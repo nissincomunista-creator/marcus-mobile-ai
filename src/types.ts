@@ -24,6 +24,7 @@ export interface AccessCode {
     activatedAt: number;
   };
   status: 'active' | 'used' | 'expired' | 'revoked';
+  durationDays?: number;
   notes?: string;
 }
 

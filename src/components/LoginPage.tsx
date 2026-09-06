@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User as UserType } from '../types';
-import { Lock, Mail, User, ArrowRight, Loader2, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Loader2, KeyRound, CheckCircle2, Smartphone } from 'lucide-react';
+import InstallAppModal from './InstallAppModal.tsx';
 
 interface LoginPageProps {
   onLoginSuccess: (token: string, user: UserType) => void;
@@ -16,6 +17,17 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,11 +267,29 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               )}
             </button>
           </form>
+
+          {/* Quick Mobile App Install CTA */}
+          <div className="mt-4 pt-4 border-t border-slate-800/80 text-center">
+            <button
+              type="button"
+              onClick={() => setIsInstallModalOpen(true)}
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-950/80 hover:bg-slate-850 border border-slate-700/80 text-sky-400 hover:text-sky-300 text-xs font-bold transition-all flex items-center justify-center space-x-2 shadow-sm cursor-pointer group"
+            >
+              <Smartphone className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform" />
+              <span>📱 Instalar App no seu Celular (Android / iPhone)</span>
+            </button>
+          </div>
         </div>
         
         <p className="text-center text-[10.5px] text-slate-500 mt-5">
           © 2026 Marcus Assessoria Imobiliária • Sistema de Avaliação & Arbitragem
         </p>
+
+        <InstallAppModal
+          isOpen={isInstallModalOpen}
+          onClose={() => setIsInstallModalOpen(false)}
+          deferredPrompt={deferredPrompt}
+        />
       </div>
     </div>
   );

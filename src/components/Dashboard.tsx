@@ -53,6 +53,7 @@ interface DashboardProps {
   selectedOriginFilter: 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal';
   setSelectedOriginFilter: (val: 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal') => void;
   onOpenLinkModal: () => void;
+  onSyncCaixaAuto?: () => void;
   itbiStats?: any[];
 }
 
@@ -86,6 +87,7 @@ export default function Dashboard({
   selectedOriginFilter,
   setSelectedOriginFilter,
   onOpenLinkModal,
+  onSyncCaixaAuto,
   itbiStats = []
 }: DashboardProps) {
   const [localMiningType, setLocalMiningType] = React.useState<'judicial' | 'caixa' | 'portal' | null>(null);
@@ -619,175 +621,54 @@ export default function Dashboard({
             </button>
           </div>
 
-          {selectedOriginFilter === 'caixa_radar' ? (
-            <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-              <span className="text-[11px] uppercase font-bold text-slate-400 font-mono tracking-wider mr-1">Ordenar por:</span>
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+            {onSyncCaixaAuto && (
               <button
-                onClick={() => setSortBy('profit')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                  sortBy === 'profit'
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-750 border-slate-700'
-                }`}
-              >
-                💎 Maior Lucro (R$)
-              </button>
-              <button
-                onClick={() => setSortBy('roi')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                  sortBy === 'roi'
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-750 border-slate-700'
-                }`}
-              >
-                🚀 Maior ROI (%)
-              </button>
-              <button
-                onClick={() => setSortBy('price_asc')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                  sortBy === 'price_asc'
-                    ? 'bg-blue-600 text-white border-blue-500 shadow-md'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-750 border-slate-700'
-                }`}
-              >
-                💵 Menor Preço (R$)
-              </button>
-              <button
-                onClick={onViewMap}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer ml-1"
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                <span>Mapa</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
-              {selectedStateFilter === 'MG' && (
-                <div className="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shrink-0 text-slate-200">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">Garimpar em:</span>
-                  <select
-                    value={selectedGarimpoCity}
-                    onChange={(e) => setSelectedGarimpoCity(e.target.value)}
-                    className="bg-transparent border-0 text-xs font-bold text-slate-200 outline-none cursor-pointer focus:ring-0"
-                  >
-                    <option value="ambas" className="bg-slate-950 text-slate-200">Todas / Ambas</option>
-                    <option value="juiz-de-fora" className="bg-slate-950 text-slate-200">Juiz de Fora</option>
-                    <option value="santos-dumont" className="bg-slate-950 text-slate-200">Santos Dumont</option>
-                  </select>
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  if (itbiCount === 0) {
-                    alert('Nenhum registro de ITBI cadastrado na base municipal. Por favor, acesse a aba "Base ITBI Municipal" e adicione ou importe transações de ITBI para usarmos como referência de preço por m² antes de garimpar.');
-                    return;
-                  }
-                  setLocalMiningType('judicial');
-                  onGarimparJudiciais(selectedGarimpoCity);
-                }}
+                onClick={onSyncCaixaAuto}
                 disabled={isMining}
-                className={`relative overflow-hidden bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-600 hover:from-indigo-700 hover:via-indigo-800 hover:to-violet-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 shadow-md hover:shadow-lg transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isMining ? 'cursor-wait' : 'cursor-pointer'
-                }`}
-                title="Garimpar leilões judiciais ativos direto dos portais dos leiloeiros"
+                className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs rounded-lg transition-all shadow-md flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 mr-2"
+                title="Varredura 100% automática da Caixa (RJ, SP, MG) sem baixar planilhas"
               >
                 {isMining ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>Garimpando...</span>
-                  </>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-950" />
                 ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                    <span>Garimpar Judiciais</span>
-                  </>
+                  <Sparkles className="w-3.5 h-3.5 text-slate-950" />
                 )}
+                <span>Sincronizar Caixa Automático</span>
               </button>
-
-              <button
-                onClick={() => {
-                  if (itbiCount === 0) {
-                    alert('Nenhum registro de ITBI cadastrado na base municipal. Por favor, acesse a aba "Base ITBI Municipal" e adicione ou importe transações de ITBI para usarmos como referência de preço por m² antes de garimpar.');
-                    return;
-                  }
-                  setLocalMiningType('caixa');
-                  onGarimparCaixa(selectedGarimpoCity);
-                }}
-                disabled={isMining}
-                className={`bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 shadow-md hover:shadow-lg transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isMining && localMiningType === 'caixa' ? 'cursor-wait' : 'cursor-pointer'
-                }`}
-                title="Baixar e processar de forma 100% automática a base de imóveis retomados da Caixa Econômica Federal"
-              >
-                {isMining && localMiningType === 'caixa' ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>Processando Caixa...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 text-white" />
-                    <span>Garimpar Imóveis Caixa</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => {
-                  if (itbiCount === 0) {
-                    alert('Nenhum registro de ITBI cadastrado na base municipal. Por favor, acesse a aba "Base ITBI Municipal" e adicione ou importe transações de ITBI para usarmos como referência de preço por m² antes de garimpar.');
-                    return;
-                  }
-                  setLocalMiningType('portal');
-                  onGarimparPortais(selectedGarimpoCity);
-                }}
-                disabled={isMining}
-                className={`bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 shadow-md hover:shadow-lg transition-all duration-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isMining && localMiningType === 'portal' ? 'cursor-wait' : 'cursor-pointer'
-                }`}
-                title="Garimpar imóveis residenciais anunciados muito abaixo do mercado no ZapImóveis e QuintoAndar para Flip"
-              >
-                {isMining && localMiningType === 'portal' ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>Buscando Flips...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-white animate-pulse" />
-                    <span>Garimpar Portais (Flip)</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={onViewMap}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 shadow-md hover:shadow-lg transition-all duration-300 transform active:scale-95 cursor-pointer"
-              >
-                <MapPin className="w-4 h-4 text-white" />
-                <span>Mapa</span>
-              </button>
-
-              <button 
-                id="btn-analisar-link"
-                onClick={onOpenLinkModal}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 transition-colors cursor-pointer shadow-md hover:shadow-lg transform active:scale-95 duration-200"
-                title="Analisar link de leilão judicial ou extrajudicial com IA"
-              >
-                <Link className="w-4 h-4" />
-                <span>Analisar Link</span>
-              </button>
-
-              <button 
-                id="btn-add-leilao"
-                onClick={onOpenAddModal}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 transition-colors cursor-pointer shadow-md hover:shadow-lg transform active:scale-95 duration-200"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Cadastrar Leilão</span>
-              </button>
-            </div>
-          )}
+            )}
+            <span className="text-[11px] uppercase font-bold text-slate-400 font-mono tracking-wider mr-1">Ordenar por:</span>
+            <button
+              onClick={() => setSortBy('profit')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                sortBy === 'profit'
+                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-750 border-slate-700'
+              }`}
+            >
+              💎 Maior Lucro (R$)
+            </button>
+            <button
+              onClick={() => setSortBy('roi')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                sortBy === 'roi'
+                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-750 border-slate-700'
+              }`}
+            >
+              🚀 Maior ROI (%)
+            </button>
+            <button
+              onClick={() => setSortBy('price_asc')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                sortBy === 'price_asc'
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-md'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-750 border-slate-700'
+              }`}
+            >
+              💵 Menor Preço (R$)
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">

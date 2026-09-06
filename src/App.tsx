@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { AuctionProperty, ItbiTransaction, PropertyType, BRAZIL_STATES, User as UserType, AccessCode } from './types.ts';
 import Dashboard from './components/Dashboard.tsx';
 import ItbiManager from './components/ItbiManager.tsx';
-import AuctionForm from './components/AuctionForm.tsx';
 import Simulator from './components/Simulator.tsx';
 import AiReporter from './components/AiReporter.tsx';
 import PropertyMap from './components/PropertyMap.tsx';
@@ -35,9 +34,11 @@ import {
   KeyRound,
   UserPlus,
   Send,
-  X
+  X,
+  Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import InstallAppModal from './components/InstallAppModal.tsx';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -134,10 +135,28 @@ export default function App() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [editingAuction, setEditingAuction] = useState<Partial<AuctionProperty> | null>(null);
 
-  // Access Codes / 7-day client license states
+  // Access Codes / client license states
   const [accessCodes, setAccessCodes] = useState<AccessCode[]>([]);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [copiedInviteCode, setCopiedInviteCode] = useState<string | null>(null);
+  const [selectedLicenseDuration, setSelectedLicenseDuration] = useState<number>(7);
+
+  // Side Drawer for Advanced Tools (Link Analyzer & Interactive Map)
+  const [isSidebarDrawerOpen, setIsSidebarDrawerOpen] = useState(false);
+  const [sidebarActiveView, setSidebarActiveView] = useState<'link' | 'mapa'>('link');
+
+  // Mobile App Install Modal & PWA Prompt
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
 
   // Async loaders
   const [isLoading, setIsLoading] = useState(true);
@@ -262,10 +281,15 @@ export default function App() {
   const handleGenerateAccessCode = async () => {
     setIsGeneratingCode(true);
     try {
+      const days = selectedLicenseDuration;
+      const durationLabel = days === 9999 ? 'Acesso Permanente / Vitalício' : `${days} dias`;
       const res = await authFetch('/api/admin/licenses/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: 'Licença de 7 dias para Cliente' })
+        body: JSON.stringify({
+          durationDays: days,
+          notes: `Licença de ${durationLabel} para Cliente`
+        })
       });
       if (res.ok) {
         await fetchAccessCodes();
@@ -276,6 +300,29 @@ export default function App() {
       alert('Erro: ' + e.message);
     } finally {
       setIsGeneratingCode(false);
+    }
+  };
+
+  const handleSyncCaixaAuto = async () => {
+    setIsMining(true);
+    try {
+      const res = await authFetch('/api/garimpar/caixa-auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ states: ['RJ', 'SP', 'MG'] })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || 'Varredura automática da Caixa concluída com sucesso!');
+        await refreshMarketData();
+        setSelectedOriginFilter('caixa_radar');
+      } else {
+        alert('Aviso: ' + (data.error || 'Erro ao sincronizar imóveis Caixa.'));
+      }
+    } catch (e: any) {
+      alert('Erro na sincronização: ' + e.message);
+    } finally {
+      setIsMining(false);
     }
   };
 
@@ -740,16 +787,38 @@ export default function App() {
               <span>Perfil</span>
             </button>
 
-            {/* Server / Host Mode & Sharing Modal Trigger */}
+            {/* Mobile App Install Button */}
             <button
-              onClick={() => setIsHostModalOpen(true)}
-              className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 text-amber-300 border border-amber-500/30 hover:bg-amber-950/30 hover:border-amber-500/50 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
-              title="Conectar outro computador ou compartilhar banco de dados"
+              onClick={() => setIsInstallModalOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-600/25 to-teal-600/25 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/35 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
+              title="Instalar aplicativo no celular ou escanear QR Code"
             >
-              <Laptop className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Conectar Outro PC</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+              <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+              <span>📱 Baixar no Celular</span>
             </button>
+
+            {/* Lateral Tools Drawer Trigger (Analisar Link IA + Mapa) */}
+            <button
+              onClick={() => setIsSidebarDrawerOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-violet-600/30 to-indigo-600/30 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-600/40 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
+              title="Abrir Ferramentas: Analisador de Link e Mapa"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Painel Lateral</span>
+            </button>
+
+            {/* Server / Matrix Mode Trigger: ONLY for Admin */}
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setIsHostModalOpen(true)}
+                className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 text-amber-300 border border-amber-500/30 hover:bg-amber-950/30 hover:border-amber-500/50 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
+                title="Central da Matriz - Gerenciar Licenças e Conectar PC"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Painel Matriz</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+              </button>
+            )}
  
             <div className="h-6 w-px bg-slate-855 mx-1 hidden sm:block"></div>
  
@@ -812,21 +881,41 @@ export default function App() {
                   <div>
                     <h4 className="text-xs font-black uppercase text-amber-300 font-mono tracking-wider flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4 text-amber-400" />
-                      Códigos de Acesso (Validade: 7 Dias)
+                      Gerador de Códigos de Acesso & Licenças
                     </h4>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      O cliente cria a conta e usa o código apenas 1 vez para liberar 7 dias completos de uso.
+                      Selecione a validade e gere o código de ativação para enviar ao cliente.
                     </p>
                   </div>
 
-                  <button
-                    onClick={handleGenerateAccessCode}
-                    disabled={isGeneratingCode}
-                    className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-                  >
-                    {isGeneratingCode ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                    <span>+ Gerar Novo Código de 7 Dias</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center space-x-1.5 bg-slate-900 border border-slate-750 px-2.5 py-1.5 rounded-xl">
+                      <span className="text-[11px] text-slate-400 font-bold">Validade:</span>
+                      <select
+                        value={selectedLicenseDuration}
+                        onChange={(e) => setSelectedLicenseDuration(Number(e.target.value))}
+                        className="bg-transparent text-xs font-bold text-amber-400 outline-none cursor-pointer"
+                      >
+                        <option value={7} className="bg-slate-900 text-white">7 Dias (Degustação)</option>
+                        <option value={15} className="bg-slate-900 text-white">15 Dias (2 Semanas)</option>
+                        <option value={30} className="bg-slate-900 text-white">30 Dias (1 Mês)</option>
+                        <option value={60} className="bg-slate-900 text-white">60 Dias (2 Meses)</option>
+                        <option value={90} className="bg-slate-900 text-white">90 Dias (3 Meses)</option>
+                        <option value={180} className="bg-slate-900 text-white">180 Dias (6 Meses)</option>
+                        <option value={365} className="bg-slate-900 text-white">365 Dias (1 Ano)</option>
+                        <option value={9999} className="bg-slate-900 text-amber-400 font-bold">Vitalício / Permanente</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleGenerateAccessCode}
+                      disabled={isGeneratingCode}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      {isGeneratingCode ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                      <span>+ Gerar Código ({selectedLicenseDuration === 9999 ? 'Vitalício' : `${selectedLicenseDuration}d`})</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Tabela de Códigos */}
@@ -1063,10 +1152,7 @@ export default function App() {
                         selectedAuctionId={selectedAuctionId}
                         onSelectAuction={(id) => setSelectedAuctionId(id)}
                         onDeleteAuction={handleDeleteAuction}
-                        onOpenAddModal={() => {
-                          setEditingAuction(null);
-                          setIsAddModalOpen(true);
-                        }}
+                        onOpenAddModal={() => {}}
                         selectedNeighborhoodFilter={selectedNeighborhoodFilter}
                         setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
                         selectedCityFilter={selectedCityFilter}
@@ -1084,13 +1170,20 @@ export default function App() {
                         onGarimparJudiciais={handleGarimparJudiciais}
                         onGarimparCaixa={handleGarimparCaixa}
                         onGarimparPortais={handleGarimparPortais}
+                        onSyncCaixaAuto={handleSyncCaixaAuto}
                         isMining={isMining}
                         itbiCount={itbiCount}
                         onUpdateProperty={handleUpdatePropertyDirectly}
-                        onViewMap={() => setActiveTab('mapa')}
+                        onViewMap={() => {
+                          setSidebarActiveView('mapa');
+                          setIsSidebarDrawerOpen(true);
+                        }}
                         selectedOriginFilter={selectedOriginFilter}
                         setSelectedOriginFilter={setSelectedOriginFilter}
-                        onOpenLinkModal={() => setIsLinkModalOpen(true)}
+                        onOpenLinkModal={() => {
+                          setSidebarActiveView('link');
+                          setIsSidebarDrawerOpen(true);
+                        }}
                         itbiStats={itbiStats}
                       />
                     )}
@@ -1208,17 +1301,122 @@ export default function App() {
         </div>
       </footer>
 
-      {/* 4. Sliding Modal: New Auction Opportunity */}
+      {/* 4. Sliding Lateral Tools Drawer (Analisador de Link IA + Mapa) */}
       <AnimatePresence>
-        {isAddModalOpen && (
-          <AuctionForm
-            isOpen={isAddModalOpen}
-            onClose={() => setIsAddModalOpen(false)}
-            onSave={handleSaveAuction}
-            initialData={editingAuction}
-            existingNeighborhoods={uniqueNeighborhoods}
-          />
+        {isSidebarDrawerOpen && (
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarDrawerOpen(false)}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs cursor-pointer"
+            />
+
+            <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="w-screen max-w-2xl bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col relative z-10"
+              >
+                {/* Drawer Header */}
+                <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-400">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-100 text-base">
+                        Painel Lateral de Ferramentas
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Análise de editais com Inteligência Artificial e Mapa de calor
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsSidebarDrawerOpen(false)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Sub-tabs in Drawer */}
+                <div className="flex border-b border-slate-800 bg-slate-950/50 p-2 gap-2">
+                  <button
+                    onClick={() => setSidebarActiveView('link')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+                      sidebarActiveView === 'link'
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>Analisar Link (IA Gemini)</span>
+                  </button>
+                  <button
+                    onClick={() => setSidebarActiveView('mapa')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+                      sidebarActiveView === 'mapa'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4 text-emerald-300" />
+                    <span>Mapa de Oportunidades</span>
+                  </button>
+                </div>
+
+                {/* Drawer Content */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {sidebarActiveView === 'link' ? (
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <span>Importar e Avaliar Link de Leilão</span>
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 font-mono px-2 py-0.5 rounded-full border border-amber-500/30">
+                            Auto Scraping
+                          </span>
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Cole qualquer link de leiloeiro (Superbid, MegaLeilões, Zukerman, Sodré Santoro, etc.). A IA do Marcus vai ler o edital e cruzar com o ITBI.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setIsSidebarDrawerOpen(false);
+                          setIsLinkModalOpen(true);
+                        }}
+                        className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                        <span>Abrir Formulário de Análise de Link</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 h-[calc(100vh-220px)] flex flex-col">
+                      <div className="flex-1 rounded-2xl overflow-hidden border border-slate-800 shadow-md">
+                        <PropertyMap
+                          auctions={auctions}
+                          onSelectPropertyFromMap={(id) => {
+                            setSelectedAuctionId(id);
+                            setIsSidebarDrawerOpen(false);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </div>
         )}
+
         {isLinkModalOpen && (
           <LinkAnalyzerModal
             isOpen={isLinkModalOpen}
@@ -1232,6 +1430,12 @@ export default function App() {
       {/* 5. AI Chat Assistant Widget */}
       <ChatAssistant auctions={auctions} selectedAuctionId={selectedAuctionId} />
 
+      {/* 6. Mobile App Install Modal */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        deferredPrompt={deferredPrompt}
+      />
     </div>
   );
 }

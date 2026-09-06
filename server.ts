@@ -4,6 +4,7 @@ import fs from 'fs';
 import csvParser from 'csv-parser';
 import iconv from 'iconv-lite';
 import { Readable } from 'stream';
+import zlib from 'zlib';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
@@ -368,6 +369,24 @@ function loadStore(): DataStore {
     arrematacoes: []
   };
 
+  const GZ_STORE_PATH = path.join(process.cwd(), 'data_store.json.gz');
+  const shouldUnpackGz = fs.existsSync(GZ_STORE_PATH) && (
+    !fs.existsSync(STORE_PATH) || 
+    fs.statSync(STORE_PATH).size < 1000000 // If json is smaller than 1MB, it's missing the 51MB dataset
+  );
+
+  if (shouldUnpackGz) {
+    try {
+      console.log('[Store] Descomprimindo base de dados oficial data_store.json.gz...');
+      const compressed = fs.readFileSync(GZ_STORE_PATH);
+      const decompressed = zlib.gunzipSync(compressed);
+      fs.writeFileSync(STORE_PATH, decompressed);
+      console.log('[Store] Base de dados descompactada com sucesso (103k+ ITBI e leilões Caixa)!');
+    } catch (gzErr) {
+      console.error('[Store] Falha ao descompactar data_store.json.gz:', gzErr);
+    }
+  }
+
   if (fs.existsSync(STORE_PATH)) {
     try {
       const data = fs.readFileSync(STORE_PATH, 'utf-8');
@@ -380,6 +399,23 @@ function loadStore(): DataStore {
       storeData.savedAnalyses = parsed.savedAnalyses || [];
       storeData.arrematacoes = parsed.arrematacoes || [];
       
+      // If ITBI transactions are still empty but GZ exists, force unpack
+      if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && fs.existsSync(GZ_STORE_PATH)) {
+        try {
+          const compressed = fs.readFileSync(GZ_STORE_PATH);
+          const decompressed = zlib.gunzipSync(compressed);
+          const gzParsed = JSON.parse(decompressed.toString('utf-8'));
+          storeData.itbiTransactions = gzParsed.itbiTransactions || [];
+          if ((!storeData.auctions || storeData.auctions.length === 0) && gzParsed.auctions) {
+            storeData.auctions = gzParsed.auctions;
+          }
+          fs.writeFileSync(STORE_PATH, decompressed);
+          console.log('[Store] Base recuperada do data_store.json.gz:', storeData.itbiTransactions.length, 'ITBI');
+        } catch (e2) {
+          console.error('[Store] Erro ao forçar descompactação do .gz:', e2);
+        }
+      }
+
       // Ensure admin role for first user if present
       if (storeData.users.length > 0 && !storeData.users[0].role) {
         storeData.users[0].role = 'admin';
@@ -915,7 +951,8 @@ app.post('/api/auth/register', (req, res) => {
   const salt = crypto.randomBytes(16).toString('hex');
   const passwordHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
 
-  const licenseDuration = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+  const durationDays = codeObj?.durationDays || 7;
+  const licenseDuration = durationDays === 9999 ? (3650 * 24 * 60 * 60 * 1000) : (durationDays * 24 * 60 * 60 * 1000);
   const newUser: User = {
     id: `user-${Date.now()}`,
     email,
@@ -1030,7 +1067,8 @@ app.post('/api/auth/renew-license', (req, res) => {
     activatedAt: Date.now()
   };
 
-  const licenseDuration = 7 * 24 * 60 * 60 * 1000;
+  const durationDays = codeObj.durationDays || 7;
+  const licenseDuration = durationDays === 9999 ? (3650 * 24 * 60 * 60 * 1000) : (durationDays * 24 * 60 * 60 * 1000);
   user.licenseExpiresAt = Date.now() + licenseDuration;
   user.activatedWithCode = codeObj.code;
 
@@ -1068,15 +1106,18 @@ app.get('/api/admin/licenses', authMiddleware, (req, res) => {
 });
 
 app.post('/api/admin/licenses/generate', authMiddleware, (req, res) => {
-  const { notes } = req.body;
+  const { notes, durationDays } = req.body;
+  const days = Number(durationDays) || 7;
+  const durationText = days === 9999 ? 'Acesso Permanente / Vitalício' : `${days} dias`;
   const newCode: AccessCode = {
     id: `code-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     code: generateRandomAccessCode(),
     createdAt: Date.now(),
-    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // Code valid for 30 days to activate, once activated lasts 7 days
+    expiresAt: Date.now() + 60 * 24 * 60 * 60 * 1000, // Code valid for 60 days to activate
+    durationDays: days,
     used: false,
     status: 'active',
-    notes: notes || 'Licença de 7 dias para Cliente'
+    notes: notes || `Licença de ${durationText} para Cliente`
   };
 
   if (!store.accessCodes) store.accessCodes = [];
@@ -3191,50 +3232,53 @@ app.post('/api/garimpar/caixa', authMiddleware, async (req, res) => {
 
 
   let content = '';
-  let browser: any;
-
   try {
     const url = `https://venda-imoveis.caixa.gov.br/listaweb/Lista_imoveis_${uf}.csv`;
-    console.log(`Baixando planilha oficial da Caixa para o estado: ${uf} via Puppeteer... URL: ${url}`);
+    console.log(`[Caixa Engine] Baixando planilha oficial da Caixa para o estado: ${uf}... URL: ${url}`);
     
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    // Tentativa 1: Download direto via HTTP em alta velocidade (sem abrir navegador)
+    const directRes = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': '*/*'
+      }
     });
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
-    console.log("[Caixa Downloader] Acessando busca-imovel.asp...");
-    await page.goto('https://venda-imoveis.caixa.gov.br/sistema/busca-imovel.asp', { waitUntil: 'networkidle2', timeout: 30000 });
-    
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    console.log(`[Caixa Downloader] Executando fetch no contexto da página para ${url}...`);
-    const base64Content = await page.evaluate(async (csvUrl) => {
-      const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error(`Erro HTTP! Status: ${response.status}`);
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = '';
-      const chunk = 8192;
-      for (let i = 0; i < bytes.length; i += chunk) {
-        const subArray = bytes.subarray(i, i + chunk);
-        binary += String.fromCharCode.apply(null, Array.from(subArray));
-      }
-      return btoa(binary);
-    }, url);
-    
-    const buffer = Buffer.from(base64Content, 'base64');
-    content = buffer.toString('latin1');
-    console.log("Planilha oficial baixada com sucesso!");
+
+    if (directRes.ok) {
+      const arrayBuffer = await directRes.arrayBuffer();
+      content = iconv.decode(Buffer.from(arrayBuffer), 'latin1');
+      console.log(`[Caixa Engine] Planilha oficial de ${uf} baixada com sucesso direto via HTTP! (${arrayBuffer.byteLength} bytes)`);
+    } else {
+      throw new Error(`HTTP Status ${directRes.status}`);
+    }
   } catch (error: any) {
-    console.error("Erro ao baixar da Caixa via Puppeteer:", error);
-    throw new Error("Falha ao baixar a planilha oficial da Caixa: " + error.message);
-  } finally {
-    if (browser) {
-      await browser.close();
+    console.warn(`[Caixa Engine] Download direto falhou (${error.message}). Tentando fallback via Puppeteer...`);
+    let browser: any;
+    try {
+      const url = `https://venda-imoveis.caixa.gov.br/listaweb/Lista_imoveis_${uf}.csv`;
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      await page.goto('https://venda-imoveis.caixa.gov.br/sistema/busca-imovel.asp', { waitUntil: 'networkidle2', timeout: 30000 });
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      const base64Content = await page.evaluate(async (csvUrl) => {
+        const response = await fetch(csvUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 8192) {
+          binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 8192)));
+        }
+        return btoa(binary);
+      }, url);
+      content = Buffer.from(base64Content, 'base64').toString('latin1');
+    } catch (fallbackErr: any) {
+      throw new Error("Falha ao baixar a planilha oficial da Caixa: " + fallbackErr.message);
+    } finally {
+      if (browser) await browser.close();
     }
   }
 
@@ -3443,6 +3487,165 @@ app.post('/api/garimpar/caixa', authMiddleware, async (req, res) => {
     count: minedAuctions.length,
     message: `Sucesso! O sistema baixou e processou de forma 100% automática a base oficial da Caixa Econômica Federal e importou ${minedAuctions.length} ofertas ativas para a sua região.`,
     mined: minedAuctions
+  });
+});
+
+// POST /api/garimpar/caixa-auto (Automated multi-state Caixa synchronization for RJ, SP, MG)
+app.post('/api/garimpar/caixa-auto', authMiddleware, async (req, res) => {
+  const targetStates: string[] = req.body.states || ['RJ', 'SP', 'MG'];
+  console.log(`[Caixa Auto-Sync] Iniciando varredura oficial automática para os estados: ${targetStates.join(', ')}`);
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+  const { avgSqmMap, streetAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(store.itbiTransactions);
+  let totalImported = 0;
+  const importedList: AuctionProperty[] = [];
+
+  for (const uf of targetStates) {
+    try {
+      const url = `https://venda-imoveis.caixa.gov.br/listaweb/Lista_imoveis_${uf}.csv`;
+      console.log(`[Caixa Auto-Sync] Baixando ${uf} direto da Caixa...`);
+      const directRes = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': '*/*'
+        }
+      });
+
+      if (!directRes.ok) {
+        console.warn(`[Caixa Auto-Sync] Falha no download de ${uf}: HTTP ${directRes.status}`);
+        continue;
+      }
+
+      const arrayBuffer = await directRes.arrayBuffer();
+      const content = iconv.decode(Buffer.from(arrayBuffer), 'latin1');
+      const lines = content.split('\n');
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(lines.length, 10); i++) {
+        if (lines[i].includes('UF') && lines[i].includes('Cidade') && lines[i].includes('Bairro')) {
+          headerIdx = i;
+          break;
+        }
+      }
+      if (headerIdx === -1) continue;
+
+      const cleanContent = lines.slice(headerIdx).join('\n');
+      const stream = Readable.from(Buffer.from(cleanContent, 'utf-8'));
+      const results: any[] = [];
+      await new Promise((resolve, reject) => {
+        stream
+          .pipe(csvParser({ separator: ';' }))
+          .on('data', (d) => results.push(d))
+          .on('end', resolve)
+          .on('error', reject);
+      });
+
+      // Mapear cidades cadastradas no ITBI deste estado
+      const itbiCities = Array.from(new Set(
+        store.itbiTransactions
+          .filter(tx => (tx.state || 'SP').toUpperCase() === uf)
+          .map(tx => tx.city ? tx.city.toLowerCase().trim() : '')
+      )).filter(Boolean).map(c => normalizeString(c));
+
+      for (const rawRow of results) {
+        const row: Record<string, string> = {};
+        for (const k of Object.keys(rawRow)) {
+          const normKey = k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+          row[normKey] = rawRow[k];
+        }
+        if (!row.ndoimovel) continue;
+
+        const bairroCaixa = (row.bairro || '').toLowerCase().trim();
+        const cidadeCaixa = (row.cidade || '').toLowerCase().trim();
+        const ufCaixa = (row.uf || uf).toUpperCase().trim();
+        const enderecoCaixa = (row.endereco || '').trim();
+        const precoStr = (row.preco || '0').replace(/\./g, '').replace(',', '.');
+        const avaliacaoStr = (row.valordeavaliacao || '0').replace(/\./g, '').replace(',', '.');
+        const descricaoCaixa = (row.descricao || '').trim();
+        const linkCaixa = (row.linkdeacesso || 'https://venda-imoveis.caixa.gov.br/').trim();
+        const modalidade = (row.modalidadedevenda || '').trim();
+
+        // Filtrar cidades de atuação
+        const normCidade = normalizeString(cidadeCaixa);
+        let cityMatch = false;
+        if (uf === 'MG') {
+          cityMatch = normCidade === 'juiz de fora' || normCidade === 'santos dumont';
+        } else if (itbiCities.length > 0) {
+          cityMatch = itbiCities.includes(normCidade);
+        } else {
+          cityMatch = true;
+        }
+        if (!cityMatch) continue;
+
+        const auctionPrice = Math.round(Number(precoStr) || 0);
+        if (auctionPrice === 0) continue;
+
+        // Evitar duplicatas
+        if (store.auctions.some(a => a.auctionLink === linkCaixa)) continue;
+
+        let propertyType: PropertyType = 'Casa';
+        if (descricaoCaixa.toLowerCase().includes('apartamento')) propertyType = 'Apartamento';
+        else if (descricaoCaixa.toLowerCase().includes('terreno') || descricaoCaixa.toLowerCase().includes('lote')) propertyType = 'Terreno';
+        else if (descricaoCaixa.toLowerCase().includes('comercial') || descricaoCaixa.toLowerCase().includes('galpão')) propertyType = 'Comercial';
+
+        let sizeSqm = 50;
+        const areaMatch = descricaoCaixa.match(/([\d\.,]+)\s*de\s*área\s*(privativa|total|terreno)/i);
+        if (areaMatch) {
+          let sizeStr = areaMatch[1];
+          if (sizeStr.includes('.') && sizeStr.includes(',')) sizeStr = sizeStr.replace(/\./g, '').replace(',', '.');
+          else if (sizeStr.includes(',')) sizeStr = sizeStr.replace(',', '.');
+          sizeSqm = Math.round(parseFloat(sizeStr)) || 50;
+        }
+
+        const cleanBairro = row.bairro ? row.bairro.trim() : 'Não informado';
+        const title = `${propertyType} Retomado Caixa - ${cleanBairro.toUpperCase()}`;
+        const allowsFinancing = (row.financiamento || '').toLowerCase() === 'sim';
+
+        const newAuc: AuctionProperty = {
+          id: `auc-caixa-radar-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+          title: title.substring(0, 100),
+          address: enderecoCaixa,
+          neighborhood: cleanBairro,
+          propertyType,
+          sizeSqm,
+          auctionPrice,
+          estimatedRepair: Math.round(5000 + Math.random() * 20000),
+          pendingDebts: 0,
+          otherCosts: 0,
+          estimatedValue: 0,
+          auctionDate: todayStr,
+          auctionLink: linkCaixa,
+          description: `Imóvel Retomado Caixa Econômica Federal. Modalidade: ${modalidade}. Avaliação original Caixa: R$ ${avaliacaoStr}. Descrição: ${descricaoCaixa}`,
+          status: 'Pendente',
+          occupied: true,
+          state: ufCaixa,
+          allowsFinancing,
+          allowsInstallments: false,
+          userId: req.userId,
+          origin: 'caixa_radar'
+        };
+
+        const recalculated = recalculateAuctionWithIndex(newAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap);
+        importedList.push(recalculated);
+        totalImported++;
+      }
+    } catch (err: any) {
+      console.error(`[Caixa Auto-Sync] Erro no processamento de ${uf}:`, err);
+    }
+  }
+
+  if (importedList.length > 0) {
+    store.auctions.unshift(...importedList);
+    saveStore(store);
+  }
+
+  console.log(`[Caixa Auto-Sync] Varredura finalizada. Novos imóveis importados: ${totalImported}`);
+  res.json({
+    success: true,
+    added: totalImported,
+    totalInDb: store.auctions.length,
+    message: totalImported > 0
+      ? `Varredura automática finalizada! ${totalImported} novos imóveis Caixa foram adicionados e avaliados com base no ITBI oficial.`
+      : 'Varredura automática finalizada! Sua base da Caixa já está 100% atualizada com os últimos leilões disponíveis.'
   });
 });
 
@@ -4248,6 +4451,19 @@ async function start() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
+    
+    // Auto-seed Caixa properties on boot if empty
+    if (!store.auctions || store.auctions.length === 0) {
+      console.log('[Server] Base de leilões vazia. Disparando sincronização inicial automática da Caixa...');
+      setTimeout(async () => {
+        try {
+          const added = await syncCaixaDirect(['RJ', 'SP', 'MG']);
+          console.log(`[Server] Sincronização inicial concluída! ${added} imóveis adicionados.`);
+        } catch (e) {
+          console.error('[Server] Falha ao sincronizar Caixa no arranque:', e);
+        }
+      }, 3000);
+    }
   });
 }
 
