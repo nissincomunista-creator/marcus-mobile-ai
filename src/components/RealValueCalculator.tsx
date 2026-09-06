@@ -66,22 +66,37 @@ export interface PortalScrapeResult {
   neighborhood?: string;
 }
 
-interface RealValueCalculatorProps {
-  itbiStats: ItbiStats[];
+export interface PrefilledCalculatorData {
+  state?: string;
+  city?: string;
+  neighborhood?: string;
+  address?: string;
+  propertyType?: string;
+  sizeSqm?: number;
+  purchasePrice?: number;
+  acquisitionRule?: 'leilao' | 'caixa';
+  estimatedRepair?: number;
+  pendingDebts?: number;
 }
 
-export default function RealValueCalculator({ itbiStats }: RealValueCalculatorProps) {
+interface RealValueCalculatorProps {
+  itbiStats: ItbiStats[];
+  prefillData?: PrefilledCalculatorData | null;
+  onClose?: () => void;
+}
+
+export default function RealValueCalculator({ itbiStats, prefillData, onClose }: RealValueCalculatorProps) {
   // Navigation mode for results display
   const [activeTab, setActiveTab] = useState<'local' | 'online' | 'comparador' | 'matricula'>('local');
 
   // Unified Form Inputs (Shared between local and online modes)
-  const [selectedState, setSelectedState] = useState('RJ');
-  const [selectedCity, setSelectedCity] = useState('Rio de Janeiro');
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
-  const [selectedStreet, setSelectedStreet] = useState('');
+  const [selectedState, setSelectedState] = useState(prefillData?.state || 'RJ');
+  const [selectedCity, setSelectedCity] = useState(prefillData?.city || 'Rio de Janeiro');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState(prefillData?.neighborhood || '');
+  const [selectedStreet, setSelectedStreet] = useState(prefillData?.address || '');
   const [streetNumber, setStreetNumber] = useState(''); // Number & complement input
-  const [propertyType, setPropertyType] = useState('Apartamento');
-  const [sizeSqm, setSizeSqm] = useState(80);
+  const [propertyType, setPropertyType] = useState(prefillData?.propertyType || 'Apartamento');
+  const [sizeSqm, setSizeSqm] = useState(prefillData?.sizeSqm || 80);
   const [bedrooms, setBedrooms] = useState(2);
   const [parkingSpaces, setParkingSpaces] = useState(1);
   const [customValue, setCustomValue] = useState<number | ''>('');
@@ -170,6 +185,31 @@ export default function RealValueCalculator({ itbiStats }: RealValueCalculatorPr
   const [isExecutingFullAnalysis, setIsExecutingFullAnalysis] = useState<boolean>(false);
   const [hoveredScenario, setHoveredScenario] = useState<number | null>(null);
   const [isExecutiveReportOpen, setIsExecutiveReportOpen] = useState<boolean>(false);
+
+  // Sync prefillData when provided from external property cards
+  useEffect(() => {
+    if (prefillData) {
+      if (prefillData.state) setSelectedState(prefillData.state);
+      if (prefillData.city) setSelectedCity(prefillData.city);
+      if (prefillData.neighborhood) {
+        setSelectedNeighborhood(prefillData.neighborhood);
+        setNeighborhoodInput(prefillData.neighborhood);
+      }
+      if (prefillData.address) {
+        setSelectedStreet(prefillData.address);
+        setStreetInput(prefillData.address);
+      }
+      if (prefillData.propertyType) setPropertyType(prefillData.propertyType);
+      if (prefillData.sizeSqm) setSizeSqm(prefillData.sizeSqm);
+      if (prefillData.purchasePrice) {
+        setArrematePrice(prefillData.purchasePrice);
+        setArremateInputStr(prefillData.purchasePrice.toLocaleString('pt-BR'));
+      }
+      if (prefillData.acquisitionRule) setAcquisitionMode(prefillData.acquisitionRule);
+      if (prefillData.estimatedRepair !== undefined) setReformCostInput(prefillData.estimatedRepair);
+      if (prefillData.pendingDebts !== undefined) setIptuDebtInput(prefillData.pendingDebts);
+    }
+  }, [prefillData]);
 
   // Unified report generator combining real Matrícula and Edital audit data
   const buildUnifiedReport = (mat: MatriculaAuditData | null, edit: EditalAuditData | null): MatriculaAnalysisReport | null => {

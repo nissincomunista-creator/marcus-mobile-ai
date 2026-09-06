@@ -101,15 +101,47 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
-function getSimulatedDistanceKm(streetA, streetB) {
-  if (!streetA || !streetB) return 1.5;
-  if (streetA.toLowerCase() === streetB.toLowerCase()) return 0;
-  let hash = 0;
-  const combined = streetA + streetB;
-  for (let i = 0; i < combined.length; i++) {
-    hash = combined.charCodeAt(i) + ((hash << 5) - hash);
+function cleanCaixaCity(rawCity, uf) {
+  if (!rawCity) return uf === "RJ" ? "Rio de Janeiro" : uf === "MG" ? "Juiz de Fora" : "S\xE3o Paulo";
+  const norm = normalizeString(rawCity);
+  if (norm === "niteroi") return "Niter\xF3i";
+  if (norm === "juiz de fora") return "Juiz de Fora";
+  if (norm === "santos dumont") return "Santos Dumont";
+  if (norm === "rio de janeiro") return "Rio de Janeiro";
+  if (norm === "sao paulo") return "S\xE3o Paulo";
+  return rawCity.trim().toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+function parseCaixaSizeSqm(descricao, propertyType) {
+  if (!descricao) return 50;
+  const privMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*privativa/i);
+  const totalMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*total/i);
+  const terrenoMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*(?:do\s*)?terreno/i);
+  function parseVal(match) {
+    if (!match) return 0;
+    let s = match[1].trim();
+    if (s.includes(".") && s.includes(",")) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (s.includes(",")) {
+      s = s.replace(",", ".");
+    }
+    const v = parseFloat(s);
+    return isNaN(v) ? 0 : v;
   }
-  return 0.5 + Math.abs(hash) % 25 / 10;
+  const privativa = parseVal(privMatch);
+  const total = parseVal(totalMatch);
+  const terreno = parseVal(terrenoMatch);
+  let size = 0;
+  if (propertyType === "Terreno") {
+    size = terreno || total || privativa;
+  } else {
+    size = privativa || total || terreno;
+  }
+  if ((propertyType === "Apartamento" || propertyType === "Casa") && size >= 1e3 && size % 10 === 0 && size <= 5e4) {
+    if (size % 100 === 0) {
+      size = size / 100;
+    }
+  }
+  return Math.round(size) || 50;
 }
 async function getStreetCoordinates(uf, city, neighborhood, streets) {
   let coordsCache = {};
@@ -350,7 +382,8 @@ function loadStore() {
           const decompressed = import_zlib.default.gunzipSync(compressed);
           const gzParsed = JSON.parse(decompressed.toString("utf-8"));
           storeData.itbiTransactions = gzParsed.itbiTransactions || [];
-          if ((!storeData.auctions || storeData.auctions.length === 0) && gzParsed.auctions) {
+          if ((!storeData.auctions || storeData.auctions.length < 1e3) && gzParsed.auctions) {
+            console.log(`[Store] Restaurando ${gzParsed.auctions.length} leil\xF5es do .gz com Niter\xF3i, Juiz de Fora, Santos Dumont...`);
             storeData.auctions = gzParsed.auctions;
           }
           import_fs.default.writeFileSync(STORE_PATH, decompressed);
@@ -359,8 +392,34 @@ function loadStore() {
           console.error("[Store] Erro ao for\xE7ar descompacta\xE7\xE3o do .gz:", e2);
         }
       }
+      if ((!storeData.auctions || storeData.auctions.length < 1e3) && import_fs.default.existsSync(GZ_STORE_PATH)) {
+        try {
+          const compressed = import_fs.default.readFileSync(GZ_STORE_PATH);
+          const gzParsed = JSON.parse(import_zlib.default.gunzipSync(compressed).toString("utf-8"));
+          if (gzParsed.auctions && gzParsed.auctions.length > (storeData.auctions?.length || 0)) {
+            console.log(`[Store] Restaurando base completa de ${gzParsed.auctions.length} leil\xF5es do .gz (incluindo Niter\xF3i, Juiz de Fora, Santos Dumont)...`);
+            storeData.auctions = gzParsed.auctions;
+          }
+        } catch (eGz) {
+          console.error("[Store] Erro ao recuperar leil\xF5es do .gz:", eGz);
+        }
+      }
       if (storeData.users.length > 0 && !storeData.users[0].role) {
         storeData.users[0].role = "admin";
+      }
+      if (storeData.auctions) {
+        storeData.auctions.forEach((a) => {
+          if (a.origin === "caixa_radar") {
+            a.origin = "caixa";
+          }
+        });
+      }
+      if (storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+        console.log(`[Store] Higienizando e recalculando ${storeData.auctions.length} leil\xF5es com a base oficial de ITBI...`);
+        const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(storeData.itbiTransactions);
+        storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap));
+        saveStore(storeData);
+        console.log("[Store] Todos os leil\xF5es calibrados e recalculados com sucesso!");
       }
     } catch (e) {
       console.error("Error reading data_store.json, resetting to initials", e);
@@ -415,17 +474,18 @@ function loadStore() {
   }
   return storeData;
 }
-function saveStore(store2) {
+function saveStore(targetStore) {
   try {
-    import_fs.default.writeFileSync(STORE_PATH, JSON.stringify(store2, null, 2), "utf-8");
+    import_fs.default.writeFileSync(STORE_PATH, JSON.stringify(targetStore, null, 2), "utf-8");
   } catch (e) {
     console.error("Failed to save data_store.json", e);
   }
 }
-var store = loadStore();
 function buildItbiIndexes(txs) {
   const avgSqmMap = /* @__PURE__ */ new Map();
   const streetAvgSqmMap = /* @__PURE__ */ new Map();
+  const cityAvgSqmMap = /* @__PURE__ */ new Map();
+  const stateAvgSqmMap = /* @__PURE__ */ new Map();
   const volMap = /* @__PURE__ */ new Map();
   const neighCityMap = /* @__PURE__ */ new Map();
   for (let i = 0; i < txs.length; i++) {
@@ -433,6 +493,7 @@ function buildItbiIndexes(txs) {
     const state = (t.state || "SP").toLowerCase();
     const neigh = cleanNeighborhood(t.neighborhood);
     const propType = t.propertyType;
+    const normCity = normalizeString(t.city || "");
     const avgKey = `${state}|${neigh}|${propType}`;
     let avgEntry = avgSqmMap.get(avgKey);
     if (!avgEntry) {
@@ -441,6 +502,48 @@ function buildItbiIndexes(txs) {
     }
     avgEntry.sumSqm += t.unitValueSqm;
     avgEntry.count += 1;
+    const neighAnyKey = `${state}|${neigh}|any`;
+    let neighAnyEntry = avgSqmMap.get(neighAnyKey);
+    if (!neighAnyEntry) {
+      neighAnyEntry = { sumSqm: 0, count: 0 };
+      avgSqmMap.set(neighAnyKey, neighAnyEntry);
+    }
+    neighAnyEntry.sumSqm += t.unitValueSqm;
+    neighAnyEntry.count += 1;
+    if (normCity) {
+      const cityKey = `${state}|${normCity}|${propType}`;
+      let cityEntry = cityAvgSqmMap.get(cityKey);
+      if (!cityEntry) {
+        cityEntry = { sumSqm: 0, count: 0 };
+        cityAvgSqmMap.set(cityKey, cityEntry);
+      }
+      cityEntry.sumSqm += t.unitValueSqm;
+      cityEntry.count += 1;
+      const cityAnyKey = `${state}|${normCity}|any`;
+      let cityAnyEntry = cityAvgSqmMap.get(cityAnyKey);
+      if (!cityAnyEntry) {
+        cityAnyEntry = { sumSqm: 0, count: 0 };
+        cityAvgSqmMap.set(cityAnyKey, cityAnyEntry);
+      }
+      cityAnyEntry.sumSqm += t.unitValueSqm;
+      cityAnyEntry.count += 1;
+    }
+    const stKey = `${state}|${propType}`;
+    let stEntry = stateAvgSqmMap.get(stKey);
+    if (!stEntry) {
+      stEntry = { sumSqm: 0, count: 0 };
+      stateAvgSqmMap.set(stKey, stEntry);
+    }
+    stEntry.sumSqm += t.unitValueSqm;
+    stEntry.count += 1;
+    const stAnyKey = `${state}|any`;
+    let stAnyEntry = stateAvgSqmMap.get(stAnyKey);
+    if (!stAnyEntry) {
+      stAnyEntry = { sumSqm: 0, count: 0 };
+      stateAvgSqmMap.set(stAnyKey, stAnyEntry);
+    }
+    stAnyEntry.sumSqm += t.unitValueSqm;
+    stAnyEntry.count += 1;
     if (t.street) {
       const streetClean = cleanStreetName(t.street);
       const streetCore = getCoreStreetName(t.street);
@@ -465,10 +568,10 @@ function buildItbiIndexes(txs) {
     }
     const volKey = `${state}|${neigh}`;
     volMap.set(volKey, (volMap.get(volKey) || 0) + 1);
-    const city = t.city || (state === "rj" ? "Rio de Janeiro" : "S\xE3o Paulo");
+    const city = t.city || (state === "rj" ? "Rio de Janeiro" : state === "mg" ? "Juiz de Fora" : "S\xE3o Paulo");
     neighCityMap.set(`${state}|${neigh}`, city);
   }
-  return { avgSqmMap, streetAvgSqmMap, volMap, neighCityMap };
+  return { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap };
 }
 function estimateNotaryFees(price, origin, state = "SP") {
   const st = (state || "SP").toUpperCase();
@@ -514,87 +617,72 @@ function estimateNotaryFees(price, origin, state = "SP") {
     registration: reg
   };
 }
-function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap) {
+function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap) {
   const state = (auc.state || "SP").toLowerCase();
   const neigh = cleanNeighborhood(auc.neighborhood);
   const propType = auc.propertyType;
   const origin = auc.origin || "judicial";
-  if (!auc.city) {
+  if (auc.city) {
+    auc.city = cleanCaixaCity(auc.city, (auc.state || "SP").toUpperCase());
+  } else {
     const matchedCity = neighCityMap.get(`${state}|${neigh}`);
     auc.city = matchedCity || (state === "rj" ? "Rio de Janeiro" : state === "mg" ? "Juiz de Fora" : "S\xE3o Paulo");
   }
+  if (auc.sizeSqm >= 1e3 && (propType === "Apartamento" || propType === "Casa") && auc.sizeSqm <= 5e4 && auc.sizeSqm % 10 === 0) {
+    if (auc.sizeSqm % 100 === 0) {
+      auc.sizeSqm = Math.round(auc.sizeSqm / 100);
+    }
+  }
+  if (!auc.sizeSqm || auc.sizeSqm <= 0) {
+    auc.sizeSqm = parseCaixaSizeSqm(auc.description || "", propType) || 50;
+  }
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
-  let itbiSurroundingAvgSqm = 0;
-  let itbiSurroundingCount = 0;
   let neighborhoodAvgSqm = 0;
-  const matchingNeighTxs = (store.itbiTransactions || []).filter(
-    (tx) => (tx.state || "SP").toLowerCase() === state && cleanNeighborhood(tx.neighborhood) === neigh && tx.propertyType === propType
-  );
-  if (matchingNeighTxs.length > 0) {
-    const sumSqm = matchingNeighTxs.reduce((acc, tx) => acc + tx.unitValueSqm, 0);
-    neighborhoodAvgSqm = Math.round(sumSqm / matchingNeighTxs.length);
-  }
   const rawStreet = extractStreet(auc.address);
   if (rawStreet) {
-    const streetNorm = normalizeString(rawStreet);
-    const streetClean = normalizeString(cleanStreetName(rawStreet));
-    const streetCore = normalizeString(getCoreStreetName(rawStreet));
-    const sameStreetTxs = matchingNeighTxs.filter((tx) => {
-      if (!tx.street) return false;
-      const txStreetNorm = normalizeString(tx.street);
-      const txStreetClean = normalizeString(cleanStreetName(tx.street));
-      const txStreetCore = normalizeString(getCoreStreetName(tx.street));
-      return txStreetNorm === streetNorm || streetClean && txStreetClean === streetClean || streetCore && txStreetCore === streetCore;
-    });
-    if (sameStreetTxs.length > 0) {
-      const sumSqm = sameStreetTxs.reduce((acc, tx) => acc + tx.unitValueSqm, 0);
-      itbiStreetAvgSqm = Math.round(sumSqm / sameStreetTxs.length);
-      itbiStreetCount = sameStreetTxs.length;
+    const streetClean = cleanStreetName(rawStreet);
+    const streetCore = getCoreStreetName(rawStreet);
+    const sEntry = streetAvgSqmMap.get(`${state}|${neigh}|${streetClean}|${propType}`) || streetAvgSqmMap.get(`${state}|${neigh}|${streetCore}|${propType}`);
+    if (sEntry && sEntry.count > 0) {
+      itbiStreetAvgSqm = Math.round(sEntry.sumSqm / sEntry.count);
+      itbiStreetCount = sEntry.count;
     }
-    const surroundingTxs = matchingNeighTxs.filter((tx) => {
-      if (!tx.street) return false;
-      const txStreetNorm = normalizeString(tx.street);
-      const txStreetClean = normalizeString(cleanStreetName(tx.street));
-      const txStreetCore = normalizeString(getCoreStreetName(tx.street));
-      const isExactStreet = txStreetNorm === streetNorm || streetClean && txStreetClean === streetClean || streetCore && txStreetCore === streetCore;
-      if (isExactStreet) return false;
-      const distance = getSimulatedDistanceKm(streetNorm, txStreetNorm);
-      return distance <= 1;
-    });
-    if (surroundingTxs.length > 0) {
-      const sumSqm = surroundingTxs.reduce((acc, tx) => acc + tx.unitValueSqm, 0);
-      itbiSurroundingAvgSqm = Math.round(sumSqm / surroundingTxs.length);
-      itbiSurroundingCount = surroundingTxs.length;
+  }
+  const nEntry = avgSqmMap.get(`${state}|${neigh}|${propType}`) || avgSqmMap.get(`${state}|${neigh}|any`);
+  if (nEntry && nEntry.count > 0) {
+    neighborhoodAvgSqm = Math.round(nEntry.sumSqm / nEntry.count);
+  }
+  let cityAvgSqm = 0;
+  if (cityAvgSqmMap && auc.city) {
+    const normCity = normalizeString(auc.city);
+    const cEntry = cityAvgSqmMap.get(`${state}|${normCity}|${propType}`) || cityAvgSqmMap.get(`${state}|${normCity}|any`);
+    if (cEntry && cEntry.count > 0) {
+      cityAvgSqm = Math.round(cEntry.sumSqm / cEntry.count);
+    }
+  }
+  let stateAvgSqm = 0;
+  if (stateAvgSqmMap) {
+    const stEntry = stateAvgSqmMap.get(`${state}|${propType}`) || stateAvgSqmMap.get(`${state}|any`);
+    if (stEntry && stEntry.count > 0) {
+      stateAvgSqm = Math.round(stEntry.sumSqm / stEntry.count);
     }
   }
   auc.itbiStreetAvgSqm = itbiStreetAvgSqm || void 0;
   auc.itbiStreetCount = itbiStreetCount || void 0;
-  auc.itbiSurroundingAvgSqm = itbiSurroundingAvgSqm || void 0;
-  auc.itbiSurroundingCount = itbiSurroundingCount || void 0;
-  const itbiAvg = itbiStreetAvgSqm || itbiSurroundingAvgSqm || neighborhoodAvgSqm;
-  auc.itbiUnitValueAvg = itbiAvg || void 0;
-  if (!auc.estimatedValue && itbiAvg > 0) {
+  const itbiAvg = itbiStreetAvgSqm || neighborhoodAvgSqm || cityAvgSqm || stateAvgSqm || 0;
+  auc.itbiUnitValueAvg = itbiAvg > 0 ? itbiAvg : void 0;
+  if (itbiAvg > 0) {
     auc.estimatedValue = Math.round(auc.sizeSqm * itbiAvg);
-  } else if (!auc.estimatedValue) {
-    auc.estimatedValue = Math.round(auc.auctionPrice * 1.8);
-  }
-  if (!auc.portalZapAvg && itbiAvg > 0) {
     auc.portalZapAvg = Math.round(auc.sizeSqm * (itbiAvg * 1.25));
-  } else if (!auc.portalZapAvg) {
-    auc.portalZapAvg = Math.round(auc.auctionPrice * 2.1);
-  }
-  if (!auc.portalQuintoAndarAvg && itbiAvg > 0) {
     auc.portalQuintoAndarAvg = Math.round(auc.sizeSqm * (itbiAvg * 1.18));
-  } else if (!auc.portalQuintoAndarAvg) {
+  } else {
+    auc.estimatedValue = Math.round(auc.auctionPrice * 1.8);
+    auc.portalZapAvg = Math.round(auc.auctionPrice * 2.1);
     auc.portalQuintoAndarAvg = Math.round(auc.auctionPrice * 2);
   }
-  if (auc.vendaBaixaPrice === void 0 || auc.vendaBaixaPrice === 0) {
-    auc.vendaBaixaPrice = auc.estimatedValue;
-  }
-  if (auc.vendaMediaPrice === void 0 || auc.vendaMediaPrice === 0) {
-    auc.vendaMediaPrice = Math.round(((auc.portalZapAvg || 0) + (auc.portalQuintoAndarAvg || 0)) / 2);
-  }
+  auc.vendaBaixaPrice = auc.estimatedValue;
+  auc.vendaMediaPrice = Math.round(((auc.portalZapAvg || 0) + (auc.portalQuintoAndarAvg || 0)) / 2);
   const bidPrice = auc.auctionPrice;
   const vMediaPrice = auc.vendaMediaPrice;
   const defaultDownpayment = origin === "caixa" ? 5 : origin === "portal" ? 20 : auc.minDownpaymentPercent !== void 0 ? auc.minDownpaymentPercent : 25;
@@ -675,9 +763,10 @@ function getOrBuildItbiIndexes(txs) {
   return indexes;
 }
 function recalculateAuction(auc, txs) {
-  const { avgSqmMap, streetAvgSqmMap, volMap, neighCityMap } = getOrBuildItbiIndexes(txs);
-  return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap);
+  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap } = getOrBuildItbiIndexes(txs);
+  return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap);
 }
+var store = loadStore();
 function generateRandomAccessCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const part1 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
@@ -2538,344 +2627,144 @@ Responda agora diretamente ao Investidor:`;
     return res.json({ reply });
   }
 });
-app.post("/api/garimpar/caixa", authMiddleware, async (req, res) => {
-  const minedAuctions = [];
+async function syncCaixaDirect(targetStates = ["RJ", "SP", "MG"], userId = "system") {
+  console.log(`[Caixa Auto-Sync] Iniciando varredura oficial direta da Caixa via Puppeteer para: ${targetStates.join(", ")}`);
   const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  const stateParam = req.body.state || req.query.state;
-  const state = stateParam ? String(stateParam).toUpperCase().trim() : store.itbiTransactions.length > 0 ? store.itbiTransactions[0].state || "SP" : "SP";
-  const uf = state.toUpperCase();
-  const requestedCity = req.body.city;
-  const itbiCities = Array.from(new Set(
-    store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf).map((tx) => tx.city ? tx.city.toLowerCase().trim() : "")
-  )).filter(Boolean);
-  const itbiNeighborhoods = Array.from(new Set(
-    store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf).map((tx) => tx.neighborhood.toLowerCase())
-  ));
-  const normalizedItbiCities = itbiCities.map((c) => normalizeString(c));
-  const normalizedItbiNeighborhoods = itbiNeighborhoods.map((n) => normalizeString(n));
-  const { avgSqmMap, streetAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(store.itbiTransactions);
-  let content = "";
-  try {
-    const url = `https://venda-imoveis.caixa.gov.br/listaweb/Lista_imoveis_${uf}.csv`;
-    console.log(`[Caixa Engine] Baixando planilha oficial da Caixa para o estado: ${uf}... URL: ${url}`);
-    const directRes = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "*/*"
-      }
-    });
-    if (directRes.ok) {
-      const arrayBuffer = await directRes.arrayBuffer();
-      content = import_iconv_lite.default.decode(Buffer.from(arrayBuffer), "latin1");
-      console.log(`[Caixa Engine] Planilha oficial de ${uf} baixada com sucesso direto via HTTP! (${arrayBuffer.byteLength} bytes)`);
-    } else {
-      throw new Error(`HTTP Status ${directRes.status}`);
-    }
-  } catch (error) {
-    console.warn(`[Caixa Engine] Download direto falhou (${error.message}). Tentando fallback via Puppeteer...`);
-    let browser;
-    try {
-      const url = `https://venda-imoveis.caixa.gov.br/listaweb/Lista_imoveis_${uf}.csv`;
-      browser = await import_puppeteer.default.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
-      });
-      const page = await browser.newPage();
-      await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-      await page.goto("https://venda-imoveis.caixa.gov.br/sistema/busca-imovel.asp", { waitUntil: "networkidle2", timeout: 3e4 });
-      await new Promise((resolve) => setTimeout(resolve, 3e3));
-      const base64Content = await page.evaluate(async (csvUrl) => {
-        const response = await fetch(csvUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        let binary = "";
-        for (let i = 0; i < bytes.length; i += 8192) {
-          binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 8192)));
-        }
-        return btoa(binary);
-      }, url);
-      content = Buffer.from(base64Content, "base64").toString("latin1");
-    } catch (fallbackErr) {
-      throw new Error("Falha ao baixar a planilha oficial da Caixa: " + fallbackErr.message);
-    } finally {
-      if (browser) await browser.close();
-    }
-  }
-  try {
-    let normalizeRowKeys = function(row) {
-      const normalized = {};
-      for (const key of Object.keys(row)) {
-        const normKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
-        normalized[normKey] = row[key];
-      }
-      return normalized;
-    };
-    const lines = content.split("\n");
-    let headerIdx = -1;
-    for (let i = 0; i < Math.min(lines.length, 10); i++) {
-      if (lines[i].includes("UF") && lines[i].includes("Cidade") && lines[i].includes("Bairro")) {
-        headerIdx = i;
-        break;
-      }
-    }
-    if (headerIdx === -1) {
-      throw new Error("Formato inv\xE1lido: Cabe\xE7alho com colunas 'UF', 'Cidade' e 'Bairro' n\xE3o encontrado na planilha da Caixa.");
-    }
-    const cleanContent = lines.slice(headerIdx).join("\n");
-    const cleanBuffer = Buffer.from(cleanContent, "utf-8");
-    const stream = import_stream.Readable.from(cleanBuffer);
-    const results = [];
-    await new Promise((resolve, reject) => {
-      stream.pipe((0, import_csv_parser.default)({ separator: ";" })).on("data", (data) => results.push(data)).on("end", resolve).on("error", reject);
-    });
-    console.log(`Encontrados ${results.length} im\xF3veis na planilha da Caixa.`);
-    for (const rawRow of results) {
-      const row = normalizeRowKeys(rawRow);
-      if (!row.ndoimovel) continue;
-      const bairroCaixa = (row.bairro || "").toLowerCase().trim();
-      const cidadeCaixa = (row.cidade || "").toLowerCase().trim();
-      const ufCaixa = (row.uf || "").toUpperCase().trim();
-      const enderecoCaixa = (row.endereco || "").trim();
-      const precoStr = (row.preco || "0").replace(/\./g, "").replace(",", ".");
-      const avaliacaoStr = (row.valordeavaliacao || "0").replace(/\./g, "").replace(",", ".");
-      const descricaoCaixa = (row.descricao || "").trim();
-      const linkCaixa = (row.linkdeacesso || "https://venda-imoveis.caixa.gov.br/").trim();
-      const modalidade = (row.modalidadedevenda || "").trim();
-      let cityMatch = false;
-      const normCidadeCaixa = normalizeString(cidadeCaixa);
-      if (uf === "MG" && requestedCity && requestedCity !== "ambas") {
-        const targetCityName = requestedCity === "juiz-de-fora" ? "juiz de fora" : "santos dumont";
-        cityMatch = normCidadeCaixa === targetCityName;
-      } else if (normalizedItbiCities.length > 0) {
-        cityMatch = normalizedItbiCities.includes(normCidadeCaixa);
-      } else {
-        cityMatch = true;
-      }
-      if (!cityMatch) {
-        continue;
-      }
-      const cityHasItbi = normalizedItbiCities.includes(normCidadeCaixa);
-      let isMatch = false;
-      if (cityHasItbi && normalizedItbiNeighborhoods.length > 0) {
-        const normBairro = normalizeString(bairroCaixa);
-        const cityNeighborhoods = Array.from(new Set(
-          store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf && normalizeString(tx.city || "") === normCidadeCaixa).map((tx) => normalizeString(tx.neighborhood))
-        ));
-        isMatch = cityNeighborhoods.some((normN) => {
-          return normBairro.includes(normN) || normN.includes(normBairro);
-        });
-      } else {
-        isMatch = true;
-      }
-      if (cityHasItbi && !isMatch) {
-        continue;
-      }
-      const auctionPrice = Math.round(Number(precoStr) || 0);
-      const estimatedValue = 0;
-      const avaliacaoOriginalCaixa = Math.round(Number(avaliacaoStr) || 0);
-      if (auctionPrice === 0) continue;
-      let propertyType = "Casa";
-      if (descricaoCaixa.toLowerCase().includes("apartamento")) propertyType = "Apartamento";
-      else if (descricaoCaixa.toLowerCase().includes("terreno") || descricaoCaixa.toLowerCase().includes("lote")) propertyType = "Terreno";
-      else if (descricaoCaixa.toLowerCase().includes("comercial") || descricaoCaixa.toLowerCase().includes("galp\xE3o")) propertyType = "Comercial";
-      let sizeSqm = 50;
-      const areaMatch = descricaoCaixa.match(/([\d\.,]+)\s*de\s*área\s*(privativa|total|terreno)/i);
-      if (areaMatch) {
-        let sizeStr = areaMatch[1];
-        if (sizeStr.includes(".") && sizeStr.includes(",")) {
-          sizeStr = sizeStr.replace(/\./g, "").replace(",", ".");
-        } else if (sizeStr.includes(",")) {
-          sizeStr = sizeStr.replace(",", ".");
-        }
-        sizeSqm = Math.round(parseFloat(sizeStr)) || 50;
-      }
-      const cleanBairro = row.bairro ? row.bairro.trim() : "N\xE3o informado";
-      const title = `${propertyType} Retomado Caixa - ${cleanBairro.toUpperCase()}`;
-      const isDuplicate = store.auctions.some((a) => a.auctionLink === linkCaixa);
-      if (isDuplicate) continue;
-      const isResidential = propertyType === "Apartamento" || propertyType === "Casa";
-      const allowsFinancing = (row.financiamento || "").toLowerCase() === "sim";
-      const occupied = modalidade.toLowerCase().includes("ocupado") || true;
-      let parsedBedrooms = void 0;
-      const qtoMatch = descricaoCaixa.match(/(\d+)\s*qto/i);
-      if (qtoMatch) {
-        parsedBedrooms = parseInt(qtoMatch[1]);
-      } else {
-        const quartoMatch = descricaoCaixa.match(/(\d+)\s*quarto/i);
-        if (quartoMatch) parsedBedrooms = parseInt(quartoMatch[1]);
-      }
-      let parsedParkingSpaces = void 0;
-      const vagaMatch = descricaoCaixa.match(/(\d+)\s*vaga/i);
-      if (vagaMatch) {
-        parsedParkingSpaces = parseInt(vagaMatch[1]);
-      }
-      const newAuc = {
-        id: `auc-caixa-${Date.now()}-${Math.floor(Math.random() * 1e4)}`,
-        title: title.substring(0, 100),
-        address: enderecoCaixa,
-        neighborhood: cleanBairro,
-        propertyType,
-        sizeSqm,
-        auctionPrice,
-        estimatedRepair: Math.round(5e3 + Math.random() * 2e4),
-        pendingDebts: 0,
-        otherCosts: 0,
-        estimatedValue,
-        auctionDate: todayStr,
-        auctionLink: linkCaixa,
-        description: `Im\xF3vel Retomado Caixa Econ\xF4mica Federal. Modalidade: ${modalidade}. Avalia\xE7\xE3o original Caixa: R$ ${avaliacaoOriginalCaixa}. Descri\xE7\xE3o: ${descricaoCaixa}`,
-        status: "Pendente",
-        occupied,
-        state: ufCaixa,
-        portalZapAvg: void 0,
-        // Let recalculate fill or leave empty if based purely on ITBI
-        portalQuintoAndarAvg: void 0,
-        streetPortalAvgSqm: void 0,
-        allowsFinancing,
-        allowsInstallments: false,
-        userId: req.userId,
-        origin: "caixa",
-        bedrooms: parsedBedrooms,
-        parkingSpaces: parsedParkingSpaces
-      };
-      const recalculated = recalculateAuctionWithIndex(newAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap);
-      minedAuctions.push(recalculated);
-      if (minedAuctions.length >= 100) break;
-    }
-  } catch (error) {
-    console.error("Erro no garimpo com Caixa:", error);
-    return res.status(500).json({ error: error.message || "Erro ao baixar ou processar a planilha da Caixa." });
-  }
-  if (minedAuctions.length === 0) {
-    return res.json({
-      success: true,
-      count: 0,
-      message: "Garimpo conclu\xEDdo: Todas as oportunidades da Caixa para as suas regi\xF5es j\xE1 est\xE3o cadastradas e atualizadas no seu painel!"
-    });
-  }
-  store.auctions.unshift(...minedAuctions);
-  saveStore(store);
-  res.json({
-    success: true,
-    count: minedAuctions.length,
-    message: `Sucesso! O sistema baixou e processou de forma 100% autom\xE1tica a base oficial da Caixa Econ\xF4mica Federal e importou ${minedAuctions.length} ofertas ativas para a sua regi\xE3o.`,
-    mined: minedAuctions
-  });
-});
-app.post("/api/garimpar/caixa-auto", authMiddleware, async (req, res) => {
-  const targetStates = req.body.states || ["RJ", "SP", "MG"];
-  console.log(`[Caixa Auto-Sync] Iniciando varredura oficial autom\xE1tica para os estados: ${targetStates.join(", ")}`);
-  const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  const { avgSqmMap, streetAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(store.itbiTransactions);
+  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(store.itbiTransactions);
   let totalImported = 0;
   const importedList = [];
-  for (const uf of targetStates) {
-    try {
-      const url = `https://venda-imoveis.caixa.gov.br/listaweb/Lista_imoveis_${uf}.csv`;
-      console.log(`[Caixa Auto-Sync] Baixando ${uf} direto da Caixa...`);
-      const directRes = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-          "Accept": "*/*"
+  let browser = null;
+  try {
+    browser = await import_puppeteer.default.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+    });
+    const page = await browser.newPage();
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    console.log("[Caixa Auto-Sync] Autenticando sess\xE3o em venda-imoveis.caixa.gov.br/sistema/download-lista.asp...");
+    await page.goto("https://venda-imoveis.caixa.gov.br/sistema/download-lista.asp", {
+      waitUntil: "networkidle2",
+      timeout: 35e3
+    });
+    for (const uf of targetStates) {
+      try {
+        console.log(`[Caixa Auto-Sync] Baixando planilha oficial de ${uf} dos servidores da Caixa...`);
+        const base64 = await page.evaluate(async (ufParam) => {
+          const res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now());
+          const buffer2 = await res.arrayBuffer();
+          let binary = "";
+          const bytes = new Uint8Array(buffer2);
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          return btoa(binary);
+        }, uf);
+        if (!base64) {
+          console.warn(`[Caixa Auto-Sync] Nenhum dado retornado para ${uf}`);
+          continue;
         }
+        const buffer = Buffer.from(base64, "base64");
+        const content = import_iconv_lite.default.decode(buffer, "latin1");
+        const lines = content.split("\n");
+        let headerIdx = -1;
+        for (let i = 0; i < Math.min(lines.length, 10); i++) {
+          if (lines[i].includes("UF") && (lines[i].includes("Cidade") || lines[i].includes("Bairro"))) {
+            headerIdx = i;
+            break;
+          }
+        }
+        if (headerIdx === -1) {
+          console.warn(`[Caixa Auto-Sync] Cabe\xE7alho CSV n\xE3o identificado para ${uf}`);
+          continue;
+        }
+        const cleanContent = lines.slice(headerIdx).join("\n");
+        const stream = import_stream.Readable.from(Buffer.from(cleanContent, "utf-8"));
+        const results = [];
+        await new Promise((resolve, reject) => {
+          stream.pipe((0, import_csv_parser.default)({ separator: ";" })).on("data", (d) => results.push(d)).on("end", resolve).on("error", reject);
+        });
+        console.log(`[Caixa Auto-Sync] Registros obtidos da Caixa para ${uf}: ${results.length}`);
+        for (const rawRow of results) {
+          const row = {};
+          for (const k of Object.keys(rawRow)) {
+            const normKey = k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+            row[normKey] = rawRow[k];
+          }
+          if (!row.ndoimovel) continue;
+          const rawBairro = (row.bairro || "").trim();
+          const rawCidade = (row.cidade || "").trim();
+          const ufCaixa = (row.uf || uf).toUpperCase().trim();
+          const enderecoCaixa = (row.endereco || "").trim();
+          const precoStr = (row.preco || "0").replace(/\./g, "").replace(",", ".");
+          const avaliacaoStr = (row.valordeavaliacao || "0").replace(/\./g, "").replace(",", ".");
+          const descricaoCaixa = (row.descricao || "").trim();
+          const linkCaixa = (row.linkdeacesso || "https://venda-imoveis.caixa.gov.br/").trim();
+          const modalidade = (row.modalidadedevenda || "").trim();
+          const cleanCidade = cleanCaixaCity(rawCidade, ufCaixa);
+          const cleanBairro = rawBairro ? rawBairro.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") : "N\xE3o informado";
+          const auctionPrice = Math.round(Number(precoStr) || 0);
+          if (auctionPrice === 0) continue;
+          if (store.auctions.some((a) => a.auctionLink === linkCaixa)) continue;
+          let propertyType = "Casa";
+          if (descricaoCaixa.toLowerCase().includes("apartamento")) propertyType = "Apartamento";
+          else if (descricaoCaixa.toLowerCase().includes("terreno") || descricaoCaixa.toLowerCase().includes("lote")) propertyType = "Terreno";
+          else if (descricaoCaixa.toLowerCase().includes("comercial") || descricaoCaixa.toLowerCase().includes("galp\xE3o")) propertyType = "Comercial";
+          const sizeSqm = parseCaixaSizeSqm(descricaoCaixa, propertyType);
+          const title = `${propertyType} Retomado Caixa - ${cleanBairro.toUpperCase()}`;
+          const allowsFinancing = (row.financiamento || "").toLowerCase() === "sim";
+          let parsedBedrooms = void 0;
+          const qtoMatch = descricaoCaixa.match(/(\d+)\s*qto/i);
+          if (qtoMatch) {
+            parsedBedrooms = parseInt(qtoMatch[1]);
+          } else {
+            const quartoMatch = descricaoCaixa.match(/(\d+)\s*quarto/i);
+            if (quartoMatch) parsedBedrooms = parseInt(quartoMatch[1]);
+          }
+          let parsedParkingSpaces = void 0;
+          const vagaMatch = descricaoCaixa.match(/(\d+)\s*vaga/i);
+          if (vagaMatch) {
+            parsedParkingSpaces = parseInt(vagaMatch[1]);
+          }
+          const newAuc = {
+            id: `auc-caixa-${Date.now()}-${Math.floor(Math.random() * 1e5)}`,
+            title: title.substring(0, 100),
+            address: enderecoCaixa,
+            neighborhood: cleanBairro,
+            city: cleanCidade,
+            propertyType,
+            sizeSqm,
+            auctionPrice,
+            estimatedRepair: Math.round(5e3 + Math.random() * 2e4),
+            pendingDebts: 0,
+            otherCosts: 0,
+            estimatedValue: 0,
+            auctionDate: todayStr,
+            auctionLink: linkCaixa,
+            description: `Im\xF3vel Retomado Caixa Econ\xF4mica Federal. Modalidade: ${modalidade}. Avalia\xE7\xE3o original Caixa: R$ ${avaliacaoStr}. Descri\xE7\xE3o: ${descricaoCaixa}`,
+            status: "Pendente",
+            occupied: true,
+            state: ufCaixa,
+            allowsFinancing,
+            allowsInstallments: false,
+            userId,
+            origin: "caixa",
+            bedrooms: parsedBedrooms,
+            parkingSpaces: parsedParkingSpaces
+          };
+          const recalculated = recalculateAuctionWithIndex(newAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap);
+          importedList.push(recalculated);
+          totalImported++;
+        }
+      } catch (ufErr) {
+        console.error(`[Caixa Auto-Sync] Erro ao processar estado ${uf}:`, ufErr.message);
+      }
+    }
+  } catch (err) {
+    console.error(`[Caixa Auto-Sync] Erro na sess\xE3o Puppeteer da Caixa:`, err.message);
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {
       });
-      if (!directRes.ok) {
-        console.warn(`[Caixa Auto-Sync] Falha no download de ${uf}: HTTP ${directRes.status}`);
-        continue;
-      }
-      const arrayBuffer = await directRes.arrayBuffer();
-      const content = import_iconv_lite.default.decode(Buffer.from(arrayBuffer), "latin1");
-      const lines = content.split("\n");
-      let headerIdx = -1;
-      for (let i = 0; i < Math.min(lines.length, 10); i++) {
-        if (lines[i].includes("UF") && lines[i].includes("Cidade") && lines[i].includes("Bairro")) {
-          headerIdx = i;
-          break;
-        }
-      }
-      if (headerIdx === -1) continue;
-      const cleanContent = lines.slice(headerIdx).join("\n");
-      const stream = import_stream.Readable.from(Buffer.from(cleanContent, "utf-8"));
-      const results = [];
-      await new Promise((resolve, reject) => {
-        stream.pipe((0, import_csv_parser.default)({ separator: ";" })).on("data", (d) => results.push(d)).on("end", resolve).on("error", reject);
-      });
-      const itbiCities = Array.from(new Set(
-        store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf).map((tx) => tx.city ? tx.city.toLowerCase().trim() : "")
-      )).filter(Boolean).map((c) => normalizeString(c));
-      for (const rawRow of results) {
-        const row = {};
-        for (const k of Object.keys(rawRow)) {
-          const normKey = k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
-          row[normKey] = rawRow[k];
-        }
-        if (!row.ndoimovel) continue;
-        const bairroCaixa = (row.bairro || "").toLowerCase().trim();
-        const cidadeCaixa = (row.cidade || "").toLowerCase().trim();
-        const ufCaixa = (row.uf || uf).toUpperCase().trim();
-        const enderecoCaixa = (row.endereco || "").trim();
-        const precoStr = (row.preco || "0").replace(/\./g, "").replace(",", ".");
-        const avaliacaoStr = (row.valordeavaliacao || "0").replace(/\./g, "").replace(",", ".");
-        const descricaoCaixa = (row.descricao || "").trim();
-        const linkCaixa = (row.linkdeacesso || "https://venda-imoveis.caixa.gov.br/").trim();
-        const modalidade = (row.modalidadedevenda || "").trim();
-        const normCidade = normalizeString(cidadeCaixa);
-        let cityMatch = false;
-        if (uf === "MG") {
-          cityMatch = normCidade === "juiz de fora" || normCidade === "santos dumont";
-        } else if (itbiCities.length > 0) {
-          cityMatch = itbiCities.includes(normCidade);
-        } else {
-          cityMatch = true;
-        }
-        if (!cityMatch) continue;
-        const auctionPrice = Math.round(Number(precoStr) || 0);
-        if (auctionPrice === 0) continue;
-        if (store.auctions.some((a) => a.auctionLink === linkCaixa)) continue;
-        let propertyType = "Casa";
-        if (descricaoCaixa.toLowerCase().includes("apartamento")) propertyType = "Apartamento";
-        else if (descricaoCaixa.toLowerCase().includes("terreno") || descricaoCaixa.toLowerCase().includes("lote")) propertyType = "Terreno";
-        else if (descricaoCaixa.toLowerCase().includes("comercial") || descricaoCaixa.toLowerCase().includes("galp\xE3o")) propertyType = "Comercial";
-        let sizeSqm = 50;
-        const areaMatch = descricaoCaixa.match(/([\d\.,]+)\s*de\s*área\s*(privativa|total|terreno)/i);
-        if (areaMatch) {
-          let sizeStr = areaMatch[1];
-          if (sizeStr.includes(".") && sizeStr.includes(",")) sizeStr = sizeStr.replace(/\./g, "").replace(",", ".");
-          else if (sizeStr.includes(",")) sizeStr = sizeStr.replace(",", ".");
-          sizeSqm = Math.round(parseFloat(sizeStr)) || 50;
-        }
-        const cleanBairro = row.bairro ? row.bairro.trim() : "N\xE3o informado";
-        const title = `${propertyType} Retomado Caixa - ${cleanBairro.toUpperCase()}`;
-        const allowsFinancing = (row.financiamento || "").toLowerCase() === "sim";
-        const newAuc = {
-          id: `auc-caixa-radar-${Date.now()}-${Math.floor(Math.random() * 1e5)}`,
-          title: title.substring(0, 100),
-          address: enderecoCaixa,
-          neighborhood: cleanBairro,
-          propertyType,
-          sizeSqm,
-          auctionPrice,
-          estimatedRepair: Math.round(5e3 + Math.random() * 2e4),
-          pendingDebts: 0,
-          otherCosts: 0,
-          estimatedValue: 0,
-          auctionDate: todayStr,
-          auctionLink: linkCaixa,
-          description: `Im\xF3vel Retomado Caixa Econ\xF4mica Federal. Modalidade: ${modalidade}. Avalia\xE7\xE3o original Caixa: R$ ${avaliacaoStr}. Descri\xE7\xE3o: ${descricaoCaixa}`,
-          status: "Pendente",
-          occupied: true,
-          state: ufCaixa,
-          allowsFinancing,
-          allowsInstallments: false,
-          userId: req.userId,
-          origin: "caixa_radar"
-        };
-        const recalculated = recalculateAuctionWithIndex(newAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap);
-        importedList.push(recalculated);
-        totalImported++;
-      }
-    } catch (err) {
-      console.error(`[Caixa Auto-Sync] Erro no processamento de ${uf}:`, err);
     }
   }
   if (importedList.length > 0) {
@@ -2883,12 +2772,35 @@ app.post("/api/garimpar/caixa-auto", authMiddleware, async (req, res) => {
     saveStore(store);
   }
   console.log(`[Caixa Auto-Sync] Varredura finalizada. Novos im\xF3veis importados: ${totalImported}`);
-  res.json({
-    success: true,
-    added: totalImported,
-    totalInDb: store.auctions.length,
-    message: totalImported > 0 ? `Varredura autom\xE1tica finalizada! ${totalImported} novos im\xF3veis Caixa foram adicionados e avaliados com base no ITBI oficial.` : "Varredura autom\xE1tica finalizada! Sua base da Caixa j\xE1 est\xE1 100% atualizada com os \xFAltimos leil\xF5es dispon\xEDveis."
-  });
+  return totalImported;
+}
+app.post("/api/garimpar/caixa", authMiddleware, async (req, res) => {
+  const stateParam = req.body.state || req.query.state || "RJ";
+  const uf = String(stateParam).toUpperCase().trim();
+  try {
+    const totalImported = await syncCaixaDirect([uf], req.userId);
+    res.json({
+      success: true,
+      count: totalImported,
+      message: `Sucesso! O sistema baixou e processou de forma 100% autom\xE1tica a base oficial da Caixa Econ\xF4mica Federal e importou ${totalImported} ofertas ativas para a sua regi\xE3o.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Erro ao sincronizar Caixa." });
+  }
+});
+app.post("/api/garimpar/caixa-auto", authMiddleware, async (req, res) => {
+  const targetStates = req.body.states || ["RJ", "SP", "MG"];
+  try {
+    const totalImported = await syncCaixaDirect(targetStates, req.userId);
+    res.json({
+      success: true,
+      added: totalImported,
+      totalInDb: store.auctions.length,
+      message: totalImported > 0 ? `Varredura autom\xE1tica finalizada! ${totalImported} novos im\xF3veis Caixa foram adicionados e avaliados com base no ITBI oficial.` : "Varredura autom\xE1tica finalizada! Sua base da Caixa j\xE1 est\xE1 100% atualizada com os \xFAltimos leil\xF5es dispon\xEDveis."
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Erro ao sincronizar im\xF3veis Caixa." });
+  }
 });
 app.post("/api/garimpar/judiciais", authMiddleware, async (req, res) => {
   const minedAuctions = [];
