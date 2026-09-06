@@ -1,0 +1,9 @@
+{
+  "appId": "com.marcusassessoria.mobile",
+  "appName": "Marcus Assessoria AI",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
