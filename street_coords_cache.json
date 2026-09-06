@@ -1,0 +1,2926 @@
+{
+  "rj_rio de janeiro_maracana_rua sao francisco xavier": {
+    "lat": -22.92,
+    "lng": -43.232
+  },
+  "rj_rio de janeiro_maracana_rua mariz e barros": {
+    "lat": -22.9156,
+    "lng": -43.2114
+  },
+  "rj_rio de janeiro_maracana_avn paula sousa": {
+    "lat": -22.9109,
+    "lng": -43.2215
+  },
+  "rj_rio de janeiro_maracana_rua santa luiza": {
+    "lat": -22.9103,
+    "lng": -43.2223
+  },
+  "rj_rio de janeiro_maracana_rua visc de itamarati": {
+    "lat": -22.9133,
+    "lng": -43.2281
+  },
+  "rj_rio de janeiro_maracana_rua artur menezes": {
+    "lat": -22.9099,
+    "lng": -43.2163
+  },
+  "rj_rio de janeiro_maracana_rua morais e silva": {
+    "lat": -22.9125,
+    "lng": -43.221
+  },
+  "rj_rio de janeiro_maracana_rua lucio de mendonca": {
+    "lat": -22.915,
+    "lng": -43.2185
+  },
+  "rj_rio de janeiro_maracana_rua pedro guedes": {
+    "lat": -22.9161,
+    "lng": -43.2173
+  },
+  "rj_rio de janeiro_maracana_rua prof gabizo": {
+    "lat": -22.9137,
+    "lng": -43.2155
+  },
+  "rj_rio de janeiro_maracana_avn maracana": {
+    "lat": -22.9128,
+    "lng": -43.2291
+  },
+  "rj_rio de janeiro_maracana_rua oto de alencar": {
+    "lat": -22.908,
+    "lng": -43.2211
+  },
+  "rj_rio de janeiro_maracana_rua gal canabarro": {
+    "lat": -22.9131,
+    "lng": -43.2307
+  },
+  "rj_rio de janeiro_maracana_rua izidro de figueiredo": {
+    "lat": -22.9143,
+    "lng": -43.2274
+  },
+  "rj_rio de janeiro_maracana_rua ibituruna": {
+    "lat": -22.9155,
+    "lng": -43.2263
+  },
+  "rj_rio de janeiro_maracana_rua dona zulmira": {
+    "lat": -22.9091,
+    "lng": -43.2275
+  },
+  "rj_rio de janeiro_maracana_rua luiz gama": {
+    "lat": -22.9085,
+    "lng": -43.2282
+  },
+  "rj_rio de janeiro_maracana_rua senad furtado": {
+    "lat": -22.908,
+    "lng": -43.2255
+  },
+  "rj_rio de janeiro_maracana_rua visc de cairu": {
+    "lat": -22.9073,
+    "lng": -43.2245
+  },
+  "rj_rio de janeiro_maracana_rua felipe camarao": {
+    "lat": -22.9068,
+    "lng": -43.2238
+  },
+  "rj_rio de janeiro_maracana_rua sergipe": {
+    "lat": -22.9066,
+    "lng": -43.223
+  },
+  "rj_rio de janeiro_maracana_rua prof eurico rabelo": {
+    "lat": -22.9103,
+    "lng": -43.23
+  },
+  "rj_rio de janeiro_maracana_rua almte joao candido brasil": {
+    "lat": -22.9079,
+    "lng": -43.2291
+  },
+  "rj_rio de janeiro_maracana_rua jaceguai": {
+    "lat": -22.9068,
+    "lng": -43.2285
+  },
+  "rj_rio de janeiro_maracana_blv vinte e oito de setembro": {
+    "lat": -22.9096,
+    "lng": -43.2195
+  },
+  "rj_rio de janeiro_maracana_rua mara": {
+    "lat": -22.9115,
+    "lng": -43.2255
+  },
+  "rj_rio de janeiro_maracana_rua waldir amaral(radialista)": {
+    "lat": -22.9122,
+    "lng": -43.2248
+  },
+  "rj_rio de janeiro_maracana_rua comte cordeiro de faria": {
+    "lat": -22.9105,
+    "lng": -43.2239
+  },
+  "rj_rio de janeiro_maracana_avn prof manoel de abreu": {
+    "lat": -22.9104,
+    "lng": -43.2325
+  },
+  "rj_rio de janeiro_maracana_rua teixeira soares": {
+    "lat": -22.9142,
+    "lng": -43.2128
+  },
+  "rj_rio de janeiro_maracana_rua benevenuto berna": {
+    "lat": -22.9157,
+    "lng": -43.2307
+  },
+  "rj_rio de janeiro_maracana_rua consel olegario": {
+    "lat": -22.9113,
+    "lng": -43.2305
+  },
+  "rj_rio de janeiro_laranjeiras_rua paissandu": {
+    "lat": -22.935,
+    "lng": -43.184
+  },
+  "rj_rio de janeiro_laranjeiras_rua senad correia": {
+    "lat": -22.936,
+    "lng": -43.184
+  },
+  "rj_rio de janeiro_laranjeiras_rua das laranjeiras": {
+    "lat": -22.931,
+    "lng": -43.187
+  },
+  "rj_rio de janeiro_laranjeiras_rua gago coutinho": {
+    "lat": -22.934,
+    "lng": -43.181
+  },
+  "rj_rio de janeiro_laranjeiras_rua conde de baependi": {
+    "lat": -22.936,
+    "lng": -43.185
+  },
+  "rj_rio de janeiro_laranjeiras_rua mario portela": {
+    "lat": -22.936,
+    "lng": -43.181
+  },
+  "rj_rio de janeiro_laranjeiras_rua moura brasil": {
+    "lat": -22.937,
+    "lng": -43.184
+  },
+  "rj_rio de janeiro_laranjeiras_rua conde de avelar": {
+    "lat": -22.939,
+    "lng": -43.184
+  },
+  "rj_rio de janeiro_laranjeiras_rua coelho neto": {
+    "lat": -22.938,
+    "lng": -43.183
+  },
+  "rj_rio de janeiro_laranjeiras_rua pereira da silva": {
+    "lat": -22.938,
+    "lng": -43.182
+  },
+  "rj_rio de janeiro_laranjeiras_rua pires de almeida": {
+    "lat": -22.939,
+    "lng": -43.183
+  },
+  "rj_rio de janeiro_laranjeiras_rua pinheiro machado": {
+    "lat": -22.94,
+    "lng": -43.187
+  },
+  "rj_rio de janeiro_laranjeiras_rua belisario tavora": {
+    "lat": -22.934,
+    "lng": -43.188
+  },
+  "rj_rio de janeiro_laranjeiras_rua pres carlos campos": {
+    "lat": -22.933,
+    "lng": -43.185
+  },
+  "rj_rio de janeiro_laranjeiras_rua gal glicerio": {
+    "lat": -22.939,
+    "lng": -43.186
+  },
+  "rj_rio de janeiro_laranjeiras_rua ipiranga": {
+    "lat": -22.938,
+    "lng": -43.18
+  },
+  "rj_rio de janeiro_laranjeiras_trv euricles de matos": {
+    "lat": -22.937,
+    "lng": -43.18
+  },
+  "rj_rio de janeiro_laranjeiras_rua gal mariante": {
+    "lat": -22.938,
+    "lng": -43.188
+  },
+  "rj_rio de janeiro_laranjeiras_rua marq de pinedo": {
+    "lat": -22.939,
+    "lng": -43.181
+  },
+  "rj_rio de janeiro_laranjeiras_rua alice": {
+    "lat": -22.937,
+    "lng": -43.19
+  },
+  "rj_rio de janeiro_laranjeiras_rua gal cristovao barcelos": {
+    "lat": -22.938,
+    "lng": -43.189
+  },
+  "rj_rio de janeiro_laranjeiras_rua marqsa de santos": {
+    "lat": -22.939,
+    "lng": -43.189
+  },
+  "rj_rio de janeiro_laranjeiras_rua prof ortiz monteiro": {
+    "lat": -22.939,
+    "lng": -43.18
+  },
+  "rj_rio de janeiro_laranjeiras_rua teixeira mendes": {
+    "lat": -22.935,
+    "lng": -43.189
+  },
+  "rj_rio de janeiro_laranjeiras_rua soares cabral": {
+    "lat": -22.934,
+    "lng": -43.18
+  },
+  "rj_rio de janeiro_laranjeiras_rua ribeiro de almeida": {
+    "lat": -22.933,
+    "lng": -43.18
+  },
+  "rj_rio de janeiro_laranjeiras_rua alvaro chaves": {
+    "lat": -22.933,
+    "lng": -43.181
+  },
+  "rj_rio de janeiro_laranjeiras_rua sao salvador": {
+    "lat": -22.932,
+    "lng": -43.182
+  },
+  "rj_rio de janeiro_laranjeiras_rua sebastiao de lacerda": {
+    "lat": -22.931,
+    "lng": -43.183
+  },
+  "rj_rio de janeiro_laranjeiras_rua leite leal": {
+    "lat": -22.93,
+    "lng": -43.184
+  },
+  "rj_rio de janeiro_laranjeiras_rua cardoso junior": {
+    "lat": -22.9308,
+    "lng": -43.1875
+  },
+  "rj_rio de janeiro_laranjeiras_rua prof estelita lins": {
+    "lat": -22.9295,
+    "lng": -43.189
+  },
+  "rj_rio de janeiro_laranjeiras_rua prof luis cantanhede": {
+    "lat": -22.9315,
+    "lng": -43.1905
+  },
+  "rj_rio de janeiro_laranjeiras_rua paulo cezar de andrade": {
+    "lat": -22.931,
+    "lng": -43.1883
+  },
+  "rj_rio de janeiro_laranjeiras_rua leitao da cunha": {
+    "lat": -22.93,
+    "lng": -43.1912
+  },
+  "rj_rio de janeiro_laranjeiras_rua alegrete": {
+    "lat": -22.9288,
+    "lng": -43.188
+  },
+  "rj_rio de janeiro_laranjeiras_rua esteves junior": {
+    "lat": -22.9322,
+    "lng": -43.1898
+  },
+  "rj_rio de janeiro_laranjeiras_rua almte salgado": {
+    "lat": -22.9318,
+    "lng": -43.1865
+  },
+  "rj_rio de janeiro_laranjeiras_rua almte benjamim sodre": {
+    "lat": -22.9297,
+    "lng": -43.186
+  },
+  "rj_rio de janeiro_penha_rua plinio de oliveira": {
+    "lat": -22.8228,
+    "lng": -43.2504
+  },
+  "rj_rio de janeiro_penha_rua jacuruta": {
+    "lat": -22.819,
+    "lng": -43.2625
+  },
+  "rj_rio de janeiro_penha_rua jequirica": {
+    "lat": -22.8189,
+    "lng": -43.2599
+  },
+  "rj_rio de janeiro_penha_rua grucai": {
+    "lat": -22.8193,
+    "lng": -43.2612
+  },
+  "rj_rio de janeiro_penha_avn braz de pina": {
+    "lat": -22.8201,
+    "lng": -43.2605
+  },
+  "rj_rio de janeiro_penha_rua cuba": {
+    "lat": -22.8199,
+    "lng": -43.2638
+  },
+  "rj_rio de janeiro_penha_rua caja": {
+    "lat": -22.8203,
+    "lng": -43.2631
+  },
+  "rj_rio de janeiro_penha_rua leopoldina rego": {
+    "lat": -22.8173,
+    "lng": -43.2575
+  },
+  "rj_rio de janeiro_penha_rua irma paula": {
+    "lat": -22.8187,
+    "lng": -43.2568
+  },
+  "rj_rio de janeiro_penha_rua guatemala": {
+    "lat": -22.8172,
+    "lng": -43.262
+  },
+  "rj_rio de janeiro_penha_etr jose rucas": {
+    "lat": -22.8206,
+    "lng": -43.2609
+  },
+  "rj_rio de janeiro_penha_rua gurupa": {
+    "lat": -22.8197,
+    "lng": -43.2596
+  },
+  "rj_rio de janeiro_penha_rua nicaragua": {
+    "lat": -22.818,
+    "lng": -43.2628
+  },
+  "rj_rio de janeiro_penha_rua comte vergueiro da cruz": {
+    "lat": -22.8184,
+    "lng": -43.2578
+  },
+  "rj_rio de janeiro_penha_rua aimore": {
+    "lat": -22.8193,
+    "lng": -43.2633
+  },
+  "rj_rio de janeiro_penha_rua panama": {
+    "lat": -22.8179,
+    "lng": -43.2637
+  },
+  "rj_rio de janeiro_penha_rua quito": {
+    "lat": -22.8166,
+    "lng": -43.2614
+  },
+  "rj_rio de janeiro_penha_rua california": {
+    "lat": -22.816,
+    "lng": -43.2618
+  },
+  "rj_rio de janeiro_penha_rua apiai": {
+    "lat": -22.8178,
+    "lng": -43.2559
+  },
+  "rj_rio de janeiro_penha_rua montevideo": {
+    "lat": -22.8172,
+    "lng": -43.2634
+  },
+  "rj_rio de janeiro_penha_rua afonso ribeiro": {
+    "lat": -22.822,
+    "lng": -43.2515
+  },
+  "rj_rio de janeiro_penha_rua taperoa": {
+    "lat": -22.821,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_penha_rua macapuri": {
+    "lat": -22.8207,
+    "lng": -43.2509
+  },
+  "rj_rio de janeiro_penha_rua joao de deus": {
+    "lat": -22.8211,
+    "lng": -43.2519
+  },
+  "rj_rio de janeiro_penha_rua tte araken baptista": {
+    "lat": -22.8198,
+    "lng": -43.25
+  },
+  "rj_rio de janeiro_penha_rua doutor weinschenk": {
+    "lat": -22.8214,
+    "lng": -43.2527
+  },
+  "rj_rio de janeiro_penha_rua santa engracia": {
+    "lat": -22.8218,
+    "lng": -43.2536
+  },
+  "rj_rio de janeiro_penha_rua dionisio": {
+    "lat": -22.8223,
+    "lng": -43.2541
+  },
+  "rj_rio de janeiro_penha_rua belizario pena": {
+    "lat": -22.8226,
+    "lng": -43.2553
+  },
+  "rj_rio de janeiro_penha_rua do couto": {
+    "lat": -22.8236,
+    "lng": -43.2562
+  },
+  "rj_rio de janeiro_penha_rua curua": {
+    "lat": -22.8427,
+    "lng": -43.2843
+  },
+  "rj_rio de janeiro_penha_rua moreira de vasconcelos": {
+    "lat": -22.8398,
+    "lng": -43.2872
+  },
+  "rj_rio de janeiro_penha_rua artur imbassai": {
+    "lat": -22.8385,
+    "lng": -43.2921
+  },
+  "rj_rio de janeiro_penha_rua jose maria": {
+    "lat": -22.844,
+    "lng": -43.2801
+  },
+  "rj_rio de janeiro_penha_rua camponesa": {
+    "lat": -22.843,
+    "lng": -43.279
+  },
+  "rj_rio de janeiro_penha_rua maragogi": {
+    "lat": -22.8405,
+    "lng": -43.2835
+  },
+  "rj_rio de janeiro_penha_rua santiago": {
+    "lat": -22.8407,
+    "lng": -43.2885
+  },
+  "rj_rio de janeiro_penha_rua costa rica": {
+    "lat": -22.84,
+    "lng": -43.283
+  },
+  "rj_rio de janeiro_penha_rua comandante vergueiro da cruz": {
+    "lat": -22.903,
+    "lng": -43.568
+  },
+  "rj_rio de janeiro_penha_rua monsen alves rocha": {
+    "lat": -22.8447,
+    "lng": -43.2712
+  },
+  "rj_rio de janeiro_penha_rua iracema": {
+    "lat": -22.8453,
+    "lng": -43.2698
+  },
+  "rj_rio de janeiro_penha_rua romeiros": {
+    "lat": -22.8461,
+    "lng": -43.2705
+  },
+  "rj_rio de janeiro_penha_rua patagonia": {
+    "lat": -22.8439,
+    "lng": -43.272
+  },
+  "rj_rio de janeiro_penha_rua venina": {
+    "lat": -22.8475,
+    "lng": -43.2689
+  },
+  "rj_rio de janeiro_penha_rua santa brigida": {
+    "lat": -22.8458,
+    "lng": -43.2731
+  },
+  "rj_rio de janeiro_penha_rua bernardo de figueiredo": {
+    "lat": -22.8482,
+    "lng": -43.2701
+  },
+  "rj_rio de janeiro_penha_rua sao felisberto": {
+    "lat": -22.8465,
+    "lng": -43.2677
+  },
+  "rj_rio de janeiro_penha_rua prof otavio freitas": {
+    "lat": -22.8431,
+    "lng": -43.269
+  },
+  "rj_rio de janeiro_penha_prc cai": {
+    "lat": -22.847,
+    "lng": -43.2715
+  },
+  "rj_rio de janeiro_penha_prc pan americana": {
+    "lat": -22.845,
+    "lng": -43.2685
+  },
+  "rj_rio de janeiro_penha_rua fernandes pinheiro": {
+    "lat": -22.8488,
+    "lng": -43.2725
+  },
+  "rj_rio de janeiro_penha_rua prof heitor luz": {
+    "lat": -22.8445,
+    "lng": -43.2738
+  },
+  "rj_rio de janeiro_penha_rua de conde agrolongo": {
+    "lat": -22.8469,
+    "lng": -43.2665
+  },
+  "rj_rio de janeiro_penha_rua sao sabas": {
+    "lat": -22.8425,
+    "lng": -43.2708
+  },
+  "rj_rio de janeiro_penha_rua jose mauricio": {
+    "lat": -22.8477,
+    "lng": -43.2695
+  },
+  "rj_rio de janeiro_penha_rua sao dionisio": {
+    "lat": -22.8456,
+    "lng": -43.2722
+  },
+  "rj_rio de janeiro_penha_rua santa fausta": {
+    "lat": -22.8491,
+    "lng": -43.271
+  },
+  "rj_rio de janeiro_penha_rua honorio bicalho": {
+    "lat": -22.8435,
+    "lng": -43.268
+  },
+  "rj_rio de janeiro_penha_rua jaci": {
+    "lat": -22.8463,
+    "lng": -43.27
+  },
+  "rj_rio de janeiro_penha_rua sao camilo": {
+    "lat": -22.8485,
+    "lng": -43.273
+  },
+  "rj_rio de janeiro_penha_rua engen francisco passos": {
+    "lat": -22.8442,
+    "lng": -43.2718
+  },
+  "rj_rio de janeiro_penha_avn da n/s penha": {
+    "lat": -22.845,
+    "lng": -43.27
+  },
+  "rj_rio de janeiro_penha_rua santa camila pia": {
+    "lat": -22.8472,
+    "lng": -43.2683
+  },
+  "rj_rio de janeiro_penha_rua sold vasco": {
+    "lat": -22.8433,
+    "lng": -43.2725
+  },
+  "rj_rio de janeiro_penha_rua sold paiva": {
+    "lat": -22.8495,
+    "lng": -43.2705
+  },
+  "rj_rio de janeiro_penha_trv juraci": {
+    "lat": -22.8467,
+    "lng": -43.267
+  },
+  "rj_rio de janeiro_penha_rua ibiapina": {
+    "lat": -22.8428,
+    "lng": -43.2695
+  },
+  "rj_rio de janeiro_penha_rua santa basilissa": {
+    "lat": -22.8479,
+    "lng": -43.271
+  },
+  "rj_rio de janeiro_penha_rua grao magrico": {
+    "lat": -22.8455,
+    "lng": -43.2735
+  },
+  "rj_rio de janeiro_penha_rua sao benigno": {
+    "lat": -22.845,
+    "lng": -43.275
+  },
+  "rj_rio de janeiro_penha_rua sao genesio": {
+    "lat": -22.844,
+    "lng": -43.274
+  },
+  "rj_rio de janeiro_penha_rua sao gedeao": {
+    "lat": -22.843,
+    "lng": -43.274
+  },
+  "rj_rio de janeiro_penha_rua indigena": {
+    "lat": -22.842,
+    "lng": -43.272
+  },
+  "rj_rio de janeiro_penha_rua irani": {
+    "lat": -22.841,
+    "lng": -43.271
+  },
+  "rj_rio de janeiro_penha_rua sao benjamin": {
+    "lat": -22.846,
+    "lng": -43.275
+  },
+  "rj_rio de janeiro_penha_rua doutor luis gaudie ley": {
+    "lat": -22.843,
+    "lng": -43.272
+  },
+  "rj_rio de janeiro_penha_rua sao filadelfo": {
+    "lat": -22.844,
+    "lng": -43.273
+  },
+  "rj_rio de janeiro_penha_rua santa celinia": {
+    "lat": -22.842,
+    "lng": -43.273
+  },
+  "rj_rio de janeiro_penha_rua paul muller": {
+    "lat": -22.841,
+    "lng": -43.27
+  },
+  "rj_rio de janeiro_riachuelo_rua filgueiras lima": {
+    "lat": -22.9022,
+    "lng": -43.2651
+  },
+  "rj_rio de janeiro_riachuelo_rua vitor meireles": {
+    "lat": -22.9023,
+    "lng": -43.2646
+  },
+  "rj_rio de janeiro_riachuelo_avn mal rondon": {
+    "lat": -22.9016,
+    "lng": -43.2625
+  },
+  "rj_rio de janeiro_riachuelo_rua vinte e quatro de maio": {
+    "lat": -22.9021,
+    "lng": -43.2608
+  },
+  "rj_rio de janeiro_riachuelo_rua barbosa da silva": {
+    "lat": -22.9029,
+    "lng": -43.2652
+  },
+  "rj_rio de janeiro_riachuelo_rua flack": {
+    "lat": -22.9015,
+    "lng": -43.2647
+  },
+  "rj_rio de janeiro_riachuelo_rua mal bitencourt": {
+    "lat": -22.9012,
+    "lng": -43.2638
+  },
+  "rj_rio de janeiro_riachuelo_rua perseveranca": {
+    "lat": -22.901,
+    "lng": -43.2651
+  },
+  "rj_rio de janeiro_riachuelo_rua doutor manoel cotrim": {
+    "lat": -22.9007,
+    "lng": -43.2641
+  },
+  "rj_rio de janeiro_riachuelo_trv cerqueira lima": {
+    "lat": -22.9002,
+    "lng": -43.2645
+  },
+  "rj_rio de janeiro_riachuelo_rua magalhaes castro": {
+    "lat": -22.9009,
+    "lng": -43.2633
+  },
+  "rj_rio de janeiro_riachuelo_rua ratclif": {
+    "lat": -22.9003,
+    "lng": -43.2632
+  },
+  "rj_rio de janeiro_riachuelo_rua esmeraldino bandeira": {
+    "lat": -22.8998,
+    "lng": -43.2636
+  },
+  "rj_rio de janeiro_riachuelo_rua jose felix": {
+    "lat": -22.8996,
+    "lng": -43.2643
+  },
+  "rj_rio de janeiro_riachuelo_rua alice figueiredo": {
+    "lat": -22.8993,
+    "lng": -43.2634
+  },
+  "rj_rio de janeiro_riachuelo_rua": {
+    "lat": -22.901,
+    "lng": -43.262
+  },
+  "rj_rio de janeiro_riachuelo_rua fr": {
+    "lat": -22.9056,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_rocha_rua do rocha": {
+    "lat": -22.903,
+    "lng": -43.244
+  },
+  "rj_rio de janeiro_rocha_rua tavares ferreira": {
+    "lat": -22.9045,
+    "lng": -43.2425
+  },
+  "rj_rio de janeiro_rocha_rua ana neri": {
+    "lat": -22.906,
+    "lng": -43.24
+  },
+  "rj_rio de janeiro_rocha_rua gal belford": {
+    "lat": -22.908,
+    "lng": -43.246
+  },
+  "rj_rio de janeiro_rocha_rua doutor garnier": {
+    "lat": -22.909,
+    "lng": -43.2475
+  },
+  "rj_rio de janeiro_rocha_rua ana guimaraes": {
+    "lat": -22.9055,
+    "lng": -43.241
+  },
+  "rj_rio de janeiro_rocha_avn mal rondon": {
+    "lat": -22.904,
+    "lng": -43.247
+  },
+  "rj_rio de janeiro_rocha_rua aluisio azevedo": {
+    "lat": -22.907,
+    "lng": -43.245
+  },
+  "rj_rio de janeiro_rocha_rua henrique dias": {
+    "lat": -22.9085,
+    "lng": -43.243
+  },
+  "rj_rio de janeiro_rocha_rua almte ari parreiras": {
+    "lat": -22.9065,
+    "lng": -43.248
+  },
+  "rj_rio de janeiro_rocha_rua sao joao": {
+    "lat": -22.9075,
+    "lng": -43.2415
+  },
+  "rj_rio de janeiro_rocha_rua de conde porto alegre": {
+    "lat": -22.905,
+    "lng": -43.249
+  },
+  "rj_rio de janeiro_rocha_rua vinte e quatro de maio": {
+    "lat": -22.902,
+    "lng": -43.2455
+  },
+  "rj_rio de janeiro_rocha_rua cotia": {
+    "lat": -22.9015,
+    "lng": -43.2435
+  },
+  "rj_rio de janeiro_rocha_rua frei pinto": {
+    "lat": -22.9035,
+    "lng": -43.241
+  },
+  "rj_rio de janeiro_ri_rua f": {
+    "lat": -22.9547517,
+    "lng": -43.3950294
+  },
+  "rj_rio de janeiro_r_rua frei pinto": {
+    "lat": -22.9038,
+    "lng": -43.2388
+  },
+  "rj_rio de janeiro_maracana_rua de visc itamarati": {
+    "lat": -22.909,
+    "lng": -43.2307
+  },
+  "rj_rio de janeiro_maracana_rua de visc cairu": {
+    "lat": -22.908,
+    "lng": -43.2299
+  },
+  "rj_rio de janeiro_maracana_rua jiquiba": {
+    "lat": -22.91,
+    "lng": -43.232
+  },
+  "rj_rio de janeiro_vigario geral_rua gregorio de matos": {
+    "lat": -22.8121,
+    "lng": -43.3423
+  },
+  "rj_rio de janeiro_vigario geral_rua tinhare": {
+    "lat": -22.8115,
+    "lng": -43.3407
+  },
+  "rj_rio de janeiro_vigario geral_rua otranto": {
+    "lat": -22.8098,
+    "lng": -43.3401
+  },
+  "rj_rio de janeiro_vigario geral_rua valentim magalhaes": {
+    "lat": -22.8102,
+    "lng": -43.3376
+  },
+  "rj_rio de janeiro_vigario geral_rua correia dias": {
+    "lat": -22.8075,
+    "lng": -43.3361
+  },
+  "rj_rio de janeiro_vigario geral_rua bulhoes marcial": {
+    "lat": -22.8068,
+    "lng": -43.3352
+  },
+  "rj_rio de janeiro_vigario geral_rua granada": {
+    "lat": -22.8145,
+    "lng": -43.3331
+  },
+  "rj_rio de janeiro_vigario geral_rua mauro": {
+    "lat": -22.8138,
+    "lng": -43.332
+  },
+  "rj_rio de janeiro_vigario geral_rua izidro rocha": {
+    "lat": -22.8149,
+    "lng": -43.3291
+  },
+  "rj_rio de janeiro_vigario geral_rua gloria borges": {
+    "lat": -22.8153,
+    "lng": -43.3285
+  },
+  "rj_rio de janeiro_vigario geral_etr do vigario geral": {
+    "lat": -22.8109,
+    "lng": -43.3345
+  },
+  "rj_rio de janeiro_vigario geral_prc catole do rocha": {
+    "lat": -22.8125,
+    "lng": -43.3364
+  },
+  "rj_rio de janeiro_vigario geral_rua professor franca amaral": {
+    "lat": -22.8107,
+    "lng": -43.3448
+  },
+  "rj_rio de janeiro_vigario geral_j": {
+    "lat": -22.809,
+    "lng": -43.326
+  },
+  "rj_rio de janeiro_jardim america_rua gal magalhaes barata": {
+    "lat": -22.811,
+    "lng": -43.345
+  },
+  "rj_rio de janeiro_jardim america_rua jorge lacerda": {
+    "lat": -22.8105,
+    "lng": -43.3435
+  },
+  "rj_rio de janeiro_jardim america_rua mal jose pessoa": {
+    "lat": -22.812,
+    "lng": -43.344
+  },
+  "rj_rio de janeiro_jardim america_rua cari levi": {
+    "lat": -22.813,
+    "lng": -43.3425
+  },
+  "rj_rio de janeiro_jardim america_rua organista antonio silva": {
+    "lat": -22.814,
+    "lng": -43.3455
+  },
+  "rj_rio de janeiro_jardim america_rua prof pires salgado": {
+    "lat": -22.8115,
+    "lng": -43.346
+  },
+  "rj_rio de janeiro_jardim america_rua charles gounod": {
+    "lat": -22.81,
+    "lng": -43.347
+  },
+  "rj_rio de janeiro_jardim america_rua robert schumann": {
+    "lat": -22.8125,
+    "lng": -43.348
+  },
+  "rj_rio de janeiro_jardim america_rua franz liszt": {
+    "lat": -22.8135,
+    "lng": -43.349
+  },
+  "rj_rio de janeiro_jardim america_rua mozart": {
+    "lat": -22.8145,
+    "lng": -43.3475
+  },
+  "rj_rio de janeiro_jardim america_rua pintor marques junior": {
+    "lat": -22.815,
+    "lng": -43.3465
+  },
+  "rj_rio de janeiro_jardim america_rua monsen castelo branco": {
+    "lat": -22.816,
+    "lng": -43.345
+  },
+  "rj_rio de janeiro_jardim america_rua minist artur costa": {
+    "lat": -22.817,
+    "lng": -43.344
+  },
+  "rj_rio de janeiro_jardim america_rua atilio vivaqua": {
+    "lat": -22.818,
+    "lng": -43.343
+  },
+  "rj_rio de janeiro_jardim america_rua mal felipe schmidt": {
+    "lat": -22.819,
+    "lng": -43.342
+  },
+  "rj_rio de janeiro_jardim america_rua sebastian bach": {
+    "lat": -22.81,
+    "lng": -43.341
+  },
+  "rj_rio de janeiro_jardim america_rua franz schubert": {
+    "lat": -22.811,
+    "lng": -43.34
+  },
+  "rj_rio de janeiro_jardim america_rua atilio parim": {
+    "lat": -22.812,
+    "lng": -43.339
+  },
+  "rj_rio de janeiro_jardim america_rua alvaro de magalhaes": {
+    "lat": -22.813,
+    "lng": -43.338
+  },
+  "rj_rio de janeiro_jardim america_rua arinos": {
+    "lat": -22.814,
+    "lng": -43.337
+  },
+  "rj_rio de janeiro_jardim america_rua plinio barreto": {
+    "lat": -22.815,
+    "lng": -43.336
+  },
+  "rj_rio de janeiro_jardim america_rua ibiuna": {
+    "lat": -22.816,
+    "lng": -43.335
+  },
+  "rj_rio de janeiro_jardim america_rua flavio da silveira": {
+    "lat": -22.817,
+    "lng": -43.334
+  },
+  "rj_rio de janeiro_jardim america_rua jorn geraldo rocha": {
+    "lat": -22.818,
+    "lng": -43.333
+  },
+  "rj_rio de janeiro_jardim america_rua irma voisin": {
+    "lat": -22.819,
+    "lng": -43.332
+  },
+  "rj_rio de janeiro_jardim america_rua padre boss": {
+    "lat": -22.82,
+    "lng": -43.331
+  },
+  "rj_rio de janeiro_jardim america_rua mal antonio de souza": {
+    "lat": -22.821,
+    "lng": -43.33
+  },
+  "rj_rio de janeiro_jardim america_rua pedro da veiga": {
+    "lat": -22.822,
+    "lng": -43.329
+  },
+  "rj_rio de janeiro_jardim america_rua frederic chopin": {
+    "lat": -22.823,
+    "lng": -43.328
+  },
+  "rj_rio de janeiro_jardim america_rua prof franca amaral": {
+    "lat": -22.824,
+    "lng": -43.327
+  },
+  "rj_rio de janeiro_jardim america_rua richard strauss": {
+    "lat": -22.82563,
+    "lng": -43.34449
+  },
+  "rj_rio de janeiro_jardim america_rua padre peroneille": {
+    "lat": -22.8239,
+    "lng": -43.34448
+  },
+  "rj_rio de janeiro_jardim america_rua prof costa ribeiro": {
+    "lat": -22.82476,
+    "lng": -43.3421
+  },
+  "rj_rio de janeiro_jardim america_rua georges bizet": {
+    "lat": -22.82298,
+    "lng": -43.34586
+  },
+  "rj_rio de janeiro_jardim america_rua rodolfo chambelland": {
+    "lat": -22.8239,
+    "lng": -43.34113
+  },
+  "rj_rio de janeiro_jardim america_rua viana do castelo": {
+    "lat": -22.82367,
+    "lng": -43.34313
+  },
+  "rj_rio de janeiro_jardim america_rua cristiano machado": {
+    "lat": -22.82442,
+    "lng": -43.33984
+  },
+  "rj_rio de janeiro_jardim america_rod pres dutra": {
+    "lat": -22.82522,
+    "lng": -43.34825
+  },
+  "rj_rio de janeiro_jardim america_rua tales de carvalho": {
+    "lat": -22.82496,
+    "lng": -43.33923
+  },
+  "rj_rio de janeiro_jardim america_rua fidias": {
+    "lat": -22.82285,
+    "lng": -43.34005
+  },
+  "rj_rio de janeiro_jardim america_rua rossini": {
+    "lat": -22.8255,
+    "lng": -43.3435
+  },
+  "rj_rio de janeiro_jardim america_rua gal correa e castro": {
+    "lat": -22.82299,
+    "lng": -43.34159
+  },
+  "rj_rio de janeiro_jardim america_rua domingos de oliveira": {
+    "lat": -22.82436,
+    "lng": -43.34563
+  },
+  "rj_rio de janeiro_ti_rua prof franca amaral": {
+    "lat": -22.9037,
+    "lng": -43.2842
+  },
+  "rj_rio de janeiro_flamengo_pra do flamengo": {
+    "lat": -22.9304,
+    "lng": -43.1762
+  },
+  "rj_rio de janeiro_flamengo_rua senad vergueiro": {
+    "lat": -22.9298,
+    "lng": -43.1789
+  },
+  "rj_rio de janeiro_flamengo_rua correa dutra": {
+    "lat": -22.93,
+    "lng": -43.1812
+  },
+  "rj_rio de janeiro_flamengo_rua de marq parana": {
+    "lat": -22.929,
+    "lng": -43.1795
+  },
+  "rj_rio de janeiro_flamengo_rua honorio de barros": {
+    "lat": -22.9274,
+    "lng": -43.1799
+  },
+  "rj_rio de janeiro_flamengo_rua almte tamandare": {
+    "lat": -22.9317,
+    "lng": -43.1769
+  },
+  "rj_rio de janeiro_flamengo_avn rui barbosa": {
+    "lat": -22.9317,
+    "lng": -43.1742
+  },
+  "rj_rio de janeiro_flamengo_rua do pinheiro": {
+    "lat": -22.9306,
+    "lng": -43.1824
+  },
+  "rj_rio de janeiro_flamengo_rua sao salvador": {
+    "lat": -22.9304,
+    "lng": -43.1843
+  },
+  "rj_rio de janeiro_flamengo_avn oswaldo cruz": {
+    "lat": -22.9283,
+    "lng": -43.1698
+  },
+  "rj_rio de janeiro_flamengo_rua de marq abrantes": {
+    "lat": -22.9314,
+    "lng": -43.1815
+  },
+  "rj_rio de janeiro_flamengo_rua paissandu": {
+    "lat": -22.9329,
+    "lng": -43.179
+  },
+  "rj_rio de janeiro_flamengo_rua dois de dezembro": {
+    "lat": -22.9293,
+    "lng": -43.1834
+  },
+  "rj_rio de janeiro_flamengo_rua senad euzebio": {
+    "lat": -22.9268,
+    "lng": -43.183
+  },
+  "rj_rio de janeiro_flamengo_rua do barao flamengo": {
+    "lat": -22.9287,
+    "lng": -43.1804
+  },
+  "rj_rio de janeiro_flamengo_rua silveira martins": {
+    "lat": -22.9304,
+    "lng": -43.1755
+  },
+  "rj_rio de janeiro_flamengo_rua de barao icarai": {
+    "lat": -22.9298,
+    "lng": -43.1774
+  },
+  "rj_rio de janeiro_flamengo_rua fernando ozorio": {
+    "lat": -22.928,
+    "lng": -43.1788
+  },
+  "rj_rio de janeiro_flamengo_rua machado de assis": {
+    "lat": -22.9325,
+    "lng": -43.1834
+  },
+  "rj_rio de janeiro_flamengo_rua de conde baependi": {
+    "lat": -22.9316,
+    "lng": -43.1827
+  },
+  "rj_rio de janeiro_flamengo_rua buarque de macedo": {
+    "lat": -22.928,
+    "lng": -43.1819
+  },
+  "rj_rio de janeiro_flamengo_rua cruz lima": {
+    "lat": -22.9267,
+    "lng": -43.1786
+  },
+  "rj_rio de janeiro_flamengo_rua martins ribeiro": {
+    "lat": -22.9254,
+    "lng": -43.1787
+  },
+  "rj_rio de janeiro_flamengo_prc jose de alencar": {
+    "lat": -22.929,
+    "lng": -43.1795
+  },
+  "rj_rio de janeiro_flamengo_trv dos tamoios": {
+    "lat": -22.9321,
+    "lng": -43.1753
+  },
+  "rj_rio de janeiro_flamengo_rua de visc cruzeiro": {
+    "lat": -22.9272,
+    "lng": -43.1813
+  },
+  "rj_rio de janeiro_flamengo_rua paulo vi": {
+    "lat": -22.9303,
+    "lng": -43.1803
+  },
+  "rj_rio de janeiro_flamengo_rua ferreira viana": {
+    "lat": -22.926,
+    "lng": -43.1805
+  },
+  "rj_rio de janeiro_flamengo_rua prca januaria": {
+    "lat": -22.9258,
+    "lng": -43.1832
+  },
+  "rj_rio de janeiro_flamengo_rua gabriela mistral": {
+    "lat": -22.931,
+    "lng": -43.18
+  },
+  "rj_rio de janeiro_copacabana_rua fernando mendes": {
+    "lat": -22.9691,
+    "lng": -43.1845
+  },
+  "rj_rio de janeiro_copacabana_rua julio de castilhos": {
+    "lat": -22.9723,
+    "lng": -43.1906
+  },
+  "rj_rio de janeiro_copacabana_avn prado junior": {
+    "lat": -22.9649,
+    "lng": -43.1764
+  },
+  "rj_rio de janeiro_copacabana_rua piragibe f aguiar": {
+    "lat": -22.975,
+    "lng": -43.1915
+  },
+  "rj_rio de janeiro_copacabana_avn de n/s copacabana": {
+    "lat": -22.9699,
+    "lng": -43.187
+  },
+  "rj_rio de janeiro_copacabana_rua minist viveiros de castro": {
+    "lat": -22.9656,
+    "lng": -43.1784
+  },
+  "rj_rio de janeiro_copacabana_avn prca isabel": {
+    "lat": -22.9628,
+    "lng": -43.1755
+  },
+  "rj_rio de janeiro_copacabana_rua bolivar": {
+    "lat": -22.9708,
+    "lng": -43.1884
+  },
+  "rj_rio de janeiro_copacabana_rua miguel lemos": {
+    "lat": -22.974,
+    "lng": -43.1925
+  },
+  "rj_rio de janeiro_copacabana_rua sa ferreira": {
+    "lat": -22.9729,
+    "lng": -43.1914
+  },
+  "rj_rio de janeiro_copacabana_rua barata ribeiro": {
+    "lat": -22.9678,
+    "lng": -43.182
+  },
+  "rj_rio de janeiro_copacabana_rua joseph bloch": {
+    "lat": -22.9754,
+    "lng": -43.1919
+  },
+  "rj_rio de janeiro_copacabana_rua siqueira campos": {
+    "lat": -22.9696,
+    "lng": -43.1858
+  },
+  "rj_rio de janeiro_copacabana_rua guimaraes natal": {
+    "lat": -22.9755,
+    "lng": -43.1918
+  },
+  "rj_rio de janeiro_copacabana_prc eugenio jardim": {
+    "lat": -22.9702,
+    "lng": -43.1873
+  },
+  "rj_rio de janeiro_copacabana_rua mal mascarenhas de morais": {
+    "lat": -22.9638,
+    "lng": -43.177
+  },
+  "rj_rio de janeiro_copacabana_rua bulhoes carvalho": {
+    "lat": -22.976,
+    "lng": -43.195
+  },
+  "rj_rio de janeiro_copacabana_rua figueiredo de magalhaes": {
+    "lat": -22.9687,
+    "lng": -43.1837
+  },
+  "rj_rio de janeiro_copacabana_rua domingos ferreira": {
+    "lat": -22.9698,
+    "lng": -43.1866
+  },
+  "rj_rio de janeiro_copacabana_rua djalma ulrich": {
+    "lat": -22.9734,
+    "lng": -43.1903
+  },
+  "rj_rio de janeiro_copacabana_lad dos tabajaras": {
+    "lat": -22.9704,
+    "lng": -43.1895
+  },
+  "rj_rio de janeiro_copacabana_rua octaviano hudson": {
+    "lat": -22.9751,
+    "lng": -43.1916
+  },
+  "rj_rio de janeiro_copacabana_rua duvivier": {
+    "lat": -22.9674,
+    "lng": -43.1804
+  },
+  "rj_rio de janeiro_copacabana_rua edmundo lins": {
+    "lat": -22.9749,
+    "lng": -43.1911
+  },
+  "rj_rio de janeiro_copacabana_rua aires de saldanha": {
+    "lat": -22.9715,
+    "lng": -43.1891
+  },
+  "rj_rio de janeiro_copacabana_rua pompeu loureiro": {
+    "lat": -22.9739,
+    "lng": -43.1908
+  },
+  "rj_rio de janeiro_copacabana_rua de barao ipanema": {
+    "lat": -22.9683,
+    "lng": -43.1828
+  },
+  "rj_rio de janeiro_copacabana_rua santa clara": {
+    "lat": -22.9705,
+    "lng": -43.1878
+  },
+  "rj_rio de janeiro_copacabana_rua xavier da silveira": {
+    "lat": -22.9721,
+    "lng": -43.19
+  },
+  "rj_rio de janeiro_copacabana_rua republica do peru": {
+    "lat": -22.9669,
+    "lng": -43.1795
+  },
+  "rj_rio de janeiro_copacabana_rua joaquim nabuco": {
+    "lat": -22.9852,
+    "lng": -43.1929
+  },
+  "rj_rio de janeiro_copacabana_rua cinco de julho": {
+    "lat": -22.975,
+    "lng": -43.189
+  },
+  "rj_rio de janeiro_copacabana_rua souza lima": {
+    "lat": -22.9754,
+    "lng": -43.1872
+  },
+  "rj_rio de janeiro_copacabana_rua tonelero": {
+    "lat": -22.9701,
+    "lng": -43.1861
+  },
+  "rj_rio de janeiro_copacabana_avn henrique dodsworth": {
+    "lat": -22.982,
+    "lng": -43.19
+  },
+  "rj_rio de janeiro_copacabana_rua prof gastao bahiana": {
+    "lat": -22.975,
+    "lng": -43.1842
+  },
+  "rj_rio de janeiro_copacabana_rua belfort roxo": {
+    "lat": -22.9694,
+    "lng": -43.1853
+  },
+  "rj_rio de janeiro_copacabana_rua paula freitas": {
+    "lat": -22.9733,
+    "lng": -43.1871
+  },
+  "rj_rio de janeiro_copacabana_rua felipe de oliveira": {
+    "lat": -22.9722,
+    "lng": -43.186
+  },
+  "rj_rio de janeiro_copacabana_rua silva castro": {
+    "lat": -22.9704,
+    "lng": -43.185
+  },
+  "rj_rio de janeiro_copacabana_rua ronald de carvalho": {
+    "lat": -22.9772,
+    "lng": -43.1891
+  },
+  "rj_rio de janeiro_copacabana_rua anita garibaldi": {
+    "lat": -22.9782,
+    "lng": -43.1901
+  },
+  "rj_rio de janeiro_copacabana_rua raimundo correa": {
+    "lat": -22.9714,
+    "lng": -43.1862
+  },
+  "rj_rio de janeiro_copacabana_rua inhanga": {
+    "lat": -22.98,
+    "lng": -43.192
+  },
+  "rj_rio de janeiro_copacabana_rua saint roman": {
+    "lat": -22.984,
+    "lng": -43.194
+  },
+  "rj_rio de janeiro_copacabana_rua mto francisco braga": {
+    "lat": -22.9741,
+    "lng": -43.188
+  },
+  "rj_rio de janeiro_copacabana_prc serzedelo correia": {
+    "lat": -22.97,
+    "lng": -43.184
+  },
+  "rj_rio de janeiro_copacabana_rua francisco sa": {
+    "lat": -22.9793,
+    "lng": -43.19
+  },
+  "rj_rio de janeiro_copacabana_rua raul pompeia": {
+    "lat": -22.9804,
+    "lng": -43.1911
+  },
+  "rj_rio de janeiro_copacabana_rua emilio berla": {
+    "lat": -22.969,
+    "lng": -43.183
+  },
+  "rj_rio de janeiro_copacabana_rua consel lafaiete": {
+    "lat": -22.971,
+    "lng": -43.183
+  },
+  "rj_rio de janeiro_copacabana_rua dias da rocha": {
+    "lat": -22.9763,
+    "lng": -43.188
+  },
+  "rj_rio de janeiro_copacabana_rua hilario de gouveia": {
+    "lat": -22.973,
+    "lng": -43.185
+  },
+  "rj_rio de janeiro_copacabana_rua carvalho de mendonca": {
+    "lat": -22.972,
+    "lng": -43.184
+  },
+  "rj_rio de janeiro_copacabana_rua almte goncalves": {
+    "lat": -22.977,
+    "lng": -43.189
+  },
+  "rj_rio de janeiro_copacabana_avn atlantica": {
+    "lat": -22.971,
+    "lng": -43.183
+  },
+  "rj_rio de janeiro_copacabana_rua assis brasil": {
+    "lat": -22.979,
+    "lng": -43.19
+  },
+  "rj_rio de janeiro_copacabana_rua constante ramos": {
+    "lat": -22.975,
+    "lng": -43.187
+  },
+  "rj_rio de janeiro_copacabana_avn rainha elisabeth": {
+    "lat": -22.982,
+    "lng": -43.192
+  },
+  "rj_rio de janeiro_copacabana_prc veread rocha leao": {
+    "lat": -22.978,
+    "lng": -43.19
+  },
+  "rj_rio de janeiro_copacabana_rua leopoldo miguez": {
+    "lat": -22.9818,
+    "lng": -43.1979
+  },
+  "rj_rio de janeiro_copacabana_rua rodolfo dantas": {
+    "lat": -22.9691,
+    "lng": -43.1783
+  },
+  "rj_rio de janeiro_copacabana_rua minist alfredo valadao": {
+    "lat": -22.9774,
+    "lng": -43.1901
+  },
+  "rj_rio de janeiro_copacabana_rua henrique oswald": {
+    "lat": -22.9701,
+    "lng": -43.1812
+  },
+  "rj_rio de janeiro_copacabana_rua maracanau": {
+    "lat": -22.9703,
+    "lng": -43.1824
+  },
+  "rj_rio de janeiro_copacabana_rua francisco otaviano": {
+    "lat": -22.984,
+    "lng": -43.1966
+  },
+  "rj_rio de janeiro_copacabana_rua gal azevedo pimentel": {
+    "lat": -22.976,
+    "lng": -43.1905
+  },
+  "rj_rio de janeiro_copacabana_rua tte marones gusmao": {
+    "lat": -22.9705,
+    "lng": -43.1819
+  },
+  "rj_rio de janeiro_copacabana_trv santa leocadia": {
+    "lat": -22.9754,
+    "lng": -43.1904
+  },
+  "rj_rio de janeiro_copacabana_rua decio vilares": {
+    "lat": -22.975,
+    "lng": -43.1901
+  },
+  "rj_rio de janeiro_copacabana_rua gal barbosa lima": {
+    "lat": -22.9758,
+    "lng": -43.1915
+  },
+  "rj_rio de janeiro_copacabana_trv guimaraes natal": {
+    "lat": -22.9752,
+    "lng": -43.191
+  },
+  "rj_rio de janeiro_copacabana_prc demetrio ribeiro": {
+    "lat": -22.969,
+    "lng": -43.1787
+  },
+  "rj_rio de janeiro_copacabana_trv angrense": {
+    "lat": -22.9749,
+    "lng": -43.1912
+  },
+  "rj_rio de janeiro_copacabana_rua conrado niemeyer": {
+    "lat": -22.9708,
+    "lng": -43.1804
+  },
+  "rj_rio de janeiro_copacabana_rua percy murray": {
+    "lat": -22.9714,
+    "lng": -43.1812
+  },
+  "rj_rio de janeiro_copacabana_rua capel alvares da silva": {
+    "lat": -22.9702,
+    "lng": -43.1808
+  },
+  "rj_rio de janeiro_copacabana_trv escadinhas saint roman": {
+    "lat": -22.9825,
+    "lng": -43.1994
+  },
+  "rj_rio de janeiro_copacabana_prc card arcoverde": {
+    "lat": -22.9712,
+    "lng": -43.1802
+  },
+  "rj_rio de janeiro_laranjeiras_rua de conde avelar": {
+    "lat": -22.936,
+    "lng": -43.2001
+  },
+  "rj_rio de janeiro_laranjeiras_rua de conde baependi": {
+    "lat": -22.9378,
+    "lng": -43.1903
+  },
+  "rj_rio de janeiro_laranjeiras_rua de marq pinedo": {
+    "lat": -22.9332,
+    "lng": -43.1973
+  },
+  "rj_rio de janeiro_laranjeiras_rua de marqsa santos": {
+    "lat": -22.9351,
+    "lng": -43.1979
+  },
+  "rj_rio de janeiro_laranjeiras_r": {
+    "lat": -22.937,
+    "lng": -43.196
+  },
+  "rj_rio de janeiro_laranjeiras_rua stefan zweig": {
+    "lat": -22.9366,
+    "lng": -43.193
+  },
+  "rj_rio de janeiro_laranjeiras_rua campo belo": {
+    "lat": -22.9377,
+    "lng": -43.1972
+  },
+  "rj_rio de janeiro_laranjeiras_rua umari": {
+    "lat": -22.9332,
+    "lng": -43.1896
+  },
+  "rj_rio de janeiro_laranjeiras_trv pinto da rocha": {
+    "lat": -22.936,
+    "lng": -43.1942
+  },
+  "rj_rio de janeiro_laranjeiras_rua engen alfredo modrach": {
+    "lat": -22.9329,
+    "lng": -43.192
+  },
+  "rj_rio de janeiro_laranjeiras_rua aparicio borges": {
+    "lat": -22.9351,
+    "lng": -43.1884
+  },
+  "rj_rio de janeiro_ti_rua alice": {
+    "lat": -22.9348,
+    "lng": -43.1979
+  },
+  "rj_rio de janeiro_tijuca_center": {
+    "lat": -22.9304,
+    "lng": -43.2372
+  },
+  "rj_rio de janeiro_sao_rua sao francisco xavier": {
+    "lat": -22.922119,
+    "lng": -43.23565
+  },
+  "rj_rio de janeiro_sao fran_rua sao francisco xavier": {
+    "lat": -22.915,
+    "lng": -43.23
+  },
+  "rj_rio de janeiro_tijuca_rua sao miguel": {
+    "lat": -22.9248,
+    "lng": -43.2384
+  },
+  "rj_rio de janeiro_tijuca_rua rocha miranda": {
+    "lat": -22.9256,
+    "lng": -43.2285
+  },
+  "rj_rio de janeiro_tijuca_rua de conde itaguai": {
+    "lat": -22.9231,
+    "lng": -43.2389
+  },
+  "rj_rio de janeiro_tijuca_rua dona delfina": {
+    "lat": -22.9246,
+    "lng": -43.2356
+  },
+  "rj_rio de janeiro_tijuca_avn heitor beltrao": {
+    "lat": -22.9255,
+    "lng": -43.2307
+  },
+  "rj_rio de janeiro_tijuca_rua antonio pinto da mota": {
+    "lat": -22.9272,
+    "lng": -43.2367
+  },
+  "rj_rio de janeiro_tijuca_rua alzira brandao": {
+    "lat": -22.9279,
+    "lng": -43.2334
+  },
+  "rj_rio de janeiro_tijuca_rua silva ramos": {
+    "lat": -22.9238,
+    "lng": -43.2302
+  },
+  "rj_rio de janeiro_tijuca_rua doutor satamini": {
+    "lat": -22.9219,
+    "lng": -43.2361
+  },
+  "rj_rio de janeiro_tijuca_avn maracana": {
+    "lat": -22.9213,
+    "lng": -43.2304
+  },
+  "rj_rio de janeiro_tijuca_rua almte cochrane": {
+    "lat": -22.9268,
+    "lng": -43.2327
+  },
+  "rj_rio de janeiro_tijuca_rua garibaldi": {
+    "lat": -22.9277,
+    "lng": -43.2312
+  },
+  "rj_rio de janeiro_tijuca_rua mto vila lobos": {
+    "lat": -22.9304,
+    "lng": -43.2372
+  },
+  "rj_rio de janeiro_tijuca_rua radmaker": {
+    "lat": -22.9288,
+    "lng": -43.2317
+  },
+  "rj_rio de janeiro_tijuca_rua gal roca": {
+    "lat": -22.9251,
+    "lng": -43.2331
+  },
+  "rj_rio de janeiro_tijuca_rua de conde bonfim": {
+    "lat": -22.925,
+    "lng": -43.235
+  },
+  "rj_rio de janeiro_tijuca_rua de marq valenca": {
+    "lat": -22.9301,
+    "lng": -43.2325
+  },
+  "rj_rio de janeiro_tijuca_rua pereira de siqueira": {
+    "lat": -22.927,
+    "lng": -43.2302
+  },
+  "rj_rio de janeiro_tijuca_rua prof gabizo": {
+    "lat": -22.9225,
+    "lng": -43.228
+  },
+  "rj_rio de janeiro_tijuca_rua campos sales": {
+    "lat": -22.9262,
+    "lng": -43.2345
+  },
+  "rj_rio de janeiro_tijuca_rua des izidro": {
+    "lat": -22.9295,
+    "lng": -43.2381
+  },
+  "rj_rio de janeiro_tijuca_rua henri ford": {
+    "lat": -22.9284,
+    "lng": -43.235
+  },
+  "rj_rio de janeiro_tijuca_rua enes de souza": {
+    "lat": -22.9291,
+    "lng": -43.2339
+  },
+  "rj_rio de janeiro_tijuca_rua santa carolina": {
+    "lat": -22.9298,
+    "lng": -43.2361
+  },
+  "rj_rio de janeiro_tijuca_rua angelo agostini": {
+    "lat": -22.9236,
+    "lng": -43.2378
+  },
+  "rj_rio de janeiro_tijuca_prc saenz pena": {
+    "lat": -22.924,
+    "lng": -43.235
+  },
+  "rj_rio de janeiro_tijuca_rua oliveira da silva": {
+    "lat": -22.926,
+    "lng": -43.2375
+  },
+  "rj_rio de janeiro_tijuca_rua pinheiro da cunha": {
+    "lat": -22.928,
+    "lng": -43.2392
+  },
+  "rj_rio de janeiro_tijuca_rua engen ernani cotrim": {
+    "lat": -22.9265,
+    "lng": -43.2398
+  },
+  "rj_rio de janeiro_tijuca_rua dos araujos": {
+    "lat": -22.9229,
+    "lng": -43.2315
+  },
+  "rj_rio de janeiro_tijuca_rua de barao mesquita": {
+    "lat": -22.9234,
+    "lng": -43.2384
+  },
+  "rj_rio de janeiro_tijuca_rua de visc cabo frio": {
+    "lat": -22.9261,
+    "lng": -43.2312
+  },
+  "rj_rio de janeiro_tijuca_rua mariz e barros": {
+    "lat": -22.922,
+    "lng": -43.2268
+  },
+  "rj_rio de janeiro_tijuca_rua jose higino": {
+    "lat": -22.9281,
+    "lng": -43.2325
+  },
+  "rj_rio de janeiro_tijuca_rua engen enaldo cravo peixoto": {
+    "lat": -22.932,
+    "lng": -43.2428
+  },
+  "rj_rio de janeiro_tijuca_rua soares da costa": {
+    "lat": -22.9315,
+    "lng": -43.2356
+  },
+  "rj_rio de janeiro_tijuca_rua antonio basilio": {
+    "lat": -22.9223,
+    "lng": -43.2289
+  },
+  "rj_rio de janeiro_tijuca_rua uruguai": {
+    "lat": -22.9338,
+    "lng": -43.2435
+  },
+  "rj_rio de janeiro_tijuca_rua major avila": {
+    "lat": -22.9332,
+    "lng": -43.2381
+  },
+  "rj_rio de janeiro_tijuca_rua carvalho alvim": {
+    "lat": -22.9337,
+    "lng": -43.2319
+  },
+  "rj_rio de janeiro_tijuca_rua delgado de carvalho": {
+    "lat": -22.9298,
+    "lng": -43.2305
+  },
+  "rj_rio de janeiro_tijuca_rua itacuruca": {
+    "lat": -22.9287,
+    "lng": -43.2372
+  },
+  "rj_rio de janeiro_tijuca_rua de barao itapagipe": {
+    "lat": -22.927,
+    "lng": -43.233
+  },
+  "rj_rio de janeiro_tijuca_rua carlos de vasconcelos": {
+    "lat": -22.9284,
+    "lng": -43.2401
+  },
+  "rj_rio de janeiro_tijuca_rua afonso pena": {
+    "lat": -22.924,
+    "lng": -43.225
+  },
+  "rj_rio de janeiro_tijuca_rua clovis bevilaqua": {
+    "lat": -22.9304,
+    "lng": -43.2443
+  },
+  "rj_rio de janeiro_tijuca_rua araujo pena": {
+    "lat": -22.925,
+    "lng": -43.2275
+  },
+  "rj_rio de janeiro_tijuca_rua dezoito de outubro": {
+    "lat": -22.9325,
+    "lng": -43.235
+  },
+  "rj_rio de janeiro_tijuca_rua guajaratuba": {
+    "lat": -22.933,
+    "lng": -43.239
+  },
+  "rj_rio de janeiro_tijuca_rua valparaiso": {
+    "lat": -22.93,
+    "lng": -43.233
+  },
+  "rj_rio de janeiro_tijuca_rua maria amalia": {
+    "lat": -22.9291,
+    "lng": -43.2365
+  },
+  "rj_rio de janeiro_tijuca_rua goncalves crespo": {
+    "lat": -22.9205,
+    "lng": -43.2225
+  },
+  "rj_rio de janeiro_tijuca_rua guapiara": {
+    "lat": -22.9345,
+    "lng": -43.241
+  },
+  "rj_rio de janeiro_tijuca_rua bom pastor": {
+    "lat": -22.9248,
+    "lng": -43.234
+  },
+  "rj_rio de janeiro_tijuca_rua haddock lobo": {
+    "lat": -22.92,
+    "lng": -43.218
+  },
+  "rj_rio de janeiro_tijuca_rua sao francisco xavier": {
+    "lat": -22.915,
+    "lng": -43.223
+  },
+  "rj_rio de janeiro_tijuca_rua andrade neves": {
+    "lat": -22.9265,
+    "lng": -43.2355
+  },
+  "rj_rio de janeiro_tijuca_rua rego lopes": {
+    "lat": -22.917,
+    "lng": -43.221
+  },
+  "rj_rio de janeiro_tijuca_rua deput soares filho": {
+    "lat": -22.931,
+    "lng": -43.2405
+  },
+  "rj_rio de janeiro_tijuca_rua silva guimaraes": {
+    "lat": -22.9295,
+    "lng": -43.238
+  },
+  "rj_rio de janeiro_freguesia(jacarepagua)_center": {
+    "lat": -22.946,
+    "lng": -43.336
+  },
+  "rj_rio de janeiro_meier_rua lucidio lago": {
+    "lat": -22.8997,
+    "lng": -43.2858
+  },
+  "rj_rio de janeiro_meier_rua aristides caire": {
+    "lat": -22.9056,
+    "lng": -43.2856
+  },
+  "rj_rio de janeiro_meier_rua joaquim meier": {
+    "lat": -22.8988,
+    "lng": -43.2818
+  },
+  "rj_rio de janeiro_meier_rua dias da cruz": {
+    "lat": -22.9009,
+    "lng": -43.2801
+  },
+  "rj_rio de janeiro_meier_rua carolina santos": {
+    "lat": -22.8966,
+    "lng": -43.2828
+  },
+  "rj_rio de janeiro_meier_rua arquias cordeiro": {
+    "lat": -22.9022,
+    "lng": -43.2906
+  },
+  "rj_rio de janeiro_meier_rua jose verissimo": {
+    "lat": -22.9036,
+    "lng": -43.2921
+  },
+  "rj_rio de janeiro_meier_rua pedro de carvalho": {
+    "lat": -22.9054,
+    "lng": -43.2925
+  },
+  "rj_rio de janeiro_meier_rua fabio luz": {
+    "lat": -22.8987,
+    "lng": -43.2897
+  },
+  "rj_rio de janeiro_meier_rua miguel fernandes": {
+    "lat": -22.9009,
+    "lng": -43.2878
+  },
+  "rj_rio de janeiro_meier_rua doutor pache de faria": {
+    "lat": -22.8972,
+    "lng": -43.2882
+  },
+  "rj_rio de janeiro_meier_rua padre ildefonso penalba": {
+    "lat": -22.8959,
+    "lng": -43.2789
+  },
+  "rj_rio de janeiro_meier_rua dos carijos": {
+    "lat": -22.8954,
+    "lng": -43.2813
+  },
+  "rj_rio de janeiro_meier_rua castro alves": {
+    "lat": -22.8973,
+    "lng": -43.2863
+  },
+  "rj_rio de janeiro_meier_rua piranga": {
+    "lat": -22.9035,
+    "lng": -43.279
+  },
+  "rj_rio de janeiro_meier_rua venceslau": {
+    "lat": -22.8995,
+    "lng": -43.2778
+  },
+  "rj_rio de janeiro_meier_rua oldegard sapucaia": {
+    "lat": -22.9028,
+    "lng": -43.2817
+  },
+  "rj_rio de janeiro_meier_rua souza aguiar": {
+    "lat": -22.8942,
+    "lng": -43.2831
+  },
+  "rj_rio de janeiro_meier_rua torres sobrinho": {
+    "lat": -22.9015,
+    "lng": -43.2829
+  },
+  "rj_rio de janeiro_meier_rua carolina meier": {
+    "lat": -22.8958,
+    "lng": -43.282
+  },
+  "rj_rio de janeiro_meier_rua maranhao": {
+    "lat": -22.8968,
+    "lng": -43.2786
+  },
+  "rj_rio de janeiro_meier_rua maria calmon": {
+    "lat": -22.9001,
+    "lng": -43.2893
+  },
+  "rj_rio de janeiro_meier_rua magalhaes couto": {
+    "lat": -22.8992,
+    "lng": -43.2798
+  },
+  "rj_rio de janeiro_meier_rua joaquina rosa": {
+    "lat": -22.9023,
+    "lng": -43.2845
+  },
+  "rj_rio de janeiro_meier_rua coracao de maria": {
+    "lat": -22.9003,
+    "lng": -43.2774
+  },
+  "rj_rio de janeiro_meier_rua paulo silva araujo": {
+    "lat": -22.9048,
+    "lng": -43.2885
+  },
+  "rj_rio de janeiro_meier_rua medina": {
+    "lat": -22.9011,
+    "lng": -43.2811
+  },
+  "rj_rio de janeiro_meier_rua oliveira": {
+    "lat": -22.8979,
+    "lng": -43.2842
+  },
+  "rj_rio de janeiro_meier_rua intend cunha menezes": {
+    "lat": -22.9019,
+    "lng": -43.2769
+  },
+  "rj_rio de janeiro_meier_rua constanca barbosa": {
+    "lat": -22.8963,
+    "lng": -43.277
+  },
+  "rj_rio de janeiro_meier_rua frederico meier": {
+    "lat": -22.901594,
+    "lng": -43.279628
+  },
+  "rj_rio de janeiro_meier_vil coqueiral": {
+    "lat": -22.898236,
+    "lng": -43.274849
+  },
+  "rj_rio de janeiro_meier_trv valdyr augusto": {
+    "lat": -22.901309,
+    "lng": -43.280145
+  },
+  "rj_rio de janeiro_meier_rua moreira sampaio": {
+    "lat": -22.905634,
+    "lng": -43.284793
+  },
+  "rj_rio de janeiro_meier_rua ana barbosa": {
+    "lat": -22.903264,
+    "lng": -43.282583
+  },
+  "rj_rio de janeiro_meier_trv teixeira": {
+    "lat": -22.900995,
+    "lng": -43.279769
+  },
+  "rj_rio de janeiro_meier_fab": {
+    "lat": -22.9016,
+    "lng": -43.2804
+  },
+  "rj_rio de janeiro_meier_rua engen juliao castelo": {
+    "lat": -22.903,
+    "lng": -43.298
+  },
+  "rj_rio de janeiro_meier_rua caetano de almeida": {
+    "lat": -22.901,
+    "lng": -43.297
+  },
+  "rj_rio de janeiro_meier_rua curupaiti": {
+    "lat": -22.9,
+    "lng": -43.297
+  },
+  "rj_rio de janeiro_meier_rua santa fe": {
+    "lat": -22.901,
+    "lng": -43.299
+  },
+  "rj_rio de janeiro_meier_rua itobi": {
+    "lat": -22.902,
+    "lng": -43.297
+  },
+  "rj_rio de janeiro_meier_rua frei fabiano": {
+    "lat": -22.903,
+    "lng": -43.297
+  },
+  "rj_rio de janeiro_meier_rua grauben barbosa": {
+    "lat": -22.9,
+    "lng": -43.299
+  },
+  "rj_rio de janeiro_m_rua pereira nunes": {
+    "lat": -22.9341,
+    "lng": -43.2371
+  },
+  "rj_rio de janeiro_fre_rua fabio luz": {
+    "lat": -22.93666,
+    "lng": -43.34442
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_center": {
+    "lat": -22.935,
+    "lng": -43.332
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_rua augusto cardoso": {
+    "lat": -22.9431,
+    "lng": -43.3458
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_travessa jose bulhoes": {
+    "lat": -22.9427,
+    "lng": -43.3429
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_praca jose alvares de azevedo": {
+    "lat": -22.943,
+    "lng": -43.3465
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_rua dom juvencio de brito": {
+    "lat": -22.9442,
+    "lng": -43.3435
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_rua mario coimbra boucas": {
+    "lat": -22.9407,
+    "lng": -43.3436
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_rua guilherme moreira": {
+    "lat": -22.9429,
+    "lng": -43.3456
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_rua orizona": {
+    "lat": -22.9416,
+    "lng": -43.3424
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_r": {
+    "lat": -22.946,
+    "lng": -43.344
+  },
+  "rj_rio de janeiro_tijuca_rua almirante cochrane": {
+    "lat": -22.9304,
+    "lng": -43.2384
+  },
+  "rj_rio de janeiro_tijuca_rua barao de itapagipe": {
+    "lat": -22.9348,
+    "lng": -43.2185
+  },
+  "rj_rio de janeiro_tijuca_rua barao de mesquita": {
+    "lat": -22.9307,
+    "lng": -43.2307
+  },
+  "rj_rio de janeiro_tijuca_praca comandante xavier de brito": {
+    "lat": -22.9305,
+    "lng": -43.2366
+  },
+  "rj_rio de janeiro_tijuca_rua conde de bonfim": {
+    "lat": -22.9342,
+    "lng": -43.2285
+  },
+  "rj_rio de janeiro_tijuca_beco dehoul": {
+    "lat": -22.9298,
+    "lng": -43.2238
+  },
+  "rj_rio de janeiro_tijuca_rua desembargador izidro": {
+    "lat": -22.9348,
+    "lng": -43.2359
+  },
+  "rj_rio de janeiro_tijuca_rua felix da cunha": {
+    "lat": -22.9317,
+    "lng": -43.2343
+  },
+  "rj_rio de janeiro_tijuca_rua general roca": {
+    "lat": -22.9309,
+    "lng": -43.2335
+  },
+  "rj_rio de janeiro_tijuca_rua general espirito santo cardoso": {
+    "lat": -22.9329,
+    "lng": -43.235
+  },
+  "rj_rio de janeiro_tijuca_avenida maracana": {
+    "lat": -22.9248,
+    "lng": -43.2308
+  },
+  "rj_rio de janeiro_tijuca_rua marques de valenca": {
+    "lat": -22.9328,
+    "lng": -43.2269
+  },
+  "rj_rio de janeiro_tijuca_avenida melo matos": {
+    "lat": -22.9272,
+    "lng": -43.2351
+  },
+  "rj_rio de janeiro_tijuca_praca saenz pena": {
+    "lat": -22.9306,
+    "lng": -43.234
+  },
+  "rj_rio de janeiro_tijuca_avenida heitor beltrao": {
+    "lat": -22.9278,
+    "lng": -43.2274
+  },
+  "rj_rio de janeiro_tijuca_rua deputado soares filho": {
+    "lat": -22.9309,
+    "lng": -43.2435
+  },
+  "rj_rio de janeiro_tijuca_rua visconde de cabo frio": {
+    "lat": -22.9343,
+    "lng": -43.2372
+  },
+  "rj_rio de janeiro_tijuca_rua engenheiro ernani cotrim": {
+    "lat": -22.9351,
+    "lng": -43.2393
+  },
+  "rj_rio de janeiro_tijuca_rua maestro vila lobos": {
+    "lat": -22.935,
+    "lng": -43.2382
+  },
+  "rj_rio de janeiro_tijuca_rua engenheiro enaldo cravo peixoto": {
+    "lat": -22.936,
+    "lng": -43.2388
+  },
+  "rj_rio de janeiro_tijuca_avenida gabriela prado maia ribeiro": {
+    "lat": -22.9221,
+    "lng": -43.2374
+  },
+  "rj_rio de janeiro_tijuca_rua adolfo mota": {
+    "lat": -22.929,
+    "lng": -43.2255
+  },
+  "rj_rio de janeiro_tijuca_rua aguiar": {
+    "lat": -22.9238,
+    "lng": -43.2381
+  },
+  "rj_rio de janeiro_tijuca_rua alberto de sequeira": {
+    "lat": -22.9264,
+    "lng": -43.2291
+  },
+  "rj_rio de janeiro_tijuca_rua alfredo pinto": {
+    "lat": -22.9293,
+    "lng": -43.2264
+  },
+  "rj_rio de janeiro_tijuca_rua almirante gaviao": {
+    "lat": -22.9319,
+    "lng": -43.241
+  },
+  "rj_rio de janeiro_tijuca_rua alves de brito": {
+    "lat": -22.9268,
+    "lng": -43.2386
+  },
+  "rj_rio de janeiro_tijuca_rua carlos de laet": {
+    "lat": -22.9262,
+    "lng": -43.2374
+  },
+  "rj_rio de janeiro_tijuca_rua da cascata": {
+    "lat": -22.9231,
+    "lng": -43.2377
+  },
+  "rj_rio de janeiro_tijuca_rua conselheiro zenha": {
+    "lat": -22.9301,
+    "lng": -43.2259
+  },
+  "rj_rio de janeiro_tijuca_rua dulce": {
+    "lat": -22.9238,
+    "lng": -43.2355
+  },
+  "rj_rio de janeiro_tijuca_rua guaxupe": {
+    "lat": -22.9247,
+    "lng": -43.2384
+  },
+  "rj_rio de janeiro_tijuca_rua homem de melo": {
+    "lat": -22.9304,
+    "lng": -43.2366
+  },
+  "rj_rio de janeiro_tijuca_rua martins pena": {
+    "lat": -22.9299,
+    "lng": -43.2323
+  },
+  "rj_rio de janeiro_tijuca_rua medeiros passaro": {
+    "lat": -22.9233,
+    "lng": -43.2376
+  },
+  "rj_rio de janeiro_tijuca_rua morales de los rios": {
+    "lat": -22.9268,
+    "lng": -43.2352
+  },
+  "rj_rio de janeiro_tijuca_rua moura brito": {
+    "lat": -22.9253,
+    "lng": -43.2334
+  },
+  "rj_rio de janeiro_tijuca_rua natalina": {
+    "lat": -22.9329,
+    "lng": -43.2365
+  },
+  "rj_rio de janeiro_tijuca_rua embaixador ramon carcano": {
+    "lat": -22.9248,
+    "lng": -43.2351
+  },
+  "rj_rio de janeiro_tijuca_rua professor gabizo": {
+    "lat": -22.9272,
+    "lng": -43.2307
+  },
+  "rj_rio de janeiro_tijuca_rua santo afonso": {
+    "lat": -22.9231,
+    "lng": -43.2263
+  },
+  "rj_rio de janeiro_tijuca_rua visconde de figueiredo": {
+    "lat": -22.9246,
+    "lng": -43.2291
+  },
+  "rj_rio de janeiro_tijuca_rua doutor oscar pimentel": {
+    "lat": -22.9273,
+    "lng": -43.233
+  },
+  "rj_rio de janeiro_tijuca_rua professor lafayette cortes": {
+    "lat": -22.9306,
+    "lng": -43.2328
+  },
+  "rj_rio de janeiro_tijuca_rua doutor renato rocco": {
+    "lat": -22.9332,
+    "lng": -43.2378
+  },
+  "rj_rio de janeiro_tijuca_rua barao de pirassinunga": {
+    "lat": -22.924,
+    "lng": -43.225
+  },
+  "rj_rio de janeiro_tijuca_rua do bispo": {
+    "lat": -22.9269,
+    "lng": -43.2241
+  },
+  "rj_rio de janeiro_tijuca_rua camaragibe": {
+    "lat": -22.9317,
+    "lng": -43.2319
+  },
+  "rj_rio de janeiro_tijuca_rua clemente falcao": {
+    "lat": -22.9284,
+    "lng": -43.2289
+  },
+  "rj_rio de janeiro_tijuca_rua conde de itaguai": {
+    "lat": -22.9325,
+    "lng": -43.2334
+  },
+  "rj_rio de janeiro_tijuca_rua doutor otavio kelly": {
+    "lat": -22.929,
+    "lng": -43.234
+  },
+  "rj_rio de janeiro_tijuca_rua engenheiro cavalcanti": {
+    "lat": -22.9314,
+    "lng": -43.2386
+  },
+  "rj_rio de janeiro_tijuca_rua joao alfredo": {
+    "lat": -22.9298,
+    "lng": -43.231
+  },
+  "rj_rio de janeiro_tijuca_rua palmira goncalves maia": {
+    "lat": -22.9309,
+    "lng": -43.2356
+  },
+  "rj_rio de janeiro_tijuca_rua coronel correia lima": {
+    "lat": -22.9262,
+    "lng": -43.2316
+  },
+  "rj_rio de janeiro_tijuca_rua professor helion povoa": {
+    "lat": -22.9287,
+    "lng": -43.2373
+  },
+  "rj_rio de janeiro_tijuca_rua engenheiro adel": {
+    "lat": -22.9304,
+    "lng": -43.2374
+  },
+  "rj_rio de janeiro_tijuca_rua jurupari": {
+    "lat": -22.9238,
+    "lng": -43.2393
+  },
+  "rj_rio de janeiro_tijuca_rua leite de abreu": {
+    "lat": -22.926,
+    "lng": -43.2376
+  },
+  "rj_rio de janeiro_tijuca_rua pardal mallet": {
+    "lat": -22.9252,
+    "lng": -43.2369
+  },
+  "rj_rio de janeiro_todos os santos_center": {
+    "lat": -22.9038,
+    "lng": -43.2952
+  },
+  "rj_rio de janeiro_fl_rua jose bonifacio": {
+    "lat": -22.926839,
+    "lng": -43.180496
+  },
+  "rj_rio de janeiro_flamengo_rua barao do flamengo": {
+    "lat": -22.9351,
+    "lng": -43.1783
+  },
+  "rj_rio de janeiro_flamengo_rua barao de icarai": {
+    "lat": -22.937,
+    "lng": -43.1814
+  },
+  "rj_rio de janeiro_flamengo_rua conde de baependi": {
+    "lat": -22.9344,
+    "lng": -43.1793
+  },
+  "rj_rio de janeiro_flamengo_rua fernando osorio": {
+    "lat": -22.937,
+    "lng": -43.1762
+  },
+  "rj_rio de janeiro_flamengo_rua marques de abrantes": {
+    "lat": -22.9354,
+    "lng": -43.1798
+  },
+  "rj_rio de janeiro_flamengo_rua marques de parana": {
+    "lat": -22.9464,
+    "lng": -43.1841
+  },
+  "rj_rio de janeiro_flamengo_avenida oswaldo cruz": {
+    "lat": -22.9385,
+    "lng": -43.1776
+  },
+  "rj_rio de janeiro_flamengo_rua senador vergueiro": {
+    "lat": -22.9337,
+    "lng": -43.1796
+  },
+  "rj_rio de janeiro_flamengo_rua senador eusebio": {
+    "lat": -22.9371,
+    "lng": -43.1763
+  },
+  "rj_rio de janeiro_flamengo_praia do flamengo": {
+    "lat": -22.9352,
+    "lng": -43.176
+  },
+  "rj_rio de janeiro_flamengo_rua almirante tamandare": {
+    "lat": -22.9366,
+    "lng": -43.1765
+  },
+  "rj_rio de janeiro_flamengo_travessa dos tamoios": {
+    "lat": -22.9373,
+    "lng": -43.1761
+  },
+  "rj_rio de janeiro_flamengo_avenida rui barbosa": {
+    "lat": -22.9355,
+    "lng": -43.1754
+  },
+  "rj_rio de janeiro_flamengo_praca jose de alencar": {
+    "lat": -22.9348,
+    "lng": -43.1764
+  },
+  "rj_rio de janeiro_flamengo_rua visconde do cruzeiro": {
+    "lat": -22.9356,
+    "lng": -43.1774
+  },
+  "rj_rio de janeiro_flamengo_rua princesa januaria": {
+    "lat": -22.9383,
+    "lng": -43.1772
+  },
+  "rj_rio de janeiro_flamengo_doi": {
+    "lat": 0,
+    "lng": 0
+  },
+  "rj_rio de janeiro_flamengo_de": {
+    "lat": -22.9268,
+    "lng": -43.1764
+  },
+  "rj_rio de janeiro_tijuca_rua carmela dutra": {
+    "lat": -22.9372,
+    "lng": -43.2435
+  },
+  "rj_rio de janeiro_tijuca_rua potengi": {
+    "lat": -22.9385,
+    "lng": -43.2418
+  },
+  "rj_rio de janeiro_tijuca_rua general marcelino": {
+    "lat": -22.9348,
+    "lng": -43.2481
+  },
+  "rj_rio de janeiro_tijuca_rua tobias moscoso": {
+    "lat": -22.9351,
+    "lng": -43.2426
+  },
+  "rj_rio de janeiro_tijuca_rua marechal marques porto": {
+    "lat": -22.9339,
+    "lng": -43.2452
+  },
+  "rj_rio de janeiro_tijuca_rua marechal trompowski": {
+    "lat": -22.9357,
+    "lng": -43.2467
+  },
+  "rj_rio de janeiro_tijuca_rua pareto": {
+    "lat": -22.9312,
+    "lng": -43.2458
+  },
+  "rj_rio de janeiro_tijuca_rua pinto guedes": {
+    "lat": -22.9315,
+    "lng": -43.2472
+  },
+  "rj_rio de janeiro_tijuca_travessa cruz": {
+    "lat": -22.9363,
+    "lng": -43.2409
+  },
+  "rj_rio de janeiro_tijuca_rua goulart": {
+    "lat": -22.9328,
+    "lng": -43.2438
+  },
+  "rj_rio de janeiro_tijuca_rua manuel leitao": {
+    "lat": -22.9334,
+    "lng": -43.2449
+  },
+  "rj_rio de janeiro_tijuca_rua mario barreto": {
+    "lat": -22.9305,
+    "lng": -43.2491
+  },
+  "rj_rio de janeiro_tijuca_praca professor pinheiro guimaraes": {
+    "lat": -22.9308,
+    "lng": -43.2465
+  },
+  "rj_rio de janeiro_tijuca_rua tiacu": {
+    "lat": -22.9368,
+    "lng": -43.2395
+  },
+  "rj_rio de janeiro_tijuca_rua guapeni": {
+    "lat": -22.9375,
+    "lng": -43.2403
+  },
+  "rj_rio de janeiro_tijuca_rua santa sofia": {
+    "lat": -22.9322,
+    "lng": -43.2483
+  },
+  "rj_rio de janeiro_tijuca_rua soriano de souza": {
+    "lat": -22.9331,
+    "lng": -43.2475
+  },
+  "rj_rio de janeiro_tijuca_rua cotingo": {
+    "lat": -22.9381,
+    "lng": -43.2429
+  },
+  "rj_rio de janeiro_tijuca_rua coronel aristarcho pessoa": {
+    "lat": -22.9343,
+    "lng": -43.2461
+  },
+  "rj_rio de janeiro_tijuca_rua alexandre de gusmao": {
+    "lat": -22.9319,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_tijuca_rua ferdinando laboriau": {
+    "lat": -22.9325,
+    "lng": -43.2498
+  },
+  "rj_rio de janeiro_tijuca_rua henrique fleiuss": {
+    "lat": -22.9354,
+    "lng": -43.2415
+  },
+  "rj_rio de janeiro_tijuca_rua marechal taumaturgo de azevedo": {
+    "lat": -22.936,
+    "lng": -43.2455
+  },
+  "rj_rio de janeiro_tijuca_rua condeuba": {
+    "lat": -22.939,
+    "lng": -43.241
+  },
+  "rj_rio de janeiro_tijuca_praca hilda": {
+    "lat": -22.9378,
+    "lng": -43.244
+  },
+  "rj_rio de janeiro_tijuca_rua joao da mata": {
+    "lat": -22.931,
+    "lng": -43.2445
+  },
+  "rj_rio de janeiro_tijuca_rua gurindiba": {
+    "lat": -22.9388,
+    "lng": -43.2422
+  },
+  "rj_rio de janeiro_tijuca_rua mario de alencar": {
+    "lat": -22.9302,
+    "lng": -43.248
+  },
+  "rj_rio de janeiro_tijuca_rua saboia lima": {
+    "lat": -22.9346,
+    "lng": -43.24
+  },
+  "rj_rio de janeiro_tijuca_rua sao vicente": {
+    "lat": -22.937,
+    "lng": -43.247
+  },
+  "rj_niteroi_vital brasil_rua aires i de oliveira,des": {
+    "lat": -22.9039,
+    "lng": -43.0898
+  },
+  "rj_niteroi_vital brasil_rua aniceto de m correa,des": {
+    "lat": -22.9048,
+    "lng": -43.0902
+  },
+  "rj_niteroi_vital brasil_rua oscar przewodowski,prf": {
+    "lat": -22.9032,
+    "lng": -43.0905
+  },
+  "rj_niteroi_vital brasil_avenida ary parreiras,alm": {
+    "lat": -22.9099,
+    "lng": -43.0886
+  },
+  "rj_niteroi_vital brasil_rua desembargador toledo piza": {
+    "lat": -22.9091,
+    "lng": -43.0903
+  },
+  "rj_niteroi_vital brasil_rua jose botelho,mto": {
+    "lat": -22.9103,
+    "lng": -43.0894
+  },
+  "rj_niteroi_vital brasil_rua souza dias,dr": {
+    "lat": -22.911,
+    "lng": -43.089
+  },
+  "rj_niteroi_vital brasil_rua vital brasil filho": {
+    "lat": -22.9105,
+    "lng": -43.0882
+  },
+  "rj_niteroi_c_rua oscar przewodowski,prf": {
+    "lat": -22.8687,
+    "lng": -43.0805
+  },
+  "rj_niteroi_centro_rua antonio a f da silva,dr": {
+    "lat": -22.899,
+    "lng": -43.125
+  },
+  "rj_niteroi_centro_rua aurea lima": {
+    "lat": -22.895,
+    "lng": -43.127
+  },
+  "rj_niteroi_centro_rua olinda,mq de": {
+    "lat": -22.896,
+    "lng": -43.118
+  },
+  "rj_niteroi_centro_rua sao pedro": {
+    "lat": -22.893,
+    "lng": -43.1125
+  },
+  "rj_niteroi_centro_rua sete de maio": {
+    "lat": -22.889,
+    "lng": -43.116
+  },
+  "rj_niteroi_centro_rua vicente romano,prof": {
+    "lat": -22.898,
+    "lng": -43.125
+  },
+  "rj_niteroi_centro_travessa fani": {
+    "lat": -22.891,
+    "lng": -43.114
+  },
+  "rj_niteroi_centro_travessa roberto de andrade,jorn": {
+    "lat": -22.897,
+    "lng": -43.127
+  },
+  "rj_niteroi_centro_rua celestino,dr": {
+    "lat": -22.894,
+    "lng": -43.124
+  },
+  "mg_juiz de fora_sao mateus_center": {
+    "lat": -21.77668,
+    "lng": -43.35707
+  },
+  "rj_rio de janeiro_taquara_estrada do cafunda": {
+    "lat": -22.9298,
+    "lng": -43.3985
+  },
+  "rj_rio de janeiro_taquara_estrada meringuava": {
+    "lat": -22.9557,
+    "lng": -43.3769
+  },
+  "rj_rio de janeiro_taquara_estrada marechal miguel salazar mendes de moraes": {
+    "lat": -22.9555,
+    "lng": -43.3857
+  },
+  "rj_rio de janeiro_taquara_estrada do rio grande": {
+    "lat": -22.9461,
+    "lng": -43.4077
+  },
+  "rj_rio de janeiro_taquara_estrada rodrigues caldas": {
+    "lat": -22.9567,
+    "lng": -43.414
+  },
+  "rj_rio de janeiro_taquara_estrada do tindiba": {
+    "lat": -22.9304,
+    "lng": -43.3792
+  },
+  "rj_rio de janeiro_taquara_estrada macembu": {
+    "lat": -22.9405,
+    "lng": -43.4057
+  },
+  "rj_rio de janeiro_taquara_rua januario barbosa": {
+    "lat": -22.9242,
+    "lng": -43.386
+  },
+  "rj_rio de janeiro_taquara_avenida dos mananciais": {
+    "lat": -22.944,
+    "lng": -43.3827
+  },
+  "rj_rio de janeiro_taquara_rua mapendi": {
+    "lat": -22.9333,
+    "lng": -43.3744
+  },
+  "rj_rio de janeiro_taquara_rua marques de jacarepagua": {
+    "lat": -22.9389,
+    "lng": -43.3753
+  },
+  "rj_rio de janeiro_taquara_rua iriquitia": {
+    "lat": -22.9331,
+    "lng": -43.3776
+  },
+  "rj_rio de janeiro_taquara_estrada da soca": {
+    "lat": -22.951,
+    "lng": -43.392
+  },
+  "rj_rio de janeiro_taquara_estrada dos teixeiras": {
+    "lat": -22.9525,
+    "lng": -43.3879
+  },
+  "rj_rio de janeiro_taquara_rua alberto soares sampaio": {
+    "lat": -22.9268,
+    "lng": -43.3813
+  },
+  "rj_rio de janeiro_taquara_rua oswaldo lussac": {
+    "lat": -22.9317,
+    "lng": -43.3799
+  },
+  "rj_rio de janeiro_taquara_avenida antonieta campos da paz": {
+    "lat": -22.925,
+    "lng": -43.3833
+  },
+  "rj_rio de janeiro_taquara_rua andre rocha": {
+    "lat": -22.9439,
+    "lng": -43.4005
+  },
+  "rj_rio de janeiro_taquara_estrada mapua": {
+    "lat": -22.9401,
+    "lng": -43.3866
+  },
+  "rj_rio de janeiro_taquara_estrada boiuna": {
+    "lat": -22.9592,
+    "lng": -43.3995
+  },
+  "rj_rio de janeiro_taquara_rua itagua": {
+    "lat": -22.936,
+    "lng": -43.376
+  },
+  "rj_rio de janeiro_taquara_estrada do outeiro santo": {
+    "lat": -22.9455,
+    "lng": -43.3907
+  },
+  "rj_rio de janeiro_taquara_rua ariapo": {
+    "lat": -22.9338,
+    "lng": -43.3822
+  },
+  "rj_rio de janeiro_taquara_estrada santa efigenia": {
+    "lat": -22.9482,
+    "lng": -43.3948
+  },
+  "rj_rio de janeiro_taquara_rua professora francisca piragibe": {
+    "lat": -22.9245,
+    "lng": -43.3804
+  },
+  "rj_rio de janeiro_taquara_rua ariperana": {
+    "lat": -22.9365,
+    "lng": -43.3805
+  },
+  "rj_rio de janeiro_taquara_rua visconde de asseca": {
+    "lat": -22.93,
+    "lng": -43.382
+  },
+  "rj_rio de janeiro_taquara_rua mansidao": {
+    "lat": -22.929,
+    "lng": -43.377
+  },
+  "rj_rio de janeiro_taquara_rua paturi": {
+    "lat": -22.9372,
+    "lng": -43.377
+  },
+  "rj_rio de janeiro_taquara_rua bacairis": {
+    "lat": -22.936,
+    "lng": -43.379
+  },
+  "rj_rio de janeiro_vila valqueire_rua das azaleias": {
+    "lat": -22.8797,
+    "lng": -43.3571
+  },
+  "rj_rio de janeiro_vila valqueire_rua quiririm": {
+    "lat": -22.8804,
+    "lng": -43.3582
+  },
+  "rj_rio de janeiro_vila valqueire_rua das margaridas": {
+    "lat": -22.8794,
+    "lng": -43.3565
+  },
+  "rj_rio de janeiro_vila valqueire_rua das tulipas": {
+    "lat": -22.88,
+    "lng": -43.3575
+  },
+  "rj_rio de janeiro_vila valqueire_avenida jambeiro": {
+    "lat": -22.8791,
+    "lng": -43.356
+  },
+  "rj_rio de janeiro_vila valqueire_rua jagoroaba": {
+    "lat": -22.8789,
+    "lng": -43.3581
+  },
+  "rj_rio de janeiro_vila valqueire_rua arcozelo": {
+    "lat": -22.8821,
+    "lng": -43.3601
+  },
+  "rj_rio de janeiro_vila valqueire_rua rochedo": {
+    "lat": -22.8828,
+    "lng": -43.3608
+  },
+  "rj_rio de janeiro_vila valqueire_rua ouro branco": {
+    "lat": -22.8794,
+    "lng": -43.36
+  },
+  "rj_rio de janeiro_vila valqueire_rua mata grande": {
+    "lat": -22.8801,
+    "lng": -43.361
+  },
+  "rj_rio de janeiro_vila valqueire_rua recreio": {
+    "lat": -22.8806,
+    "lng": -43.3615
+  },
+  "rj_rio de janeiro_vila valqueire_rua novo cruzeiro": {
+    "lat": -22.8812,
+    "lng": -43.3621
+  },
+  "rj_rio de janeiro_vila valqueire_rua cardo santo": {
+    "lat": -22.8793,
+    "lng": -43.3628
+  },
+  "rj_rio de janeiro_vila valqueire_rua das cravinas": {
+    "lat": -22.8803,
+    "lng": -43.3578
+  },
+  "rj_rio de janeiro_vila valqueire_rua das dalias": {
+    "lat": -22.8792,
+    "lng": -43.3569
+  },
+  "rj_rio de janeiro_vila valqueire_rua das hortencias": {
+    "lat": -22.8787,
+    "lng": -43.3562
+  },
+  "rj_rio de janeiro_vila valqueire_rua dos jasmins": {
+    "lat": -22.8784,
+    "lng": -43.3559
+  },
+  "rj_rio de janeiro_vila valqueire_rua namur": {
+    "lat": -22.8778,
+    "lng": -43.3555
+  },
+  "rj_rio de janeiro_vila valqueire_rua das rosas": {
+    "lat": -22.8789,
+    "lng": -43.3557
+  },
+  "rj_rio de janeiro_vila valqueire_rua camaratuba": {
+    "lat": -22.8817,
+    "lng": -43.3592
+  },
+  "rj_rio de janeiro_vila valqueire_rua agua comprida": {
+    "lat": -22.8823,
+    "lng": -43.3598
+  },
+  "rj_rio de janeiro_vila valqueire_rua capim branco": {
+    "lat": -22.8815,
+    "lng": -43.3603
+  },
+  "rj_rio de janeiro_vila valqueire_rua victorio libonati": {
+    "lat": -22.8785,
+    "lng": -43.3638
+  },
+  "rj_rio de janeiro_vila valqueire_praca francisco daltro de brito": {
+    "lat": -22.8784,
+    "lng": -43.3556
+  },
+  "rj_rio de janeiro_vila valqueire_rua das verbenas": {
+    "lat": -22.8799,
+    "lng": -43.3573
+  },
+  "rj_rio de janeiro_vila valqueire_rua evaristo de morais": {
+    "lat": -22.8773,
+    "lng": -43.3601
+  },
+  "rj_rio de janeiro_vila valqueire_rua pedro moacir": {
+    "lat": -22.8765,
+    "lng": -43.3607
+  },
+  "rj_rio de janeiro_vila valqueire_rua cairucu": {
+    "lat": -22.876,
+    "lng": -43.3612
+  },
+  "rj_rio de janeiro_vila valqueire_rua pocos de caldas": {
+    "lat": -22.8755,
+    "lng": -43.3618
+  },
+  "rj_rio de janeiro_vila valqueire_rua rosario oeste": {
+    "lat": -22.8749,
+    "lng": -43.3623
+  },
+  "rj_rio de janeiro_h_rua das dalias": {
+    "lat": -22.88062,
+    "lng": -43.34582
+  },
+  "rj_rio de janeiro_higienopolis_center": {
+    "lat": -22.8569,
+    "lng": -43.2647
+  },
+  "rj_rio de janeiro_riac_rua frederico de albuquerque": {
+    "lat": -22.9038,
+    "lng": -43.2504
+  },
+  "mg_juiz de fora_sao vicente_center": {
+    "lat": -21.783,
+    "lng": -43.35
+  },
+  "rj_rio de janeiro_tijuca_rua caruso": {
+    "lat": -22.929,
+    "lng": -43.245
+  },
+  "rj_rio de janeiro_tijuca_rua domicio da gama": {
+    "lat": -22.931,
+    "lng": -43.243
+  },
+  "rj_rio de janeiro_tijuca_rua severino brandao": {
+    "lat": -22.928,
+    "lng": -43.247
+  },
+  "rj_rio de janeiro_tijuca_rua doutor anibal moreira": {
+    "lat": -22.93,
+    "lng": -43.248
+  },
+  "rj_rio de janeiro_tijuca_rua benjamin franklin": {
+    "lat": -22.932,
+    "lng": -43.246
+  },
+  "rj_rio de janeiro_tijuca_rua pinto de figueiredo": {
+    "lat": -22.929,
+    "lng": -43.244
+  },
+  "rj_rio de janeiro_tijuca_rua jacuma": {
+    "lat": -22.93,
+    "lng": -43.242
+  },
+  "rj_rio de janeiro_tijuca_travessa nestor vitor": {
+    "lat": -22.931,
+    "lng": -43.241
+  },
+  "rj_rio de janeiro_tijuca_travessa santa teresinha": {
+    "lat": -22.928,
+    "lng": -43.243
+  },
+  "rj_rio de janeiro_tijuca_travessa afonso": {
+    "lat": -22.927,
+    "lng": -43.245
+  },
+  "rj_rio de janeiro_tijuca_rua general silva pessoa": {
+    "lat": -22.93,
+    "lng": -43.249
+  },
+  "rj_rio de janeiro_tijuca_avenida edison passos": {
+    "lat": -22.933,
+    "lng": -43.247
+  },
+  "rj_rio de janeiro_tijuca_rua tenente marques de sousa": {
+    "lat": -22.931,
+    "lng": -43.24
+  },
+  "rj_rio de janeiro_tijuca_rua doutor dilermando cruz": {
+    "lat": -22.929,
+    "lng": -43.246
+  },
+  "rj_rio de janeiro_tijuca_rua piracicaba": {
+    "lat": -22.928,
+    "lng": -43.242
+  },
+  "rj_rio de janeiro_tijuca_rua babilonia": {
+    "lat": -22.932,
+    "lng": -43.244
+  },
+  "rj_rio de janeiro_tijuca_travessa dutra rodrigues": {
+    "lat": -22.93,
+    "lng": -43.241
+  },
+  "rj_rio de janeiro_tijuca_rua fernandes figueira": {
+    "lat": -22.927,
+    "lng": -43.248
+  },
+  "rj_rio de janeiro_tijuca_pereir": {
+    "lat": -22.926,
+    "lng": -43.246
+  },
+  "rj_rio de janeiro_vila isabel_rua visconde de santa isabel": {
+    "lat": -22.9242,
+    "lng": -43.2575
+  },
+  "rj_rio de janeiro_vila isabel_rua angelo bittencourt": {
+    "lat": -22.9218,
+    "lng": -43.2523
+  },
+  "rj_rio de janeiro_vila isabel_rua araujo lima": {
+    "lat": -22.9265,
+    "lng": -43.2601
+  },
+  "rj_rio de janeiro_vila isabel_rua dos artistas": {
+    "lat": -22.925,
+    "lng": -43.2568
+  },
+  "rj_rio de janeiro_vila isabel_rua baltazar lisboa": {
+    "lat": -22.923,
+    "lng": -43.2612
+  },
+  "rj_rio de janeiro_vila isabel_rua barao de cotegipe": {
+    "lat": -22.932,
+    "lng": -43.259
+  },
+  "rj_rio de janeiro_vila isabel_rua barao de mesquita": {
+    "lat": -22.925,
+    "lng": -43.265
+  },
+  "rj_rio de janeiro_vila isabel_rua dona maria": {
+    "lat": -22.9205,
+    "lng": -43.2558
+  },
+  "rj_rio de janeiro_vila isabel_rua emilia sampaio": {
+    "lat": -22.927,
+    "lng": -43.2618
+  },
+  "rj_rio de janeiro_vila isabel_rua gonzaga bastos": {
+    "lat": -22.9238,
+    "lng": -43.253
+  },
+  "rj_rio de janeiro_vila isabel_rua alexandre calaza": {
+    "lat": -22.9215,
+    "lng": -43.254
+  },
+  "rj_rio de janeiro_vila isabel_rua jorge rudge": {
+    "lat": -22.92,
+    "lng": -43.2515
+  },
+  "rj_rio de janeiro_vila isabel_rua justiniano da rocha": {
+    "lat": -22.928,
+    "lng": -43.2625
+  },
+  "rj_rio de janeiro_vila isabel_rua luiz barbosa": {
+    "lat": -22.926,
+    "lng": -43.258
+  },
+  "rj_rio de janeiro_vila isabel_rua luis guimaraes": {
+    "lat": -22.929,
+    "lng": -43.2595
+  },
+  "rj_rio de janeiro_vila isabel_rua maxwell": {
+    "lat": -22.9245,
+    "lng": -43.263
+  },
+  "rj_rio de janeiro_vila isabel_rua oito de dezembro": {
+    "lat": -22.9225,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_vila isabel_rua pereira nunes": {
+    "lat": -22.9275,
+    "lng": -43.2608
+  },
+  "rj_rio de janeiro_vila isabel_rua pereira soares": {
+    "lat": -22.9285,
+    "lng": -43.2588
+  },
+  "rj_rio de janeiro_vila isabel_rua petrocochino": {
+    "lat": -22.9295,
+    "lng": -43.2575
+  },
+  "rj_rio de janeiro_vila isabel_rua ribeiro guimaraes": {
+    "lat": -22.921,
+    "lng": -43.256
+  },
+  "rj_rio de janeiro_vila isabel_rua senador muniz freire": {
+    "lat": -22.9208,
+    "lng": -43.2535
+  },
+  "rj_rio de janeiro_vila isabel_rua senador nabuco": {
+    "lat": -22.9235,
+    "lng": -43.251
+  },
+  "rj_rio de janeiro_vila isabel_rua silva pinto": {
+    "lat": -22.9255,
+    "lng": -43.2598
+  },
+  "rj_rio de janeiro_vila isabel_rua souza franco": {
+    "lat": -22.9268,
+    "lng": -43.2605
+  },
+  "rj_rio de janeiro_vila isabel_rua teodoro da silva": {
+    "lat": -22.9233,
+    "lng": -43.255
+  },
+  "rj_rio de janeiro_vila isabel_rua tomaz coelho": {
+    "lat": -22.9272,
+    "lng": -43.261
+  },
+  "rj_rio de janeiro_vila isabel_rua torres homem": {
+    "lat": -22.924,
+    "lng": -43.2585
+  },
+  "rj_rio de janeiro_vila isabel_rua padre champagnat": {
+    "lat": -22.928,
+    "lng": -43.258
+  },
+  "rj_rio de janeiro_vila isabel_boulevard vinte e oito de setembro": {
+    "lat": -22.923,
+    "lng": -43.2545
+  },
+  "rj_rio de janeiro_vila isabel_rua juparana": {
+    "lat": -22.9238,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_vila isabel_rua rodolfo de souza": {
+    "lat": -22.9219,
+    "lng": -43.2526
+  },
+  "rj_rio de janeiro_vila isabel_rua doutor heleno brandao": {
+    "lat": -22.9247,
+    "lng": -43.2514
+  },
+  "rj_rio de janeiro_pr_rua pereira nunes": {
+    "lat": -22.934,
+    "lng": -43.195
+  }
+}
