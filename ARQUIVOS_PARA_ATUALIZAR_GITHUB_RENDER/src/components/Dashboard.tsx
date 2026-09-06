@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuctionProperty, PropertyType } from '../types.ts';
+import { AuctionProperty, PropertyType, BRAZIL_STATES } from '../types.ts';
 import { 
   Building2, 
   TrendingUp, 
@@ -19,9 +19,11 @@ import {
   RefreshCw,
   Bookmark,
   Gavel,
-  Link
+  Link,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import RealValueCalculator from './RealValueCalculator.tsx';
 
 interface DashboardProps {
   auctions: AuctionProperty[];
@@ -50,11 +52,12 @@ interface DashboardProps {
   onGarimparJudiciais: (city?: string) => void;
   onGarimparCaixa: (city?: string) => void;
   onGarimparPortais: (city?: string) => void;
-  selectedOriginFilter: 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal';
-  setSelectedOriginFilter: (val: 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal') => void;
+  selectedOriginFilter: 'caixa' | 'judicial' | 'extrajudicial' | 'portal';
+  setSelectedOriginFilter: (val: 'caixa' | 'judicial' | 'extrajudicial' | 'portal') => void;
   onOpenLinkModal: () => void;
   onSyncCaixaAuto?: () => void;
   itbiStats?: any[];
+  onClearAll?: () => void;
 }
 
 export default function Dashboard({
@@ -88,8 +91,10 @@ export default function Dashboard({
   setSelectedOriginFilter,
   onOpenLinkModal,
   onSyncCaixaAuto,
-  itbiStats = []
+  itbiStats = [],
+  onClearAll
 }: DashboardProps) {
+  const [simulatingAuction, setSimulatingAuction] = React.useState<AuctionProperty | null>(null);
   const [localMiningType, setLocalMiningType] = React.useState<'judicial' | 'caixa' | 'portal' | null>(null);
   const [selectedGarimpoCity, setSelectedGarimpoCity] = React.useState<string>('ambas');
 
@@ -99,29 +104,38 @@ export default function Dashboard({
     }
   }, [isMining]);
   
-  
   const normalizeText = (str: string) => str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase() : '';
+
+  const checkOriginMatch = (a: AuctionProperty) => {
+    const origin = a.origin || (a.id.startsWith('auc-caixa') ? 'caixa' : 'judicial');
+    if (selectedOriginFilter === 'caixa' || selectedOriginFilter === 'caixa_radar') {
+      return origin === 'caixa' || origin === 'caixa_radar';
+    }
+    return origin === selectedOriginFilter;
+  };
+
+  // Extract unique states to filter by (filtered by selectedOriginFilter)
+  const uniqueStates = React.useMemo(() => {
+    const list = auctions.filter(checkOriginMatch);
+    const foundStates = Array.from(new Set(list.map(a => (a.state || '').toUpperCase()).filter(Boolean)));
+    const all = Array.from(new Set([...foundStates, 'RJ', 'SP', 'MG'])).sort();
+    return all;
+  }, [auctions, selectedOriginFilter]);
 
   // Extract unique cities from auctions for filters (filtered by selectedStateFilter and selectedOriginFilter)
   const uniqueCities = React.useMemo(() => {
-    let list = auctions.filter(a => {
-      const origin = a.origin || (a.id.startsWith('auc-caixa-radar') ? 'caixa_radar' : (a.id.startsWith('auc-caixa') ? 'caixa' : 'judicial'));
-      return origin === selectedOriginFilter;
-    });
+    let list = auctions.filter(checkOriginMatch);
     if (selectedStateFilter) {
       list = list.filter(a => (a.state || 'SP').toUpperCase() === selectedStateFilter.toUpperCase());
     }
     
-    const citiesList = list.map(a => a.city || (selectedStateFilter === 'RJ' ? 'Rio de Janeiro' : selectedStateFilter === 'MG' ? 'Juiz de Fora' : 'São Paulo'));
+    const citiesList = list.map(a => a.city).filter(Boolean) as string[];
     return Array.from(new Set(citiesList)).sort();
   }, [auctions, selectedStateFilter, selectedOriginFilter]);
 
   // Extract unique neighborhoods from auctions for filters (filtered by selectedStateFilter, selectedCityFilter and selectedOriginFilter)
   const uniqueNeighborhoods = React.useMemo(() => {
-    let list = auctions.filter(a => {
-      const origin = a.origin || (a.id.startsWith('auc-caixa-radar') ? 'caixa_radar' : (a.id.startsWith('auc-caixa') ? 'caixa' : 'judicial'));
-      return origin === selectedOriginFilter;
-    });
+    let list = auctions.filter(checkOriginMatch);
     if (selectedStateFilter) {
       list = list.filter(a => (a.state || 'SP').toUpperCase() === selectedStateFilter.toUpperCase());
     }
@@ -130,24 +144,15 @@ export default function Dashboard({
       list = list.filter(a => normalizeText(a.city || '').includes(normCity) || normCity.includes(normalizeText(a.city || '')));
     }
 
-    return Array.from(new Set(list.map(a => a.neighborhood))).sort();
+    const titleCased = list
+      .map(a => a.neighborhood ? a.neighborhood.trim().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '').join(' ') : '')
+      .filter(Boolean);
+    return Array.from(new Set(titleCased)).sort();
   }, [auctions, selectedStateFilter, selectedCityFilter, selectedOriginFilter]);
-
-  // Extract unique states to filter by (filtered by selectedOriginFilter)
-  const uniqueStates = React.useMemo(() => {
-    const list = auctions.filter(a => {
-      const origin = a.origin || (a.id.startsWith('auc-caixa-radar') ? 'caixa_radar' : (a.id.startsWith('auc-caixa') ? 'caixa' : 'judicial'));
-      return origin === selectedOriginFilter;
-    });
-    return Array.from(new Set(list.map(a => a.state || 'SP')));
-  }, [auctions, selectedOriginFilter]);
 
   // Filter & Sort listing
   const filteredAndSortedAuctions = React.useMemo(() => {
-    let result = auctions.filter(a => {
-      const origin = a.origin || (a.id.startsWith('auc-caixa-radar') ? 'caixa_radar' : (a.id.startsWith('auc-caixa') ? 'caixa' : 'judicial'));
-      return origin === selectedOriginFilter;
-    });
+    let result = auctions.filter(checkOriginMatch);
 
     if (selectedStateFilter) {
       result = result.filter(a => (a.state || 'SP').toUpperCase() === selectedStateFilter.toUpperCase());
@@ -158,10 +163,8 @@ export default function Dashboard({
       result = result.filter(a => normalizeText(a.city || '').includes(normCity) || normCity.includes(normalizeText(a.city || '')));
     }
     if (selectedNeighborhoodFilter) {
-      result = result.filter(a => a.neighborhood === selectedNeighborhoodFilter);
-    }
-    if (selectedNeighborhoodFilter) {
-      result = result.filter(a => a.neighborhood === selectedNeighborhoodFilter);
+      const normNeighFilter = normalizeText(selectedNeighborhoodFilter);
+      result = result.filter(a => normalizeText(a.neighborhood || '') === normNeighFilter);
     }
     if (selectedTypeFilter) {
       result = result.filter(a => a.propertyType === selectedTypeFilter);
@@ -195,11 +198,11 @@ export default function Dashboard({
     return result;
   }, [auctions, selectedNeighborhoodFilter, selectedCityFilter, selectedTypeFilter, selectedStateFilter, maxPriceFilter, paymentFilter, sortBy, selectedOriginFilter]);
 
-  const [visibleCount, setVisibleCount] = React.useState(10);
+  const [visibleCount, setVisibleCount] = React.useState(12);
 
   // Reset visibleCount when filters/sorting change to optimize responsiveness
   React.useEffect(() => {
-    setVisibleCount(10);
+    setVisibleCount(12);
   }, [selectedNeighborhoodFilter, selectedCityFilter, selectedTypeFilter, selectedStateFilter, maxPriceFilter, paymentFilter, sortBy, selectedOriginFilter]);
 
   // Infinite scroll listener
@@ -209,7 +212,7 @@ export default function Dashboard({
         window.innerHeight + document.documentElement.scrollTop >=
         document.documentElement.offsetHeight - 150
       ) {
-        setVisibleCount(prev => Math.min(prev + 10, filteredAndSortedAuctions.length));
+        setVisibleCount(prev => Math.min(prev + 12, filteredAndSortedAuctions.length));
       }
     }
     window.addEventListener('scroll', handleScroll);
@@ -227,40 +230,6 @@ export default function Dashboard({
 
     return { totalCount, avgRoi, totalPotentialProfit, highLiquidityCount };
   }, [filteredAndSortedAuctions]);
-
-  // Top 3 opportunities for executive summary
-  const topRadarHighlights = React.useMemo(() => {
-    if (selectedOriginFilter !== 'caixa_radar') return [];
-    return [...filteredAndSortedAuctions]
-      .sort((a, b) => (b.calculatedProfit || 0) - (a.calculatedProfit || 0))
-      .slice(0, 3);
-  }, [filteredAndSortedAuctions, selectedOriginFilter]);
-
-  // Top profitable neighborhoods for current city/state filter
-  const topProfitableNeighborhoods = React.useMemo(() => {
-    if (selectedOriginFilter !== 'caixa_radar') return [];
-    const map = new Map<string, { count: number; totalProfit: number; avgRoi: number; avgSqm: number }>();
-    for (const a of filteredAndSortedAuctions) {
-      if (!a.neighborhood) continue;
-      const nb = a.neighborhood;
-      const entry = map.get(nb) || { count: 0, totalProfit: 0, avgRoi: 0, avgSqm: 0 };
-      entry.count += 1;
-      entry.totalProfit += (a.calculatedProfit || 0);
-      entry.avgRoi += (a.calculatedRoi || 0);
-      entry.avgSqm += (a.itbiUnitValueAvg || 0);
-      map.set(nb, entry);
-    }
-    return Array.from(map.entries())
-      .map(([name, data]) => ({
-        name,
-        count: data.count,
-        avgProfit: Math.round(data.totalProfit / data.count),
-        avgRoi: Math.round(data.avgRoi / data.count),
-        avgSqm: Math.round(data.avgSqm / data.count)
-      }))
-      .sort((a, b) => b.avgProfit - a.avgProfit)
-      .slice(0, 5);
-  }, [filteredAndSortedAuctions, selectedOriginFilter]);
 
   // Format currency helper
   const formatBRL = (val: number) => {
@@ -319,37 +288,26 @@ export default function Dashboard({
           </div>
           <div>
             <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Alta Liquidez (Score ≥8)</p>
-            <h3 className="text-2xl font-bold text-white font-mono">{stats.highLiquidityCount} <span className="text-xs text-slate-400 font-sans font-normal">imóveis</span></h3>
+<h3 className="text-2xl font-bold text-white font-mono">{stats.highLiquidityCount} <span className="text-xs text-slate-400 font-sans font-normal">imóveis</span></h3>
           </div>
         </motion.div>
       </div>
 
-      {/* Premium Tab Selector for Source (Radar Caixa ITBI vs Caixa Geral vs Judicial vs Extrajudicial vs Portais) */}
+      {/* Tab Selector for Source (Imóveis Caixa vs Judicial vs Extrajudicial vs Portais) */}
       <div className="bg-slate-900/80 p-1.5 rounded-xl flex flex-wrap gap-1.5 w-full border border-slate-800 backdrop-blur-md shadow-lg">
         <button
           onClick={() => {
-            setSelectedOriginFilter('caixa_radar');
+            setSelectedOriginFilter('caixa');
             setSelectedNeighborhoodFilter('');
           }}
-          className={`flex-1 min-w-[200px] flex items-center justify-center space-x-2 py-2.5 px-3 rounded-lg text-sm font-bold transition-all duration-200 cursor-pointer ${
-            selectedOriginFilter === 'caixa_radar'
-              ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-lg shadow-orange-950/40 border border-amber-400/30 ring-1 ring-amber-400/30'
-              : 'text-amber-400 hover:text-amber-200 hover:bg-slate-800/60 bg-amber-950/20 border border-amber-900/30'
-          }`}
-        >
-          <Sparkles className="w-4 h-4 text-amber-200 animate-pulse" />
-          <span>⭐ Radar Oportunidades Caixa (Base ITBI)</span>
-        </button>
-        <button
-          onClick={() => setSelectedOriginFilter('caixa')}
-          className={`flex-1 min-w-[140px] flex items-center justify-center space-x-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer ${
+          className={`flex-1 min-w-[150px] flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-200 cursor-pointer ${
             selectedOriginFilter === 'caixa'
               ? 'bg-blue-600 text-white shadow-md border border-blue-500/20'
               : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/40'
           }`}
         >
-          <Building2 className="w-4 h-4" />
-          <span>Imóveis Caixa (Geral)</span>
+          <Building2 className="w-4 h-4 text-blue-300" />
+          <span>⚡ Imóveis Caixa</span>
         </button>
         <button
           onClick={() => setSelectedOriginFilter('judicial')}
@@ -386,221 +344,14 @@ export default function Dashboard({
         </button>
       </div>
 
-      {/* Special Intelligence Banner for Radar Caixa ITBI */}
-      {selectedOriginFilter === 'caixa_radar' && (
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-amber-500/30 rounded-2xl p-5 shadow-xl space-y-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  Inteligência Interna de Arbitragem
-                </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  Base Caixa Cruzada com 104k+ Transações Oficiais ITBI
-                </span>
-              </div>
-              <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-                <span>Garimpo dos Melhores Imóveis Caixa por Maior Lucro Real</span>
-              </h2>
-              <p className="text-xs text-slate-300 max-w-3xl">
-                Selecione a cidade desejada para ver o resumo executivo dos melhores imóveis com maior margem de lucro e maior desconto balizados pelo ITBI oficial.
-              </p>
-            </div>
-
-            {/* Quick State & City Selector Cards */}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => {
-                  setSelectedStateFilter('');
-                  setSelectedCityFilter('');
-                  setSelectedNeighborhoodFilter('');
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                  !selectedCityFilter && !selectedStateFilter
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black ring-2 ring-amber-400/40'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 border-slate-700'
-                }`}
-              >
-                Todas Cidades ({filteredAndSortedAuctions.length})
-              </button>
-              
-              <button
-                onClick={() => {
-                  setSelectedStateFilter('RJ');
-                  setSelectedCityFilter('Rio de Janeiro');
-                  setSelectedNeighborhoodFilter('');
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center space-x-1.5 ${
-                  normalizeText(selectedCityFilter) === 'rio de janeiro'
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black ring-2 ring-amber-400/40'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 border-slate-700'
-                }`}
-              >
-                <span>🏖️ Rio de Janeiro</span>
-                <span className="text-[10px] opacity-75">(4.014)</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setSelectedStateFilter('RJ');
-                  setSelectedCityFilter('Niterói');
-                  setSelectedNeighborhoodFilter('');
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center space-x-1.5 ${
-                  normalizeText(selectedCityFilter) === 'niteroi'
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black ring-2 ring-amber-400/40'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 border-slate-700'
-                }`}
-              >
-                <span>🌊 Niterói</span>
-                <span className="text-[10px] opacity-75">(86)</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setSelectedStateFilter('MG');
-                  setSelectedCityFilter('Juiz de Fora');
-                  setSelectedNeighborhoodFilter('');
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center space-x-1.5 ${
-                  normalizeText(selectedCityFilter) === 'juiz de fora'
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black ring-2 ring-amber-400/40'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 border-slate-700'
-                }`}
-              >
-                <span>⛰️ Juiz de Fora</span>
-                <span className="text-[10px] opacity-75">(68)</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setSelectedStateFilter('MG');
-                  setSelectedCityFilter('Santos Dumont');
-                  setSelectedNeighborhoodFilter('');
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center space-x-1.5 ${
-                  normalizeText(selectedCityFilter) === 'santos dumont'
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black ring-2 ring-amber-400/40'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 border-slate-700'
-                }`}
-              >
-                <span>🚂 Santos Dumont</span>
-                <span className="text-[10px] opacity-75">(1)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Executive Summary: Top 3 Best Opportunities & Most Profitable Neighborhoods */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Top 3 Best Opportunities Cards */}
-            <div className="lg:col-span-2 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-                  <span>⭐ Top Destaques de Maior Lucro ({selectedCityFilter || 'Geral'})</span>
-                </span>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  Ordenado por Lucro Líquido Real vs ITBI
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {topRadarHighlights.map((topAuc, idx) => (
-                  <div
-                    key={topAuc.id}
-                    onClick={() => onSelectAuction(topAuc.id)}
-                    className="bg-slate-950/70 border border-amber-500/30 hover:border-amber-400 rounded-xl p-3 space-y-2 cursor-pointer transition-all hover:bg-slate-950 hover:shadow-lg hover:shadow-amber-950/30 group relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-bl-lg">
-                      #{idx + 1} MAIOR LUCRO
-                    </div>
-                    <div className="pr-12">
-                      <p className="text-[11px] font-bold text-slate-200 line-clamp-1 group-hover:text-amber-300 transition-colors">
-                        {topAuc.neighborhood}, {topAuc.city}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-mono line-clamp-1">
-                        {topAuc.address || 'Endereço Caixa'}
-                      </p>
-                    </div>
-
-                    <div className="bg-slate-900/90 rounded-lg p-2 space-y-1 border border-slate-800">
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400">Preço Caixa:</span>
-                        <span className="font-bold text-slate-200 font-mono">{formatBRL(topAuc.auctionPrice)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400">Valor ITBI:</span>
-                        <span className="font-bold text-sky-300 font-mono">{formatBRL(topAuc.estimatedValue)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px] pt-1 border-t border-slate-800">
-                        <span className="text-emerald-400 font-bold">Lucro Estimado:</span>
-                        <span className="font-black text-emerald-400 font-mono">+{formatBRL(topAuc.calculatedProfit || 0)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] pt-1">
-                      <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-mono font-bold">
-                        ROI: +{topAuc.calculatedRoi || 0}%
-                      </span>
-                      {topAuc.allowsFinancing && (
-                        <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded font-semibold text-[9px]">
-                          Aceita Financ.
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Top Profitable Neighborhoods Column */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Top Bairros Mais Lucrativos</span>
-                </span>
-                <span className="text-[10px] text-slate-400 font-mono">m² Médio ITBI</span>
-              </div>
-
-              <div className="space-y-1.5">
-                {topProfitableNeighborhoods.map((nb, i) => (
-                  <button
-                    key={nb.name}
-                    onClick={() => setSelectedNeighborhoodFilter(selectedNeighborhoodFilter === nb.name ? '' : nb.name)}
-                    className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-all text-xs cursor-pointer border ${
-                      selectedNeighborhoodFilter === nb.name
-                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
-                        : 'bg-slate-900/60 hover:bg-slate-900 border-slate-800/80 text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <span className="w-4 h-4 rounded-full bg-slate-800 text-[10px] font-mono flex items-center justify-center text-slate-400 font-bold">
-                        {i + 1}
-                      </span>
-                      <span className="font-bold">{nb.name}</span>
-                      <span className="text-[10px] text-slate-400">({nb.count})</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono font-bold text-emerald-400">+{formatBRL(nb.avgProfit)}</span>
-                      <span className="block text-[9px] text-slate-400 font-mono">R$ {nb.avgSqm.toLocaleString('pt-BR')}/m²</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Control Panel: Filters & Presets */}
       <div className="bg-slate-900 border border-slate-800/80 rounded-xl p-5 shadow-md">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <SlidersHorizontal className="w-5 h-5 text-slate-400" />
+              <SlidersHorizontal className="w-5 h-5 text-indigo-400" />
               <h2 className="font-semibold text-slate-100">
-                {selectedOriginFilter === 'caixa_radar' ? 'Filtros da Análise Caixa' : 'Filtros de Garimpo'}
+                Filtros de Garimpo
               </h2>
             </div>
             <button
@@ -621,20 +372,20 @@ export default function Dashboard({
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-            {onSyncCaixaAuto && (
+          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            {onSyncCaixaAuto && selectedOriginFilter === 'caixa' && (
               <button
                 onClick={onSyncCaixaAuto}
                 disabled={isMining}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs rounded-lg transition-all shadow-md flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 mr-2"
-                title="Varredura 100% automática da Caixa (RJ, SP, MG) sem baixar planilhas"
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm rounded-xl transition-all shadow-lg flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                title="Varredura 100% automática da Caixa sem baixar planilhas"
               >
                 {isMining ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-950" />
+                  <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+                  <Sparkles className="w-4 h-4 text-slate-950" />
                 )}
-                <span>Sincronizar Caixa Automático</span>
+                <span>⚡ Sincronizar Imóveis Caixa</span>
               </button>
             )}
             <span className="text-[11px] uppercase font-bold text-slate-400 font-mono tracking-wider mr-1">Ordenar por:</span>
@@ -672,6 +423,29 @@ export default function Dashboard({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">Filtrar por Estado (UF)</label>
+            <select
+              value={selectedStateFilter}
+              onChange={(e) => {
+                setSelectedStateFilter(e.target.value);
+                setSelectedCityFilter(''); // reset city filter on state change
+                setSelectedNeighborhoodFilter(''); // reset neighborhood filter on state change
+              }}
+              className="w-full text-sm border border-slate-800 rounded-lg p-2 bg-slate-950 text-slate-200 hover:bg-slate-900 focus:bg-slate-950 focus:border-indigo-500/80 focus:ring-indigo-500/30 outline-none transition-colors cursor-pointer [&>option]:bg-slate-950 [&>option]:text-slate-200"
+            >
+              <option value="" className="bg-slate-950 text-slate-200">Todos os Estados</option>
+              {uniqueStates.map(uf => {
+                const stateObj = BRAZIL_STATES.find(s => s.value === uf);
+                return (
+                  <option key={uf} value={uf} className="bg-slate-950 text-slate-200">
+                    {uf} {stateObj ? `- ${stateObj.label}` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-400 mb-1">Filtrar por Cidade</label>
@@ -743,26 +517,11 @@ export default function Dashboard({
               <option value="both" className="bg-slate-950 text-slate-200">Financiamento & Parcelamento</option>
             </select>
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-1">Classificar por</label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full text-sm border border-slate-800 rounded-lg p-2 bg-slate-950 text-slate-200 hover:bg-slate-900 focus:bg-slate-950 focus:border-indigo-500/80 focus:ring-indigo-500/30 outline-none transition-colors cursor-pointer [&>option]:bg-slate-950 [&>option]:text-slate-200"
-            >
-              <option value="roi" className="bg-slate-950 text-slate-200">Maior Retorno (ROI %)</option>
-              <option value="profit" className="bg-slate-950 text-slate-200">Maior Lucro Líquido (R$)</option>
-              <option value="liquidity" className="bg-slate-950 text-slate-200">Melhor Liquidez (1-10)</option>
-              <option value="price_asc" className="bg-slate-950 text-slate-200">Menor Preço de Leilão</option>
-              <option value="price_desc" className="bg-slate-950 text-slate-200">Maior Preço de Leilão</option>
-            </select>
-          </div>
         </div>
       </div>
 
-      {/* Active Filters Summary Indicator */}
-      <div className="flex items-center justify-between text-xs bg-slate-950 border border-slate-850 rounded-lg py-2.5 px-3.5 shadow-inner">
+      {/* Active Filters Summary Indicator & Zerar Imoveis */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-slate-950 border border-slate-850 rounded-lg py-2.5 px-3.5 shadow-inner">
         <div className="flex items-center space-x-2 text-slate-400">
           <div className={`w-2 h-2 rounded-full ${filteredAndSortedAuctions.length !== auctions.length ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`}></div>
           <span>
@@ -774,6 +533,17 @@ export default function Dashboard({
             )}
           </span>
         </div>
+
+        {onClearAll && auctions.length > 0 && (
+          <button
+            onClick={onClearAll}
+            className="text-xs text-rose-400 hover:text-rose-300 font-bold px-3 py-1.5 rounded-lg bg-rose-950/30 hover:bg-rose-950/50 transition-colors cursor-pointer border border-rose-900/40 shadow-xs flex items-center space-x-1.5 self-start sm:self-auto"
+            title="Zerar todas as pesquisas e imóveis garimpados"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Zerar Imóveis</span>
+          </button>
+        )}
       </div>
 
       {/* Grid of Results */}
@@ -928,22 +698,40 @@ export default function Dashboard({
                       <div className="flex justify-between items-center text-slate-400">
                         <span className="font-semibold text-slate-450">Média m² Anunciado na Rua:</span>
                         <span className="font-bold text-slate-200 font-mono bg-blue-950/40 text-blue-400 px-2 py-0.5 rounded border border-blue-900/30 text-[11px]">
-                          {auc.streetPortalAvgSqm ? `${formatBRL(auc.streetPortalAvgSqm)}/m²` : 'Não informado'}
+                          {auc.streetPortalAvgSqm ? `${formatBRL(auc.streetPortalAvgSqm)}/m²` : '-'}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-1">
-                        <div className="bg-slate-950/40 border border-slate-800/60 p-2 rounded-lg text-center">
-                          <span className="text-[9px] text-slate-500 block font-medium uppercase tracking-wide">Média ZapImóveis</span>
+                        <a
+                          href={`https://www.zapimoveis.com.br/venda/imoveis/${(auc.state || 'rj').toLowerCase()}--${encodeURIComponent((auc.city || '').toLowerCase().replace(/\s+/g, '-'))}/${encodeURIComponent((auc.neighborhood || '').toLowerCase().replace(/\s+/g, '-'))}/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-slate-950/40 hover:bg-slate-900 border border-slate-800/60 hover:border-slate-700 p-2 rounded-lg text-center transition-colors group cursor-pointer"
+                          title="Conferir anúncios reais no ZapImóveis"
+                        >
+                          <div className="flex items-center justify-center space-x-1">
+                            <span className="text-[9px] text-slate-500 group-hover:text-slate-300 block font-medium uppercase tracking-wide">Média ZapImóveis</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-500 group-hover:text-indigo-400" />
+                          </div>
                           <span className="font-bold text-indigo-400 text-xs font-mono">
-                            {auc.portalZapAvg ? formatBRL(auc.portalZapAvg) : 'Não informado'}
+                            {auc.portalZapAvg ? formatBRL(auc.portalZapAvg) : '-'}
                           </span>
-                        </div>
-                        <div className="bg-slate-950/40 border border-slate-800/60 p-2 rounded-lg text-center">
-                          <span className="text-[9px] text-slate-500 block font-medium uppercase tracking-wide">Média QuintoAndar</span>
+                        </a>
+                        <a
+                          href={`https://www.quintoandar.com.br/comprar/imovel/${encodeURIComponent((auc.city || '').toLowerCase().replace(/\s+/g, '-'))}-${(auc.state || 'rj').toLowerCase()}/${encodeURIComponent((auc.neighborhood || '').toLowerCase().replace(/\s+/g, '-'))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-slate-950/40 hover:bg-slate-900 border border-slate-800/60 hover:border-slate-700 p-2 rounded-lg text-center transition-colors group cursor-pointer"
+                          title="Conferir anúncios reais no QuintoAndar"
+                        >
+                          <div className="flex items-center justify-center space-x-1">
+                            <span className="text-[9px] text-slate-500 group-hover:text-slate-300 block font-medium uppercase tracking-wide">Média QuintoAndar</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-500 group-hover:text-indigo-400" />
+                          </div>
                           <span className="font-bold text-indigo-400 text-xs font-mono">
-                            {auc.portalQuintoAndarAvg ? formatBRL(auc.portalQuintoAndarAvg) : 'Não informado'}
+                            {auc.portalQuintoAndarAvg ? formatBRL(auc.portalQuintoAndarAvg) : '-'}
                           </span>
-                        </div>
+                        </a>
                       </div>
                     </div>
 
@@ -965,8 +753,8 @@ export default function Dashboard({
                         </span>
                       )}
                       {auc.itbiUnitValueAvg && (
-                        <span className="text-[11px] bg-slate-850 text-slate-350 border border-slate-750 px-2 py-0.5 rounded">
-                          Valor local: {formatBRL(auc.itbiUnitValueAvg)}/m²
+                        <span className="text-[11px] bg-slate-850 text-slate-350 border border-slate-750 px-2 py-0.5 rounded" title="Média oficial por m² apurada no registro de transações municipais de ITBI">
+                          🏛️ ITBI Bairro (Oficial): {formatBRL(auc.itbiUnitValueAvg)}/m²
                         </span>
                       )}
                       {auc.aiAppreciationScore && (
@@ -980,11 +768,12 @@ export default function Dashboard({
                   {/* Actions Bar */}
                   <div className="bg-slate-950/45 border-t border-slate-800/80 px-5 py-3.5 flex justify-between items-center">
                     <button
-                      onClick={() => onSelectAuction(auc.id)}
-                      className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 cursor-pointer transition-colors"
+                      onClick={() => setSimulatingAuction(auc)}
+                      className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1.5 cursor-pointer transition-colors bg-indigo-950/40 hover:bg-indigo-900/50 px-3 py-1.5 rounded-lg border border-indigo-900/40"
                     >
-                      <span>Simulador & Análise AI</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Simular Viabilidade & Jurídico</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />
                     </button>
 
                     <div className="flex items-center space-x-2">
@@ -1033,6 +822,73 @@ export default function Dashboard({
           </AnimatePresence>
         </div>
       )}
+
+      {/* In-Tab Sliding Drawer for Simulation & Legal Viability */}
+      <AnimatePresence>
+        {simulatingAuction && (
+          <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSimulatingAuction(null)}
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs cursor-pointer"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-screen max-w-4xl bg-slate-900 border-l border-slate-800 shadow-2xl h-full overflow-y-auto z-10 p-6 space-y-6"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">
+                      Simulação de Viabilidade & Jurídico
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {simulatingAuction.title} • {simulatingAuction.neighborhood}, {simulatingAuction.city} - {simulatingAuction.state}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSimulatingAuction(null)}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <RealValueCalculator
+                key={simulatingAuction.id}
+                itbiStats={itbiStats}
+                prefillData={{
+                  id: simulatingAuction.id,
+                  title: simulatingAuction.title,
+                  description: simulatingAuction.description,
+                  auctionLink: simulatingAuction.auctionLink,
+                  state: simulatingAuction.state || selectedStateFilter || 'RJ',
+                  city: simulatingAuction.city,
+                  neighborhood: simulatingAuction.neighborhood,
+                  address: simulatingAuction.address,
+                  propertyType: simulatingAuction.propertyType,
+                  sizeSqm: simulatingAuction.sizeSqm,
+                  purchasePrice: simulatingAuction.auctionPrice,
+                  estimatedRepair: simulatingAuction.estimatedRepair,
+                  pendingDebts: simulatingAuction.pendingDebts,
+                  otherCosts: (simulatingAuction.itbiTax || 0) + (simulatingAuction.registryCost || 0) + (simulatingAuction.condoDebts || 0),
+                  itbiUnitValueAvg: simulatingAuction.itbiUnitValueAvg,
+                }}
+                onClose={() => setSimulatingAuction(null)}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

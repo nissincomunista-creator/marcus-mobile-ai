@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Calculator, 
   Search, 
@@ -66,22 +66,203 @@ export interface PortalScrapeResult {
   neighborhood?: string;
 }
 
-interface RealValueCalculatorProps {
-  itbiStats: ItbiStats[];
+export interface PrefilledCalculatorData {
+  id?: string;
+  title?: string;
+  description?: string;
+  auctionLink?: string;
+  state?: string;
+  city?: string;
+  neighborhood?: string;
+  address?: string;
+  propertyType?: string;
+  sizeSqm?: number;
+  purchasePrice?: number;
+  acquisitionRule?: 'leilao' | 'caixa';
+  estimatedRepair?: number;
+  pendingDebts?: number;
+  otherCosts?: number;
+  itbiUnitValueAvg?: number;
 }
 
-export default function RealValueCalculator({ itbiStats }: RealValueCalculatorProps) {
+function normalizeString(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function cleanNeighborhood(neigh: string | null | undefined): string {
+  if (!neigh) return '';
+  return normalizeString(neigh).replace(/[^a-z0-9]/g, '').trim();
+}
+
+function extractCoreStreetTokens(str: string | null | undefined): string[] {
+  if (!str) return [];
+  // Remove all parenthetical content like (antiga rua ...)
+  let s = str.replace(/\([^)]*\)/g, ' ');
+  // Normalize accents and lower
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // Remove punctuation
+  s = s.replace(/[^a-z0-9\s]/g, ' ');
+  const stopWords = new Set([
+    'rua', 'r', 'avenida', 'av', 'avn', 'estrada', 'estr', 'etr', 'travessa', 'trav', 'trv',
+    'praca', 'pra', 'prc', 'alameda', 'al', 'alm', 'largo', 'lgo', 'rodovia', 'rod',
+    'dr', 'dra', 'doutor', 'doutora', 'prof', 'profa', 'professor', 'professora',
+    'des', 'desembargador', 'cel', 'coronel', 'gen', 'general', 'alm', 'almirante',
+    'eng', 'engenheiro', 'maj', 'major', 'sgt', 'sargento', 'cap', 'capitao',
+    'sta', 'santa', 'sto', 'santo', 'sao', 'pres', 'presidente', 'gov', 'governador',
+    'sen', 'senador', 'dep', 'deputado', 'visc', 'visconde', 'brg', 'brigadeiro',
+    'bar', 'barao', 'mal', 'marechal', 'jorn', 'jornalista', 'ver', 'vereador',
+    'de', 'da', 'do', 'das', 'dos', 'e'
+  ]);
+  return s.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
+}
+
+function findBestStreetMatch(target: string | null | undefined, candidateList: any[]): any | null {
+  if (!target || !candidateList || candidateList.length === 0) return null;
+  const targetTokens = extractCoreStreetTokens(target);
+  if (targetTokens.length === 0) return null;
+
+  let bestMatch: any = null;
+  let bestScore = 0;
+
+  for (const cand of candidateList) {
+    const candStreet = typeof cand === 'string' ? cand : (cand?.street || '');
+    const candTokens = extractCoreStreetTokens(candStreet);
+    if (candTokens.length === 0) continue;
+
+    // Check token overlap
+    let matchCount = 0;
+    for (const t of targetTokens) {
+      if (candTokens.includes(t)) {
+        matchCount += 1.0;
+      } else if (candTokens.some(c => c.startsWith(t) || t.startsWith(c))) {
+        matchCount += 0.8;
+      }
+    }
+
+    const score = matchCount / Math.max(targetTokens.length, candTokens.length);
+    if (score > bestScore && score >= 0.5) {
+      bestScore = score;
+      bestMatch = cand;
+    }
+  }
+
+  return bestMatch;
+}
+
+function parseAddressComponents(rawAddress: string | null | undefined): {
+  street: string;
+  number: string;
+  complement: string;
+} {
+  if (!rawAddress) return { street: '', number: '', complement: '' };
+  let str = rawAddress.trim();
+  
+  // 1. Remove parenthetical notes like (Antiga Rua ...), (Lote ...), (Pavuna - RJ), etc.
+  str = str.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // 2. Extract number strictly
+  let num = '';
+  let street = str;
+  let complement = '';
+
+  // Look for ', N. 123', ', Nº 123', ', 123', ', S/N'
+  const matchWithComma = str.match(/^(.*?),\s*(?:n[º°.]?|numero)?\s*(\d+|s\/?n)\b\s*(?:,\s*(.*))?$/i);
+  if (matchWithComma) {
+    street = matchWithComma[1].trim();
+    num = matchWithComma[2].trim().toUpperCase();
+    complement = (matchWithComma[3] || '').trim();
+  } else {
+    // Look for ' N. 123' without comma
+    const matchWithoutComma = str.match(/^(.*?)\s+(?:n[º°.]?|numero)\s*(\d+|s\/?n)\b\s*(?:,\s*(.*))?$/i);
+    if (matchWithoutComma) {
+      street = matchWithoutComma[1].trim();
+      num = matchWithoutComma[2].trim().toUpperCase();
+      complement = (matchWithoutComma[3] || '').trim();
+    } else {
+      // Split by comma: if second element is just a number
+      const parts = str.split(',').map(p => p.trim());
+      if (parts.length > 1) {
+        const numOnlyMatch = parts[1].match(/^(\d+|s\/?n)$/i);
+        if (numOnlyMatch) {
+          street = parts[0];
+          num = numOnlyMatch[1].toUpperCase();
+          complement = parts.slice(2).join(', ');
+        }
+      }
+    }
+  }
+
+  // Clean trailing punctuation or apto from street if any leaked
+  street = street.replace(/,\s*$/, '').trim();
+
+  return { street, number: num, complement };
+}
+
+function cleanStreetName(street: string | null | undefined): string {
+  if (!street) return '';
+  let norm = normalizeString(street);
+  norm = norm.replace(/\s+/g, ' ');
+  
+  const prefixes: [RegExp, string][] = [
+    [/^(rua|r)\b\.?\s*/i, 'r '],
+    [/^(avenida|avn|av)\b\.?\s*/i, 'av '],
+    [/^(estrada|etr|estr)\b\.?\s*/i, 'est '],
+    [/^(travessa|trv|tra|trav)\b\.?\s*/i, 'trav '],
+    [/^(praca|pra|prc)\b\.?\s*/i, 'praca '],
+    [/^(beco|bec|bc)\b\.?\s*/i, 'beco '],
+    [/^(rodovia|rod)\b\.?\s*/i, 'rod '],
+    [/^(alameda|alm|al)\b\.?\s*/i, 'alameda '],
+    [/^(largo|lrg|lgo)\b\.?\s*/i, 'largo '],
+    [/^(caminho|cam)\b\.?\s*/i, 'caminho '],
+    [/^(servidao|srv)\b\.?\s*/i, 'servidao '],
+    [/^(ladeira|lad)\b\.?\s*/i, 'ladeira '],
+    [/^(boulevard|blv)\b\.?\s*/i, 'boulevard '],
+    [/^(vila|vil)\b\.?\s*/i, 'vila ']
+  ];
+  
+  for (const [regex, replacement] of prefixes) {
+    if (regex.test(norm)) {
+      return norm.replace(regex, replacement).trim();
+    }
+  }
+  return norm;
+}
+
+function getCoreStreetName(street: string | null | undefined): string {
+  if (!street) return '';
+  let norm = normalizeString(street);
+  norm = norm.replace(/\s+/g, ' ');
+  
+  const prefixRegex = /^(rua|r|avenida|avn|av|estrada|etr|estr|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i;
+  return norm.replace(prefixRegex, '').trim();
+}
+
+interface RealValueCalculatorProps {
+  itbiStats: ItbiStats[];
+  prefillData?: PrefilledCalculatorData | null;
+  onClose?: () => void;
+}
+
+export default function RealValueCalculator({ itbiStats, prefillData, onClose }: RealValueCalculatorProps) {
   // Navigation mode for results display
   const [activeTab, setActiveTab] = useState<'local' | 'online' | 'comparador' | 'matricula'>('local');
 
+  const initialAddr = useMemo(() => parseAddressComponents(prefillData?.address), [prefillData?.address]);
+
   // Unified Form Inputs (Shared between local and online modes)
-  const [selectedState, setSelectedState] = useState('RJ');
-  const [selectedCity, setSelectedCity] = useState('Rio de Janeiro');
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState('');
-  const [selectedStreet, setSelectedStreet] = useState('');
-  const [streetNumber, setStreetNumber] = useState(''); // Number & complement input
-  const [propertyType, setPropertyType] = useState('Apartamento');
-  const [sizeSqm, setSizeSqm] = useState(80);
+  const [selectedState, setSelectedState] = useState(prefillData?.state || 'RJ');
+  const [selectedCity, setSelectedCity] = useState(prefillData?.city || 'Rio de Janeiro');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState(prefillData?.neighborhood || '');
+  const [selectedStreet, setSelectedStreet] = useState(initialAddr.street || '');
+  const [streetNumber, setStreetNumber] = useState(
+    initialAddr.number ? (initialAddr.complement ? `${initialAddr.number}, ${initialAddr.complement}` : initialAddr.number) : (initialAddr.complement || '')
+  ); // Number & complement input
+  const [propertyType, setPropertyType] = useState(prefillData?.propertyType || 'Apartamento');
+  const [sizeSqm, setSizeSqm] = useState(prefillData?.sizeSqm || 80);
   const [bedrooms, setBedrooms] = useState(2);
   const [parkingSpaces, setParkingSpaces] = useState(1);
   const [customValue, setCustomValue] = useState<number | ''>('');
@@ -170,6 +351,85 @@ export default function RealValueCalculator({ itbiStats }: RealValueCalculatorPr
   const [isExecutingFullAnalysis, setIsExecutingFullAnalysis] = useState<boolean>(false);
   const [hoveredScenario, setHoveredScenario] = useState<number | null>(null);
   const [isExecutiveReportOpen, setIsExecutiveReportOpen] = useState<boolean>(false);
+
+  // Extract unique neighborhoods for selected state and city
+  const neighborhoodsList = useMemo(() => {
+    const list = itbiStats
+      .filter(stat => 
+        (stat.state || 'SP').toUpperCase() === selectedState.toUpperCase() &&
+        (stat.city || 'São Paulo').toLowerCase() === selectedCity.toLowerCase()
+      )
+      .map(stat => stat.neighborhood);
+    return Array.from(new Set(list)).sort();
+  }, [itbiStats, selectedState, selectedCity]);
+
+  const prefillInitializedRef = useRef<boolean>(false);
+  const hasAutoExecutedAnalysisRef = useRef<boolean>(false);
+
+  // Sync prefillData when provided from external property cards (Run ONCE on initialization)
+  useEffect(() => {
+    if (!prefillData || prefillInitializedRef.current) return;
+    prefillInitializedRef.current = true;
+
+    if (prefillData.state) setSelectedState(prefillData.state);
+    if (prefillData.city) setSelectedCity(prefillData.city);
+    if (prefillData.neighborhood) {
+      let targetNeigh = prefillData.neighborhood;
+      if (neighborhoodsList && neighborhoodsList.length > 0) {
+        const match = neighborhoodsList.find(n => normalizeString(n) === normalizeString(targetNeigh)) ||
+                      neighborhoodsList.find(n => cleanNeighborhood(n) === cleanNeighborhood(targetNeigh));
+        if (match) targetNeigh = match;
+      }
+      setSelectedNeighborhood(targetNeigh);
+      setNeighborhoodInput(targetNeigh);
+    }
+    if (prefillData.address) {
+      const parsed = parseAddressComponents(prefillData.address);
+      const cleanSt = parsed.street;
+      setSelectedStreet(cleanSt);
+      setStreetInput(cleanSt);
+      // Feed ONLY the numeric street number
+      setStreetNumber(parsed.number || '');
+    }
+    if (prefillData.propertyType) setPropertyType(prefillData.propertyType);
+    if (prefillData.sizeSqm) setSizeSqm(prefillData.sizeSqm);
+    if (prefillData.purchasePrice) {
+      setArrematePrice(prefillData.purchasePrice);
+      setArremateInputStr(prefillData.purchasePrice.toLocaleString('pt-BR'));
+    }
+    if (prefillData.acquisitionRule) setAcquisitionMode(prefillData.acquisitionRule);
+    if (prefillData.estimatedRepair !== undefined) setReformCostInput(prefillData.estimatedRepair);
+    if (prefillData.pendingDebts !== undefined) setIptuDebtInput(prefillData.pendingDebts);
+
+    // Matrícula: ONLY if actually present in description/title, never invent dummy text!
+    const descToScan = (prefillData.description || '') + ' ' + (prefillData.title || '');
+    const mMatch = descToScan.match(/matr[ií]cula\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i) ||
+                   descToScan.match(/rgi\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
+    if (mMatch && mMatch[1]) {
+      setMatriculaNumber(`Matrícula nº ${mMatch[1]}`);
+    } else {
+      setMatriculaNumber('');
+    }
+    setRegistryOffice(`Ofício de Registro de Imóveis de ${prefillData.city || 'Capital'}/${prefillData.state || 'UF'}`);
+    setMatriculaText('');
+    setUploadedFileName('');
+    setMatriculaAuditResult(null);
+
+    // Edital: if property description exists, place real description in editalText
+    if (prefillData.description) {
+      setEditalText(prefillData.description);
+      setLeiloeiroInput('Caixa Econômica Federal');
+    }
+
+    // Auto-trigger "Executar Análise Completa" ONCE on modal open
+    if (!hasAutoExecutedAnalysisRef.current) {
+      hasAutoExecutedAnalysisRef.current = true;
+      const timer = setTimeout(() => {
+        handleExecuteFullAnalysis();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [prefillData, neighborhoodsList]);
 
   // Unified report generator combining real Matrícula and Edital audit data
   const buildUnifiedReport = (mat: MatriculaAuditData | null, edit: EditalAuditData | null): MatriculaAnalysisReport | null => {
@@ -541,54 +801,6 @@ export default function RealValueCalculator({ itbiStats }: RealValueCalculatorPr
   const [aiReport, setAiReport] = useState('');
   const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
 
-  // Normalized search helper
-  const normalizeString = (str: string) => {
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-  };
-
-  const cleanStreetName = (street: string | null | undefined): string => {
-    if (!street) return '';
-    let norm = normalizeString(street);
-    norm = norm.replace(/\s+/g, ' ');
-    
-    const prefixes: [RegExp, string][] = [
-      [/^(rua|r)\b\.?\s*/i, 'r '],
-      [/^(avenida|avn|av)\b\.?\s*/i, 'av '],
-      [/^(estrada|etr|estr)\b\.?\s*/i, 'est '],
-      [/^(travessa|trv|tra|trav)\b\.?\s*/i, 'trav '],
-      [/^(praca|pra|prc)\b\.?\s*/i, 'praca '],
-      [/^(beco|bec|bc)\b\.?\s*/i, 'beco '],
-      [/^(rodovia|rod)\b\.?\s*/i, 'rod '],
-      [/^(alameda|alm|al)\b\.?\s*/i, 'alameda '],
-      [/^(largo|lrg|lgo)\b\.?\s*/i, 'largo '],
-      [/^(caminho|cam)\b\.?\s*/i, 'caminho '],
-      [/^(servidao|srv)\b\.?\s*/i, 'servidao '],
-      [/^(ladeira|lad)\b\.?\s*/i, 'ladeira '],
-      [/^(boulevard|blv)\b\.?\s*/i, 'boulevard '],
-      [/^(vila|vil)\b\.?\s*/i, 'vila ']
-    ];
-    
-    for (const [regex, replacement] of prefixes) {
-      if (regex.test(norm)) {
-        return norm.replace(regex, replacement).trim();
-      }
-    }
-    return norm;
-  };
-
-  const getCoreStreetName = (street: string | null | undefined): string => {
-    if (!street) return '';
-    let norm = normalizeString(street);
-    norm = norm.replace(/\s+/g, ' ');
-    
-    const prefixRegex = /^(rua|r|avenida|avn|av|estrada|etr|estr|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i;
-    return norm.replace(prefixRegex, '').trim();
-  };
-
   // Sync neighborhood input text
   useEffect(() => {
     setNeighborhoodInput(selectedNeighborhood);
@@ -598,17 +810,6 @@ export default function RealValueCalculator({ itbiStats }: RealValueCalculatorPr
   useEffect(() => {
     setStreetInput(selectedStreet);
   }, [selectedStreet]);
-
-  // Extract unique neighborhoods for selected state and city
-  const neighborhoodsList = useMemo(() => {
-    const list = itbiStats
-      .filter(stat => 
-        (stat.state || 'SP').toUpperCase() === selectedState.toUpperCase() &&
-        (stat.city || 'São Paulo').toLowerCase() === selectedCity.toLowerCase()
-      )
-      .map(stat => stat.neighborhood);
-    return Array.from(new Set(list)).sort();
-  }, [itbiStats, selectedState, selectedCity]);
 
   // Load streets when neighborhood changes
   useEffect(() => {
@@ -625,6 +826,14 @@ export default function RealValueCalculator({ itbiStats }: RealValueCalculatorPr
         if (res.ok) {
           const data = await res.json();
           setStreetsList(data);
+          // Auto-match and select the closest official ITBI street from suggestion list
+          if (streetInput && Array.isArray(data) && data.length > 0) {
+            const matched = findBestStreetMatch(streetInput, data);
+            if (matched && matched.street) {
+              setSelectedStreet(matched.street);
+              setStreetInput(matched.street);
+            }
+          }
         }
       } catch (e) {
         console.error('Error fetching streets:', e);
@@ -1157,7 +1366,7 @@ export default function RealValueCalculator({ itbiStats }: RealValueCalculatorPr
   // Market Tiers for 1-to-1 Comparison with Auction Acquisition
   const marketTiers = useMemo(() => {
     const portalSqm = portalResults?.close?.avgSqm || (averageAskingValue > 0 ? Math.round(averageAskingValue / sizeSqm) : Math.round(calculatedStats.avgSqm * 1.15));
-    const streetSqm = exactStreetStats?.avgSqm || calculatedStats.avgSqm;
+    const streetSqm = exactStreetStats?.avgSqm || null;
     const buildingSqm = exactBuildingStats?.avgSqm || null;
     const surroundingSqm = nearbyStats.avgSqm;
     const neighborhoodSqm = calculatedStats.avgSqm;
@@ -1178,8 +1387,8 @@ export default function RealValueCalculator({ itbiStats }: RealValueCalculatorPr
         icon: MapPin,
         color: 'indigo',
         sqm: streetSqm,
-        samples: exactStreetStats ? `${exactStreetStats.count} tx` : 'Média aproximada',
-        active: true
+        samples: exactStreetStats ? `${exactStreetStats.count} tx` : 'Sem transações na rua',
+        active: !!streetSqm
       },
       {
         id: 'surrounding',

@@ -17,11 +17,18 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Marcus Assessoria" />
-  <script type="module" crossorigin src="/assets/index-kGfnGUM7.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-vXpbFW29.css">
+  <script type="module" crossorigin src="/assets/index-CO2cUcdm.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Bb0KDMPd.css">
 </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        });
+      }
+    </script>
   </body>
 </html>
 
