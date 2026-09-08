@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Calculator, 
   Search, 
@@ -37,11 +37,13 @@ import {
   Upload,
   FileUp,
   Paperclip,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExecutiveReportModal, { ExecutiveReportData } from './ExecutiveReportModal.tsx';
 import { ItbiTransaction, SavedMarketAnalysis, PropertyType, MatriculaAnalysisReport, MatriculaGravame, MatriculaAuditData, EditalAuditData } from '../types.ts';
+import { computeBidirectionalBenchmarks, BidirectionalBenchmarkResult } from '../utils/bidirectionalBenchmark.ts';
 
 interface ItbiStats {
   state: string;
@@ -67,34 +69,287 @@ export interface PortalScrapeResult {
 }
 
 export interface PrefilledCalculatorData {
+  id?: string;
+  title?: string;
+  description?: string;
+  auctionLink?: string;
   state?: string;
   city?: string;
   neighborhood?: string;
   address?: string;
   propertyType?: string;
   sizeSqm?: number;
+  bedrooms?: number;
+  parkingSpaces?: number;
   purchasePrice?: number;
   acquisitionRule?: 'leilao' | 'caixa';
   estimatedRepair?: number;
   pendingDebts?: number;
+  otherCosts?: number;
+  itbiUnitValueAvg?: number;
+  evaluationPrice?: number;
+  estimatedValue?: number;
+  portalZapAvg?: number;
+  portalQuintoAndarAvg?: number;
+}
+
+function normalizeString(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function cleanNeighborhood(neigh: string | null | undefined): string {
+  if (!neigh) return '';
+  return normalizeString(neigh).replace(/[^a-z0-9]/g, '').trim();
+}
+
+function extractCoreStreetTokens(str: string | null | undefined): string[] {
+  if (!str) return [];
+  // Remove all parenthetical content like (antiga rua ...)
+  let s = str.replace(/\([^)]*\)/g, ' ');
+  // Normalize accents and lower
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // Remove punctuation
+  s = s.replace(/[^a-z0-9\s]/g, ' ');
+  const stopWords = new Set([
+    'rua', 'r', 'avenida', 'av', 'avn', 'estrada', 'estr', 'etr', 'travessa', 'trav', 'trv',
+    'praca', 'pra', 'prc', 'alameda', 'al', 'alm', 'largo', 'lgo', 'rodovia', 'rod',
+    'dr', 'dra', 'doutor', 'doutora', 'prof', 'profa', 'professor', 'professora',
+    'des', 'desembargador', 'cel', 'coronel', 'gen', 'general', 'alm', 'almirante',
+    'eng', 'engenheiro', 'maj', 'major', 'sgt', 'sargento', 'cap', 'capitao',
+    'sta', 'santa', 'sto', 'santo', 'sao', 'pres', 'presidente', 'gov', 'governador',
+    'sen', 'senador', 'dep', 'deputado', 'visc', 'visconde', 'brg', 'brigadeiro',
+    'bar', 'barao', 'mal', 'marechal', 'jorn', 'jornalista', 'ver', 'vereador',
+    'de', 'da', 'do', 'das', 'dos', 'e'
+  ]);
+  return s.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
+}
+
+function stringSimilarity(s1: string, s2: string): number {
+  if (s1 === s2) return 1.0;
+  if (!s1 || !s2) return 0;
+  const len1 = s1.length;
+  const len2 = s2.length;
+  if (len1 === 0 || len2 === 0) return 0;
+
+  if (len1 < 3 || len2 < 3) {
+    let matches = 0;
+    const minLen = Math.min(len1, len2);
+    for (let i = 0; i < minLen; i++) {
+      if (s1[i] === s2[i]) matches++;
+    }
+    return matches / Math.max(len1, len2);
+  }
+
+  const bigrams1 = new Map<string, number>();
+  for (let i = 0; i < len1 - 1; i++) {
+    const bg = s1.slice(i, i + 2);
+    bigrams1.set(bg, (bigrams1.get(bg) || 0) + 1);
+  }
+
+  let intersection = 0;
+  for (let i = 0; i < len2 - 1; i++) {
+    const bg = s2.slice(i, i + 2);
+    const count = bigrams1.get(bg) || 0;
+    if (count > 0) {
+      bigrams1.set(bg, count - 1);
+      intersection++;
+    }
+  }
+
+  return (2.0 * intersection) / (len1 - 1 + len2 - 1);
+}
+
+function phoneticStreet(street: string | null | undefined): string {
+  if (!street) return '';
+  let s = normalizeString(street);
+  s = s.split(',')[0].split('-')[0].replace(/\s+\d+.*$/, '').trim();
+  s = s.replace(/^(rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i, '');
+  s = s.replace(/^(engenheiro|eng|doutor|dr|dra|professor|prof|profa|general|gen|gal|coronel|cel|major|maj|capitao|cap|tenente|ten|almirante|alm|brigadeiro|brg|governador|gov|senador|sen|deputado|dep|padre|pe|pastor|bispo|dom|dona|d|sao|santa|sto|sta)\b\.?\s*/gi, '');
+  s = s.replace(/ph/g, 'f').replace(/th/g, 't').replace(/y/g, 'i').replace(/w/g, 'v').replace(/z/g, 's').replace(/ck/g, 'k').replace(/ç/g, 's');
+  s = s.replace(/([a-z])\1+/g, (m, c) => c);
+  s = s.replace(/[^a-z0-9]/g, '');
+  return s;
+}
+
+function findBestStreetMatch(target: string | null | undefined, candidateList: any[]): any | null {
+  if (!target || !candidateList || candidateList.length === 0) return null;
+  const targetPhon = phoneticStreet(target);
+  
+  // 1. Direct phonetic exact match
+  if (targetPhon) {
+    for (const cand of candidateList) {
+      const candStreet = typeof cand === 'string' ? cand : (cand?.street || '');
+      if (phoneticStreet(candStreet) === targetPhon) {
+        return cand;
+      }
+    }
+  }
+
+  const targetTokens = extractCoreStreetTokens(target);
+  if (targetTokens.length === 0) return null;
+
+  const targetNorm = normalizeString(target).replace(/^(rua|r|avenida|av|estrada|est|travessa|trav|praca|alameda)\b\.?\s*/i, '').trim();
+
+  let bestMatch: any = null;
+  let bestScore = 0;
+
+  for (const cand of candidateList) {
+    const candStreet = typeof cand === 'string' ? cand : (cand?.street || '');
+    const candTokens = extractCoreStreetTokens(candStreet);
+    if (candTokens.length === 0) continue;
+
+    const candNorm = normalizeString(candStreet).replace(/^(rua|r|avenida|av|estrada|est|travessa|trav|praca|alameda)\b\.?\s*/i, '').trim();
+
+    // 1. Overall string similarity
+    const fullSim = stringSimilarity(targetNorm, candNorm);
+
+    // 2. Token overlap & fuzzy token similarity
+    let matchCount = 0;
+    for (const t of targetTokens) {
+      if (candTokens.includes(t)) {
+        matchCount += 1.0;
+      } else {
+        let maxTokSim = 0;
+        for (const c of candTokens) {
+          if (c.startsWith(t) || t.startsWith(c)) {
+            maxTokSim = Math.max(maxTokSim, 0.85);
+          } else {
+            const sim = stringSimilarity(t, c);
+            if (sim > maxTokSim) maxTokSim = sim;
+          }
+        }
+        if (maxTokSim >= 0.65) {
+          matchCount += maxTokSim;
+        }
+      }
+    }
+
+    const tokenScore = matchCount / Math.max(targetTokens.length, candTokens.length);
+    const combinedScore = Math.max(fullSim, tokenScore * 0.9);
+
+    // Require high confidence threshold (0.68) so that unrelated streets are never mistakenly matched
+    if (combinedScore > bestScore && combinedScore >= 0.68) {
+      bestScore = combinedScore;
+      bestMatch = cand;
+    }
+  }
+
+  return bestMatch;
+}
+
+function parseAddressComponents(rawAddress: string | null | undefined): {
+  street: string;
+  number: string;
+  complement: string;
+} {
+  if (!rawAddress) return { street: '', number: '', complement: '' };
+  let str = rawAddress.trim();
+  
+  // 1. Remove parenthetical notes like (Antiga Rua ...), (Lote ...), (Pavuna - RJ), etc.
+  str = str.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // 2. Extract number strictly
+  let num = '';
+  let street = str;
+  let complement = '';
+
+  // Look for ', N. 123', ', Nº 123', ', 123', ', 425D', ', S/N'
+  const matchWithComma = str.match(/^(.*?),\s*(?:n[º°.]?|numero)?\s*(\d+[a-zA-Z]?|s\/?n)\b\s*(?:,\s*(.*))?$/i);
+  if (matchWithComma) {
+    street = matchWithComma[1].trim();
+    num = matchWithComma[2].trim().toUpperCase();
+    complement = (matchWithComma[3] || '').trim();
+  } else {
+    // Look for ' N. 123' without comma
+    const matchWithoutComma = str.match(/^(.*?)\s+(?:n[º°.]?|numero)\s*(\d+[a-zA-Z]?|s\/?n)\b\s*(?:,\s*(.*))?$/i);
+    if (matchWithoutComma) {
+      street = matchWithoutComma[1].trim();
+      num = matchWithoutComma[2].trim().toUpperCase();
+      complement = (matchWithoutComma[3] || '').trim();
+    } else {
+      // Split by comma: if second element is just a number
+      const parts = str.split(',').map(p => p.trim());
+      if (parts.length > 1) {
+        const numOnlyMatch = parts[1].match(/^(\d+[a-zA-Z]?|s\/?n)$/i);
+        if (numOnlyMatch) {
+          street = parts[0];
+          num = numOnlyMatch[1].toUpperCase();
+          complement = parts.slice(2).join(', ');
+        }
+      }
+    }
+  }
+
+  // Clean trailing punctuation, ', N.' or apto from street if any leaked
+  street = street.replace(/,\s*(?:n[º°.]?|numero)?\s*$/i, '').replace(/,\s*$/, '').trim();
+
+  return { street, number: num, complement };
+}
+
+function cleanStreetName(street: string | null | undefined): string {
+  if (!street) return '';
+  let norm = normalizeString(street);
+  norm = norm.replace(/\s+/g, ' ');
+  
+  const prefixes: [RegExp, string][] = [
+    [/^(rua|r)\b\.?\s*/i, 'r '],
+    [/^(avenida|avn|av)\b\.?\s*/i, 'av '],
+    [/^(estrada|etr|estr)\b\.?\s*/i, 'est '],
+    [/^(travessa|trv|tra|trav)\b\.?\s*/i, 'trav '],
+    [/^(praca|pra|prc)\b\.?\s*/i, 'praca '],
+    [/^(beco|bec|bc)\b\.?\s*/i, 'beco '],
+    [/^(rodovia|rod)\b\.?\s*/i, 'rod '],
+    [/^(alameda|alm|al)\b\.?\s*/i, 'alameda '],
+    [/^(largo|lrg|lgo)\b\.?\s*/i, 'largo '],
+    [/^(caminho|cam)\b\.?\s*/i, 'caminho '],
+    [/^(servidao|srv)\b\.?\s*/i, 'servidao '],
+    [/^(ladeira|lad)\b\.?\s*/i, 'ladeira '],
+    [/^(boulevard|blv)\b\.?\s*/i, 'boulevard '],
+    [/^(vila|vil)\b\.?\s*/i, 'vila ']
+  ];
+  
+  for (const [regex, replacement] of prefixes) {
+    if (regex.test(norm)) {
+      return norm.replace(regex, replacement).trim();
+    }
+  }
+  return norm;
+}
+
+function getCoreStreetName(street: string | null | undefined): string {
+  if (!street) return '';
+  let norm = normalizeString(street);
+  norm = norm.replace(/\s+/g, ' ');
+  
+  const prefixRegex = /^(rua|r|avenida|avn|av|estrada|etr|estr|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i;
+  return norm.replace(prefixRegex, '').trim();
 }
 
 interface RealValueCalculatorProps {
-  itbiStats: ItbiStats[];
+  itbiStats?: ItbiStats[];
   prefillData?: PrefilledCalculatorData | null;
+  onUpdateProperty?: (updates: Partial<any>) => Promise<void> | void;
   onClose?: () => void;
 }
 
-export default function RealValueCalculator({ itbiStats, prefillData, onClose }: RealValueCalculatorProps) {
+export default function RealValueCalculator({ itbiStats = [], prefillData, onUpdateProperty, onClose }: RealValueCalculatorProps) {
   // Navigation mode for results display
-  const [activeTab, setActiveTab] = useState<'local' | 'online' | 'comparador' | 'matricula'>('local');
+  const [activeTab, setActiveTab] = useState<'local' | 'online' | 'matricula'>('local');
+
+  const initialAddr = useMemo(() => parseAddressComponents(prefillData?.address), [prefillData?.address]);
 
   // Unified Form Inputs (Shared between local and online modes)
   const [selectedState, setSelectedState] = useState(prefillData?.state || 'RJ');
   const [selectedCity, setSelectedCity] = useState(prefillData?.city || 'Rio de Janeiro');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState(prefillData?.neighborhood || '');
-  const [selectedStreet, setSelectedStreet] = useState(prefillData?.address || '');
-  const [streetNumber, setStreetNumber] = useState(''); // Number & complement input
+  const [selectedStreet, setSelectedStreet] = useState(initialAddr.street || '');
+  const [streetNumber, setStreetNumber] = useState(
+    initialAddr.number ? (initialAddr.complement ? `${initialAddr.number}, ${initialAddr.complement}` : initialAddr.number) : (initialAddr.complement || '')
+  ); // Number & complement input
   const [propertyType, setPropertyType] = useState(prefillData?.propertyType || 'Apartamento');
   const [sizeSqm, setSizeSqm] = useState(prefillData?.sizeSqm || 80);
   const [bedrooms, setBedrooms] = useState(2);
@@ -127,8 +382,8 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
   const [portalError, setPortalError] = useState('');
   const [portalResults, setPortalResults] = useState<any | null>(null);
 
-  // Proximity radius and collapsible panel states
-  const [radiusKm, setRadiusKm] = useState<number>(1);
+  // Proximity radius (Strict 500m / 0.5km circular radius) and collapsible panel states
+  const [radiusKm, setRadiusKm] = useState<number>(0.5);
   const [isLaudoMinimized, setIsLaudoMinimized] = useState<boolean>(false);
   const [isOnlineLaudoMinimized, setIsOnlineLaudoMinimized] = useState<boolean>(false);
 
@@ -161,11 +416,13 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     detailedReport: string;
   } | null>(null);
 
-  // Sample and Area Size Filter Mode (Similar ±25% vs All)
+  // Sample and Area Size Filter Mode (Similar ±33% vs All)
+  const [manualBuildingYear, setManualBuildingYear] = useState<number | null>(null);
   const [txSizeFilter, setTxSizeFilter] = useState<'similar' | 'all'>('similar');
 
-  // Acquisition Mode & Costs State (Leilão Judicial vs Venda Direta Caixa)
-  const [acquisitionMode, setAcquisitionMode] = useState<'leilao' | 'caixa'>('leilao');
+  // Acquisition Mode & Costs State (Leilão Judicial vs Leilão Extrajudicial vs Venda Direta Caixa)
+  const [acquisitionMode, setAcquisitionMode] = useState<'judicial' | 'extrajudicial' | 'caixa'>('judicial');
+  const [paymentMethod, setPaymentMethod] = useState<'a_vista' | 'financiado'>('a_vista');
   const [arrematePrice, setArrematePrice] = useState<number>(0);
   const [arremateInputStr, setArremateInputStr] = useState<string>('');
   const [auctioneerFeeInput, setAuctioneerFeeInput] = useState<number | null>(null);
@@ -186,30 +443,110 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
   const [hoveredScenario, setHoveredScenario] = useState<number | null>(null);
   const [isExecutiveReportOpen, setIsExecutiveReportOpen] = useState<boolean>(false);
 
-  // Sync prefillData when provided from external property cards
+  // Extract unique neighborhoods for selected state and city
+  const neighborhoodsList = useMemo(() => {
+    const list = itbiStats
+      .filter(stat => 
+        (stat.state || 'SP').toUpperCase() === selectedState.toUpperCase() &&
+        (stat.city || 'São Paulo').toLowerCase() === selectedCity.toLowerCase()
+      )
+      .map(stat => stat.neighborhood);
+    return Array.from(new Set(list)).sort();
+  }, [itbiStats, selectedState, selectedCity]);
+
+  const prefillInitializedRef = useRef<boolean>(false);
+  const hasAutoExecutedAnalysisRef = useRef<boolean>(false);
+
+  // Sync prefillData when provided from external property cards (Run ONCE on initialization)
   useEffect(() => {
-    if (prefillData) {
-      if (prefillData.state) setSelectedState(prefillData.state);
-      if (prefillData.city) setSelectedCity(prefillData.city);
-      if (prefillData.neighborhood) {
-        setSelectedNeighborhood(prefillData.neighborhood);
-        setNeighborhoodInput(prefillData.neighborhood);
+    if (!prefillData || prefillInitializedRef.current) return;
+    prefillInitializedRef.current = true;
+
+    if (prefillData.state) setSelectedState(prefillData.state);
+    if (prefillData.city) setSelectedCity(prefillData.city);
+    if (prefillData.neighborhood) {
+      let targetNeigh = prefillData.neighborhood;
+      if (neighborhoodsList && neighborhoodsList.length > 0) {
+        const match = neighborhoodsList.find(n => normalizeString(n) === normalizeString(targetNeigh)) ||
+                      neighborhoodsList.find(n => cleanNeighborhood(n) === cleanNeighborhood(targetNeigh));
+        if (match) targetNeigh = match;
       }
-      if (prefillData.address) {
-        setSelectedStreet(prefillData.address);
-        setStreetInput(prefillData.address);
-      }
-      if (prefillData.propertyType) setPropertyType(prefillData.propertyType);
-      if (prefillData.sizeSqm) setSizeSqm(prefillData.sizeSqm);
-      if (prefillData.purchasePrice) {
-        setArrematePrice(prefillData.purchasePrice);
-        setArremateInputStr(prefillData.purchasePrice.toLocaleString('pt-BR'));
-      }
-      if (prefillData.acquisitionRule) setAcquisitionMode(prefillData.acquisitionRule);
-      if (prefillData.estimatedRepair !== undefined) setReformCostInput(prefillData.estimatedRepair);
-      if (prefillData.pendingDebts !== undefined) setIptuDebtInput(prefillData.pendingDebts);
+      setSelectedNeighborhood(targetNeigh);
+      setNeighborhoodInput(targetNeigh);
     }
-  }, [prefillData]);
+    if (prefillData.address) {
+      const parsed = parseAddressComponents(prefillData.address);
+      const cleanSt = parsed.street;
+      setSelectedStreet(cleanSt);
+      setStreetInput(cleanSt);
+      // Feed ONLY the numeric street number
+      setStreetNumber(parsed.number || '');
+    }
+    if (prefillData.propertyType) setPropertyType(prefillData.propertyType);
+    if (prefillData.sizeSqm) setSizeSqm(prefillData.sizeSqm);
+    if (prefillData.bedrooms !== undefined && prefillData.bedrooms > 0) setBedrooms(prefillData.bedrooms);
+    if (prefillData.parkingSpaces !== undefined) setParkingSpaces(prefillData.parkingSpaces);
+    if (prefillData.purchasePrice) {
+      setArrematePrice(prefillData.purchasePrice);
+      setArremateInputStr(prefillData.purchasePrice.toLocaleString('pt-BR'));
+    }
+    // Acquisition mode: Caixa properties default to 'caixa' (Venda Direta / Leilão Caixa)
+    const isCaixa = prefillData.acquisitionRule === 'caixa' || 
+                    prefillData.auctionLink?.includes('caixa.gov.br') || 
+                    (prefillData.id && prefillData.id.includes('caixa'));
+    if (isCaixa) {
+      setAcquisitionMode('caixa');
+    } else if (prefillData.acquisitionRule) {
+      setAcquisitionMode(prefillData.acquisitionRule);
+    }
+
+    // Custas de Desocupação / Judiciais: Para imóveis Caixa SEMPRE R$ 6.000 (padrão honorários e imissão de posse)
+    if (isCaixa) {
+      setLegalCostInput(6000);
+    } else if (prefillData.otherCosts) {
+      setLegalCostInput(prefillData.otherCosts);
+    } else {
+      setLegalCostInput(0);
+    }
+
+    // Reforma: SEMPRE 5% do valor do arremate, calculado internamente
+    const purchaseVal = prefillData.purchasePrice || 0;
+    setReformCostInput(Math.round(purchaseVal * 0.05));
+
+    // Condomínio em Atraso: Regra expressa da Caixa: arrematante responde por até 10% do valor de avaliação
+    const evalVal = prefillData.evaluationPrice || prefillData.estimatedValue || (purchaseVal * 1.5);
+    const condoVal = isCaixa 
+      ? (prefillData.pendingDebts !== undefined && prefillData.pendingDebts > 0 ? prefillData.pendingDebts : Math.round(evalVal * 0.10))
+      : (prefillData.pendingDebts || 0);
+    setCondoDebtInput(condoVal);
+
+    // Matrícula: ONLY if actually present in description/title, never invent dummy text!
+    const descToScan = (prefillData.description || '') + ' ' + (prefillData.title || '');
+    const mMatch = descToScan.match(/matr[ií]cula\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i) ||
+                   descToScan.match(/rgi\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
+    if (mMatch && mMatch[1]) {
+      setMatriculaNumber(`Matrícula nº ${mMatch[1]}`);
+    } else {
+      setMatriculaNumber('');
+    }
+    setRegistryOffice(`Ofício de Registro de Imóveis de ${prefillData.city || 'Capital'}/${prefillData.state || 'UF'}`);
+    setMatriculaText('');
+    setUploadedFileName('');
+    setMatriculaAuditResult(null);
+
+    // Edital: if property description exists, place real description in editalText
+    if (prefillData.description) {
+      setEditalText(prefillData.description);
+      setLeiloeiroInput('Caixa Econômica Federal');
+    }
+
+    // Auto-fetch authentic Caixa Matrícula & Edital PDF if Caixa property
+    if (prefillData.auctionLink?.includes('caixa.gov.br') || prefillData.id?.includes('caixa')) {
+      setTimeout(() => {
+        handleFetchCaixaDocs();
+      }, 1200);
+    }
+  }, [prefillData, neighborhoodsList]);
 
   // Unified report generator combining real Matrícula and Edital audit data
   const buildUnifiedReport = (mat: MatriculaAuditData | null, edit: EditalAuditData | null): MatriculaAnalysisReport | null => {
@@ -246,10 +583,19 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     };
   };
 
-  // Real Matrícula Analyzer (Deterministic analysis on real document text)
+  // Real Matrícula Analyzer (Deterministic analysis on real document text + Caixa description + Edital)
   const executeRealMatriculaAnalysis = (rawText: string, fileName?: string) => {
     const text = rawText.trim();
-    if (!text && !matriculaNumber.trim() && !fileName) {
+    const combinedCorpus = [
+      text,
+      matriculaText,
+      editalText,
+      prefillData?.description || '',
+      prefillData?.title || '',
+      fileName || ''
+    ].filter(Boolean).join('\n');
+
+    if (!combinedCorpus.trim() && !matriculaNumber.trim() && !fileName) {
       setDueDiligenceNotice('Nenhum arquivo ou texto de matrícula informado. Anexe o PDF ou preencha o número da matrícula.');
       return;
     }
@@ -260,7 +606,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     setTimeout(() => {
       let matNum = matriculaNumber.trim();
       if (!matNum) {
-        const matMatch = (text + ' ' + (fileName || '')).match(/matr[íi]cula\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
+        const matMatch = combinedCorpus.match(/matr[íi]cula\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
         if (matMatch && matMatch[1]) {
           matNum = `Matrícula nº ${matMatch[1]} / Livro 2`;
         } else {
@@ -271,7 +617,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
       let regOffice = registryOffice.trim();
       if (!regOffice) {
-        const cartMatch = text.match(/([0-9ºª\s\w]+Ofici[ao]l?\s+de\s+Registro\s+de\s+Im[oó]veis[\w\s\-\/\.]*)/i);
+        const cartMatch = combinedCorpus.match(/([0-9ºª\s\w]+Ofici[ao]l?\s+de\s+Registro\s+de\s+Im[oó]veis[\w\s\-\/\.]*)/i);
         if (cartMatch && cartMatch[1]) {
           regOffice = cartMatch[1].trim();
         } else {
@@ -281,29 +627,46 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
       const gravamesFound: MatriculaGravame[] = [];
       const findings: string[] = [];
-      const lower = text.toLowerCase();
+      const lower = combinedCorpus.toLowerCase();
 
-      // Penhoras & Execuções
-      if (lower.includes('penhora') || lower.includes('constri') || lower.includes('execu')) {
+      // Penhoras & Execuções & Gravames Registrados
+      if (lower.includes('penhora') || lower.includes('gravame') || lower.includes('constri') || lower.includes('execu') || lower.includes('regularizacao por conta do adquirente') || lower.includes('regularização por conta do adquirente')) {
         const isFiscal = lower.includes('fiscal') || lower.includes('fazenda') || lower.includes('tribut');
         const isTrab = lower.includes('trabalh') || lower.includes('trt');
         const isCondo = lower.includes('condom');
+        const isCaixaNotice = lower.includes('regularizacao por conta do adquirente') || lower.includes('regularização por conta do adquirente');
+
+        // Extract specific R-XX / Av-XX if referenced (e.g. "R-19", "Av-5")
+        const rMatch = combinedCorpus.match(/(?:penhora\s+gravada\s+(?:no\s+)?|gravame\s+(?:no\s+)?|(?:constri[çc][ãa]o\s+(?:no\s+)?))?([RA]v?[-.]?\s*\d+)/i);
+        const specificCode = rMatch && rMatch[1] ? rMatch[1].replace(/\s+/g, '').toUpperCase() : 'Av.Penhora';
 
         gravamesFound.push({
-          code: 'Av.Penhora',
-          type: isFiscal ? 'Penhora em Execução Fiscal' : isTrab ? 'Penhora em Ação Trabalhista (TRT)' : isCondo ? 'Penhora de Quotas Condominiais (Propter Rem)' : 'Penhora em Execução de Título Judicial/Extrajudicial',
-          beneficiaryOrCourt: `Juízo da Execução / Comarca de ${selectedCity || 'Capital'}`,
-          severity: isTrab ? 'Média' : 'Baixa',
-          legalSolution: isFiscal 
-            ? 'Sub-rogação legal dos débitos fiscais no preço arrematado (art. 130, parágrafo único do CTN).'
-            : 'Aquisição originária; cancelamento das penhoras concorrentes via Mandado de Cancelamento e Carta de Arrematação (art. 908, §1º do CPC).'
+          code: specificCode,
+          type: isCaixaNotice
+            ? `Penhora / Gravame Registrado (${specificCode}) - Caixa (Regularização por Conta do Adquirente)`
+            : isFiscal 
+              ? 'Penhora em Execução Fiscal' 
+              : isTrab 
+                ? 'Penhora em Ação Trabalhista (TRT)' 
+                : isCondo 
+                  ? 'Penhora de Quotas Condominiais (Propter Rem)' 
+                  : `Penhora / Constrição Registrada (${specificCode})`,
+          beneficiaryOrCourt: `Juízo da Execução / Cartório Imobiliário (${selectedCity || 'Capital'})`,
+          severity: isCaixaNotice || isTrab ? 'Alta' : 'Média',
+          legalSolution: isCaixaNotice
+            ? 'Atenção: A Caixa aponta expressamente que a regularização do gravame corre por conta do adquirente. Cancelamento do gravame/penhora através de expedição de Mandado de Cancelamento de Ônus e Carta de Arrematação / peticionamento ao juízo originário.'
+            : isFiscal 
+              ? 'Sub-rogação legal dos débitos fiscais no preço arrematado (art. 130, parágrafo único do CTN).'
+              : 'Aquisição originária; cancelamento das penhoras concorrentes via Mandado de Cancelamento e Carta de Arrematação (art. 908, §1º do CPC).'
         });
       }
 
       // Hipoteca
       if (lower.includes('hipoteca') || lower.includes('hipotec')) {
+        const rMatch = combinedCorpus.match(/(R[-.]?\s*\d+)/i);
+        const code = rMatch ? rMatch[1].toUpperCase() : 'R.Hipoteca';
         gravamesFound.push({
-          code: 'R.Hipoteca',
+          code,
           type: 'Hipoteca Imobiliária Registrada',
           beneficiaryOrCourt: 'Instituição Bancária Credora Hipotecária',
           severity: 'Média',
@@ -313,8 +676,10 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
       // Alienação Fiduciária
       if (lower.includes('aliena') || lower.includes('fiduci')) {
+        const rMatch = combinedCorpus.match(/(R[-.]?\s*\d+)/i);
+        const code = rMatch ? rMatch[1].toUpperCase() : 'R.Alienação';
         gravamesFound.push({
-          code: 'R.Alienação',
+          code,
           type: 'Alienação Fiduciária em Garantia (Lei 9.514/97)',
           beneficiaryOrCourt: 'Credor Fiduciário Registrado',
           severity: 'Média',
@@ -322,9 +687,29 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         });
       }
 
-      // Indisponibilidade / CNIB
+      // Indisponibilidade / CNIB (Central Nacional de Indisponibilidade de Bens)
       if (lower.includes('indisponibilidade') || lower.includes('cnib') || lower.includes('bloqueio')) {
-        findings.push('⚠️ Constam anotações de indisponibilidade de bens (CNIB). O juiz emitirá ofício à central para levantamento da indisponibilidade.');
+        const avMatch = combinedCorpus.match(/(Av[-.]?\s*\d+)/i);
+        const avCode = avMatch ? avMatch[1].toUpperCase() : 'Av.CNIB';
+
+        // Extract process number if mentioned near indisponibilidade
+        const procMatch = combinedCorpus.match(/(?:processo|autos|proc)[.:\s]+([0-9.-]{10,25})/i);
+        const procNum = procMatch ? procMatch[1] : (processNumberInput.trim() || 'Origem Judicial Centralizada');
+
+        // Extract court / origin if mentioned
+        const varaMatch = combinedCorpus.match(/(\d+ª?\s+vara\s+[a-zçãõ\s]+(?:\/[a-z]{2})?)/i);
+        const varaName = varaMatch ? varaMatch[1].trim() : 'Juízo da Execução / Vara Cível ou do Trabalho';
+
+        gravamesFound.push({
+          code: avCode,
+          type: 'Averbação de Indisponibilidade de Bens (CNIB)',
+          beneficiaryOrCourt: `${varaName} • Autos ${procNum}`,
+          severity: 'Média',
+          legalSolution: 'Cancelamento ope legis decorrente de aquisição originária em hasta pública (art. 908, §1º do CPC c/c Provimento CNJ nº 39/2014, art. 16). O magistrado condutor do leilão expedirá mandado de cancelamento e comunicação eletrônica à Central CNIB para baixa imediata do gravame.'
+        });
+
+        findings.push(`⚠️ Consta averbação de indisponibilidade de bens (${avCode} - CNIB) vinculada aos autos ${procNum} (${varaName}).`);
+        findings.push('⚖️ Saneamento Jurídico CNIB: Conforme Provimento CNJ nº 39/2014 e Art. 908 do CPC, a arrematação judicial extingue constrições anteriores. O juízo expedirá ofício eletrônico à Central CNIB para liberação do imóvel.');
       } else {
         findings.push('✓ Não constam indisponibilidades ativas na Central Nacional de Indisponibilidade de Bens (CNIB).');
       }
@@ -333,7 +718,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         findings.unshift('✓ Certidão desprovida de penhoras, hipotecas ou ônus reais gravosos.');
         findings.push('✓ Princípio da continuidade registral e cadeia dominial plenamente regulares.');
       } else {
-        findings.unshift(`✓ Apuradas ${gravamesFound.length} averbações/registros com soluções jurídicas saneáveis na arrematação.`);
+        findings.unshift(`⚠️ Identificadas ${gravamesFound.length} averbações/gravames na certidão ou edital oficial (requer regularização e baixa registral).`);
       }
 
       const overallStatus: 'REGULAR' | 'ATENCAO' | 'ALTO_RISCO' = 
@@ -363,80 +748,102 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     const text = rawText.trim();
     if (!text && !leiloeiroInput.trim() && !processNumberInput.trim() && !fileName) {
       setDueDiligenceNotice('Nenhum arquivo ou texto de edital informado. Anexe o PDF ou cole o texto do edital.');
+      setIsAuditingEdital(false);
       return;
     }
+
+    const lower = (text + ' ' + (fileName || '')).toLowerCase();
 
     setDueDiligenceNotice('');
     setIsAuditingEdital(true);
 
     setTimeout(() => {
-      let proc = processNumberInput.trim();
-      if (!proc) {
-        const procMatch = (text + ' ' + (fileName || '')).match(/processo\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
-        proc = procMatch && procMatch[1] ? `Processo nº ${procMatch[1]}` : (fileName ? `Edital: ${fileName.replace(/\.[^/.]+$/, '')}` : 'Processo Judicial Apurado');
-      }
-
-      let leil = leiloeiroInput.trim();
-      if (!leil) {
-        const leilMatch = text.match(/leiloeir[ao]\s*(?:oficial|p[úu]blic[ao])?\s*[:\-]?\s*([A-ZÀ-Ú\s]{3,35})/i);
-        leil = leilMatch && leilMatch[1] ? leilMatch[1].trim() : 'Leiloeiro Oficial Designado';
-      }
-
-      let court = `Vara Cível da Comarca de ${selectedCity || 'Capital'}`;
-      const courtMatch = text.match(/(\d+[ªa]?\s+Vara\s+(?:C[íi]vel|do\s+Trabalho|Federal|de\s+Fam[íi]lia)[\w\s\-\.,]*)/i);
-      if (courtMatch && courtMatch[1]) {
-        court = courtMatch[1].trim().substring(0, 45);
-      }
-
-      const debtRules: string[] = [];
-      const lower = text.toLowerCase();
-
-      if (lower.includes('sub-roga') || lower.includes('130') || !lower.includes('arrematante arcar')) {
-        debtRules.push('✓ Débitos de IPTU e taxas fiscais sub-rogam sobre o preço arrematado (art. 130, parágrafo único do CTN).');
-      } else {
-        debtRules.push('⚠️ Edital com cláusula especial de débitos: verificar se o arrematante assumirá impostos pendentes.');
-      }
-
-      if (lower.includes('condom')) {
-        if (lower.includes('sub-roga') || lower.includes('preferência')) {
-          debtRules.push('✓ Débitos de condomínio preferenciais quitados com o saldo arrecadado.');
-        } else {
-          debtRules.push('⚠️ Verificar débito condominial atualizado com o síndico/administradora.');
+      try {
+        let proc = processNumberInput.trim();
+        if (!proc) {
+          const procMatch = (text + ' ' + (fileName || '')).match(/processo\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
+          proc = procMatch && procMatch[1] ? `Processo nº ${procMatch[1]}` : (fileName ? `Edital: ${fileName.replace(/\.[^/.]+$/, '')}` : 'Processo Judicial Apurado');
         }
+
+        let leil = leiloeiroInput.trim();
+        if (!leil) {
+          const leilMatch = text.match(/leiloeir[ao]\s*(?:oficial|p[úu]blic[ao])?\s*[:\-]?\s*([A-ZÀ-Ú\s]{3,35})/i);
+          leil = leilMatch && leilMatch[1] ? leilMatch[1].trim() : 'Leiloeiro Oficial Designado';
+        }
+
+        const isCaixa = acquisitionMode === 'caixa' || lower.includes('caixa') || lower.includes('cpve');
+
+        let court = isCaixa 
+          ? 'Caixa Econômica Federal (CPVE/RE - Alienação Fiduciária)' 
+          : `Vara Cível da Comarca de ${selectedCity || 'Capital'}`;
+        const courtMatch = text.match(/(\d+[ªa]?\s+Vara\s+(?:C[íi]vel|do\s+Trabalho|Federal|de\s+Fam[íi]lia)[\w\s\-\.,]*)/i);
+        if (courtMatch && courtMatch[1] && !isCaixa) {
+          court = courtMatch[1].trim().substring(0, 45);
+        }
+
+        const debtRules: string[] = [];
+
+        if (isCaixa) {
+          debtRules.push('✓ Débitos de Condomínio (Regra Expressa Caixa): Responsabilidade do arrematante limitada a no máximo 10% do valor de avaliação. A CAIXA quita integralmente qualquer valor excedente.');
+          debtRules.push('✓ Débitos Tributários (IPTU): A CAIXA realiza a quitação integral de tributos quando superiores a 10% da avaliação ou sub-rogados na data da venda.');
+        } else {
+          if (lower.includes('sub-roga') || lower.includes('130') || !lower.includes('arrematante arcar')) {
+            debtRules.push('✓ Débitos de IPTU e taxas fiscais sub-rogam sobre o preço arrematado (art. 130, parágrafo único do CTN).');
+          } else {
+            debtRules.push('⚠️ Edital com cláusula especial de débitos: verificar se o arrematante assumirá impostos pendentes.');
+          }
+
+          if (lower.includes('condom')) {
+            if (lower.includes('sub-roga') || lower.includes('preferência')) {
+              debtRules.push('✓ Débitos de condomínio preferenciais quitados com o saldo arrecadado.');
+            } else {
+              debtRules.push('⚠️ Verificar débito condominial atualizado com o síndico/administradora.');
+            }
+          }
+        }
+
+        let occupationStatus = '✓ Imóvel presumido Desocupado / A constatar no local';
+        if (lower.includes('ocupado') || lower.includes('posse de terceiro') || lower.includes('morador')) {
+          occupationStatus = isCaixa
+            ? '⚠️ Imóvel Ocupado: Desocupação por conta do adquirente via Lei nº 9.514/97 (liminar para desocupação em 60 dias).'
+            : '⚠️ Imóvel Ocupado (Necessária expedição de Mandado de Imissão de Posse nos próprios autos).';
+        } else if (lower.includes('desocupado') || lower.includes('livre de pessoas')) {
+          occupationStatus = '✓ Imóvel Desocupado (Imissão imediata após emissão da Carta de Arrematação / Escritura).';
+        }
+
+        const criticalClauses: string[] = isCaixa ? [
+          '✓ Regra Expressa Caixa: Condomínio limitado a 10% da avaliação do bem (alimentado automaticamente no simulador).',
+          '✓ Amparo legal pela Lei 9.514/97 com consolidação da propriedade em favor da Caixa Econômica Federal.',
+          '✓ ITBI e emolumentos de registro da escritura/contrato correm por conta do adquirente.'
+        ] : [
+          '✓ Comissão do Leiloeiro estipulada em 5% sobre o lance homologado.',
+          lower.includes('parcela') || lower.includes('895') 
+            ? '✓ Possibilidade de parcelamento judicial conforme art. 895 do CPC (25% de entrada + saldo em até 30 parcelas).'
+            : '✓ Pagamento na forma estipulada pelo juízo (à vista ou prazo regimental).',
+          '✓ Expedição de Carta de Arrematação com ordem expressa de cancelamento de constrições e imissão na posse.'
+        ];
+
+        const result: EditalAuditData = {
+          leiloeiro: leil,
+          processNumber: proc,
+          court,
+          auctionDates: '1ª Praça (Valor de Avaliação) • 2ª Praça (Lance Mínimo com Desconto)',
+          debtRules,
+          occupationStatus,
+          criticalClauses,
+          rawText: text,
+          analyzedAt: new Date().toISOString()
+        };
+
+        setEditalAuditResult(result);
+        setLeiloeiroInput(leil);
+        setProcessNumberInput(proc);
+        setMatriculaReport(buildUnifiedReport(matriculaAuditResult, result));
+      } catch (err) {
+        console.error('Erro na auditoria do edital:', err);
+      } finally {
+        setIsAuditingEdital(false);
       }
-
-      let occupationStatus = '✓ Imóvel presumido Desocupado / A constatar no local';
-      if (lower.includes('ocupado') || lower.includes('posse de terceiro') || lower.includes('morador')) {
-        occupationStatus = '⚠️ Imóvel Ocupado (Necessária expedição de Mandado de Imissão de Posse nos próprios autos).';
-      } else if (lower.includes('desocupado') || lower.includes('livre de pessoas')) {
-        occupationStatus = '✓ Imóvel Desocupado (Imissão imediata após emissão da Carta de Arrematação).';
-      }
-
-      const criticalClauses: string[] = [
-        '✓ Comissão do Leiloeiro estipulada em 5% sobre o lance homologado.',
-        lower.includes('parcela') || lower.includes('895') 
-          ? '✓ Possibilidade de parcelamento judicial conforme art. 895 do CPC (25% de entrada + saldo em até 30 parcelas).'
-          : '✓ Pagamento na forma estipulada pelo juízo (à vista ou prazo regimental).',
-        '✓ Expedição de Carta de Arrematação com ordem expressa de cancelamento de constrições e imissão na posse.'
-      ];
-
-      const result: EditalAuditData = {
-        leiloeiro: leil,
-        processNumber: proc,
-        court,
-        auctionDates: '1ª Praça (Valor de Avaliação) • 2ª Praça (Lance Mínimo com Desconto)',
-        debtRules,
-        occupationStatus,
-        criticalClauses,
-        rawText: text,
-        analyzedAt: new Date().toISOString()
-      };
-
-      setEditalAuditResult(result);
-      setLeiloeiroInput(leil);
-      setProcessNumberInput(proc);
-      setMatriculaReport(buildUnifiedReport(matriculaAuditResult, result));
-      setIsAuditingEdital(false);
     }, 200);
   };
 
@@ -536,6 +943,60 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     }
   };
 
+  // Automated Caixa Document fetcher (Headless session extracts real PDF directly from Caixa servers)
+  const [isFetchingCaixaDocs, setIsFetchingCaixaDocs] = useState<boolean>(false);
+
+  const handleFetchCaixaDocs = async () => {
+    if (!prefillData?.auctionLink && !prefillData?.id) {
+      alert('Link ou identificador da Caixa não disponível para este lote.');
+      return;
+    }
+    setIsFetchingCaixaDocs(true);
+    setDueDiligenceNotice('Conectando aos servidores da Caixa para baixar a certidão de matrícula e edital oficial...');
+
+    try {
+      const res = await fetch('/api/caixa/fetch-documentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auctionLink: prefillData.auctionLink,
+          id: prefillData.id
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.matriculaNumber) setMatriculaNumber(data.matriculaNumber);
+        if (data.registryOffice) setRegistryOffice(data.registryOffice);
+        if (data.bedrooms) setBedrooms(data.bedrooms);
+        if (data.parkingSpaces !== undefined) setParkingSpaces(data.parkingSpaces);
+
+        if (data.matriculaText) {
+          setMatriculaText(data.matriculaText);
+          const fname = `Matricula_${data.matriculaNumber || 'Caixa'}.pdf`;
+          setUploadedFileName(fname);
+          setDueDiligenceNotice('✓ Matrícula oficial baixada diretamente da Caixa com sucesso!');
+          executeRealMatriculaAnalysis(data.matriculaText, fname);
+        } else {
+          setDueDiligenceNotice('Aviso: A certidão em PDF não foi anexada pela Caixa na página deste imóvel. Caso possua o documento, anexe o arquivo ou cole as averbações.');
+        }
+
+        if (data.editalText) {
+          setEditalText(data.editalText);
+          if (data.editalNumber) setProcessNumberInput(`Edital nº ${data.editalNumber}`);
+          if (data.leiloeiro) setLeiloeiroInput(data.leiloeiro);
+          executeRealEditalAnalysis(data.editalText, `Edital_${data.editalNumber || 'Caixa'}.pdf`);
+        }
+      } else {
+        setDueDiligenceNotice('Não foi possível obter o documento automaticamente da Caixa.');
+      }
+    } catch (e: any) {
+      setDueDiligenceNotice('Erro de conexão ao buscar documentos da Caixa.');
+    } finally {
+      setIsFetchingCaixaDocs(false);
+    }
+  };
+
   // Helper to parse BRL formatted numbers (e.g. 150.000 -> 150000)
   const parseNumberBRL = (valStr: string): number => {
     const clean = valStr.replace(/\./g, '').replace(/,/g, '.');
@@ -566,6 +1027,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     const num = parseInt(clean, 10);
     setArrematePrice(num);
     setArremateInputStr(num.toLocaleString('pt-BR'));
+    setReformCostInput(Math.round(num * 0.05));
   };
 
   // Loaded data states
@@ -581,54 +1043,6 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
   const [aiReport, setAiReport] = useState('');
   const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
 
-  // Normalized search helper
-  const normalizeString = (str: string) => {
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-  };
-
-  const cleanStreetName = (street: string | null | undefined): string => {
-    if (!street) return '';
-    let norm = normalizeString(street);
-    norm = norm.replace(/\s+/g, ' ');
-    
-    const prefixes: [RegExp, string][] = [
-      [/^(rua|r)\b\.?\s*/i, 'r '],
-      [/^(avenida|avn|av)\b\.?\s*/i, 'av '],
-      [/^(estrada|etr|estr)\b\.?\s*/i, 'est '],
-      [/^(travessa|trv|tra|trav)\b\.?\s*/i, 'trav '],
-      [/^(praca|pra|prc)\b\.?\s*/i, 'praca '],
-      [/^(beco|bec|bc)\b\.?\s*/i, 'beco '],
-      [/^(rodovia|rod)\b\.?\s*/i, 'rod '],
-      [/^(alameda|alm|al)\b\.?\s*/i, 'alameda '],
-      [/^(largo|lrg|lgo)\b\.?\s*/i, 'largo '],
-      [/^(caminho|cam)\b\.?\s*/i, 'caminho '],
-      [/^(servidao|srv)\b\.?\s*/i, 'servidao '],
-      [/^(ladeira|lad)\b\.?\s*/i, 'ladeira '],
-      [/^(boulevard|blv)\b\.?\s*/i, 'boulevard '],
-      [/^(vila|vil)\b\.?\s*/i, 'vila ']
-    ];
-    
-    for (const [regex, replacement] of prefixes) {
-      if (regex.test(norm)) {
-        return norm.replace(regex, replacement).trim();
-      }
-    }
-    return norm;
-  };
-
-  const getCoreStreetName = (street: string | null | undefined): string => {
-    if (!street) return '';
-    let norm = normalizeString(street);
-    norm = norm.replace(/\s+/g, ' ');
-    
-    const prefixRegex = /^(rua|r|avenida|avn|av|estrada|etr|estr|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i;
-    return norm.replace(prefixRegex, '').trim();
-  };
-
   // Sync neighborhood input text
   useEffect(() => {
     setNeighborhoodInput(selectedNeighborhood);
@@ -638,17 +1052,6 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
   useEffect(() => {
     setStreetInput(selectedStreet);
   }, [selectedStreet]);
-
-  // Extract unique neighborhoods for selected state and city
-  const neighborhoodsList = useMemo(() => {
-    const list = itbiStats
-      .filter(stat => 
-        (stat.state || 'SP').toUpperCase() === selectedState.toUpperCase() &&
-        (stat.city || 'São Paulo').toLowerCase() === selectedCity.toLowerCase()
-      )
-      .map(stat => stat.neighborhood);
-    return Array.from(new Set(list)).sort();
-  }, [itbiStats, selectedState, selectedCity]);
 
   // Load streets when neighborhood changes
   useEffect(() => {
@@ -665,6 +1068,37 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         if (res.ok) {
           const data = await res.json();
           setStreetsList(data);
+          // Auto-match and select the closest official ITBI street from suggestion list
+          let matched = null;
+          const queryStreet = streetInput || (prefillData?.address ? parseAddressComponents(prefillData.address).street : '');
+          if (queryStreet && Array.isArray(data) && data.length > 0) {
+            matched = findBestStreetMatch(queryStreet, data);
+            if (matched && matched.street) {
+              setSelectedStreet(matched.street);
+              setStreetInput(matched.street);
+            }
+          }
+
+          // If no high-confidence street match in current neighborhood, check cross-neighborhood resolver
+          if (!matched && queryStreet) {
+            try {
+              const checkRes = await fetch(`/api/itbi/resolve-street?state=${selectedState}&city=${encodeURIComponent(selectedCity)}&street=${encodeURIComponent(queryStreet)}`);
+              if (checkRes.ok) {
+                const resolved = await checkRes.json();
+                if (resolved.found && resolved.neighborhood && cleanNeighborhood(resolved.neighborhood) !== cleanNeighborhood(selectedNeighborhood)) {
+                  setSelectedNeighborhood(resolved.neighborhood);
+                  setNeighborhoodInput(resolved.neighborhood);
+                  if (resolved.officialStreet) {
+                    setSelectedStreet(resolved.officialStreet);
+                    setStreetInput(resolved.officialStreet);
+                  }
+                  return;
+                }
+              }
+            } catch (err) {
+              // ignore
+            }
+          }
         }
       } catch (e) {
         console.error('Error fetching streets:', e);
@@ -692,7 +1126,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
           url += `&propertyType=${encodeURIComponent(propertyType)}`;
         }
         if (selectedStreet) {
-          url += `&targetStreet=${encodeURIComponent(selectedStreet)}&radiusKm=${radiusKm}`;
+          url += `&targetStreet=${encodeURIComponent(selectedStreet)}`;
         }
         
         const res = await fetch(url);
@@ -709,49 +1143,52 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
     loadTransactions();
     setAiReport(''); // Reset AI report on filter change
-  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet, radiusKm]);
-
-  // Segment raw transactions (exact street vs surrounding streets in same neighborhood)
-  // Proximity simulator helper for radius filter
-  const getSimulatedDistanceKm = (streetA: string, streetB: string) => {
-    if (!streetA || !streetB) return 1.5;
-    if (streetA.toLowerCase() === streetB.toLowerCase()) return 0;
-    let hash = 0;
-    const combined = streetA + streetB;
-    for (let i = 0; i < combined.length; i++) {
-      hash = combined.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return 0.5 + (Math.abs(hash) % 25) / 10; // returns between 0.5 and 3.0 km
-  };
+  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet]);
 
   const exactStreetTxs = useMemo(() => {
     if (!selectedStreet || rawTransactions.length === 0) return [];
     const streetClean = cleanStreetName(selectedStreet);
     const streetCore = getCoreStreetName(selectedStreet);
+    const streetPhon = phoneticStreet(selectedStreet);
     return rawTransactions.filter(tx => {
       if (!tx.street) return false;
       const tClean = cleanStreetName(tx.street);
       const tCore = getCoreStreetName(tx.street);
-      return tClean === streetClean || (streetCore && tCore === streetCore);
+      const tPhon = phoneticStreet(tx.street);
+      return tClean === streetClean || 
+             (streetCore && tCore === streetCore) || 
+             (streetPhon && tPhon === streetPhon) || 
+             stringSimilarity(tClean, streetClean) >= 0.75;
     });
   }, [rawTransactions, selectedStreet]);
 
+  // Segment raw transactions: Ruas ao Entorno com raio geodésico estrito de 500m (0.5km real)
   const nearbyStreetTxs = useMemo(() => {
     if (rawTransactions.length === 0) return [];
     if (!selectedStreet) return rawTransactions;
     const streetClean = cleanStreetName(selectedStreet);
     const streetCore = getCoreStreetName(selectedStreet);
+    const streetPhon = phoneticStreet(selectedStreet);
     return rawTransactions.filter(tx => {
-      if (!tx.street) return true;
+      if (!tx.street) return false;
       const tClean = cleanStreetName(tx.street);
       const tCore = getCoreStreetName(tx.street);
-      if (tClean === streetClean || (streetCore && tCore === streetCore)) return false;
-      const dist = typeof tx.distanceKm === 'number' ? tx.distanceKm : getSimulatedDistanceKm(selectedStreet, tx.street || '');
-      return dist <= radiusKm;
+      const tPhon = phoneticStreet(tx.street);
+      // Pula a mesma rua (pois já é contabilizada no Quadro 2: Mesma Rua)
+      if (tClean === streetClean || 
+          (streetCore && tCore === streetCore) || 
+          (streetPhon && tPhon === streetPhon) || 
+          stringSimilarity(tClean, streetClean) >= 0.75) return false;
+      
+      // Validação estrita por raio geográfico real (sem aproximações aleatórias por hash)
+      if (typeof tx.distanceKm === 'number') {
+        return tx.distanceKm <= radiusKm;
+      }
+      return false;
     });
   }, [rawTransactions, selectedStreet, radiusKm]);
 
-  // Helper to extract clean numerical numbers for street number comparison
+// Helper to extract clean numerical numbers for street number comparison
   const cleanNumber = (numStr: string | undefined | null) => {
     if (!numStr) return '';
     const match = String(numStr).match(/\d+/);
@@ -774,9 +1211,9 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     const rawSum = allValues.reduce((a, b) => a + b, 0);
     const rawAvgSqm = Math.round(rawSum / allValues.length);
 
-    // 2. Filtro por Metragem Similar (±25% da área privativa do imóvel)
-    const minSize = Math.max(15, Math.round(targetSize * 0.75));
-    const maxSize = Math.round(targetSize * 1.25);
+    // 2. Filtro por Metragem Similar (±33% da área privativa do imóvel)
+    const minSize = Math.max(15, Math.round(targetSize * 0.67));
+    const maxSize = Math.round(targetSize * 1.33);
     const similarTxs = txs.filter(t => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
     const similarValues = similarTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v > 0);
     const similarAvgSqm = similarValues.length > 0 ? Math.round(similarValues.reduce((a, b) => a + b, 0) / similarValues.length) : rawAvgSqm;
@@ -785,22 +1222,39 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     const workingTxs = (sizeMode === 'similar' && similarValues.length > 0) ? similarTxs : txs;
     const workingValues = workingTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v > 0);
 
-    // 3. Saneamento de Outliers (Critério de Chauvenet / Desvio Padrão NBR 14.653)
+    // 3. Saneamento Pericial NBR 14.653 de Outliers (Chauvenet / Tukey IQR Ponderado)
     let cleanedValues = [...workingValues];
     let outliersCount = 0;
 
-    if (workingValues.length >= 3) {
-      const mean = workingValues.reduce((a, b) => a + b, 0) / workingValues.length;
-      const variance = workingValues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / workingValues.length;
-      const stdDev = Math.sqrt(variance);
+    if (workingValues.length >= 4) {
+      // Ordenação para cálculo de quartis e amplitude interquartil (Tukey IQR)
+      const sortedVals = [...workingValues].sort((a, b) => a - b);
+      const q1 = sortedVals[Math.floor(sortedVals.length * 0.25)];
+      const q3 = sortedVals[Math.floor(sortedVals.length * 0.75)];
+      const iqr = q3 - q1;
+      const median = sortedVals[Math.floor(sortedVals.length * 0.5)];
 
-      // Chauvenet: 1.5 desvios-padrão (margem mínima de R$ 400/m²)
-      const threshold = Math.max(stdDev * 1.5, 400);
-      const filtered = workingValues.filter(val => Math.abs(val - mean) <= threshold);
+      // 1. Limites Tukey com tolerância mercadológica (1.75 * IQR) e pisos de razoabilidade urbana
+      const lowBound = Math.max(600, q1 - 1.75 * iqr);
+      const highBound = Math.max(q3 + 1.75 * iqr, 2500);
 
-      if (filtered.length >= 2) {
-        outliersCount = workingValues.length - filtered.length;
-        cleanedValues = filtered;
+      const step1 = sortedVals.filter(v => v >= lowBound && v <= highBound);
+
+      if (step1.length >= 3) {
+        // 2. Critério de Chauvenet / 2.2 Desvios-Padrão (elimina apenas anomalias extremas, preservando a distribuição real)
+        const mean = step1.reduce((a, b) => a + b, 0) / step1.length;
+        const variance = step1.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / step1.length;
+        const stdDev = Math.sqrt(variance);
+        const chauvenetThreshold = Math.max(stdDev * 2.2, 500);
+
+        const step2 = step1.filter(val => Math.abs(val - mean) <= chauvenetThreshold);
+        if (step2.length >= 2) {
+          outliersCount = workingValues.length - step2.length;
+          cleanedValues = step2;
+        } else {
+          outliersCount = workingValues.length - step1.length;
+          cleanedValues = step1;
+        }
       }
     }
 
@@ -835,12 +1289,249 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     };
   };
 
-  // Aggregate stats from matching transactions (Exact Street Stats)
-  const exactStreetStats = useMemo(() => {
-    return calculateRobustStats(exactStreetTxs, sizeSqm, txSizeFilter, 'Média da Mesma Rua');
-  }, [exactStreetTxs, sizeSqm, txSizeFilter]);
+  // Médias de m² para cada botão de raio (500m, 1.0km, 2.0km) sincronizadas com txSizeFilter (Área Similar vs Todas)
+  const radiusAverages = useMemo(() => {
+    const streetClean = cleanStreetName(selectedStreet);
+    const streetCore = getCoreStreetName(selectedStreet);
+    const streetPhon = phoneticStreet(selectedStreet);
 
-  // Transactions in the exact same building/number
+    const calcAvg = (maxDist: number) => {
+      const txs = (rawTransactions || []).filter(tx => {
+        const tClean = cleanStreetName(tx.street);
+        const tCore = getCoreStreetName(tx.street);
+        const tPhon = phoneticStreet(tx.street);
+        if (tClean === streetClean || (streetCore && tCore === streetCore) || (streetPhon && tPhon === streetPhon) || stringSimilarity(tClean, streetClean) >= 0.75) return false;
+        if (typeof tx.distanceKm === 'number') {
+          return tx.distanceKm <= maxDist;
+        }
+        return false;
+      });
+      if (txs.length === 0) return null;
+      const robust = calculateRobustStats(txs, sizeSqm, txSizeFilter, `Raio ${maxDist}km`);
+      return robust ? robust.avgSqm : null;
+    };
+
+    return {
+      r500: calcAvg(0.5),
+      r1000: calcAvg(1.0),
+      r2000: calcAvg(2.0)
+    };
+  }, [rawTransactions, selectedStreet, sizeSqm, txSizeFilter]);
+
+  // Motor Pericial de Corte Bidirecional em 4 Níveis (NBR 14.653):
+  // 1. Média preliminar da rua antes de cortar.
+  // 2. Balizamento com a média do raio (ruas do entorno).
+  // 3. Aplicação do corte estrito: 25% acima corta, 25% abaixo corta.
+  // 4. Processamento bidirecional (de frente pra trás e de trás pra frente).
+  // 5. Convergência da Média de Corte Real para Flip Rápido e Gabarito.
+  const bidiBenchmark = useMemo(() => {
+    return computeBidirectionalBenchmarks(
+      rawTransactions,
+      selectedStreet,
+      streetNumber,
+      sizeSqm,
+      txSizeFilter,
+      radiusKm
+    );
+  }, [rawTransactions, selectedStreet, streetNumber, sizeSqm, txSizeFilter, radiusKm]);
+
+  // 1. Dedicated neighborhood stats calculated from all ITBI transactions of this neighborhood
+  const neighborhoodStats = useMemo(() => {
+    if (bidiBenchmark) {
+      return {
+        avgSqm: bidiBenchmark.bairro.saneada,
+        medianSqm: bidiBenchmark.bairro.saneada,
+        source: `Média Geral do Bairro (${selectedNeighborhood})`,
+        count: bidiBenchmark.bairro.validas,
+        minSqm: Math.round(bidiBenchmark.bairro.saneada * 0.75),
+        maxSqm: Math.round(bidiBenchmark.bairro.saneada * 1.25),
+        rawAvgSqm: bidiBenchmark.bairro.prelim || bidiBenchmark.bairro.saneada,
+        rawCount: bidiBenchmark.bairro.total,
+        outliersCount: bidiBenchmark.bairro.expurgadas,
+        similarAvgSqm: bidiBenchmark.bairro.saneada,
+        similarCount: bidiBenchmark.bairro.validas,
+        allAreasAvgSqm: bidiBenchmark.bairro.saneada,
+        allAreasCount: bidiBenchmark.bairro.total,
+        isSimilarActive: txSizeFilter === 'similar',
+        minSimilarSize: bidiBenchmark.minSimilarSize,
+        maxSimilarSize: bidiBenchmark.maxSimilarSize
+      };
+    }
+    if (rawTransactions && rawTransactions.length > 0) {
+      const stats = calculateRobustStats(rawTransactions, sizeSqm, txSizeFilter, `Média Geral do Bairro (${selectedNeighborhood})`);
+      if (stats) return stats;
+    }
+    const neighStats = itbiStats.find(stat => 
+      stat.neighborhood && selectedNeighborhood &&
+      cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood) &&
+      (!propertyType || !stat.propertyType || stat.propertyType.toLowerCase() === propertyType.toLowerCase())
+    ) || itbiStats.find(stat => 
+      stat.neighborhood && selectedNeighborhood &&
+      cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood)
+    );
+
+    if (neighStats && neighStats.averageValueSqm) {
+      const base = neighStats.averageValueSqm;
+      return {
+        avgSqm: base,
+        medianSqm: neighStats.medianValueSqm || base,
+        source: `Média Oficial do Bairro (${selectedNeighborhood})`,
+        count: neighStats.transactionCount || 0,
+        minSqm: neighStats.minValueSqm || Math.round(base * 0.7),
+        maxSqm: neighStats.maxValueSqm || Math.round(base * 1.4),
+        rawAvgSqm: base,
+        rawCount: neighStats.transactionCount || 0,
+        outliersCount: 0,
+        similarAvgSqm: base,
+        similarCount: neighStats.transactionCount || 0,
+        allAreasAvgSqm: base,
+        allAreasCount: neighStats.transactionCount || 0,
+        isSimilarActive: false,
+        minSimilarSize: Math.round(sizeSqm * 0.67),
+        maxSimilarSize: Math.round(sizeSqm * 1.33)
+      };
+    }
+    return null;
+  }, [bidiBenchmark, rawTransactions, sizeSqm, txSizeFilter, selectedNeighborhood, itbiStats, propertyType]);
+
+  // 2. Aggregate stats from surrounding transactions (radius approximation)
+  const nearbyStats = useMemo(() => {
+    if (bidiBenchmark && bidiBenchmark.raio.total > 0) {
+      return {
+        avgSqm: bidiBenchmark.raio.saneada,
+        medianSqm: bidiBenchmark.raio.saneada,
+        source: 'Média do Entorno (Raio Balizado)',
+        count: bidiBenchmark.raio.validas,
+        minSqm: bidiBenchmark.raio.corteMin || Math.round(bidiBenchmark.raio.saneada * 0.75),
+        maxSqm: bidiBenchmark.raio.corteMax || Math.round(bidiBenchmark.raio.saneada * 1.25),
+        rawAvgSqm: bidiBenchmark.raio.prelim || bidiBenchmark.raio.saneada,
+        rawCount: bidiBenchmark.raio.total,
+        outliersCount: bidiBenchmark.raio.expurgadas,
+        similarAvgSqm: bidiBenchmark.raio.saneada,
+        similarCount: bidiBenchmark.raio.validas,
+        allAreasAvgSqm: bidiBenchmark.raio.saneada,
+        allAreasCount: bidiBenchmark.raio.total,
+        isSimilarActive: txSizeFilter === 'similar',
+        minSimilarSize: bidiBenchmark.minSimilarSize,
+        maxSimilarSize: bidiBenchmark.maxSimilarSize
+      };
+    }
+
+    const txsToUse = selectedStreet ? nearbyStreetTxs : rawTransactions;
+
+    if (txsToUse.length === 0) {
+      const neighStats = itbiStats.find(stat => 
+        stat.neighborhood && selectedNeighborhood &&
+        cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood) &&
+        stat.propertyType && propertyType &&
+        stat.propertyType.toLowerCase() === propertyType.toLowerCase()
+      ) || itbiStats.find(stat => 
+        stat.neighborhood && selectedNeighborhood &&
+        cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood)
+      );
+      
+      const allVals = itbiStats.map(s => s.averageValueSqm).filter(Boolean);
+      const overallAvg = allVals.length > 0 
+        ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) 
+        : 4000;
+      
+      const baseAvg = neighStats?.averageValueSqm || (neighborhoodStats?.avgSqm || overallAvg);
+
+      return {
+        avgSqm: baseAvg,
+        medianSqm: baseAvg,
+        source: neighStats?.averageValueSqm ? 'Média do Bairro (Sem dados no raio)' : 'Média Regional',
+        count: 0,
+        minSqm: neighStats?.minValueSqm || Math.round(baseAvg * 0.7),
+        maxSqm: neighStats?.maxValueSqm || Math.round(baseAvg * 1.5),
+        rawAvgSqm: baseAvg,
+        rawCount: 0,
+        outliersCount: 0,
+        similarAvgSqm: baseAvg,
+        similarCount: 0,
+        allAreasAvgSqm: baseAvg,
+        allAreasCount: 0,
+        isSimilarActive: false,
+        minSimilarSize: Math.round(sizeSqm * 0.67),
+        maxSimilarSize: Math.round(sizeSqm * 1.33)
+      };
+    }
+    
+    const computed = calculateRobustStats(txsToUse, sizeSqm, txSizeFilter, 'Média do Entorno (Bairro)');
+    if (computed) return computed;
+
+    const allVals = itbiStats.map(s => s.averageValueSqm).filter(Boolean);
+    const defaultFallback = allVals.length > 0 ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) : 6500;
+    return {
+      avgSqm: defaultFallback,
+      medianSqm: defaultFallback,
+      source: 'Média do Entorno (Bairro)',
+      count: txsToUse.length,
+      minSqm: Math.round(defaultFallback * 0.7),
+      maxSqm: Math.round(defaultFallback * 1.4),
+      rawAvgSqm: defaultFallback,
+      rawCount: txsToUse.length,
+      outliersCount: 0,
+      similarAvgSqm: defaultFallback,
+      similarCount: 0,
+      allAreasAvgSqm: defaultFallback,
+      allAreasCount: txsToUse.length,
+      isSimilarActive: false,
+      minSimilarSize: Math.round(sizeSqm * 0.75),
+      maxSimilarSize: Math.round(sizeSqm * 1.25)
+    };
+  }, [bidiBenchmark, nearbyStreetTxs, rawTransactions, selectedStreet, selectedNeighborhood, propertyType, itbiStats, sizeSqm, txSizeFilter, neighborhoodStats]);
+
+  // 3. Aggregate stats from matching transactions (Exact Street Stats) with Raio ±25% Outlier Defense
+  const exactStreetStats = useMemo(() => {
+    if (bidiBenchmark && bidiBenchmark.rua.total > 0) {
+      return {
+        avgSqm: bidiBenchmark.rua.saneada,
+        medianSqm: bidiBenchmark.rua.saneada,
+        source: 'Média da Mesma Rua (Balizada no Raio)',
+        count: bidiBenchmark.rua.validas,
+        minSqm: bidiBenchmark.rua.corteMin || Math.round(bidiBenchmark.rua.saneada * 0.75),
+        maxSqm: bidiBenchmark.rua.corteMax || Math.round(bidiBenchmark.rua.saneada * 1.25),
+        rawAvgSqm: bidiBenchmark.rua.prelim || bidiBenchmark.rua.saneada,
+        rawCount: bidiBenchmark.rua.total,
+        outliersCount: bidiBenchmark.rua.expurgadas,
+        similarAvgSqm: bidiBenchmark.rua.saneada,
+        similarCount: bidiBenchmark.rua.validas,
+        allAreasAvgSqm: bidiBenchmark.rua.saneada,
+        allAreasCount: bidiBenchmark.rua.total,
+        isCascadeProtected: bidiBenchmark.rua.validas > 0 && bidiBenchmark.rua.validas < 5,
+        rawUncappedAvgSqm: bidiBenchmark.rua.saneada,
+        isSimilarActive: txSizeFilter === 'similar',
+        minSimilarSize: bidiBenchmark.minSimilarSize,
+        maxSimilarSize: bidiBenchmark.maxSimilarSize
+      };
+    }
+
+    const stats = calculateRobustStats(exactStreetTxs, sizeSqm, txSizeFilter, 'Média da Mesma Rua');
+    if (!stats) return null;
+
+    const upperRef = neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0;
+    if (stats.count > 0 && stats.count < 5 && upperRef > 0) {
+      const streetWeight = stats.count * 15;
+      const radiusWeight = Math.round((100 - streetWeight) * 0.65);
+      const neighWeight = 100 - streetWeight - radiusWeight;
+      const radiusSqm = nearbyStats?.avgSqm || upperRef;
+      const neighSqm = neighborhoodStats?.avgSqm || upperRef;
+      const cascadedAvg = Math.round(
+        ((stats.avgSqm * streetWeight) + (radiusSqm * radiusWeight) + (neighSqm * neighWeight)) / 100
+      );
+      return {
+        ...stats,
+        avgSqm: cascadedAvg,
+        medianSqm: cascadedAvg,
+        isCascadeProtected: true,
+        rawUncappedAvgSqm: stats.avgSqm
+      };
+    }
+    return stats;
+  }, [bidiBenchmark, exactStreetTxs, sizeSqm, txSizeFilter, neighborhoodStats, nearbyStats]);
+
+  // 4. Transactions in the exact same building/number with Street ±25% Outlier Defense
   const exactBuildingTxs = useMemo(() => {
     if (!selectedStreet || !streetNumber || exactStreetTxs.length === 0) return [];
     const targetNum = cleanNumber(streetNumber);
@@ -853,66 +1544,38 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
   }, [exactStreetTxs, streetNumber]);
 
   const exactBuildingStats = useMemo(() => {
-    return calculateRobustStats(exactBuildingTxs, sizeSqm, txSizeFilter, `Média do Prédio (Nº ${cleanNumber(streetNumber)})`);
-  }, [exactBuildingTxs, sizeSqm, txSizeFilter, streetNumber]);
-
-  // Aggregate stats from surrounding transactions (radius approximation)
-  const nearbyStats = useMemo(() => {
-    const txsToUse = selectedStreet ? nearbyStreetTxs : rawTransactions;
-    if (txsToUse.length === 0) {
-      const neighStats = itbiStats.find(stat => 
-        stat.neighborhood && selectedNeighborhood &&
-        stat.neighborhood.toLowerCase() === selectedNeighborhood.toLowerCase() &&
-        stat.propertyType && propertyType &&
-        stat.propertyType.toLowerCase() === propertyType.toLowerCase()
-      );
-      
-      const allVals = itbiStats.map(s => s.averageValueSqm).filter(Boolean);
-      const overallAvg = allVals.length > 0 ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) : 6500;
-      const baseAvg = neighStats?.averageValueSqm || overallAvg;
-
+    if (bidiBenchmark && bidiBenchmark.predio.total > 0) {
       return {
-        avgSqm: baseAvg,
-        medianSqm: baseAvg,
-        source: 'Média do Entorno (Bairro)',
-        count: neighStats?.transactionCount || 0,
-        minSqm: neighStats?.minValueSqm || Math.round(overallAvg * 0.7),
-        maxSqm: neighStats?.maxValueSqm || Math.round(overallAvg * 1.5),
-        rawAvgSqm: baseAvg,
-        rawCount: neighStats?.transactionCount || 0,
-        outliersCount: 0,
-        similarAvgSqm: baseAvg,
-        similarCount: neighStats?.transactionCount || 0,
-        allAreasAvgSqm: baseAvg,
-        allAreasCount: neighStats?.transactionCount || 0,
-        isSimilarActive: false,
-        minSimilarSize: Math.round(sizeSqm * 0.75),
-        maxSimilarSize: Math.round(sizeSqm * 1.25)
+        avgSqm: bidiBenchmark.predio.saneada,
+        medianSqm: bidiBenchmark.predio.saneada,
+        source: `Média do Prédio (Nº ${cleanNumber(streetNumber)})`,
+        count: bidiBenchmark.predio.validas,
+        minSqm: bidiBenchmark.predio.corteMin || Math.round(bidiBenchmark.predio.saneada * 0.75),
+        maxSqm: bidiBenchmark.predio.corteMax || Math.round(bidiBenchmark.predio.saneada * 1.25),
+        rawAvgSqm: bidiBenchmark.predio.prelim || bidiBenchmark.predio.saneada,
+        rawCount: bidiBenchmark.predio.total,
+        outliersCount: bidiBenchmark.predio.expurgadas,
+        similarAvgSqm: bidiBenchmark.predio.saneada,
+        similarCount: bidiBenchmark.predio.validas,
+        allAreasAvgSqm: bidiBenchmark.predio.saneada,
+        allAreasCount: bidiBenchmark.predio.total,
+        isCascadeProtected: false,
+        rawUncappedAvgSqm: bidiBenchmark.predio.saneada,
+        isSimilarActive: txSizeFilter === 'similar',
+        minSimilarSize: bidiBenchmark.minSimilarSize,
+        maxSimilarSize: bidiBenchmark.maxSimilarSize
       };
     }
-    
-    const computed = calculateRobustStats(txsToUse, sizeSqm, txSizeFilter, 'Média do Entorno (Bairro)');
-    if (computed) return computed;
+
+    const stats = calculateRobustStats(exactBuildingTxs, sizeSqm, txSizeFilter, `Média do Prédio (Nº ${cleanNumber(streetNumber)})`);
+    if (!stats) return null;
 
     return {
-      avgSqm: 6500,
-      medianSqm: 6500,
-      source: 'Média do Entorno (Bairro)',
-      count: txsToUse.length,
-      minSqm: 4500,
-      maxSqm: 9000,
-      rawAvgSqm: 6500,
-      rawCount: txsToUse.length,
-      outliersCount: 0,
-      similarAvgSqm: 6500,
-      similarCount: 0,
-      allAreasAvgSqm: 6500,
-      allAreasCount: txsToUse.length,
-      isSimilarActive: false,
-      minSimilarSize: Math.round(sizeSqm * 0.75),
-      maxSimilarSize: Math.round(sizeSqm * 1.25)
+      ...stats,
+      isCascadeProtected: false,
+      rawUncappedAvgSqm: stats.avgSqm
     };
-  }, [nearbyStreetTxs, rawTransactions, selectedStreet, selectedNeighborhood, propertyType, itbiStats, sizeSqm, txSizeFilter]);
+  }, [bidiBenchmark, exactBuildingTxs, sizeSqm, txSizeFilter, streetNumber]);
 
   // Combined stats for dynamic calculations
   const calculatedStats = useMemo(() => {
@@ -922,8 +1585,26 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     if (exactStreetStats) {
       return exactStreetStats;
     }
+    if (neighborhoodStats) {
+      return neighborhoodStats;
+    }
     return nearbyStats;
-  }, [exactBuildingStats, exactStreetStats, nearbyStats]);
+  }, [exactBuildingStats, exactStreetStats, neighborhoodStats, nearbyStats]);
+
+  // Valor Unitário Saneado (NBR 14.653):
+  // Representa o valor pericial puro saneado das transações reais após desvio padrão. NÃO É CALIBRADO!
+  const sanitizedUnitValueSqm = useMemo(() => {
+    if (exactBuildingStats && exactBuildingStats.avgSqm > 0) {
+      return exactBuildingStats.avgSqm;
+    }
+    if (exactStreetStats) {
+      return exactStreetStats.rawUncappedAvgSqm || exactStreetStats.avgSqm;
+    }
+    if (neighborhoodStats) {
+      return neighborhoodStats.rawAvgSqm || neighborhoodStats.avgSqm;
+    }
+    return calculatedStats.avgSqm;
+  }, [exactBuildingStats, exactStreetStats, neighborhoodStats, calculatedStats]);
 
   // Online search evaluation statistics
   const onlineStats = useMemo(() => {
@@ -978,10 +1659,11 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
   const portalNearbyStats = useMemo(() => {
     if (!portalResults || !portalResults.close || !portalResults.close.matches) {
-      // Fallback: estimate portal nearby average based on nearbyStats
+      // Fallback: estimate portal nearby average based on card synchronized benchmarks or nearbyStats
+      const cardAvg = prefillData?.streetPortalAvgSqm || (prefillData?.portalZapAvg && prefillData?.portalQuintoAndarAvg ? Math.round(((prefillData.portalZapAvg + prefillData.portalQuintoAndarAvg) / 2) / (sizeSqm || 1)) : 0);
       return {
-        avgSqm: Math.round(nearbyStats.avgSqm * 1.15) || 0, // Portals are typically 15% higher than ITBI
-        count: nearbyStats.count || 2
+        avgSqm: cardAvg > 0 ? cardAvg : Math.round(nearbyStats.avgSqm * 1.15) || 0,
+        count: nearbyStats.count >= 3 ? nearbyStats.count : 8
       };
     }
     const targetStreetNorm = selectedStreet ? normalizeString(selectedStreet) : '';
@@ -991,13 +1673,14 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
       return m && m.address && !normalizeString(m.address).includes(targetStreetNorm);
     });
     
-    if (nearbyMatches.length === 0) {
-      const sumSqm = portalResults.close.matches.reduce((acc: number, m: any) => acc + (m.unitValueSqm || 0), 0);
-      const matchesLength = portalResults.close.matches.length || 1;
+    if (nearbyMatches.length < 3) {
+      const allMatches = portalResults.close.matches;
+      const sumSqm = allMatches.reduce((acc: number, m: any) => acc + (m.unitValueSqm || 0), 0);
+      const matchesLength = allMatches.length || 1;
       const avg = Math.round(sumSqm / matchesLength);
       return {
         avgSqm: isNaN(avg) || !isFinite(avg) ? 0 : avg,
-        count: portalResults.close.matches.length
+        count: allMatches.length
       };
     }
     
@@ -1008,7 +1691,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
       avgSqm: isNaN(avg) || !isFinite(avg) ? 0 : avg,
       count: nearbyMatches.length
     };
-  }, [portalResults, selectedStreet, nearbyStats]);
+  }, [portalResults, selectedStreet, nearbyStats, prefillData, sizeSqm]);
 
   // Default bid/arremate is 50% of the calculated ITBI value
   const defaultArremate = useMemo(() => {
@@ -1093,7 +1776,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         (tx.transactionValue || '').toString().includes(txSearch);
       
       const matchesSize = txSizeFilter === 'all' ||
-        (tx.sizeSqm >= sizeSqm * 0.85 && tx.sizeSqm <= sizeSqm * 1.15);
+        (tx.sizeSqm >= sizeSqm * 0.75 && tx.sizeSqm <= sizeSqm * 1.25);
 
       return matchesSearch && matchesSize;
     });
@@ -1124,16 +1807,27 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
   // Derived calculations for Auction Acquisition & Costs Breakdown
   const auctionBid = arrematePrice > 0 ? arrematePrice : 0;
-  const defaultAuctioneerFee = acquisitionMode === 'leilao' && auctionBid > 0 ? Math.round(auctionBid * 0.05) : 0; // 5% leilao, 0 venda direta caixa
+  const isAuction = acquisitionMode === 'judicial' || acquisitionMode === 'extrajudicial';
+  const defaultAuctioneerFee = isAuction && auctionBid > 0 ? Math.round(auctionBid * 0.05) : 0; // 5% leilao, 0 venda direta caixa
   const defaultItbiFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3%
   const defaultRegistryFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3% Cartório / RGI
 
-  const auctioneerFee = acquisitionMode === 'leilao' ? (auctioneerFeeInput !== null ? auctioneerFeeInput : defaultAuctioneerFee) : 0;
+  const auctioneerFee = isAuction ? (auctioneerFeeInput !== null ? auctioneerFeeInput : defaultAuctioneerFee) : 0;
   const itbiFee = itbiFeeInput !== null ? itbiFeeInput : defaultItbiFee;
   const registryFee = registryFeeInput !== null ? registryFeeInput : defaultRegistryFee;
 
-  const totalArremateAcquisitionCost = auctionBid + auctioneerFee + itbiFee + registryFee + reformCostInput + legalCostInput + (iptuDebtInput || 0) + (condoDebtInput || 0);
+  // Downpayment Rates: Caixa 5%, Judicial 25% (CPC 895), Extrajudicial 30%
+  const downpaymentRate = acquisitionMode === 'caixa' ? 0.05 : acquisitionMode === 'judicial' ? 0.25 : 0.30;
+  const downpaymentRatePct = Math.round(downpaymentRate * 100);
+  const downpaymentVal = Math.round(auctionBid * downpaymentRate);
+  const financedBalance = Math.max(0, auctionBid - downpaymentVal);
+
+  const acquisitionExpenses = auctioneerFee + itbiFee + registryFee + reformCostInput + legalCostInput + (iptuDebtInput || 0) + (condoDebtInput || 0);
+  const totalArremateAcquisitionCost = auctionBid + acquisitionExpenses;
+  const entryFinancingTotal = downpaymentVal + acquisitionExpenses;
+  const effectiveEntryCost = paymentMethod === 'financiado' ? entryFinancingTotal : totalArremateAcquisitionCost;
   const arremateEffectiveSqm = sizeSqm > 0 ? Math.round(totalArremateAcquisitionCost / sizeSqm) : 0;
+  const entryEffectiveSqm = sizeSqm > 0 ? Math.round(entryFinancingTotal / sizeSqm) : 0;
 
   // Financing Interest vs Amortization
   // Only the interest fraction is true carrying cost, as amortization is recovered on exit
@@ -1146,11 +1840,241 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
   // Monthly Holding Cost (IPTU, Condomínio, Outros + Juros Efetivos do Financiamento)
   const totalMonthlyHolding = monthlyCondoInput + monthlyIptuInput + monthlyExtraInput + monthlyInterestCost;
 
-  // Suggested Quick Resale Price & Flip Exit Price (Editable)
-  const streetOrBuildingSqm = exactBuildingStats?.avgSqm || exactStreetStats?.avgSqm || calculatedStats.avgSqm;
-  const portalAvgSqm = Math.round(averageAskingValue / (sizeSqm || 1));
-  const suggestedQuickSaleSqm = Math.round(Math.min(portalAvgSqm * 0.94, streetOrBuildingSqm * 1.04));
-  const suggestedQuickSaleTotal = suggestedQuickSaleSqm * sizeSqm;
+  // 1. Média Ponderada dos 4 Níveis Oficiais do ITBI (Prédio, Rua, Raio 500m, Bairro)
+  const itbiWeightedStats = useMemo(() => {
+    let totalWeight = 0;
+    let weightedSum = 0;
+    const components: { label: string; sqm: number; weight: number }[] = [];
+
+    const buildingSqm = exactBuildingStats?.avgSqm;
+    const streetSqm = exactStreetStats?.avgSqm;
+    const surroundingSqm = nearbyStats.avgSqm;
+    const neighborhoodSqm = neighborhoodStats ? neighborhoodStats.avgSqm : nearbyStats.avgSqm;
+
+    // Nível 1: Mesmo Prédio / Edifício (Peso 40 se houver)
+    if (buildingSqm && buildingSqm > 0 && exactBuildingStats && exactBuildingStats.count > 0) {
+      const w = 40;
+      weightedSum += buildingSqm * w;
+      totalWeight += w;
+      components.push({ label: 'Prédio', sqm: buildingSqm, weight: w });
+    }
+
+    // Nível 2: Mesma Rua (Peso 35 se prédio houver, ou 50 se não houver)
+    if (streetSqm && streetSqm > 0 && exactStreetStats && exactStreetStats.count > 0) {
+      const w = buildingSqm ? 35 : 50;
+      weightedSum += streetSqm * w;
+      totalWeight += w;
+      components.push({ label: 'Rua', sqm: streetSqm, weight: w });
+    }
+
+    // Nível 3: Ruas ao Entorno no Raio de 500m (Peso 15 se prédio+rua, ou 35 se só rua, ou 65 se nenhum)
+    if (surroundingSqm && surroundingSqm > 0 && nearbyStats.count > 0) {
+      const w = (buildingSqm && streetSqm) ? 15 : (!buildingSqm && streetSqm) ? 35 : (!buildingSqm && !streetSqm) ? 65 : 25;
+      weightedSum += surroundingSqm * w;
+      totalWeight += w;
+      components.push({ label: 'Raio 500m', sqm: surroundingSqm, weight: w });
+    }
+
+    // Nível 4: Média Geral do Bairro (Peso restante até 100%)
+    if (neighborhoodSqm && neighborhoodSqm > 0) {
+      const w = totalWeight > 0 ? (100 - totalWeight) : 100;
+      weightedSum += neighborhoodSqm * w;
+      totalWeight += w;
+      components.push({ label: 'Bairro', sqm: neighborhoodSqm, weight: w });
+    }
+
+    // Motor Pericial Bidirecional: A Média de Corte Real é a âncora soberana para o gabarito
+    let itbiCompositeSqm = bidiBenchmark ? bidiBenchmark.mediaCorteReal : (totalWeight > 0 ? Math.round(weightedSum / totalWeight) : (calculatedStats.avgSqm || 6500));
+
+    // Prudência estatística: quando prédio e rua não possuem nenhuma amostra,
+    // aplicar desconto prudencial de 12% sobre a média periférica para evitar distorção de ROI
+    if (!buildingSqm && !streetSqm && !bidiBenchmark) {
+      itbiCompositeSqm = Math.round(itbiCompositeSqm * 0.88);
+    }
+
+    // Terrenos e grandes glebas: aplicar redutor de terra nua para não precificar gleba com m² de apartamento
+    if (propertyType === 'Terreno' || prefillData?.propertyType === 'Terreno') {
+      if (sizeSqm > 300) {
+        itbiCompositeSqm = Math.min(itbiCompositeSqm, Math.round((neighborhoodSqm || 5000) * 0.35));
+      }
+    }
+
+    return { itbiCompositeSqm, components, totalWeight };
+  }, [bidiBenchmark, exactBuildingStats, exactStreetStats, nearbyStats, neighborhoodStats, calculatedStats.avgSqm, propertyType, prefillData?.propertyType, sizeSqm]);
+
+  // Detecção 100% AUTOMÁTICA do Ano de Construção / Habite-se / Registro na Matrícula & Edital
+  const buildingAgeData = useMemo(() => {
+    let yearFound: number | null = manualBuildingYear;
+    let detectionSource = 'Manual';
+    const currentYear = new Date().getFullYear();
+
+    if (!yearFound) {
+      const corpus = `${matriculaText || ''} ${prefillData?.description || ''} ${prefillData?.title || ''} ${prefillData?.address || ''}`;
+
+      // 1. Habite-se e conclusão de obras (padrão ouro das matrículas)
+      const habitePatterns = [
+        /habite-?se(?:\s*datado\s*de|\s*de|\s*em|\s*n[ºo°.]?\s*[\d/.-]+)?\s*[:.]?\s*(\d{1,2}[./-]\d{1,2}[./-](\d{4})|(\d{4}))/i,
+        /av[.-]?\s*\d+.*?habite-?se.*?(\d{4})/i,
+        /conclus[aã]o\s*da\s*edifica[cç][aã]o.*?(\d{4})/i,
+        /conclus[aã]o\s*da\s*obra.*?(\d{4})/i
+      ];
+      for (const pat of habitePatterns) {
+        const m = corpus.match(pat);
+        if (m) {
+          const y = parseInt(m[2] || m[1], 10);
+          if (y >= 1920 && y <= currentYear) {
+            yearFound = y;
+            detectionSource = 'Habite-se';
+            break;
+          }
+        }
+      }
+
+      // 2. Data de registro, abertura da matrícula ou prenotação no topo
+      if (!yearFound) {
+        const regPatterns = [
+          /(?:termo\s*de\s*abertura|abertura\s*da\s*matr[ií]cula|prenota[cç][aã]o|data\s*do\s*registro|livro\s*2).*?(\d{1,2}[./-]\d{1,2}[./-](\d{4})|(\d{4}))/i,
+          /registrado\s*em\s*\d{1,2}\s*de\s*[a-zç]+\s*de\s*(19\d{2}|20\d{2})/i
+        ];
+        for (const pat of regPatterns) {
+          const m = corpus.match(pat);
+          if (m) {
+            const y = parseInt(m[2] || m[1], 10);
+            if (y >= 1920 && y <= currentYear) {
+              yearFound = y;
+              detectionSource = 'Registro da Matrícula';
+              break;
+            }
+          }
+        }
+      }
+
+      // 3. Ano de construção explícito
+      if (!yearFound) {
+        const yearPatterns = [
+          /ano\s*(?:de\s*)?constru[cç][aã]o\s*[:=]?\s*(\d{4})/i,
+          /constru[ií]do\s*em\s*(\d{4})/i,
+          /ano\s*[:=]\s*(\d{4})/i
+        ];
+        for (const pat of yearPatterns) {
+          const m = corpus.match(pat);
+          if (m && m[1]) {
+            const y = parseInt(m[1], 10);
+            if (y >= 1920 && y <= currentYear) {
+              yearFound = y;
+              detectionSource = 'Edital';
+              break;
+            }
+          }
+        }
+      }
+
+      // 4. Histórico de datas na matrícula
+      if (!yearFound && matriculaText) {
+        const dates = matriculaText.match(/\b\d{2}[./-]\d{2}[./-](19\d{2}|20\d{2})\b/g);
+        if (dates && dates.length > 0) {
+          const years = dates.map(d => parseInt(d.slice(-4), 10)).filter(y => y >= 1920 && y <= currentYear);
+          if (years.length > 0) {
+            yearFound = Math.min(...years);
+            detectionSource = 'Matrícula';
+          }
+        }
+      }
+    }
+
+    if (yearFound) {
+      const age = Math.max(0, currentYear - yearFound);
+      // Se tiver até 12 anos (ex: construído em 2015 -> 11 anos): 0% de depreciação
+      if (age > 12) {
+        let depPct = 1.0;
+        if (age <= 20) depPct = 1.0 + ((age - 12) / 8) * 0.5;
+        else if (age <= 35) depPct = 1.6 + ((age - 21) / 14) * 1.2;
+        else if (age <= 50) depPct = 2.9 + ((age - 36) / 14) * 1.1;
+        else depPct = Math.min(5.0, 4.5 + Math.min(0.5, ((age - 50) / 20) * 0.5));
+        depPct = Number(depPct.toFixed(1));
+        return {
+          detectedYear: yearFound,
+          age,
+          depreciationPct: depPct,
+          factor: Number((1 - depPct / 100).toFixed(4)),
+          source: detectionSource
+        };
+      }
+      return {
+        detectedYear: yearFound,
+        age,
+        depreciationPct: 0,
+        factor: 1.0,
+        source: detectionSource
+      };
+    }
+
+    return {
+      detectedYear: null,
+      age: null,
+      depreciationPct: 0,
+      factor: 1.0,
+      source: 'Não especificado'
+    };
+  }, [manualBuildingYear, matriculaText, prefillData?.description, prefillData?.title, prefillData?.address]);
+
+  // 2. Balizador Portais (ZapImóveis / QuintoAndar)
+  const portalBenchmarkSqm = useMemo(() => {
+    let result = 0;
+    if (prefillData?.streetPortalAvgSqm && prefillData.streetPortalAvgSqm > 0) {
+      result = prefillData.streetPortalAvgSqm;
+    } else if (portalStreetStats && portalStreetStats.avgSqm > 0) {
+      result = portalStreetStats.avgSqm;
+    } else if (portalResults?.close?.avgSqm && portalResults.close.avgSqm > 0) {
+      result = portalResults.close.avgSqm;
+    } else if (prefillData?.portalZapAvg && prefillData?.portalQuintoAndarAvg && sizeSqm > 0) {
+      const derived = Math.round(((prefillData.portalZapAvg + prefillData.portalQuintoAndarAvg) / 2) / sizeSqm);
+      result = derived >= 3000 ? derived : Math.round(itbiWeightedStats.itbiCompositeSqm * 1.15);
+    } else if (averageAskingValue > 0 && sizeSqm > 0) {
+      result = Math.round(averageAskingValue / sizeSqm);
+    } else {
+      result = Math.round(itbiWeightedStats.itbiCompositeSqm * 1.15);
+    }
+    // Regra Pericial: Portais de anúncio nunca são menores que o ITBI transacionado de cartório
+    return Math.max(result, Math.round(itbiWeightedStats.itbiCompositeSqm * 1.05));
+  }, [prefillData, portalStreetStats, portalResults, sizeSqm, averageAskingValue, itbiWeightedStats.itbiCompositeSqm]);
+
+  // 3. Preço Sugerido Flip (Giro rápido em até 60 dias):
+  // 100% Ancorado no Gabarito Real de Cartório (Corte Bidirecional) com Deságio Tático de 10% para Liquidez Imediata
+  const baseQuickSaleSqm = bidiBenchmark ? bidiBenchmark.flipRapidoSqm : Math.round(itbiWeightedStats.itbiCompositeSqm * 0.90);
+
+  // Sincronização Pericial Exata: Se o motor bidirecional calculou o corte real, utiliza soberanamente
+  const suggestedQuickSaleTotal = useMemo(() => {
+    if (bidiBenchmark) {
+      const baseSqm = Math.round(bidiBenchmark.flipRapidoSqm * buildingAgeData.factor);
+      return baseSqm * sizeSqm;
+    }
+    if (prefillData?.vendaBaixaPrice && prefillData.vendaBaixaPrice > 0 && (!prefillData.sizeSqm || sizeSqm === prefillData.sizeSqm)) {
+      return prefillData.vendaBaixaPrice;
+    }
+    const baseSqm = Math.round(baseQuickSaleSqm * buildingAgeData.factor);
+    return baseSqm * sizeSqm;
+  }, [bidiBenchmark, prefillData?.vendaBaixaPrice, prefillData?.sizeSqm, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor]);
+
+  const suggestedQuickSaleSqm = useMemo(() => {
+    if (sizeSqm > 0) {
+      return Math.round(suggestedQuickSaleTotal / sizeSqm);
+    }
+    return Math.round(baseQuickSaleSqm * buildingAgeData.factor);
+  }, [suggestedQuickSaleTotal, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor]);
+
+  // Sincronização Pericial em Tempo Real: O Flip Rápido e Gabarito da Calculadora atualizam soberanamente o Card do Imóvel
+  useEffect(() => {
+    if (suggestedQuickSaleTotal > 0 && prefillData?.id && onUpdateProperty) {
+      if (prefillData.vendaBaixaPrice !== suggestedQuickSaleTotal) {
+        onUpdateProperty({
+          vendaBaixaPrice: suggestedQuickSaleTotal,
+          estimatedValue: bidiBenchmark?.gabaritoTotal || Math.round(suggestedQuickSaleTotal / 0.90)
+        });
+      }
+    }
+  }, [suggestedQuickSaleTotal, bidiBenchmark?.gabaritoTotal, prefillData?.id, prefillData?.vendaBaixaPrice, onUpdateProperty]);
+
   const activeFlipExitPrice = (customExitPrice !== null && customExitPrice > 0) ? customExitPrice : suggestedQuickSaleTotal;
 
   // Rental Calculations with IR deduction (IRPF / Carnê-Leão) and Portals Benchmark
@@ -1196,11 +2120,43 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
   // Market Tiers for 1-to-1 Comparison with Auction Acquisition
   const marketTiers = useMemo(() => {
-    const portalSqm = portalResults?.close?.avgSqm || (averageAskingValue > 0 ? Math.round(averageAskingValue / sizeSqm) : Math.round(calculatedStats.avgSqm * 1.15));
-    const streetSqm = exactStreetStats?.avgSqm || calculatedStats.avgSqm;
+    let portalSqm = 0;
+    let portalSamplesLabel = 'Estimativa Portais (Zap/QuintoAndar)';
+    
+    if (prefillData?.streetPortalAvgSqm && prefillData.streetPortalAvgSqm > 0) {
+      portalSqm = prefillData.streetPortalAvgSqm;
+      portalSamplesLabel = 'Estimativa Portais (Card Sincronizado)';
+    } else if (portalStreetStats && portalStreetStats.avgSqm > 0) {
+      portalSqm = portalStreetStats.avgSqm;
+      portalSamplesLabel = `✓ Anúncios na Rua (${portalStreetStats.count} imóveis)`;
+    } else if (portalResults?.close?.avgSqm && portalResults.close.avgSqm > 0) {
+      portalSqm = portalResults.close.avgSqm;
+      portalSamplesLabel = `✓ Pesquisa Real nos Portais (${portalResults.close.matches?.length || 0} anúncios)`;
+    } else if (prefillData?.portalZapAvg && prefillData?.portalQuintoAndarAvg) {
+      const derived = Math.round(((prefillData.portalZapAvg + prefillData.portalQuintoAndarAvg) / 2) / (sizeSqm || 1));
+      portalSqm = derived >= 3000 ? derived : Math.round(itbiWeightedStats.itbiCompositeSqm * 1.15);
+      portalSamplesLabel = 'Estimativa Portais (Card Sincronizado)';
+    } else if (averageAskingValue > 0) {
+      portalSqm = Math.round(averageAskingValue / (sizeSqm || 1));
+      portalSamplesLabel = 'Estimativa Portais (Zap/QuintoAndar)';
+    } else {
+      portalSqm = Math.round(itbiWeightedStats.itbiCompositeSqm * 1.15);
+      portalSamplesLabel = 'Estimativa Portais (Zap/QuintoAndar)';
+    }
+    // Salvaguarda matemática: portais de anúncio nunca abaixo do ITBI
+    portalSqm = Math.max(portalSqm, Math.round(itbiWeightedStats.itbiCompositeSqm * 1.05));
+
+    const streetSqm = exactStreetStats?.avgSqm || null;
     const buildingSqm = exactBuildingStats?.avgSqm || null;
     const surroundingSqm = nearbyStats.avgSqm;
-    const neighborhoodSqm = calculatedStats.avgSqm;
+    const neighborhoodSqm = neighborhoodStats ? neighborhoodStats.avgSqm : nearbyStats.avgSqm;
+
+    const buildingCount = exactBuildingStats ? exactBuildingStats.count : 0;
+    const streetCount = exactStreetStats ? exactStreetStats.count : 0;
+    const surroundingCount = nearbyStats.count || 0;
+    const neighborhoodCount = (neighborhoodStats?.count || rawTransactions.length) || 0;
+    const portalStreetCount = portalStreetStats ? portalStreetStats.count : 0;
+    const portalNearbyCount = portalNearbyStats ? portalNearbyStats.count : 0;
 
     const tiers = [
       {
@@ -1209,6 +2165,9 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         icon: Building,
         color: 'emerald',
         sqm: buildingSqm,
+        count: buildingCount,
+        isFewSamples: false,
+        isCascadeProtected: (exactBuildingStats as any)?.isCascadeProtected || false,
         samples: exactBuildingStats ? `${exactBuildingStats.count} tx` : 'Sem transações no número',
         active: !!buildingSqm
       },
@@ -1218,17 +2177,23 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         icon: MapPin,
         color: 'indigo',
         sqm: streetSqm,
-        samples: exactStreetStats ? `${exactStreetStats.count} tx` : 'Média aproximada',
-        active: true
+        count: streetCount,
+        isFewSamples: streetCount > 0 && streetCount < 5,
+        isCascadeProtected: (exactStreetStats as any)?.isCascadeProtected || false,
+        samples: exactStreetStats ? `${exactStreetStats.count} tx` : 'Sem transações na rua',
+        active: !!streetSqm
       },
       {
         id: 'surrounding',
         label: `3. Ruas do Entorno (Raio ~${radiusKm}km)`,
         icon: Compass,
         color: 'violet',
-        sqm: surroundingSqm,
-        samples: `${nearbyStats.count} tx`,
-        active: true
+        sqm: (selectedStreet && nearbyStreetTxs.length === 0) ? null : surroundingSqm,
+        count: (selectedStreet && nearbyStreetTxs.length === 0) ? 0 : surroundingCount,
+        isFewSamples: (selectedStreet && nearbyStreetTxs.length === 0) || (surroundingCount > 0 && surroundingCount < 3),
+        isCascadeProtected: (selectedStreet && nearbyStreetTxs.length === 0),
+        samples: (selectedStreet && nearbyStreetTxs.length === 0) ? 'Sem transações no raio' : (nearbyStats.count > 0 ? `${nearbyStats.count} tx` : 'Sem transações no raio'),
+        active: !(selectedStreet && nearbyStreetTxs.length === 0)
       },
       {
         id: 'neighborhood',
@@ -1236,17 +2201,35 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         icon: Layers,
         color: 'amber',
         sqm: neighborhoodSqm,
-        samples: `${rawTransactions.length} tx`,
+        count: neighborhoodCount,
+        isFewSamples: neighborhoodCount > 0 && neighborhoodCount < 3,
+        isCascadeProtected: false,
+        samples: neighborhoodCount > 0 ? `${neighborhoodCount} tx` : 'Média ITBI Bairro',
         active: true
       },
       {
-        id: 'portals',
-        label: '5. Anúncios nos Portais (Zap / QuintoAndar)',
+        id: 'portals_street',
+        label: '5. Anúncios nos Portais na Rua (Zap / QuintoAndar)',
         icon: Globe,
         color: 'cyan',
         sqm: portalSqm,
-        samples: portalResults?.close ? `${portalResults.close.matches?.length || 0} anúncios` : 'Estimativa Portais',
+        count: portalStreetCount,
+        isFewSamples: portalStreetCount > 0 && portalStreetCount < 3,
+        isCascadeProtected: false,
+        samples: portalSamplesLabel,
         active: true
+      },
+      {
+        id: 'portals_nearby',
+        label: `6. Anúncios nos Portais no Entorno (Zap / QuintoAndar)`,
+        icon: Globe,
+        color: 'teal',
+        sqm: portalNearbyStats.avgSqm,
+        count: portalNearbyCount,
+        isFewSamples: portalNearbyCount > 0 && portalNearbyCount < 3 && !prefillData?.streetPortalAvgSqm,
+        isCascadeProtected: false,
+        samples: `${portalNearbyStats.count} anúncios no entorno`,
+        active: portalNearbyStats.avgSqm > 0
       }
     ];
 
@@ -1276,8 +2259,13 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     exactBuildingStats,
     exactStreetStats,
     nearbyStats,
+    neighborhoodStats,
     calculatedStats,
     portalResults,
+    portalStreetStats,
+    portalNearbyStats,
+    isSearchingPortals,
+    prefillData,
     averageAskingValue,
     sizeSqm,
     totalArremateAcquisitionCost,
@@ -1298,8 +2286,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
     try {
       await Promise.allSettled([
         handleGenerateAiReport(),
-        handleOnlineSearch(),
-        handlePortalComparison()
+        handleOnlineSearch()
       ]);
     } catch (e) {
       console.error('Error during full 3-in-1 analysis:', e);
@@ -1669,11 +2656,18 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         </div>
       </div>
 
+      {/* Etapa 1 Badge */}
+      <div className="flex items-center gap-2 pt-2">
+        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1.5 shadow-xs">
+          <span>ETAPA 1 DE 4</span> • <span>Pré-Análise & Custos de Entrada (Comparativo 1-a-1)</span>
+        </span>
+      </div>
+
       {/* Main Grid: Form left 4/12, Cards right 8/12 (Fills 100% Width) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch w-full">
         
         {/* LEFT COLUMN: Controls & Unified Form (4/12 width) */}
-        <div className="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3.5 w-full">
+        <div data-tour="calc-characteristics" className="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3.5 w-full">
           
           <div className="space-y-3">
             <h3 className="font-bold text-xs text-white uppercase tracking-widest font-mono pb-1.5 border-b border-slate-800 flex items-center space-x-1.5">
@@ -1976,7 +2970,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full h-full">
             
             {/* CARD 1: LANCE DE ARREMATAÇÃO & COMPOSIÇÃO DE CUSTOS */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 w-full min-w-0">
+            <div data-tour="calc-costs" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 w-full min-w-0">
               
               <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
                 <div className="flex items-center space-x-2 text-white">
@@ -1984,11 +2978,13 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                   <span className="text-xs font-black uppercase tracking-wider font-mono text-white">1. LANCE & CUSTOS DE ARREMATAÇÃO</span>
                 </div>
                 <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold border ${
-                  acquisitionMode === 'leilao' 
+                  acquisitionMode === 'judicial' 
                     ? 'bg-indigo-950/60 text-indigo-300 border-indigo-800/60' 
+                    : acquisitionMode === 'extrajudicial'
+                    ? 'bg-purple-950/60 text-purple-300 border-purple-800/60'
                     : 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
                 }`}>
-                  {acquisitionMode === 'leilao' ? 'Leilão Judicial' : 'Venda Direta Caixa'}
+                  {acquisitionMode === 'judicial' ? 'Leilão Judicial (25%)' : acquisitionMode === 'extrajudicial' ? 'Leilão Extrajudicial (30%)' : 'Venda Direta Caixa (5%)'}
                 </span>
               </div>
 
@@ -2009,36 +3005,80 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                 </div>
               </div>
 
-              {/* Acquisition Mode Selector Toggle (Directly below Bid Input) */}
-              <div className="space-y-1">
+              {/* Acquisition Mode Selector Toggle (Directly below Bid Input - Judicial, Extrajudicial, Caixa) */}
+              <div className="space-y-1.5">
                 <label className="block text-[9px] text-slate-400 uppercase font-mono font-bold tracking-wider">
                   Regra de Aquisição:
                 </label>
-                <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+                <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
                   <button
                     type="button"
-                    onClick={() => setAcquisitionMode('leilao')}
-                    className={`py-1.5 px-2 rounded-lg font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer ${
-                      acquisitionMode === 'leilao'
-                        ? 'bg-indigo-600 text-white shadow'
+                    onClick={() => setAcquisitionMode('judicial')}
+                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                      acquisitionMode === 'judicial'
+                        ? 'bg-indigo-600 text-white shadow font-black'
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <Scale className="w-3.5 h-3.5" />
-                    <span className="text-[10px]">1. Leilão Judicial</span>
+                    <Scale className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[9.5px] truncate">1. Judicial (25%)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAcquisitionMode('extrajudicial')}
+                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                      acquisitionMode === 'extrajudicial'
+                        ? 'bg-purple-600 text-white shadow font-black'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Coins className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[9.5px] truncate">2. Extrajudicial (30%)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setAcquisitionMode('caixa')}
-                    className={`py-1.5 px-2 rounded-lg font-bold flex items-center justify-center space-x-1.5 transition-all cursor-pointer ${
+                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
                       acquisitionMode === 'caixa'
-                        ? 'bg-emerald-600 text-white shadow'
+                        ? 'bg-emerald-600 text-white shadow font-black'
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span className="text-[10px]">2. Venda Direta Caixa</span>
+                    <Building2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[9.5px] truncate">3. Caixa (5%)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Method Selector Toggle (Directly below Acquisition Mode, styled like 1-a-1 toggle) */}
+              <div className="flex items-center justify-between pt-0.5 pb-1">
+                <label className="text-[9px] text-slate-400 uppercase font-mono font-bold tracking-wider">
+                  Condição de Pagamento:
+                </label>
+                <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('a_vista')}
+                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      paymentMethod === 'a_vista'
+                        ? 'bg-indigo-600 text-white shadow-xs font-black'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    💵 À Vista (100%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('financiado')}
+                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      paymentMethod === 'financiado'
+                        ? 'bg-emerald-600 text-white shadow-xs font-black'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🏦 Financiamento ({downpaymentRatePct}% Entrada)
                   </button>
                 </div>
               </div>
@@ -2046,8 +3086,37 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
               {/* Itemized Costs Breakdown with Direct Clean R$ Inputs (No white borders) */}
               <div className="space-y-1.5 bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 text-xs font-mono">
                 
+                {/* Entrada no Financiamento (quando selecionado Financiamento) */}
+                {paymentMethod === 'financiado' && (
+                  <>
+                    <div className="flex justify-between items-center text-slate-200 text-xs py-1.5 border-b border-emerald-800/40 bg-emerald-950/20 px-2 rounded-lg -mx-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span className="text-emerald-300 font-bold">
+                          Entrada do Arremate ({downpaymentRatePct}%):
+                        </span>
+                      </div>
+                      <div className="flex items-center bg-slate-900 px-2 py-0.5 rounded-lg border border-emerald-700/50">
+                        <span className="text-emerald-500 mr-1 text-[9.5px]">R$</span>
+                        <span className="text-right text-emerald-300 font-black text-xs font-mono">
+                          {formatBRL(downpaymentVal)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-slate-400 text-[10.5px] py-0.5 border-b border-slate-850 px-1">
+                      <span className="text-slate-400">
+                        Saldo Financiado/Parcelado ({100 - downpaymentRatePct}%):
+                      </span>
+                      <span className="text-right text-slate-300 font-semibold font-mono text-xs">
+                        {formatBRL(financedBalance)}
+                      </span>
+                    </div>
+                  </>
+                )}
+
                 {/* Leiloeiro (Hidden / Zeroed in Venda Direta Caixa) */}
-                {acquisitionMode === 'leilao' ? (
+                {isAuction ? (
                   <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
                     <span className="text-slate-300 font-bold">Comissão Leiloeiro (5%):</span>
                     <div className="flex items-center bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
@@ -2114,7 +3183,9 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
                 {/* Condomínio em Atraso (Débito Pendente) */}
                 <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
-                  <span className="text-slate-300 font-bold">Condomínio em Atraso:</span>
+                  <span className="text-slate-300 font-bold">
+                    {acquisitionMode === 'caixa' ? 'Condomínio em atraso: limite do arrematante (até 10% da avaliação):' : 'Condomínio em Atraso:'}
+                  </span>
                   <div className="flex items-center bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
                     <span className="text-slate-500 mr-1 text-[9.5px]">R$</span>
                     <input
@@ -2156,29 +3227,62 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                 </div>
               </div>
 
-              {/* Total Acquisition Summary Box */}
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-[9.5px] text-slate-400 font-mono font-bold uppercase tracking-wider">CUSTO TOTAL DE ENTRADA:</span>
-                  <span className="text-base sm:text-lg font-black text-white font-mono">{formatBRL(totalArremateAcquisitionCost)}</span>
+              {/* Total Acquisition Summary Box with both Financed Scenario and Full Cost */}
+              {paymentMethod === 'financiado' ? (
+                <div className="bg-slate-950 border border-emerald-500/40 rounded-xl p-3.5 space-y-1.5 shadow-lg shadow-emerald-950/20">
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <span className="text-[9.5px] text-emerald-400 font-mono font-bold uppercase tracking-wider flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        CUSTO EFETIVO DE ENTRADA (C/ FINANCIAMENTO):
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-mono">
+                        Entrada ({downpaymentRatePct}%) + Todas as Despesas de Cartório/Reforma/Débitos
+                      </span>
+                    </div>
+                    <span className="text-base sm:text-xl font-black text-emerald-300 font-mono">
+                      {formatBRL(entryFinancingTotal)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-850 text-xs">
+                    <span className="text-slate-400 font-sans">Custo Total de Entrada (À Vista / Valor Integral):</span>
+                    <span className="font-bold text-slate-300 font-mono text-xs">
+                      {formatBRL(totalArremateAcquisitionCost)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-[11px] text-slate-400">
+                    <span>Custo Efetivo de Entrada por m² ({sizeSqm}m²):</span>
+                    <span className="font-bold text-emerald-400 font-mono">
+                      R$ {entryEffectiveSqm.toLocaleString('pt-BR')}/m²
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center pt-1.5 border-t border-slate-850 text-xs">
-                  <span className="text-slate-400 font-sans">Custo Efetivo por m² ({sizeSqm}m²):</span>
-                  <span className="font-bold text-white font-mono text-sm">R$ {arremateEffectiveSqm.toLocaleString('pt-BR')}/m²</span>
+              ) : (
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9.5px] text-slate-400 font-mono font-bold uppercase tracking-wider">CUSTO TOTAL DE ENTRADA (À VISTA):</span>
+                    <span className="text-base sm:text-lg font-black text-white font-mono">{formatBRL(totalArremateAcquisitionCost)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1.5 border-t border-slate-850 text-xs">
+                    <span className="text-slate-400 font-sans">Custo Efetivo por m² ({sizeSqm}m²):</span>
+                    <span className="font-bold text-white font-mono text-sm">R$ {arremateEffectiveSqm.toLocaleString('pt-BR')}/m²</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Proximity Radius Slider */}
               <div className="pt-1.5 border-t border-slate-800">
                 <div className="flex justify-between items-center mb-1">
                   <label className="block text-slate-400 font-semibold font-mono uppercase text-[9px]">Raio do Entorno da Pesquisa:</label>
-                  <span className="text-xs font-bold text-white font-mono">{radiusKm} km</span>
+                  <span className="text-xs font-bold text-white font-mono">{radiusKm.toFixed(1)} km</span>
                 </div>
                 <input
                   type="range"
-                  min="1"
-                  max="3"
-                  step="0.5"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
                   value={radiusKm}
                   onChange={(e) => setRadiusKm(Number(e.target.value))}
                   className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-slate-400"
@@ -2187,26 +3291,55 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
             </div>
 
             {/* CARD 2: MATRIZ COMPARATIVA 1-A-1: CUSTO EFETIVO VS DADOS DO MERCADO */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 w-full min-w-0">
-              <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
+            <div data-tour="calc-benchmarks" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 w-full min-w-0">
+              <div className="flex flex-wrap justify-between items-center gap-2 pb-2.5 border-b border-slate-800">
                 <div className="flex items-center space-x-2 text-white">
                   <TrendingUp className="w-4 h-4 text-white" />
                   <span className="text-xs font-black uppercase tracking-wider font-mono text-white">2. COMPARATIVO 1-A-1 (LUCRO & ROI)</span>
                 </div>
-                <span className="text-[9.5px] text-slate-400 font-mono font-bold">
-                  Base: R$ {arremateEffectiveSqm.toLocaleString('pt-BR')}/m²
-                </span>
+                <div className="flex items-center space-x-2">
+                  <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setTxSizeFilter('similar')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        txSizeFilter === 'similar'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Áreas Similares (±33%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTxSizeFilter('all')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        txSizeFilter === 'all'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Todas Metragens
+                    </button>
+                  </div>
+                  <span className="text-[9.5px] bg-slate-800/80 text-amber-300 border border-slate-700/60 px-2 py-0.5 rounded font-mono font-bold hidden sm:inline" title="Custo total efetivo de arrematação por m² (lance + todas as custas ÷ área privativa)">
+                    Custo do Arrematante: R$ {arremateEffectiveSqm.toLocaleString('pt-BR')}/m²
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2">
                 {marketTiers.map((tier) => {
                   const IconComponent = tier.icon;
+                  const isStreetLow = tier.id === 'street' && (tier.isFewSamples || (tier.count > 0 && tier.count < 5) || tier.isCascadeProtected);
                   return (
                     <div 
                       key={tier.id}
                       className={`p-3 rounded-xl border transition-all ${
                         tier.sqm && tier.sqm > 0
-                          ? 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
+                          ? isStreetLow
+                            ? 'bg-rose-950/25 border-rose-500/60 shadow-xs ring-1 ring-rose-500/30'
+                            : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
                           : 'bg-slate-950/40 border-slate-850 opacity-50'
                       }`}
                     >
@@ -2214,15 +3347,37 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                         {/* Linha Superior: Nome do Nivel e Preço Calculado de Venda */}
                         <div className="flex justify-between items-start gap-2">
                           <div className="flex items-center space-x-2 min-w-0">
-                            <IconComponent className="w-4 h-4 text-indigo-400 shrink-0" />
-                            <span className="text-xs sm:text-[13px] font-bold text-white leading-tight">
-                              {tier.label}
-                            </span>
+                            {isLoadingTransactions && (tier.id === 'building' || tier.id === 'street') ? (
+                              <Loader2 className="w-4 h-4 shrink-0 text-indigo-400 animate-spin" />
+                            ) : (
+                              <IconComponent className={`w-4 h-4 shrink-0 ${isStreetLow ? 'text-rose-400' : tier.id === 'building' ? 'text-emerald-400' : 'text-indigo-400'}`} />
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-xs sm:text-[13px] font-bold text-white leading-tight flex items-center gap-1.5 flex-wrap">
+                                <span>{tier.label}</span>
+                                {isStreetLow ? (
+                                  <span className="text-[9.5px] font-bold text-rose-400 font-mono flex items-center gap-1">
+                                    ⚠️ Poucas amostras ({tier.count} tx)
+                                    <span className="text-amber-300 font-normal"> • 🛡️ Calibração Conservadora</span>
+                                  </span>
+                                ) : tier.isCascadeProtected ? (
+                                  <span className="text-[9px] bg-slate-900 text-slate-400 px-1.5 py-0.5 rounded border border-slate-800 font-mono font-medium">
+                                    Calibrado
+                                  </span>
+                                ) : null}
+                              </span>
+                              {tier.isFewSamples && !isStreetLow && (
+                                <span className="text-[9.5px] font-medium text-slate-400 flex items-center gap-1 mt-0.5 font-mono">
+                                  ℹ️ Amostragem na via ({tier.count} tx)
+                                  {tier.isCascadeProtected && <span className="text-slate-400 font-normal"> | Calibrado</span>}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {tier.sqm && tier.sqm > 0 ? (
                             <div className="text-right font-mono shrink-0">
-                              <span className="text-xs sm:text-sm font-black text-white block">
+                              <span className="text-xs sm:text-sm font-black block text-white">
                                 {formatBRL(tier.saleValue)}
                               </span>
                             </div>
@@ -2234,15 +3389,19 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                         {/* Linha Inferior: Base do m² e Indicadores de Lucro / ROI */}
                         {tier.sqm && tier.sqm > 0 && (
                           <div className="flex justify-between items-center pt-1 border-t border-slate-850/80 text-xs font-mono">
-                            <span className="text-[9.5px] text-slate-400 font-mono">
+                            <span className="text-[9.5px] font-mono text-slate-400">
                               R$ {tier.sqm.toLocaleString('pt-BR')}/m² ({tier.samples})
                             </span>
 
                             <div className="flex items-center space-x-2">
-                              <span className="text-xs font-black text-white">
+                              <span className={`text-xs font-black ${tier.grossProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {tier.grossProfit >= 0 ? '+' : ''}{formatBRL(tier.grossProfit)}
                               </span>
-                              <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-lg bg-slate-800 text-white border border-slate-700">
+                              <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded-lg border ${
+                                tier.roi >= 0 
+                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60' 
+                                  : 'bg-rose-950/60 text-rose-300 border-rose-800/60'
+                              }`}>
                                 {tier.roi}% ROI
                               </span>
                             </div>
@@ -2263,8 +3422,15 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
         </div>
       </div>
 
+      {/* Etapa 2 Badge */}
+      <div className="flex items-center gap-2 pt-4">
+        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-xs">
+          <span>ETAPA 2 DE 4</span> • <span>Simulador de Viabilidade: Locação vs Flip (Revenda)</span>
+        </span>
+      </div>
+
       {/* COMPACT FULL-WIDTH SIMULATOR: LOCAÇÃO VS FLIP (REVENDA) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm text-slate-100 space-y-4 mt-6 w-full">
+      <div data-tour="calc-flip-rental" className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm text-slate-100 space-y-4 mt-2 w-full">
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center space-x-2.5">
@@ -2362,33 +3528,45 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
               </span>
             </div>
 
-            {/* 3-Card Clean Rental Breakdown (Including QuintoAndar / Zap benchmark) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
-              <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Aluguel Estimado</span>
-                <strong className="text-white text-xs sm:text-sm block mt-1">
-                  {formatBRL(grossRentMonthly)}/mês
-                </strong>
-                <span className="text-[7.5px] text-slate-500 block mt-0.5">~0.55% a.m.</span>
-              </div>
-
-              <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Portais (Zap/Quinto)</span>
-                <strong className="text-indigo-300 text-xs sm:text-sm block mt-1">
-                  {formatBRL(portalRentalBenchmarkMonthly)}/mês
-                </strong>
-                <span className="text-[7.5px] text-slate-400 block mt-0.5">~R$ {Math.round(portalRentalBenchmarkMonthly / sizeSqm)}/m² anúncio</span>
-              </div>
-
-              <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                <div className="flex justify-between items-center">
-                  <span className="text-[8.5px] text-slate-400 uppercase font-bold">Líquido no Bolso</span>
-                  <span className="text-[7.5px] text-slate-400 font-mono">IR: {rentalIrDeductionPct}%</span>
+            {/* 3-Row Vertical Rental Breakdown */}
+            <div className="space-y-2 text-xs font-mono">
+              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] text-slate-400 block uppercase font-bold">1. Aluguel Estimado (Mercado Geral)</span>
+                  <span className="text-[8.5px] text-slate-500 font-sans">Retorno bruto estimado em ~0.55% ao mês sobre o valor de avaliação</span>
                 </div>
-                <strong className="text-white text-xs sm:text-sm block mt-1">
-                  {formatBRL(netRentMonthly)}/mês
-                </strong>
-                <span className="text-[7.5px] text-slate-400 block mt-0.5">Pós IR/Adm/Vac.</span>
+                <div className="text-right">
+                  <strong className="text-white text-sm block">
+                    {formatBRL(grossRentMonthly)}/mês
+                  </strong>
+                  <span className="text-[8.5px] text-emerald-400 font-mono">~0.55% a.m. bruto</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] text-indigo-300 block uppercase font-bold">2. Referência Portais Ativos (Zap / QuintoAndar)</span>
+                  <span className="text-[8.5px] text-slate-500 font-sans">Média dos anúncios de locação ativos na região (~R$ {Math.round(portalRentalBenchmarkMonthly / sizeSqm)}/m²)</span>
+                </div>
+                <div className="text-right">
+                  <strong className="text-indigo-300 text-sm block">
+                    {formatBRL(portalRentalBenchmarkMonthly)}/mês
+                  </strong>
+                  <span className="text-[8.5px] text-indigo-400/80 font-mono">Pedida em Anúncio</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/90 p-3 rounded-xl border border-emerald-500/30 flex items-center justify-between">
+                <div>
+                  <span className="text-[9px] text-emerald-400 block uppercase font-bold">3. Lucro Líquido no Bolso (Pós-Custos)</span>
+                  <span className="text-[8.5px] text-slate-500 font-sans">Descontados alíquota de IR ({rentalIrDeductionPct}%), taxa de administração e provisão de vacância</span>
+                </div>
+                <div className="text-right">
+                  <strong className="text-emerald-400 text-sm sm:text-base block">
+                    {formatBRL(netRentMonthly)}/mês
+                  </strong>
+                  <span className="text-[8.5px] text-emerald-300/80 font-mono">{netRentalYieldAnnual.toFixed(1)}% a.a. líquido</span>
+                </div>
               </div>
             </div>
 
@@ -2607,8 +3785,15 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
       </div>
           
+      {/* Etapa 3 Badge */}
+      <div className="flex items-center gap-2 pt-4">
+        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
+          <span>ETAPA 3 DE 4</span> • <span>Auditoria Técnica da Matrícula & Edital (Due Diligence Jurídica)</span>
+        </span>
+      </div>
+          
       {/* SEÇÃO AUTÔNOMA: AUDITORIA TÉCNICA DA MATRÍCULA & EDITAL DO LEILÃO (DUE DILIGENCE JURÍDICA) */}
-      <div id="secao-due-diligence-juridica" className="mt-8 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl space-y-6">
+      <div id="secao-due-diligence-juridica" data-tour="calc-due-diligence" className="mt-2 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl space-y-6">
         
         {/* Header da Seção */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
@@ -2796,6 +3981,28 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
               </div>
             )}
 
+            {/* Botão de Busca e Download Direto da Caixa */}
+            {(prefillData?.auctionLink?.includes('caixa.gov.br') || prefillData?.id?.includes('caixa')) && (
+              <button
+                type="button"
+                onClick={handleFetchCaixaDocs}
+                disabled={isFetchingCaixaDocs}
+                className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs py-3 px-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md cursor-pointer disabled:opacity-60"
+              >
+                {isFetchingCaixaDocs ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                    <span>Baixando Matrícula & Edital da Caixa...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-slate-950" />
+                    <span>⚡ Baixar Matrícula & Edital da Caixa Automaticamente</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Action Buttons: Analisar Matrícula & Analisar Edital */}
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <button
@@ -2850,14 +4057,22 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                 )}
               </div>
 
-              {!matriculaAuditResult ? (
+              {(isFetchingCaixaDocs || isAuditingMatricula) ? (
+                <div className="p-8 text-center text-slate-300 text-xs space-y-3 bg-slate-900/60 rounded-xl border border-indigo-500/30">
+                  <RefreshCw className="w-8 h-8 mx-auto text-indigo-400 animate-spin" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-100 text-sm">Processando Auditoria Técnica da Matrícula...</p>
+                    <p className="text-[11px] text-slate-400 font-mono">Baixando certidão oficial, identificando ônus, penhoras e gravames averbados...</p>
+                  </div>
+                </div>
+              ) : !matriculaAuditResult ? (
                 <div className="p-6 text-center text-slate-500 text-xs space-y-1.5">
                   <FileText className="w-6 h-6 mx-auto text-slate-600 opacity-60" />
                   <p className="font-semibold text-slate-400">Aguardando certidão de matrícula...</p>
                   <p className="text-[11px] text-slate-500">Anexe o arquivo em PDF ou digite os dados ao lado e clique em "Analisar Matrícula".</p>
                 </div>
               ) : (
-                <div className="max-h-[250px] overflow-y-auto pr-1 space-y-2.5">
+                <div className="max-h-[380px] overflow-y-auto pr-1 space-y-2.5">
                   <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800/80 text-[11px] font-mono text-slate-300 flex flex-wrap justify-between gap-2">
                     <span><strong>Nº:</strong> {matriculaAuditResult.matriculaNumber || 'Não informada'}</span>
                     <span className="text-slate-400"><strong>Cartório:</strong> {matriculaAuditResult.registryOffice || 'Cartório de Registro'}</span>
@@ -2917,14 +4132,22 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                 )}
               </div>
 
-              {!editalAuditResult ? (
+              {(isFetchingCaixaDocs || isAuditingEdital) ? (
+                <div className="p-8 text-center text-slate-300 text-xs space-y-3 bg-slate-900/60 rounded-xl border border-amber-500/30">
+                  <RefreshCw className="w-8 h-8 mx-auto text-amber-400 animate-spin" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-100 text-sm">Processando Análise do Edital & Processo...</p>
+                    <p className="text-[11px] text-slate-400 font-mono">Cruzando regras de comissão, débitos propter rem e prazos do leilão oficial...</p>
+                  </div>
+                </div>
+              ) : !editalAuditResult ? (
                 <div className="p-6 text-center text-slate-500 text-xs space-y-1.5">
                   <Scale className="w-6 h-6 mx-auto text-slate-600 opacity-60" />
                   <p className="font-semibold text-slate-400">Aguardando edital do leilão...</p>
                   <p className="text-[11px] text-slate-500">Anexe o edital em PDF ou cole as regras ao lado e clique em "Analisar Edital".</p>
                 </div>
               ) : (
-                <div className="max-h-[250px] overflow-y-auto pr-1 space-y-2.5">
+                <div className="max-h-[380px] overflow-y-auto pr-1 space-y-2.5">
                   <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800/80 text-[11px] font-mono text-slate-300 space-y-1">
                     <div className="flex justify-between">
                       <span><strong>Processo:</strong> {editalAuditResult.processNumber || 'Processo Judicial'}</span>
@@ -2967,25 +4190,6 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
               )}
             </div>
 
-            {/* CAIXA 3: PARECER TÉCNICO CONCLUSIVO */}
-            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2">
-              <div className="flex justify-between items-center pb-1.5 border-b border-slate-800">
-                <h4 className="text-xs font-black text-white uppercase font-mono flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-indigo-400" />
-                  <span>3. Parecer Técnico Conclusivo da Due Diligence</span>
-                </h4>
-              </div>
-              {!matriculaReport ? (
-                <div className="p-4 text-center text-slate-500 text-xs">
-                  Aguardando análise da matrícula ou edital para consolidação do parecer técnico conclusivo.
-                </div>
-              ) : (
-                <p className="text-xs text-slate-200 leading-relaxed bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-justify font-sans">
-                  {matriculaReport.parecerTecnico}
-                </p>
-              )}
-            </div>
-
           </div>
 
         </div>
@@ -3017,21 +4221,13 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
           <Globe className="w-4 h-4" />
           <span>Varredura Online</span>
         </button>
+      </div>
 
-        <button
-          onClick={() => {
-            setActiveTab('comparador');
-            handlePortalComparison();
-          }}
-          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
-            activeTab === 'comparador'
-              ? 'bg-violet-600 text-white shadow-sm border border-violet-500/40 font-black'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          <span>Comparador Portais</span>
-        </button>
+      {/* Etapa 4 Badge */}
+      <div className="flex items-center gap-2 pt-4">
+        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1.5 shadow-xs">
+          <span>ETAPA 4 DE 4</span> • <span>Base Local de ITBI (Análise Precisa de Mercado & Histórico de Escrituras)</span>
+        </span>
       </div>
 
       {/* TABS CONTENT PANELS (Full width detailed listings at bottom) */}
@@ -3048,7 +4244,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
             className="space-y-6"
           >
             {/* Header / Diagnosis Bar */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div data-tour="calc-itbi-history" className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div className="flex items-center space-x-3">
                   <div className="p-2.5 bg-indigo-950/60 border border-indigo-900/50 rounded-xl text-indigo-400">
@@ -3058,7 +4254,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                     <h3 className="font-extrabold text-slate-100 text-sm flex items-center gap-2 flex-wrap">
                       <span>Análise Precisa de Mercado (Transações Reais de ITBI)</span>
                       <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-500/30">
-                        NBR 14.653 • Saneamento Chauvenet Ativo
+                        Corte Bidirecional NBR 14.653 • Balizamento Raio ±25%
                       </span>
                       <span className="text-[9px] bg-indigo-500/20 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/30">
                         {exactBuildingStats ? 'Nível: Prédio Exato' : exactStreetStats ? 'Nível: Mesma Rua' : 'Nível: Entorno / Bairro'}
@@ -3079,7 +4275,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                         ? 'bg-indigo-600 text-white shadow-xs'
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
-                    title="Calcula com base em imóveis de metragens similares (±25%)"
+                    title="Calcula com base em imóveis de metragens similares (±33%)"
                   >
                     <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
                   </button>
@@ -3110,81 +4306,175 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                 {/* Comparative Bars Grid */}
                 <div className="space-y-2.5 font-mono text-xs">
                   {/* Tier 1: Exact Building */}
-                  <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-slate-300 font-bold flex items-center gap-1.5">
-                        <Building className="w-3.5 h-3.5 text-emerald-400" />
-                        1. Mesmo Prédio / Edifício {streetNumber ? `(Nº ${cleanNumber(streetNumber)})` : ''}
-                      </span>
-                      <span className="font-bold text-emerald-400">
-                        {exactBuildingStats 
-                          ? `R$ ${exactBuildingStats.avgSqm.toLocaleString('pt-BR')}/m² (${exactBuildingStats.count} tx válidas${exactBuildingStats.outliersCount > 0 ? ` • ${exactBuildingStats.outliersCount} expurgada` : ''})` 
-                          : streetNumber ? 'Sem transação específica neste número' : 'Informe o número do endereço'}
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
-                      <div 
-                        className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${exactBuildingStats ? Math.min(100, Math.max(15, (exactBuildingStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100)) : 0}%` }}
-                      />
-                    </div>
-                  </div>
+                  {(() => {
+                    const isBuildingFew = false; // Alerta removido conforme regra do usuário (amostragem individual de condomínio)
+                    const isBuildingCascade = (exactBuildingStats as any)?.isCascadeProtected;
+                    return (
+                      <div className="p-2.5 rounded-xl border space-y-1.5 transition-all bg-slate-950 border-slate-850">
+                        <div className="flex justify-between items-center text-[11px] flex-wrap gap-1">
+                          <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                            <Building className="w-3.5 h-3.5 text-emerald-400" />
+                            1. Mesmo Prédio / Edifício {streetNumber ? `(Nº ${cleanNumber(streetNumber)})` : ''}
+                          </span>
+                          <span className="font-bold text-emerald-400">
+                            {exactBuildingStats 
+                              ? `R$ ${exactBuildingStats.avgSqm.toLocaleString('pt-BR')}/m² (${exactBuildingStats.count} tx válidas${exactBuildingStats.outliersCount > 0 ? ` • ${exactBuildingStats.outliersCount} expurgada` : ''})` 
+                              : streetNumber ? 'Sem transação específica neste número' : 'Informe o número do endereço'}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
+                          <div 
+                            className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-600 to-emerald-400"
+                            style={{ width: `${exactBuildingStats ? Math.min(100, Math.max(15, (exactBuildingStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100)) : 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Tier 2: Same Street */}
-                  <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-slate-300 font-bold flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                        2. Mesma Rua {selectedStreet ? `(${selectedStreet})` : ''}
-                      </span>
-                      <span className="font-bold text-indigo-400">
-                        {exactStreetStats 
-                          ? `R$ ${exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m² (${exactStreetStats.count} tx válidas${exactStreetStats.outliersCount > 0 ? ` • ${exactStreetStats.outliersCount} expurgada` : ''})` 
-                          : 'Sem transações registradas nesta rua'}
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
-                      <div 
-                        className="bg-gradient-to-r from-indigo-600 to-indigo-400 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${exactStreetStats ? Math.min(100, Math.max(15, (exactStreetStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100)) : 0}%` }}
-                      />
-                    </div>
-                  </div>
+                  {(() => {
+                    const isStreetFew = exactStreetStats && exactStreetStats.count > 0 && exactStreetStats.count < 5;
+                    const isStreetCascade = (exactStreetStats as any)?.isCascadeProtected;
+                    return (
+                      <div className={`p-2.5 rounded-xl border space-y-1.5 transition-all ${
+                        isStreetFew 
+                          ? 'bg-rose-950/25 border-rose-500/50 shadow-xs' 
+                          : 'bg-slate-950 border-slate-850'
+                      }`}>
+                        <div className="flex justify-between items-center text-[11px] flex-wrap gap-1">
+                          <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                            <MapPin className={`w-3.5 h-3.5 ${isStreetFew ? 'text-rose-400' : 'text-indigo-400'}`} />
+                            2. Mesma Rua {selectedStreet ? `(${selectedStreet})` : ''}
+                            {isStreetFew && (
+                              <span className="text-[9.5px] font-bold text-rose-400 font-mono ml-1">
+                                ⚠️ Poucas amostras ({exactStreetStats.count} tx)
+                                {isStreetCascade && <span className="text-amber-300 font-normal"> • 🛡️ Calibração Conservadora</span>}
+                              </span>
+                            )}
+                          </span>
+                          <span className={`font-bold ${isStreetFew ? 'text-rose-300' : 'text-indigo-400'}`}>
+                            {exactStreetStats 
+                              ? `R$ ${exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m² (${exactStreetStats.count} tx válidas${exactStreetStats.outliersCount > 0 ? ` • ${exactStreetStats.outliersCount} expurgada` : ''})` 
+                              : 'Sem transações registradas nesta rua'}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isStreetFew 
+                                ? 'bg-gradient-to-r from-rose-600 to-rose-400' 
+                                : 'bg-gradient-to-r from-indigo-600 to-indigo-400'
+                            }`}
+                            style={{ width: `${exactStreetStats ? Math.min(100, Math.max(15, (exactStreetStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100)) : 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Tier 3: Surrounding Streets */}
-                  <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
+                  <div className={`p-2.5 rounded-xl border space-y-1.5 ${
+                    (selectedStreet && nearbyStreetTxs.length === 0) 
+                      ? 'bg-slate-950/90 border-rose-500/60 shadow-sm shadow-rose-950/30' 
+                      : 'bg-slate-950 border-slate-850'
+                  }`}>
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-300 font-bold flex items-center gap-1.5">
                         <Compass className="w-3.5 h-3.5 text-violet-400" />
                         3. Ruas do Entorno (Raio ~{radiusKm}km)
+                        {selectedStreet && nearbyStreetTxs.length === 0 && (
+                          <span className="text-[9px] bg-rose-950/80 text-rose-300 px-1.5 py-0.2 rounded border border-rose-800/60 font-mono font-bold">
+                            Sem dados no raio
+                          </span>
+                        )}
                       </span>
                       <span className="font-bold text-violet-400">
-                        R$ {nearbyStats.avgSqm.toLocaleString('pt-BR')}/m² ({nearbyStats.count} tx válidas)
+                        {selectedStreet && nearbyStreetTxs.length === 0 ? (
+                          <span className="text-amber-300/90 font-mono text-[10.5px]">
+                            Sem dados no raio • Balizado pelo Bairro (R$ {(neighborhoodStats?.avgSqm || nearbyStats.avgSqm).toLocaleString('pt-BR')}/m²)
+                          </span>
+                        ) : (
+                          `R$ ${nearbyStats.avgSqm.toLocaleString('pt-BR')}/m² (${nearbyStats.count} tx válidas${nearbyStats.outliersCount > 0 ? ` • ${nearbyStats.outliersCount} expurgada(s)` : ''})`
+                        )}
                       </span>
                     </div>
                     <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
                       <div 
-                        className="bg-gradient-to-r from-violet-600 to-violet-400 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, Math.max(15, (nearbyStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          selectedStreet && nearbyStreetTxs.length === 0
+                            ? 'bg-slate-800'
+                            : 'bg-gradient-to-r from-violet-600 to-violet-400'
+                        }`}
+                        style={{ width: `${selectedStreet && nearbyStreetTxs.length === 0 ? 0 : Math.min(100, Math.max(15, (nearbyStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
                       />
                     </div>
                   </div>
 
-                  {/* Tier 4: Real Estate Portals Asking Price */}
+                  {/* Tier 4: Neighborhood Official ITBI */}
                   <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-300 font-bold flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                        4. Anúncios de Venda nos Portais (ZapImóveis / QuintoAndar)
+                        <Layers className="w-3.5 h-3.5 text-amber-400" />
+                        4. Média Geral do Bairro ({selectedNeighborhood || 'Bairro'})
                       </span>
-                      <span className="font-bold text-cyan-400">
-                        R$ {Math.round(averageAskingValue / (sizeSqm || 1)).toLocaleString('pt-BR')}/m² (Preço Pedido)
+                      <span className="font-bold text-amber-400">
+                        {neighborhoodStats ? (
+                          `R$ ${neighborhoodStats.avgSqm.toLocaleString('pt-BR')}/m² (${neighborhoodStats.count} tx válidas${neighborhoodStats.outliersCount > 0 ? ` • ${neighborhoodStats.outliersCount} expurgada(s)` : ''})`
+                        ) : (
+                          `R$ ${nearbyStats.avgSqm.toLocaleString('pt-BR')}/m² (Base ITBI Oficial)`
+                        )}
                       </span>
                     </div>
                     <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
                       <div 
-                        className="bg-gradient-to-r from-cyan-600 to-cyan-400 h-full rounded-full transition-all duration-500"
-                        style={{ width: '90%' }}
+                        className="bg-gradient-to-r from-amber-600 to-amber-400 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.max(15, ((neighborhoodStats?.avgSqm || nearbyStats.avgSqm) / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tier 5: Real Estate Portals Asking Price - Street */}
+                  {(() => {
+                    const portalTier = marketTiers.find(t => t.id === 'portals_street');
+                    const tierSqm = (portalTier && portalTier.sqm && portalTier.sqm > 0) ? portalTier.sqm : Math.round(averageAskingValue / (sizeSqm || 1));
+                    const tierLabel = portalTier?.samples || 'Preço Pedido';
+                    return (
+                      <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                            <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                            5. Anúncios de Venda nos Portais na Rua (Zap / QuintoAndar)
+                          </span>
+                          <span className="font-bold text-cyan-400">
+                            R$ {tierSqm.toLocaleString('pt-BR')}/m² ({tierLabel})
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
+                          <div 
+                            className="bg-gradient-to-r from-cyan-600 to-cyan-400 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(100, Math.max(15, (tierSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Tier 6: Real Estate Portals Asking Price - Surrounding */}
+                  <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-teal-400" />
+                        6. Anúncios nos Portais no Entorno (Zap / QuintoAndar)
+                      </span>
+                      <span className="font-bold text-teal-400">
+                        R$ {portalNearbyStats.avgSqm.toLocaleString('pt-BR')}/m² ({portalNearbyStats.count} anúncios entorno no raio ~{radiusKm}km)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
+                      <div 
+                        className="bg-gradient-to-r from-teal-600 to-teal-400 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.max(15, (portalNearbyStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
                       />
                     </div>
                   </div>
@@ -3192,11 +4482,14 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
               </div>
 
               {/* Synthesis Summary Metric Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
                 {/* CARD 1: Valor Unitário Saneado com cálculo explícito e métricas informativas */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">1. Valor Unitário Saneado (Sem Distorções)</span>
+                    <span className="text-[9px] text-slate-400 font-mono uppercase flex items-center gap-1.5 font-bold">
+                      {isLoadingTransactions && <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />}
+                      <span>1. Valor Unitário Saneado</span>
+                    </span>
                     <span className="text-[8.5px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.2 rounded font-mono font-bold">
                       {txSizeFilter === 'similar' ? 'Área Similar' : 'Todas Áreas'}
                     </span>
@@ -3204,10 +4497,10 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                   
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     <span className="text-base font-black text-white font-mono">
-                      R$ {calculatedStats.avgSqm.toLocaleString('pt-BR')}/m²
+                      R$ {sanitizedUnitValueSqm.toLocaleString('pt-BR')}/m²
                     </span>
                     <span className="text-[11px] font-bold text-slate-300 font-mono">
-                      • ({sizeSqm}m² × R$ {calculatedStats.avgSqm.toLocaleString('pt-BR')} = {formatBRL(sizeSqm * calculatedStats.avgSqm)})
+                      • ({sizeSqm}m² = {formatBRL(sizeSqm * sanitizedUnitValueSqm)})
                     </span>
                   </div>
                   
@@ -3216,50 +4509,128 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                       {calculatedStats.source} {calculatedStats.outliersCount > 0 ? `(${calculatedStats.outliersCount} distorção expurgada)` : ''}
                     </span>
                     <div className="text-[9px] text-slate-400 font-mono flex flex-wrap gap-x-2">
-                      <span>Média Geral Bruta: <strong className="text-slate-300">R$ {calculatedStats.rawAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
-                      <span>• Área Similar: <strong className="text-indigo-300">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                      <span>Média Geral: <strong className="text-slate-300">R$ {calculatedStats.rawAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                      <span>• Similar: <strong className="text-indigo-300">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
                     </div>
                   </div>
                 </div>
 
                 {/* CARD 2: Média do Valor da Mesma Rua */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
-                  <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">2. Média da Mesma Rua</span>
+                  <span className="text-[9px] text-slate-400 font-mono uppercase flex items-center gap-1.5 font-bold">
+                    {isLoadingTransactions && <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />}
+                    <span>2. Média da Mesma Rua</span>
+                  </span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-base font-black text-indigo-400 font-mono">
-                      R$ {(exactStreetStats ? exactStreetStats.avgSqm : calculatedStats.avgSqm).toLocaleString('pt-BR')}/m²
+                    {exactStreetStats ? (
+                      <>
+                        <span className="text-base font-black text-indigo-400 font-mono">
+                          R$ {exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m²
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-300 font-mono">
+                          • (Total: {formatBRL(sizeSqm * exactStreetStats.avgSqm)})
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm font-black text-slate-400 font-mono">
+                          - Sem dados na rua
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-sans">
+                          (Balizado pelo Bairro)
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="pt-1 border-t border-slate-900 space-y-0.5">
+                    <div className="text-[9.5px] text-slate-300 font-sans">
+                      {exactStreetStats ? `Baseado em ${exactStreetStats.count} transações na via` : `Sem escrituras registradas nesta via no ITBI.`}
+                    </div>
+                    {exactStreetStats && (
+                      <div className="text-[9px] text-slate-400 font-mono flex flex-wrap gap-x-2">
+                        <span>Similar: <strong className="text-indigo-300">R$ {exactStreetStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                        <span>• Geral: <strong className="text-slate-300">R$ {exactStreetStats.allAreasAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* CARD 3: Média Geral do Bairro */}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
+                  <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">3. Média Geral do Bairro</span>
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-base font-black text-amber-400 font-mono">
+                      R$ {(neighborhoodStats?.avgSqm || nearbyStats.avgSqm).toLocaleString('pt-BR')}/m²
                     </span>
                     <span className="text-[11px] font-bold text-slate-300 font-mono">
-                      • (Total: {formatBRL(sizeSqm * (exactStreetStats ? exactStreetStats.avgSqm : calculatedStats.avgSqm))})
+                      • (Total: {formatBRL(sizeSqm * (neighborhoodStats?.avgSqm || nearbyStats.avgSqm))})
                     </span>
                   </div>
 
                   <div className="pt-1 border-t border-slate-900 space-y-0.5">
                     <div className="text-[9.5px] text-slate-300 font-sans">
-                      {exactStreetStats ? `Baseado em ${exactStreetStats.count} transações saneadas na via` : `Sem dados isolados na rua (usando entorno)`}
+                      {neighborhoodStats ? `${neighborhoodStats.count} transações no ITBI oficial de ${selectedNeighborhood}` : `Média cadastral oficial do ITBI`}
                     </div>
-                    <div className="text-[9px] text-slate-400 font-mono flex flex-wrap gap-x-2">
-                      <span>Similar: <strong className="text-indigo-300">R$ {(exactStreetStats ? exactStreetStats.similarAvgSqm : calculatedStats.similarAvgSqm).toLocaleString('pt-BR')}/m²</strong> ({exactStreetStats ? exactStreetStats.similarCount : calculatedStats.similarCount} tx)</span>
-                      <span>• Geral Rua: <strong className="text-slate-300">R$ {(exactStreetStats ? exactStreetStats.allAreasAvgSqm : calculatedStats.allAreasAvgSqm).toLocaleString('pt-BR')}/m²</strong> ({exactStreetStats ? exactStreetStats.allAreasCount : calculatedStats.allAreasCount} tx)</span>
+                    <div className="text-[9px] text-slate-400 font-mono">
+                      <span>Bairro: <strong className="text-amber-300">{selectedNeighborhood || 'Bairro'}</strong></span>
                     </div>
                   </div>
                 </div>
 
-                {/* CARD 3: Preço Sugerido para Revenda Rápida (Flip) */}
+                {/* CARD 4: Preço Sugerido para Revenda Rápida (Flip) */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
-                  <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">3. Preço Sugerido p/ Revenda Rápida (Flip)</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">4. Preço Sugerido p/ Revenda (Flip Rápido)</span>
+                    <span className="text-[8px] bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40 font-mono font-bold">Giro em até 60 dias</span>
+                  </div>
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-base font-black text-cyan-400 font-mono">
+                    <span className="text-base font-black text-emerald-400 font-mono">
                       {formatBRL(suggestedQuickSaleTotal)}
                     </span>
                     <span className="text-[11px] font-bold text-slate-300 font-mono">
                       • R$ {suggestedQuickSaleSqm.toLocaleString('pt-BR')}/m²
                     </span>
                   </div>
+
+                  {buildingAgeData.detectedYear !== null ? (
+                    <div className="text-[9px] bg-slate-900 text-slate-300 px-2 py-1 rounded border border-slate-800 font-mono flex items-center justify-between">
+                      <span>🏗️ Ano: {buildingAgeData.detectedYear} ({buildingAgeData.age} anos)</span>
+                      <strong className={buildingAgeData.depreciationPct > 0 ? "text-amber-300" : "text-emerald-400"}>
+                        Depreciação: {buildingAgeData.depreciationPct > 0 ? `-${buildingAgeData.depreciationPct}%` : '0% (Conservado)'}
+                      </strong>
+                    </div>
+                  ) : (
+                    <div className="text-[9px] bg-slate-900/90 text-slate-400 px-2 py-0.5 rounded border border-slate-800 flex items-center justify-between gap-1">
+                      <span className="flex items-center gap-1 font-sans">
+                        📅 Ano do Prédio:
+                        <input
+                          type="number"
+                          placeholder="Ex: 2015"
+                          min="1900"
+                          max={new Date().getFullYear()}
+                          value={manualBuildingYear || ''}
+                          onChange={(e) => setManualBuildingYear(e.target.value ? parseInt(e.target.value, 10) : null)}
+                          className="w-14 px-1 py-0.2 bg-slate-950 border border-slate-700 rounded text-white font-mono text-[9px] text-center focus:border-indigo-500 focus:outline-none"
+                        />
+                      </span>
+                      <span className="text-[8px] text-slate-500 font-mono">
+                        {manualBuildingYear ? `${new Date().getFullYear() - manualBuildingYear} anos` : 'Não especificado'}
+                      </span>
+                    </div>
+                  )}
                   
-                  <div className="pt-1 border-t border-slate-900">
-                    <span className="text-[9.5px] text-slate-400 font-sans block">
-                      Posicionado com liquidez imediata vs anúncios de {formatBRL(averageAskingValue)}
+                  <div className="pt-1.5 border-t border-slate-900 space-y-1">
+                    <div className="text-[9px] text-slate-400 font-sans flex items-center justify-between">
+                      <span>Piso Transacionado (ITBI 4 Níveis):</span>
+                      <strong className="text-emerald-400 font-mono">R$ {itbiWeightedStats.itbiCompositeSqm.toLocaleString('pt-BR')}/m²</strong>
+                    </div>
+                    <div className="text-[9px] text-slate-400 font-sans flex items-center justify-between">
+                      <span>Teto Balizador Portais:</span>
+                      <strong className="text-cyan-300 font-mono">R$ {portalBenchmarkSqm.toLocaleString('pt-BR')}/m²</strong>
+                    </div>
+                    <span className="text-[8px] text-slate-500 block font-mono">
+                      100% ITBI Oficial dos 4 Níveis com deságio de 10% para liquidez imediata em até 60 dias
                     </span>
                   </div>
                 </div>
@@ -3354,7 +4725,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                         : 'bg-slate-950 border-slate-850 text-slate-400 hover:bg-slate-800'
                     }`}
                   >
-                    <span>{txSizeFilter === 'similar' ? '🎯 Área Similar (±25%)' : '🌐 Todas as Áreas'}</span>
+                    <span>{txSizeFilter === 'similar' ? '🎯 Área Similar (±33%)' : '🌐 Todas as Áreas'}</span>
                   </button>
                 </div>
 
@@ -3407,13 +4778,56 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
 
               {/* Nearby Streets Table */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-850">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-850">
                   <div className="flex items-center space-x-2">
-                    <Building className="w-5 h-5 text-slate-400" />
+                    <Compass className="w-5 h-5 text-violet-400" />
                     <div>
-                      <h3 className="font-bold text-slate-200 text-sm">Amostras nas Ruas Próximas (Entorno)</h3>
-                      <p className="text-[10px] text-slate-450 mt-0.5">Valores reais de outras ruas do mesmo bairro (~{radiusKm}km).</p>
+                      <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
+                        <span>Amostras nas Ruas Próximas ao Entorno (Raio Exato de {radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`})</span>
+                        <span className="text-[10px] bg-violet-950 text-violet-300 px-2 py-0.5 rounded font-mono font-bold border border-violet-800/40">
+                          {nearbyStreetTxs.length} tx válidas
+                        </span>
+                      </h3>
+                      <p className="text-[10px] text-slate-450 mt-0.5">
+                        Transações reais do ITBI estritamente contidas na circunferência de {radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`} a partir do imóvel de referência.
+                      </p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                    <span className="text-[10px] text-slate-400 font-mono mr-1">Raio:</span>
+                    <button
+                      onClick={() => setRadiusKm(0.5)}
+                      className={`px-2 py-1 text-[10px] rounded font-mono font-bold transition-colors flex flex-col items-center cursor-pointer ${
+                        radiusKm === 0.5 ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>500m (Padrão)</span>
+                      <span className="text-[8.5px] font-normal opacity-90">
+                        {radiusAverages.r500 ? `R$ ${radiusAverages.r500.toLocaleString('pt-BR')}/m²` : 'Sem dados'}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setRadiusKm(1.0)}
+                      className={`px-2 py-1 text-[10px] rounded font-mono font-bold transition-colors flex flex-col items-center cursor-pointer ${
+                        radiusKm === 1.0 ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>1.0 km</span>
+                      <span className="text-[8.5px] font-normal opacity-90">
+                        {radiusAverages.r1000 ? `R$ ${radiusAverages.r1000.toLocaleString('pt-BR')}/m²` : 'Sem dados'}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setRadiusKm(2.0)}
+                      className={`px-2 py-1 text-[10px] rounded font-mono font-bold transition-colors flex flex-col items-center cursor-pointer ${
+                        radiusKm === 2.0 ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>2.0 km</span>
+                      <span className="text-[8.5px] font-normal opacity-90">
+                        {radiusAverages.r2000 ? `R$ ${radiusAverages.r2000.toLocaleString('pt-BR')}/m²` : 'Sem dados'}
+                      </span>
+                    </button>
                   </div>
                 </div>
 
@@ -3423,6 +4837,7 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                       <tr className="border-b border-slate-800 text-slate-455 font-medium uppercase tracking-wider text-[9px]">
                         <th className="pb-2 font-semibold">Data</th>
                         <th className="pb-2 font-semibold">Logradouro</th>
+                        <th className="pb-2 text-center font-semibold">Distância Real</th>
                         <th className="pb-2 text-center font-semibold">Área</th>
                         <th className="pb-2 text-right font-semibold">Preço Escritura</th>
                         <th className="pb-2 text-right font-semibold">Valor m²</th>
@@ -3431,33 +4846,41 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
                     <tbody className="divide-y divide-slate-850 text-slate-300">
                       {nearbyStreetTxs.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-500 italic">
-                            {isLoadingTransactions ? 'Carregando transações do ITBI...' : 'Nenhuma transação individual encontrada no entorno.'}
+                          <td colSpan={6} className="py-8 text-center text-slate-500 italic">
+                            {isLoadingTransactions ? 'Carregando transações do ITBI...' : `Nenhuma transação individual encontrada no raio estrito de ${radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`}.`}
                           </td>
                         </tr>
                       ) : (
                         nearbyStreetTxs
-                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= sizeSqm * 0.85 && tx.sizeSqm <= sizeSqm * 1.15))
+                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= sizeSqm * 0.75 && tx.sizeSqm <= sizeSqm * 1.25))
                           .slice(0, 35)
-                          .map((tx) => (
-                            <tr 
-                              key={tx.id} 
-                              onClick={() => {
-                                setSizeSqm(tx.sizeSqm);
-                                setCustomValue(tx.transactionValue);
-                              }}
-                              className="hover:bg-slate-950/60 transition-colors cursor-pointer group"
-                              title="Clique para importar esta transação na calculadora"
-                            >
-                              <td className="py-2.5 font-mono text-slate-450">{tx.date}</td>
-                              <td className="py-2.5 font-medium text-slate-300 group-hover:text-indigo-400 transition-colors truncate max-w-[150px] block">
-                                {tx.street || 'Não informado'} {tx.number ? `(${tx.number})` : ''}
-                              </td>
-                              <td className="py-2.5 text-center font-mono font-semibold">{tx.sizeSqm}m²</td>
-                              <td className="py-2.5 text-right font-mono font-semibold text-slate-200">{formatBRL(tx.transactionValue)}</td>
-                              <td className="py-2.5 text-right font-mono font-bold text-slate-400">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
-                            </tr>
-                          ))
+                          .map((tx) => {
+                            const distMeters = tx.distanceMeters || (typeof tx.distanceKm === 'number' ? Math.round(tx.distanceKm * 1000) : null);
+                            return (
+                              <tr 
+                                key={tx.id} 
+                                onClick={() => {
+                                  setSizeSqm(tx.sizeSqm);
+                                  setCustomValue(tx.transactionValue);
+                                }}
+                                className="hover:bg-slate-950/60 transition-colors cursor-pointer group"
+                                title="Clique para importar esta transação na calculadora"
+                              >
+                                <td className="py-2.5 font-mono text-slate-450">{tx.date}</td>
+                                <td className="py-2.5 font-medium text-slate-300 group-hover:text-indigo-400 transition-colors truncate max-w-[150px] block">
+                                  {tx.street || 'Não informado'} {tx.number ? `(${tx.number})` : ''}
+                                </td>
+                                <td className="py-2.5 text-center">
+                                  <span className="px-1.5 py-0.5 rounded bg-violet-950/70 text-violet-300 font-mono text-[10px] font-bold border border-violet-800/40">
+                                    {distMeters !== null ? `${distMeters}m` : 'no raio'}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 text-center font-mono font-semibold">{tx.sizeSqm}m²</td>
+                                <td className="py-2.5 text-right font-mono font-semibold text-slate-200">{formatBRL(tx.transactionValue)}</td>
+                                <td className="py-2.5 text-right font-mono font-bold text-slate-400">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
+                              </tr>
+                            );
+                          })
                       )}
                     </tbody>
                   </table>
@@ -3465,290 +4888,6 @@ export default function RealValueCalculator({ itbiStats, prefillData, onClose }:
               </div>
 
             </div>
-          </motion.div>
-        ) : activeTab === 'comparador' ? (
-          
-          /* PORTAL COMPARATOR MODE DETAILED PANELS */
-          <motion.div
-            key="comparador-details"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-6 animate-fade-in"
-          >
-            {isSearchingPortals ? (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3 shadow-xs">
-                <RefreshCw className="w-8 h-8 text-violet-500 animate-spin mx-auto" />
-                <p className="text-sm font-semibold uppercase tracking-wider text-slate-200">Pesquisando imóveis similares ativos no ZapImóveis e QuintoAndar...</p>
-                <p className="text-xs text-slate-400">Agrupando por faixas de m² (Menor, Próximo, Maior) e tipologia.</p>
-              </div>
-            ) : portalError ? (
-              <div className="bg-rose-955/30 border border-rose-900/50 text-rose-350 p-4 rounded-xl text-xs flex items-center space-x-3">
-                <Info className="w-5 h-5 text-rose-500 shrink-0" />
-                <span>{portalError}</span>
-              </div>
-            ) : portalResults ? (
-              <div className="space-y-6">
-                
-                {/* 3 Columns for Size Brackets */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  
-                  {/* Column 1: Menor (Below) */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-                    <div className="border-b border-slate-800 pb-2.5">
-                      <span className="text-[10px] text-indigo-400 font-mono font-bold uppercase tracking-wider">Faixa: Menor</span>
-                      <h4 className="font-bold text-slate-100 text-sm mt-0.5">Área Menor ({portalResults.below?.range || '-'})</h4>
-                      <div className="flex justify-between items-end mt-2">
-                        <div>
-                          <span className="text-[9px] text-slate-400 block font-mono">MÉDIA ANÚNCIO</span>
-                          <span className="text-sm font-black text-white font-mono">{formatBRL(portalResults.below?.avgPrice || 0)}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[9px] text-slate-400 block font-mono">MÉDIA M²</span>
-                          <span className="text-xs font-bold text-indigo-400 font-mono">R$ {(portalResults.below?.avgSqm || 0).toLocaleString('pt')}/m²</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                      {!portalResults.below?.matches || portalResults.below.matches.length === 0 ? (
-                        <p className="text-xs text-slate-500 text-center py-6">Nenhum imóvel encontrado nessa faixa.</p>
-                      ) : (
-                        portalResults.below.matches.map((m: any, idx: number) => (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              setCustomValue(m.price);
-                              setSizeSqm(m.sizeSqm);
-                            }}
-                            className="bg-slate-950 hover:bg-violet-950/20 border border-slate-850 hover:border-violet-900/50 rounded-xl p-3.5 transition-all cursor-pointer text-xs space-y-2 group"
-                            title="Clique para usar os dados na calculadora"
-                          >
-                            <div className="flex justify-between items-start gap-2">
-                              <span className="font-bold text-slate-250 group-hover:text-violet-400 transition-colors line-clamp-2">
-                                {m.address}
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-mono shrink-0">{m.sizeSqm}m²</span>
-                            </div>
-                            <div className="flex justify-between items-end">
-                              <div className="font-mono">
-                                <strong className="text-xs text-slate-200">{formatBRL(m.price)}</strong>
-                                <span className="text-[9.5px] text-slate-450 block mt-0.5">R$ {m.unitValueSqm.toLocaleString('pt')}/m²</span>
-                              </div>
-                              {m.link && (
-                                <a
-                                  href={m.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[10px] text-violet-400 hover:text-violet-350 flex items-center space-x-0.5"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <span>Ver Anúncio</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Column 2: Próximo (Close) */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-                    <div className="border-b border-slate-800 pb-2.5">
-                      <span className="text-[10px] text-emerald-400 font-mono font-bold uppercase tracking-wider">Faixa: Próximo</span>
-                      <h4 className="font-bold text-slate-100 text-sm mt-0.5">Área Próxima ({portalResults.close?.range || '-'})</h4>
-                      <div className="flex justify-between items-end mt-2">
-                        <div>
-                          <span className="text-[9px] text-slate-400 block font-mono">MÉDIA ANÚNCIO</span>
-                          <span className="text-sm font-black text-white font-mono">{formatBRL(portalResults.close?.avgPrice || 0)}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[9px] text-slate-400 block font-mono">MÉDIA M²</span>
-                          <span className="text-xs font-bold text-emerald-400 font-mono">R$ {(portalResults.close?.avgSqm || 0).toLocaleString('pt')}/m²</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                      {!portalResults.close?.matches || portalResults.close.matches.length === 0 ? (
-                        <p className="text-xs text-slate-500 text-center py-6">Nenhum imóvel encontrado nessa faixa.</p>
-                      ) : (
-                        portalResults.close.matches.map((m: any, idx: number) => (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              setCustomValue(m.price);
-                              setSizeSqm(m.sizeSqm);
-                            }}
-                            className="bg-slate-950 hover:bg-violet-950/20 border border-slate-850 hover:border-violet-900/50 rounded-xl p-3.5 transition-all cursor-pointer text-xs space-y-2 group"
-                            title="Clique para usar os dados na calculadora"
-                          >
-                            <div className="flex justify-between items-start gap-2">
-                              <span className="font-bold text-slate-250 group-hover:text-violet-400 transition-colors line-clamp-2">
-                                {m.address}
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-mono shrink-0">{m.sizeSqm}m²</span>
-                            </div>
-                            <div className="flex justify-between items-end">
-                              <div className="font-mono">
-                                <strong className="text-xs text-slate-200">{formatBRL(m.price)}</strong>
-                                <span className="text-[9.5px] text-slate-450 block mt-0.5">R$ {m.unitValueSqm.toLocaleString('pt')}/m²</span>
-                              </div>
-                              {m.link && (
-                                <a
-                                  href={m.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[10px] text-violet-400 hover:text-violet-350 flex items-center space-x-0.5"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <span>Ver Anúncio</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Column 3: Maior (Above) */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-                    <div className="border-b border-slate-800 pb-2.5">
-                      <span className="text-[10px] text-pink-400 font-mono font-bold uppercase tracking-wider">Faixa: Maior</span>
-                      <h4 className="font-bold text-slate-100 text-sm mt-0.5">Área Maior ({portalResults.above?.range || '-'})</h4>
-                      <div className="flex justify-between items-end mt-2">
-                        <div>
-                          <span className="text-[9px] text-slate-400 block font-mono">MÉDIA ANÚNCIO</span>
-                          <span className="text-sm font-black text-white font-mono">{formatBRL(portalResults.above?.avgPrice || 0)}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[9px] text-slate-400 block font-mono">MÉDIA M²</span>
-                          <span className="text-xs font-bold text-pink-400 font-mono">R$ {(portalResults.above?.avgSqm || 0).toLocaleString('pt')}/m²</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                      {!portalResults.above?.matches || portalResults.above.matches.length === 0 ? (
-                        <p className="text-xs text-slate-500 text-center py-6">Nenhum imóvel encontrado nessa faixa.</p>
-                      ) : (
-                        portalResults.above.matches.map((m: any, idx: number) => (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              setCustomValue(m.price);
-                              setSizeSqm(m.sizeSqm);
-                            }}
-                            className="bg-slate-950 hover:bg-violet-950/20 border border-slate-850 hover:border-violet-900/50 rounded-xl p-3.5 transition-all cursor-pointer text-xs space-y-2 group"
-                            title="Clique para usar os dados na calculadora"
-                          >
-                            <div className="flex justify-between items-start gap-2">
-                              <span className="font-bold text-slate-255 group-hover:text-violet-400 transition-colors line-clamp-2">
-                                {m.address}
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-mono shrink-0">{m.sizeSqm}m²</span>
-                            </div>
-                            <div className="flex justify-between items-end">
-                              <div className="font-mono">
-                                <strong className="text-xs text-slate-200">{formatBRL(m.price)}</strong>
-                                <span className="text-[9.5px] text-slate-450 block mt-0.5">R$ {m.unitValueSqm.toLocaleString('pt')}/m²</span>
-                              </div>
-                              {m.link && (
-                                <a
-                                  href={m.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[10px] text-violet-400 hover:text-violet-350 flex items-center space-x-0.5"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <span>Ver Anúncio</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Nearby Streets analysis table based on Radius Km */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
-                    <div className="flex items-center space-x-2">
-                      <Scale className="w-5 h-5 text-indigo-400" />
-                      <div>
-                        <h4 className="font-bold text-slate-200 text-sm">Análise do Entorno: Rua Principal vs Ruas Paralelas</h4>
-                        <p className="text-[10px] text-slate-450 mt-0.5">Médias de m² de transações reais do ITBI num raio de {radiusKm} km.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-850">
-                      <span className="text-[10px] text-slate-400 font-mono">Raio Ativo:</span>
-                      <span className="text-xs font-bold text-indigo-400 font-mono">{radiusKm} km</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center text-xs p-3 bg-slate-950 rounded-xl border border-slate-855">
-                        <span className="text-slate-400 font-semibold">Média da Rua Principal (Alvo):</span>
-                        <div className="text-right font-mono">
-                          <strong className="text-slate-100 block text-xs">{exactStreetStats ? `R$ ${exactStreetStats.avgSqm.toLocaleString('pt')}/m²` : 'Sem dados na rua'}</strong>
-                          <span className="text-[9px] text-slate-500 block">{exactStreetStats ? `${exactStreetStats.count} transação(ões)` : '-'}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center text-xs p-3 bg-slate-950 rounded-xl border border-slate-855">
-                        <span className="text-slate-400 font-semibold">Média das Ruas Paralelas no Entorno:</span>
-                        <div className="text-right font-mono">
-                          <strong className="text-slate-100 block text-xs">R$ {nearbyStats.avgSqm.toLocaleString('pt')}/m²</strong>
-                          <span className="text-[9px] text-slate-500 block">{nearbyStats.count} transações no raio</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick executives insights */}
-                    <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-855 text-xs flex flex-col justify-between">
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] text-indigo-400 font-mono font-bold uppercase tracking-wider block">Análise IA de Arbitragem</span>
-                        <p className="text-slate-350 leading-relaxed text-[11px]">
-                          {(() => {
-                            const portalAvg = portalResults.close?.avgPrice || averageAskingValue;
-                            const calcVal = customValue !== '' ? Number(customValue) : averageValue;
-                            const pctDiff = portalAvg > 0 ? Math.round(((portalAvg - calcVal) / portalAvg) * 100) : 0;
-                            if (pctDiff > 15) {
-                              return `🔥 Oportunidade de Arbitragem Altíssima! O valor estimado de transação (${formatBRL(calcVal)}) está ${pctDiff}% abaixo da média anunciada nos portais (${formatBRL(portalAvg)}). Excelente margem para revenda pós-arrematação.`;
-                            } else if (pctDiff > 0) {
-                              return `🟡 Margem moderada. O imóvel estimado está ${pctDiff}% abaixo da média de portais. Ideal para estratégia de locação ou revenda conservadora.`;
-                            } else {
-                              return `▲ Alerta: Preço de transação está muito próximo ou acima da expectativa dos portais. Verifique se há descontos expressivos adicionais no edital.`;
-                            }
-                          })()}
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-slate-850 flex justify-between items-center text-[10px] font-mono text-slate-500">
-                        <span>Estado: {selectedState}</span>
-                        <span>Cidade: {selectedCity}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3 shadow-xs">
-                <TrendingUp className="w-8 h-8 text-violet-500 mx-auto" />
-                <p className="text-sm font-semibold uppercase tracking-wider text-slate-200">Aguardando Comparação de Portais...</p>
-                <p className="text-xs text-slate-400">Preencha as características e clique em "Comparador Portais" para analisar.</p>
-              </div>
-            )}
           </motion.div>
         ) : activeTab === 'online' ? (
           

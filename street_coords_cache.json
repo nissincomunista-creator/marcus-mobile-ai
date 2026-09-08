@@ -2040,8 +2040,8 @@
     "lng": -43.2264
   },
   "rj_rio de janeiro_tijuca_rua almirante gaviao": {
-    "lat": -22.9319,
-    "lng": -43.241
+    "lat": -22.918986,
+    "lng": -43.213908
   },
   "rj_rio de janeiro_tijuca_rua alves de brito": {
     "lat": -22.9268,
@@ -2922,5 +2922,833 @@
   "rj_rio de janeiro_pr_rua pereira nunes": {
     "lat": -22.934,
     "lng": -43.195
+  },
+  "rj_rio de janeiro_bangu_center": {
+    "lat": -22.8833,
+    "lng": -43.4667
+  },
+  "rj_niteroi_centro_avenida ernani do amaral peixoto": {
+    "lat": -22.8988,
+    "lng": -43.1235
+  },
+  "rj_niteroi_centro_avenida washington luis": {
+    "lat": -22.8996,
+    "lng": -43.1264
+  },
+  "rj_niteroi_centro_rua borman,dr": {
+    "lat": -22.8951,
+    "lng": -43.1189
+  },
+  "rj_niteroi_centro_rua da conceicao": {
+    "lat": -22.8984,
+    "lng": -43.1218
+  },
+  "rj_niteroi_centro_rua general andrade neves": {
+    "lat": -22.8943,
+    "lng": -43.1194
+  },
+  "rj_niteroi_centro_rua gomes machado,cel": {
+    "lat": -22.8949,
+    "lng": -43.1166
+  },
+  "rj_niteroi_centro_rua jose clemente": {
+    "lat": -22.8974,
+    "lng": -43.1205
+  },
+  "rj_niteroi_centro_rua quinze de novembro": {
+    "lat": -22.897,
+    "lng": -43.1147
+  },
+  "rj_niteroi_centro_rua sepetiba, vsc": {
+    "lat": -22.8955,
+    "lng": -43.1159
+  },
+  "rj_niteroi_centro_rua walter goncalves,acd": {
+    "lat": -22.8956,
+    "lng": -43.1197
+  },
+  "rj_niteroi_centro_avenida visconde do rio branco, n. 633,": {
+    "lat": -22.8906,
+    "lng": -43.1159
+  },
+  "rj_rio de janeiro_pavuna_center": {
+    "lat": -22.8276663,
+    "lng": -43.3742461
+  },
+  "rj_rio de janeiro_madureira_rua andrade figueira": {
+    "lat": -22.8798,
+    "lng": -43.3449
+  },
+  "rj_rio de janeiro_madureira_rua padre manso": {
+    "lat": -22.8779,
+    "lng": -43.3414
+  },
+  "rj_rio de janeiro_madureira_rua carolina machado": {
+    "lat": -22.8761,
+    "lng": -43.3406
+  },
+  "rj_rio de janeiro_madureira_rua carvalho de souza": {
+    "lat": -22.8778,
+    "lng": -43.3409
+  },
+  "rj_rio de janeiro_madureira_rua agostinho barbalho": {
+    "lat": -22.8752,
+    "lng": -43.3508
+  },
+  "rj_rio de janeiro_madureira_rua doutor joviniano": {
+    "lat": -22.875,
+    "lng": -43.3418
+  },
+  "rj_rio de janeiro_madureira_estrada intendente magalhaes": {
+    "lat": -22.8765,
+    "lng": -43.3524
+  },
+  "rj_rio de janeiro_madureira_rua mano decio da viola": {
+    "lat": -22.8789,
+    "lng": -43.3436
+  },
+  "rj_rio de janeiro_madureira_avenida ministro edgard romero": {
+    "lat": -22.8762,
+    "lng": -43.3468
+  },
+  "rj_rio de janeiro_madureira_rua maria jose": {
+    "lat": -22.8781,
+    "lng": -43.3458
+  },
+  "rj_rio de janeiro_madureira_rua miguel rangel": {
+    "lat": -22.8777,
+    "lng": -43.3473
+  },
+  "rj_rio de janeiro_madureira_rua oliva maia": {
+    "lat": -22.8808,
+    "lng": -43.3433
+  },
+  "rj_rio de janeiro_madureira_rua americo brasiliense": {
+    "lat": -22.8792,
+    "lng": -43.3438
+  },
+  "rj_rio de janeiro_madureira_rua joao vicente": {
+    "lat": -22.8793,
+    "lng": -43.3458
+  },
+  "rj_rio de janeiro_madureira_rua maria lopes": {
+    "lat": -22.8799,
+    "lng": -43.3444
+  },
+  "rj_rio de janeiro_madureira_rua sao geraldo": {
+    "lat": -22.8804,
+    "lng": -43.3441
+  },
+  "rj_rio de janeiro_madureira_rua antonio de abreu": {
+    "lat": -22.8787,
+    "lng": -43.3443
+  },
+  "rj_rio de janeiro_madureira_rua julio fragoso": {
+    "lat": -22.8795,
+    "lng": -43.344
+  },
+  "rj_rio de janeiro_madureira_rua chui": {
+    "lat": -22.8766,
+    "lng": -43.3496
+  },
+  "rj_rio de janeiro_madureira_rua delfina alves": {
+    "lat": -22.8768,
+    "lng": -43.3492
+  },
+  "rj_rio de janeiro_madureira_rua firmino fragoso": {
+    "lat": -22.8772,
+    "lng": -43.3486
+  },
+  "rj_rio de janeiro_madureira_rua frederico lima": {
+    "lat": -22.8774,
+    "lng": -43.3479
+  },
+  "rj_rio de janeiro_madureira_rua alcina": {
+    "lat": -22.8785,
+    "lng": -43.3465
+  },
+  "rj_rio de janeiro_madureira_rua joana rezende": {
+    "lat": -22.879,
+    "lng": -43.3452
+  },
+  "rj_rio de janeiro_madureira_rua domingos lopes": {
+    "lat": -22.8792,
+    "lng": -43.345
+  },
+  "rj_rio de janeiro_madureira_rua soares caldeira": {
+    "lat": -22.8788,
+    "lng": -43.347
+  },
+  "rj_rio de janeiro_madureira_rua maria maia": {
+    "lat": -22.8791,
+    "lng": -43.3464
+  },
+  "rj_rio de janeiro_madureira_estrada do portela": {
+    "lat": -22.874,
+    "lng": -43.348
+  },
+  "rj_rio de janeiro_madureira_rua sanatorio": {
+    "lat": -22.8784,
+    "lng": -43.3482
+  },
+  "rj_rio de janeiro_madureira_rua alaide": {
+    "lat": -22.8793,
+    "lng": -43.3475
+  },
+  "rj_rio de janeiro_madureira_rua silas de oliveira": {
+    "lat": -22.8767,
+    "lng": -43.3444
+  },
+  "rj_rio de janeiro_madureira_rua tapajos": {
+    "lat": -22.8756,
+    "lng": -43.3497
+  },
+  "rj_rio de janeiro_madureira_rua dagmar da fonseca": {
+    "lat": -22.8755,
+    "lng": -43.3458
+  },
+  "rj_rio de janeiro_madureira_rua luiz bueno": {
+    "lat": -22.8795,
+    "lng": -43.3443
+  },
+  "rj_rio de janeiro_madureira_rua guanabara": {
+    "lat": -22.8782,
+    "lng": -43.351
+  },
+  "rj_rio de janeiro_madureira_rua capitao couto menezes": {
+    "lat": -22.8748,
+    "lng": -43.3524
+  },
+  "rj_rio de janeiro_madureira_rua ewbanck da camara": {
+    "lat": -22.8732,
+    "lng": -43.3493
+  },
+  "rj_rio de janeiro_madureira_travessa carlos xavier": {
+    "lat": -22.8744,
+    "lng": -43.343
+  },
+  "rj_rio de janeiro_madureira_rua conselheiro galvao": {
+    "lat": -22.8731,
+    "lng": -43.3443
+  },
+  "rj_rio de janeiro_vila isabel_rua engenheiro gama lobo": {
+    "lat": -22.9234,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_vila isabel_rua antonio salema": {
+    "lat": -22.9157,
+    "lng": -43.2519
+  },
+  "rj_rio de janeiro_vila isabel_rua conselheiro otaviano": {
+    "lat": -22.9213,
+    "lng": -43.2519
+  },
+  "rj_rio de janeiro_vila isabel_rua pontes correa": {
+    "lat": -22.923,
+    "lng": -43.2492
+  },
+  "rj_rio de janeiro_vila isabel_rua senador soares": {
+    "lat": -22.9242,
+    "lng": -43.2507
+  },
+  "rj_rio de janeiro_vila isabel_rua viana drumond": {
+    "lat": -22.9197,
+    "lng": -43.253
+  },
+  "rj_rio de janeiro_vila isabel_travessa santo paulo provitina": {
+    "lat": -22.9211,
+    "lng": -43.252
+  },
+  "rj_rio de janeiro_vila isabel_rua adalberto aranha": {
+    "lat": -22.9199,
+    "lng": -43.2524
+  },
+  "rj_rio de janeiro_vila isabel_rua mendes tavares": {
+    "lat": -22.919,
+    "lng": -43.2496
+  },
+  "rj_rio de janeiro_vila isabel_rua barao de sao francisco": {
+    "lat": -22.9205,
+    "lng": -43.248
+  },
+  "rj_rio de janeiro_vila isabel_rua visconde de abaete": {
+    "lat": -22.921,
+    "lng": -43.2504
+  },
+  "rj_rio de janeiro_vila isabel_rua rocha fragoso": {
+    "lat": -22.923,
+    "lng": -43.2527
+  },
+  "rj_rio de janeiro_vila isabel_rua hipolito da costa": {
+    "lat": -22.9219,
+    "lng": -43.2493
+  },
+  "rua anchieta,pe": {
+    "lat": -22.8981158,
+    "lng": -43.1220392
+  },
+  "r padre anchieta": {
+    "lat": -22.8981158,
+    "lng": -43.1220392
+  },
+  "rua padre anchieta": {
+    "lat": -22.8981158,
+    "lng": -43.1220392
+  },
+  "rj_rio de janeiro_engenho novo_center": {
+    "lat": -22.9090942,
+    "lng": -43.2678381
+  },
+  "rj_rio de janeiro_engenho novo_rua agariba": {
+    "lat": -22.9117604,
+    "lng": -43.2660936
+  },
+  "rj_rio de janeiro_engenho novo_rua sousa barros": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_lins de vasconcelos_rua antenor": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_engenho novo_rua aibu": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_engenho novo_rua vaz de toledo": {
+    "lat": -22.8959532,
+    "lng": -43.2671617
+  },
+  "rj_rio de janeiro_lins de vasconcelos_rua maranhao": {
+    "lat": -22.9078808,
+    "lng": -43.293041
+  },
+  "rj_rio de janeiro_engenho novo_rua antonio caetano": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_engenho novo_rua barao do bom retiro": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_lins de vasconcelos_rua cabucu": {
+    "lat": -22.9075678,
+    "lng": -43.2772706
+  },
+  "rj_rio de janeiro_engenho novo_rua grao para": {
+    "lat": -22.9119643,
+    "lng": -43.2718303
+  },
+  "rj_rio de janeiro_engenho novo_rua": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_lins de vasconcelos_rua vilela tavares": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_lins de vasconcelos_rua lins de vasconcelos": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_meier_rua salvador pires": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_engenho novo_rua bolivia": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_engenho novo_rua visconde de itabaiana": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_engenho novo_rua leopoldino bastos": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_engenho novo_rua baronesa do engenho": {
+    "lat": -22.8963777,
+    "lng": -43.2644254
+  },
+  "rj_rio de janeiro_engenho novo_rua propicia": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_lins de vasconcelos_rua vinte de marco": {
+    "lat": -22.90642,
+    "lng": -43.18223
+  },
+  "rj_rio de janeiro_santa cruz_estrada de santa eugenia": {
+    "lat": -22.9513238,
+    "lng": -43.6426867
+  },
+  "rj_rio de janeiro_santa cruz_rua aporuna": {
+    "lat": -22.9457082,
+    "lng": -43.6409064
+  },
+  "rj_rio de janeiro_santa cruz_rua macapa": {
+    "lat": -22.9305996,
+    "lng": -43.6924202
+  },
+  "rj_rio de janeiro_campo grande_rua projetada a": {
+    "lat": -22.8434609,
+    "lng": -43.5215647
+  },
+  "rj_rio de janeiro_guaratiba_estrada cabucu de baixo": {
+    "lat": -22.940458,
+    "lng": -43.5799353
+  },
+  "rj_rio de janeiro_santa cruz_estrada da pedra": {
+    "lat": -22.9467734,
+    "lng": -43.6548012
+  },
+  "rj_rio de janeiro_cosmos_estrada do campinho": {
+    "lat": -22.8859115,
+    "lng": -43.6136871
+  },
+  "rj_rio de janeiro_pavuna_avenida chrisostomo pimentel de oliveira": {
+    "lat": -22.8160222,
+    "lng": -43.3873817
+  },
+  "rj_rio de janeiro_guaratiba_rua lolita rodrigues (antiga rua projetada": {
+    "lat": -22.9480261,
+    "lng": -43.5844627
+  },
+  "rj_rio de janeiro_santa cruz_rua dos jesuitas": {
+    "lat": -22.9098659,
+    "lng": -43.6833226
+  },
+  "rj_rio de janeiro_santa cruz_rua compositor tunai (antiga rua projetada": {
+    "lat": -22.9132282,
+    "lng": -43.6948148
+  },
+  "rj_rio de janeiro_pavuna_rua braz cubas": {
+    "lat": -22.8112301,
+    "lng": -43.366968
+  },
+  "rj_rio de janeiro_santa cruz_avenida padre guilherme decaminada": {
+    "lat": -22.9054053,
+    "lng": -43.6836827
+  },
+  "rj_rio de janeiro_santa cruz_rua itatinga": {
+    "lat": -22.9483488,
+    "lng": -43.6458953
+  },
+  "rj_rio de janeiro_braz de pina_avenida marlene cunha": {
+    "lat": -22.830836,
+    "lng": -43.3029263
+  },
+  "rj_rio de janeiro_pavuna_rua edgar loureiro valdetaro": {
+    "lat": -22.8120103,
+    "lng": -43.3552598
+  },
+  "rj_rio de janeiro_guaratiba_rua aloes": {
+    "lat": -22.9659366,
+    "lng": -43.6478529
+  },
+  "rj_rio de janeiro_guaratiba_estrada do magarca": {
+    "lat": -22.9490803,
+    "lng": -43.6041357
+  },
+  "rj_rio de janeiro_inhoaiba_rua campo grande": {
+    "lat": -22.9090062,
+    "lng": -43.5950918
+  },
+  "rj_rio de janeiro_realengo_rua helio do amaral": {
+    "lat": -22.8591607,
+    "lng": -43.4470013
+  },
+  "rj_rio de janeiro_santissimo_rua guandu mirim": {
+    "lat": -22.8669245,
+    "lng": -43.5301234
+  },
+  "rj_rio de janeiro_santa cruz_rua projetada c": {
+    "lat": -22.9306552,
+    "lng": -43.6720903
+  },
+  "rj_rio de janeiro_pavuna_rua iguaba grande": {
+    "lat": -22.8176077,
+    "lng": -43.3744795
+  },
+  "rj_rio de janeiro_curicica_rua goianinha": {
+    "lat": -22.9505063,
+    "lng": -43.3809103
+  },
+  "rj_rio de janeiro_vargem grande_estrada dos bandeirantes": {
+    "lat": -22.984702,
+    "lng": -43.4896734
+  },
+  "rj_rio de janeiro_inhoaiba_rua gentil de ouro": {
+    "lat": -22.8981576,
+    "lng": -43.5882296
+  },
+  "rj_rio de janeiro_campo grande_via projetada": {
+    "lat": -22.8434609,
+    "lng": -43.5215647
+  },
+  "rj_rio de janeiro_bangu_estrada do guandu do sena": {
+    "lat": -22.8450596,
+    "lng": -43.48889
+  },
+  "rj_rio de janeiro_parque columbia_rua embau": {
+    "lat": -22.8186981,
+    "lng": -43.3479088
+  },
+  "rj_rio de janeiro_campo grande_estrada do campinho": {
+    "lat": -22.9023216,
+    "lng": -43.5681535
+  },
+  "rj_rio de janeiro_bonsucesso_avenida itaoca": {
+    "lat": -22.8678226,
+    "lng": -43.2579868
+  },
+  "rj_rio de janeiro_paciencia_avenida brasil": {
+    "lat": -22.8801732,
+    "lng": -43.6293935
+  },
+  "rj_rio de janeiro_campo grande_avenida coracao selvagem": {
+    "lat": -22.8956533,
+    "lng": -43.5548732
+  },
+  "rj_rio de janeiro_campo grande_rua mauro portugal": {
+    "lat": -22.9129648,
+    "lng": -43.545257
+  },
+  "rj_rio de janeiro_bangu_rua comandante eduardo de almeida magalhaes": {
+    "lat": -22.8639725,
+    "lng": -43.3732538
+  },
+  "rj_rio de janeiro_cosmos_estrada da paciencia": {
+    "lat": -22.9006822,
+    "lng": -43.6124351
+  },
+  "rj_rio de janeiro_cosmos_rua das amendoeiras": {
+    "lat": -22.9188302,
+    "lng": -43.6155218
+  },
+  "rj_rio de janeiro_inhauma_avenida pastor martin luther king jr": {
+    "lat": -22.8745685,
+    "lng": -43.2834559
+  },
+  "rj_rio de janeiro_bangu_rua osvaldo orico": {
+    "lat": -22.8641734,
+    "lng": -43.4776633
+  },
+  "rj_rio de janeiro_campo grande_rua constituinte do bairro iracema": {
+    "lat": -22.8827207,
+    "lng": -43.5918401
+  },
+  "rj_rio de janeiro_gardenia azul_avenida das lagoas": {
+    "lat": -22.9582794,
+    "lng": -43.3523303
+  },
+  "rj_rio de janeiro_campo grande_estrada do mendanha": {
+    "lat": -22.8660124,
+    "lng": -43.5515733
+  },
+  "rj_rio de janeiro_anchieta_avenida chrisostomo pimentel de oliveira": {
+    "lat": -22.8216707,
+    "lng": -43.3984258
+  },
+  "rj_rio de janeiro_santa cruz_rua ibirarema": {
+    "lat": -22.9497214,
+    "lng": -43.643742
+  },
+  "rj_rio de janeiro_inhauma_avenida pastor martin luther king junior": {
+    "lat": -22.8759774,
+    "lng": -43.2772615
+  },
+  "rj_rio de janeiro_campo grande_rua projetada": {
+    "lat": -22.8434609,
+    "lng": -43.5215647
+  },
+  "rj_rio de janeiro_barra da tijuca_rua projetada": {
+    "lat": -23.0084488,
+    "lng": -43.3305149
+  },
+  "rj_rio de janeiro_cavalcanti_rua laurindo filho": {
+    "lat": -22.8691475,
+    "lng": -43.3186826
+  },
+  "rj_rio de janeiro_bangu_estrada do taquaral": {
+    "lat": -22.8702703,
+    "lng": -43.4831651
+  },
+  "rj_rio de janeiro_cosmos_rua dos caquizeiros": {
+    "lat": -22.9226192,
+    "lng": -43.6097898
+  },
+  "rj_rio de janeiro_santissimo_rua itaque": {
+    "lat": -22.8731562,
+    "lng": -43.5168932
+  },
+  "rj_rio de janeiro_campo grande_rua antonio carlos belchior": {
+    "lat": -22.8594457,
+    "lng": -43.5478599
+  },
+  "rj_rio de janeiro_campo grande_rua vicente francisco dos santos": {
+    "lat": -22.8765399,
+    "lng": -43.5688077
+  },
+  "rj_rio de janeiro_barros filho_estrada joao paulo": {
+    "lat": -22.8364707,
+    "lng": -43.3632793
+  },
+  "rj_rio de janeiro_vargem pequena_estrada jose duarte": {
+    "lat": -22.9851511,
+    "lng": -43.4687337
+  },
+  "rj_rio de janeiro_santa cruz_rua projetada b": {
+    "lat": -22.9459381,
+    "lng": -43.6774896
+  },
+  "rj_rio de janeiro_anchieta_rua delfina da cunha": {
+    "lat": -22.8214159,
+    "lng": -43.4047474
+  },
+  "rj_rio de janeiro_campo grande_estrada rio-sao paulo": {
+    "lat": -22.8738332,
+    "lng": -43.5785347
+  },
+  "rj_rio de janeiro_anil_rua projetada a": {
+    "lat": -22.8597145,
+    "lng": -43.4709007
+  },
+  "rj_rio de janeiro_guaratiba_rua lolita rodrigues": {
+    "lat": -22.9480261,
+    "lng": -43.5844627
+  },
+  "rj_rio de janeiro_paciencia_estrada do campinho": {
+    "lat": -22.8852929,
+    "lng": -43.61938
+  },
+  "rj_rio de janeiro_cosmos_rua das amoreiras": {
+    "lat": -22.9207592,
+    "lng": -43.6110501
+  },
+  "rj_rio de janeiro_campo grande_estrada do tingui": {
+    "lat": -22.8781198,
+    "lng": -43.5982935
+  },
+  "rj_rio de janeiro_cosmos_rua sempre verde": {
+    "lat": -22.8963035,
+    "lng": -43.5995572
+  },
+  "rj_rio de janeiro_turiacu_rua ibia": {
+    "lat": -22.8597648,
+    "lng": -43.3427527
+  },
+  "rj_rio de janeiro_campo grande_estrada joao melo": {
+    "lat": -22.8737646,
+    "lng": -43.548628
+  },
+  "rj_rio de janeiro_taquara_estrada marechal miguel salazar mendes d": {
+    "lat": -22.9409319,
+    "lng": -43.3672857
+  },
+  "rj_rio de janeiro_cavalcanti_rua enaldo dos santos araujo": {
+    "lat": -22.8733468,
+    "lng": -43.3144246
+  },
+  "rj_rio de janeiro_campo grande_estrada professor daltro santos": {
+    "lat": -22.8811216,
+    "lng": -43.5492305
+  },
+  "rj_rio de janeiro_pechincha_estrada do campo da areia": {
+    "lat": -22.9242257,
+    "lng": -43.3488898
+  },
+  "rj_rio de janeiro_santa cruz_rua francisco belisario": {
+    "lat": -22.9098659,
+    "lng": -43.6833226
+  },
+  "rj_rio de janeiro_tomas coelho_rua silva vale": {
+    "lat": -22.8662849,
+    "lng": -43.306692
+  },
+  "rj_rio de janeiro_piedade_rua assis carneiro": {
+    "lat": -22.8932665,
+    "lng": -43.3114964
+  },
+  "rj_rio de janeiro_campo grande_estrada do moinho": {
+    "lat": -22.9253164,
+    "lng": -43.5359433
+  },
+  "rj_rio de janeiro_campo grande_rua hermogenes": {
+    "lat": -22.9022661,
+    "lng": -43.5600036
+  },
+  "rj_rio de janeiro_bangu_avenida de santa cruz": {
+    "lat": -22.8765541,
+    "lng": -43.4720887
+  },
+  "rj_rio de janeiro_rocha miranda_estrada do barro vermelho": {
+    "lat": -22.8541606,
+    "lng": -43.3497256
+  },
+  "rj_rio de janeiro_tomas coelho_rua moacir de almeida": {
+    "lat": -22.8690481,
+    "lng": -43.3052837
+  },
+  "rj_rio de janeiro_pavuna_rua dores do turvo (antiga r projetada b)": {
+    "lat": -22.8165903,
+    "lng": -43.3775136
+  },
+  "rj_rio de janeiro_cosmos_avenida cesario de melo": {
+    "lat": -22.915255,
+    "lng": -43.6238396
+  },
+  "rj_rio de janeiro_ramos_rua sargento silva": {
+    "lat": -22.8554291,
+    "lng": -43.2501076
+  },
+  "rj_rio de janeiro_campo grande_rua constituinte": {
+    "lat": -22.883336,
+    "lng": -43.5937489
+  },
+  "rj_rio de janeiro_colegio_estrada do barro vermelho": {
+    "lat": -22.8428137,
+    "lng": -43.3355557
+  },
+  "rj_rio de janeiro_pavuna_praca belo monte": {
+    "lat": -22.8167421,
+    "lng": -43.3782594
+  },
+  "rj_rio de janeiro_bangu_rua arari": {
+    "lat": -22.8657461,
+    "lng": -43.4534201
+  },
+  "rj_rio de janeiro_inhoaiba_rua professor paulo ribeiro": {
+    "lat": -22.8973566,
+    "lng": -43.5960632
+  },
+  "rj_rio de janeiro_campo grande_rua almerinda de castro": {
+    "lat": -22.8946403,
+    "lng": -43.5876097
+  },
+  "rj_rio de janeiro_santissimo_rua doutor juvenal murtinho": {
+    "lat": -22.8751945,
+    "lng": -43.5336147
+  },
+  "rj_rio de janeiro_campo grande_rua josue de barros": {
+    "lat": -22.8786208,
+    "lng": -43.5492079
+  },
+  "rj_rio de janeiro_campo grande_rua campina grande": {
+    "lat": -22.8676168,
+    "lng": -43.5472133
+  },
+  "rj_rio de janeiro_pavuna_rua bras cubas": {
+    "lat": -22.8112301,
+    "lng": -43.366968
+  },
+  "rj_rio de janeiro_bonsucesso_rua engenheiro artur moura": {
+    "lat": -22.8715148,
+    "lng": -43.2533188
+  },
+  "rj_rio de janeiro_colegio_estrada do colegio": {
+    "lat": -22.8426511,
+    "lng": -43.3350915
+  },
+  "rj_rio de janeiro_agua santa_rua dois de fevereiro": {
+    "lat": -22.9075767,
+    "lng": -43.303076
+  },
+  "rj_rio de janeiro_cordovil_rua agua doce": {
+    "lat": -22.8188264,
+    "lng": -43.2938384
+  },
+  "rj_rio de janeiro_penha circular_rua maturaca": {
+    "lat": -22.845194,
+    "lng": -43.2980954
+  },
+  "rj_rio de janeiro_guadalupe_rua joao paranagua": {
+    "lat": -22.8406689,
+    "lng": -43.3763801
+  },
+  "rj_rio de janeiro_realengo_rua dois": {
+    "lat": -22.8821311,
+    "lng": -43.4122359
+  },
+  "rj_rio de janeiro_santa cruz_rua compositor tunai": {
+    "lat": -22.9132282,
+    "lng": -43.6948148
+  },
+  "rj_rio de janeiro_pavuna_rua edgard loureiro valdetaro": {
+    "lat": -22.8120103,
+    "lng": -43.3552598
+  },
+  "rj_rio de janeiro_engenho de dentro_estrada santa eugenia": {
+    "lat": -22.8931291,
+    "lng": -43.29683
+  },
+  "rj_rio de janeiro_santa cruz_rua  aporuna": {
+    "lat": -22.9457082,
+    "lng": -43.6409064
+  },
+  "rj_rio de janeiro_recreio dos bandeirantes_rua teixeira heizer": {
+    "lat": -23.0190429,
+    "lng": -43.5079986
+  },
+  "rj_rio de janeiro_guadalupe_rua luis coutinho cavalcanti": {
+    "lat": -22.8498875,
+    "lng": -43.3711323
+  },
+  "rj_rio de janeiro_campo grande_rua mauro portugal (antiga r projetada a)": {
+    "lat": -22.9129648,
+    "lng": -43.545257
+  },
+  "rj_rio de janeiro_santo cristo_rua geografo milton santos": {
+    "lat": -22.9053859,
+    "lng": -43.2079431
+  },
+  "rj_rio de janeiro_parada de lucas_rua ministro pinto da luz": {
+    "lat": -22.8146906,
+    "lng": -43.2942218
+  },
+  "rj_rio de janeiro_praca seca_rua bricio de abreu": {
+    "lat": -22.903266,
+    "lng": -43.3446859
+  },
+  "rj_rio de janeiro_pavuna_rua dona placida": {
+    "lat": -22.8199109,
+    "lng": -43.3716575
+  },
+  "rj_rio de janeiro_coelho neto_avenida prefeito sa lessa": {
+    "lat": -22.8334107,
+    "lng": -43.3583191
+  },
+  "rj_rio de janeiro_campo grande_rua general moreira lima": {
+    "lat": -22.9381523,
+    "lng": -43.572856
+  },
+  "rj_rio de janeiro_barra da tijuca_avenida das americas": {
+    "lat": -22.9990757,
+    "lng": -43.3658289
+  },
+  "rj_rio de janeiro_praca seca_rua maranga": {
+    "lat": -22.8969958,
+    "lng": -43.3423942
+  },
+  "rj_rio de janeiro_cordovil_rua mar grande": {
+    "lat": -22.8163398,
+    "lng": -43.2906563
+  },
+  "rj_rio de janeiro_guadalupe_estrada camboata": {
+    "lat": -22.8342113,
+    "lng": -43.3796342
+  },
+  "rj_rio de janeiro_padre miguel_rua murundu": {
+    "lat": -22.8878624,
+    "lng": -43.4440404
+  },
+  "rj_rio de janeiro_olaria_center": {
+    "lat": -22.8484866,
+    "lng": -43.2706124
+  },
+  "rj_sao joao de meriti_parque sao nicolau_rua sebastiao sobral": {
+    "lat": -22.784532,
+    "lng": -43.393478
   }
 }

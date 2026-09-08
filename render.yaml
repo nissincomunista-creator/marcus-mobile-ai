@@ -1,12 +1,5 @@
 services:
   - type: web
-    name: marcus-assessoria-mobile
-    env: node
+    name: marcus-assessoria
+    env: docker
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: node dist/server.cjs
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 3001

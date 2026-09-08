@@ -10,6 +10,200 @@ body {
   font-family: var(--font-sans);
   background-color: #020617;
   color: #f1f5f9;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ==========================================================================
+   MODO CLARO (LIGHT THEME) PROFISSIONAL, COESO & ELEGANTE
+   ========================================================================== */
+body.light-theme {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Planos de fundo de containers e cartões no modo claro */
+body.light-theme .bg-\[\#0F172A\],
+body.light-theme .bg-slate-950,
+body.light-theme .bg-slate-950\/95,
+body.light-theme .bg-slate-950\/90,
+body.light-theme .bg-slate-950\/80,
+body.light-theme .bg-slate-950\/70,
+body.light-theme .bg-slate-950\/60,
+body.light-theme .bg-slate-950\/50,
+body.light-theme .bg-slate-950\/45,
+body.light-theme .bg-slate-950\/40,
+body.light-theme .bg-slate-900,
+body.light-theme .bg-slate-900\/95,
+body.light-theme .bg-slate-900\/90,
+body.light-theme .bg-slate-900\/80,
+body.light-theme .bg-slate-900\/70,
+body.light-theme .bg-slate-900\/60,
+body.light-theme .bg-slate-900\/50,
+body.light-theme .bg-slate-900\/40 {
+  background-color: #ffffff !important;
+}
+
+body.light-theme .bg-slate-850,
+body.light-theme .bg-slate-800,
+body.light-theme .bg-slate-800\/90,
+body.light-theme .bg-slate-800\/80,
+body.light-theme .bg-slate-800\/70,
+body.light-theme .bg-slate-800\/60,
+body.light-theme .bg-slate-800\/50,
+body.light-theme .bg-slate-800\/40 {
+  background-color: #f8fafc !important;
+}
+
+body.light-theme .bg-slate-800\/30,
+body.light-theme .bg-slate-800\/20,
+body.light-theme .bg-slate-700\/30,
+body.light-theme .bg-slate-700\/20 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Bordas no modo claro */
+body.light-theme .border-white,
+body.light-theme .border-white\/90,
+body.light-theme .border-white\/80,
+body.light-theme .border-white\/70,
+body.light-theme .border-white\/60,
+body.light-theme .border-white\/40,
+body.light-theme .border-white\/20,
+body.light-theme .border-slate-850,
+body.light-theme .border-slate-800,
+body.light-theme .border-slate-800\/80,
+body.light-theme .border-slate-800\/60,
+body.light-theme .border-slate-800\/50,
+body.light-theme .border-slate-800\/40,
+body.light-theme .border-slate-750,
+body.light-theme .border-slate-700,
+body.light-theme .border-slate-700\/60,
+body.light-theme .border-slate-700\/50,
+body.light-theme .border-slate-700\/40 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Tipografia de textos no modo claro com alto contraste */
+body.light-theme .text-white,
+body.light-theme .text-slate-100,
+body.light-theme .text-slate-200,
+body.light-theme .text-slate-205 {
+  color: #0f172a !important;
+}
+
+body.light-theme .text-slate-300,
+body.light-theme .text-slate-350 {
+  color: #1e293b !important;
+}
+
+body.light-theme .text-slate-400,
+body.light-theme .text-slate-450 {
+  color: #334155 !important;
+  font-weight: 500;
+}
+
+body.light-theme .text-slate-500 {
+  color: #475569 !important;
+}
+
+body.light-theme .text-slate-400.uppercase,
+body.light-theme .text-slate-500.uppercase {
+  color: #1e293b !important;
+}
+
+/* Inputs, Selects e Textareas no modo claro */
+body.light-theme input,
+body.light-theme select,
+body.light-theme textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme input::placeholder,
+body.light-theme textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Botões com fundo sólido colorido continuam com texto branco */
+body.light-theme .bg-indigo-600,
+body.light-theme .bg-indigo-600 *,
+body.light-theme button.bg-indigo-600,
+body.light-theme button.bg-indigo-600 *,
+body.light-theme .bg-emerald-600,
+body.light-theme .bg-emerald-600 *,
+body.light-theme button.bg-emerald-600,
+body.light-theme button.bg-emerald-600 *,
+body.light-theme .bg-rose-600,
+body.light-theme .bg-rose-600 *,
+body.light-theme button.bg-rose-600,
+body.light-theme button.bg-rose-600 *,
+body.light-theme .bg-blue-600,
+body.light-theme .bg-blue-600 *,
+body.light-theme button.bg-blue-600,
+body.light-theme button.bg-blue-600 *,
+body.light-theme .bg-amber-600,
+body.light-theme .bg-amber-600 *,
+body.light-theme button.bg-amber-600,
+body.light-theme button.bg-amber-600 * {
+  color: #ffffff !important;
+}
+
+/* Tags, Pills e Badges no modo claro */
+body.light-theme .bg-indigo-950\/40,
+body.light-theme .bg-indigo-950\/50,
+body.light-theme .bg-indigo-950\/60 {
+  background-color: #e0e7ff !important;
+  color: #3730a3 !important;
+  border-color: #c7d2fe !important;
+}
+
+body.light-theme .bg-emerald-950\/40,
+body.light-theme .bg-emerald-950\/50,
+body.light-theme .bg-emerald-950\/60 {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+
+body.light-theme .bg-blue-950\/40,
+body.light-theme .bg-blue-950\/50,
+body.light-theme .bg-blue-950\/60 {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: #bfdbfe !important;
+}
+
+body.light-theme .bg-amber-950\/40,
+body.light-theme .bg-amber-950\/50,
+body.light-theme .bg-amber-950\/60 {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #fde68a !important;
+}
+
+body.light-theme .bg-purple-950\/40,
+body.light-theme .bg-purple-950\/50,
+body.light-theme .bg-purple-950\/60 {
+  background-color: #f3e8ff !important;
+  color: #6b21a8 !important;
+  border-color: #e9d5ff !important;
+}
+
+body.light-theme .bg-rose-950\/40,
+body.light-theme .bg-rose-950\/50,
+body.light-theme .bg-rose-950\/60 {
+  background-color: #ffe4e6 !important;
+  color: #9f1239 !important;
+  border-color: #fecdd3 !important;
+}
+
+/* Drop shadows suaves para cards em fundo claro */
+body.light-theme .shadow-2xl,
+body.light-theme .shadow-xl,
+body.light-theme .shadow-lg,
+body.light-theme .shadow-md {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -2px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* ISOLAÇÃO COMPLETA DE IMPRESSÃO DO LAUDO (APENAS O RELATÓRIO É IMPRESSO) */

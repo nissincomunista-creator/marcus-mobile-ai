@@ -397,7 +397,7 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
       {/* ========================================================================= */}
       {/* 1. SEÇÃO PRINCIPAL (TOPO): MINHAS ANÁLISES SALVAS (CALCULADORA & ITBI)     */}
       {/* ========================================================================= */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm space-y-6">
+      <div data-tour="profile-analyses" className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-sm space-y-6">
         
         {/* Header with Sorting Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">

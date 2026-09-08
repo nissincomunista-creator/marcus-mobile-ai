@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuctionProperty, ItbiTransaction, PropertyType, BRAZIL_STATES, User as UserType, AccessCode } from './types.ts';
 import Dashboard from './components/Dashboard.tsx';
 import ItbiManager from './components/ItbiManager.tsx';
-import Simulator from './components/Simulator.tsx';
 import AiReporter from './components/AiReporter.tsx';
 import PropertyMap from './components/PropertyMap.tsx';
 import ChatAssistant from './components/ChatAssistant.tsx';
@@ -10,6 +9,8 @@ import Profile from './components/Profile.tsx';
 import { LoginPage } from './components/LoginPage.tsx';
 import RealValueCalculator from './components/RealValueCalculator.tsx';
 import LinkAnalyzerModal from './components/LinkAnalyzerModal.tsx';
+import CapitalInvestmentMatcher from './components/CapitalInvestmentMatcher.tsx';
+import { InteractiveTour } from './components/InteractiveTour.tsx';
 import { 
   Building2, 
   Database, 
@@ -23,6 +24,7 @@ import {
   User,
   LogOut,
   Trash2,
+  DollarSign,
   Calculator,
   Laptop,
   Server,
@@ -35,7 +37,10 @@ import {
   UserPlus,
   Send,
   X,
-  Smartphone
+  Smartphone,
+  Sun,
+  Moon,
+  ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import InstallAppModal from './components/InstallAppModal.tsx';
@@ -100,6 +105,19 @@ export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [user, setUser] = useState<UserType | null>(null);
 
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  }, [theme]);
+
   const [activeTab, setActiveTab] = useState<'garimpo' | 'calculadora' | 'itbi' | 'mapa' | 'perfil'>('garimpo');
   const [auctions, setAuctions] = useState<AuctionProperty[]>([]);
   const [itbiStats, setItbiStats] = useState<any[]>([]);
@@ -113,7 +131,7 @@ export default function App() {
   const [selectedNeighborhoodFilter, setSelectedNeighborhoodFilter] = useState('');
   const [selectedCityFilter, setSelectedCityFilter] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState('');
-  const [selectedStateFilter, setSelectedStateFilter] = useState('');
+  const [selectedStateFilter, setSelectedStateFilter] = useState('RJ');
   const [maxPriceFilter, setMaxPriceFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [sortBy, setSortBy] = useState('roi');
@@ -121,6 +139,14 @@ export default function App() {
 
   // Modal toggle state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+
+  const handleNavigateTourTab = useCallback((tab: 'garimpo' | 'calculadora' | 'capital' | 'perfil') => {
+    setActiveTab(tab);
+    setSelectedAuctionId(null);
+  }, []);
+
+
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [isAnalyzingLink, setIsAnalyzingLink] = useState(false);
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
@@ -691,11 +717,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-slate-100 font-sans flex flex-col justify-between">
+    <div className={`min-h-screen font-sans flex flex-col justify-between transition-colors duration-200 ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-[#0F172A] text-slate-100'}`}>
       
       {/* 1. Header Toolbar (Navigation & Logo) */}
-      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md px-6 py-4 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md px-4 sm:px-6 py-3.5 sticky top-0 z-40">
+        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
           
           {/* Logo & Clock details */}
           <div className="flex items-center space-x-3 cursor-pointer justify-start" onClick={() => setSelectedAuctionId(null)}>
@@ -718,12 +744,13 @@ export default function App() {
             </div>
           </div>
              {/* Right: All tabs grouped in a responsive flex-wrap row */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-tour="header-nav" className="flex flex-wrap items-center gap-2">
             <button
               id="tab-garimpo"
               onClick={() => {
                 setActiveTab('garimpo');
                 setSelectedAuctionId(null); // Back to listings
+                setSelectedOriginFilter('caixa');
               }}
               className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
                 activeTab === 'garimpo'
@@ -768,19 +795,19 @@ export default function App() {
             </button>
 
             <button
-              id="tab-mapa"
+              id="tab-capital"
               onClick={() => {
-                setActiveTab('mapa');
+                setActiveTab('capital');
                 setSelectedAuctionId(null);
               }}
               className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
-                activeTab === 'mapa'
+                activeTab === 'capital'
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                   : 'bg-slate-800 text-slate-350 border-slate-700 hover:bg-slate-700 hover:text-slate-100'
               }`}
             >
-              <MapPin className={`w-3.5 h-3.5 ${activeTab === 'mapa' ? 'text-white' : 'text-slate-400'}`} />
-              <span>Mapa de Oportunidades</span>
+              <DollarSign className={`w-3.5 h-3.5 ${activeTab === 'capital' ? 'text-white' : 'text-slate-400'}`} />
+              <span>Alocação de Capital</span>
             </button>
  
             <button
@@ -807,6 +834,39 @@ export default function App() {
             >
               <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
               <span>📱 Baixar no Celular</span>
+            </button>
+
+            {/* Interactive Gamified Tour Button */}
+            <button
+              onClick={() => setIsTourOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-300 border border-blue-500/40 hover:bg-blue-600/30 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
+              title="Tutorial Interativo Passo a Passo do Sistema"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>🎓 Tutorial</span>
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              className={`px-3 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
+                theme === 'light'
+                  ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+                  : 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-750'
+              }`}
+              title={theme === 'dark' ? 'Alternar para Tema Claro' : 'Alternar para Tema Escuro'}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Claro</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="hidden sm:inline">Escuro</span>
+                </>
+              )}
             </button>
 
             {/* Server / Matrix Mode Trigger: ONLY for Admin */}
@@ -1046,7 +1106,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* 2. Main Content Board */}
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 flex-1 w-full">
+      <main className="max-w-[1720px] mx-auto px-3 sm:px-5 py-4 flex-1 w-full">
         
         {/* RPC Server connection failure alert banner */}
         {rpcError && (
@@ -1079,50 +1139,90 @@ export default function App() {
                 className="space-y-6"
               >
                 {!activeSelectedAuction ? (
-                  <Dashboard
-                    auctions={auctions}
-                    selectedAuctionId={selectedAuctionId}
-                    onSelectAuction={(id) => setSelectedAuctionId(id)}
-                    onDeleteAuction={handleDeleteAuction}
-                    onOpenAddModal={() => {}}
-                    selectedNeighborhoodFilter={selectedNeighborhoodFilter}
-                    setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
-                    selectedCityFilter={selectedCityFilter}
-                    setSelectedCityFilter={setSelectedCityFilter}
-                    selectedTypeFilter={selectedTypeFilter}
-                    setSelectedTypeFilter={setSelectedTypeFilter}
-                    selectedStateFilter={selectedStateFilter}
-                    setSelectedStateFilter={setSelectedStateFilter}
-                    maxPriceFilter={maxPriceFilter}
-                    setMaxPriceFilter={setMaxPriceFilter}
-                    paymentFilter={paymentFilter}
-                    setPaymentFilter={setPaymentFilter}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                    onGarimparJudiciais={handleGarimparJudiciais}
-                    onGarimparCaixa={handleGarimparCaixa}
-                    onGarimparPortais={handleGarimparPortais}
-                    onSyncCaixaAuto={handleSyncCaixaAuto}
-                    isMining={isMining}
-                    itbiCount={itbiCount}
-                    onUpdateProperty={handleUpdatePropertyDirectly}
-                    onViewMap={() => setActiveTab('mapa')}
-                    selectedOriginFilter={selectedOriginFilter}
-                    setSelectedOriginFilter={setSelectedOriginFilter}
-                    onOpenLinkModal={() => setIsLinkModalOpen(true)}
-                    itbiStats={itbiStats}
-                    onClearAll={handleClearAllAuctions}
-                  />
-                ) : (
-                  /* Single Detail focused Split Pane view (Simulator on top, AI reporter below) */
-                  <div className="space-y-6">
-                    <Simulator
-                      property={activeSelectedAuction}
-                      onUpdateProperty={handleSaveAuction}
-                      onBack={() => setSelectedAuctionId(null)}
-                      onTriggerAi={handleTriggerAiReport}
-                      isAiAnalyzing={isAiAnalyzing}
+                  <ErrorBoundary fallbackTitle="Erro ao carregar o Painel de Garimpo">
+                    <Dashboard
+                      auctions={auctions}
+                      selectedAuctionId={selectedAuctionId}
+                      onSelectAuction={(id) => setSelectedAuctionId(id)}
+                      onDeleteAuction={handleDeleteAuction}
+                      onOpenAddModal={() => {}}
+                      selectedNeighborhoodFilter={selectedNeighborhoodFilter}
+                      setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
+                      selectedCityFilter={selectedCityFilter}
+                      setSelectedCityFilter={setSelectedCityFilter}
+                      selectedTypeFilter={selectedTypeFilter}
+                      setSelectedTypeFilter={setSelectedTypeFilter}
+                      selectedStateFilter={selectedStateFilter}
+                      setSelectedStateFilter={setSelectedStateFilter}
+                      maxPriceFilter={maxPriceFilter}
+                      setMaxPriceFilter={setMaxPriceFilter}
+                      paymentFilter={paymentFilter}
+                      setPaymentFilter={setPaymentFilter}
+                      sortBy={sortBy}
+                      setSortBy={setSortBy}
+                      onGarimparJudiciais={handleGarimparJudiciais}
+                      onGarimparCaixa={handleGarimparCaixa}
+                      onGarimparPortais={handleGarimparPortais}
+                      onSyncCaixaAuto={handleSyncCaixaAuto}
+                      isMining={isMining}
+                      itbiCount={itbiCount}
+                      onUpdateProperty={handleUpdatePropertyDirectly}
+                      onViewMap={() => setActiveTab('mapa')}
+                      selectedOriginFilter={selectedOriginFilter}
+                      setSelectedOriginFilter={setSelectedOriginFilter}
+                      onOpenLinkModal={() => setIsLinkModalOpen(true)}
+                      itbiStats={itbiStats}
+                      onClearAll={handleClearAllAuctions}
+                      onOpenCapitalMatcher={() => setActiveTab('capital')}
                     />
+                  </ErrorBoundary>
+                ) : (
+                  /* Single Detail focused Split Pane view (RealValueCalculator on top, AI reporter below) */
+                  <div className="space-y-6">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <button
+                          onClick={() => setSelectedAuctionId(null)}
+                          className="px-3.5 py-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer flex items-center space-x-2 text-xs font-bold border border-slate-700 shadow-xs"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-indigo-400" />
+                          <span>Voltar para Lista de Leilões</span>
+                        </button>
+                        <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-500/30">
+                          {activeSelectedAuction.neighborhood}, {activeSelectedAuction.city} - {activeSelectedAuction.state || 'RJ'}
+                        </span>
+                      </div>
+
+                      <RealValueCalculator
+                        key={activeSelectedAuction.id}
+                        itbiStats={itbiStats}
+                        prefillData={{
+                          id: activeSelectedAuction.id,
+                          title: activeSelectedAuction.title,
+                          description: activeSelectedAuction.description,
+                          auctionLink: activeSelectedAuction.auctionLink,
+                          state: activeSelectedAuction.state || selectedStateFilter || 'RJ',
+                          city: activeSelectedAuction.city,
+                          neighborhood: activeSelectedAuction.neighborhood,
+                          address: activeSelectedAuction.address,
+                          propertyType: activeSelectedAuction.propertyType,
+                          sizeSqm: activeSelectedAuction.sizeSqm,
+                          bedrooms: (activeSelectedAuction as any).bedrooms,
+                          parkingSpaces: (activeSelectedAuction as any).parkingSpaces,
+                          purchasePrice: activeSelectedAuction.auctionPrice,
+                          evaluationPrice: (activeSelectedAuction as any).evaluationPrice,
+                          estimatedValue: activeSelectedAuction.estimatedValue,
+                          acquisitionRule: activeSelectedAuction.origin === 'caixa' || (activeSelectedAuction.id && activeSelectedAuction.id.includes('caixa')) ? 'caixa' : 'leilao',
+                          estimatedRepair: Math.round(activeSelectedAuction.auctionPrice * 0.05),
+                          pendingDebts: (activeSelectedAuction as any).pendingCondoCost || Math.round(((activeSelectedAuction as any).evaluationPrice || 0) * 0.10),
+                          otherCosts: (activeSelectedAuction.itbiTax || 0) + (activeSelectedAuction.registryCost || 0) + (activeSelectedAuction.condoDebts || 0),
+                          itbiUnitValueAvg: activeSelectedAuction.itbiUnitValueAvg,
+                          portalZapAvg: activeSelectedAuction.portalZapAvg,
+                          portalQuintoAndarAvg: activeSelectedAuction.portalQuintoAndarAvg,
+                        }}
+                        onClose={() => setSelectedAuctionId(null)}
+                      />
+                    </div>
 
                     <AiReporter
                       property={activeSelectedAuction}
@@ -1191,6 +1291,32 @@ export default function App() {
               </motion.div>
             )}
 
+            {/* TAB CONTENT: Capital Allocation Matcher */}
+            {activeTab === 'capital' && (
+              <motion.div
+                key="capital-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15 }}
+              >
+                <ErrorBoundary fallbackTitle="Erro ao carregar Alocação por Capital">
+                  <CapitalInvestmentMatcher
+                    auctions={auctions}
+                    itbiStats={itbiStats}
+                    onSelectProperty={(auc) => {
+                      setSelectedAuctionId(auc.id);
+                      setActiveTab('garimpo');
+                    }}
+                    onSimulateProperty={(auc) => {
+                      setSelectedAuctionId(auc.id);
+                      setActiveTab('garimpo');
+                    }}
+                  />
+                </ErrorBoundary>
+              </motion.div>
+            )}
+
             {/* TAB CONTENT: Map Satellite Georeferencer */}
             {activeTab === 'mapa' && (
               <motion.div
@@ -1216,7 +1342,7 @@ export default function App() {
 
       {/* 3. Footer credits */}
       <footer className="bg-slate-900 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
           <p>© 2026 Garimpeiro de Leilões - Decisões Inteligentes baseadas no ITBI Real Municipal.</p>
           <div className="flex justify-center space-x-3.5 text-slate-500">
             <span>Privacidade</span>
@@ -1246,6 +1372,13 @@ export default function App() {
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
         deferredPrompt={deferredPrompt}
+      />
+
+      {/* 7. Interactive Onboarding & Game Tour */}
+      <InteractiveTour
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onNavigateTab={handleNavigateTourTab}
       />
     </div>
   );

@@ -1,5 +1,12 @@
 export type PropertyType = 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno';
 
+export const VALID_ITBI_CITIES_BY_STATE: Record<string, string[]> = {
+  RJ: ['Rio de Janeiro', 'Niterói'],
+  MG: ['Juiz de Fora'],
+  SP: ['São Paulo']
+};
+
+
 export interface User {
   id: string;
   email: string;
@@ -68,6 +75,11 @@ export interface AuctionProperty {
   calculatedProfit?: number; // Capital gains
   liquidityScore?: number; // 1-10 score
   riskLevel?: 'Baixo' | 'Médio' | 'Alto';
+  isCommunityRisk?: boolean; // True if inside or adjacent to identified community/faction area
+  communityName?: string; // e.g. Morro do São João
+  factionName?: string; // e.g. CV, TCP, ADA
+  buildingAge?: number; // Estimated age of building in years
+  ageDepreciationPct?: number; // Ross-Heidecke subtle depreciation (1-5%)
   
   // AI Generated fields
   aiAppreciationScore?: number; // 1-10 score
@@ -115,6 +127,8 @@ export interface AuctionProperty {
   finalDecisionVerdict?: 'revenda' | 'locacao' | 'skip';
   bedrooms?: number;
   parkingSpaces?: number;
+  lat?: number;
+  lng?: number;
 }
 
 export interface ItbiTransaction {
