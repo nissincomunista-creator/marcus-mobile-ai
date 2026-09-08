@@ -6,5 +6,6 @@ COPY package*.json ./
 RUN npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
 COPY . .
 EXPOSE 3000
-CMD ["node", "dist/server.cjs"]
+CMD ["node", "--max-old-space-size=450", "dist/server.cjs"]
+
 

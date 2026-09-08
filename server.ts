@@ -614,7 +614,7 @@ function loadStore(): DataStore {
         console.log(`[Store] Calibrando ${storeData.auctions.length} leilões com a base oficial de ITBI...`);
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
-        saveStore(storeData);
+        // saveStore omitido na inicializacao para economizar RAM e evitar estouro de 512MB no Render
         console.log('[Store] Todos os leilões calibrados e recalculados com sucesso!');
       } else {
         console.log(`[Store] Leilões prontos e calibrados (${storeData.auctions?.length || 0} registros). Inicialização instantânea!`);
@@ -623,7 +623,7 @@ function loadStore(): DataStore {
       console.error('Error reading data_store.json, resetting to initials', e);
     }
   } else {
-    saveStore(storeData);
+    // saveStore omitido na inicializacao
   }
 
   // Retroactive correction of portal links to the stable search format
@@ -648,7 +648,6 @@ function loadStore(): DataStore {
   }
   if (storeModified) {
     console.log('Retroactively migrated/corrected unstable portal links to stable search format.');
-    saveStore(storeData);
   }
 
   // Retroactive attachment of auctions to first user
@@ -661,7 +660,6 @@ function loadStore(): DataStore {
         modified = true;
       }
     });
-    if (modified) saveStore(storeData);
   }
 
   // If ITBI transactions are empty, attempt auto-import from Excel

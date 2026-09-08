@@ -1079,7 +1079,6 @@ function loadStore() {
         console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com a base oficial de ITBI...`);
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
-        saveStore(storeData);
         console.log("[Store] Todos os leil\xF5es calibrados e recalculados com sucesso!");
       } else {
         console.log(`[Store] Leil\xF5es prontos e calibrados (${storeData.auctions?.length || 0} registros). Inicializa\xE7\xE3o instant\xE2nea!`);
@@ -1088,7 +1087,6 @@ function loadStore() {
       console.error("Error reading data_store.json, resetting to initials", e);
     }
   } else {
-    saveStore(storeData);
   }
   let storeModified = false;
   if (storeData.auctions && storeData.auctions.length > 0) {
@@ -1109,7 +1107,6 @@ function loadStore() {
   }
   if (storeModified) {
     console.log("Retroactively migrated/corrected unstable portal links to stable search format.");
-    saveStore(storeData);
   }
   if (storeData.users.length > 0) {
     const firstUserId = storeData.users[0].id;
@@ -1120,7 +1117,6 @@ function loadStore() {
         modified = true;
       }
     });
-    if (modified) saveStore(storeData);
   }
   if (!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) {
     console.log("Base de ITBI vazia no JSON. Tentando importar dados da planilha Excel do Desktop...");
