@@ -409,7 +409,7 @@ export const DUQUE_DE_CAXIAS_BAIRROS: Record<string, [number, number]> = {
 };
 
 export function getPropertyCoordinates(prop: AuctionProperty): [number, number] | null {
-  // Se o imóvel estiver marcado como pendente de revisão, NÃO plotar coordenadas falsas
+  // Nunca exibir uma coordenada que o pipeline já marcou como não confiável.
   if (prop.precisa_revisao || prop.status_geocodificacao === 'PENDENTE_REVISAO') {
     return null;
   }
@@ -419,13 +419,9 @@ export function getPropertyCoordinates(prop: AuctionProperty): [number, number] 
   const neighNorm = normalizeGeoString(prop.neighborhood);
 
   let streetHit: { lat: number; lng: number } | null = null;
-  let streetNum = 0;
 
   if (prop.address) {
     const rawAddr = prop.address.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-    const numMatch = rawAddr.match(/,\s*n[ºo°]?\s*(\d+)/i) || rawAddr.match(/n[ºo°]?\s*(\d+)/i) || rawAddr.match(/,\s*(\d+)/i);
-    streetNum = numMatch ? parseInt(numMatch[1], 10) : 0;
-
     let cleanStreet = rawAddr.split(',')[0].trim();
     cleanStreet = cleanStreet.replace(/\b(n[ºo°.]?|\d+).*$/, '').trim();
     cleanStreet = cleanStreet.replace(/^r\.\s*/, 'rua ').replace(/^av\.\s*/, 'avn ').replace(/^est\.\s*/, 'etr ');
@@ -435,48 +431,28 @@ export function getPropertyCoordinates(prop: AuctionProperty): [number, number] 
     const kWithBairro = `${uf}_${cityNorm}_${neighNorm}_${cleanStreet}`;
     if (streetCoords[kWithBairro] && streetCoords[kWithBairro].lat !== 0) {
       streetHit = streetCoords[kWithBairro];
-    } else if (cleanStreet.length >= 4) {
-      for (const [key, coords] of Object.entries(streetCoords)) {
-        if (key.startsWith(`${uf}_${cityNorm}`) && (key.endsWith(`_${cleanStreet}`) || key.includes(`_${cleanStreet}_`)) && coords.lat !== 0) {
-          streetHit = coords;
-          break;
-        }
-      }
     }
   }
 
-  // 0. Validação de consistência cartográfica:
+  // Coordenadas já resolvidas pelo geocoder predial ou pela base oficial têm
+  // precedência. Não as "corrigimos" por uma estimativa de eixo de rua.
   if (prop.lat && prop.lng && !isNaN(prop.lat) && !isNaN(prop.lng) && prop.lat !== 0 && prop.lng !== 0) {
-    // Se temos o eixo oficial da via mapeado, verifica se a coordenada cadastrada não é um centróide espúrio (desvio > 600m)
-    if (streetHit) {
-      const dLat = Math.abs(prop.lat - streetHit.lat);
-      const dLng = Math.abs(prop.lng - streetHit.lng);
-      // ~600m é aprox 0.0055 graus no RJ
-      if (dLat > 0.0055 || dLng > 0.0055) {
-        // Coordenada do imóvel estava corrompida / deslocada! Auto-corrige para o eixo oficial da via
-        const numOffset = streetNum > 0 ? ((streetNum % 300) - 150) * 0.000004 : 0;
-        return [
-          Number((streetHit.lat + numOffset).toFixed(6)),
-          Number((streetHit.lng + numOffset * 0.6).toFixed(6))
-        ];
-      }
-    }
     return [
       Number(prop.lat.toFixed(6)),
       Number(prop.lng.toFixed(6))
     ];
   }
 
-  // 1. Street Level Match from Real ITBI Geo-registry
+  // Sem coordenada predial, a única alternativa visual permitida é o eixo da
+  // mesma rua, na mesma cidade e no mesmo bairro. Não há interpolação inventada
+  // por número nem busca frouxa por uma rua homônima em outro bairro.
   if (streetHit) {
-    const numOffset = streetNum > 0 ? ((streetNum % 300) - 150) * 0.000004 : 0;
     return [
-      Number((streetHit.lat + numOffset).toFixed(6)),
-      Number((streetHit.lng + numOffset * 0.6).toFixed(6))
+      Number(streetHit.lat.toFixed(6)),
+      Number(streetHit.lng.toFixed(6))
     ];
   }
 
   // ETAPA 3: Bloqueio Rigoroso de Falsa Precisão (Regra de Ouro)
   return null;
 }
-

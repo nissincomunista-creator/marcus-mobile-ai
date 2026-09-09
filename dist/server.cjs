@@ -30,12 +30,12 @@ var import_iconv_lite = __toESM(require("iconv-lite"), 1);
 var import_stream = require("stream");
 var import_zlib = __toESM(require("zlib"), 1);
 var import_vite = require("vite");
-var import_genai = require("@google/genai");
+var import_genai2 = require("@google/genai");
 var import_dotenv = __toESM(require("dotenv"), 1);
 var import_child_process = require("child_process");
 var import_crypto = __toESM(require("crypto"), 1);
 var import_os = __toESM(require("os"), 1);
-var import_puppeteer2 = __toESM(require("puppeteer"), 1);
+var import_puppeteer3 = __toESM(require("puppeteer"), 1);
 var import_pdf_parse = require("pdf-parse");
 
 // src/data.ts
@@ -495,6 +495,35 @@ async function geocodeAddress(query, options) {
 }
 
 // src/utils/bidirectionalBenchmark.ts
+function isGenericStreet(str) {
+  if (!str) return true;
+  const s = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  if (s.length < 3) return true;
+  const genericPrefixRegex = /^(rua|r\b|avenida|av\b|estrada|estr\b|travessa|trav\b|alameda|al\b|via|beco|praca|pc\b)\s+([a-z]|[0-9]{1,3})$/i;
+  if (genericPrefixRegex.test(s)) return true;
+  const genericKeywords = [
+    "projetad",
+    "sem nome",
+    "s/n",
+    "nao informado",
+    "nao informada",
+    "loteamento",
+    "quadra",
+    "gleba",
+    "chacara",
+    "sitio",
+    "estrada municipal",
+    "zona rural",
+    "area rural",
+    "area de posse",
+    "vila nova",
+    "povoado"
+  ];
+  if (genericKeywords.some((k) => s.includes(k))) return true;
+  const core = cleanStreetCore(s);
+  if (core.length <= 2) return true;
+  return false;
+}
 function cleanStreetCore(s) {
   if (!s) return "";
   let str = s.split(",")[0].trim();
@@ -506,19 +535,48 @@ function cleanStreetNumber(n) {
   const match = String(n).match(/\d+/);
   return match ? match[0] : "";
 }
-function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, targetNumber, targetSize, sizeMode = "similar", radiusKm = 0.5) {
+function computeMedian(vals) {
+  if (vals.length === 0) return 0;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, targetNumber, targetSize, sizeMode = "similar", radiusKm = 0.5, targetPropType) {
   if (!allNeighborhoodTxs || allNeighborhoodTxs.length === 0) return null;
-  const targetCore = cleanStreetCore(targetStreet);
-  const targetNum = cleanStreetNumber(targetNumber);
   const size = targetSize > 0 ? targetSize : 60;
   const minSize = Math.max(15, Math.round(size * 0.67));
   const maxSize = Math.round(size * 1.33);
+  if (isGenericStreet(targetStreet)) {
+    return {
+      bairro: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      raio: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      rua: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      predio: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      mediaCorteReal: 0,
+      nivelUtilizado: "Sem Dados Suficientes",
+      flipRapidoSqm: 0,
+      gabaritoTotal: 0,
+      flipTotal: 0,
+      minSimilarSize: minSize,
+      maxSimilarSize: maxSize,
+      hasMicroData: false
+    };
+  }
+  const targetCore = cleanStreetCore(targetStreet);
+  const targetNum = cleanStreetNumber(targetNumber);
+  let typeTxs = allNeighborhoodTxs;
+  if (targetPropType) {
+    const exactTypeTxs = allNeighborhoodTxs.filter((t) => t.propertyType === targetPropType);
+    if (exactTypeTxs.length >= 2) {
+      typeTxs = exactTypeTxs;
+    }
+  }
   const filterByArea = (txs) => {
     if (sizeMode === "all") return txs;
     const filtered = txs.filter((t) => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
     return filtered.length >= 2 ? filtered : txs;
   };
-  const poolTxs = filterByArea(allNeighborhoodTxs);
+  const poolTxs = filterByArea(typeTxs);
   const bVals = poolTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
   if (bVals.length === 0) return null;
   const bPrelim = bVals.reduce((a, b) => a + b, 0) / bVals.length;
@@ -539,11 +597,37 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const raioExpurgados = raioVals.length - raioValid.length;
   const ruaVals = ruaTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
   const ruaPrelim = ruaVals.length > 0 ? Math.round(ruaVals.reduce((a, b) => a + b, 0) / ruaVals.length) : 0;
-  const refCorteRua = raioSaneada;
-  const ruaCorteMin = Math.round(refCorteRua * 0.75);
-  const ruaCorteMax = Math.round(refCorteRua * 1.25);
-  const ruaValid = ruaVals.filter((v) => v >= ruaCorteMin && v <= ruaCorteMax);
-  const ruaSaneada = ruaValid.length > 0 ? Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length) : refCorteRua;
+  let ruaValid = [];
+  let ruaSaneada = 0;
+  let ruaCorteMin = 0;
+  let ruaCorteMax = 0;
+  let refCorteRua = raioSaneada;
+  if (ruaVals.length >= 2) {
+    const ruaMed = computeMedian(ruaVals);
+    refCorteRua = ruaMed;
+    ruaCorteMin = Math.round(ruaMed * 0.65);
+    ruaCorteMax = Math.round(ruaMed * 1.35);
+    ruaValid = ruaVals.filter((v) => v >= ruaCorteMin && v <= ruaCorteMax);
+    if (ruaValid.length === 0) ruaValid = ruaVals;
+    ruaSaneada = Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length);
+  } else if (ruaVals.length === 1) {
+    const anchor = raioSaneada > 0 ? raioSaneada : bSaneada;
+    refCorteRua = anchor;
+    ruaCorteMin = Math.round(anchor * 0.55);
+    ruaCorteMax = Math.round(anchor * 1.45);
+    if (ruaVals[0] >= ruaCorteMin && ruaVals[0] <= ruaCorteMax) {
+      ruaValid = [ruaVals[0]];
+      ruaSaneada = ruaVals[0];
+    } else {
+      ruaValid = [];
+      ruaSaneada = 0;
+    }
+  } else {
+    ruaValid = [];
+    ruaSaneada = 0;
+    ruaCorteMin = 0;
+    ruaCorteMax = 0;
+  }
   const ruaExpurgados = ruaVals.length - ruaValid.length;
   const predioTxs = targetNum ? ruaTxs.filter((t) => cleanStreetNumber(t.number) === targetNum) : [];
   const predioVals = predioTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
@@ -552,34 +636,84 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   let predioSaneada = 0;
   let predioCorteMin = 0;
   let predioCorteMax = 0;
-  if (predioVals.length === ruaVals.length && ruaVals.length > 0) {
-    predioValid = ruaValid;
-    predioSaneada = ruaSaneada;
-    predioCorteMin = ruaCorteMin;
-    predioCorteMax = ruaCorteMax;
-  } else if (predioVals.length > 0) {
-    const refCortePredio = ruaSaneada > 0 ? ruaSaneada : raioSaneada;
-    predioCorteMin = Math.round(refCortePredio * 0.75);
-    predioCorteMax = Math.round(refCortePredio * 1.25);
+  if (predioVals.length >= 2) {
+    const pMed = computeMedian(predioVals);
+    predioCorteMin = Math.round(pMed * 0.65);
+    predioCorteMax = Math.round(pMed * 1.35);
     predioValid = predioVals.filter((v) => v >= predioCorteMin && v <= predioCorteMax);
-    predioSaneada = predioValid.length > 0 ? Math.round(predioValid.reduce((a, b) => a + b, 0) / predioValid.length) : refCortePredio;
+    if (predioValid.length === 0) predioValid = predioVals;
+    predioSaneada = Math.round(predioValid.reduce((a, b) => a + b, 0) / predioValid.length);
+  } else if (predioVals.length === 1) {
+    const pAnchor = ruaSaneada > 0 ? ruaSaneada : raioSaneada > 0 ? raioSaneada : bSaneada;
+    predioCorteMin = Math.round(pAnchor * 0.55);
+    predioCorteMax = Math.round(pAnchor * 1.45);
+    if (predioVals[0] >= predioCorteMin && predioVals[0] <= predioCorteMax) {
+      predioValid = [predioVals[0]];
+      predioSaneada = predioVals[0];
+    } else {
+      predioValid = [];
+      predioSaneada = 0;
+    }
+  } else {
+    predioValid = [];
+    predioSaneada = 0;
+    predioCorteMin = 0;
+    predioCorteMax = 0;
   }
   const predioExpurgados = predioVals.length - predioValid.length;
-  let mediaCorteReal = bSaneada;
-  let nivelUtilizado = "Bairro";
+  let mediaCorteReal = 0;
+  let nivelUtilizado = "Sem Dados Suficientes";
+  let hasMicroData = false;
   if (predioValid.length > 0) {
-    mediaCorteReal = predioSaneada;
+    const anchor = ruaSaneada > 0 ? ruaSaneada : raioSaneada;
+    if (predioValid.length === 1) {
+      if (predioSaneada <= anchor) {
+        mediaCorteReal = predioSaneada;
+      } else {
+        const blended = predioSaneada * 0.4 + anchor * 0.6;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
+      }
+    } else if (predioValid.length === 2) {
+      if (predioSaneada <= anchor) {
+        mediaCorteReal = predioSaneada;
+      } else {
+        const blended = predioSaneada * 0.7 + anchor * 0.3;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
+      }
+    } else {
+      mediaCorteReal = predioSaneada;
+    }
     nivelUtilizado = "Pr\xE9dio";
+    hasMicroData = true;
   } else if (ruaValid.length > 0) {
-    mediaCorteReal = ruaSaneada;
+    const anchor = raioSaneada > 0 ? raioSaneada : bSaneada;
+    if (ruaValid.length === 1) {
+      if (ruaSaneada <= anchor) {
+        mediaCorteReal = ruaSaneada;
+      } else {
+        const blended = ruaSaneada * 0.4 + anchor * 0.6;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
+      }
+    } else if (ruaValid.length === 2) {
+      if (ruaSaneada <= anchor) {
+        mediaCorteReal = ruaSaneada;
+      } else {
+        const blended = ruaSaneada * 0.7 + anchor * 0.3;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
+      }
+    } else {
+      mediaCorteReal = ruaSaneada;
+    }
     nivelUtilizado = "Rua";
-  } else if (raioValid.length > 0) {
-    mediaCorteReal = raioSaneada;
-    nivelUtilizado = "Raio Entorno";
+    hasMicroData = true;
+  } else {
+    mediaCorteReal = 0;
+    nivelUtilizado = "Sem Dados Suficientes";
+    hasMicroData = false;
   }
-  const flipRapidoSqm = Math.round(mediaCorteReal * 0.9);
-  const gabaritoTotal = mediaCorteReal * size;
-  const flipTotal = flipRapidoSqm * size;
+  const flipRapidoSqm = hasMicroData ? Math.round(mediaCorteReal * 0.9) : 0;
+  const gabaritoTotal = hasMicroData ? mediaCorteReal * size : 0;
+  const flipTotal = hasMicroData ? flipRapidoSqm * size : 0;
   return {
     bairro: {
       saneada: bSaneada,
@@ -623,23 +757,858 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     gabaritoTotal,
     flipTotal,
     minSimilarSize: minSize,
-    maxSimilarSize: maxSize
+    maxSimilarSize: maxSize,
+    hasMicroData
+  };
+}
+
+// src/utils/cityZones.ts
+function normalizeString(str) {
+  if (!str) return "";
+  return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+var CITY_ZONES = {
+  "rio de janeiro": [
+    {
+      name: "Zona Sul",
+      neighborhoods: [
+        "copacabana",
+        "ipanema",
+        "leblon",
+        "botafogo",
+        "flamengo",
+        "laranjeiras",
+        "catete",
+        "gloria",
+        "urca",
+        "leme",
+        "gavea",
+        "jardim botanico",
+        "humaita",
+        "lagoa",
+        "sao conrado",
+        "cosme velho",
+        "rodrigo de freitas",
+        "vidigal",
+        "rocinha"
+      ]
+    },
+    {
+      name: "Zona Norte",
+      neighborhoods: [
+        "tijuca",
+        "maracana",
+        "vila isabel",
+        "grajau",
+        "meier",
+        "cachambi",
+        "del castilho",
+        "engenho novo",
+        "engenho de dentro",
+        "todos os santos",
+        "madureira",
+        "ilha do governador",
+        "penha",
+        "penha circular",
+        "ramos",
+        "olaria",
+        "bonsucesso",
+        "pavuna",
+        "iraja",
+        "rocha miranda",
+        "bento ribeiro",
+        "marechal hermes",
+        "cascadura",
+        "campinho",
+        "piedade",
+        "pilares",
+        "abolicao",
+        "encantado",
+        "agua santa",
+        "riachuelo",
+        "sampaio",
+        "sao cristovao",
+        "mangueira",
+        "benfica",
+        "caju",
+        "higienopolis",
+        "maria da graca",
+        "inhauma",
+        "engenho da rainha",
+        "tomas coelho",
+        "vicente de carvalho",
+        "vila da penha",
+        "vista alegre",
+        "braz de pina",
+        "cordovil",
+        "parada de lucas",
+        "vigario geral",
+        "jardim america",
+        "coelho neto",
+        "acari",
+        "barros filho",
+        "costa barros",
+        "honorio gurgel",
+        "oswaldo cruz",
+        "turia\xE7u",
+        "vila kosmos",
+        "anchieta",
+        "parque anchieta",
+        "guadalupe",
+        "ricardo de albuquerque",
+        "portuguesa",
+        "monero",
+        "jardim guanabara",
+        "cacuia",
+        "taua",
+        "bancarios",
+        "freguesia (ilha)",
+        "pitangueiras",
+        "zumbi",
+        "ribeira",
+        "galeao",
+        "cidade universitaria"
+      ]
+    },
+    {
+      name: "Zona Oeste",
+      neighborhoods: [
+        "barra da tijuca",
+        "recreio dos bandeirantes",
+        "recreio",
+        "jacarepagua",
+        "taquara",
+        "freguesia (jacarepagua)",
+        "freguesia jacarepagua",
+        "pechincha",
+        "anil",
+        "curicica",
+        "camorim",
+        "vargem grande",
+        "vargem pequena",
+        "campo grande",
+        "bangu",
+        "realengo",
+        "santa cruz",
+        "senador camara",
+        "senador vasconcelos",
+        "santissimo",
+        "paciencia",
+        "cosmos",
+        "inhoaiba",
+        "guaratiba",
+        "barra de guaratiba",
+        "pedra de guaratiba",
+        "ilha de guaratiba",
+        "deodoro",
+        "magalhaes bastos",
+        "vila militar",
+        "jardim sulacap",
+        "vila valqueire",
+        "praca seca",
+        "tanque",
+        "gardenia azul",
+        "cidade de deus",
+        "itaguai",
+        "padre miguel",
+        "gericino",
+        "jabour"
+      ]
+    },
+    {
+      name: "Centro",
+      neighborhoods: [
+        "centro",
+        "lapa",
+        "santa teresa",
+        "santo cristo",
+        "gamboa",
+        "saude",
+        "estacio",
+        "cidade nova",
+        "praca da bandeira",
+        "catumbi",
+        "rio comprido"
+      ]
+    }
+  ],
+  "niteroi": [
+    {
+      name: "Praias da Ba\xEDa (Zona Sul)",
+      neighborhoods: [
+        "icarai",
+        "santa rosa",
+        "inga",
+        "boa viagem",
+        "sao domingos",
+        "gragoata",
+        "charitas",
+        "jurujuba",
+        "sao francisco",
+        "centro",
+        "ponta d areia",
+        "fatima",
+        "sao lourenco",
+        "morro do estado"
+      ]
+    },
+    {
+      name: "Regi\xE3o Oce\xE2nica",
+      neighborhoods: [
+        "piratininga",
+        "camboinhas",
+        "itaipu",
+        "itacoatiara",
+        "engenho do mato",
+        "maravista",
+        "cafuba",
+        "santo antonio",
+        "serra grande",
+        "jacare"
+      ]
+    },
+    {
+      name: "Regi\xE3o Norte",
+      neighborhoods: [
+        "fonseca",
+        "barreto",
+        "santana",
+        "engenhoca",
+        "tenente jardim",
+        "ilha da conceicao",
+        "cubango",
+        "vicoso jardim",
+        "caramujo",
+        "baldeador",
+        "santa barbara"
+      ]
+    },
+    {
+      name: "Pendotiba & Regi\xE3o Leste",
+      neighborhoods: [
+        "pendotiba",
+        "badu",
+        "cantagalo",
+        "ititioca",
+        "maceio",
+        "sape",
+        "matapaca",
+        "vila progresso",
+        "largo da batalha",
+        "maria paula",
+        "rio do ouro",
+        "varzea das mocas",
+        "muriqui"
+      ]
+    }
+  ],
+  "sao paulo": [
+    {
+      name: "Zona Sul",
+      neighborhoods: [
+        "moema",
+        "vila mariana",
+        "santo amaro",
+        "campo belo",
+        "brooklin",
+        "itaim bibi",
+        "morumbi",
+        "vila andrade",
+        "saude",
+        "jabaquara",
+        "ipiranga",
+        "cursino",
+        "sacoma",
+        "cidade ademar",
+        "campo limpo",
+        "capao redondo",
+        "socorro",
+        "grajau",
+        "interlagos",
+        "pedreira",
+        "cidade dutra",
+        "jardim sao luis",
+        "jardim angela",
+        "parelheiros"
+      ]
+    },
+    {
+      name: "Zona Oeste",
+      neighborhoods: [
+        "pinheiros",
+        "perdizes",
+        "vila madalena",
+        "lapa",
+        "barra funda",
+        "butanta",
+        "jaguare",
+        "rio pequeno",
+        "raposo tavares",
+        "vila leopoldina",
+        "alto de pinheiros",
+        "jaguara",
+        "morro doce",
+        "vila sonia"
+      ]
+    },
+    {
+      name: "Zona Norte",
+      neighborhoods: [
+        "santana",
+        "tucuruvi",
+        "mandaqui",
+        "casa verde",
+        "limao",
+        "freguesia do o",
+        "brasilandia",
+        "jacana",
+        "tremembe",
+        "vila maria",
+        "vila guilherme",
+        "vila medeiros",
+        "cachoeirinha",
+        "pirituba",
+        "jaragua",
+        "anhanguera",
+        "perus"
+      ]
+    },
+    {
+      name: "Zona Leste",
+      neighborhoods: [
+        "tatuape",
+        "mooca",
+        "analia franco",
+        "belem",
+        "bras",
+        "penha",
+        "vila prudente",
+        "carrao",
+        "vila formosa",
+        "agua rasa",
+        "aricanduva",
+        "itaquera",
+        "sao mateus",
+        "sao miguel paulista",
+        "guaianases",
+        "cidade tiradentes",
+        "itaim paulista",
+        "vila matilde",
+        "arthur alvim",
+        "ponte rasa",
+        "ermelino matarazzo",
+        "sapopemba",
+        "iguatemi",
+        "sao rafael",
+        "parque do carmo",
+        "jose bonifacio",
+        "lajeado",
+        "vila curuca"
+      ]
+    },
+    {
+      name: "Zona Central",
+      neighborhoods: [
+        "centro",
+        "bela vista",
+        "consolacao",
+        "republica",
+        "se",
+        "santa cecilia",
+        "bom retiro",
+        "liberdade",
+        "cambuci",
+        "pari"
+      ]
+    }
+  ],
+  "juiz de fora": [
+    {
+      name: "Zona Central",
+      neighborhoods: ["centro", "granbery", "morro da gloria", "santa helena", "paineiras", "sao mateus"]
+    },
+    {
+      name: "Zona Sul",
+      neighborhoods: ["cascatinha", "estrela sul", "santa luzia", "teixeiras", "sagrado coracao", "dom bosco"]
+    },
+    {
+      name: "Zona Norte",
+      neighborhoods: ["benfica", "barreira do triunfo", "fontesville", "francisco bernardino", "industrial", "santa cruz"]
+    },
+    {
+      name: "Zona Oeste / Cidade Alta",
+      neighborhoods: ["sao pedro", "marilandia", "aeroporto", "santos dumont", "novo horizonte"]
+    },
+    {
+      name: "Zona Leste / Sudeste",
+      neighborhoods: ["manoel honorio", "bairu", "progresso", "santa terezinha", "costa carvalho", "vila ideal", "pocinhos"]
+    }
+  ],
+  "belo horizonte": [
+    {
+      name: "Centro-Sul",
+      neighborhoods: ["savassi", "lourdes", "funcionarios", "sion", "ancheta", "serra", "cruzeiro", "santo agostinho", "centro"]
+    },
+    {
+      name: "Zona Sul / Oeste",
+      neighborhoods: ["buritis", "belvedere", "gutierrez", "prado", "grajau", "estrela dalva", "palmeiras"]
+    },
+    {
+      name: "Zona Norte / Pampulha",
+      neighborhoods: ["pampulha", "ouro preto", "castelo", "itapoa", "planalto", "santa amelia", "sao luiz", "sao judas tadeu"]
+    },
+    {
+      name: "Zona Leste / Nordeste",
+      neighborhoods: ["santa efigenia", "floresta", "santa tereza", "sagrada familia", "horto", "cidade nova", "silveira", "renascenca"]
+    },
+    {
+      name: "Barreiro / Noroeste",
+      neighborhoods: ["barreiro", "padre eustaquio", "caicara", "carlos prates", "monsenhor messias"]
+    }
+  ]
+};
+function getZoneForNeighborhood(cityName, neighborhoodName) {
+  if (!cityName || !neighborhoodName) return null;
+  const normCity = normalizeString(cityName);
+  const normNeigh = normalizeString(neighborhoodName);
+  const configs = CITY_ZONES[normCity];
+  if (!configs) return null;
+  for (const zone of configs) {
+    for (const n of zone.neighborhoods) {
+      if (normNeigh === n || normNeigh.includes(n) || n.includes(normNeigh)) {
+        return zone.name;
+      }
+    }
+  }
+  return null;
+}
+
+// auctioneerSyncService.ts
+var import_puppeteer2 = __toESM(require("puppeteer"), 1);
+var import_genai = require("@google/genai");
+var AUCTIONEER_PORTALS = [
+  { id: "frazao", name: "Fraz\xE3o Leil\xF5es", domain: "frazaoleiloes.com.br", baseUrl: "https://www.frazaoleiloes.com.br", enabled: true },
+  { id: "biasi", name: "Biasi Leil\xF5es", domain: "biasileiloes.com.br", baseUrl: "https://www.biasileiloes.com.br", enabled: true },
+  { id: "megaleiloes", name: "Mega Leil\xF5es", domain: "megaleiloes.com.br", baseUrl: "https://www.megaleiloes.com.br", enabled: true },
+  { id: "portalzuk", name: "Portal Zuk", domain: "portalzuk.com.br", baseUrl: "https://www.portalzuk.com.br", enabled: true },
+  { id: "sold", name: "Sold Leil\xF5es", domain: "sold.com.br", baseUrl: "https://www.sold.com.br", enabled: true },
+  { id: "pestana", name: "Pestana Leil\xF5es", domain: "pestanaleiloes.com.br", baseUrl: "https://www.pestanaleiloes.com.br", enabled: true },
+  { id: "mgl", name: "MGL Leil\xF5es", domain: "mgl.com.br", baseUrl: "https://www.mgl.com.br", enabled: true }
+];
+function normalizeStr(str) {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function parseType(text) {
+  const norm = normalizeStr(text);
+  if (norm.includes("apartamento") || norm.includes("apto") || norm.includes("studio") || norm.includes("cobertura") || norm.includes("flat")) {
+    return "Apartamento";
+  }
+  if (norm.includes("casa") || norm.includes("sobrado") || norm.includes("vila")) {
+    return "Casa";
+  }
+  if (norm.includes("terreno") || norm.includes("lote") || norm.includes("gleba")) {
+    return "Terreno";
+  }
+  if (norm.includes("comercial") || norm.includes("sala") || norm.includes("loja") || norm.includes("galp") || norm.includes("predio") || norm.includes("pr\xE9dio")) {
+    return "Comercial";
+  }
+  return "Apartamento";
+}
+function detectBankOrJudicial(text) {
+  const norm = normalizeStr(text);
+  if (norm.includes("santander")) return { origin: "extrajudicial", bank: "Santander" };
+  if (norm.includes("itau") || norm.includes("ita\xFA")) return { origin: "extrajudicial", bank: "Ita\xFA" };
+  if (norm.includes("bradesco")) return { origin: "extrajudicial", bank: "Bradesco" };
+  if (norm.includes("caixa")) return { origin: "extrajudicial", bank: "Caixa" };
+  if (norm.includes("inter")) return { origin: "extrajudicial", bank: "Banco Inter" };
+  if (norm.includes("pan")) return { origin: "extrajudicial", bank: "Banco Pan" };
+  if (norm.includes("safra")) return { origin: "extrajudicial", bank: "Safra" };
+  if (norm.includes("banco do brasil") || norm.includes("bb")) return { origin: "extrajudicial", bank: "Banco do Brasil" };
+  if (norm.includes("alienacao fiduciaria") || norm.includes("aliena\xE7\xE3o fiduci\xE1ria") || norm.includes("extrajudicial") || norm.includes("banco")) {
+    return { origin: "extrajudicial", bank: "Institui\xE7\xE3o Financeira" };
+  }
+  if (norm.includes("vara") || norm.includes("judicial") || norm.includes("falencia") || norm.includes("fal\xEAncia") || norm.includes("execucao") || norm.includes("execu\xE7\xE3o") || norm.includes("civel") || norm.includes("c\xEDvel") || norm.includes("trabalho") || norm.includes("trt") || norm.includes("tj")) {
+    return { origin: "judicial" };
+  }
+  return { origin: "extrajudicial" };
+}
+async function scrapeMegaLeiloes(targetType, state = "RJ", city = "Rio de Janeiro") {
+  const results = [];
+  let browser = null;
+  try {
+    browser = await import_puppeteer2.default.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+    });
+    const page = await browser.newPage();
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    const ufSlug = state.toLowerCase();
+    const citySlug = city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
+    const url = `https://www.megaleiloes.com.br/imoveis/${ufSlug}/${citySlug}`;
+    console.log(`[Mega Leil\xF5es Scraper] Acessando ${url}...`);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25e3 });
+    await new Promise((r) => setTimeout(r, 4e3));
+    const rawLots = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll(".card.open, .card"));
+      return cards.map((c) => {
+        const link = c.querySelector("a")?.href || "";
+        const text = c.innerText || "";
+        const img = c.querySelector("img")?.src || "";
+        const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
+        const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
+        const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
+        const size = sizeMatch ? Math.round(Number(sizeMatch[1].replace(",", "."))) : 0;
+        const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+        const title = lines.find((l) => l.includes("Apartamento") || l.includes("Casa") || l.includes("Terreno") || l.includes("Comercial") || l.includes("Unid")) || lines[0] || "Im\xF3vel Mega Leil\xF5es";
+        return { title, text, price, size, link, img };
+      });
+    });
+    for (const raw of rawLots) {
+      if (!raw.link || raw.price <= 0) continue;
+      const propType = parseType(raw.title + " " + raw.text);
+      const detection = detectBankOrJudicial(raw.text);
+      if (targetType === "extrajudicial" && detection.origin !== "extrajudicial") continue;
+      if (targetType === "judicial" && detection.origin !== "judicial") continue;
+      let neigh = "";
+      const parts = raw.title.split("-").map((p) => p.trim());
+      if (parts.length >= 3) {
+        neigh = parts[parts.length - 3] || parts[parts.length - 2];
+      }
+      results.push({
+        portalId: "megaleiloes",
+        auctioneerName: "Mega Leil\xF5es",
+        title: raw.title,
+        address: raw.title,
+        neighborhood: neigh || "Centro",
+        city,
+        state,
+        propertyType: propType,
+        sizeSqm: raw.size > 0 ? raw.size : 60,
+        auctionPrice: raw.price,
+        estimatedValue: Math.round(raw.price * 1.6),
+        auctionDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0],
+        auctionLink: raw.link,
+        imageUrl: raw.img,
+        description: raw.text.slice(0, 300),
+        origin: targetType,
+        sellerBank: detection.bank
+      });
+    }
+  } catch (err) {
+    console.error("[Mega Leil\xF5es Scraper] Erro:", err.message);
+  } finally {
+    if (browser) await browser.close();
+  }
+  return results;
+}
+async function scrapeFrazao(targetType, state = "RJ", city = "Rio de Janeiro") {
+  const results = [];
+  let browser = null;
+  try {
+    browser = await import_puppeteer2.default.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+    });
+    const page = await browser.newPage();
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    const url = `https://www.frazaoleiloes.com.br/sale/searchLot?estado=${state}&cidade=${encodeURIComponent(city)}&pesquisaSimples=false`;
+    console.log(`[Fraz\xE3o Scraper] Acessando ${url}...`);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25e3 });
+    await new Promise((r) => setTimeout(r, 4e3));
+    const rawLots = await page.evaluate(() => {
+      const anchors = Array.from(document.querySelectorAll("a")).filter((a) => a.href && a.href.includes("/lote/"));
+      const unique = [];
+      const seen = /* @__PURE__ */ new Set();
+      for (const a of anchors) {
+        if (!seen.has(a.href)) {
+          seen.add(a.href);
+          const card = a.closest(".card") || a.parentElement;
+          const text = card ? card.innerText : a.innerText;
+          const img = card ? card.querySelector("img")?.src : null;
+          const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
+          const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
+          const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
+          const size = sizeMatch ? Math.round(Number(sizeMatch[1].replace(",", "."))) : 0;
+          const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+          const title = lines.find((l) => l.includes("Apartamento") || l.includes("Casa") || l.includes("Terreno") || l.includes("Comercial")) || lines[0] || "Im\xF3vel Fraz\xE3o";
+          unique.push({ title, text, price, size, link: a.href, img });
+        }
+      }
+      return unique;
+    });
+    for (const raw of rawLots) {
+      if (!raw.link || raw.price <= 0) continue;
+      const propType = parseType(raw.title + " " + raw.text);
+      const detection = detectBankOrJudicial(raw.text);
+      if (targetType === "extrajudicial" && detection.origin !== "extrajudicial") continue;
+      if (targetType === "judicial" && detection.origin !== "judicial") continue;
+      let neigh = "";
+      const mNeigh = raw.title.match(/(?:em|no|na)\s+([A-Za-zÀ-ÿ\s]+),\s*(?:Rio de Janeiro|RJ)/i);
+      if (mNeigh) {
+        neigh = mNeigh[1].trim();
+      }
+      results.push({
+        portalId: "frazao",
+        auctioneerName: "Fraz\xE3o Leil\xF5es",
+        title: raw.title,
+        address: raw.title,
+        neighborhood: neigh || "Centro",
+        city,
+        state,
+        propertyType: propType,
+        sizeSqm: raw.size > 0 ? raw.size : 60,
+        auctionPrice: raw.price,
+        estimatedValue: Math.round(raw.price * 1.5),
+        auctionDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0],
+        auctionLink: raw.link,
+        imageUrl: raw.img,
+        description: raw.text.slice(0, 300),
+        origin: targetType,
+        sellerBank: detection.bank
+      });
+    }
+  } catch (err) {
+    console.error("[Fraz\xE3o Scraper] Erro:", err.message);
+  } finally {
+    if (browser) await browser.close();
+  }
+  return results;
+}
+async function scrapeBiasi(targetType, state = "RJ", city = "Rio de Janeiro") {
+  const results = [];
+  let browser = null;
+  try {
+    browser = await import_puppeteer2.default.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+    });
+    const page = await browser.newPage();
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    const ufSlug = state.toLowerCase();
+    const citySlug = city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
+    const url = `https://www.biasileiloes.com.br/imoveis/${ufSlug}/${citySlug}/todos-os-bairros/todos-os-segmentos?pagina=1`;
+    console.log(`[Biasi Scraper] Acessando ${url}...`);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25e3 });
+    await new Promise((r) => setTimeout(r, 4e3));
+    const rawLots = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll("a.leilao-lote"));
+      return cards.map((a) => {
+        const link = a.href || "";
+        const text = a.innerText || "";
+        const imgEl = a.querySelector(".card-img-cover");
+        let img = "";
+        if (imgEl && imgEl.style.backgroundImage) {
+          const m = imgEl.style.backgroundImage.match(/url\(['"]?(.*?)['"]?\)/);
+          if (m) img = m[1];
+        }
+        if (!img) img = a.querySelector("img")?.src || "";
+        const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
+        const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
+        const descEl = a.querySelector(".text-descricao");
+        const descText = descEl ? descEl.innerText : text;
+        return { text: descText, price, link, img };
+      });
+    });
+    for (const raw of rawLots) {
+      if (!raw.link || raw.price <= 0) continue;
+      const propType = parseType(raw.text);
+      const detection = detectBankOrJudicial(raw.text);
+      if (targetType === "extrajudicial" && detection.origin !== "extrajudicial") continue;
+      if (targetType === "judicial" && detection.origin !== "judicial") continue;
+      let neigh = "";
+      const parts = raw.text.split("-").map((p) => p.trim());
+      if (parts.length >= 2) {
+        neigh = parts[1];
+      }
+      results.push({
+        portalId: "biasi",
+        auctioneerName: "Biasi Leil\xF5es",
+        title: raw.text.split("\n")[0] || "Im\xF3vel Biasi",
+        address: raw.text.split("\n")[0] || "Rio de Janeiro, RJ",
+        neighborhood: neigh || "Centro",
+        city,
+        state,
+        propertyType: propType,
+        sizeSqm: 65,
+        auctionPrice: raw.price,
+        estimatedValue: Math.round(raw.price * 1.55),
+        auctionDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0],
+        auctionLink: raw.link,
+        imageUrl: raw.img,
+        description: raw.text,
+        origin: targetType,
+        sellerBank: detection.bank
+      });
+    }
+  } catch (err) {
+    console.error("[Biasi Scraper] Erro:", err.message);
+  } finally {
+    if (browser) await browser.close();
+  }
+  return results;
+}
+async function scrapeGroundedAuctioneers(targetType, state = "RJ", city = "Rio de Janeiro") {
+  const results = [];
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("[Auctioneer Miner] GEMINI_API_KEY n\xE3o configurada. Pulando varredura Grounded.");
+    return results;
+  }
+  const ai = new import_genai.GoogleGenAI({
+    apiKey,
+    httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+  });
+  const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+  const targetLabel = targetType === "extrajudicial" ? "LEIL\xD5ES DE BANCOS E EXTRAJUDICIAIS (Aliena\xE7\xE3o Fiduci\xE1ria)" : "LEIL\xD5ES JUDICIAIS (Varas C\xEDveis e Trabalhistas)";
+  const domains = AUCTIONEER_PORTALS.map((p) => p.domain).join(", ");
+  const prompt = `
+Voc\xEA \xE9 um auditor e rob\xF4 de varredura pericial de leil\xF5es imobili\xE1rios no Brasil. Hoje \xE9 ${todayStr}.
+Realize uma pesquisa ativa no Google (Google Search Grounding) focando estritamente nos seguintes 7 portais de leiloeiros oficiais:
+${domains} (Portal Zuk, Mega Leil\xF5es, Biasi Leil\xF5es, Fraz\xE3o Leil\xF5es, Sold Leil\xF5es/Superbid, Pestana Leil\xF5es, MGL Leil\xF5es).
+
+Objetivo:
+Encontre entre 4 e 8 ${targetLabel} de im\xF3veis ATIVOS (com data de leil\xE3o futura a ${todayStr}) localizados no estado do ${state} (especialmente em ${city} ou Regi\xE3o Metropolitana).
+
+${targetType === "extrajudicial" ? "Foque em im\xF3veis retomados por bancos (Santander, Ita\xFA, Bradesco, Banco do Brasil, Inter, Pan, Safra, etc.) ou aliena\xE7\xE3o fiduci\xE1ria." : "Foque em im\xF3veis com processo judicial, penhora, fal\xEAncia ou execu\xE7\xE3o judicial das varas c\xEDveis/trabalhistas."}
+
+Gere links REAIS que apontem diretamente para o lote do im\xF3vel dentro de um dos portais citados.
+
+Retorne EXCLUSIVAMENTE um array JSON puro (sem explica\xE7\xF5es, sem markdown fora do bloco json):
+[
+  {
+    "portalId": "zuk" | "megaleiloes" | "biasi" | "frazao" | "sold" | "pestana" | "mgl",
+    "auctioneerName": "Nome do leiloeiro (ex: Portal Zuk, Mega Leil\xF5es, Sold Leil\xF5es, Pestana Leil\xF5es)",
+    "title": "Apartamento / Casa no Bairro X",
+    "address": "Endere\xE7o com rua e n\xFAmero se dispon\xEDvel",
+    "neighborhood": "Nome do Bairro oficial",
+    "city": "${city}",
+    "state": "${state}",
+    "propertyType": "Apartamento" | "Casa" | "Terreno" | "Comercial",
+    "sizeSqm": n\xFAmero da metragem em m\xB2 (ex: 65),
+    "auctionPrice": valor do lance m\xEDnimo em reais (n\xFAmero inteiro sem v\xEDrgulas),
+    "estimatedValue": valor de avalia\xE7\xE3o do leil\xE3o em reais,
+    "auctionDate": "AAAA-MM-DD",
+    "auctionLink": "URL direta do lote no site do leiloeiro",
+    "imageUrl": "URL da foto se dispon\xEDvel",
+    "description": "Detalhes do lote e comitente/banco",
+    "sellerBank": "Nome do banco se houver (ex: Santander, Ita\xFA)"
+  }
+]
+`;
+  try {
+    console.log(`[Auctioneer Grounded Miner] Iniciando busca no Google para leil\xF5es ${targetType} em ${city}-${state}...`);
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }]
+      }
+    });
+    const responseText = response.text || "";
+    const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/```\s*([\s\S]*?)\s*```/) || [null, responseText];
+    let jsonStr = (jsonMatch[1] || responseText).trim();
+    jsonStr = jsonStr.replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
+    const parsed = JSON.parse(jsonStr);
+    if (Array.isArray(parsed)) {
+      for (const item of parsed) {
+        if (!item.auctionLink || !item.auctionPrice || item.auctionPrice <= 0) continue;
+        results.push({
+          portalId: item.portalId || "portal",
+          auctioneerName: item.auctioneerName || "Leiloeiro Oficial",
+          title: item.title || "Im\xF3vel em Leil\xE3o",
+          address: item.address || item.title,
+          neighborhood: item.neighborhood || "Centro",
+          city: item.city || city,
+          state: item.state || state,
+          propertyType: parseType(item.propertyType || item.title),
+          sizeSqm: Number(item.sizeSqm) || 60,
+          auctionPrice: Math.round(Number(item.auctionPrice)),
+          estimatedValue: item.estimatedValue ? Math.round(Number(item.estimatedValue)) : Math.round(Number(item.auctionPrice) * 1.5),
+          auctionDate: item.auctionDate || new Date(Date.now() + 15 * 24 * 60 * 60 * 1e3).toISOString().split("T")[0],
+          auctionLink: item.auctionLink,
+          imageUrl: item.imageUrl,
+          description: item.description || "",
+          origin: targetType,
+          sellerBank: item.sellerBank
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[Auctioneer Grounded Miner] Erro:", err.message);
+  }
+  return results;
+}
+async function syncAuctioneersPipeline(targetType, state = "RJ", city = "Rio de Janeiro", existingAuctions, recalculateFn) {
+  console.log(`
+======================================================`);
+  console.log(`[Auctioneer Master Sync] Sincronizando Leil\xF5es ${targetType.toUpperCase()} para ${city}-${state}...`);
+  console.log(`Portais configurados: ${AUCTIONEER_PORTALS.map((p) => p.name).join(", ")}`);
+  console.log(`======================================================
+`);
+  const [megaList, frazaoList, biasiList, groundedList] = await Promise.all([
+    scrapeMegaLeiloes(targetType, state, city).catch(() => []),
+    scrapeFrazao(targetType, state, city).catch(() => []),
+    scrapeBiasi(targetType, state, city).catch(() => []),
+    scrapeGroundedAuctioneers(targetType, state, city).catch(() => [])
+  ]);
+  const allDrafts = [...megaList, ...frazaoList, ...biasiList, ...groundedList];
+  console.log(`[Auctioneer Master Sync] Total bruto capturado nos portais: ${allDrafts.length}`);
+  const existingLinks = new Set(existingAuctions.map((a) => a.auctionLink).filter(Boolean));
+  const newAuctions = [];
+  for (const draft of allDrafts) {
+    if (existingLinks.has(draft.auctionLink)) {
+      continue;
+    }
+    existingLinks.add(draft.auctionLink);
+    const baseId = `auc-${draft.portalId}-${normalizeStr(draft.title).slice(0, 15)}-${Math.floor(Math.random() * 1e5)}`;
+    const rawAuc = {
+      id: baseId,
+      title: draft.title,
+      address: draft.address,
+      neighborhood: draft.neighborhood,
+      city: draft.city,
+      state: draft.state,
+      propertyType: draft.propertyType,
+      sizeSqm: draft.sizeSqm,
+      auctionPrice: draft.auctionPrice,
+      estimatedRepair: Math.round(draft.auctionPrice * 0.05),
+      pendingDebts: 0,
+      otherCosts: 0,
+      estimatedValue: draft.estimatedValue || Math.round(draft.auctionPrice * 1.5),
+      auctionDate: draft.auctionDate,
+      auctionLink: draft.auctionLink,
+      imageUrl: draft.imageUrl,
+      description: draft.description || `${draft.title} - Leiloeiro: ${draft.auctioneerName}`,
+      status: "Pendente",
+      occupied: true,
+      origin: targetType,
+      allowsFinancing: targetType === "extrajudicial",
+      downpaymentPercent: targetType === "extrajudicial" ? 20 : 25
+    };
+    const calculated = recalculateFn(rawAuc);
+    newAuctions.push(calculated);
+  }
+  console.log(`[Auctioneer Master Sync] Novos leil\xF5es ${targetType} adicionados e auditados com sucesso: ${newAuctions.length}`);
+  return {
+    newAuctions,
+    totalScraped: allDrafts.length
   };
 }
 
 // server.ts
 import_dotenv.default.config();
-function normalizeString(str) {
+function normalizeString2(str) {
   if (!str) return "";
   return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 function cleanNeighborhood(neigh) {
   if (!neigh) return "";
-  return normalizeString(neigh).replace(/[^a-z0-9]/g, "").trim();
+  return normalizeString2(neigh).replace(/[^a-z0-9]/g, "").trim();
 }
 function cleanStreetName(street) {
   if (!street) return "";
-  let norm = normalizeString(street);
+  let norm = normalizeString2(street);
   norm = norm.replace(/\s+/g, " ");
   const prefixes = [
     [/^(rua|r)\b\.?\s*/i, "r "],
@@ -666,7 +1635,7 @@ function cleanStreetName(street) {
 }
 function getCoreStreetName(street) {
   if (!street) return "";
-  let norm = normalizeString(street);
+  let norm = normalizeString2(street);
   norm = norm.replace(/\s+/g, " ");
   const prefixRegex = /^(rua|r|avenida|avn|av|estrada|etr|estr|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i;
   return norm.replace(prefixRegex, "").trim();
@@ -675,11 +1644,11 @@ function extractStreet(address) {
   if (!address) return "";
   let street = address.split(",")[0].split("-")[0].trim();
   street = street.replace(/\s+\d+.*$/, "").trim();
-  return normalizeString(street);
+  return normalizeString2(street);
 }
 function phoneticStreet(street) {
   if (!street) return "";
-  let s = normalizeString(street);
+  let s = normalizeString2(street);
   s = s.split(",")[0].split("-")[0].replace(/\s+\d+.*$/, "").trim();
   s = s.replace(/^(rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i, "");
   s = s.replace(/^(engenheiro|eng|doutor|dr|dra|professor|prof|profa|general|gen|gal|coronel|cel|major|maj|capitao|cap|tenente|ten|almirante|alm|brigadeiro|brg|governador|gov|senador|sen|deputado|dep|padre|pe|pastor|bispo|dom|dona|d|sao|santa|sto|sta)\b\.?\s*/gi, "");
@@ -725,6 +1694,8 @@ function checkPropertyCommunityRisk(auc) {
   const lng = auc.lng;
   if (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && factionFeatures.length > 0) {
     const pt = [lng, lat];
+    let closestNearby = null;
+    let minNearbyDist = Infinity;
     for (const f of factionFeatures) {
       const geom = f.geometry;
       if (!geom) continue;
@@ -739,7 +1710,7 @@ function checkPropertyCommunityRisk(auc) {
           if (p[1] < minLat) minLat = p[1];
           if (p[1] > maxLat) maxLat = p[1];
         }
-        if (pt[0] >= minLng - 15e-4 && pt[0] <= maxLng + 15e-4 && pt[1] >= minLat - 15e-4 && pt[1] <= maxLat + 15e-4) {
+        if (pt[0] >= minLng - 5e-3 && pt[0] <= maxLng + 5e-3 && pt[1] >= minLat - 5e-3 && pt[1] <= maxLat + 5e-3) {
           if (pointInPolygon(pt, ring)) {
             return {
               isRisk: true,
@@ -749,30 +1720,45 @@ function checkPropertyCommunityRisk(auc) {
             };
           }
           const faction = f.properties?.f || "";
-          if (faction && faction !== "NEU") {
-            for (const p of ring) {
-              const dx = (pt[0] - p[0]) * 111e3 * Math.cos(pt[1] * Math.PI / 180);
-              const dy = (pt[1] - p[1]) * 111e3;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist <= 30) {
-                return {
-                  isRisk: true,
-                  name: f.properties?.n || "Comunidade",
-                  faction,
-                  distanceMeters: Math.round(dist)
-                };
-              }
+          for (const p of ring) {
+            const dx = (pt[0] - p[0]) * 111e3 * Math.cos(pt[1] * Math.PI / 180);
+            const dy = (pt[1] - p[1]) * 111e3;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= 30) {
+              return {
+                isRisk: true,
+                name: f.properties?.n || "Comunidade",
+                faction: faction || "CV",
+                distanceMeters: Math.round(dist)
+              };
+            }
+            if (dist <= 500 && dist < minNearbyDist) {
+              minNearbyDist = dist;
+              closestNearby = {
+                name: f.properties?.n || "Comunidade",
+                faction: faction || void 0,
+                dist: Math.round(dist)
+              };
             }
           }
         }
       }
+    }
+    if (closestNearby) {
+      return {
+        isRisk: false,
+        isNearby: true,
+        nearbyCommunityName: closestNearby.name,
+        nearbyFaction: closestNearby.faction,
+        nearbyDistanceMeters: closestNearby.dist
+      };
     }
   }
   return { isRisk: false };
 }
 function cleanCaixaCity(rawCity, uf) {
   if (!rawCity) return uf === "RJ" ? "Rio de Janeiro" : uf === "MG" ? "Juiz de Fora" : "S\xE3o Paulo";
-  const norm = normalizeString(rawCity);
+  const norm = normalizeString2(rawCity);
   if (norm === "niteroi") return "Niter\xF3i";
   if (norm === "juiz de fora") return "Juiz de Fora";
   if (norm === "santos dumont") return "Santos Dumont";
@@ -839,7 +1825,7 @@ async function getStreetCoordinates(uf, city, neighborhood, streets, anchorCoord
     for (let i = 0; i < uncached.length; i += batchSize) {
       const batch = uncached.slice(i, i + batchSize);
       try {
-        const ai = new import_genai.GoogleGenAI({
+        const ai = new import_genai2.GoogleGenAI({
           apiKey: process.env.GEMINI_API_KEY,
           httpOptions: {
             headers: { "User-Agent": "aistudio-build" },
@@ -1074,11 +2060,21 @@ function loadStore() {
           }
         });
       }
-      const isAlreadyCalibrated = storeData.auctions && storeData.auctions.length > 0 && storeData.auctions[0].gabaritoITBI !== void 0;
-      if (!isAlreadyCalibrated && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
-        console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com a base oficial de ITBI...`);
+      const STORE_CALIBRATION_VERSION = "v6_micro_unified";
+      const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
+      if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+        console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com a base oficial de ITBI e corte estrito de micro-dados (v6)...`);
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
+        storeData.calibrationVersion = STORE_CALIBRATION_VERSION;
+        saveStore(storeData);
+        try {
+          const compressed = import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData)));
+          import_fs3.default.writeFileSync(GZ_STORE_PATH, compressed);
+          console.log("[Store] data_store.json.gz atualizado com sucesso com corte estrito de micro-dados (v6)!");
+        } catch (gzErr) {
+          console.error("[Store] Erro ao salvar data_store.json.gz:", gzErr);
+        }
         console.log("[Store] Todos os leil\xF5es calibrados e recalculados com sucesso!");
       } else {
         console.log(`[Store] Leil\xF5es prontos e calibrados (${storeData.auctions?.length || 0} registros). Inicializa\xE7\xE3o instant\xE2nea!`);
@@ -1149,7 +2145,7 @@ function extractAddressNumber(address) {
 }
 function getTypologyCategory(propType) {
   if (!propType) return "residential";
-  const norm = normalizeString(propType);
+  const norm = normalizeString2(propType);
   if (norm.includes("comercial") || norm.includes("loja") || norm.includes("sala") || norm.includes("galpao") || norm.includes("predio")) {
     return "commercial";
   }
@@ -1174,7 +2170,7 @@ function buildItbiIndexes(txs) {
     if (!t.unitValueSqm || t.unitValueSqm < 800 || t.unitValueSqm > 8e4) continue;
     t._core = getCoreStreetName(t.street);
     const state = (t.state || "SP").toLowerCase();
-    const city = normalizeString(t.city || "");
+    const city = normalizeString2(t.city || "");
     const neigh = cleanNeighborhood(t.neighborhood);
     const key = `${state}|${city}|${neigh}`;
     let list = neighMap.get(key);
@@ -1237,7 +2233,7 @@ function buildItbiIndexes(txs) {
     const neigh = cleanNeighborhood(t.neighborhood);
     const propType = t.propertyType;
     const cat = getTypologyCategory(propType);
-    const normCity = normalizeString(t.city || "");
+    const normCity = normalizeString2(t.city || "");
     const avgKey = `${state}|${normCity}|${neigh}|${propType}`;
     let avgEntry = avgSqmMap.get(avgKey);
     if (!avgEntry) {
@@ -1441,11 +2437,60 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   let itbiStreetCount = 0;
   let neighborhoodAvgSqm = 0;
   const rawStreet = extractStreet(auc.address);
+  const isGeneric = isGenericStreet(rawStreet);
   const streetPhon = phoneticStreet(rawStreet);
   const aucNum = extractAddressNumber(auc.address);
+  if (isGeneric) {
+    const tm = (auc.title || "").match(/Retomado Caixa - ([A-Z\s]+)/i);
+    if (tm && tm[1].trim()) {
+      const orig = tm[1].trim();
+      const origClean = orig.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      auc.neighborhood = origClean;
+      neigh = cleanNeighborhood(origClean);
+    }
+    auc.officialNeighborhood = void 0;
+    auc.originalListedNeighborhood = void 0;
+    auc.divergentNeighborhoodNotice = void 0;
+  }
+  if (rawStreet) {
+    const normSt2 = normalizeString2(rawStreet);
+    const normC2 = normalizeString2(auc.city || "");
+    if (normC2.includes("rio de janeiro") && normSt2.includes("adhemar bebiano")) {
+      if (aucNum && aucNum > 350 && aucNum <= 3200) {
+        if (cleanNeighborhood(auc.neighborhood) !== "inhauma") {
+          auc.originalListedNeighborhood = auc.neighborhood;
+          auc.officialNeighborhood = "Inha\xFAma";
+          auc.divergentNeighborhoodNotice = `Bairro Real: Inha\xFAma (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.neighborhood = "Inha\xFAma";
+          neigh = "inhauma";
+        }
+      } else if (aucNum && aucNum > 3200) {
+        if (cleanNeighborhood(auc.neighborhood) !== "engenhodarainha") {
+          auc.originalListedNeighborhood = auc.neighborhood;
+          auc.officialNeighborhood = "Engenho da Rainha";
+          auc.divergentNeighborhoodNotice = `Bairro Real: Engenho da Rainha (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.neighborhood = "Engenho da Rainha";
+          neigh = "engenhodarainha";
+        }
+      }
+    } else if (normC2.includes("niteroi") && normSt2.includes("noronha torrezao")) {
+      if (aucNum && aucNum >= 340) {
+        if (cleanNeighborhood(auc.neighborhood) !== "cubango") {
+          auc.originalListedNeighborhood = auc.neighborhood;
+          auc.officialNeighborhood = "Cubango";
+          auc.divergentNeighborhoodNotice = `Bairro Real: Cubango (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.neighborhood = "Cubango";
+          neigh = "cubango";
+        }
+      }
+    }
+  }
+  const normSt = normalizeString2(rawStreet);
+  const normC = normalizeString2(auc.city || "");
+  const hasSpecificBorderRule = normSt.includes("adhemar bebiano") && normC.includes("rio de janeiro") || normSt.includes("noronha torrezao") && normC.includes("niteroi");
   const numResolver = streetNumberNeighMap || globalStreetNumberNeighMap;
-  if (streetPhon && numResolver) {
-    const normCity2 = normalizeString(auc.city || "");
+  if (!isGeneric && !hasSpecificBorderRule && streetPhon && streetPhon.length >= 4 && numResolver) {
+    const normCity2 = normalizeString2(auc.city || "");
     const numList = numResolver.get(`${state}|${normCity2}|${streetPhon}`);
     if (numList && numList.length > 0 && aucNum !== null) {
       let closest = numList[0];
@@ -1459,13 +2504,16 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       }
       const correctedClean = cleanNeighborhood(closest.neighborhood);
       if (correctedClean && correctedClean !== neigh) {
+        auc.originalListedNeighborhood = auc.neighborhood;
+        auc.officialNeighborhood = closest.neighborhood;
+        auc.divergentNeighborhoodNotice = `Bairro Real: ${closest.neighborhood} (Caixa listou ${auc.originalListedNeighborhood})`;
         auc.neighborhood = closest.neighborhood;
         neigh = correctedClean;
       }
     }
   }
-  const normCity = normalizeString(auc.city || "");
-  if (rawStreet) {
+  const normCity = normalizeString2(auc.city || "");
+  if (!isGeneric && rawStreet) {
     const streetClean = cleanStreetName(rawStreet);
     const streetCore = getCoreStreetName(rawStreet);
     const sEntry = streetAvgSqmMap.get(`${state}|${normCity}|${neigh}|${streetClean}|${propType}`) || streetAvgSqmMap.get(`${state}|${normCity}|${neigh}|${streetCore}|${propType}`) || (streetPhon ? streetAvgSqmMap.get(`${state}|${normCity}|${neigh}|${streetPhon}|${propType}`) : void 0) || streetAvgSqmMap.get(`${state}|${normCity}|${neigh}|${streetClean}|${cat}`) || streetAvgSqmMap.get(`${state}|${normCity}|${neigh}|${streetCore}|${cat}`) || (streetPhon ? streetAvgSqmMap.get(`${state}|${normCity}|${neigh}|${streetPhon}|${cat}`) : void 0);
@@ -1475,11 +2523,14 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     }
   }
   const streetResolverMap = cityStreetToNeighMap || globalCityStreetToNeighMap;
-  if (itbiStreetAvgSqm === 0 && streetPhon && streetResolverMap) {
+  if (!isGeneric && !hasSpecificBorderRule && itbiStreetAvgSqm === 0 && streetPhon && streetPhon.length >= 4 && streetResolverMap) {
     const csEntry = streetResolverMap.get(`${state}|${normCity}|${streetPhon}`);
-    if (csEntry && csEntry.count >= 2) {
+    if (csEntry && csEntry.count >= 3) {
       const correctedCleanNeigh = cleanNeighborhood(csEntry.neighborhood);
       if (correctedCleanNeigh && correctedCleanNeigh !== neigh) {
+        auc.originalListedNeighborhood = auc.neighborhood;
+        auc.officialNeighborhood = csEntry.neighborhood;
+        auc.divergentNeighborhoodNotice = `Bairro Real: ${csEntry.neighborhood} (Caixa listou ${auc.originalListedNeighborhood})`;
         auc.neighborhood = csEntry.neighborhood;
         neigh = correctedCleanNeigh;
         const correctedEntry = streetAvgSqmMap.get(`${state}|${normCity}|${correctedCleanNeigh}|${streetPhon}|${propType}`) || streetAvgSqmMap.get(`${state}|${normCity}|${correctedCleanNeigh}|${streetPhon}|${cat}`);
@@ -1496,7 +2547,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   }
   let cityAvgSqm = 0;
   if (cityAvgSqmMap && auc.city) {
-    const normCity2 = normalizeString(auc.city);
+    const normCity2 = normalizeString2(auc.city);
     const cEntry = cityAvgSqmMap.get(`${state}|${normCity2}|${propType}`) || cityAvgSqmMap.get(`${state}|${normCity2}|${cat}`);
     if (cEntry && cEntry.count > 0) {
       cityAvgSqm = Math.round(cEntry.sumSqm / cEntry.count);
@@ -1531,19 +2582,28 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   if (itbiStreetAvgSqm > 0) {
     if (neighborhoodAvgSqm > 0) {
       if (itbiStreetCount < 5) {
-        const streetWeight = itbiStreetCount * 0.15;
+        const streetWeight = itbiStreetCount === 1 ? 0.25 : itbiStreetCount === 2 ? 0.4 : 0.6;
         const neighborhoodWeight = 1 - streetWeight;
-        reliableStreetAvgSqm = Math.round(itbiStreetAvgSqm * streetWeight + neighborhoodAvgSqm * neighborhoodWeight);
-        if (itbiStreetCount <= 3) {
-          auc.isCascadeProtected = true;
-        }
-      } else if (itbiStreetAvgSqm > neighborhoodAvgSqm * 1.6 || itbiStreetAvgSqm < neighborhoodAvgSqm * 0.4) {
-        reliableStreetAvgSqm = neighborhoodAvgSqm;
+        const rawBlend = itbiStreetAvgSqm * streetWeight + neighborhoodAvgSqm * neighborhoodWeight;
+        const maxDeviationPct = itbiStreetCount === 1 ? 0.12 : itbiStreetCount === 2 ? 0.15 : 0.22;
+        reliableStreetAvgSqm = Math.round(
+          Math.max(neighborhoodAvgSqm * (1 - maxDeviationPct), Math.min(neighborhoodAvgSqm * (1 + maxDeviationPct), rawBlend))
+        );
+        auc.isCascadeProtected = true;
+      } else if (itbiStreetAvgSqm > neighborhoodAvgSqm * 1.5 || itbiStreetAvgSqm < neighborhoodAvgSqm * 0.5) {
+        reliableStreetAvgSqm = itbiStreetAvgSqm > neighborhoodAvgSqm ? Math.round(neighborhoodAvgSqm * 1.3) : Math.round(neighborhoodAvgSqm * 0.7);
       } else {
         reliableStreetAvgSqm = itbiStreetAvgSqm;
       }
     } else {
       reliableStreetAvgSqm = itbiStreetAvgSqm;
+    }
+  }
+  auc.zone = getZoneForNeighborhood(auc.city, auc.neighborhood) || void 0;
+  if (!auc.imageUrl && (auc.origin === "caixa" || auc.id?.includes("caixa") || auc.auctionLink?.includes("caixa.gov.br"))) {
+    const rawNumMatch = (auc.auctionLink || "").match(/hdnimovel=(\d+)/) || (auc.id || "").match(/auc-caixa-(\d+)/);
+    if (rawNumMatch) {
+      auc.imageUrl = `https://venda-imoveis.caixa.gov.br/fotos/F${rawNumMatch[1]}21.jpg`;
     }
   }
   let itbiBenchmark = 0;
@@ -1554,7 +2614,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   } else if (cityAvgSqm > 0) {
     itbiBenchmark = cityAvgSqm;
   } else if (stateAvgSqm > 0) {
-    const isCapital = auc.city && (normalizeString(auc.city).includes("rio de janeiro") || normalizeString(auc.city).includes("sao paulo"));
+    const isCapital = auc.city && (normalizeString2(auc.city).includes("rio de janeiro") || normalizeString2(auc.city).includes("sao paulo"));
     itbiBenchmark = isCapital ? stateAvgSqm : Math.min(stateAvgSqm, 4200);
   } else {
     itbiBenchmark = 4e3;
@@ -1563,15 +2623,19 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   auc.itbiStreetCount = itbiStreetCount > 0 ? itbiStreetCount : void 0;
   auc.itbiUnitValueAvg = neighborhoodAvgSqm > 0 ? neighborhoodAvgSqm : cityAvgSqm > 0 ? cityAvgSqm : void 0;
   const commRisk = checkPropertyCommunityRisk(auc);
+  auc.isCommunityRisk = commRisk.isRisk;
+  auc.communityName = commRisk.name;
+  auc.factionName = commRisk.faction;
+  auc.communityDistanceM = commRisk.distanceMeters;
+  auc.isNearbyCommunity = commRisk.isNearby;
+  auc.nearbyCommunityName = commRisk.nearbyCommunityName;
+  auc.nearbyFactionName = commRisk.nearbyFaction;
+  auc.nearbyCommunityDistanceM = commRisk.nearbyDistanceMeters;
   if (commRisk.isRisk) {
-    auc.isCommunityRisk = true;
-    auc.communityName = commRisk.name;
-    auc.factionName = commRisk.faction;
     auc.riskLevel = "Alto";
+  } else if (commRisk.isNearby) {
+    if (auc.riskLevel === "Baixo") auc.riskLevel = "M\xE9dio";
   } else {
-    auc.isCommunityRisk = false;
-    auc.communityName = void 0;
-    auc.factionName = void 0;
     if (auc.riskLevel === "Alto") auc.riskLevel = "Baixo";
   }
   let effectiveArea = auc.sizeSqm;
@@ -1619,13 +2683,9 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   }
   auc.buildingAge = buildingAge;
   auc.ageDepreciationPct = ageDepreciationPct;
-  const portalBenchmark = Math.round(itbiBenchmark * 1.08);
-  auc.streetPortalAvgSqm = portalBenchmark;
-  auc.portalZapAvg = Math.round(auc.estimatedValue * 1.06);
-  auc.portalQuintoAndarAvg = Math.round(auc.estimatedValue * 1.03);
-  auc.vendaMediaPrice = Math.round(((auc.portalZapAvg || 0) + (auc.portalQuintoAndarAvg || 0)) / 2);
   let bidiSqm = 0;
   let bidiGabaritoSqm = 0;
+  let hasMicroData = false;
   if (neighMap) {
     const key = `${state}|${normCity}|${neigh}`;
     const nTxs = neighMap.get(key);
@@ -1633,22 +2693,41 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       const rawAddr = auc.address || "";
       const numMatch = rawAddr.match(/,\s*n[ºo°]?\s*(\d+)/i) || rawAddr.match(/n[ºo°]?\s*(\d+)/i) || rawAddr.match(/,\s*(\d+)/i);
       const sNum = numMatch ? numMatch[1] : "";
-      const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 50, "similar");
-      if (bidi && bidi.flipRapidoSqm > 0) {
+      const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 50, "similar", 0.5, auc.propertyType);
+      if (bidi && bidi.hasMicroData && bidi.flipRapidoSqm > 0) {
         bidiSqm = bidi.flipRapidoSqm;
         bidiGabaritoSqm = bidi.mediaCorteReal;
+        hasMicroData = true;
       }
     }
   }
+  if (isGeneric) {
+    hasMicroData = false;
+    bidiSqm = 0;
+    bidiGabaritoSqm = 0;
+  }
+  auc.hasMicroBenchmark = hasMicroData;
   const ageFactor = ageDepreciationPct > 0 ? 1 - ageDepreciationPct / 100 : 1;
-  if (bidiSqm > 0) {
+  if (hasMicroData && bidiSqm > 0) {
     auc.vendaBaixaPrice = Math.round(Math.round(bidiSqm * ageFactor) * (auc.sizeSqm || 50));
     if (bidiGabaritoSqm > 0) {
       auc.estimatedValue = Math.round(bidiGabaritoSqm * (auc.sizeSqm || 50));
+      auc.itbiStreetAvgSqm = Math.round(bidiGabaritoSqm);
     }
+    auc.streetPortalAvgSqm = Math.round((bidiGabaritoSqm || itbiBenchmark) * 1.08);
+    auc.portalZapAvg = Math.round(auc.estimatedValue * 1.06);
+    auc.portalQuintoAndarAvg = Math.round(auc.estimatedValue * 1.03);
+    auc.vendaMediaPrice = Math.round(((auc.portalZapAvg || 0) + (auc.portalQuintoAndarAvg || 0)) / 2);
   } else {
-    const flipBase = Math.round(auc.estimatedValue * 0.9);
-    auc.vendaBaixaPrice = ageDepreciationPct > 0 ? Math.round(flipBase * (1 - ageDepreciationPct / 100)) : flipBase;
+    auc.estimatedValue = void 0;
+    auc.vendaBaixaPrice = void 0;
+    auc.portalZapAvg = void 0;
+    auc.portalQuintoAndarAvg = void 0;
+    auc.streetPortalAvgSqm = void 0;
+    auc.vendaMediaPrice = void 0;
+    auc.calculatedProfit = void 0;
+    auc.calculatedRoi = void 0;
+    auc.itbiStreetAvgSqm = void 0;
   }
   const bidPrice = auc.auctionPrice;
   const vMediaPrice = auc.vendaMediaPrice;
@@ -1696,13 +2775,18 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   auc.monthlyFinancingInstallment = monthlyFinancingInstall;
   const purchaseCostsTotal = calculatedItbiCost + cartCd + caixCd + certCd + iptuAt + condoAt + leilCd + advCd + auc.estimatedRepair;
   const totalAcquisitionCost = bidPrice + purchaseCostsTotal;
-  const brokerCommM = Math.round(vMediaPrice * (brokerCommissionPct / 100));
-  const taxGainBaseM = vMediaPrice - brokerCommM - bidPrice - calculatedItbiCost - cartCd - caixCd - certCd;
-  const capitalGainTaxM = taxGainBaseM > 0 ? Math.round(taxGainBaseM * 0.15) : 0;
-  const montanteM = vMediaPrice - brokerCommM - capitalGainTaxM;
-  const lucroM = montanteM - bidPrice - purchaseCostsTotal;
-  auc.calculatedProfit = lucroM;
-  auc.calculatedRoi = Number((lucroM / (totalAcquisitionCost || 1) * 100).toFixed(2));
+  if (vMediaPrice && vMediaPrice > 0) {
+    const brokerCommM = Math.round(vMediaPrice * (brokerCommissionPct / 100));
+    const taxGainBaseM = vMediaPrice - brokerCommM - bidPrice - calculatedItbiCost - cartCd - caixCd - certCd;
+    const capitalGainTaxM = taxGainBaseM > 0 ? Math.round(taxGainBaseM * 0.15) : 0;
+    const montanteM = vMediaPrice - brokerCommM - capitalGainTaxM;
+    const lucroM = montanteM - bidPrice - purchaseCostsTotal;
+    auc.calculatedProfit = lucroM;
+    auc.calculatedRoi = Number((lucroM / (totalAcquisitionCost || 1) * 100).toFixed(2));
+  } else {
+    auc.calculatedProfit = void 0;
+    auc.calculatedRoi = void 0;
+  }
   let score = 5;
   const streetTxs = auc.itbiStreetCount || 0;
   const volKey = `${state}|${normCity}|${neigh}`;
@@ -2385,7 +3469,7 @@ app.get("/api/itbi/resolve-street", (req, res) => {
   }
   const phon = phoneticStreet(street);
   const st = state.toLowerCase();
-  const c = normalizeString(city);
+  const c = normalizeString2(city);
   const match = globalCityStreetToNeighMap?.get(`${st}|${c}|${phon}`) || globalCityStreetToNeighMap?.get(`${st}||${phon}`);
   if (match) {
     return res.json({
@@ -2616,7 +3700,7 @@ Este leil\xE3o apresenta uma excelente rela\xE7\xE3o de retorno comparada com a 
     return res.json(auc);
   }
   try {
-    const ai = new import_genai.GoogleGenAI({
+    const ai = new import_genai2.GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
         headers: {
@@ -2774,7 +3858,7 @@ No Estado do ${state === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo"}, a escritura\
     return res.json({ report });
   }
   try {
-    const ai = new import_genai.GoogleGenAI({
+    const ai = new import_genai2.GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
         headers: {
@@ -2863,7 +3947,7 @@ app.post("/api/itbi/search-online", async (req, res) => {
   const formatBRL = (val) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
   };
-  const normalizeStr = (str) => {
+  const normalizeStr2 = (str) => {
     return (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   };
   if (!isGeminiEnabled) {
@@ -2958,7 +4042,7 @@ Identificamos os seguintes registros de transa\xE7\xF5es efetivadas para o condo
     });
   }
   try {
-    const ai = new import_genai.GoogleGenAI({
+    const ai = new import_genai2.GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
         headers: {
@@ -3060,9 +4144,9 @@ Retorne APENAS o JSON v\xE1lido.
     let parallelMinSqm = 4e3;
     let parallelMaxSqm = 1e4;
     let parallelCount = 0;
-    const streetNameNorm = street ? normalizeStr(street) : "";
-    const streetTxs = streetNameNorm ? localTxs.filter((t) => t.street && normalizeStr(t.street) === streetNameNorm) : [];
-    const parallelTxs = streetNameNorm ? localTxs.filter((t) => !t.street || normalizeStr(t.street) !== streetNameNorm) : localTxs;
+    const streetNameNorm = street ? normalizeStr2(street) : "";
+    const streetTxs = streetNameNorm ? localTxs.filter((t) => t.street && normalizeStr2(t.street) === streetNameNorm) : [];
+    const parallelTxs = streetNameNorm ? localTxs.filter((t) => !t.street || normalizeStr2(t.street) !== streetNameNorm) : localTxs;
     if (streetTxs.length > 0) {
       const vals = streetTxs.map((t) => t.unitValueSqm).filter(Boolean);
       streetCount = streetTxs.length;
@@ -3503,7 +4587,7 @@ app.post("/api/portais/search-similar", async (req, res) => {
     return res.json(fallbackResponse);
   }
   try {
-    const ai = new import_genai.GoogleGenAI({
+    const ai = new import_genai2.GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: { headers: { "User-Agent": "aistudio-build" } }
     });
@@ -3677,14 +4761,17 @@ app.post("/api/parse-pdf", async (req, res) => {
       numpages = textRes.pages?.length || 1;
       await parser.destroy();
     } catch (parseErr) {
-      console.warn("[PDF Parser] Fallback extractor acionado:", parseErr);
-      const raw = buffer.toString("latin1");
-      const streamMatches = raw.match(/\(([^()]{3,})\)Tj|\[([^\[\]]{3,})\]TJ/g);
-      if (streamMatches) {
-        text = streamMatches.map((m) => m.replace(/[\(\)\[\]]|T[jJ]/g, " ")).join(" ");
-      }
+      console.warn("[PDF Parser] PDFParse direto falhou:", parseErr);
+      text = "";
     }
-    console.log(`[PDF Parser] Texto extra\xEDdo com sucesso: ${text.length} caracteres, ${numpages} p\xE1ginas.`);
+    const lettersCount = (text.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+    const isReadable = text.length >= 25 && lettersCount / text.length >= 0.4;
+    const hasLegalKeywords = /\b(matricula|matrícula|imovel|imóvel|apartamento|casa|terreno|edital|registro|cartorio|cartório|caixa|leilao|leilão|comarca|oficio|ofício|devedor|alienacao|alienação|averbacao|averbação|penhora|hipoteca|livro|certidao|certidão|quitacao|quitação|rgi|lote)\b/i.test(text);
+    if (!isReadable || !hasLegalKeywords && text.length > 50) {
+      console.warn(`[PDF Parser] Texto extra\xEDdo (${text.length} chars) n\xE3o possui palavras em portugu\xEAs v\xE1lidas ou cont\xE9m artefatos bin\xE1rios. Marcado como digitaliza\xE7\xE3o sem OCR.`);
+      text = "";
+    }
+    console.log(`[PDF Parser] Texto final validado: ${text.length} caracteres, ${numpages} p\xE1ginas.`);
     return res.json({
       success: true,
       text,
@@ -3712,7 +4799,7 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
   let browser = null;
   try {
     console.log(`[Caixa Docs] Buscando certid\xE3o e edital oficial em: ${targetUrl}`);
-    browser = await import_puppeteer2.default.launch({
+    browser = await import_puppeteer3.default.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -3810,12 +4897,18 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
           try {
             const parser = new import_pdf_parse.PDFParse({ data: new Uint8Array(buffer) });
             const textRes = await parser.getText();
-            matriculaText = (textRes.text || "").trim();
+            const rawText = (textRes.text || "").trim();
             await parser.destroy();
+            const letters = (rawText.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+            const ratio = rawText.length > 0 ? letters / rawText.length : 0;
+            const hasLegalKeywords = /\b(matricula|matrícula|imovel|imóvel|apartamento|casa|terreno|edital|registro|cartorio|cartório|caixa|leilao|leilão|comarca|oficio|ofício|devedor|alienacao|alienação|averbacao|averbação|penhora|hipoteca|livro|certidao|certidão|quitacao|quitação|rgi|lote)\b/i.test(rawText);
+            if (rawText.length > 50 && ratio >= 0.4 && hasLegalKeywords) {
+              matriculaText = rawText;
+            } else {
+              console.warn("[Caixa Docs] Texto da matr\xEDcula rejeitado por conter glifos/codifica\xE7\xE3o corrompida.");
+            }
           } catch (pe) {
-            const raw = buffer.toString("latin1");
-            const streamMatches = raw.match(/\(([^()]{3,})\)Tj|\[([^\[\]]{3,})\]TJ/g);
-            if (streamMatches) matriculaText = streamMatches.map((m) => m.replace(/[\(\)\[\]]|T[jJ]/g, " ")).join(" ");
+            console.warn("[Caixa Docs] Falha na biblioteca PDF ao ler matr\xEDcula:", pe);
           }
           hasMatriculaPdf = matriculaText.length > 50;
         }
@@ -3840,12 +4933,18 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
           try {
             const parser = new import_pdf_parse.PDFParse({ data: new Uint8Array(buffer) });
             const textRes = await parser.getText();
-            editalPdfRaw = (textRes.text || "").trim();
+            const rawText = (textRes.text || "").trim();
             await parser.destroy();
+            const letters = (rawText.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+            const ratio = rawText.length > 0 ? letters / rawText.length : 0;
+            const hasLegalKeywords = /\b(edital|leilao|leilão|caixa|processo|comarca|vara|arrematante|lance|imovel|imóvel|condicoes|condições)\b/i.test(rawText);
+            if (rawText.length > 50 && ratio >= 0.4 && hasLegalKeywords) {
+              editalPdfRaw = rawText;
+            } else {
+              console.warn("[Caixa Docs] Texto do edital rejeitado por conter glifos/codifica\xE7\xE3o corrompida.");
+            }
           } catch (pe) {
-            const raw = buffer.toString("latin1");
-            const streamMatches = raw.match(/\(([^()]{3,})\)Tj|\[([^\[\]]{3,})\]TJ/g);
-            if (streamMatches) editalPdfRaw = streamMatches.map((m) => m.replace(/[\(\)\[\]]|T[jJ]/g, " ")).join(" ");
+            console.warn("[Caixa Docs] Falha na biblioteca PDF ao ler edital:", pe);
           }
           hasEditalPdf = editalPdfRaw.length > 50;
         }
@@ -3924,7 +5023,7 @@ app.post("/api/chat", async (req, res) => {
     return res.json({ reply });
   }
   try {
-    const ai = new import_genai.GoogleGenAI({
+    const ai = new import_genai2.GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
         headers: {
@@ -4003,7 +5102,7 @@ async function syncCaixaDirect(targetStates = ["RJ", "SP", "MG"], userId = "syst
   let totalImported = 0;
   let browser = null;
   try {
-    browser = await import_puppeteer2.default.launch({
+    browser = await import_puppeteer3.default.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -4177,6 +5276,70 @@ app.post("/api/garimpar/caixa-auto", authMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message || "Erro ao sincronizar im\xF3veis Caixa." });
   }
 });
+app.post("/api/garimpar/extrajudiciais-auto", authMiddleware, async (req, res) => {
+  const state = (req.body.state || "RJ").toUpperCase().trim();
+  const city = req.body.city || (state === "RJ" ? "Rio de Janeiro" : state === "MG" ? "Juiz de Fora" : "S\xE3o Paulo");
+  try {
+    const { newAuctions, totalScraped } = await syncAuctioneersPipeline(
+      "extrajudicial",
+      state,
+      city,
+      store.auctions,
+      (auc) => recalculateAuction(auc, store.itbiTransactions)
+    );
+    if (newAuctions.length > 0) {
+      if (req.userId) {
+        newAuctions.forEach((a) => {
+          a.userId = req.userId;
+        });
+      }
+      store.auctions.unshift(...newAuctions);
+      saveStore(store);
+    }
+    res.json({
+      success: true,
+      added: newAuctions.length,
+      totalScraped,
+      totalInDb: store.auctions.length,
+      message: newAuctions.length > 0 ? `Sincroniza\xE7\xE3o de leil\xF5es extrajudiciais conclu\xEDda! ${newAuctions.length} novas oportunidades de bancos capturadas nos portais (Zuk, Mega, Biasi, Fraz\xE3o, etc.) e avaliadas com ITBI oficial.` : `Varredura conclu\xEDda! ${totalScraped} lotes avaliados nos portais de leiloeiros. Nenhuma nova oportunidade pendente para importa\xE7\xE3o.`
+    });
+  } catch (err) {
+    console.error("[Sync Extrajudiciais] Erro:", err);
+    res.status(500).json({ error: err.message || "Erro ao sincronizar leil\xF5es extrajudiciais." });
+  }
+});
+app.post("/api/garimpar/judiciais-auto", authMiddleware, async (req, res) => {
+  const state = (req.body.state || "RJ").toUpperCase().trim();
+  const city = req.body.city || (state === "RJ" ? "Rio de Janeiro" : state === "MG" ? "Juiz de Fora" : "S\xE3o Paulo");
+  try {
+    const { newAuctions, totalScraped } = await syncAuctioneersPipeline(
+      "judicial",
+      state,
+      city,
+      store.auctions,
+      (auc) => recalculateAuction(auc, store.itbiTransactions)
+    );
+    if (newAuctions.length > 0) {
+      if (req.userId) {
+        newAuctions.forEach((a) => {
+          a.userId = req.userId;
+        });
+      }
+      store.auctions.unshift(...newAuctions);
+      saveStore(store);
+    }
+    res.json({
+      success: true,
+      added: newAuctions.length,
+      totalScraped,
+      totalInDb: store.auctions.length,
+      message: newAuctions.length > 0 ? `Sincroniza\xE7\xE3o de leil\xF5es judiciais conclu\xEDda! ${newAuctions.length} novos leil\xF5es das varas c\xEDveis e trabalhistas capturados nos portais e avaliados com ITBI oficial.` : `Varredura conclu\xEDda! ${totalScraped} leil\xF5es judiciais avaliados nos portais. Nenhuma nova oportunidade pendente para importa\xE7\xE3o.`
+    });
+  } catch (err) {
+    console.error("[Sync Judiciais] Erro:", err);
+    res.status(500).json({ error: err.message || "Erro ao sincronizar leil\xF5es judiciais." });
+  }
+});
 app.post("/api/garimpar/judiciais", authMiddleware, async (req, res) => {
   const minedAuctions = [];
   const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
@@ -4185,7 +5348,7 @@ app.post("/api/garimpar/judiciais", authMiddleware, async (req, res) => {
   const uf = state.toUpperCase();
   const itbiCities = Array.from(new Set(
     store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf).map((tx) => tx.city ? tx.city.toLowerCase().trim() : "")
-  )).filter(Boolean).map((c) => normalizeString(c));
+  )).filter(Boolean).map((c) => normalizeString2(c));
   const itbiNeighborhoods = Array.from(new Set(
     store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf).map((tx) => tx.neighborhood.toLowerCase())
   ));
@@ -4194,7 +5357,7 @@ app.post("/api/garimpar/judiciais", authMiddleware, async (req, res) => {
   if (isGeminiEnabled) {
     try {
       console.log("Starting real-time Grounded Google Search mining with Gemini 2.5-flash for judicial auctions...");
-      const ai = new import_genai.GoogleGenAI({
+      const ai = new import_genai2.GoogleGenAI({
         apiKey: process.env.GEMINI_API_KEY,
         httpOptions: {
           headers: {
@@ -4267,12 +5430,12 @@ N\xE3o inclua nenhuma outra marca\xE7\xE3o al\xE9m do JSON puro dentro do bloco 
         for (const item of parsed) {
           if (!item.title || !item.neighborhood || !item.auctionPrice) continue;
           const bairroJudicial = item.neighborhood.toLowerCase();
-          const itemCityNorm = normalizeString(item.city || (uf === "RJ" ? "rio de janeiro" : uf === "MG" ? requestedCity === "santos-dumont" ? "santos dumont" : "juiz de fora" : "sao paulo"));
+          const itemCityNorm = normalizeString2(item.city || (uf === "RJ" ? "rio de janeiro" : uf === "MG" ? requestedCity === "santos-dumont" ? "santos dumont" : "juiz de fora" : "sao paulo"));
           const cityHasItbi = itbiCities.includes(itemCityNorm);
           let isMatch = false;
           if (cityHasItbi && itbiNeighborhoods.length > 0) {
             const cityNeighborhoods = Array.from(new Set(
-              store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf && normalizeString(tx.city || "") === itemCityNorm).map((tx) => tx.neighborhood.toLowerCase())
+              store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf && normalizeString2(tx.city || "") === itemCityNorm).map((tx) => tx.neighborhood.toLowerCase())
             ));
             isMatch = cityNeighborhoods.some((n) => {
               const normN = n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -4393,7 +5556,7 @@ app.post("/api/garimpar/portais", authMiddleware, async (req, res) => {
   const uf = state.toUpperCase();
   const itbiCities = Array.from(new Set(
     store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf).map((tx) => tx.city ? tx.city.toLowerCase().trim() : "")
-  )).filter(Boolean).map((c) => normalizeString(c));
+  )).filter(Boolean).map((c) => normalizeString2(c));
   const itbiNeighborhoods = Array.from(new Set(
     store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf).map((tx) => tx.neighborhood.toLowerCase())
   ));
@@ -4402,7 +5565,7 @@ app.post("/api/garimpar/portais", authMiddleware, async (req, res) => {
   if (isGeminiEnabled) {
     try {
       console.log("Starting real-time ZapIm\xF3veis / QuintoAndar mining with Gemini 2.5-flash for house flips...");
-      const ai = new import_genai.GoogleGenAI({
+      const ai = new import_genai2.GoogleGenAI({
         apiKey: process.env.GEMINI_API_KEY,
         httpOptions: {
           headers: {
@@ -4473,12 +5636,12 @@ N\xE3o inclua nenhuma outra marca\xE7\xE3o al\xE9m do JSON puro dentro do bloco 
         for (const item of parsed) {
           if (!item.title || !item.neighborhood || !item.auctionPrice) continue;
           const bairroPortal = item.neighborhood.toLowerCase();
-          const itemCityNorm = normalizeString(item.city || (uf === "RJ" ? "rio de janeiro" : uf === "MG" ? requestedCity === "santos-dumont" ? "santos dumont" : "juiz de fora" : "sao paulo"));
+          const itemCityNorm = normalizeString2(item.city || (uf === "RJ" ? "rio de janeiro" : uf === "MG" ? requestedCity === "santos-dumont" ? "santos dumont" : "juiz de fora" : "sao paulo"));
           const cityHasItbi = itbiCities.includes(itemCityNorm);
           let isMatch = false;
           if (cityHasItbi && itbiNeighborhoods.length > 0) {
             const cityNeighborhoods = Array.from(new Set(
-              store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf && normalizeString(tx.city || "") === itemCityNorm).map((tx) => tx.neighborhood.toLowerCase())
+              store.itbiTransactions.filter((tx) => (tx.state || "SP").toUpperCase() === uf && normalizeString2(tx.city || "") === itemCityNorm).map((tx) => tx.neighborhood.toLowerCase())
             ));
             isMatch = cityNeighborhoods.some((n) => {
               const normN = n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -4542,7 +5705,7 @@ N\xE3o inclua nenhuma outra marca\xE7\xE3o al\xE9m do JSON puro dentro do bloco 
       targetCity = Math.random() > 0.5 ? "Juiz de Fora" : "Santos Dumont";
     }
     const targetTxs = store.itbiTransactions.filter(
-      (tx) => (tx.state || "SP").toUpperCase() === uf && (uf !== "MG" || normalizeString(tx.city) === normalizeString(targetCity)) && tx.street && tx.street.trim().length > 3
+      (tx) => (tx.state || "SP").toUpperCase() === uf && (uf !== "MG" || normalizeString2(tx.city) === normalizeString2(targetCity)) && tx.street && tx.street.trim().length > 3
     );
     const stateNeighs = Array.from(new Set(
       targetTxs.map((tx) => tx.neighborhood)
@@ -4623,7 +5786,7 @@ app.post("/api/auctions/analyze-url", authMiddleware, async (req, res) => {
   let browser;
   try {
     console.log(`[URL Analyzer] Abrindo Puppeteer para: ${url}`);
-    browser = await import_puppeteer2.default.launch({
+    browser = await import_puppeteer3.default.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
@@ -4697,7 +5860,7 @@ Este im\xF3vel foi importado a partir do link fornecido.
     return res.json(recalculated);
   }
   try {
-    const ai = new import_genai.GoogleGenAI({
+    const ai = new import_genai2.GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: { headers: { "User-Agent": "aistudio-build" } }
     });

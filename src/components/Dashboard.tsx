@@ -26,7 +26,9 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import RealValueCalculator from './RealValueCalculator.tsx';
 import PropertyMap from './PropertyMap.tsx';
+import PropertyThumbnail from './PropertyThumbnail.tsx';
 import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
+import { getAvailableZonesForCity, isNeighborhoodInZone } from '../utils/cityZones.ts';
 
 interface DashboardProps {
   auctions: AuctionProperty[];
@@ -38,12 +40,14 @@ interface DashboardProps {
   setSelectedNeighborhoodFilter: (val: string) => void;
   selectedCityFilter: string;
   setSelectedCityFilter: (val: string) => void;
+  selectedZoneFilter?: string;
+  setSelectedZoneFilter?: (val: string) => void;
   selectedTypeFilter: string;
   setSelectedTypeFilter: (val: string) => void;
   selectedStateFilter: string;
   setSelectedStateFilter: (val: string) => void;
-  maxPriceFilter: string;
-  setMaxPriceFilter: (val: string) => void;
+  maxPriceFilter?: string;
+  setMaxPriceFilter?: (val: string) => void;
   paymentFilter: string;
   setPaymentFilter: (val: string) => void;
   sortBy: string;
@@ -55,10 +59,12 @@ interface DashboardProps {
   onGarimparJudiciais: (city?: string) => void;
   onGarimparCaixa: (city?: string) => void;
   onGarimparPortais: (city?: string) => void;
-  selectedOriginFilter: 'caixa' | 'judicial' | 'extrajudicial' | 'portal';
-  setSelectedOriginFilter: (val: 'caixa' | 'judicial' | 'extrajudicial' | 'portal') => void;
+  selectedOriginFilter: 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal';
+  setSelectedOriginFilter: (val: 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal') => void;
   onOpenLinkModal: () => void;
   onSyncCaixaAuto?: () => void;
+  onSyncExtrajudiciaisAuto?: () => void;
+  onSyncJudiciaisAuto?: () => void;
   itbiStats?: any[];
   onClearAll?: () => void;
   onOpenCapitalMatcher?: () => void;
@@ -74,6 +80,8 @@ export default function Dashboard({
   setSelectedNeighborhoodFilter,
   selectedCityFilter,
   setSelectedCityFilter,
+  selectedZoneFilter,
+  setSelectedZoneFilter,
   selectedTypeFilter,
   setSelectedTypeFilter,
   selectedStateFilter,
@@ -95,16 +103,119 @@ export default function Dashboard({
   setSelectedOriginFilter,
   onOpenLinkModal,
   onSyncCaixaAuto,
+  onSyncExtrajudiciaisAuto,
+  onSyncJudiciaisAuto,
   itbiStats = [],
   onClearAll,
   onOpenCapitalMatcher
 }: DashboardProps) {
+  const [internalZoneFilter, setInternalZoneFilter] = React.useState('');
+  const activeZoneFilter = selectedZoneFilter !== undefined ? selectedZoneFilter : internalZoneFilter;
+  const setActiveZoneFilter = setSelectedZoneFilter || setInternalZoneFilter;
+
+  const availableZones = React.useMemo(() => {
+    return getAvailableZonesForCity(selectedCityFilter);
+  }, [selectedCityFilter]);
+
   const [simulatingAuction, setSimulatingAuction] = React.useState<AuctionProperty | null>(null);
   const [selectedMapProperty, setSelectedMapProperty] = React.useState<AuctionProperty | null>(null);
   const [isGeneralMapOpen, setIsGeneralMapOpen] = React.useState<boolean>(false);
-  const [activeTooltip, setActiveTooltip] = React.useState<'caixa' | 'capital' | null>(null);
+  const [activeTooltip, setActiveTooltip] = React.useState<'caixa' | 'extrajudicial' | 'judicial' | 'capital' | null>(null);
   const [localMiningType, setLocalMiningType] = React.useState<'judicial' | 'caixa' | 'portal' | null>(null);
   const [selectedGarimpoCity, setSelectedGarimpoCity] = React.useState<string>('ambas');
+  const [selectedSaleModeFilter, setSelectedSaleModeFilter] = React.useState<string>('');
+
+  const getSaleModeBadge = React.useCallback((auc: AuctionProperty) => {
+    const isCaixaAuction = auc.origin === 'caixa' || auc.origin === 'caixa_radar' || auc.id.startsWith('auc-caixa');
+    let mode = auc.saleMode;
+    if (!mode && auc.description) {
+      const mMatch = auc.description.match(/Modalidade:\s*([^.]+)/i);
+      if (mMatch) mode = mMatch[1].trim();
+    }
+    if (!mode) {
+      const textLower = `${auc.title} ${auc.description || ''} ${auc.paymentTerms || ''}`.toLowerCase();
+      if (textLower.includes('venda direta online')) mode = 'Venda Direta Online';
+      else if (textLower.includes('venda direta')) mode = 'Venda Direta';
+      else if (textLower.includes('licitação aberta') || textLower.includes('licitacao aberta')) mode = 'Licitação Aberta';
+      else if (textLower.includes('venda online')) mode = 'Venda Online';
+      else if (textLower.includes('leilão sfi') || textLower.includes('leilao sfi')) mode = 'Leilão SFI';
+      else if (textLower.includes('online')) mode = 'Leilão Online';
+      else if (auc.origin === 'judicial') mode = 'Leilão Judicial Online';
+      else if (auc.origin === 'extrajudicial') mode = 'Leilão Extrajudicial Online';
+      else if (isCaixaAuction) mode = '';
+      else mode = 'Leilão Online';
+    }
+
+    if (!mode && isCaixaAuction) {
+      return {
+        label: 'Modalidade não informada',
+        shortLabel: 'Sem modalidade',
+        type: 'modalidade_indefinida',
+        icon: '○',
+        className: 'bg-slate-800 text-slate-300 border-slate-600'
+      };
+    }
+
+    const modeLower = (mode || '').toLowerCase();
+    
+    if (modeLower.includes('venda direta')) {
+      return {
+        label: modeLower.includes('online') ? 'Venda Direta Online' : 'Venda Direta',
+        shortLabel: 'Venda Direta',
+        type: 'venda_direta',
+        icon: '🤝',
+        className: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-sm shadow-emerald-950/50'
+      };
+    }
+    
+    if (modeLower.includes('licita') || modeLower.includes('licitação')) {
+      return {
+        label: 'Licitação Aberta',
+        shortLabel: 'Licitação Aberta',
+        type: 'licitacao_aberta',
+        icon: '📢',
+        className: 'bg-amber-950/90 text-amber-300 border-amber-500/60 shadow-sm shadow-amber-950/50'
+      };
+    }
+    
+    if (modeLower.includes('venda online')) {
+      return {
+        label: 'Venda Online',
+        shortLabel: 'Venda Online',
+        type: 'venda_online',
+        icon: '💻',
+        className: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/60 shadow-sm shadow-cyan-950/50'
+      };
+    }
+
+    if (modeLower.includes('sfi') || modeLower.includes('edital único')) {
+      return {
+        label: 'Leilão SFI Online',
+        shortLabel: 'Leilão SFI',
+        type: 'leilao_sfi',
+        icon: '⚖️',
+        className: 'bg-indigo-950/90 text-indigo-300 border-indigo-500/60 shadow-sm shadow-indigo-950/50'
+      };
+    }
+
+    if (auc.origin === 'judicial') {
+      return {
+        label: 'Leilão Judicial Online',
+        shortLabel: 'Judicial Online',
+        type: 'judicial_online',
+        icon: '⚖️',
+        className: 'bg-purple-950/90 text-purple-300 border-purple-500/60 shadow-sm shadow-purple-950/50'
+      };
+    }
+
+    return {
+      label: mode || 'Leilão Online',
+      shortLabel: mode || 'Leilão Online',
+      type: 'leilao_online',
+      icon: '🌐',
+      className: 'bg-blue-950/90 text-blue-300 border-blue-500/60 shadow-sm shadow-blue-950/50'
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!isMining) {
@@ -155,7 +266,7 @@ export default function Dashboard({
     return Array.from(new Set(citiesList)).sort();
   }, [auctions, selectedStateFilter, selectedOriginFilter]);
 
-  // Extract unique neighborhoods from auctions for filters (filtered by selectedStateFilter, selectedCityFilter and selectedOriginFilter)
+  // Extract unique neighborhoods from auctions for filters (filtered by selectedStateFilter, selectedCityFilter, activeZoneFilter and selectedOriginFilter)
   const uniqueNeighborhoods = React.useMemo(() => {
     let list = auctions.filter(checkOriginMatch);
     if (selectedStateFilter) {
@@ -165,12 +276,34 @@ export default function Dashboard({
       const normCity = normalizeText(selectedCityFilter);
       list = list.filter(a => normalizeText(a.city || '').includes(normCity) || normCity.includes(normalizeText(a.city || '')));
     }
+    if (activeZoneFilter) {
+      list = list.filter(a => isNeighborhoodInZone(a.city, a.neighborhood, activeZoneFilter) || a.zone === activeZoneFilter);
+    }
 
     const titleCased = list
       .map(a => a.neighborhood ? a.neighborhood.trim().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '').join(' ') : '')
       .filter(Boolean);
     return Array.from(new Set(titleCased)).sort();
-  }, [auctions, selectedStateFilter, selectedCityFilter, selectedOriginFilter]);
+  }, [auctions, selectedStateFilter, selectedCityFilter, activeZoneFilter, selectedOriginFilter]);
+
+  const activeSorts = React.useMemo(() => {
+    if (!sortBy) return ['roi'];
+    if (sortBy === 'roi_liquidity') return ['roi', 'liquidity'];
+    return sortBy.split('+').filter(Boolean);
+  }, [sortBy]);
+
+  const handleToggleSort = (key: string) => {
+    if (activeSorts.includes(key)) {
+      if (activeSorts.length > 1) {
+        const remaining = activeSorts.filter(s => s !== key);
+        setSortBy(remaining.join('+'));
+      } else {
+        setSortBy(key);
+      }
+    } else if (activeSorts.length < 4) {
+      setSortBy([...activeSorts, key].join('+'));
+    }
+  };
 
   // Filter & Sort listing
   const filteredAndSortedAuctions = React.useMemo(() => {
@@ -184,18 +317,15 @@ export default function Dashboard({
       const normCity = normalizeText(selectedCityFilter);
       result = result.filter(a => normalizeText(a.city || '').includes(normCity) || normCity.includes(normalizeText(a.city || '')));
     }
+    if (activeZoneFilter) {
+      result = result.filter(a => isNeighborhoodInZone(a.city, a.neighborhood, activeZoneFilter) || a.zone === activeZoneFilter);
+    }
     if (selectedNeighborhoodFilter) {
       const normNeighFilter = normalizeText(selectedNeighborhoodFilter);
       result = result.filter(a => normalizeText(a.neighborhood || '') === normNeighFilter);
     }
     if (selectedTypeFilter) {
       result = result.filter(a => a.propertyType === selectedTypeFilter);
-    }
-    if (maxPriceFilter) {
-      const maxVal = Number(maxPriceFilter);
-      if (!isNaN(maxVal)) {
-        result = result.filter(a => a.auctionPrice <= maxVal);
-      }
     }
     if (paymentFilter === 'financing') {
       result = result.filter(a => a.allowsFinancing === true);
@@ -204,21 +334,38 @@ export default function Dashboard({
     } else if (paymentFilter === 'both') {
       result = result.filter(a => a.allowsFinancing === true && a.allowsInstallments === true);
     }
-
-    if (sortBy === 'roi') {
-      result.sort((a, b) => (b.calculatedRoi || 0) - (a.calculatedRoi || 0));
-    } else if (sortBy === 'profit') {
-      result.sort((a, b) => (b.calculatedProfit || 0) - (a.calculatedProfit || 0));
-    } else if (sortBy === 'liquidity') {
-      result.sort((a, b) => (b.liquidityScore || 0) - (a.liquidityScore || 0));
-    } else if (sortBy === 'price_asc') {
-      result.sort((a, b) => a.auctionPrice - b.auctionPrice);
-    } else if (sortBy === 'price_desc') {
-      result.sort((a, b) => b.auctionPrice - a.auctionPrice);
+    if (selectedSaleModeFilter) {
+      result = result.filter(a => {
+        const b = getSaleModeBadge(a);
+        return b.type === selectedSaleModeFilter;
+      });
     }
 
+    const getSortScore = (prop: AuctionProperty, sortKey: string) => {
+      if (sortKey === 'profit') return Math.max(0, prop.calculatedProfit || 0);
+      if (sortKey === 'roi') return Math.max(0, prop.calculatedRoi || 0);
+      if (sortKey === 'liquidity') return Math.max(0, prop.liquidityScore || 0);
+      if (sortKey === 'price_asc') return -prop.auctionPrice;
+      if (sortKey === 'price_desc') return prop.auctionPrice;
+      return 0;
+    };
+
+    const scoreRanges = new Map(activeSorts.map(sortKey => {
+      const values = result.map(property => getSortScore(property, sortKey));
+      return [sortKey, { min: Math.min(...values), max: Math.max(...values) }];
+    }));
+    const weightedScore = (property: AuctionProperty) => activeSorts.reduce((total, sortKey, index) => {
+      const value = getSortScore(property, sortKey);
+      const range = scoreRanges.get(sortKey)!;
+      const normalized = range.max === range.min ? 0.5 : (value - range.min) / (range.max - range.min);
+      const weight = [1, 0.65, 0.4, 0.25][index] || 0;
+      return total + normalized * weight;
+    }, 0);
+
+    result.sort((a, b) => weightedScore(b) - weightedScore(a));
+
     return result;
-  }, [auctions, selectedNeighborhoodFilter, selectedCityFilter, selectedTypeFilter, selectedStateFilter, maxPriceFilter, paymentFilter, sortBy, selectedOriginFilter]);
+  }, [auctions, selectedNeighborhoodFilter, selectedCityFilter, selectedTypeFilter, selectedStateFilter, maxPriceFilter, paymentFilter, sortBy, activeSorts, selectedOriginFilter]);
 
   const [visibleCount, setVisibleCount] = React.useState(12);
 
@@ -256,6 +403,21 @@ export default function Dashboard({
   // Format currency helper
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+  };
+
+  const getAuctionHost = (auctionLink?: string) => {
+    if (!auctionLink) return 'Portal não informado';
+    try {
+      return new URL(auctionLink).hostname.replace(/^www\./, '');
+    } catch {
+      return 'Portal não informado';
+    }
+  };
+
+  const formatAuctionDate = (date?: string) => {
+    if (!date) return 'Data não informada';
+    const parsed = new Date(`${date}T12:00:00`);
+    return Number.isNaN(parsed.getTime()) ? 'Data não informada' : parsed.toLocaleDateString('pt-BR');
   };
 
   return (
@@ -433,6 +595,80 @@ export default function Dashboard({
                 </div>
               )}
 
+              {onSyncExtrajudiciaisAuto && selectedOriginFilter === 'extrajudicial' && (
+                <div className="relative inline-flex items-center pt-1.5">
+                  <button
+                    onClick={onSyncExtrajudiciaisAuto}
+                    disabled={isMining}
+                    className="px-4 sm:px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center space-x-2 cursor-pointer disabled:opacity-50 border border-emerald-400/30"
+                    title="Sincronizar leilões de bancos dos portais parceiros (Mega Leilões, Biasi, Frazão, Zuk, Sold, Pestana, MGL)"
+                  >
+                    {isMining ? (
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-emerald-200" />
+                    )}
+                    <span>⚡ Sincronizar Leilões Extrajudiciais</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTooltip(activeTooltip === 'extrajudicial' ? null : 'extrajudicial')}
+                    className="absolute -top-3 -right-3.5 z-10 w-5 h-5 rounded-full bg-emerald-950/90 border border-emerald-500/70 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-400 hover:text-white flex items-center justify-center shadow-lg hover:scale-110 transition-all cursor-pointer font-serif italic text-xs font-black"
+                    title="Informações sobre a sincronização de leilões extrajudiciais"
+                  >
+                    i
+                  </button>
+                  {activeTooltip === 'extrajudicial' && (
+                    <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 p-3.5 bg-slate-900/98 text-slate-200 text-xs rounded-xl shadow-2xl border border-emerald-500/40 z-50 backdrop-blur-md">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-emerald-300">⚡ Sincronização Extrajudicial Oficial</span>
+                        <button onClick={() => setActiveTooltip(null)} className="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-slate-300">
+                        Varre os 7 principais portais de leiloeiros (Mega Leilões, Biasi, Frazão, Portal Zuk, Sold, Pestana, MGL) capturando imóveis de bancos (Santander, Itaú, Bradesco, etc.) e alienação fiduciária. Audita com ITBI da Prefeitura e calcula ROI real.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {onSyncJudiciaisAuto && selectedOriginFilter === 'judicial' && (
+                <div className="relative inline-flex items-center pt-1.5">
+                  <button
+                    onClick={onSyncJudiciaisAuto}
+                    disabled={isMining}
+                    className="px-4 sm:px-5 py-2.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 hover:from-indigo-500 hover:to-violet-500 text-white font-black text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center space-x-2 cursor-pointer disabled:opacity-50 border border-indigo-400/30"
+                    title="Sincronizar leilões judiciais ativos das varas cíveis e trabalhistas nos portais parceiros"
+                  >
+                    {isMining ? (
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-indigo-200" />
+                    )}
+                    <span>⚡ Sincronizar Leilões Judiciais</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTooltip(activeTooltip === 'judicial' ? null : 'judicial')}
+                    className="absolute -top-3 -right-3.5 z-10 w-5 h-5 rounded-full bg-indigo-950/90 border border-indigo-500/70 text-indigo-300 hover:bg-indigo-900 hover:border-indigo-400 hover:text-white flex items-center justify-center shadow-lg hover:scale-110 transition-all cursor-pointer font-serif italic text-xs font-black"
+                    title="Informações sobre a sincronização de leilões judiciais"
+                  >
+                    i
+                  </button>
+                  {activeTooltip === 'judicial' && (
+                    <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 p-3.5 bg-slate-900/98 text-slate-200 text-xs rounded-xl shadow-2xl border border-indigo-500/40 z-50 backdrop-blur-md">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-indigo-300">⚡ Sincronização Judicial Oficial</span>
+                        <button onClick={() => setActiveTooltip(null)} className="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-slate-300">
+                        Varre os leiloeiros oficiais em busca de processos das varas cíveis, de família e trabalhistas com leilão marcado. Cruza metragens e calcula viabilidade e margem com base na NBR 14.653 e ITBI.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {onOpenCapitalMatcher && (
                 <div className="relative inline-flex items-center pt-1.5">
                   <button
@@ -466,62 +702,60 @@ export default function Dashboard({
               )}
             </div>
 
-            {/* Grupo de Ordenação - 2 em cima e 2 embaixo */}
-            <div data-tour="sorting-map" className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-950/90 p-2 sm:px-3 sm:py-2.5 rounded-xl border border-slate-800/90 ml-auto">
-              <span className="text-xs uppercase font-bold text-slate-300 font-mono tracking-wider shrink-0 mr-1 flex items-center gap-1.5">
-                <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Ordenar por:</span>
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {/* Linha 1: 2 botões em cima */}
-                <button
-                  onClick={() => setSortBy('profit')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center justify-center gap-1.5 ${
-                    sortBy === 'profit'
-                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30'
-                      : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-750'
-                  }`}
-                >
-                  <span>💎 Maior Lucro</span>
-                </button>
-                <button
-                  onClick={() => setSortBy('roi')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center justify-center gap-1.5 ${
-                    sortBy === 'roi'
-                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
-                      : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-750'
-                  }`}
-                >
-                  <span>🚀 Maior ROI</span>
-                </button>
+            {/* Grupo de Ordenação com Seleção Dupla (Sem botões extras) */}
+            <div data-tour="sorting-map" className="flex flex-col gap-2 bg-slate-950/90 p-2 sm:px-3 sm:py-2.5 rounded-xl border border-slate-800/90 ml-auto w-full sm:w-[36rem] shrink-0">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase font-bold text-slate-300 font-mono tracking-wider shrink-0 flex items-center gap-1.5">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Ordenar por:</span>
+                </span>
+                <span className="text-[10px] font-mono">
+                  {activeSorts.length > 1 ? (
+                    <span className="text-amber-300 font-bold">{activeSorts.length} critérios ativos</span>
+                  ) : (
+                    <span className="text-slate-400">Selecione até 4 critérios</span>
+                  )}
+                </span>
+              </div>
 
-                {/* Linha 2: 2 botões embaixo */}
-                <button
-                  onClick={() => setSortBy('liquidity')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center justify-center gap-1.5 ${
-                    sortBy === 'liquidity'
-                      ? 'bg-amber-600 text-white border-amber-500 shadow-md shadow-amber-600/30'
-                      : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-750'
-                  }`}
-                >
-                  <span>📊 Maior Liquidez</span>
-                </button>
-                <button
-                  onClick={() => setSortBy('price_asc')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center justify-center gap-1.5 ${
-                    sortBy === 'price_asc'
-                      ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30'
-                      : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-750'
-                  }`}
-                >
-                  <span>💵 Menor Preço</span>
-                </button>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                {[
+                  { id: 'profit', label: 'Lucro', icon: '💎', color: 'bg-emerald-600 border-emerald-500 shadow-emerald-600/30' },
+                  { id: 'roi', label: 'Maior ROI', icon: '🚀', color: 'bg-indigo-600 border-indigo-500 shadow-indigo-600/30' },
+                  { id: 'liquidity', label: 'Liquidez', icon: '📊', color: 'bg-amber-600 border-amber-500 shadow-amber-600/30' },
+                  { id: 'price_asc', label: 'Menor Preço', icon: '💵', color: 'bg-blue-600 border-blue-500 shadow-blue-600/30' }
+                ].map(item => {
+                  const isSelected = activeSorts.includes(item.id);
+                  const orderIndex = activeSorts.indexOf(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleToggleSort(item.id)}
+                      className={`min-w-0 h-9 px-2.5 rounded-lg text-[11px] sm:text-xs font-bold transition-colors cursor-pointer border flex items-center justify-center gap-1 ${
+                        isSelected
+                          ? `${item.color} text-white shadow-md ring-1 ring-white/30`
+                          : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-750'
+                      }`}
+                      title={isSelected && activeSorts.length > 1 ? `Critério ${orderIndex + 1} de ordenação combinada` : `Ordenar por ${item.label}`}
+                    >
+                      <span className="truncate">{item.icon} {item.label}</span>
+                      <span
+                        aria-hidden={!isSelected || activeSorts.length === 1}
+                        className={`w-4 h-4 shrink-0 rounded bg-black/50 text-[9px] font-mono leading-4 text-center text-amber-300 font-black border border-amber-400/40 transition-opacity ${
+                          isSelected && activeSorts.length > 1 ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      >
+                          {orderIndex + 1}º
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
         </div>
       </div>
 
-        <div data-tour="filters-bar" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
+        <div data-tour="filters-bar" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mt-4">
 
           <div>
             <label className="block text-xs font-semibold text-slate-400 mb-1">Filtrar por Estado (UF)</label>
@@ -552,13 +786,34 @@ export default function Dashboard({
               value={selectedCityFilter}
               onChange={(e) => {
                 setSelectedCityFilter(e.target.value);
-                setSelectedNeighborhoodFilter(''); // reset neighborhood on city change
+                setActiveZoneFilter('');
+                setSelectedNeighborhoodFilter(''); // reset on city change
               }}
               className="w-full text-sm border border-slate-800 rounded-lg p-2 bg-slate-950 text-slate-200 hover:bg-slate-900 focus:bg-slate-950 focus:border-indigo-500/80 focus:ring-indigo-500/30 outline-none transition-colors cursor-pointer [&>option]:bg-slate-950 [&>option]:text-slate-200"
             >
               <option value="" className="bg-slate-950 text-slate-200">Todas as cidades</option>
               {uniqueCities.map(c => (
                 <option key={c} value={c} className="bg-slate-950 text-slate-200">{c}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">Filtrar por Zona</label>
+            <select
+              value={activeZoneFilter}
+              onChange={(e) => {
+                setActiveZoneFilter(e.target.value);
+                setSelectedNeighborhoodFilter(''); // reset neighborhood on zone change
+              }}
+              disabled={availableZones.length === 0}
+              className="w-full text-sm border border-slate-800 rounded-lg p-2 bg-slate-950 text-slate-200 hover:bg-slate-900 focus:bg-slate-950 focus:border-indigo-500/80 focus:ring-indigo-500/30 outline-none transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed [&>option]:bg-slate-950 [&>option]:text-slate-200"
+            >
+              <option value="" className="bg-slate-950 text-slate-200">
+                {availableZones.length === 0 ? (selectedCityFilter ? 'Zonas não demarcadas' : 'Selecione a cidade') : 'Todas as zonas'}
+              </option>
+              {availableZones.map(z => (
+                <option key={z} value={z} className="bg-slate-950 text-slate-200">{z}</option>
               ))}
             </select>
           </div>
@@ -593,17 +848,6 @@ export default function Dashboard({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-1">Preço Máximo (R$)</label>
-            <input
-              type="number"
-              placeholder="Ex: 500000"
-              value={maxPriceFilter}
-              onChange={(e) => setMaxPriceFilter(e.target.value)}
-              className="w-full text-sm border border-slate-800 rounded-lg p-2 bg-slate-950 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500/80 focus:ring-indigo-500/30 outline-none transition-colors"
-            />
-          </div>
-
-          <div>
             <label className="block text-xs font-semibold text-slate-400 mb-1">Condições de Pagamento</label>
             <select
               value={paymentFilter}
@@ -614,6 +858,23 @@ export default function Dashboard({
               <option value="financing" className="bg-slate-950 text-slate-200">Aceita Financiamento</option>
               <option value="installments" className="bg-slate-950 text-slate-200">Permite Parcelamento</option>
               <option value="both" className="bg-slate-950 text-slate-200">Financiamento & Parcelamento</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-indigo-300 mb-1 font-mono uppercase text-[10.5px]">Modalidade da Disputa</label>
+            <select
+              value={selectedSaleModeFilter}
+              onChange={(e) => setSelectedSaleModeFilter(e.target.value)}
+              className="w-full text-sm border border-indigo-500/40 rounded-lg p-2 bg-slate-950 text-slate-200 hover:bg-slate-900 focus:bg-slate-950 focus:border-indigo-500/80 focus:ring-indigo-500/30 outline-none transition-colors cursor-pointer font-medium [&>option]:bg-slate-950 [&>option]:text-slate-200"
+            >
+              <option value="" className="bg-slate-950 text-slate-200">Todas as modalidades</option>
+              <option value="venda_direta" className="bg-slate-950 text-emerald-400 font-semibold">🤝 Venda Direta Online</option>
+              <option value="licitacao_aberta" className="bg-slate-950 text-amber-400 font-semibold">📢 Licitação Aberta</option>
+              <option value="venda_online" className="bg-slate-950 text-cyan-400 font-semibold">💻 Venda Online</option>
+              <option value="leilao_sfi" className="bg-slate-950 text-indigo-400 font-semibold">⚖️ Leilão SFI Online</option>
+              <option value="judicial_online" className="bg-slate-950 text-purple-400 font-semibold">⚖️ Leilão Judicial Online</option>
+              <option value="leilao_online" className="bg-slate-950 text-blue-400 font-semibold">🌐 Leilão Online</option>
             </select>
           </div>
         </div>
@@ -711,6 +972,7 @@ export default function Dashboard({
               const totalCost = auc.auctionPrice + repairCost + condoDebt + (auc.otherCosts || (auc.itbiCost || 0) + (auc.notaryCost || 0));
               const isSelected = selectedAuctionId === auc.id;
               const isFeatured = (auc.calculatedRoi || 0) >= 40 && (auc.liquidityScore || 0) >= 7;
+              const isCaixaAuction = auc.origin === 'caixa' || auc.origin === 'caixa_radar' || auc.id.startsWith('auc-caixa');
 
               return (
                 <motion.div
@@ -729,26 +991,32 @@ export default function Dashboard({
                   }`}
                 >
                   <div className="p-4 space-y-3">
-                    {/* Header Block with Type, Badges, Title & Address */}
-                    <div data-tour={idx === 0 ? "card-header" : undefined} className="space-y-2">
-                      {/* Upper Row: Type & Badges */}
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="bg-slate-800 text-slate-200 text-xs font-semibold px-2 py-0.5 rounded border border-slate-700">
-                          {auc.propertyType} • {auc.sizeSqm} m²
-                          {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
-                          {auc.parkingSpaces ? ` • ${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : ''}
-                        </span>
-                        <div className="flex space-x-1.5">
-                          {isFeatured && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
-                              Destaque ★
-                            </span>
-                          )}
-                          {auc.isCommunityRisk && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/60 flex items-center gap-1">
-                              ⚠️ {auc.communityName ? `${auc.communityName}` : 'Comunidade'} {auc.factionName ? `(${auc.factionName})` : ''}
-                            </span>
-                          )}
+                    {/* Header Block with Thumbnail, Type, Left Badges, Title & Address */}
+                    <div data-tour={idx === 0 ? "card-header" : undefined} className="flex gap-3 items-start justify-between">
+                      {/* Informações: Tipologia + Badges alinhados à esquerda, Título e Endereço */}
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        {/* Upper Row: Tipologia e Avisos todos à esquerda */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="bg-slate-800 text-slate-200 text-xs font-semibold px-2 py-0.5 rounded border border-slate-700">
+                            {auc.propertyType} • {auc.sizeSqm} m²
+                            {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
+                            {auc.parkingSpaces ? ` • ${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : ''}
+                          </span>
+
+                          {/* Modalidade fica no slot do status de fluxo para imóveis Caixa. */}
+                          {!isCaixaAuction && (() => {
+                            const badge = getSaleModeBadge(auc);
+                            return (
+                              <span 
+                                className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 shadow-sm transition-all ${badge.className}`}
+                                title={`Modalidade de Aquisição: ${badge.label}`}
+                              >
+                                <span className="text-xs leading-none">{badge.icon}</span>
+                                <span className="tracking-tight">{badge.label}</span>
+                              </span>
+                            );
+                          })()}
+
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
                             auc.riskLevel === 'Baixo' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' :
                             auc.riskLevel === 'Médio' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
@@ -756,27 +1024,88 @@ export default function Dashboard({
                           }`}>
                             Risco {auc.riskLevel}
                           </span>
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                            auc.status === 'Arrematado' ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' :
-                            auc.status === 'Analisado' ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' :
-                            'bg-slate-800 text-slate-300 border-slate-700'
-                          }`}>
-                            {auc.status}
-                          </span>
+
+                          {isCaixaAuction ? (() => {
+                            const badge = getSaleModeBadge(auc);
+                            return (
+                              <span
+                                className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 shadow-sm transition-all ${badge.className}`}
+                                title={`Modalidade oficial da Caixa: ${badge.label}`}
+                              >
+                                <span className="text-xs leading-none">{badge.icon}</span>
+                                <span className="tracking-tight">{badge.label}</span>
+                              </span>
+                            );
+                          })() : (
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                              auc.status === 'Arrematado' ? 'bg-purple-500/15 text-purple-300 border-purple-500/30' :
+                              auc.status === 'Analisado' ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' :
+                              'bg-slate-800 text-slate-300 border-slate-700'
+                            }`}>
+                              {auc.status}
+                            </span>
+                          )}
+
+                          {/* Alerta de Comunidade no Parâmetro Crítico (<= 30m) */}
+                          {auc.isCommunityRisk && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/60 flex items-center gap-1">
+                              ⛔ {auc.communityName ? `${auc.communityName}` : 'Comunidade'} {auc.factionName ? `(${auc.factionName})` : ''}
+                            </span>
+                          )}
+
+                          {/* Alerta Informativo de Proximidade (31m a 500m): NÃO altera valor nem liquidez */}
+                          {!auc.isCommunityRisk && auc.nearbyCommunityName && (
+                            <span
+                              className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800/50 flex items-center gap-1 cursor-help"
+                              title={`Localizado a ~${auc.nearbyCommunityDistanceM || 300}m da comunidade ${auc.nearbyCommunityName}. Por estar fora do raio crítico de 30m, não afeta o valor do imóvel nem a liquidez.`}
+                            >
+                              ⚠️ Próx. Comunidade: {auc.nearbyCommunityName} (~{auc.nearbyCommunityDistanceM || 300}m)
+                            </span>
+                          )}
+
+                          {isFeatured && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                              Destaque ★
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Title & Address */}
+                        <div className="space-y-0.5">
+                          <h3 className="text-sm sm:text-base font-bold text-white leading-snug line-clamp-2 font-display hover:text-slate-200 transition-colors" title={auc.title}>
+                            {auc.title}
+                          </h3>
+                          <div className="flex items-center text-xs text-slate-400 space-x-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="truncate" title={`${auc.address} (${auc.neighborhood} - ${auc.state || 'SP'})`}>
+                              {auc.address} ({auc.neighborhood} - {auc.state || 'SP'})
+                            </span>
+                          </div>
+                          {auc.origin !== 'caixa' && auc.origin !== 'caixa_radar' && (
+                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-slate-400 font-mono pt-0.5">
+                              <span>Portal: <strong className="text-slate-200">{getAuctionHost(auc.auctionLink)}</strong></span>
+                              <span>1ª praça: <strong className="text-slate-200">{formatAuctionDate(auc.firstAuctionDate || auc.auctionDate)}</strong></span>
+                              {auc.secondAuctionDate && <span>2ª praça: <strong className="text-slate-200">{formatAuctionDate(auc.secondAuctionDate)}</strong></span>}
+                              <span>Modalidade: <strong className="text-slate-200">{auc.saleMode || getSaleModeBadge(auc).label}</strong></span>
+                            </div>
+                          )}
+                          {auc.valuationBasis && (
+                            <div className="text-[9px] text-amber-300/90 font-mono pt-0.5">{auc.valuationBasis}</div>
+                          )}
+                          {auc.divergentNeighborhoodNotice && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className="text-[9.5px] bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded border border-amber-800/60 font-mono font-bold flex items-center gap-1" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
+                                <span>⚠️</span>
+                                <span>{auc.divergentNeighborhoodNotice}</span>
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Title & Address */}
-                      <div className="space-y-1">
-                        <h3 className="text-sm sm:text-base font-bold text-white leading-snug line-clamp-2 font-display hover:text-slate-200 transition-colors" title={auc.title}>
-                          {auc.title}
-                        </h3>
-                        <div className="flex items-center text-xs text-slate-400 mt-1 space-x-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="truncate" title={`${auc.address} (${auc.neighborhood} - ${auc.state || 'SP'})`}>
-                            {auc.address} ({auc.neighborhood} - {auc.state || 'SP'})
-                          </span>
-                        </div>
+                      {/* Foto do Imóvel / Thumbnail na DIREITA */}
+                      <div className="shrink-0 pt-0.5">
+                        <PropertyThumbnail property={auc} size="md" />
                       </div>
                     </div>
 
@@ -804,8 +1133,8 @@ export default function Dashboard({
                       {/* Col 3: Lucro Estimado */}
                       <div className="flex flex-col justify-center">
                         <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Lucro Estimado</span>
-                        <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${(auc.calculatedProfit || 0) >= 0 ? 'text-white' : 'text-rose-400'}`}>
-                          {formatBRL(auc.calculatedProfit || 0)}
+                        <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${auc.hasMicroBenchmark === false ? 'text-slate-400' : (auc.calculatedProfit || 0) >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                          {auc.hasMicroBenchmark === false || auc.calculatedProfit === undefined ? 'Sob consulta' : formatBRL(auc.calculatedProfit || 0)}
                         </span>
                       </div>
 
@@ -819,7 +1148,9 @@ export default function Dashboard({
                           <span className="text-[8.5px] text-amber-400/80 font-mono">ℹ️</span>
                         </div>
                         <span className="text-xs sm:text-sm font-black text-amber-300 font-mono block mt-0.5">
-                          {auc.estimatedValue ? formatBRL(auc.estimatedValue) : (auc.itbiUnitValueAvg ? formatBRL(auc.itbiUnitValueAvg * auc.sizeSqm) : 'N/A')}
+                          {auc.hasMicroBenchmark === false || (!auc.estimatedValue && !auc.itbiStreetAvgSqm)
+                            ? <span className="text-amber-400/90 font-mono text-[11px]">Sem amostragem</span>
+                            : (auc.estimatedValue ? formatBRL(auc.estimatedValue) : (auc.itbiUnitValueAvg ? formatBRL(auc.itbiUnitValueAvg * auc.sizeSqm) : 'N/A'))}
                         </span>
 
                         {/* Tooltip flutuante no hover */}
@@ -844,10 +1175,11 @@ export default function Dashboard({
                       <div className="flex flex-col justify-center">
                         <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">ROI Projetado</span>
                         <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
+                          auc.hasMicroBenchmark === false ? 'text-slate-400' :
                           (auc.calculatedRoi || 0) > 40 ? 'text-emerald-400' : 
                           (auc.calculatedRoi || 0) > 20 ? 'text-indigo-400' : 'text-slate-200'
                         }`}>
-                          {auc.calculatedRoi ? auc.calculatedRoi.toLocaleString('pt-BR') : '0'}%
+                          {auc.hasMicroBenchmark === false || auc.calculatedRoi === undefined ? 'Sob consulta' : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
                         </span>
                       </div>
 
@@ -866,33 +1198,9 @@ export default function Dashboard({
                           const roi = auc.calculatedRoi || 0;
                           const profit = auc.calculatedProfit || 0;
                           
-                          let effScore = auc.liquidityScore || 5;
-
-                          if (auc.isCommunityRisk) {
-                            effScore = Math.min(effScore, 2);
-                          } else if (roi <= 0 || profit <= 0) {
-                            effScore = 1;
-                          } else if (streetCount === 0) {
-                            effScore = Math.min(effScore, 2);
-                          } else if (streetCount === 1) {
-                            effScore = Math.min(effScore, 3);
-                          } else if (streetCount === 2) {
-                            effScore = Math.min(effScore, 5);
-                          } else if (streetCount < 5) {
-                            effScore = Math.min(effScore, 6);
-                          }
-
-                          if (roi < 20) {
-                            effScore = Math.min(effScore, 3);
-                          } else if (roi < 30) {
-                            effScore = Math.min(effScore, 5);
-                          } else if (roi < 45) {
-                            effScore = Math.min(effScore, 7);
-                          }
-
-                          if (profit < 30000) {
-                            effScore = Math.min(effScore, 4);
-                          }
+                          // A nota é calculada e persistida no servidor. O card
+                          // só a exibe, evitando regras concorrentes de 1/10.
+                          const effScore = Math.max(1, Math.min(10, auc.liquidityScore ?? 5));
 
                           return (
                             <>
@@ -948,7 +1256,11 @@ export default function Dashboard({
                           <span className="text-[8.5px] text-emerald-400/80 font-mono">ℹ️</span>
                         </div>
                         <span className="text-xs sm:text-sm font-black text-emerald-300 font-mono block mt-0.5">
-                          {formatBRL(auc.vendaBaixaPrice || (auc.estimatedValue ? Math.round(auc.estimatedValue * 0.90) : 0))}
+                          {auc.hasMicroBenchmark === false || !auc.vendaBaixaPrice ? (
+                            <span className="text-slate-400 font-mono text-[11px]">Sem amostragem</span>
+                          ) : (
+                            formatBRL(auc.vendaBaixaPrice)
+                          )}
                         </span>
 
                         {/* Tooltip flutuante no hover */}
@@ -972,6 +1284,22 @@ export default function Dashboard({
                         </div>
                       </div>
                     </div>
+
+                    {!auc.isCommunityRisk && auc.isNearbyCommunity && auc.nearbyCommunityName && (
+                      <div className="border border-amber-700/50 bg-amber-950/30 px-3 py-2 rounded-lg text-[10px] text-amber-200 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <strong>Proximidade informativa:</strong>
+                        <span>{auc.nearbyCommunityName}{auc.nearbyFactionName ? ` (${auc.nearbyFactionName})` : ''} a aproximadamente {auc.nearbyCommunityDistanceM || 300} m.</span>
+                        <span className="text-amber-300/80">Fora do critério crítico: não altera valor nem liquidez.</span>
+                      </div>
+                    )}
+
+                    {auc.streetRadiusCalibrated && auc.itbiSurroundingAvgSqm && auc.itbiStreetAvgSqm && (
+                      <div className="border border-indigo-700/50 bg-indigo-950/30 px-3 py-2 rounded-lg text-[10px] text-indigo-200 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <strong>Calibragem rua–raio:</strong>
+                        <span>Rua R$ {auc.itbiStreetAvgSqm.toLocaleString('pt-BR')}/m² versus raio R$ {auc.itbiSurroundingAvgSqm.toLocaleString('pt-BR')}/m².</span>
+                        <span className="text-indigo-300/80">Diferença atípica ponderada pela amostragem válida.</span>
+                      </div>
+                    )}
 
                     {/* Real Estate Portals Comparison (Sem Links Externos que abrem páginas em branco) */}
                     <div data-tour={idx === 0 ? "card-portals" : undefined} className="border-t border-slate-800/80 pt-2.5 flex flex-col space-y-2 text-xs">
@@ -1178,13 +1506,13 @@ export default function Dashboard({
                   itbiUnitValueAvg: simulatingAuction.itbiUnitValueAvg,
                   portalZapAvg: simulatingAuction.portalZapAvg,
                   portalQuintoAndarAvg: simulatingAuction.portalQuintoAndarAvg,
-                  vendaBaixaPrice: simulatingAuction.vendaBaixaPrice || Math.round((simulatingAuction.estimatedValue || 0) * 0.90),
+                  vendaBaixaPrice: simulatingAuction.vendaBaixaPrice,
                   vendaMediaPrice: simulatingAuction.vendaMediaPrice,
                   ageDepreciationPct: simulatingAuction.ageDepreciationPct,
                   buildingAge: (simulatingAuction as any).buildingAge,
                 }}
                 onUpdateProperty={async (updates) => {
-                  setAuctions(prev => prev.map(a => a.id === simulatingAuction.id ? { ...a, ...updates } : a));
+                  await onUpdateProperty({ id: simulatingAuction.id, ...updates });
                   setSimulatingAuction(prev => prev ? { ...prev, ...updates } : null);
                   try {
                     fetch(`/api/auctions/${simulatingAuction.id}`, {

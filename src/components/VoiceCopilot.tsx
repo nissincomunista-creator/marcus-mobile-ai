@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, Volume2, VolumeX, Send, Sparkles, CheckCircle2, ArrowRight, RefreshCw } from 'lucide-react';
 import { voiceService } from '../services/voiceService';
 import { sendCopilotMessage, CopilotResponse } from '../services/geminiService';

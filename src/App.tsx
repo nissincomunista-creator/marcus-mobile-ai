@@ -118,7 +118,7 @@ export default function App() {
     }
   }, [theme]);
 
-  const [activeTab, setActiveTab] = useState<'garimpo' | 'calculadora' | 'itbi' | 'mapa' | 'perfil'>('garimpo');
+  const [activeTab, setActiveTab] = useState<'garimpo' | 'calculadora' | 'itbi' | 'mapa' | 'capital' | 'perfil'>('garimpo');
   const [auctions, setAuctions] = useState<AuctionProperty[]>([]);
   const [itbiStats, setItbiStats] = useState<any[]>([]);
   const [itbiCount, setItbiCount] = useState<number>(0);
@@ -129,13 +129,14 @@ export default function App() {
   
   // Filter and Sorting state passed to Dashboard
   const [selectedNeighborhoodFilter, setSelectedNeighborhoodFilter] = useState('');
+  const [selectedZoneFilter, setSelectedZoneFilter] = useState('');
   const [selectedCityFilter, setSelectedCityFilter] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState('');
   const [selectedStateFilter, setSelectedStateFilter] = useState('RJ');
   const [maxPriceFilter, setMaxPriceFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [sortBy, setSortBy] = useState('roi');
-  const [selectedOriginFilter, setSelectedOriginFilter] = useState<'caixa' | 'judicial' | 'extrajudicial' | 'portal'>('caixa');
+  const [selectedOriginFilter, setSelectedOriginFilter] = useState<'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal'>('caixa');
 
   // Modal toggle state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -340,6 +341,52 @@ export default function App() {
         setSelectedOriginFilter('caixa_radar');
       } else {
         alert('Aviso: ' + (data.error || 'Erro ao sincronizar imóveis Caixa.'));
+      }
+    } catch (e: any) {
+      alert('Erro na sincronização: ' + e.message);
+    } finally {
+      setIsMining(false);
+    }
+  };
+
+  const handleSyncExtrajudiciaisAuto = async () => {
+    setIsMining(true);
+    try {
+      const res = await authFetch('/api/garimpar/extrajudiciais-auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ states: ['RJ', 'SP'] })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || 'Varredura de leilões extrajudiciais concluída com sucesso!');
+        await refreshMarketData();
+        setSelectedOriginFilter('extrajudicial');
+      } else {
+        alert('Aviso: ' + (data.error || 'Erro ao sincronizar leilões extrajudiciais.'));
+      }
+    } catch (e: any) {
+      alert('Erro na sincronização: ' + e.message);
+    } finally {
+      setIsMining(false);
+    }
+  };
+
+  const handleSyncJudiciaisAuto = async () => {
+    setIsMining(true);
+    try {
+      const res = await authFetch('/api/garimpar/judiciais-auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ states: ['RJ', 'SP'] })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || 'Varredura de leilões judiciais concluída com sucesso!');
+        await refreshMarketData();
+        setSelectedOriginFilter('judicial');
+      } else {
+        alert('Aviso: ' + (data.error || 'Erro ao sincronizar leilões judiciais.'));
       }
     } catch (e: any) {
       alert('Erro na sincronização: ' + e.message);
@@ -589,6 +636,7 @@ export default function App() {
       }
       
       setSelectedNeighborhoodFilter('');
+      setSelectedZoneFilter('');
       setSelectedCityFilter('');
       setSelectedTypeFilter('');
       setSelectedStateFilter('');
@@ -1150,6 +1198,8 @@ export default function App() {
                       setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
                       selectedCityFilter={selectedCityFilter}
                       setSelectedCityFilter={setSelectedCityFilter}
+                      selectedZoneFilter={selectedZoneFilter}
+                      setSelectedZoneFilter={setSelectedZoneFilter}
                       selectedTypeFilter={selectedTypeFilter}
                       setSelectedTypeFilter={setSelectedTypeFilter}
                       selectedStateFilter={selectedStateFilter}
@@ -1164,6 +1214,8 @@ export default function App() {
                       onGarimparCaixa={handleGarimparCaixa}
                       onGarimparPortais={handleGarimparPortais}
                       onSyncCaixaAuto={handleSyncCaixaAuto}
+                      onSyncExtrajudiciaisAuto={handleSyncExtrajudiciaisAuto}
+                      onSyncJudiciaisAuto={handleSyncJudiciaisAuto}
                       isMining={isMining}
                       itbiCount={itbiCount}
                       onUpdateProperty={handleUpdatePropertyDirectly}
@@ -1219,6 +1271,8 @@ export default function App() {
                           itbiUnitValueAvg: activeSelectedAuction.itbiUnitValueAvg,
                           portalZapAvg: activeSelectedAuction.portalZapAvg,
                           portalQuintoAndarAvg: activeSelectedAuction.portalQuintoAndarAvg,
+                          vendaBaixaPrice: activeSelectedAuction.vendaBaixaPrice,
+                          vendaMediaPrice: activeSelectedAuction.vendaMediaPrice,
                         }}
                         onClose={() => setSelectedAuctionId(null)}
                       />

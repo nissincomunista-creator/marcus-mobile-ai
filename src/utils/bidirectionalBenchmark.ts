@@ -17,12 +17,41 @@ export interface BidirectionalBenchmarkResult {
   rua: TierStats;
   predio: TierStats;
   mediaCorteReal: number;
-  nivelUtilizado: 'Prédio' | 'Rua' | 'Raio Entorno' | 'Bairro';
+  nivelUtilizado: 'Prédio' | 'Rua' | 'Raio Entorno' | 'Bairro' | 'Sem Dados Suficientes';
   flipRapidoSqm: number;
   gabaritoTotal: number;
   flipTotal: number;
+  ruaRaioDesvioPct: number;
+  ruaRaioCalibrada: boolean;
   minSimilarSize: number;
   maxSimilarSize: number;
+  hasMicroData: boolean;
+}
+
+export function isGenericStreet(str?: string | null): boolean {
+  if (!str) return true;
+  const s = str.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  
+  if (s.length < 3) return true;
+
+  // Generic patterns: "rua a", "rua 1", "estrada 2", "travessa b", "alameda 10"
+  const genericPrefixRegex = /^(rua|r\b|avenida|av\b|estrada|estr\b|travessa|trav\b|alameda|al\b|via|beco|praca|pc\b)\s+([a-z]|[0-9]{1,3})$/i;
+  if (genericPrefixRegex.test(s)) return true;
+
+  const genericKeywords = [
+    'projetad', 'sem nome', 's/n', 'nao informado', 'nao informada', 
+    'loteamento', 'quadra', 'gleba', 'chacara', 'sitio', 'estrada municipal',
+    'zona rural', 'area rural', 'area de posse', 'vila nova', 'povoado'
+  ];
+  if (genericKeywords.some(k => s.includes(k))) return true;
+
+  const core = cleanStreetCore(s);
+  if (core.length <= 2) return true;
+
+  return false;
 }
 
 export function cleanStreetCore(s: string | undefined | null): string {
@@ -48,6 +77,13 @@ export function cleanStreetNumber(n: string | undefined | null): string {
   return match ? match[0] : '';
 }
 
+export function computeMedian(vals: number[]): number {
+  if (vals.length === 0) return 0;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
 /**
  * Motor Pericial de Corte Bidirecional de Outliers (NBR 14.653)
  * 1. Média preliminar da rua antes de cortar.
@@ -64,18 +100,48 @@ export function computeBidirectionalBenchmarks(
   targetNumber: string | undefined | null,
   targetSize: number,
   sizeMode: 'similar' | 'all' = 'similar',
-  radiusKm: number = 0.5
+  radiusKm: number = 0.5,
+  targetPropType?: string
 ): BidirectionalBenchmarkResult | null {
   if (!allNeighborhoodTxs || allNeighborhoodTxs.length === 0) return null;
 
-  const targetCore = cleanStreetCore(targetStreet);
-  const targetNum = cleanStreetNumber(targetNumber);
   const size = targetSize > 0 ? targetSize : 60;
-
-  // Filtro de Metragem Similar (±33% da área privativa do imóvel)
   const minSize = Math.max(15, Math.round(size * 0.67));
   const maxSize = Math.round(size * 1.33);
 
+  // Endereços genéricos (rua projetada, rua a, quadra, etc.): vedado arbitramento
+  if (isGenericStreet(targetStreet)) {
+    return {
+      bairro: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      raio: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      rua: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      predio: { saneada: 0, total: 0, validas: 0, expurgadas: 0 },
+      mediaCorteReal: 0,
+      nivelUtilizado: 'Sem Dados Suficientes',
+      flipRapidoSqm: 0,
+      gabaritoTotal: 0,
+      flipTotal: 0,
+      ruaRaioDesvioPct: 0,
+      ruaRaioCalibrada: false,
+      minSimilarSize: minSize,
+      maxSimilarSize: maxSize,
+      hasMicroData: false
+    };
+  }
+
+  const targetCore = cleanStreetCore(targetStreet);
+  const targetNum = cleanStreetNumber(targetNumber);
+
+  // Isolamento Estrito de Tipologia (Casa não pode ser precificada com m² de Apartamento, e vice-versa):
+  let typeTxs = allNeighborhoodTxs;
+  if (targetPropType) {
+    const exactTypeTxs = allNeighborhoodTxs.filter(t => t.propertyType === targetPropType);
+    if (exactTypeTxs.length >= 2) {
+      typeTxs = exactTypeTxs;
+    }
+  }
+
+  // Filtro de Metragem Similar (±33% da área privativa do imóvel)
   // Aplica filtro de área caso o usuário selecione 'similar'
   const filterByArea = (txs: ItbiTransaction[]) => {
     if (sizeMode === 'all') return txs;
@@ -83,7 +149,7 @@ export function computeBidirectionalBenchmarks(
     return filtered.length >= 2 ? filtered : txs;
   };
 
-  const poolTxs = filterByArea(allNeighborhoodTxs);
+  const poolTxs = filterByArea(typeTxs);
 
   // 1. Nível Bairro Macro (Saneamento de Segurança: valores absurdos e Chauvenet 2.2σ)
   const bVals = poolTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v >= 800 && v <= 80000);
@@ -100,29 +166,60 @@ export function computeBidirectionalBenchmarks(
   const ruaTxs = targetCore ? poolTxs.filter(t => cleanStreetCore(t.street) === targetCore) : [];
   const raioTxs = targetCore ? poolTxs.filter(t => cleanStreetCore(t.street) !== targetCore) : poolTxs;
 
-  // 2. Nível Raio (Ruas do Entorno)
+  // 2. Nível Raio (Ruas do Entorno). O expurgo usa Chauvenet operacional
+  // em 2 desvios-padrão, sem uma faixa percentual que descarte comparáveis válidos.
   const raioVals = raioTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v >= 800 && v <= 80000);
   const raioPrelim = raioVals.length > 0 ? (raioVals.reduce((a, b) => a + b, 0) / raioVals.length) : bSaneada;
-  
-  // Balizado pelo Bairro (+/- 25% do bairro):
-  const refCorteRaio = (raioPrelim >= bSaneada * 0.70 && raioPrelim <= bSaneada * 1.30) ? raioPrelim : bSaneada;
-  const raioCorteMin = Math.round(refCorteRaio * 0.75);
-  const raioCorteMax = Math.round(refCorteRaio * 1.25);
-  const raioValid = raioVals.filter(v => v >= raioCorteMin && v <= raioCorteMax);
-  const raioSaneada = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : Math.round(refCorteRaio);
+  const raioVariance = raioVals.length > 0
+    ? raioVals.reduce((acc, value) => acc + Math.pow(value - raioPrelim, 2), 0) / raioVals.length
+    : 0;
+  const raioStd = Math.sqrt(raioVariance);
+  const refCorteRaio = Math.round(raioPrelim || bSaneada);
+  const raioCorteMin = raioStd > 0 ? Math.round(raioPrelim - (2 * raioStd)) : Math.round(raioPrelim);
+  const raioCorteMax = raioStd > 0 ? Math.round(raioPrelim + (2 * raioStd)) : Math.round(raioPrelim);
+  const raioValid = raioVals.filter(v => raioStd === 0 || Math.abs(v - raioPrelim) <= 2 * raioStd);
+  const raioSaneada = raioValid.length > 0
+    ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length)
+    : Math.round(refCorteRaio);
   const raioExpurgados = raioVals.length - raioValid.length;
 
-  // 3. Nível Rua: Média da rua antes de cortar, balizar com a média do raio, 25% acima corta, 25% abaixo corta
+  // 3. Nível Rua: Saneamento interno do cluster da rua (NBR 14.653)
+  // Se a rua possui amostragem própria, seu cluster factual tem supremacia hierárquica sobre o raio
   const ruaVals = ruaTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v >= 800 && v <= 80000);
   const ruaPrelim = ruaVals.length > 0 ? Math.round(ruaVals.reduce((a, b) => a + b, 0) / ruaVals.length) : 0;
 
-  // Parâmetro de corte da rua balizado diretamente no raio (ruas do entorno)
-  const refCorteRua = raioSaneada;
-  const ruaCorteMin = Math.round(refCorteRua * 0.75);
-  const ruaCorteMax = Math.round(refCorteRua * 1.25);
+  let ruaValid: number[] = [];
+  let ruaSaneada = 0;
+  let ruaCorteMin = 0;
+  let ruaCorteMax = 0;
+  let refCorteRua = raioSaneada;
 
-  const ruaValid = ruaVals.filter(v => v >= ruaCorteMin && v <= ruaCorteMax);
-  const ruaSaneada = ruaValid.length > 0 ? Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length) : refCorteRua;
+  if (ruaVals.length >= 2) {
+    const ruaMed = computeMedian(ruaVals);
+    refCorteRua = ruaMed;
+    ruaCorteMin = Math.round(ruaMed * 0.65);
+    ruaCorteMax = Math.round(ruaMed * 1.35);
+    ruaValid = ruaVals.filter(v => v >= ruaCorteMin && v <= ruaCorteMax);
+    if (ruaValid.length === 0) ruaValid = ruaVals;
+    ruaSaneada = Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length);
+  } else if (ruaVals.length === 1) {
+    const anchor = raioSaneada > 0 ? raioSaneada : bSaneada;
+    refCorteRua = anchor;
+    ruaCorteMin = Math.round(anchor * 0.55);
+    ruaCorteMax = Math.round(anchor * 1.45);
+    if (ruaVals[0] >= ruaCorteMin && ruaVals[0] <= ruaCorteMax) {
+      ruaValid = [ruaVals[0]];
+      ruaSaneada = ruaVals[0];
+    } else {
+      ruaValid = [];
+      ruaSaneada = 0;
+    }
+  } else {
+    ruaValid = [];
+    ruaSaneada = 0;
+    ruaCorteMin = 0;
+    ruaCorteMax = 0;
+  }
   const ruaExpurgados = ruaVals.length - ruaValid.length;
 
   // 4. Nível Prédio (Mesmo Edifício / Número Predial)
@@ -130,47 +227,113 @@ export function computeBidirectionalBenchmarks(
   const predioVals = predioTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v >= 800 && v <= 80000);
   const predioPrelim = predioVals.length > 0 ? Math.round(predioVals.reduce((a, b) => a + b, 0) / predioVals.length) : 0;
 
-  let predioValid = [];
+  let predioValid: number[] = [];
   let predioSaneada = 0;
   let predioCorteMin = 0;
   let predioCorteMax = 0;
 
-  // Se o prédio compreende 100% da amostragem da rua, herda o saneamento balizado pelo raio sem duplo expurgo
-  if (predioVals.length === ruaVals.length && ruaVals.length > 0) {
-    predioValid = ruaValid;
-    predioSaneada = ruaSaneada;
-    predioCorteMin = ruaCorteMin;
-    predioCorteMax = ruaCorteMax;
-  } else if (predioVals.length > 0) {
-    const refCortePredio = ruaSaneada > 0 ? ruaSaneada : raioSaneada;
-    predioCorteMin = Math.round(refCortePredio * 0.75);
-    predioCorteMax = Math.round(refCortePredio * 1.25);
+  if (predioVals.length >= 2) {
+    const pMed = computeMedian(predioVals);
+    predioCorteMin = Math.round(pMed * 0.65);
+    predioCorteMax = Math.round(pMed * 1.35);
     predioValid = predioVals.filter(v => v >= predioCorteMin && v <= predioCorteMax);
-    predioSaneada = predioValid.length > 0 ? Math.round(predioValid.reduce((a, b) => a + b, 0) / predioValid.length) : refCortePredio;
+    if (predioValid.length === 0) predioValid = predioVals;
+    predioSaneada = Math.round(predioValid.reduce((a, b) => a + b, 0) / predioValid.length);
+  } else if (predioVals.length === 1) {
+    const pAnchor = ruaSaneada > 0 ? ruaSaneada : (raioSaneada > 0 ? raioSaneada : bSaneada);
+    predioCorteMin = Math.round(pAnchor * 0.55);
+    predioCorteMax = Math.round(pAnchor * 1.45);
+    if (predioVals[0] >= predioCorteMin && predioVals[0] <= predioCorteMax) {
+      predioValid = [predioVals[0]];
+      predioSaneada = predioVals[0];
+    } else {
+      predioValid = [];
+      predioSaneada = 0;
+    }
+  } else {
+    predioValid = [];
+    predioSaneada = 0;
+    predioCorteMin = 0;
+    predioCorteMax = 0;
   }
   const predioExpurgados = predioVals.length - predioValid.length;
 
   // 5. DE TRÁS PRA FRENTE (Prédio -> Rua -> Raio -> Bairro)
-  // Convergência da Média de Corte Real
-  let mediaCorteReal = bSaneada;
-  let nivelUtilizado = 'Bairro';
+  // Calibragem Conservadora Pericial: Quando há poucas amostras (1 ou 2),
+  // NUNCA inflar o valor se a amostragem real for menor que o bairro!
+  let mediaCorteReal = 0;
+  let nivelUtilizado: 'Prédio' | 'Rua' | 'Raio Entorno' | 'Bairro' | 'Sem Dados Suficientes' = 'Sem Dados Suficientes';
+  let hasMicroData = false;
+  const ruaRaioDesvioPct = ruaSaneada > 0 && raioSaneada > 0
+    ? Math.round(((ruaSaneada - raioSaneada) / raioSaneada) * 100)
+    : 0;
+  let ruaRaioCalibrada = false;
 
   if (predioValid.length > 0) {
-    mediaCorteReal = predioSaneada;
+    const anchor = ruaSaneada > 0 ? ruaSaneada : raioSaneada;
+    if (predioValid.length === 1) {
+      if (predioSaneada <= anchor) {
+        mediaCorteReal = predioSaneada;
+      } else {
+        const blended = (predioSaneada * 0.40) + (anchor * 0.60);
+        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
+      }
+    } else if (predioValid.length === 2) {
+      if (predioSaneada <= anchor) {
+        mediaCorteReal = predioSaneada;
+      } else {
+        const blended = (predioSaneada * 0.70) + (anchor * 0.30);
+        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
+      }
+    } else {
+      mediaCorteReal = predioSaneada;
+    }
     nivelUtilizado = 'Prédio';
+    hasMicroData = true;
   } else if (ruaValid.length > 0) {
-    mediaCorteReal = ruaSaneada;
+    const anchor = raioSaneada > 0 ? raioSaneada : bSaneada;
+    if (ruaValid.length === 1) {
+      // 1 amostra na rua: Respeitar a realidade fática da rua de forma estritamente conservadora.
+      // Se a rua for mais barata que o bairro (ex: 1382 vs 1874), NUNCA inflar o valor para cima!
+      if (ruaSaneada <= anchor) {
+        mediaCorteReal = ruaSaneada;
+      } else {
+        const blended = (ruaSaneada * 0.40) + (anchor * 0.60);
+        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
+      }
+    } else if (ruaValid.length === 2) {
+      if (ruaSaneada <= anchor) {
+        mediaCorteReal = ruaSaneada;
+      } else {
+        const blended = (ruaSaneada * 0.70) + (anchor * 0.30);
+        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
+      }
+    } else {
+      mediaCorteReal = ruaSaneada;
+    }
+
+    // Divergência material rua x raio: pondera a rua sem permitir que uma
+    // anomalia local exceda 30% da mediana saneada do bairro.
+    if (Math.abs(ruaRaioDesvioPct) > 25 && raioSaneada > 0) {
+      const blended = (ruaSaneada * 0.65) + (raioSaneada * 0.35);
+      const neighborhoodCeiling = bSaneada > 0 ? bSaneada * 1.30 : Number.POSITIVE_INFINITY;
+      mediaCorteReal = Math.round(Math.min(neighborhoodCeiling, blended));
+      ruaRaioCalibrada = true;
+    }
     nivelUtilizado = 'Rua';
-  } else if (raioValid.length > 0) {
-    mediaCorteReal = raioSaneada;
-    nivelUtilizado = 'Raio Entorno';
+    hasMicroData = true;
+  } else {
+    // Sem amostragem fática na rua ou no edifício: NBR 14.653 veda arbitramento de Flip e Gabarito
+    mediaCorteReal = 0;
+    nivelUtilizado = 'Sem Dados Suficientes';
+    hasMicroData = false;
   }
 
   // 6. Aplicação no Flip Rápido (60 dias) e Gabarito
-  // Deságio tático de 10% para liquidez imediata
-  const flipRapidoSqm = Math.round(mediaCorteReal * 0.90);
-  const gabaritoTotal = mediaCorteReal * size;
-  const flipTotal = flipRapidoSqm * size;
+  // Deságio tático de 10% para liquidez imediata - SOMENTE se houver amostragem na microregião
+  const flipRapidoSqm = hasMicroData ? Math.round(mediaCorteReal * 0.90) : 0;
+  const gabaritoTotal = hasMicroData ? mediaCorteReal * size : 0;
+  const flipTotal = hasMicroData ? flipRapidoSqm * size : 0;
 
   return {
     bairro: {
@@ -214,7 +377,10 @@ export function computeBidirectionalBenchmarks(
     flipRapidoSqm,
     gabaritoTotal,
     flipTotal,
+    ruaRaioDesvioPct,
+    ruaRaioCalibrada,
     minSimilarSize: minSize,
-    maxSimilarSize: maxSize
+    maxSimilarSize: maxSize,
+    hasMicroData
   };
 }

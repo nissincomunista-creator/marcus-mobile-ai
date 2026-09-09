@@ -15,7 +15,7 @@ export async function sendCopilotMessage(
   currentCalculator: CalculatorState
 ): Promise<CopilotResponse> {
   try {
-    const res = await fetch('/api/copilot/chat', {
+    const res = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -23,7 +23,7 @@ export async function sendCopilotMessage(
       body: JSON.stringify({
         message: userText,
         history: history.slice(-6).map(h => ({
-          role: h.sender === 'user' ? 'user' : 'model',
+          sender: h.sender === 'user' ? 'user' : 'bot',
           text: h.text
         })),
         currentCalculator
@@ -35,7 +35,10 @@ export async function sendCopilotMessage(
     }
 
     const data = await res.json();
-    return data;
+    return {
+      replyText: data.replyText || data.reply || 'Não foi possível gerar uma resposta.',
+      action: data.action
+    };
   } catch (err: any) {
     console.error('Failed to communicate with Gemini Copilot:', err);
     return {

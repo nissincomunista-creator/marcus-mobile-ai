@@ -1,4 +1,4 @@
-export type PropertyType = 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno';
+export type PropertyType = 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno' | 'Lote';
 
 export const VALID_ITBI_CITIES_BY_STATE: Record<string, string[]> = {
   RJ: ['Rio de Janeiro', 'Niterói'],
@@ -55,6 +55,7 @@ export interface AuctionProperty {
   estimatedValue: number;
   auctionDate: string;
   auctionLink?: string;
+  auctioneerName?: string;
   description?: string;
   status: 'Pendente' | 'Analisado' | 'Arrematado' | 'Arquivado';
   occupied: boolean;
@@ -71,6 +72,9 @@ export interface AuctionProperty {
   itbiStreetCount?: number; // Number of transactions on the same street
   itbiSurroundingAvgSqm?: number; // Average $/m2 on surrounding streets (within 1km radius)
   itbiSurroundingCount?: number; // Number of transactions on surrounding streets
+  streetRadiusDeviationPct?: number; // Street versus surrounding-radius divergence
+  streetRadiusCalibrated?: boolean; // Street value was statistically blended with radius
+  valuationBasis?: string; // Audit label for the source used in the valuation
   calculatedRoi?: number; // ROI percentage
   calculatedProfit?: number; // Capital gains
   liquidityScore?: number; // 1-10 score
@@ -80,6 +84,16 @@ export interface AuctionProperty {
   factionName?: string; // e.g. CV, TCP, ADA
   buildingAge?: number; // Estimated age of building in years
   ageDepreciationPct?: number; // Ross-Heidecke subtle depreciation (1-5%)
+  hasMicroBenchmark?: boolean; // True if building, street or radius ITBI deeds exist (NBR 14.653)
+  officialNeighborhood?: string; // Real municipal neighborhood from official registry / geocoding
+  originalListedNeighborhood?: string; // Original neighborhood listed by Caixa
+  divergentNeighborhoodNotice?: string; // Notice explaining divergence (e.g. Santa Rosa -> Cubango)
+  imageUrl?: string; // Direct real photo URL of the property
+  zone?: string; // Macro urban zone (Zona Sul, Zona Norte, Região Oceânica, etc.)
+  isNearbyCommunity?: boolean; // True if within ~500m of community (does NOT reduce valuation/liquidity)
+  nearbyCommunityName?: string; // Name of nearby community
+  nearbyFactionName?: string; // Controlling faction if known
+  nearbyCommunityDistanceM?: number; // Distance in meters
   
   // AI Generated fields
   aiAppreciationScore?: number; // 1-10 score
@@ -120,6 +134,9 @@ export interface AuctionProperty {
   paymentTerms?: string;
   maxInstallments?: number;
   minDownpaymentPercent?: number;
+  saleMode?: string; // e.g. 'Venda Direta Online', 'Licitação Aberta', 'Leilão Online', 'Venda Online'
+  firstAuctionDate?: string;
+  secondAuctionDate?: string;
 
   // AI detailed legal checks
   legalAnalysisDebtor?: string;
@@ -129,6 +146,58 @@ export interface AuctionProperty {
   parkingSpaces?: number;
   lat?: number;
   lng?: number;
+  evaluationPrice?: number;
+  isCascadeProtected?: boolean;
+  communityDistanceM?: number;
+  itbiTax?: number;
+  registryCost?: number;
+  condoDebts?: number;
+  precisa_revisao?: boolean;
+  status_geocodificacao?: string;
+}
+
+export interface CopilotMessage {
+  id: string;
+  sender: 'user' | 'gemini' | 'system';
+  text: string;
+  timestamp: string;
+  actionExecuted?: CopilotAction;
+}
+
+export interface CopilotAction {
+  type: 'fill_calculator' | 'filter_radar' | 'itbi_lookup' | 'switch_tab';
+  data: Record<string, unknown>;
+  summary: string;
+}
+
+export interface CalculatorState {
+  state: string;
+  city: string;
+  neighborhood: string;
+  sizeSqm: number;
+  auctionPrice: number;
+  estimatedRepair: number;
+  evictionCost: number;
+  itbiSqm: number;
+  marketValueItbi: number;
+  totalAcquisitionCost: number;
+  netProfit: number;
+  roiPercent: number;
+  lastUpdatedByVoice?: boolean;
+  [key: string]: unknown;
+}
+
+export interface ItbiStats {
+  state: string;
+  city: string;
+  neighborhood: string;
+  propertyType: string;
+  averageValueSqm: number;
+  medianValueSqm?: number;
+  minValueSqm: number;
+  maxValueSqm: number;
+  transactionCount: number;
+  averageTotalValue: number;
 }
 
 export interface ItbiTransaction {
@@ -145,6 +214,8 @@ export interface ItbiTransaction {
   number?: string;     // Building / House number (e.g. '388')
   complement?: string; // Complement (e.g. 'Apto 302', 'Bloco 1')
   description?: string;// Full property description from ITBI
+  distanceKm?: number; // Verified geodesic distance from the calculator target street
+  distanceMeters?: number;
 }
 
 export interface NeighborhoodStats {
@@ -339,4 +410,3 @@ export interface MatriculaAnalysisReport {
   editalData?: EditalAuditData;
   analyzedAt?: string;
 }
-

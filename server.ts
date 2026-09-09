@@ -17,9 +17,19 @@ import { AuctionProperty, ItbiTransaction, PropertyType, User, Session, AccessCo
 import { initialAuctions, initialItbiTransactions } from './src/data.ts';
 import { scrapeLivePortals } from './portalScraper.ts';
 import { geocodeAddress, getCachedCoords, cleanQuery } from './geocodeService.ts';
-import { computeBidirectionalBenchmarks } from './src/utils/bidirectionalBenchmark.ts';
+import { computeBidirectionalBenchmarks, isGenericStreet } from './src/utils/bidirectionalBenchmark.ts';
+import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
+import { syncAuctioneersPipeline, AUCTIONEER_PORTALS } from './auctioneerSyncService.ts';
 
 dotenv.config();
+
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;
+    }
+  }
+}
 
 function normalizeString(str: string | null | undefined): string {
   if (!str) return '';
@@ -99,7 +109,24 @@ function phoneticStreet(street: string | null | undefined): string {
   return s;
 }
 
-const STREET_COORDS_CACHE_PATH = path.join(process.cwd(), 'street_coords_cache.json');
+type StreetCoordinates = { lat: number; lng: number };
+
+interface RadialStreetCoordinatesCacheEntry {
+  expiresAt: number;
+  coordinates: Record<string, StreetCoordinates>;
+}
+
+interface OsmRoadGeometry {
+  name: string;
+  geometry: StreetCoordinates[];
+}
+
+// This cache is keyed by the reference point, never just the street name. A
+// long avenue can have a very different nearest point depending on the target
+// address, so a global street centroid would corrupt the radial comparison.
+const radialStreetCoordinatesCache = new Map<string, RadialStreetCoordinatesCacheEntry>();
+const RADIAL_COORDINATES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_VALIDATED_STREET_FALLBACKS = 12;
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth radius in km
@@ -126,10 +153,14 @@ function getSimulatedDistanceKm(streetA: string, streetB: string): number {
 }
 
 interface CommunityRiskResult {
-  isRisk: boolean;
+  isRisk: boolean; // Somente true se dentro ou <= 30m (afeta valor e liquidez)
   name?: string;
   faction?: string;
   distanceMeters?: number;
+  isNearby?: boolean; // True se entre 31m e 500m (não afeta valor nem liquidez)
+  nearbyCommunityName?: string;
+  nearbyFaction?: string;
+  nearbyDistanceMeters?: number;
 }
 
 let factionFeatures: any[] = [];
@@ -165,6 +196,9 @@ function checkPropertyCommunityRisk(auc: AuctionProperty): CommunityRiskResult {
   // 1. Check coordinates against faction polygons if coords are valid
   if (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && factionFeatures.length > 0) {
     const pt: [number, number] = [lng, lat]; // [lng, lat]
+    let closestNearby: { name: string; faction?: string; dist: number } | null = null;
+    let minNearbyDist = Infinity;
+
     for (const f of factionFeatures) {
       const geom = f.geometry;
       if (!geom) continue;
@@ -174,7 +208,7 @@ function checkPropertyCommunityRisk(auc: AuctionProperty): CommunityRiskResult {
       for (const ring of coords) {
         if (!Array.isArray(ring) || ring.length < 3) continue;
 
-        // Bounding box pre-check (~150m = 0.0015 deg)
+        // Bounding box pre-check (~550m = 0.0050 deg)
         let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
         for (const p of ring) {
           if (p[0] < minLng) minLng = p[0];
@@ -183,8 +217,8 @@ function checkPropertyCommunityRisk(auc: AuctionProperty): CommunityRiskResult {
           if (p[1] > maxLat) maxLat = p[1];
         }
 
-        if (pt[0] >= minLng - 0.0015 && pt[0] <= maxLng + 0.0015 &&
-            pt[1] >= minLat - 0.0015 && pt[1] <= maxLat + 0.0015) {
+        if (pt[0] >= minLng - 0.0050 && pt[0] <= maxLng + 0.0050 &&
+            pt[1] >= minLat - 0.0050 && pt[1] <= maxLat + 0.0050) {
           if (pointInPolygon(pt, ring)) {
             return {
               isRisk: true,
@@ -194,29 +228,46 @@ function checkPropertyCommunityRisk(auc: AuctionProperty): CommunityRiskResult {
             };
           }
 
-          // Regra do Usuário: Somente DENTRO da favela ou até 30m. Passou de 30 metros, NÃO adicionar depreciação!
           const faction = f.properties?.f || '';
-          if (faction && faction !== 'NEU') {
-            for (const p of ring) {
-              const dx = (pt[0] - p[0]) * 111000 * Math.cos(pt[1] * Math.PI / 180);
-              const dy = (pt[1] - p[1]) * 111000;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist <= 30) {
-                return {
-                  isRisk: true,
-                  name: f.properties?.n || 'Comunidade',
-                  faction: faction,
-                  distanceMeters: Math.round(dist)
-                };
-              }
+          for (const p of ring) {
+            const dx = (pt[0] - p[0]) * 111000 * Math.cos(pt[1] * Math.PI / 180);
+            const dy = (pt[1] - p[1]) * 111000;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Regra Estrita do Usuário: Somente DENTRO da favela ou até 30m afeta valor/liquidez
+            if (dist <= 30) {
+              return {
+                isRisk: true,
+                name: f.properties?.n || 'Comunidade',
+                faction: faction || 'CV',
+                distanceMeters: Math.round(dist)
+              };
+            }
+
+            // Alerta Informativo de Proximidade (até 500m): NÃO altera valor nem liquidez!
+            if (dist <= 500 && dist < minNearbyDist) {
+              minNearbyDist = dist;
+              closestNearby = {
+                name: f.properties?.n || 'Comunidade',
+                faction: faction || undefined,
+                dist: Math.round(dist)
+              };
             }
           }
         }
       }
     }
-  }
 
-  // Passou de 30 metros: NÃO adicionar depreciação nem risco de favela
+    if (closestNearby) {
+      return {
+        isRisk: false,
+        isNearby: true,
+        nearbyCommunityName: closestNearby.name,
+        nearbyFaction: closestNearby.faction,
+        nearbyDistanceMeters: closestNearby.dist
+      };
+    }
+  }
 
   return { isRisk: false };
 }
@@ -230,6 +281,38 @@ function cleanCaixaCity(rawCity: string, uf: string): string {
   if (norm === 'rio de janeiro') return 'Rio de Janeiro';
   if (norm === 'sao paulo') return 'São Paulo';
   return rawCity.trim().toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+/**
+ * The Caixa catalogue has a finite set of sale modes, but its spelling has
+ * changed over time. Keep a single canonical value in the store so the card,
+ * filters, and calculator do not have to infer it independently.
+ */
+function normalizeCaixaSaleMode(rawMode: string | undefined, fallbackText = ''): string | undefined {
+  const source = `${rawMode || ''} ${fallbackText || ''}`.trim();
+  const normalized = normalizeString(source);
+  if (!normalized) return undefined;
+
+  if (normalized.includes('venda direta')) {
+    return normalized.includes('online') ? 'Venda Direta Online' : 'Venda Direta';
+  }
+  if (normalized.includes('venda online')) return 'Venda Online';
+  if (normalized.includes('licitacao aberta')) return 'Licitação Aberta';
+  if (normalized.includes('leilao sfi') || normalized.includes('edital unico')) {
+    return 'Leilão SFI - Edital Único';
+  }
+  if (normalized.includes('leilao')) return 'Leilão Online';
+
+  // Preserve an unrecognised official value rather than inventing a modality.
+  return rawMode?.trim().replace(/\s+/g, ' ') || undefined;
+}
+
+function getCaixaCatalogField(row: Record<string, string>, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
 }
 
 function parseCaixaSizeSqm(descricao: string, propertyType: PropertyType): number {
@@ -272,175 +355,223 @@ function parseCaixaSizeSqm(descricao: string, propertyType: PropertyType): numbe
   return Math.round(size) || 50;
 }
 
+function isValidStreetCoordinates(value: unknown): value is StreetCoordinates {
+  const candidate = value as Partial<StreetCoordinates> | null;
+  return !!candidate && Number.isFinite(candidate.lat) && Number.isFinite(candidate.lng) &&
+    Math.abs(candidate.lat as number) <= 90 && Math.abs(candidate.lng as number) <= 180;
+}
+
+function streetAxesMatch(left: string, right: string): boolean {
+  const leftClean = cleanStreetName(left);
+  const rightClean = cleanStreetName(right);
+  if (leftClean && leftClean === rightClean) return true;
+
+  const leftCore = getCoreStreetName(left);
+  const rightCore = getCoreStreetName(right);
+  if (leftCore.length >= 4 && leftCore === rightCore) return true;
+
+  const leftPhonetic = phoneticStreet(left);
+  const rightPhonetic = phoneticStreet(right);
+  return leftPhonetic.length >= 5 && leftPhonetic === rightPhonetic;
+}
+
+function nearestPointOnRoad(
+  origin: StreetCoordinates,
+  geometry: StreetCoordinates[]
+): { coordinate: StreetCoordinates; distanceKm: number } | null {
+  const points = geometry.filter(isValidStreetCoordinates);
+  if (points.length === 0) return null;
+
+  const kmPerLatitude = 110.574;
+  const kmPerLongitude = 111.320 * Math.cos(origin.lat * Math.PI / 180);
+  let nearest: { coordinate: StreetCoordinates; distanceKm: number } | null = null;
+
+  const consider = (coordinate: StreetCoordinates) => {
+    const distanceKm = calculateDistanceKm(origin.lat, origin.lng, coordinate.lat, coordinate.lng);
+    if (!nearest || distanceKm < nearest.distanceKm) {
+      nearest = { coordinate, distanceKm };
+    }
+  };
+
+  for (const point of points) consider(point);
+
+  for (let index = 1; index < points.length; index++) {
+    const start = points[index - 1];
+    const end = points[index];
+    const startX = (start.lng - origin.lng) * kmPerLongitude;
+    const startY = (start.lat - origin.lat) * kmPerLatitude;
+    const endX = (end.lng - origin.lng) * kmPerLongitude;
+    const endY = (end.lat - origin.lat) * kmPerLatitude;
+    const deltaX = endX - startX;
+    const deltaY = endY - startY;
+    const segmentLengthSquared = deltaX * deltaX + deltaY * deltaY;
+    if (segmentLengthSquared === 0) continue;
+
+    const fraction = Math.max(0, Math.min(1, -((startX * deltaX) + (startY * deltaY)) / segmentLengthSquared));
+    consider({
+      lat: origin.lat + ((startY + fraction * deltaY) / kmPerLatitude),
+      lng: origin.lng + ((startX + fraction * deltaX) / kmPerLongitude)
+    });
+  }
+
+  return nearest;
+}
+
+function makeRadialStreetCacheKey(
+  uf: string,
+  city: string,
+  neighborhood: string,
+  anchorCoords: StreetCoordinates,
+  radiusKm: number
+): string {
+  return [
+    normalizeString(uf),
+    normalizeString(city),
+    cleanNeighborhood(neighborhood),
+    anchorCoords.lat.toFixed(5),
+    anchorCoords.lng.toFixed(5),
+    radiusKm.toFixed(2)
+  ].join('|');
+}
+
+function escapeOverpassRegex(value: string): string {
+  return value.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+}
+
+async function findOsmRoadsWithinRadius(
+  anchorCoords: StreetCoordinates,
+  radiusKm: number,
+  candidateStreetNames: string[]
+): Promise<OsmRoadGeometry[]> {
+  const uniqueNames = Array.from(new Set(
+    candidateStreetNames.map(name => name.trim()).filter(name => name.length >= 3)
+  ));
+  if (uniqueNames.length === 0) return [];
+
+  // A name-filtered Overpass query resolves an entire neighborhood in one
+  // request. It is both faster and more reliable than asking an LLM to invent
+  // a coordinate for each individual street.
+  const namePattern = uniqueNames.map(escapeOverpassRegex).join('|');
+  const radiusMeters = Math.round(Math.max(500, Math.min(2000, radiusKm * 1000)));
+  const query = `[out:json][timeout:20];way(around:${radiusMeters},${anchorCoords.lat},${anchorCoords.lng})["highway"]["name"~"^(${namePattern})$",i];out tags geom;`;
+  const endpoints = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
+  ];
+
+  for (const endpoint of endpoints) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25_000);
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'MarcusAssessoriaApp/2.0'
+        },
+        body: new URLSearchParams({ data: query }),
+        signal: controller.signal
+      });
+      if (!response.ok) continue;
+
+      const payload = await response.json() as { elements?: Array<{ tags?: { name?: string }; geometry?: Array<{ lat?: number; lon?: number }> }> };
+      const roads: OsmRoadGeometry[] = [];
+      for (const element of payload.elements || []) {
+        const name = element.tags?.name?.trim();
+        if (!name || !Array.isArray(element.geometry)) continue;
+        const geometry = element.geometry
+          .map(point => ({ lat: Number(point.lat), lng: Number(point.lon) }))
+          .filter(isValidStreetCoordinates);
+        if (geometry.length > 0) roads.push({ name, geometry });
+      }
+      return roads;
+    } catch (error: any) {
+      console.warn(`[ITBI Radius] Overpass indisponível em ${endpoint}: ${error?.message || 'erro de rede'}`);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  return [];
+}
+
 async function getStreetCoordinates(
   uf: string,
   city: string,
   neighborhood: string,
   streets: string[],
-  anchorCoords?: { lat: number; lng: number }
-): Promise<Record<string, {lat: number; lng: number}>> {
-  let coordsCache: Record<string, {lat: number; lng: number}> = {};
-  if (fs.existsSync(STREET_COORDS_CACHE_PATH)) {
-    try {
-      coordsCache = JSON.parse(fs.readFileSync(STREET_COORDS_CACHE_PATH, 'utf-8'));
-    } catch (e) {
-      console.error('Error reading street_coords_cache.json:', e);
+  anchorCoords?: StreetCoordinates,
+  radiusKm: number = 2
+): Promise<Record<string, StreetCoordinates>> {
+  const uniqueStreets = Array.from(new Set(streets.map(street => street.trim()).filter(Boolean)));
+  const result: Record<string, StreetCoordinates> = {};
+  const validAnchor = isValidStreetCoordinates(anchorCoords) ? anchorCoords : undefined;
+  const normalizedRadius = Math.max(0.5, Math.min(2, Number.isFinite(radiusKm) ? radiusKm : 2));
+  let radialCache: RadialStreetCoordinatesCacheEntry | undefined;
+
+  if (validAnchor) {
+    const cacheKey = makeRadialStreetCacheKey(uf, city, neighborhood, validAnchor, normalizedRadius);
+    const cached = radialStreetCoordinatesCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      radialCache = cached;
+      for (const street of uniqueStreets) {
+        const coordinates = cached.coordinates[street];
+        if (isValidStreetCoordinates(coordinates)) result[street] = coordinates;
+      }
+    } else if (cached) {
+      radialStreetCoordinatesCache.delete(cacheKey);
     }
-  }
 
-  const result: Record<string, {lat: number; lng: number}> = {};
-  const uncached: string[] = [];
-
-  for (const s of streets) {
-    const cleanStreet = s.trim();
-    if (!cleanStreet) continue;
-    const cacheKey = `${uf}_${city}_${neighborhood}_${cleanStreet}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    if (coordsCache[cacheKey]) {
-      result[cleanStreet] = coordsCache[cacheKey];
-    } else {
-      uncached.push(cleanStreet);
-    }
-  }
-
-  if (uncached.length > 0 && process.env.GEMINI_API_KEY) {
-    // Geolocate in batches of 30 to prevent prompt size issues
-    const batchSize = 30;
-    let cacheModified = false;
-    for (let i = 0; i < uncached.length; i += batchSize) {
-      const batch = uncached.slice(i, i + batchSize);
-      try {
-        const ai = new GoogleGenAI({
-          apiKey: process.env.GEMINI_API_KEY,
-          httpOptions: { 
-            headers: { 'User-Agent': 'aistudio-build' },
-            timeout: 10000 // 10 seconds timeout (Gemini API minimum)
-          }
-        });
-
-        const prompt = `Você é um geocodificador preciso para cidades brasileiras.
-Dada a lista de ruas localizadas no bairro ${neighborhood}, cidade de ${city}, estado de ${uf}:
-${JSON.stringify(batch)}
-
-Retorne a latitude e longitude aproximadas para cada uma dessas ruas no formato JSON estruturado:
-{
-  "nome_da_rua_1": {"lat": número_float, "lng": número_float},
-  "nome_da_rua_2": {"lat": número_float, "lng": número_float}
-}
-Responda APENAS com o JSON puro, sem marcações markdown ou outros textos adicionais.`;
-
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-          }
-        });
-
-        const responseText = response.text || '{}';
-        let cleanedText = responseText.trim();
-        const jsonStart = cleanedText.indexOf('{');
-        const jsonEnd = cleanedText.lastIndexOf('}');
-        if (jsonStart !== -1 && jsonEnd !== -1) {
-          cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1);
+    const unresolved = uniqueStreets.filter(street => !result[street]);
+    // A fresh radial cache represents the result of the OSM road query for
+    // this exact reference point. Re-querying only its misses makes repeated
+    // calculator changes wait for Overpass again without producing new data.
+    if (!radialCache && unresolved.length > 0) {
+      const roads = await findOsmRoadsWithinRadius(validAnchor, normalizedRadius, unresolved);
+      for (const street of unresolved) {
+        let closest: { coordinate: StreetCoordinates; distanceKm: number } | null = null;
+        for (const road of roads) {
+          if (!streetAxesMatch(street, road.name)) continue;
+          const candidate = nearestPointOnRoad(validAnchor, road.geometry);
+          if (candidate && (!closest || candidate.distanceKm < closest.distanceKm)) closest = candidate;
         }
-
-        const parsed = JSON.parse(cleanedText);
-        
-        for (const [sName, coords] of Object.entries(parsed)) {
-          const matchedStreet = batch.find(b => b.toLowerCase() === sName.toLowerCase()) || sName;
-          const lat = (coords as any).lat;
-          const lng = (coords as any).lng;
-          if (typeof lat === 'number' && typeof lng === 'number') {
-            const cacheKey = `${uf}_${city}_${neighborhood}_${matchedStreet}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            coordsCache[cacheKey] = { lat, lng };
-            result[matchedStreet] = { lat, lng };
-            cacheModified = true;
-          }
-        }
-      } catch (e: any) {
-        console.error(`Failed to geocode batch starting at index ${i} with Gemini:`, e);
-        if (e.status === 429 || (e.message && e.message.includes('429')) || (e.message && e.message.includes('quota'))) {
-          console.warn('Gemini quota exceeded or rate limit hit. Skipping remaining geocoding batches.');
-          break;
-        }
+        if (closest) result[street] = closest.coordinate;
       }
     }
 
-    if (cacheModified) {
-      try {
-        fs.writeFileSync(STREET_COORDS_CACHE_PATH, JSON.stringify(coordsCache, null, 2), 'utf-8');
-      } catch (err) {
-        console.error('Failed to save street_coords_cache.json:', err);
+  }
+
+  // Registry/cache records and external geocoding are only fallbacks for roads
+  // not returned by the exact OSM radius query. No neighborhood centroid or
+  // simulated point is used here.
+  for (const street of uniqueStreets) {
+    if (result[street]) continue;
+    const cached = getCachedCoords(street, neighborhood, city, uf);
+    if (cached && isValidStreetCoordinates(cached)) result[street] = { lat: cached.lat, lng: cached.lng };
+  }
+
+  // A radial cache hit means these roads were already queried against OSM for
+  // this point. Do not make the same external street fallbacks on every slider
+  // change; successful fallback coordinates are folded into that cache below.
+  if (!radialCache) {
+    const unresolvedAfterCache = uniqueStreets.filter(street => !result[street]);
+    for (const street of unresolvedAfterCache.slice(0, MAX_VALIDATED_STREET_FALLBACKS)) {
+      const geocoded = await geocodeAddress(street, { neighborhood, city, state: uf });
+      if (geocoded && isValidStreetCoordinates(geocoded)) {
+        result[street] = { lat: geocoded.lat, lng: geocoded.lng };
       }
     }
   }
 
-  // Resolve accurate neighborhood center
-  let baseLat: number | null = (anchorCoords && typeof anchorCoords.lat === 'number') ? anchorCoords.lat : null;
-  let baseLng: number | null = (anchorCoords && typeof anchorCoords.lng === 'number') ? anchorCoords.lng : null;
-
-  const centerKey = `${uf}_${city}_${neighborhood}_center`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  if (baseLat === null || baseLng === null) {
-    if (coordsCache[centerKey]) {
-      baseLat = coordsCache[centerKey].lat;
-      baseLng = coordsCache[centerKey].lng;
-    } else {
-      // Query Nominatim via geocodeAddress for real neighborhood center
-      const neighGeo = await geocodeAddress(neighborhood, { city, state: uf });
-      if (neighGeo && !isNaN(neighGeo.lat) && !isNaN(neighGeo.lng)) {
-        baseLat = neighGeo.lat;
-        baseLng = neighGeo.lng;
-        coordsCache[centerKey] = { lat: baseLat, lng: baseLng };
-        try {
-          fs.writeFileSync(STREET_COORDS_CACHE_PATH, JSON.stringify(coordsCache, null, 2), 'utf-8');
-        } catch (err) {}
+  if (validAnchor) {
+    const cacheKey = makeRadialStreetCacheKey(uf, city, neighborhood, validAnchor, normalizedRadius);
+    radialStreetCoordinatesCache.set(cacheKey, {
+      expiresAt: Date.now() + RADIAL_COORDINATES_CACHE_TTL_MS,
+      coordinates: {
+        ...(radialCache?.coordinates || {}),
+        ...result
       }
-    }
-  }
-
-  if (baseLat === null || baseLng === null) {
-    const neighKeyPrefix = `${uf}_${city}_${neighborhood}_`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const cachedKeysInNeigh = Object.keys(coordsCache).filter(k => k.startsWith(neighKeyPrefix) && !k.endsWith('_center'));
-    if (cachedKeysInNeigh.length > 0) {
-      let sumLat = 0;
-      let sumLng = 0;
-      for (const key of cachedKeysInNeigh) {
-        sumLat += coordsCache[key].lat;
-        sumLng += coordsCache[key].lng;
-      }
-      baseLat = sumLat / cachedKeysInNeigh.length;
-      baseLng = sumLng / cachedKeysInNeigh.length;
-    }
-  }
-
-  // Fallback to City Center if neighborhood center could not be resolved
-  if (baseLat === null || baseLng === null) {
-    baseLat = -22.9068; // Rio de Janeiro default
-    baseLng = -43.1729;
-    if (uf.toUpperCase() === 'SP') {
-      baseLat = -23.5505;
-      baseLng = -46.6333;
-    } else if (city.toLowerCase().includes('juiz de fora')) {
-      baseLat = -21.7642;
-      baseLng = -43.3496;
-    } else if (city.toLowerCase().includes('niteroi')) {
-      baseLat = -22.8981;
-      baseLng = -43.1220;
-    }
-  }
-
-  // For each street missing coordinates, disperse realistically within the neighborhood (cluster within 100m to 400m of the anchor)
-  for (const s of streets) {
-    if (!result[s]) {
-      let hash = 0;
-      for (let i = 0; i < s.length; i++) {
-        hash = s.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const latOffset = ((Math.abs(hash) % 1000) - 500) / 140000;
-      const lngOffset = ((Math.abs(hash * 31) % 1000) - 500) / 140000;
-      result[s] = { lat: baseLat + latOffset, lng: baseLng + lngOffset };
-    }
+    });
   }
 
   return result;
@@ -608,13 +739,22 @@ function loadStore(): DataStore {
         });
       }
 
-      // Sanitize and recalculate auctions with verified ITBI benchmark ONLY if not already calibrated
-      const isAlreadyCalibrated = storeData.auctions && storeData.auctions.length > 0 && (storeData.auctions[0] as any).gabaritoITBI !== undefined;
-      if (!isAlreadyCalibrated && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
-        console.log(`[Store] Calibrando ${storeData.auctions.length} leilões com a base oficial de ITBI...`);
+      // Sanitize and recalculate auctions with verified ITBI benchmark whenever calibration version changes
+      const STORE_CALIBRATION_VERSION = 'v9_caixa_valuation_liquidity';
+      const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
+      if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+        console.log(`[Store] Calibrando ${storeData.auctions.length} leilões com a base oficial de ITBI e corte estrito de micro-dados (v6)...`);
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
-        // saveStore omitido na inicializacao para economizar RAM e evitar estouro de 512MB no Render
+        (storeData as any).calibrationVersion = STORE_CALIBRATION_VERSION;
+        saveStore(storeData);
+        try {
+          const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(storeData)));
+          fs.writeFileSync(GZ_STORE_PATH, compressed);
+          console.log('[Store] data_store.json.gz atualizado com sucesso com corte estrito de micro-dados (v6)!');
+        } catch (gzErr) {
+          console.error('[Store] Erro ao salvar data_store.json.gz:', gzErr);
+        }
         console.log('[Store] Todos os leilões calibrados e recalculados com sucesso!');
       } else {
         console.log(`[Store] Leilões prontos e calibrados (${storeData.auctions?.length || 0} registros). Inicialização instantânea!`);
@@ -1042,6 +1182,52 @@ function recalculateAuctionWithIndex(
   const cat = getTypologyCategory(propType);
   const origin = auc.origin || 'judicial';
 
+  // Caixa provides this information in its official catalogue. Prefer that
+  // source over the old generic fallback ("Venda Online Caixa"), which was
+  // not a real mode and made cards misleading.
+  const isCaixaOrigin = origin === 'caixa' || origin === 'caixa_radar';
+  if (isCaixaOrigin) {
+    const desc = auc.description || '';
+    const mMatch = desc.match(/Modalidade:\s*([^.]+)/i);
+    const currentMode = auc.saleMode === 'Venda Online Caixa' ? '' : auc.saleMode;
+    const normalizedMode = normalizeCaixaSaleMode(mMatch?.[1] || currentMode, desc);
+    if (normalizedMode) {
+      auc.saleMode = normalizedMode;
+    } else {
+      delete auc.saleMode;
+    }
+  }
+
+  // Normalizar / extrair saleMode para as demais origens.
+  if (!auc.saleMode && !isCaixaOrigin) {
+    const desc = auc.description || '';
+    const mMatch = desc.match(/Modalidade:\s*([^.]+)/i);
+    if (mMatch) {
+      auc.saleMode = mMatch[1].trim();
+    } else {
+      const textLower = `${auc.title} ${desc} ${auc.paymentTerms || ''}`.toLowerCase();
+      if (textLower.includes('venda direta online')) {
+        auc.saleMode = 'Venda Direta Online';
+      } else if (textLower.includes('venda direta')) {
+        auc.saleMode = 'Venda Direta';
+      } else if (textLower.includes('licitação aberta') || textLower.includes('licitacao aberta')) {
+        auc.saleMode = 'Licitação Aberta';
+      } else if (textLower.includes('venda online')) {
+        auc.saleMode = 'Venda Online';
+      } else if (textLower.includes('leilão sfi') || textLower.includes('leilao sfi')) {
+        auc.saleMode = 'Leilão SFI';
+      } else if (textLower.includes('leilão online') || textLower.includes('leilao online')) {
+        auc.saleMode = 'Leilão Online';
+      } else if (origin === 'judicial') {
+        auc.saleMode = 'Leilão Judicial Online';
+      } else if (origin === 'extrajudicial') {
+        auc.saleMode = 'Leilão Extrajudicial Online';
+      } else {
+        auc.saleMode = 'Leilão Online';
+      }
+    }
+  }
+
   // Normalize city name
   if (auc.city) {
     auc.city = cleanCaixaCity(auc.city, (auc.state || 'SP').toUpperCase());
@@ -1065,14 +1251,75 @@ function recalculateAuctionWithIndex(
   let neighborhoodAvgSqm = 0;
 
   const rawStreet = extractStreet(auc.address);
+  const isGeneric = isGenericStreet(rawStreet);
   const streetPhon = phoneticStreet(rawStreet);
   const aucNum = extractAddressNumber(auc.address);
 
-  // Multi-neighborhood Street Number Resolution
-  // If a street spans multiple neighborhoods (e.g. Vilela Tavares spans Meier and Lins de Vasconcelos),
-  // match by nearest street number in ITBI transactions to assign the 100% correct municipal neighborhood
+  // Se a rua for genérica ("rua projetada", "rua a", "quadra", "lote"), VEDADO especular ou alterar bairros:
+  if (isGeneric) {
+    const tm = (auc.title || '').match(/Retomado Caixa - ([A-Z\s]+)/i);
+    if (tm && tm[1].trim()) {
+      const orig = tm[1].trim();
+      const origClean = orig.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      auc.neighborhood = origClean;
+      neigh = cleanNeighborhood(origClean);
+    }
+    auc.officialNeighborhood = undefined;
+    auc.originalListedNeighborhood = undefined;
+    auc.divergentNeighborhoodNotice = undefined;
+  }
+
+  // Regra Específica Pericial de Limítrofes Municipais:
+  // 1. Estrada Adhemar Bebiano (Rio de Janeiro):
+  //    Nº 1 a 350: Del Castilho (próximo ao Shopping Nova América)
+  //    Nº 351 a 3200 (ex: 1185): INHAÚMA (Caixa comumente lista Del Castilho de forma errônea)
+  //    Nº > 3200 (ex: 4013, 4106): Engenho da Rainha / Tomás Coelho
+  // 2. Rua Noronha Torrezão (Niterói):
+  //    Nº >= 340 pertence oficialmente ao bairro CUBANGO (Caixa lista Santa Rosa)
+  if (rawStreet) {
+    const normSt = normalizeString(rawStreet);
+    const normC = normalizeString(auc.city || '');
+
+    if (normC.includes('rio de janeiro') && normSt.includes('adhemar bebiano')) {
+      if (aucNum && aucNum > 350 && aucNum <= 3200) {
+        if (cleanNeighborhood(auc.neighborhood) !== 'inhauma') {
+          auc.originalListedNeighborhood = auc.neighborhood;
+          auc.officialNeighborhood = 'Inhaúma';
+          auc.divergentNeighborhoodNotice = `Bairro Real: Inhaúma (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.neighborhood = 'Inhaúma';
+          neigh = 'inhauma';
+        }
+      } else if (aucNum && aucNum > 3200) {
+        if (cleanNeighborhood(auc.neighborhood) !== 'engenhodarainha') {
+          auc.originalListedNeighborhood = auc.neighborhood;
+          auc.officialNeighborhood = 'Engenho da Rainha';
+          auc.divergentNeighborhoodNotice = `Bairro Real: Engenho da Rainha (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.neighborhood = 'Engenho da Rainha';
+          neigh = 'engenhodarainha';
+        }
+      }
+    } else if (normC.includes('niteroi') && normSt.includes('noronha torrezao')) {
+      if (aucNum && aucNum >= 340) {
+        if (cleanNeighborhood(auc.neighborhood) !== 'cubango') {
+          auc.originalListedNeighborhood = auc.neighborhood;
+          auc.officialNeighborhood = 'Cubango';
+          auc.divergentNeighborhoodNotice = `Bairro Real: Cubango (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.neighborhood = 'Cubango';
+          neigh = 'cubango';
+        }
+      }
+    }
+  }
+
+  const normSt = normalizeString(rawStreet);
+  const normC = normalizeString(auc.city || '');
+  const hasSpecificBorderRule = (normSt.includes('adhemar bebiano') && normC.includes('rio de janeiro')) ||
+                                (normSt.includes('noronha torrezao') && normC.includes('niteroi'));
+
+  // Multi-neighborhood Street Number Resolution (SOMENTE para vias reais não-genéricas e sem regras específicas limítrofes):
+  // Se a via já possui delimitação pericial exata (ex: Adhemar Bebiano, Noronha Torrezão), respeita a delimitação oficial soberana
   const numResolver = streetNumberNeighMap || globalStreetNumberNeighMap;
-  if (streetPhon && numResolver) {
+  if (!isGeneric && !hasSpecificBorderRule && streetPhon && streetPhon.length >= 4 && numResolver) {
     const normCity = normalizeString(auc.city || '');
     const numList = numResolver.get(`${state}|${normCity}|${streetPhon}`);
     if (numList && numList.length > 0 && aucNum !== null) {
@@ -1087,6 +1334,9 @@ function recalculateAuctionWithIndex(
       }
       const correctedClean = cleanNeighborhood(closest.neighborhood);
       if (correctedClean && correctedClean !== neigh) {
+        auc.originalListedNeighborhood = auc.neighborhood;
+        auc.officialNeighborhood = closest.neighborhood;
+        auc.divergentNeighborhoodNotice = `Bairro Real: ${closest.neighborhood} (Caixa listou ${auc.originalListedNeighborhood})`;
         auc.neighborhood = closest.neighborhood;
         neigh = correctedClean;
       }
@@ -1095,7 +1345,7 @@ function recalculateAuctionWithIndex(
 
   // 1. Street match with strict Typology Segregation AND City Isolation (NEVER cross-match across different cities!)
   const normCity = normalizeString(auc.city || '');
-  if (rawStreet) {
+  if (!isGeneric && rawStreet) {
     const streetClean = cleanStreetName(rawStreet);
     const streetCore = getCoreStreetName(rawStreet);
 
@@ -1111,15 +1361,17 @@ function recalculateAuctionWithIndex(
     }
   }
 
-  // Cross-Neighborhood Resolution fallback (STRICTLY within the SAME city):
-  // If no street match was found in Caixa's listed neighborhood, check if the street belongs to another official neighborhood in the same city
+  // Cross-Neighborhood Resolution fallback (STRICTLY within the SAME city & SOMENTE para vias reais não genéricas):
   const streetResolverMap = cityStreetToNeighMap || globalCityStreetToNeighMap;
-  if (itbiStreetAvgSqm === 0 && streetPhon && streetResolverMap) {
+  if (!isGeneric && !hasSpecificBorderRule && itbiStreetAvgSqm === 0 && streetPhon && streetPhon.length >= 4 && streetResolverMap) {
     const csEntry = streetResolverMap.get(`${state}|${normCity}|${streetPhon}`);
-    if (csEntry && csEntry.count >= 2) {
+    if (csEntry && csEntry.count >= 3) {
       const correctedCleanNeigh = cleanNeighborhood(csEntry.neighborhood);
       if (correctedCleanNeigh && correctedCleanNeigh !== neigh) {
         // Correct the neighborhood to official ITBI municipal registry
+        auc.originalListedNeighborhood = auc.neighborhood;
+        auc.officialNeighborhood = csEntry.neighborhood;
+        auc.divergentNeighborhoodNotice = `Bairro Real: ${csEntry.neighborhood} (Caixa listou ${auc.originalListedNeighborhood})`;
         auc.neighborhood = csEntry.neighborhood;
         neigh = correctedCleanNeigh;
 
@@ -1182,27 +1434,41 @@ function recalculateAuctionWithIndex(
   }
   auc.evaluationPrice = evalPrice || undefined;
 
-  // Cascade Outlier Protection:
-  // When street has fewer than 5 transactions, apply the subsequent cascade weighted average of street + neighborhood/entorno
+  // Cascade Outlier Protection & Conservative Calibration:
+  // When street has fewer than 5 transactions, apply strict Bayesian shrinkage + corridor capping
+  // to avoid inflating the price aggressively or crashing it abnormally based on 1-2 noisy deeds.
   let reliableStreetAvgSqm = 0;
   if (itbiStreetAvgSqm > 0) {
     if (neighborhoodAvgSqm > 0) {
       if (itbiStreetCount < 5) {
-        // Cascade weighted average for small street sample (< 5 transactions)
-        const streetWeight = itbiStreetCount * 0.15;
+        const streetWeight = itbiStreetCount === 1 ? 0.25 : itbiStreetCount === 2 ? 0.40 : 0.60;
         const neighborhoodWeight = 1 - streetWeight;
-        reliableStreetAvgSqm = Math.round((itbiStreetAvgSqm * streetWeight) + (neighborhoodAvgSqm * neighborhoodWeight));
-        if (itbiStreetCount <= 3) {
-          auc.isCascadeProtected = true;
-        }
-      } else if (itbiStreetAvgSqm > neighborhoodAvgSqm * 1.6 || itbiStreetAvgSqm < neighborhoodAvgSqm * 0.40) {
-        // Protection for larger samples with aberrant deed
-        reliableStreetAvgSqm = neighborhoodAvgSqm;
+        const rawBlend = (itbiStreetAvgSqm * streetWeight) + (neighborhoodAvgSqm * neighborhoodWeight);
+        const maxDeviationPct = itbiStreetCount === 1 ? 0.12 : itbiStreetCount === 2 ? 0.15 : 0.22;
+        reliableStreetAvgSqm = Math.round(
+          Math.max(neighborhoodAvgSqm * (1 - maxDeviationPct), Math.min(neighborhoodAvgSqm * (1 + maxDeviationPct), rawBlend))
+        );
+        auc.isCascadeProtected = true;
+      } else if (itbiStreetAvgSqm > neighborhoodAvgSqm * 1.5 || itbiStreetAvgSqm < neighborhoodAvgSqm * 0.50) {
+        reliableStreetAvgSqm = itbiStreetAvgSqm > neighborhoodAvgSqm
+          ? Math.round(neighborhoodAvgSqm * 1.30)
+          : Math.round(neighborhoodAvgSqm * 0.70);
       } else {
         reliableStreetAvgSqm = itbiStreetAvgSqm;
       }
     } else {
       reliableStreetAvgSqm = itbiStreetAvgSqm;
+    }
+  }
+
+  // Macro Urban Zone assignment (Zona Sul, Zona Norte, Região Oceânica, etc.)
+  auc.zone = getZoneForNeighborhood(auc.city, auc.neighborhood) || undefined;
+
+  // Candidate Real Photo URL for Caixa properties
+  if (!auc.imageUrl && (auc.origin === 'caixa' || auc.id?.includes('caixa') || auc.auctionLink?.includes('caixa.gov.br'))) {
+    const rawNumMatch = (auc.auctionLink || '').match(/hdnimovel=(\d+)/) || (auc.id || '').match(/auc-caixa-(\d+)/);
+    if (rawNumMatch) {
+      auc.imageUrl = `https://venda-imoveis.caixa.gov.br/fotos/F${rawNumMatch[1]}21.jpg`;
     }
   }
 
@@ -1229,15 +1495,18 @@ function recalculateAuctionWithIndex(
 
   // 1. Check Community Risk (polygons & high-risk keywords)
   const commRisk = checkPropertyCommunityRisk(auc);
+  auc.isCommunityRisk = commRisk.isRisk; // STRICT: only <= 30m or inside
+  auc.communityName = commRisk.name;
+  auc.factionName = commRisk.faction;
+  auc.communityDistanceM = commRisk.distanceMeters;
+  auc.isNearbyCommunity = commRisk.isNearby;
+  auc.nearbyCommunityName = commRisk.nearbyCommunityName;
+  auc.nearbyFactionName = commRisk.nearbyFaction;
+  auc.nearbyCommunityDistanceM = commRisk.nearbyDistanceMeters;
+
   if (commRisk.isRisk) {
-    auc.isCommunityRisk = true;
-    auc.communityName = commRisk.name;
-    auc.factionName = commRisk.faction;
     auc.riskLevel = 'Alto';
   } else {
-    auc.isCommunityRisk = false;
-    auc.communityName = undefined;
-    auc.factionName = undefined;
     if (auc.riskLevel === 'Alto') auc.riskLevel = 'Baixo';
   }
 
@@ -1303,43 +1572,80 @@ function recalculateAuctionWithIndex(
   auc.buildingAge = buildingAge;
   auc.ageDepreciationPct = ageDepreciationPct;
 
-  // Active listings portal benchmark & Venda Média ancorados no ITBI real
-  const portalBenchmark = Math.round(itbiBenchmark * 1.08);
-  auc.streetPortalAvgSqm = portalBenchmark;
-  auc.portalZapAvg = Math.round(auc.estimatedValue * 1.06);
-  auc.portalQuintoAndarAvg = Math.round(auc.estimatedValue * 1.03);
-  auc.vendaMediaPrice = Math.round(((auc.portalZapAvg || 0) + (auc.portalQuintoAndarAvg || 0)) / 2);
-
   // 4. Preço Sugerido p/ Revenda (Flip Rápido 60 dias) - MOTOR SOBERANO DA CALCULADORA:
   // Executa exatamente o mesmo algoritmo bidirecional que a Calculadora executa no frontend
   let bidiSqm = 0;
   let bidiGabaritoSqm = 0;
+  let hasMicroData = false;
+  let hasExactNeighborhoodReference = false;
   if (neighMap) {
     const key = `${state}|${normCity}|${neigh}`;
     const nTxs = neighMap.get(key);
     if (nTxs && nTxs.length > 0) {
+      hasExactNeighborhoodReference = true;
       const rawAddr = auc.address || '';
       const numMatch = rawAddr.match(/,\s*n[ºo°]?\s*(\d+)/i) || rawAddr.match(/n[ºo°]?\s*(\d+)/i) || rawAddr.match(/,\s*(\d+)/i);
       const sNum = numMatch ? numMatch[1] : '';
-      const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 50, 'similar');
-      if (bidi && bidi.flipRapidoSqm > 0) {
+      const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 50, 'similar', 0.5, auc.propertyType);
+      if (bidi && bidi.hasMicroData && bidi.flipRapidoSqm > 0) {
         bidiSqm = bidi.flipRapidoSqm;
         bidiGabaritoSqm = bidi.mediaCorteReal;
+        hasMicroData = true;
+        auc.itbiSurroundingAvgSqm = bidi.raio.saneada || undefined;
+        auc.itbiSurroundingCount = bidi.raio.validas || undefined;
+        auc.streetRadiusDeviationPct = bidi.ruaRaioDesvioPct || undefined;
+        auc.streetRadiusCalibrated = bidi.ruaRaioCalibrada;
       }
     }
   }
 
+  // Caixa e leilões extrajudiciais podem ser precificados pela mediana ITBI do
+  // bairro oficial quando a rua não possui escrituras compatíveis. Isso evita
+  // cards sem valor apesar de haver base municipal, mantendo a origem auditável.
+  const canUseOfficialNeighborhoodFallback = !hasMicroData &&
+    hasExactNeighborhoodReference &&
+    neighborhoodAvgSqm > 0 &&
+    (origin === 'caixa' || origin === 'caixa_radar' || origin === 'extrajudicial');
+  if (canUseOfficialNeighborhoodFallback) {
+    bidiGabaritoSqm = neighborhoodAvgSqm;
+    bidiSqm = Math.round(neighborhoodAvgSqm * 0.90);
+    hasMicroData = true;
+    auc.valuationBasis = isGeneric
+      ? 'Balizado pela Mediana do Bairro (Sem rua no edital)'
+      : 'Balizado pela Mediana do Bairro (Sem amostras compatíveis na rua)';
+  }
+
+  // Endereço genérico não pode reutilizar uma média de rua/prédio incorreta.
+  if (isGeneric) {
+    auc.itbiStreetAvgSqm = undefined;
+    auc.itbiStreetCount = undefined;
+  }
+
+  auc.hasMicroBenchmark = hasMicroData;
+
   const ageFactor = ageDepreciationPct > 0 ? (1 - ageDepreciationPct / 100) : 1.0;
-  if (bidiSqm > 0) {
+  if (hasMicroData && bidiSqm > 0) {
     auc.vendaBaixaPrice = Math.round(Math.round(bidiSqm * ageFactor) * (auc.sizeSqm || 50));
     if (bidiGabaritoSqm > 0) {
       auc.estimatedValue = Math.round(bidiGabaritoSqm * (auc.sizeSqm || 50));
+      // A média factual da rua é preservada para auditoria; o gabarito é o composto.
+      auc.itbiStreetAvgSqm = isGeneric ? undefined : (itbiStreetAvgSqm || undefined);
     }
+    auc.streetPortalAvgSqm = Math.round((bidiGabaritoSqm || itbiBenchmark) * 1.08);
+    auc.portalZapAvg = Math.round(auc.estimatedValue * 1.06);
+    auc.portalQuintoAndarAvg = Math.round(auc.estimatedValue * 1.03);
+    auc.vendaMediaPrice = Math.round(((auc.portalZapAvg || 0) + (auc.portalQuintoAndarAvg || 0)) / 2);
   } else {
-    const flipBase = Math.round(auc.estimatedValue * 0.90);
-    auc.vendaBaixaPrice = ageDepreciationPct > 0 
-      ? Math.round(flipBase * (1 - ageDepreciationPct / 100)) 
-      : flipBase;
+    // REGRA DO USUÁRIO: Se não tiver dados da rua, do prédio e do entorno, NÃO gerar cálculo de flip e gabarito!
+    auc.estimatedValue = undefined;
+    auc.vendaBaixaPrice = undefined;
+    auc.portalZapAvg = undefined;
+    auc.portalQuintoAndarAvg = undefined;
+    auc.streetPortalAvgSqm = undefined;
+    auc.vendaMediaPrice = undefined;
+    auc.calculatedProfit = undefined;
+    auc.calculatedRoi = undefined;
+    auc.itbiStreetAvgSqm = undefined;
   }
 
   // Pre-fill parameters and costs
@@ -1413,14 +1719,19 @@ function recalculateAuctionWithIndex(
   const purchaseCostsTotal = calculatedItbiCost + cartCd + caixCd + certCd + iptuAt + condoAt + leilCd + advCd + auc.estimatedRepair;
   const totalAcquisitionCost = bidPrice + purchaseCostsTotal;
 
-  const brokerCommM = Math.round(vMediaPrice * (brokerCommissionPct / 100));
-  const taxGainBaseM = vMediaPrice - brokerCommM - bidPrice - calculatedItbiCost - cartCd - caixCd - certCd;
-  const capitalGainTaxM = taxGainBaseM > 0 ? Math.round(taxGainBaseM * 0.15) : 0;
-  const montanteM = vMediaPrice - brokerCommM - capitalGainTaxM;
-  const lucroM = montanteM - bidPrice - purchaseCostsTotal;
+  if (vMediaPrice && vMediaPrice > 0) {
+    const brokerCommM = Math.round(vMediaPrice * (brokerCommissionPct / 100));
+    const taxGainBaseM = vMediaPrice - brokerCommM - bidPrice - calculatedItbiCost - cartCd - caixCd - certCd;
+    const capitalGainTaxM = taxGainBaseM > 0 ? Math.round(taxGainBaseM * 0.15) : 0;
+    const montanteM = vMediaPrice - brokerCommM - capitalGainTaxM;
+    const lucroM = montanteM - bidPrice - purchaseCostsTotal;
 
-  auc.calculatedProfit = lucroM;
-  auc.calculatedRoi = Number(((lucroM / (totalAcquisitionCost || 1)) * 100).toFixed(2));
+    auc.calculatedProfit = lucroM;
+    auc.calculatedRoi = Number(((lucroM / (totalAcquisitionCost || 1)) * 100).toFixed(2));
+  } else {
+    auc.calculatedProfit = undefined;
+    auc.calculatedRoi = undefined;
+  }
 
   // Multi-factor Empirical Real Estate Liquidity Score: 1 to 10
   // Balanced baseline centered at 5/10
@@ -1430,76 +1741,57 @@ function recalculateAuctionWithIndex(
   const volKey = `${state}|${normCity}|${neigh}`;
   const neighVol = volMap.get(volKey) || 0;
 
-  // 1. Street Density (Proven transaction record on the exact street)
-  if (streetTxs >= 10) score += 3;
-  else if (streetTxs >= 3) score += 2;
-  else if (streetTxs >= 1) score += 1;
+  // 1. Evidência de giro na via. Os pesos são deliberadamente pequenos: a
+  // quantidade de escrituras mede confiança da análise, não liquidez sozinha.
+  if (streetTxs >= 10) score += 1.5;
+  else if (streetTxs >= 3) score += 1;
+  else if (streetTxs >= 1) score += 0.5;
 
   // 2. Neighborhood Velocity
-  if (neighVol >= 40) score += 2;
-  else if (neighVol >= 15) score += 1;
+  if (neighVol >= 40) score += 0.75;
+  else if (neighVol >= 15) score += 0.4;
 
   // 3. Property Type General Liquidity
-  if (auc.propertyType === 'Apartamento') score += 1;
+  if (auc.propertyType === 'Apartamento') score += 0.5;
   else if (auc.propertyType === 'Casa') score += 0;
-  else if (auc.propertyType === 'Comercial') score -= 1;
-  else if (auc.propertyType === 'Terreno') score -= 2;
+  else if (auc.propertyType === 'Comercial') score -= 0.5;
+  else if (auc.propertyType === 'Terreno' || auc.propertyType === 'Lote') score -= 1;
 
   // 4. Physical Possession & Vacancy (Desocupado has faster turnover)
-  if (auc.occupied === false) score += 1;
-  else score -= 1;
+  if (auc.occupied === false) score += 0.5;
+  else score -= 0.5;
 
   // 5. Price Bracket Accessibility (Sub-350k represents majority of buyer demand in Brazil)
-  if (auc.auctionPrice > 0 && auc.auctionPrice <= 300000) score += 1;
-  else if (auc.auctionPrice > 1500000) score -= 1;
+  if (auc.auctionPrice > 0 && auc.auctionPrice <= 300000) score += 0.5;
+  else if (auc.auctionPrice > 1500000) score -= 0.5;
 
   // 6. Discount Attractiveness (Steep discount from Caixa appraisal drives fast buyer interest)
   if (auc.estimatedValue > 0 && auc.auctionPrice > 0) {
     const discount = (auc.estimatedValue - auc.auctionPrice) / auc.estimatedValue;
-    if (discount >= 0.40) score += 1;
+    if (discount >= 0.40) score += 0.5;
   }
 
   // 7. Financing / FGTS Acceptance
-  if (auc.allowsFinancing) score += 1;
+  if (auc.allowsFinancing) score += 0.75;
 
   // 8. Risk penalty
-  if (auc.riskLevel === 'Alto') score -= 1;
+  if (auc.riskLevel === 'Alto') score -= 0.75;
 
-  // 9. Strict Financial Viability & Margins Gating (Demanda do Usuário)
-  // Imóvel com ROI baixo (< 20%) ou lucro baixo não pode ter nota alta de liquidez
-  if (auc.calculatedProfit <= 0 || auc.calculatedRoi <= 0) {
-    score = 1;
-  } else if (auc.calculatedRoi < 20) {
-    // ROI abaixo de 20%: nota máxima 3/10 (margem muito estreita para leilão)
-    score = Math.min(score, 3);
-  } else if (auc.calculatedRoi < 30) {
-    // ROI entre 20% e 30%: nota máxima 5/10
-    score = Math.min(score, 5);
-  } else if (auc.calculatedRoi < 45) {
-    // ROI entre 30% e 45%: nota máxima 7/10
-    score = Math.min(score, 7);
+  // 9. Retorno confirmado altera a nota de forma gradual. Falta de cálculo
+  // não é prejuízo e não pode reduzir todos os imóveis para 1/10.
+  if (typeof auc.calculatedRoi === 'number') {
+    if (auc.calculatedRoi >= 45) score += 0.75;
+    else if (auc.calculatedRoi >= 30) score += 0.4;
+    else if (auc.calculatedRoi < 15) score -= 0.75;
+  }
+  if (typeof auc.calculatedProfit === 'number') {
+    if (auc.calculatedProfit >= 50000) score += 0.4;
+    else if (auc.calculatedProfit < 0) score -= 1.5;
   }
 
-  // Se o lucro absoluto for inferior a R$ 30.000, teto de 4/10
-  if (auc.calculatedProfit < 30000) {
-    score = Math.min(score, 4);
-  }
-
-  // 10. Regra de Confiabilidade Estatística e Densidade Amostral (Demanda do Usuário):
-  // "ess liquidez precisa ser mais precisa, ela ta dando liquidez pra um imovel com roi baixo, com apenas uma transação de imovel na rua ou no predio"
-  if (streetTxs === 0) {
-    // Sem nenhuma transação na rua/prédio: teto 2/10
-    score = Math.min(score, 2);
-  } else if (streetTxs === 1) {
-    // Apenas 1 transação isolada na rua ou prédio: teto 3/10
-    score = Math.min(score, 3);
-  } else if (streetTxs === 2) {
-    // Apenas 2 transações: teto 5/10
-    score = Math.min(score, 5);
-  } else if (streetTxs < 5) {
-    // Menos de 5 transações: teto 6/10
-    score = Math.min(score, 6);
-  }
+  // 10. Poucas amostras reduzem confiança sem confundir ausência de dado com
+  // iliquidez. A contagem continua exposta para decisão humana.
+  if (streetTxs <= 1) score -= 0.5;
 
   // 11. Se for comunidade / área de risco: teto estrito 2/10
   if (commRisk.isRisk) {
@@ -1507,7 +1799,7 @@ function recalculateAuctionWithIndex(
   }
 
   // Final Clamp: realistic scores between 1 and 10
-  auc.liquidityScore = Math.max(1, Math.min(10, score));
+  auc.liquidityScore = Math.round(Math.max(1, Math.min(10, score)));
 
   // Determine Risk Level dynamically
   if (commRisk.isRisk) {
@@ -1950,9 +2242,12 @@ app.get('/api/auctions', authMiddleware, (req, res) => {
     if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
       const cached = getCachedCoords(a.address, a.neighborhood, a.city, a.state);
       if (cached) {
-        a.lat = cached.lat;
-        a.lng = cached.lng;
-        return { ...a, lat: cached.lat, lng: cached.lng };
+        return {
+          ...a,
+          lat: cached.lat,
+          lng: cached.lng,
+          status_geocodificacao: a.status_geocodificacao || (cached.precision === 'rooftop' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA')
+        };
       }
     }
     return a;
@@ -1987,17 +2282,19 @@ app.get('/api/auctions/bbox', (req, res) => {
   for (const a of userAuctions) {
     let lat = a.lat;
     let lng = a.lng;
+    let geocodeStatus = a.status_geocodificacao;
     if ((!lat || !lng || isNaN(lat)) && a.address) {
       const cached = getCachedCoords(a.address, a.neighborhood, a.city, a.state);
       if (cached) {
         lat = cached.lat;
         lng = cached.lng;
+        geocodeStatus = geocodeStatus || (cached.precision === 'rooftop' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA');
       }
     }
 
     if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
       if (lat >= minLat && lat <= maxLat && lng >= minLon && lng <= maxLon) {
-        inside.push({ ...a, lat, lng });
+        inside.push({ ...a, lat, lng, status_geocodificacao: geocodeStatus });
         if (inside.length >= 150) {
           break; // Cap estrito de 150 para garantir 60 FPS
         }
@@ -2385,11 +2682,19 @@ app.get('/api/itbi/transactions', async (req, res) => {
   // Calculate real distance if targetStreet and neighborhood are specified
   if (targetStreet && filterNeighborhood) {
     const tgt = targetStreet as string;
-    const rad = radiusKm ? parseFloat(radiusKm as string) : 1.5;
+    const requestedRadius = radiusKm ? parseFloat(radiusKm as string) : 2;
+    const rad = Number.isFinite(requestedRadius) ? Math.max(0.5, Math.min(2, requestedRadius)) : 2;
     
     // Find all unique streets in the current filtered list of transactions
-    const uniqueStreets = Array.from(new Set(txs.map(t => t.street).filter(Boolean))) as string[];
-    if (!uniqueStreets.includes(tgt)) {
+    const streetFrequency = new Map<string, number>();
+    for (const tx of txs) {
+      const streetName = tx.street?.trim();
+      if (streetName) streetFrequency.set(streetName, (streetFrequency.get(streetName) || 0) + 1);
+    }
+    const uniqueStreets = Array.from(streetFrequency.entries())
+      .sort((left, right) => right[1] - left[1])
+      .map(([streetName]) => streetName);
+    if (!uniqueStreets.some(streetName => streetAxesMatch(streetName, tgt))) {
       uniqueStreets.push(tgt);
     }
 
@@ -2403,7 +2708,17 @@ app.get('/api/itbi/transactions', async (req, res) => {
       }
 
       // Get coordinates for all these streets, anchored to tgtCoords if available
-      const coordsMap = await getStreetCoordinates(filterState, filterCity, filterNeighborhood, uniqueStreets, tgtCoords || undefined);
+      // The calculator can switch between 500m, 1km and 2km without making a
+      // new request. Hydrate the full supported 2km envelope here, then let
+      // the client apply the selected radius to the verified distances.
+      const coordsMap = await getStreetCoordinates(
+        filterState,
+        filterCity,
+        filterNeighborhood,
+        uniqueStreets,
+        tgtCoords || undefined,
+        2
+      );
       if (tgtCoords) {
         coordsMap[tgt] = tgtCoords;
       } else {
@@ -3346,6 +3661,7 @@ app.post('/api/portais/search-similar', async (req, res) => {
 
   let nearbyStreets: string[] = [street || 'Rua Principal'];
   let targetStreetCoords: {lat: number; lng: number} | null = null;
+  const streetCoordsMap: Record<string, { lat: number; lng: number }> = {};
 
   try {
     if (street) {
@@ -3355,7 +3671,14 @@ app.post('/api/portais/search-similar', async (req, res) => {
       }
     }
 
-    streetCoordsMap = await getStreetCoordinates(uf, cityName, neighborhood, uniqueStreets, targetStreetCoords || undefined);
+    Object.assign(streetCoordsMap, await getStreetCoordinates(
+      uf,
+      cityName,
+      neighborhood,
+      uniqueStreets,
+      targetStreetCoords || undefined,
+      rad
+    ));
     
     // Find target street coordinates (allowing cleaned name matching)
     if (street) {
@@ -3849,15 +4172,22 @@ app.post('/api/parse-pdf', async (req, res) => {
       numpages = textRes.pages?.length || 1;
       await parser.destroy();
     } catch (parseErr) {
-      console.warn('[PDF Parser] Fallback extractor acionado:', parseErr);
-      const raw = buffer.toString('latin1');
-      const streamMatches = raw.match(/\(([^()]{3,})\)Tj|\[([^\[\]]{3,})\]TJ/g);
-      if (streamMatches) {
-        text = streamMatches.map(m => m.replace(/[\(\)\[\]]|T[jJ]/g, ' ')).join(' ');
-      }
+      console.warn('[PDF Parser] PDFParse direto falhou:', parseErr);
+      text = '';
+    }
+
+    // Validação Pericial do Texto Extraído:
+    // Expurga lixo de encoding/fontes binárias como "[ c Y W ^ [ d d [ Y e f d g h h X..."
+    const lettersCount = (text.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+    const isReadable = text.length >= 25 && (lettersCount / text.length) >= 0.40;
+    const hasLegalKeywords = /\b(matricula|matrícula|imovel|imóvel|apartamento|casa|terreno|edital|registro|cartorio|cartório|caixa|leilao|leilão|comarca|oficio|ofício|devedor|alienacao|alienação|averbacao|averbação|penhora|hipoteca|livro|certidao|certidão|quitacao|quitação|rgi|lote)\b/i.test(text);
+
+    if (!isReadable || (!hasLegalKeywords && text.length > 50)) {
+      console.warn(`[PDF Parser] Texto extraído (${text.length} chars) não possui palavras em português válidas ou contém artefatos binários. Marcado como digitalização sem OCR.`);
+      text = '';
     }
     
-    console.log(`[PDF Parser] Texto extraído com sucesso: ${text.length} caracteres, ${numpages} páginas.`);
+    console.log(`[PDF Parser] Texto final validado: ${text.length} caracteres, ${numpages} páginas.`);
 
     return res.json({
       success: true,
@@ -3995,12 +4325,18 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
           try {
             const parser = new PDFParse({ data: new Uint8Array(buffer) });
             const textRes = await parser.getText();
-            matriculaText = (textRes.text || '').trim();
+            const rawText = (textRes.text || '').trim();
             await parser.destroy();
+            const letters = (rawText.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+            const ratio = rawText.length > 0 ? (letters / rawText.length) : 0;
+            const hasLegalKeywords = /\b(matricula|matrícula|imovel|imóvel|apartamento|casa|terreno|edital|registro|cartorio|cartório|caixa|leilao|leilão|comarca|oficio|ofício|devedor|alienacao|alienação|averbacao|averbação|penhora|hipoteca|livro|certidao|certidão|quitacao|quitação|rgi|lote)\b/i.test(rawText);
+            if (rawText.length > 50 && ratio >= 0.40 && hasLegalKeywords) {
+              matriculaText = rawText;
+            } else {
+              console.warn('[Caixa Docs] Texto da matrícula rejeitado por conter glifos/codificação corrompida.');
+            }
           } catch (pe) {
-            const raw = buffer.toString('latin1');
-            const streamMatches = raw.match(/\(([^()]{3,})\)Tj|\[([^\[\]]{3,})\]TJ/g);
-            if (streamMatches) matriculaText = streamMatches.map(m => m.replace(/[\(\)\[\]]|T[jJ]/g, ' ')).join(' ');
+            console.warn('[Caixa Docs] Falha na biblioteca PDF ao ler matrícula:', pe);
           }
           hasMatriculaPdf = matriculaText.length > 50;
         }
@@ -4027,12 +4363,18 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
           try {
             const parser = new PDFParse({ data: new Uint8Array(buffer) });
             const textRes = await parser.getText();
-            editalPdfRaw = (textRes.text || '').trim();
+            const rawText = (textRes.text || '').trim();
             await parser.destroy();
+            const letters = (rawText.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+            const ratio = rawText.length > 0 ? (letters / rawText.length) : 0;
+            const hasLegalKeywords = /\b(edital|leilao|leilão|caixa|processo|comarca|vara|arrematante|lance|imovel|imóvel|condicoes|condições)\b/i.test(rawText);
+            if (rawText.length > 50 && ratio >= 0.40 && hasLegalKeywords) {
+              editalPdfRaw = rawText;
+            } else {
+              console.warn('[Caixa Docs] Texto do edital rejeitado por conter glifos/codificação corrompida.');
+            }
           } catch (pe) {
-            const raw = buffer.toString('latin1');
-            const streamMatches = raw.match(/\(([^()]{3,})\)Tj|\[([^\[\]]{3,})\]TJ/g);
-            if (streamMatches) editalPdfRaw = streamMatches.map(m => m.replace(/[\(\)\[\]]|T[jJ]/g, ' ')).join(' ');
+            console.warn('[Caixa Docs] Falha na biblioteca PDF ao ler edital:', pe);
           }
           hasEditalPdf = editalPdfRaw.length > 50;
         }
@@ -4366,8 +4708,9 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'SP', 'MG'], user
           const precoStr = (row.preco || '0').replace(/\./g, '').replace(',', '.');
           const avaliacaoStr = (row.valordeavaliacao || '0').replace(/\./g, '').replace(',', '.');
           const descricaoCaixa = (row.descricao || '').trim();
-          const linkCaixa = (row.linkdeacesso || 'https://venda-imoveis.caixa.gov.br/').trim();
-          const modalidade = (row.modalidadedevenda || '').trim();
+          const linkCaixa = getCaixaCatalogField(row, 'linkdeacesso', 'link') || 'https://venda-imoveis.caixa.gov.br/';
+          const modalidadeRaw = getCaixaCatalogField(row, 'modalidadedevenda', 'modalidadedavenda', 'modalidade');
+          const saleMode = normalizeCaixaSaleMode(modalidadeRaw, descricaoCaixa);
 
           const cleanCidade = cleanCaixaCity(rawCidade, ufCaixa);
           const cleanBairro = rawBairro ? rawBairro.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Não informado';
@@ -4418,7 +4761,12 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'SP', 'MG'], user
             estimatedValue: 0,
             auctionDate: todayStr,
             auctionLink: linkCaixa,
-            description: `Imóvel Retomado Caixa Econômica Federal. Modalidade: ${modalidade}. Avaliação original Caixa: R$ ${avaliacaoStr}. Descrição: ${descricaoCaixa}`,
+            description: [
+              'Imóvel Retomado Caixa Econômica Federal.',
+              saleMode ? `Modalidade: ${saleMode}.` : '',
+              `Avaliação original Caixa: R$ ${avaliacaoStr}.`,
+              `Descrição: ${descricaoCaixa}`
+            ].filter(Boolean).join(' '),
             status: 'Pendente',
             occupied: true,
             state: ufCaixa,
@@ -4427,7 +4775,8 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'SP', 'MG'], user
             userId,
             origin: 'caixa',
             bedrooms: parsedBedrooms,
-            parkingSpaces: parsedParkingSpaces
+            parkingSpaces: parsedParkingSpaces,
+            saleMode
           };
 
           const recalculated = recalculateAuctionWithIndex(newAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap);
@@ -4492,6 +4841,78 @@ app.post('/api/garimpar/caixa-auto', authMiddleware, async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Erro ao sincronizar imóveis Caixa.' });
+  }
+});
+
+// POST /api/garimpar/extrajudiciais-auto (Varredura nos 7 portais de leiloeiros para leilões de bancos / extrajudiciais)
+app.post('/api/garimpar/extrajudiciais-auto', authMiddleware, async (req, res) => {
+  const state = (req.body.state || 'RJ').toUpperCase().trim();
+  const city = req.body.city || (state === 'RJ' ? 'Rio de Janeiro' : state === 'MG' ? 'Juiz de Fora' : 'São Paulo');
+  try {
+    const { newAuctions, totalScraped } = await syncAuctioneersPipeline(
+      'extrajudicial',
+      state,
+      city,
+      store.auctions,
+      (auc) => recalculateAuction(auc, store.itbiTransactions)
+    );
+
+    if (newAuctions.length > 0) {
+      if (req.userId) {
+        newAuctions.forEach(a => { a.userId = req.userId; });
+      }
+      store.auctions.unshift(...newAuctions);
+      saveStore(store);
+    }
+
+    res.json({
+      success: true,
+      added: newAuctions.length,
+      totalScraped,
+      totalInDb: store.auctions.length,
+      message: newAuctions.length > 0
+        ? `Sincronização de leilões extrajudiciais concluída! ${newAuctions.length} novas oportunidades de bancos capturadas nos portais (Zuk, Mega, Biasi, Frazão, etc.) e avaliadas com ITBI oficial.`
+        : `Varredura concluída! ${totalScraped} lotes avaliados nos portais de leiloeiros. Nenhuma nova oportunidade pendente para importação.`
+    });
+  } catch (err: any) {
+    console.error('[Sync Extrajudiciais] Erro:', err);
+    res.status(500).json({ error: err.message || 'Erro ao sincronizar leilões extrajudiciais.' });
+  }
+});
+
+// POST /api/garimpar/judiciais-auto (Varredura nos 7 portais de leiloeiros para leilões judiciais)
+app.post('/api/garimpar/judiciais-auto', authMiddleware, async (req, res) => {
+  const state = (req.body.state || 'RJ').toUpperCase().trim();
+  const city = req.body.city || (state === 'RJ' ? 'Rio de Janeiro' : state === 'MG' ? 'Juiz de Fora' : 'São Paulo');
+  try {
+    const { newAuctions, totalScraped } = await syncAuctioneersPipeline(
+      'judicial',
+      state,
+      city,
+      store.auctions,
+      (auc) => recalculateAuction(auc, store.itbiTransactions)
+    );
+
+    if (newAuctions.length > 0) {
+      if (req.userId) {
+        newAuctions.forEach(a => { a.userId = req.userId; });
+      }
+      store.auctions.unshift(...newAuctions);
+      saveStore(store);
+    }
+
+    res.json({
+      success: true,
+      added: newAuctions.length,
+      totalScraped,
+      totalInDb: store.auctions.length,
+      message: newAuctions.length > 0
+        ? `Sincronização de leilões judiciais concluída! ${newAuctions.length} novos leilões das varas cíveis e trabalhistas capturados nos portais e avaliados com ITBI oficial.`
+        : `Varredura concluída! ${totalScraped} leilões judiciais avaliados nos portais. Nenhuma nova oportunidade pendente para importação.`
+    });
+  } catch (err: any) {
+    console.error('[Sync Judiciais] Erro:', err);
+    res.status(500).json({ error: err.message || 'Erro ao sincronizar leilões judiciais.' });
   }
 });
 

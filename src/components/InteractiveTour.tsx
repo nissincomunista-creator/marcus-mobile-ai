@@ -271,7 +271,7 @@ export const TOUR_STEPS: TourStep[] = [
     targetSelector: '[data-tour="calc-benchmarks"]',
     targetTab: 'calculadora',
     preferredPlacement: 'bottom',
-    description: 'Matriz comparativa em 6 níveis oficiais: Mesmo Prédio, Mesma Rua, Ruas do Entorno (Raio), Média do Bairro, Anúncios na Rua e Anúncios no Entorno. Salve a análise no seu perfil ou gere o Laudo Técnico PTAM em PDF.',
+    description: 'Matriz comparativa em 5 níveis oficiais: Mesmo Prédio, Mesma Rua, Ruas do Entorno (Raio), Média do Bairro e Anúncios na Rua. Salve a análise no seu perfil ou gere o Laudo Técnico PTAM em PDF.',
     investorBenefit: 'Emita um Laudo Pericial completo com respaldo da NBR 14.653 para apresentar a sócios, investidores e bancos financiadores.',
     actionHint: 'Avance para a Etapa 2 para simular viabilidade comparada entre Locação e Revenda Rápida (Flip).',
     icon: CheckCircle2

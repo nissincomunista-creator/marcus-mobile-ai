@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { AuctionProperty } from '../types.ts';
 import { 
   MapPin, Layers, Compass, Building, ExternalLink, X, Search, 
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getPropertyCoordinates } from '../utils/geoCoords.ts';
 import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
+import PropertyThumbnail from './PropertyThumbnail.tsx';
 import RealValueCalculator from './RealValueCalculator.tsx';
 
 interface PropertyMapProps {
@@ -30,24 +31,30 @@ export default function PropertyMap({
   const [selectedTypologyFilter, setSelectedTypologyFilter] = useState<string | null>(null);
   const [showFactionsLayer, setShowFactionsLayer] = useState<boolean>(false);
   const [simulatingProperty, setSimulatingProperty] = useState<AuctionProperty | null>(null);
-  const [activeTab, setActiveTab] = useState<'both' | 'map' | 'list'>('both');
+  const [activeTab, setActiveTab] = useState<'both' | 'map' | 'list'>(() => typeof window !== 'undefined' && window.innerWidth < 1024 ? 'map' : 'both');
   const [buildingClusterModal, setBuildingClusterModal] = useState<{ address: string; properties: AuctionProperty[] } | null>(null);
   const [showPendingDrawer, setShowPendingDrawer] = useState<boolean>(false);
   const [isViewportDirty, setIsViewportDirty] = useState<boolean>(false);
   const [isSearchingArea, setIsSearchingArea] = useState<boolean>(false);
   const [autoSearchOnMove, setAutoSearchOnMove] = useState<boolean>(true);
+  const [resolvedCoordinates, setResolvedCoordinates] = useState<Record<string, [number, number]>>({});
   const autoSearchOnMoveRef = useRef<boolean>(true);
   const autoSearchTimerRef = useRef<any>(null);
   const handleSearchInAreaRef = useRef<() => void>(() => {});
   const spiderfyLayerRef = useRef<any>(null);
+  const geocodeAttemptedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     autoSearchOnMoveRef.current = autoSearchOnMove;
   }, [autoSearchOnMove]);
+
+  const getMapCoordinates = useCallback((property: AuctionProperty): [number, number] | null => {
+    return resolvedCoordinates[property.id] || getPropertyCoordinates(property);
+  }, [resolvedCoordinates]);
   
   const pendingReviewProps = useMemo(() => {
-    return auctions.filter(a => getPropertyCoordinates(a) === null);
-  }, [auctions]);
+    return auctions.filter(a => getMapCoordinates(a) === null);
+  }, [auctions, getMapCoordinates]);
   
   const factionsGeoJsonRef = useRef<any>(null);
   const [areaFilteredProps, setAreaFilteredProps] = useState<AuctionProperty[] | null>(() => {
@@ -187,7 +194,7 @@ export default function PropertyMap({
 
       let fetchedProps: AuctionProperty[] = [];
       try {
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem('token');
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
         const res = await fetch(`/api/auctions/bbox?minLat=${sw.lat}&maxLat=${ne.lat}&minLon=${sw.lng}&maxLon=${ne.lng}`, { headers });
@@ -201,7 +208,7 @@ export default function PropertyMap({
 
       if (!fetchedProps || fetchedProps.length === 0) {
         fetchedProps = auctions.filter(a => {
-          const coords = getPropertyCoordinates(a);
+          const coords = getMapCoordinates(a);
           return coords ? bounds.contains(coords) : false;
         });
       }
@@ -403,18 +410,29 @@ export default function PropertyMap({
   }, [showFactionsLayer]);
 
   useEffect(() => {
-    const unlocated = displayedList.filter(p => !p.lat || !p.lng || p.lat === 0);
+    const unlocated = displayedList.filter(p => getMapCoordinates(p) === null);
     if (unlocated.length === 0) return;
 
     let isSubscribed = true;
     async function geocodeBatch() {
-      for (const prop of unlocated.slice(0, 30)) {
+      // Requests are deliberately bounded and only accept an address-level
+      // answer. A missing result remains in the review drawer instead of being
+      // placed at a neighborhood/city centroid.
+      for (const prop of unlocated.slice(0, 12)) {
         if (!isSubscribed) break;
+        if (geocodeAttemptedRef.current.has(prop.id)) continue;
+
+        const address = prop.address?.trim() || '';
+        if (!address || !/^(?:rua|r\.|avenida|av\.|estrada|est\.|travessa|trav\.|alameda|al\.|praca|praça|pca\.|rodovia|rod\.|largo|beco|ladeira)\b/i.test(address)) {
+          geocodeAttemptedRef.current.add(prop.id);
+          continue;
+        }
+
+        geocodeAttemptedRef.current.add(prop.id);
         try {
-          const query = `${prop.address}, ${prop.neighborhood || ''}, ${prop.city || ''} - ${prop.state || 'RJ'}`;
           const params = new URLSearchParams({
-            q: query,
-            address: prop.address || '',
+            q: address,
+            address,
             neighborhood: prop.neighborhood || '',
             city: prop.city || '',
             state: prop.state || 'RJ'
@@ -422,12 +440,17 @@ export default function PropertyMap({
           const res = await fetch(`/api/geocode?${params.toString()}`);
           if (res.ok) {
             const geo = await res.json();
-            if (geo && geo.lat && geo.lng && isSubscribed) {
-              prop.lat = geo.lat;
-              prop.lng = geo.lng;
-              if (markersRef.current[prop.id]) {
-                markersRef.current[prop.id].setLatLng([geo.lat, geo.lng]);
-              }
+            if (
+              geo?.precision &&
+              Number.isFinite(geo.lat) &&
+              Number.isFinite(geo.lng) &&
+              isSubscribed
+            ) {
+              setResolvedCoordinates(current => (
+                current[prop.id]
+                  ? current
+                  : { ...current, [prop.id]: [geo.lat, geo.lng] }
+              ));
             }
           }
         } catch (e) {}
@@ -435,7 +458,7 @@ export default function PropertyMap({
     }
     geocodeBatch();
     return () => { isSubscribed = false; };
-  }, [displayedList]);
+  }, [displayedList, getMapCoordinates]);
 
   useEffect(() => {
     const L = (window as any).L;
@@ -482,7 +505,7 @@ export default function PropertyMap({
   }> = {};
 
   displayedList.forEach(prop => {
-    const baseCoords = getPropertyCoordinates(prop);
+    const baseCoords = getMapCoordinates(prop);
     if (!baseCoords) return; // REGRA DE OURO: Bloqueio rigoroso de falsa precisão
 
     const addrClean = (prop.address || '').split(',')[0].trim().toLowerCase();
@@ -608,25 +631,28 @@ export default function PropertyMap({
   if (selectedPropId && markersRef.current[selectedPropId]) {
     const target = auctions.find(a => a.id === selectedPropId);
     if (target) {
-      const coords = getPropertyCoordinates(target);
+      const coords = getMapCoordinates(target);
       if (coords) mapRef.current.setView(coords, 16, { animate: true });
     }
   }
-}, [displayedList, selectedPropId]);
+}, [displayedList, selectedPropId, getMapCoordinates]);
 
 useEffect(() => {
   if (!selectedPropId || !mapRef.current) return;
   const target = auctions.find(a => a.id === selectedPropId);
   if (!target) return;
-  const coords = getPropertyCoordinates(target);
+  const coords = getMapCoordinates(target);
   if (coords) mapRef.current.setView(coords, 16, { animate: true });
-}, [selectedPropId, auctions]);
+}, [selectedPropId, auctions, getMapCoordinates]);
 
   const handleCardClick = (prop: AuctionProperty) => {
     setSelectedPropId(prop.id);
-    const coords = getPropertyCoordinates(prop);
+    const coords = getMapCoordinates(prop);
     if (coords && mapRef.current) {
       mapRef.current.setView(coords, 16, { animate: true });
+    }
+    if (window.innerWidth < 1024) {
+      setActiveTab('map');
     }
   };
 
@@ -668,7 +694,7 @@ useEffect(() => {
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="flex lg:hidden items-center bg-slate-900 p-0.5 rounded-xl border border-slate-800">
             <button
-              onClick={() => setActiveTab(activeTab === 'map' ? 'both' : 'map')}
+              onClick={() => setActiveTab('map')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
                 activeTab === 'map' ? 'bg-indigo-600 text-white' : 'text-slate-400'
               }`}
@@ -676,7 +702,7 @@ useEffect(() => {
               Mapa
             </button>
             <button
-              onClick={() => setActiveTab(activeTab === 'list' ? 'both' : 'list')}
+              onClick={() => setActiveTab('list')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
                 activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-400'
               }`}
@@ -810,20 +836,20 @@ useEffect(() => {
           <div ref={mapContainerRef} className="w-full h-full z-0" />
 
           {/* BARRA FLUTUANTE ESTILO ZAP IMÓVEIS / AIRBNB */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 max-w-[90vw] animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="absolute top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-center gap-2 pointer-events-none animate-in fade-in slide-in-from-top-2 duration-150">
             {(!autoSearchOnMove && isViewportDirty) && (
               <button
                 type="button"
                 onClick={handleSearchInArea}
                 disabled={isSearchingArea}
-                className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 border-2 border-indigo-300 cursor-pointer backdrop-blur-md transition-all hover:shadow-indigo-500/50"
+                className="pointer-events-auto bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 border-2 border-indigo-300 cursor-pointer backdrop-blur-md transition-all hover:shadow-indigo-500/50"
               >
                 <Search className={`w-3.5 h-3.5 text-amber-300 ${isSearchingArea ? 'animate-spin' : 'animate-bounce'}`} />
                 <span>{isSearchingArea ? 'Buscando na área...' : '🔍 Buscar nesta área'}</span>
               </button>
             )}
 
-            <label className="flex items-center gap-2 bg-slate-950/95 hover:bg-slate-900 text-slate-200 px-3.5 py-2 rounded-full border border-slate-750 text-xs font-bold shadow-2xl backdrop-blur-md cursor-pointer select-none transition-colors">
+            <label className="pointer-events-auto flex items-center gap-2 bg-slate-950/95 hover:bg-slate-900 text-slate-200 px-3.5 py-2 rounded-full border border-slate-750 text-xs font-bold shadow-2xl backdrop-blur-md cursor-pointer select-none transition-colors">
               <input
                 type="checkbox"
                 checked={autoSearchOnMove}
@@ -833,30 +859,17 @@ useEffect(() => {
               <span className="hidden sm:inline">Buscar ao mover o mapa</span>
               <span className="sm:hidden">Auto-buscar</span>
             </label>
-          </div>
 
-          <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
             {areaFilteredProps !== null && (
               <button
                 onClick={() => setAreaFilteredProps(null)}
-                className="bg-slate-900/95 hover:bg-slate-850 text-slate-300 hover:text-white px-3 py-2 rounded-xl border border-slate-700 text-xs font-bold shadow-xl cursor-pointer backdrop-blur-md transition-all flex items-center gap-1.5"
+                className="pointer-events-auto bg-slate-900/95 hover:bg-slate-850 text-slate-300 hover:text-white px-3 py-2 rounded-xl border border-slate-700 text-xs font-bold shadow-xl cursor-pointer backdrop-blur-md transition-all flex items-center gap-1.5"
                 title="Limpar filtro de área e exibir todos os imóveis"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Ver todos ({auctions.length})</span>
               </button>
             )}
-            <button
-              onClick={handleSearchInArea}
-              className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3.5 py-2 rounded-xl shadow-2xl font-bold text-xs flex items-center gap-2 border border-indigo-400/50 cursor-pointer backdrop-blur-md transition-all"
-              title="Filtrar imóveis visíveis no enquadramento atual"
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span>Pesquisar na área</span>
-              <span className="bg-indigo-800/90 text-white text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
-                {displayedList.length}
-              </span>
-            </button>
           </div>
 
           {buildingClusterModal && (
@@ -1041,44 +1054,71 @@ useEffect(() => {
                     }`}
                   >
                     <div className="p-3.5 space-y-2.5">
-                      <div className="flex justify-between items-start gap-1.5">
-                        <span className="bg-slate-800 text-slate-200 text-[11px] font-semibold px-2 py-0.5 rounded border border-slate-700">
-                          {auc.propertyType} • {auc.sizeSqm} m²
-                          {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
-                          {auc.parkingSpaces ? ` • ${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : ''}
-                        </span>
-                        <div className="flex items-center space-x-1">
-                          {isFeatured && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                              ★ Top ROI
+                      {/* Header Block with Typology and Left Badges, and Thumbnail on the Right */}
+                      <div className="flex gap-2.5 items-start justify-between">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-1">
+                            <span className="bg-slate-800 text-slate-200 text-[10.5px] font-semibold px-2 py-0.5 rounded border border-slate-700">
+                              {auc.propertyType} • {auc.sizeSqm} m²
+                              {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
+                              {auc.parkingSpaces ? ` • ${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : ''}
                             </span>
-                          )}
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
-                            auc.riskLevel === 'Baixo' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' :
-                            auc.riskLevel === 'Médio' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
-                            'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                          }`}>
-                            {auc.riskLevel}
-                          </span>
-                        </div>
-                      </div>
 
-                      {auc.isCommunityRisk && (
-                        <div className="pt-0.5">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800/60 font-mono inline-flex items-center gap-1">
-                            ⚠️ {auc.communityName ? `${auc.communityName}` : 'Comunidade'} {auc.factionName ? `(${auc.factionName})` : ''}
-                          </span>
-                        </div>
-                      )}
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                              auc.riskLevel === 'Baixo' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' :
+                              auc.riskLevel === 'Médio' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
+                              'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                            }`}>
+                              Risco {auc.riskLevel}
+                            </span>
 
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 hover:text-indigo-300 transition-colors">
-                          {auc.title}
-                        </h4>
-                        <p className="text-[11px] text-slate-400 flex items-center gap-1 line-clamp-1">
-                          <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
-                          <span>{auc.address || 'Endereço'} ({auc.neighborhood} - {auc.state || 'RJ'})</span>
-                        </p>
+                            {/* Alerta Crítico (<= 30m) */}
+                            {auc.isCommunityRisk && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/60 font-mono inline-flex items-center gap-1">
+                                ⛔ {auc.communityName ? `${auc.communityName}` : 'Comunidade'} {auc.factionName ? `(${auc.factionName})` : ''}
+                              </span>
+                            )}
+
+                            {/* Alerta Informativo de Proximidade (31-500m) */}
+                            {!auc.isCommunityRisk && auc.nearbyCommunityName && (
+                              <span
+                                className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800/50 inline-flex items-center gap-1 cursor-help"
+                                title={`Localizado a ~${auc.nearbyCommunityDistanceM || 300}m da comunidade ${auc.nearbyCommunityName}. Sem desvalorização forçada.`}
+                              >
+                                ⚠️ Próx. {auc.nearbyCommunityName} (~{auc.nearbyCommunityDistanceM || 300}m)
+                              </span>
+                            )}
+
+                            {isFeatured && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                ★ Top ROI
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <h4 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 hover:text-indigo-300 transition-colors">
+                              {auc.title}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 flex items-center gap-1 line-clamp-1">
+                              <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                              <span>{auc.address || 'Endereço'} ({auc.neighborhood} - {auc.state || 'RJ'})</span>
+                            </p>
+                            {auc.divergentNeighborhoodNotice && (
+                              <div className="pt-0.5">
+                                <span className="text-[9px] bg-amber-950/80 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
+                                  <span>⚠️</span>
+                                  <span>{auc.divergentNeighborhoodNotice}</span>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Thumbnail na DIREITA */}
+                        <div className="shrink-0 pt-0.5">
+                          <PropertyThumbnail property={auc} size="sm" />
+                        </div>
                       </div>
 
                       {/* Grid Linha 1 de Valores Principais (4 Colunas Perfeitamente Alinhadas) */}
@@ -1098,8 +1138,8 @@ useEffect(() => {
                         {/* Col 3: Lucro Líquido */}
                         <div className="flex flex-col justify-center">
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Lucro Líquido</span>
-                          <span className={`text-xs font-black font-mono mt-0.5 ${(auc.calculatedProfit || 0) >= 0 ? 'text-white' : 'text-rose-400'}`}>
-                            {formatBRL(auc.calculatedProfit || 0)}
+                          <span className={`text-xs font-black font-mono mt-0.5 ${auc.hasMicroBenchmark === false ? 'text-slate-400' : (auc.calculatedProfit || 0) >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                            {auc.hasMicroBenchmark === false || auc.calculatedProfit === undefined ? 'Sob consulta' : formatBRL(auc.calculatedProfit || 0)}
                           </span>
                         </div>
 
@@ -1110,7 +1150,9 @@ useEffect(() => {
                             <span className="text-[8px] text-amber-400/80 font-mono">ℹ️</span>
                           </div>
                           <span className="text-xs font-black text-amber-300 font-mono block mt-0.5">
-                            {auc.estimatedValue ? formatBRL(auc.estimatedValue) : (auc.itbiUnitValueAvg ? formatBRL(auc.itbiUnitValueAvg * auc.sizeSqm) : '-')}
+                            {auc.hasMicroBenchmark === false || (!auc.estimatedValue && !auc.itbiStreetAvgSqm)
+                              ? <span className="text-amber-400/90 font-mono text-[10px]">Sem amostragem</span>
+                              : (auc.estimatedValue ? formatBRL(auc.estimatedValue) : (auc.itbiUnitValueAvg ? formatBRL(auc.itbiUnitValueAvg * auc.sizeSqm) : '-'))}
                           </span>
 
                           {/* Tooltip flutuante no hover */}
@@ -1135,9 +1177,10 @@ useEffect(() => {
                         <div className="flex flex-col justify-center">
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">ROI Estimado</span>
                           <span className={`text-xs font-black font-mono mt-0.5 ${
+                            auc.hasMicroBenchmark === false ? 'text-slate-400' :
                             (auc.calculatedRoi || 0) > 40 ? 'text-emerald-400' : 'text-indigo-400'
                           }`}>
-                            {auc.calculatedRoi ? `${auc.calculatedRoi.toLocaleString('pt-BR')}%` : '0%'}
+                            {auc.hasMicroBenchmark === false || auc.calculatedRoi === undefined ? 'Sob consulta' : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
                           </span>
                         </div>
 
@@ -1204,7 +1247,11 @@ useEffect(() => {
                             <span className="text-[8px] text-emerald-400/80 font-mono">ℹ️</span>
                           </div>
                           <span className="text-xs font-black text-emerald-300 font-mono block mt-0.5">
-                            {formatBRL(auc.vendaBaixaPrice || (auc.estimatedValue ? Math.round(auc.estimatedValue * 0.90) : 0))}
+                            {auc.hasMicroBenchmark === false || !auc.vendaBaixaPrice ? (
+                              <span className="text-slate-400 font-mono text-[10px]">Sem amostragem</span>
+                            ) : (
+                              formatBRL(auc.vendaBaixaPrice)
+                            )}
                           </span>
 
                           {/* Tooltip flutuante no hover */}
@@ -1451,6 +1498,26 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      {/* Botão Flutuante Mobile QuintoAndar/Airbnb: Alternar entre Mapa e Lista */}
+      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-950/95 border border-indigo-500/50 rounded-full shadow-2xl p-1.5 backdrop-blur-xl pointer-events-auto">
+        <button
+          onClick={() => setActiveTab(activeTab === 'map' ? 'list' : 'map')}
+          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs rounded-full shadow-lg shadow-indigo-600/40 transition-all cursor-pointer select-none"
+        >
+          {activeTab === 'map' ? (
+            <>
+              <ListFilter className="w-4 h-4 text-white" />
+              <span>Ver Fichas ({displayedList.length})</span>
+            </>
+          ) : (
+            <>
+              <MapPin className="w-4 h-4 text-emerald-300" />
+              <span>Ver no Mapa</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
