@@ -775,7 +775,10 @@ function loadStore(): DataStore {
       // Sanitize and recalculate auctions with verified ITBI benchmark whenever calibration version changes
       const STORE_CALIBRATION_VERSION = 'v16_community_200m';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
-      if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+      const isMemoryConstrainedRender = process.env.RENDER === 'true';
+      if (needsRecalibration && isMemoryConstrainedRender) {
+        console.log('[Store] Migração integral adiada no Render Free; usando a base pré-calibrada e cálculo incremental para evitar estouro de memória.');
+      } else if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
         console.log(`[Store] Calibrando ${storeData.auctions.length} leilões com trava local e faixa crítica de comunidade em 200m (v16)...`);
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
@@ -5908,7 +5911,7 @@ async function start() {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
     
     // Keep every source current on each boot without delaying the first screen.
-    setTimeout(async () => {
+    if (process.env.RENDER !== 'true') setTimeout(async () => {
       console.log('[Server] Iniciando atualização automática das fontes...');
       try {
         const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
