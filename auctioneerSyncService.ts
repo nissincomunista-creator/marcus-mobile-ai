@@ -74,6 +74,8 @@ export interface ScrapedAuctionDraft {
   minDownpaymentPercent?: number;
   pendingIptuCost?: number;
   pendingCondoCost?: number;
+  addressVerified?: boolean;
+  sizeVerified?: boolean;
 }
 
 function normalizeStr(str: string | undefined | null): string {
@@ -320,7 +322,44 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
           } catch { /* URL inválida */ }
         }
       });
-      return { text: document.body?.innerText || '', documentLinks: Array.from(links) };
+      const normalizeValue = (value: unknown) => typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+      const addresses: string[] = [];
+      const sizes: number[] = [];
+      const visitJson = (value: any) => {
+        if (!value) return;
+        if (Array.isArray(value)) return value.forEach(visitJson);
+        if (typeof value !== 'object') return;
+        const address = value.address;
+        if (typeof address === 'string') addresses.push(normalizeValue(address));
+        else if (address && typeof address === 'object') {
+          const formatted = [address.streetAddress, address.addressLocality, address.addressRegion, address.postalCode]
+            .map(normalizeValue).filter(Boolean).join(', ');
+          if (formatted) addresses.push(formatted);
+        }
+        const floorValue = value.floorSize?.value ?? value.area?.value ?? value.floorSize;
+        const numericFloor = Number(String(floorValue ?? '').replace(',', '.'));
+        if (Number.isFinite(numericFloor) && numericFloor > 0) sizes.push(numericFloor);
+        Object.values(value).forEach(visitJson);
+      };
+      document.querySelectorAll('script[type="application/ld+json"]').forEach(script => {
+        try { visitJson(JSON.parse(script.textContent || 'null')); } catch { /* JSON-LD inválido */ }
+      });
+
+      const addressSelectors = '[itemprop="streetAddress"], [itemprop="address"], [data-testid*="address" i], [class*="endereco" i], [class*="address" i]';
+      document.querySelectorAll(addressSelectors).forEach(element => {
+        const value = normalizeValue((element as HTMLElement).innerText || element.getAttribute('content'));
+        if (value) addresses.push(value);
+      });
+      document.querySelectorAll('a[href*="google.com/maps"], a[href*="maps.google"], iframe[src*="maps"]')
+        .forEach(element => {
+          const raw = element.getAttribute('href') || element.getAttribute('src') || '';
+          try {
+            const url = new URL(raw, location.href);
+            const mapAddress = url.searchParams.get('q') || url.searchParams.get('query') || url.searchParams.get('destination');
+            if (mapAddress && !/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(mapAddress)) addresses.push(normalizeValue(mapAddress));
+          } catch { /* mapa sem URL válida */ }
+        });
+      return { text: document.body?.innerText || '', documentLinks: Array.from(links), structuredAddresses: addresses, structuredSizes: sizes };
     });
 
     let officialDocumentText = '';
@@ -344,18 +383,26 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
     const combinedText = `${detailData.text}\n${officialDocumentText}`;
     const financialTerms = extractFinancialTerms(combinedText);
     const dates = extractAuctionDates(combinedText);
-    const sizeMatch = combinedText.match(/[aá]rea\s+privativa\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i)
+    const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa|[uú]til|constru[ií]da)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i)
       || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i)
-      || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
-    const detailedSize = sizeMatch ? Math.round(Number(sizeMatch[1].replace(',', '.'))) : 0;
+      || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+    const structuredSize = detailData.structuredSizes.find((value: number) => value >= 10 && value <= 5000) || 0;
+    const detailedSize = structuredSize || (sizeMatch ? Math.round(Number(sizeMatch[1].replace(',', '.'))) : 0);
+    const structuredAddress = detailData.structuredAddresses
+      .map((value: string) => extractAddress(value, ''))
+      .find((value: string) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
+    const textAddress = extractAddress(combinedText, '');
+    const verifiedAddress = structuredAddress || (hasAuditableAddress(textAddress) ? textAddress : '');
     const detailedMinimumBid = extractMinimumBid(combinedText);
     const enrichedDescription = combinedText.trim().slice(0, 30000);
     return {
       ...draft,
-      address: extractAddress(combinedText, draft.address),
+      address: verifiedAddress || draft.address,
+      addressVerified: Boolean(verifiedAddress),
       matriculaText,
       matriculaUrl,
       sizeSqm: detailedSize > 0 ? detailedSize : draft.sizeSqm,
+      sizeVerified: detailedSize > 0,
       auctionPrice: detailedMinimumBid || draft.auctionPrice,
       estimatedValue: extractAppraisal(combinedText) || draft.estimatedValue,
       auctionDate: dates.first || draft.auctionDate,
@@ -922,7 +969,7 @@ export async function syncAuctioneersPipeline(
     }
     if (existingLinks.has(draft.auctionLink)) {
       const existing = existingAuctions.find(item => item.auctionLink === draft.auctionLink);
-      if (existing && hasAuditableAddress(draft.address)) {
+      if (existing && draft.addressVerified && draft.sizeVerified && hasAuditableAddress(draft.address)) {
         Object.assign(existing, recalculateFn({ ...existing, address: draft.address, sizeSqm: draft.sizeSqm,
           description: draft.description, matriculaText: draft.matriculaText || existing.matriculaText,
           matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
@@ -939,6 +986,8 @@ export async function syncAuctioneersPipeline(
     existingLinks.add(draft.auctionLink);
 
     const baseId = `auc-${draft.portalId}-${normalizeStr(draft.title).slice(0, 15)}-${Math.floor(Math.random() * 100000)}`;
+
+    if (!draft.addressVerified || !draft.sizeVerified || !hasAuditableAddress(draft.address)) continue;
 
     const rawAuc: AuctionProperty = {
       id: baseId,

@@ -773,7 +773,7 @@ function loadStore(): DataStore {
       }
 
       // Sanitize and recalculate auctions with verified ITBI benchmark whenever calibration version changes
-      const STORE_CALIBRATION_VERSION = 'v17_external_terms_audit';
+      const STORE_CALIBRATION_VERSION = 'v18_verified_age_only';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -1620,11 +1620,13 @@ function recalculateAuctionWithIndex(
 
   auc.estimatedValue = computedEstValue;
 
-  // 5. Ross-Heidecke / Building Age Depreciation Factor
+  // 5. Ross-Heidecke / Building Age Depreciation Factor. The year must be
+  // explicitly identified as construction/completion in the registry text;
+  // auction dates and unrelated years are never accepted.
   let buildingAge: number | undefined = undefined;
   let ageDepreciationPct = 0;
-  const descText = `${auc.description || ''} ${auc.title || ''} ${auc.address || ''}`;
-  const yearMatch = descText.match(/\b(19\d{2}|20\d{2})\b/);
+  const registryText = auc.matriculaText || '';
+  const yearMatch = registryText.match(/(?:ano\s+de\s+constru[cç][aã]o|constru[ií]d[oa]\s+em|edifica[cç][aã]o\s+(?:foi\s+)?conclu[ií]da\s+em|conclus[aã]o\s+da\s+obra|habite-se)[^\d]{0,50}\b(19\d{2}|20\d{2})\b/i);
   if (yearMatch) {
     const y = parseInt(yearMatch[1], 10);
     const curY = new Date().getFullYear();
@@ -1637,10 +1639,6 @@ function recalculateAuctionWithIndex(
     else if (buildingAge <= 40) ageDepreciationPct = 3;
     else if (buildingAge <= 55) ageDepreciationPct = 4;
     else ageDepreciationPct = 5;
-  } else {
-    if (!descText.toLowerCase().includes('lancamento') && !descText.toLowerCase().includes('novo')) {
-      ageDepreciationPct = 3;
-    }
   }
   auc.buildingAge = buildingAge;
   auc.ageDepreciationPct = ageDepreciationPct;
@@ -5960,22 +5958,29 @@ async function start() {
         const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
         let auctioneerAdded = 0;
 
-        for (const targetType of ['extrajudicial', 'judicial'] as const) {
-          try {
-            const { newAuctions } = await syncAuctioneersPipeline(
-              targetType,
-              'RJ',
-              'Rio de Janeiro',
-              store.auctions,
-              (auc) => recalculateAuction(auc, store.itbiTransactions)
-            );
-            if (newAuctions.length > 0) {
-              newAuctions.forEach((auction) => { auction.userId = auction.userId || 'system'; });
-              store.auctions.unshift(...newAuctions);
-              auctioneerAdded += newAuctions.length;
+        const auctioneerTargets = [
+          { state: 'RJ', city: 'Rio de Janeiro' },
+          { state: 'RJ', city: 'Niterói' },
+          { state: 'MG', city: 'Juiz de Fora' }
+        ];
+        for (const target of auctioneerTargets) {
+          for (const targetType of ['extrajudicial', 'judicial'] as const) {
+            try {
+              const { newAuctions } = await syncAuctioneersPipeline(
+                targetType,
+                target.state,
+                target.city,
+                store.auctions,
+                (auc) => recalculateAuction(auc, store.itbiTransactions)
+              );
+              if (newAuctions.length > 0) {
+                newAuctions.forEach((auction) => { auction.userId = auction.userId || 'system'; });
+                store.auctions.unshift(...newAuctions);
+                auctioneerAdded += newAuctions.length;
+              }
+            } catch (error) {
+              console.error(`[Server] Falha parcial na atualização ${targetType} de ${target.city}:`, error);
             }
-          } catch (error) {
-            console.error(`[Server] Falha parcial na atualização ${targetType}:`, error);
           }
         }
 

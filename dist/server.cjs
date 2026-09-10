@@ -1633,7 +1633,45 @@ async function enrichLotDetails(browser, draft) {
           }
         }
       });
-      return { text: document.body?.innerText || "", documentLinks: Array.from(links) };
+      const normalizeValue = (value) => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+      const addresses = [];
+      const sizes = [];
+      const visitJson = (value) => {
+        if (!value) return;
+        if (Array.isArray(value)) return value.forEach(visitJson);
+        if (typeof value !== "object") return;
+        const address = value.address;
+        if (typeof address === "string") addresses.push(normalizeValue(address));
+        else if (address && typeof address === "object") {
+          const formatted = [address.streetAddress, address.addressLocality, address.addressRegion, address.postalCode].map(normalizeValue).filter(Boolean).join(", ");
+          if (formatted) addresses.push(formatted);
+        }
+        const floorValue = value.floorSize?.value ?? value.area?.value ?? value.floorSize;
+        const numericFloor = Number(String(floorValue ?? "").replace(",", "."));
+        if (Number.isFinite(numericFloor) && numericFloor > 0) sizes.push(numericFloor);
+        Object.values(value).forEach(visitJson);
+      };
+      document.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+        try {
+          visitJson(JSON.parse(script.textContent || "null"));
+        } catch {
+        }
+      });
+      const addressSelectors = '[itemprop="streetAddress"], [itemprop="address"], [data-testid*="address" i], [class*="endereco" i], [class*="address" i]';
+      document.querySelectorAll(addressSelectors).forEach((element) => {
+        const value = normalizeValue(element.innerText || element.getAttribute("content"));
+        if (value) addresses.push(value);
+      });
+      document.querySelectorAll('a[href*="google.com/maps"], a[href*="maps.google"], iframe[src*="maps"]').forEach((element) => {
+        const raw = element.getAttribute("href") || element.getAttribute("src") || "";
+        try {
+          const url = new URL(raw, location.href);
+          const mapAddress = url.searchParams.get("q") || url.searchParams.get("query") || url.searchParams.get("destination");
+          if (mapAddress && !/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(mapAddress)) addresses.push(normalizeValue(mapAddress));
+        } catch {
+        }
+      });
+      return { text: document.body?.innerText || "", documentLinks: Array.from(links), structuredAddresses: addresses, structuredSizes: sizes };
     });
     let officialDocumentText = "";
     let matriculaText = draft.matriculaText || "";
@@ -1657,16 +1695,22 @@ ${extracted}`;
 ${officialDocumentText}`;
     const financialTerms = extractFinancialTerms(combinedText);
     const dates = extractAuctionDates(combinedText);
-    const sizeMatch = combinedText.match(/[aá]rea\s+privativa\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
-    const detailedSize = sizeMatch ? Math.round(Number(sizeMatch[1].replace(",", "."))) : 0;
+    const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa|[uú]til|constru[ií]da)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+    const structuredSize = detailData.structuredSizes.find((value) => value >= 10 && value <= 5e3) || 0;
+    const detailedSize = structuredSize || (sizeMatch ? Math.round(Number(sizeMatch[1].replace(",", "."))) : 0);
+    const structuredAddress = detailData.structuredAddresses.map((value) => extractAddress(value, "")).find((value) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
+    const textAddress = extractAddress(combinedText, "");
+    const verifiedAddress = structuredAddress || (hasAuditableAddress(textAddress) ? textAddress : "");
     const detailedMinimumBid = extractMinimumBid(combinedText);
     const enrichedDescription = combinedText.trim().slice(0, 3e4);
     return {
       ...draft,
-      address: extractAddress(combinedText, draft.address),
+      address: verifiedAddress || draft.address,
+      addressVerified: Boolean(verifiedAddress),
       matriculaText,
       matriculaUrl,
       sizeSqm: detailedSize > 0 ? detailedSize : draft.sizeSqm,
+      sizeVerified: detailedSize > 0,
       auctionPrice: detailedMinimumBid || draft.auctionPrice,
       estimatedValue: extractAppraisal(combinedText) || draft.estimatedValue,
       auctionDate: dates.first || draft.auctionDate,
@@ -2135,7 +2179,7 @@ async function syncAuctioneersPipeline(targetType, state = "RJ", city = "Rio de 
     }
     if (existingLinks.has(draft.auctionLink)) {
       const existing = existingAuctions.find((item) => item.auctionLink === draft.auctionLink);
-      if (existing && hasAuditableAddress(draft.address)) {
+      if (existing && draft.addressVerified && draft.sizeVerified && hasAuditableAddress(draft.address)) {
         Object.assign(existing, recalculateFn({
           ...existing,
           address: draft.address,
@@ -2156,6 +2200,7 @@ async function syncAuctioneersPipeline(targetType, state = "RJ", city = "Rio de 
     }
     existingLinks.add(draft.auctionLink);
     const baseId = `auc-${draft.portalId}-${normalizeStr(draft.title).slice(0, 15)}-${Math.floor(Math.random() * 1e5)}`;
+    if (!draft.addressVerified || !draft.sizeVerified || !hasAuditableAddress(draft.address)) continue;
     const rawAuc = {
       id: baseId,
       title: draft.title,
@@ -2735,7 +2780,7 @@ function loadStore() {
           }
         });
       }
-      const STORE_CALIBRATION_VERSION = "v17_external_terms_audit";
+      const STORE_CALIBRATION_VERSION = "v18_verified_age_only";
       const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === "true";
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -3405,8 +3450,8 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   auc.estimatedValue = computedEstValue;
   let buildingAge = void 0;
   let ageDepreciationPct = 0;
-  const descText = `${auc.description || ""} ${auc.title || ""} ${auc.address || ""}`;
-  const yearMatch = descText.match(/\b(19\d{2}|20\d{2})\b/);
+  const registryText = auc.matriculaText || "";
+  const yearMatch = registryText.match(/(?:ano\s+de\s+constru[cç][aã]o|constru[ií]d[oa]\s+em|edifica[cç][aã]o\s+(?:foi\s+)?conclu[ií]da\s+em|conclus[aã]o\s+da\s+obra|habite-se)[^\d]{0,50}\b(19\d{2}|20\d{2})\b/i);
   if (yearMatch) {
     const y = parseInt(yearMatch[1], 10);
     const curY = (/* @__PURE__ */ new Date()).getFullYear();
@@ -3419,10 +3464,6 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     else if (buildingAge <= 40) ageDepreciationPct = 3;
     else if (buildingAge <= 55) ageDepreciationPct = 4;
     else ageDepreciationPct = 5;
-  } else {
-    if (!descText.toLowerCase().includes("lancamento") && !descText.toLowerCase().includes("novo")) {
-      ageDepreciationPct = 3;
-    }
   }
   auc.buildingAge = buildingAge;
   auc.ageDepreciationPct = ageDepreciationPct;
@@ -6939,24 +6980,31 @@ async function start() {
       try {
         const caixaAdded = await syncCaixaDirect(["RJ", "SP", "MG"]);
         let auctioneerAdded = 0;
-        for (const targetType of ["extrajudicial", "judicial"]) {
-          try {
-            const { newAuctions } = await syncAuctioneersPipeline(
-              targetType,
-              "RJ",
-              "Rio de Janeiro",
-              store.auctions,
-              (auc) => recalculateAuction(auc, store.itbiTransactions)
-            );
-            if (newAuctions.length > 0) {
-              newAuctions.forEach((auction) => {
-                auction.userId = auction.userId || "system";
-              });
-              store.auctions.unshift(...newAuctions);
-              auctioneerAdded += newAuctions.length;
+        const auctioneerTargets = [
+          { state: "RJ", city: "Rio de Janeiro" },
+          { state: "RJ", city: "Niter\xF3i" },
+          { state: "MG", city: "Juiz de Fora" }
+        ];
+        for (const target of auctioneerTargets) {
+          for (const targetType of ["extrajudicial", "judicial"]) {
+            try {
+              const { newAuctions } = await syncAuctioneersPipeline(
+                targetType,
+                target.state,
+                target.city,
+                store.auctions,
+                (auc) => recalculateAuction(auc, store.itbiTransactions)
+              );
+              if (newAuctions.length > 0) {
+                newAuctions.forEach((auction) => {
+                  auction.userId = auction.userId || "system";
+                });
+                store.auctions.unshift(...newAuctions);
+                auctioneerAdded += newAuctions.length;
+              }
+            } catch (error) {
+              console.error(`[Server] Falha parcial na atualiza\xE7\xE3o ${targetType} de ${target.city}:`, error);
             }
-          } catch (error) {
-            console.error(`[Server] Falha parcial na atualiza\xE7\xE3o ${targetType}:`, error);
           }
         }
         saveStore(store);
