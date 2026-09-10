@@ -2687,7 +2687,10 @@ function loadStore() {
       }
       const STORE_CALIBRATION_VERSION = "v16_community_200m";
       const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
-      if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+      const isMemoryConstrainedRender = process.env.RENDER === "true";
+      if (needsRecalibration && isMemoryConstrainedRender) {
+        console.log("[Store] Migra\xE7\xE3o integral adiada no Render Free; usando a base pr\xE9-calibrada e c\xE1lculo incremental para evitar estouro de mem\xF3ria.");
+      } else if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
         console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com trava local e faixa cr\xEDtica de comunidade em 200m (v16)...`);
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
@@ -5912,7 +5915,17 @@ Responda agora diretamente ao Investidor:`;
 async function syncCaixaDirect(targetStates = ["RJ", "SP", "MG"], userId = "system") {
   console.log(`[Caixa Auto-Sync] Iniciando varredura oficial direta da Caixa via Puppeteer para: ${targetStates.join(", ")}`);
   const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(store.itbiTransactions);
+  const {
+    avgSqmMap,
+    streetAvgSqmMap,
+    cityAvgSqmMap,
+    stateAvgSqmMap,
+    volMap,
+    neighCityMap,
+    cityStreetToNeighMap,
+    streetNumberNeighMap,
+    neighMap
+  } = buildItbiIndexes(store.itbiTransactions);
   let totalImported = 0;
   let browser = null;
   try {
@@ -6042,7 +6055,18 @@ async function syncCaixaDirect(targetStates = ["RJ", "SP", "MG"], userId = "syst
             parkingSpaces: parsedParkingSpaces,
             saleMode
           };
-          const recalculated = recalculateAuctionWithIndex(newAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap);
+          const recalculated = recalculateAuctionWithIndex(
+            newAuc,
+            avgSqmMap,
+            streetAvgSqmMap,
+            volMap,
+            neighCityMap,
+            cityAvgSqmMap,
+            stateAvgSqmMap,
+            cityStreetToNeighMap,
+            streetNumberNeighMap,
+            neighMap
+          );
           importedList.push(recalculated);
         }
         if (importedList.length > 0) {
@@ -6843,7 +6867,7 @@ async function start() {
   }
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
-    setTimeout(async () => {
+    if (process.env.RENDER !== "true") setTimeout(async () => {
       console.log("[Server] Iniciando atualiza\xE7\xE3o autom\xE1tica das fontes...");
       try {
         const caixaAdded = await syncCaixaDirect(["RJ", "SP", "MG"]);

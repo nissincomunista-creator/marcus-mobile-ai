@@ -4807,7 +4807,17 @@ function getStreetForNeighborhood(neighborhood: string, state: string): string {
 async function syncCaixaDirect(targetStates: string[] = ['RJ', 'SP', 'MG'], userId: string = 'system'): Promise<number> {
   console.log(`[Caixa Auto-Sync] Iniciando varredura oficial direta da Caixa via Puppeteer para: ${targetStates.join(', ')}`);
   const todayStr = new Date().toISOString().split('T')[0];
-  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(store.itbiTransactions);
+  const {
+    avgSqmMap,
+    streetAvgSqmMap,
+    cityAvgSqmMap,
+    stateAvgSqmMap,
+    volMap,
+    neighCityMap,
+    cityStreetToNeighMap,
+    streetNumberNeighMap,
+    neighMap
+  } = buildItbiIndexes(store.itbiTransactions);
   let totalImported = 0;
 
   let browser: any = null;
@@ -4960,7 +4970,18 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'SP', 'MG'], user
             saleMode
           };
 
-          const recalculated = recalculateAuctionWithIndex(newAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap);
+          const recalculated = recalculateAuctionWithIndex(
+            newAuc,
+            avgSqmMap,
+            streetAvgSqmMap,
+            volMap,
+            neighCityMap,
+            cityAvgSqmMap,
+            stateAvgSqmMap,
+            cityStreetToNeighMap,
+            streetNumberNeighMap,
+            neighMap
+          );
           importedList.push(recalculated);
         }
 

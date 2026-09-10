@@ -1180,7 +1180,9 @@ export default function Dashboard({
                       <div className="flex flex-col justify-center">
                         <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Lucro Estimado</span>
                         <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${!isVerifiedValuation ? 'text-rose-400' : (auc.calculatedProfit || 0) >= 0 ? 'text-white' : 'text-rose-400'}`}>
-                          {!isVerifiedValuation || auc.calculatedProfit === undefined ? (isProjectedValuation ? 'Projeção não ranqueada' : 'Sob consulta') : formatBRL(auc.calculatedProfit || 0)}
+                          {auc.calculatedProfit === undefined
+                            ? 'Sob consulta'
+                            : <>{formatBRL(auc.calculatedProfit)}{isProjectedValuation && <span className="block text-[8px]">PROJEÇÃO NÃO RANQUEADA</span>}</>}
                         </span>
                       </div>
 
@@ -1225,7 +1227,9 @@ export default function Dashboard({
                           (auc.calculatedRoi || 0) > 40 ? 'text-emerald-400' : 
                           (auc.calculatedRoi || 0) > 20 ? 'text-indigo-400' : 'text-slate-200'
                         }`}>
-                          {!isVerifiedValuation || auc.calculatedRoi === undefined ? (isProjectedValuation ? 'Projeção' : 'Sob consulta') : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
+                          {auc.calculatedRoi === undefined
+                            ? 'Sob consulta'
+                            : <>{auc.calculatedRoi.toLocaleString('pt-BR')}%{isProjectedValuation && <span className="block text-[8px]">PROJEÇÃO NÃO RANQUEADA</span>}</>}
                         </span>
                       </div>
 
