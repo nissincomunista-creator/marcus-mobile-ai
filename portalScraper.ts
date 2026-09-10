@@ -83,8 +83,13 @@ function streetCore(value: string): string {
 function isIndividualPortalLink(link: string): boolean {
   try {
     const url = new URL(link);
-    const allowed = url.hostname.endsWith('quintoandar.com.br') || url.hostname.endsWith('zapimoveis.com.br');
-    return allowed && /\/imovel\//i.test(url.pathname);
+    if (url.hostname.endsWith('quintoandar.com.br')) {
+      return /\/imovel\/\d+(?:\/|$)/i.test(url.pathname);
+    }
+    if (url.hostname.endsWith('zapimoveis.com.br')) {
+      return /\/imovel\/[^/]*id-\d+/i.test(url.pathname);
+    }
+    return false;
   } catch {
     return false;
   }
@@ -111,7 +116,7 @@ export async function scrapeLivePortals(params: {
   const streetClean = (street || '').trim();
   const streetSlug = normalizeSlug(streetClean);
 
-  const cacheKey = `v2_${ufSlug}_${citySlug}_${neighSlug}_${streetSlug}_${targetSize}_${targetBeds}`;
+  const cacheKey = `v4_${ufSlug}_${citySlug}_${neighSlug}_${streetSlug}_${targetSize}_${targetBeds}`;
   if (liveCache[cacheKey]) {
     const entry = liveCache[cacheKey];
     if (Date.now() - entry.timestamp < 12 * 60 * 60 * 1000) {
@@ -155,12 +160,15 @@ export async function scrapeLivePortals(params: {
 
     // 1. QuintoAndar Scrape
     try {
-      let quintoUrl = `https://www.quintoandar.com.br/comprar/imovel/${citySlug}-${ufSlug}/${neighSlug}`;
-      if (targetBeds) quintoUrl += `?quartos=${targetBeds}`;
+      const propertySlug = (propertyType || '').toLowerCase().includes('casa') ? 'casa' : 'apartamento';
+      let quintoUrl = streetSlug
+        ? `https://www.quintoandar.com.br/comprar/imovel/${streetSlug}-${neighSlug}-${citySlug}-${ufSlug}-brasil/${propertySlug}`
+        : `https://www.quintoandar.com.br/comprar/imovel/${citySlug}-${ufSlug}/${neighSlug}`;
+      if (targetBeds) quintoUrl += `${quintoUrl.includes('?') ? '&' : '?'}quartos=${targetBeds}`;
 
       console.log('[Portal Live Scraper] Acessando QuintoAndar:', quintoUrl);
-      await page.goto(quintoUrl, { waitUntil: 'domcontentloaded', timeout: 8000 });
-      await new Promise(r => setTimeout(r, 500));
+      await page.goto(quintoUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await new Promise(r => setTimeout(r, 1500));
 
       const quintoCards = await page.evaluate(() => {
         const cards = document.querySelectorAll('[data-testid="house-card"], [class*="HouseCard"], a[href*="/imovel/"]');
@@ -218,14 +226,15 @@ export async function scrapeLivePortals(params: {
 
     // 2. ZapImóveis Scrape
     try {
-      let zapUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${neighSlug}/`;
+      let zapUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}%2B${citySlug}%2B${neighSlug}/`;
       if (streetSlug && streetClean.length >= 5) {
-        zapUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${neighSlug}+${streetSlug}/`;
+        const propertySlug = (propertyType || '').toLowerCase().includes('casa') ? 'casas' : 'apartamentos';
+        zapUrl = `https://www.zapimoveis.com.br/venda/${propertySlug}/${ufSlug}%2B${citySlug}/${streetSlug}/`;
       }
 
       console.log('[Portal Live Scraper] Acessando ZapImóveis:', zapUrl);
-      await page.goto(zapUrl, { waitUntil: 'domcontentloaded', timeout: 8000 });
-      await new Promise(r => setTimeout(r, 500));
+      await page.goto(zapUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await new Promise(r => setTimeout(r, 1500));
 
       const zapCards = await page.evaluate(() => {
         const cards = document.querySelectorAll('[data-testid="listing-card"], [class*="card-container"], a[href*="/imovel/"]');

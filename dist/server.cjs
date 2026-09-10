@@ -116,8 +116,13 @@ function streetCore(value) {
 function isIndividualPortalLink(link) {
   try {
     const url = new URL(link);
-    const allowed = url.hostname.endsWith("quintoandar.com.br") || url.hostname.endsWith("zapimoveis.com.br");
-    return allowed && /\/imovel\//i.test(url.pathname);
+    if (url.hostname.endsWith("quintoandar.com.br")) {
+      return /\/imovel\/\d+(?:\/|$)/i.test(url.pathname);
+    }
+    if (url.hostname.endsWith("zapimoveis.com.br")) {
+      return /\/imovel\/[^/]*id-\d+/i.test(url.pathname);
+    }
+    return false;
   } catch {
     return false;
   }
@@ -132,7 +137,7 @@ async function scrapeLivePortals(params) {
   const neighSlug = normalizeSlug(neighborhood || "");
   const streetClean = (street || "").trim();
   const streetSlug = normalizeSlug(streetClean);
-  const cacheKey = `v2_${ufSlug}_${citySlug}_${neighSlug}_${streetSlug}_${targetSize}_${targetBeds}`;
+  const cacheKey = `v4_${ufSlug}_${citySlug}_${neighSlug}_${streetSlug}_${targetSize}_${targetBeds}`;
   if (liveCache[cacheKey]) {
     const entry = liveCache[cacheKey];
     if (Date.now() - entry.timestamp < 12 * 60 * 60 * 1e3) {
@@ -169,11 +174,12 @@ async function scrapeLivePortals(params) {
       }
     });
     try {
-      let quintoUrl = `https://www.quintoandar.com.br/comprar/imovel/${citySlug}-${ufSlug}/${neighSlug}`;
-      if (targetBeds) quintoUrl += `?quartos=${targetBeds}`;
+      const propertySlug = (propertyType || "").toLowerCase().includes("casa") ? "casa" : "apartamento";
+      let quintoUrl = streetSlug ? `https://www.quintoandar.com.br/comprar/imovel/${streetSlug}-${neighSlug}-${citySlug}-${ufSlug}-brasil/${propertySlug}` : `https://www.quintoandar.com.br/comprar/imovel/${citySlug}-${ufSlug}/${neighSlug}`;
+      if (targetBeds) quintoUrl += `${quintoUrl.includes("?") ? "&" : "?"}quartos=${targetBeds}`;
       console.log("[Portal Live Scraper] Acessando QuintoAndar:", quintoUrl);
-      await page.goto(quintoUrl, { waitUntil: "domcontentloaded", timeout: 8e3 });
-      await new Promise((r) => setTimeout(r, 500));
+      await page.goto(quintoUrl, { waitUntil: "domcontentloaded", timeout: 15e3 });
+      await new Promise((r) => setTimeout(r, 1500));
       const quintoCards = await page.evaluate(() => {
         const cards = document.querySelectorAll('[data-testid="house-card"], [class*="HouseCard"], a[href*="/imovel/"]');
         const list = [];
@@ -217,13 +223,14 @@ async function scrapeLivePortals(params) {
       console.warn("[Portal Live Scraper] QuintoAndar scraping warning:", e.message);
     }
     try {
-      let zapUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${neighSlug}/`;
+      let zapUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}%2B${citySlug}%2B${neighSlug}/`;
       if (streetSlug && streetClean.length >= 5) {
-        zapUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${neighSlug}+${streetSlug}/`;
+        const propertySlug = (propertyType || "").toLowerCase().includes("casa") ? "casas" : "apartamentos";
+        zapUrl = `https://www.zapimoveis.com.br/venda/${propertySlug}/${ufSlug}%2B${citySlug}/${streetSlug}/`;
       }
       console.log("[Portal Live Scraper] Acessando ZapIm\xF3veis:", zapUrl);
-      await page.goto(zapUrl, { waitUntil: "domcontentloaded", timeout: 8e3 });
-      await new Promise((r) => setTimeout(r, 500));
+      await page.goto(zapUrl, { waitUntil: "domcontentloaded", timeout: 15e3 });
+      await new Promise((r) => setTimeout(r, 1500));
       const zapCards = await page.evaluate(() => {
         const cards = document.querySelectorAll('[data-testid="listing-card"], [class*="card-container"], a[href*="/imovel/"]');
         const list = [];
@@ -5049,7 +5056,7 @@ app.post("/api/portais/search-similar", async (req, res) => {
   const uf = (state || "SP").toUpperCase().trim();
   const cityName = city || (uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
   const rad = radiusKm ? parseFloat(radiusKm) : 1.5;
-  const cacheKey = `portal_v2_${uf}_${cityName}_${neighborhood}_${propertyType || "Apartamento"}_${sizeSqm || 100}_${bedrooms || 2}_${parkingSpaces || 1}_${street || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "_");
+  const cacheKey = `portal_v4_${uf}_${cityName}_${neighborhood}_${propertyType || "Apartamento"}_${sizeSqm || 100}_${bedrooms || 2}_${parkingSpaces || 1}_${street || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "_");
   if (portalSearchCache[cacheKey]) {
     const entry = portalSearchCache[cacheKey];
     const age = Date.now() - entry.timestamp;

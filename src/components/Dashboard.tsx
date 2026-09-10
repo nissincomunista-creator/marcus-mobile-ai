@@ -126,6 +126,7 @@ export default function Dashboard({
   const [selectedGarimpoCity, setSelectedGarimpoCity] = React.useState<string>('ambas');
   const [selectedSaleModeFilter, setSelectedSaleModeFilter] = React.useState<string>('');
   const [portalSearchIds, setPortalSearchIds] = React.useState<Set<string>>(new Set());
+  const autoPortalSearchIds = React.useRef<Set<string>>(new Set());
 
   const refreshCardPortalData = React.useCallback(async (auc: AuctionProperty) => {
     if (portalSearchIds.has(auc.id)) return;
@@ -427,6 +428,19 @@ export default function Dashboard({
   }, [auctions, selectedNeighborhoodFilter, selectedCityFilter, selectedTypeFilter, selectedStateFilter, maxPriceFilter, paymentFilter, sortBy, activeSorts, selectedOriginFilter]);
 
   const [visibleCount, setVisibleCount] = React.useState(12);
+
+  React.useEffect(() => {
+    if (autoPortalSearchIds.current.size >= 2) return;
+    const pending = filteredAndSortedAuctions
+      .slice(0, Math.min(visibleCount, 12))
+      .filter(auc => !auc.portalDataVerifiedAt && !autoPortalSearchIds.current.has(auc.id))
+      .slice(0, 2 - autoPortalSearchIds.current.size);
+
+    pending.forEach(auc => {
+      autoPortalSearchIds.current.add(auc.id);
+      void refreshCardPortalData(auc);
+    });
+  }, [filteredAndSortedAuctions, visibleCount, refreshCardPortalData]);
 
   // Reset visibleCount when filters/sorting change to optimize responsiveness
   React.useEffect(() => {

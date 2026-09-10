@@ -3754,7 +3754,7 @@ app.post('/api/portais/search-similar', async (req, res) => {
   const rad = radiusKm ? parseFloat(radiusKm) : 1.5;
 
   // Cache lookup
-  const cacheKey = `portal_v2_${uf}_${cityName}_${neighborhood}_${propertyType || 'Apartamento'}_${sizeSqm || 100}_${bedrooms || 2}_${parkingSpaces || 1}_${street || ''}`
+  const cacheKey = `portal_v4_${uf}_${cityName}_${neighborhood}_${propertyType || 'Apartamento'}_${sizeSqm || 100}_${bedrooms || 2}_${parkingSpaces || 1}_${street || ''}`
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
