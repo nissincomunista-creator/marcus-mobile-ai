@@ -14,4 +14,30 @@ const building = store.itbiTransactions.filter((t: any) => /lygia|ligia/i.test(t
 const similar = building.filter((t: any) => t.sizeSqm >= Math.round(65 * 0.67) && t.sizeSqm <= Math.round(65 * 1.33));
 assert(similar.some((t: any) => t.sizeSqm === 45), '45m2 deve participar do recorte de 65m2 +/-33%');
 assert(similar.every((t: any) => building.includes(t)));
-console.log(JSON.stringify({ adhemar: { street: result.rua, building: result.predio, exitSqm: result.flipRapidoSqm }, similarAreas: similar.map((t: any) => t.sizeSqm) }, null, 2));
+
+const oneStreetSample = [
+  { id: 'street', street: 'Rua das Dálias', number: '20', sizeSqm: 177, unitValueSqm: 4762, propertyType: 'Casa', distanceKm: 0 },
+  { id: 'near-1', street: 'Rua A', number: '1', sizeSqm: 160, unitValueSqm: 3600, propertyType: 'Casa', distanceKm: 0.2 },
+  { id: 'near-2', street: 'Rua B', number: '2', sizeSqm: 190, unitValueSqm: 3900, propertyType: 'Casa', distanceKm: 0.3 },
+  { id: 'near-3', street: 'Rua C', number: '3', sizeSqm: 150, unitValueSqm: 3850, propertyType: 'Casa', distanceKm: 0.4 },
+  { id: 'wide-1', street: 'Rua D', number: '4', sizeSqm: 45, unitValueSqm: 2600, propertyType: 'Casa', distanceKm: 0.25 },
+  { id: 'wide-2', street: 'Rua E', number: '5', sizeSqm: 500, unitValueSqm: 2900, propertyType: 'Casa', distanceKm: 0.45 }
+] as any;
+const oneStreetSimilar = computeBidirectionalBenchmarks(oneStreetSample, 'Rua das Dálias', '135', 177, 'similar', 0.5, 'Casa');
+const oneStreetAll = computeBidirectionalBenchmarks(oneStreetSample, 'Rua das Dálias', '135', 177, 'all', 0.5, 'Casa');
+assert(oneStreetSimilar && oneStreetAll);
+assert.equal(oneStreetSimilar.rua.validas, 1);
+assert.equal(oneStreetAll.rua.validas, 1);
+assert.equal(oneStreetSimilar.rua.saneada, 4762);
+assert.equal(oneStreetAll.rua.saneada, 4762);
+assert.equal(oneStreetSimilar.nivelUtilizado, 'Rua');
+assert.equal(oneStreetAll.nivelUtilizado, 'Rua');
+
+console.log(JSON.stringify({
+  adhemar: { street: result.rua, building: result.predio, exitSqm: result.flipRapidoSqm },
+  similarAreas: similar.map((t: any) => t.sizeSqm),
+  oneStreetSample: {
+    similar: { streetSqm: oneStreetSimilar.rua.saneada, flipSqm: oneStreetSimilar.flipRapidoSqm, source: oneStreetSimilar.nivelUtilizado },
+    all: { streetSqm: oneStreetAll.rua.saneada, flipSqm: oneStreetAll.flipRapidoSqm, source: oneStreetAll.nivelUtilizado }
+  }
+}, null, 2));

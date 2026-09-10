@@ -226,13 +226,11 @@ export function computeBidirectionalBenchmarks(
     refCorteRua = anchor;
     ruaCorteMin = Math.round(anchor * 0.55);
     ruaCorteMax = Math.round(anchor * 1.45);
-    if (ruaVals[0] >= ruaCorteMin && ruaVals[0] <= ruaCorteMax) {
-      ruaValid = [ruaVals[0]];
-      ruaSaneada = ruaVals[0];
-    } else {
-      ruaValid = [];
-      ruaSaneada = 0;
-    }
+    // Uma escritura real da rua continua sendo evidência local nos dois modos
+    // de metragem. A anomalia é tratada na ponderação conservadora abaixo, não
+    // apagando a amostra e reclassificando o mesmo imóvel como mera projeção.
+    ruaValid = [ruaVals[0]];
+    ruaSaneada = ruaVals[0];
   } else {
     ruaValid = [];
     ruaSaneada = 0;

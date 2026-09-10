@@ -280,17 +280,6 @@ export default function App() {
     }
     fetchData();
 
-    // Startup source refresh runs in the server background. Keep the visible
-    // opportunity list in step with it without requiring a manual reload.
-    const auctionsRefreshTimer = token ? setInterval(async () => {
-      try {
-        const response = await authFetch('/api/auctions');
-        if (response.ok) setAuctions(await response.json());
-      } catch (error) {
-        console.error('Background auctions refresh error:', error);
-      }
-    }, 30000) : undefined;
-
     // Minor clock update relative to user timezone
     const timer = setInterval(() => {
       const now = new Date();
@@ -299,7 +288,6 @@ export default function App() {
     }, 1000);
     return () => {
       clearInterval(timer);
-      if (auctionsRefreshTimer) clearInterval(auctionsRefreshTimer);
     };
   }, [token]);
 

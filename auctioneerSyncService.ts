@@ -76,6 +76,7 @@ export interface ScrapedAuctionDraft {
   pendingCondoCost?: number;
   addressVerified?: boolean;
   sizeVerified?: boolean;
+  priceVerified?: boolean;
 }
 
 function normalizeStr(str: string | undefined | null): string {
@@ -404,6 +405,7 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
       sizeSqm: detailedSize > 0 ? detailedSize : draft.sizeSqm,
       sizeVerified: detailedSize > 0,
       auctionPrice: detailedMinimumBid || draft.auctionPrice,
+      priceVerified: detailedMinimumBid > 0,
       estimatedValue: extractAppraisal(combinedText) || draft.estimatedValue,
       auctionDate: dates.first || draft.auctionDate,
       firstAuctionDate: dates.first || draft.firstAuctionDate,
@@ -967,10 +969,15 @@ export async function syncAuctioneersPipeline(
     if (!isConfiguredAuctionLink(draft.auctionLink) || draft.sizeSqm <= 0 || draft.auctionPrice <= 0 || !lastKnownDate || lastKnownDate < today) {
       continue;
     }
+    const addressCity = extractDeclaredCity(draft.address, state);
+    if (addressCity && normalizeStr(addressCity) !== normalizeStr(city)) continue;
+    const completeAddress = normalizeStr(draft.address).includes(normalizeStr(city))
+      ? draft.address
+      : `${draft.address}, ${city} - ${state}`;
     if (existingLinks.has(draft.auctionLink)) {
       const existing = existingAuctions.find(item => item.auctionLink === draft.auctionLink);
-      if (existing && draft.addressVerified && draft.sizeVerified && hasAuditableAddress(draft.address)) {
-        Object.assign(existing, recalculateFn({ ...existing, address: draft.address, sizeSqm: draft.sizeSqm,
+      if (existing && draft.addressVerified && draft.sizeVerified && draft.priceVerified && hasAuditableAddress(draft.address)) {
+        Object.assign(existing, recalculateFn({ ...existing, address: completeAddress, sizeSqm: draft.sizeSqm, auctionPrice: draft.auctionPrice,
           description: draft.description, matriculaText: draft.matriculaText || existing.matriculaText,
           matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
           allowsFinancing: draft.allowsFinancing ?? existing.allowsFinancing ?? false,
@@ -987,12 +994,12 @@ export async function syncAuctioneersPipeline(
 
     const baseId = `auc-${draft.portalId}-${normalizeStr(draft.title).slice(0, 15)}-${Math.floor(Math.random() * 100000)}`;
 
-    if (!draft.addressVerified || !draft.sizeVerified || !hasAuditableAddress(draft.address)) continue;
+    if (!draft.addressVerified || !draft.sizeVerified || !draft.priceVerified || !hasAuditableAddress(draft.address)) continue;
 
     const rawAuc: AuctionProperty = {
       id: baseId,
       title: draft.title,
-      address: draft.address,
+      address: completeAddress,
       neighborhood: draft.neighborhood,
       city: draft.city,
       state: draft.state,

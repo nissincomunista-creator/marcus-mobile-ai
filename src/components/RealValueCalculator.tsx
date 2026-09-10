@@ -465,6 +465,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [isExecutingFullAnalysis, setIsExecutingFullAnalysis] = useState<boolean>(false);
   const [hoveredScenario, setHoveredScenario] = useState<number | null>(null);
   const [isExecutiveReportOpen, setIsExecutiveReportOpen] = useState<boolean>(false);
+  const isHouseProperty = normalizeString(propertyType).includes('casa');
+
+  useEffect(() => {
+    if (isHouseProperty && condoDebtInput !== 0) setCondoDebtInput(0);
+  }, [isHouseProperty, condoDebtInput]);
 
   // Extract unique neighborhoods for selected state and city
   const neighborhoodsList = useMemo(() => {
@@ -538,7 +543,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
     // Condomínio em Atraso: Regra expressa da Caixa: arrematante responde por até 10% do valor de avaliação
     const evalVal = prefillData.evaluationPrice || prefillData.estimatedValue || (purchaseVal * 1.5);
-    const condoVal = isCaixa 
+    const isHouse = normalizeString(prefillData.propertyType || '').includes('casa');
+    const condoVal = isHouse ? 0 : isCaixa 
       ? (prefillData.pendingDebts !== undefined && prefillData.pendingDebts > 0 ? prefillData.pendingDebts : Math.round(evalVal * 0.10))
       : (prefillData.pendingDebts || 0);
     setCondoDebtInput(condoVal);
@@ -1819,26 +1825,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         }
       }
 
-      // 2. Data de registro, abertura da matrícula ou prenotação no topo
-      if (!yearFound) {
-        const regPatterns = [
-          /(?:termo\s*de\s*abertura|abertura\s*da\s*matr[ií]cula|prenota[cç][aã]o|data\s*do\s*registro|livro\s*2).*?(\d{1,2}[./-]\d{1,2}[./-](\d{4})|(\d{4}))/i,
-          /registrado\s*em\s*\d{1,2}\s*de\s*[a-zç]+\s*de\s*(19\d{2}|20\d{2})/i
-        ];
-        for (const pat of regPatterns) {
-          const m = corpus.match(pat);
-          if (m) {
-            const y = parseInt(m[2] || m[1], 10);
-            if (y >= 1920 && y <= currentYear) {
-              yearFound = y;
-              detectionSource = 'Registro da Matrícula';
-              break;
-            }
-          }
-        }
-      }
-
-      // 3. Ano de construção explícito
+      // 2. Ano de construção explícito
       if (!yearFound) {
         const yearPatterns = [
           /ano\s*(?:de\s*)?constru[cç][aã]o\s*[:=]?\s*(\d{4})/i,
@@ -1858,17 +1845,6 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         }
       }
 
-      // 4. Histórico de datas na matrícula
-      if (!yearFound && matriculaText) {
-        const dates = matriculaText.match(/\b\d{2}[./-]\d{2}[./-](19\d{2}|20\d{2})\b/g);
-        if (dates && dates.length > 0) {
-          const years = dates.map(d => parseInt(d.slice(-4), 10)).filter(y => y >= 1920 && y <= currentYear);
-          if (years.length > 0) {
-            yearFound = Math.min(...years);
-            detectionSource = 'Matrícula';
-          }
-        }
-      }
     }
 
     if (yearFound) {
@@ -3094,8 +3070,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </div>
                 </div>
 
-                {/* Condomínio em Atraso (Débito Pendente) */}
-                <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
+                {/* Casas não recebem custo condominial presumido. */}
+                {!isHouseProperty && <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
                   <span className="text-slate-300 font-bold">
                     {acquisitionMode === 'caixa' ? 'Condomínio em atraso: limite do arrematante (até 10% da avaliação):' : 'Condomínio em Atraso:'}
                   </span>
@@ -3109,7 +3085,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       placeholder="0"
                     />
                   </div>
-                </div>
+                </div>}
 
                 {/* Configurable Renovation Cost */}
                 <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">

@@ -812,13 +812,8 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     refCorteRua = anchor;
     ruaCorteMin = Math.round(anchor * 0.55);
     ruaCorteMax = Math.round(anchor * 1.45);
-    if (ruaVals[0] >= ruaCorteMin && ruaVals[0] <= ruaCorteMax) {
-      ruaValid = [ruaVals[0]];
-      ruaSaneada = ruaVals[0];
-    } else {
-      ruaValid = [];
-      ruaSaneada = 0;
-    }
+    ruaValid = [ruaVals[0]];
+    ruaSaneada = ruaVals[0];
   } else {
     ruaValid = [];
     ruaSaneada = 0;
@@ -1712,6 +1707,7 @@ ${officialDocumentText}`;
       sizeSqm: detailedSize > 0 ? detailedSize : draft.sizeSqm,
       sizeVerified: detailedSize > 0,
       auctionPrice: detailedMinimumBid || draft.auctionPrice,
+      priceVerified: detailedMinimumBid > 0,
       estimatedValue: extractAppraisal(combinedText) || draft.estimatedValue,
       auctionDate: dates.first || draft.auctionDate,
       firstAuctionDate: dates.first || draft.firstAuctionDate,
@@ -2177,13 +2173,17 @@ async function syncAuctioneersPipeline(targetType, state = "RJ", city = "Rio de 
     if (!isConfiguredAuctionLink(draft.auctionLink) || draft.sizeSqm <= 0 || draft.auctionPrice <= 0 || !lastKnownDate || lastKnownDate < today) {
       continue;
     }
+    const addressCity = extractDeclaredCity(draft.address, state);
+    if (addressCity && normalizeStr(addressCity) !== normalizeStr(city)) continue;
+    const completeAddress = normalizeStr(draft.address).includes(normalizeStr(city)) ? draft.address : `${draft.address}, ${city} - ${state}`;
     if (existingLinks.has(draft.auctionLink)) {
       const existing = existingAuctions.find((item) => item.auctionLink === draft.auctionLink);
-      if (existing && draft.addressVerified && draft.sizeVerified && hasAuditableAddress(draft.address)) {
+      if (existing && draft.addressVerified && draft.sizeVerified && draft.priceVerified && hasAuditableAddress(draft.address)) {
         Object.assign(existing, recalculateFn({
           ...existing,
-          address: draft.address,
+          address: completeAddress,
           sizeSqm: draft.sizeSqm,
+          auctionPrice: draft.auctionPrice,
           description: draft.description,
           matriculaText: draft.matriculaText || existing.matriculaText,
           matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
@@ -2200,11 +2200,11 @@ async function syncAuctioneersPipeline(targetType, state = "RJ", city = "Rio de 
     }
     existingLinks.add(draft.auctionLink);
     const baseId = `auc-${draft.portalId}-${normalizeStr(draft.title).slice(0, 15)}-${Math.floor(Math.random() * 1e5)}`;
-    if (!draft.addressVerified || !draft.sizeVerified || !hasAuditableAddress(draft.address)) continue;
+    if (!draft.addressVerified || !draft.sizeVerified || !draft.priceVerified || !hasAuditableAddress(draft.address)) continue;
     const rawAuc = {
       id: baseId,
       title: draft.title,
-      address: draft.address,
+      address: completeAddress,
       neighborhood: draft.neighborhood,
       city: draft.city,
       state: draft.state,
