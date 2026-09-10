@@ -773,7 +773,7 @@ function loadStore(): DataStore {
       }
 
       // Sanitize and recalculate auctions with verified ITBI benchmark whenever calibration version changes
-      const STORE_CALIBRATION_VERSION = 'v16_community_200m';
+      const STORE_CALIBRATION_VERSION = 'v17_external_terms_audit';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -1536,6 +1536,28 @@ function recalculateAuctionWithIndex(
       auc.lat = cachedCoordinates.lat;
       auc.lng = cachedCoordinates.lng;
       auc.status_geocodificacao = auc.status_geocodificacao || (cachedCoordinates.precision === 'rooftop' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA');
+    }
+  }
+
+  // Judicial/extrajudicial payment flags must be backed by the lot page,
+  // edital or registry text. This also removes legacy blanket defaults.
+  if (origin === 'judicial' || origin === 'extrajudicial') {
+    const sourceTerms = normalizeString(`${auc.description || ''} ${auc.matriculaText || ''} ${auc.paymentTerms || ''}`).replace(/\s+/g, ' ');
+    const deniesFinancing = /(?:nao\s+(?:aceita|admite|permite)|sem)\s+financiamento|pagamento\s+exclusivamente\s+a\s+vista/.test(sourceTerms);
+    const confirmedFinancing = !deniesFinancing && /(?:aceita|admite|permite|possibilidade\s+de|podera\s+ser)\s+(?:o\s+)?financiamento|financiamento\s+(?:bancario|imobiliario|habitacional)/.test(sourceTerms);
+    const confirmedInstallments = /(?:parcelamento|parcelado|pagamento\s+em\s+ate\s+\d+\s+parcelas|\d+\s+parcelas)/.test(sourceTerms)
+      && !/(?:nao\s+(?:aceita|admite|permite)|sem)\s+parcelamento/.test(sourceTerms);
+    auc.allowsFinancing = confirmedFinancing;
+    auc.allowsInstallments = confirmedInstallments;
+    if (!confirmedFinancing && !confirmedInstallments && !/(?:somente|apenas|exclusivamente)\s+a\s+vista/.test(sourceTerms)) {
+      auc.paymentTerms = 'Condição de pagamento não confirmada na fonte';
+    }
+
+    const sellerClearsDebts = /(?:debitos?|dividas?|condominio|iptu)[^.]{0,160}(?:quitad[oa]s?|por\s+conta|responsabilidade)[^.]{0,80}(?:vendedor|credor|banco|alienante)|(?:vendedor|credor|banco|alienante)[^.]{0,100}(?:quitara|assumira|responsavel)[^.]{0,80}(?:debitos?|dividas?|condominio|iptu)/.test(sourceTerms);
+    if (sellerClearsDebts) {
+      auc.pendingIptuCost = 0;
+      auc.pendingCondoCost = 0;
+      auc.pendingDebts = 0;
     }
   }
   const polygonCommunityRisk = checkPropertyCommunityRisk(auc);
