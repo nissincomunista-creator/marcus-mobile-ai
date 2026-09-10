@@ -21,13 +21,14 @@ import {
   Gavel,
   Link,
   ArrowUpDown,
+  Gem,
+  Gauge,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import RealValueCalculator from './RealValueCalculator.tsx';
 import PropertyMap from './PropertyMap.tsx';
 import PropertyThumbnail from './PropertyThumbnail.tsx';
-import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
 import { getAvailableZonesForCity, isNeighborhoodInZone } from '../utils/cityZones.ts';
 
 interface DashboardProps {
@@ -124,6 +125,62 @@ export default function Dashboard({
   const [localMiningType, setLocalMiningType] = React.useState<'judicial' | 'caixa' | 'portal' | null>(null);
   const [selectedGarimpoCity, setSelectedGarimpoCity] = React.useState<string>('ambas');
   const [selectedSaleModeFilter, setSelectedSaleModeFilter] = React.useState<string>('');
+  const [portalSearchIds, setPortalSearchIds] = React.useState<Set<string>>(new Set());
+
+  const refreshCardPortalData = React.useCallback(async (auc: AuctionProperty) => {
+    if (portalSearchIds.has(auc.id)) return;
+    setPortalSearchIds(prev => new Set(prev).add(auc.id));
+    try {
+      const response = await fetch('/api/portais/search-similar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: auc.state || 'RJ',
+          city: auc.city || 'Rio de Janeiro',
+          neighborhood: auc.neighborhood,
+          street: (auc.address || '').split(',')[0].trim(),
+          propertyType: auc.propertyType,
+          sizeSqm: auc.sizeSqm,
+          bedrooms: auc.bedrooms,
+          parkingSpaces: auc.parkingSpaces
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Falha ao consultar os portais.');
+
+      const matches = [
+        ...(data.below?.matches || []),
+        ...(data.close?.matches || []),
+        ...(data.above?.matches || [])
+      ];
+      const unique = Array.from(new Map(matches.map((item: any) => [item.link, item])).values()) as any[];
+      const valid = unique.filter(item => Number(item.unitValueSqm) > 0 && Number(item.price) > 0);
+      if (!data.verified || valid.length === 0) return;
+
+      const averagePrice = (items: any[]) => items.length
+        ? Math.round(items.reduce((sum, item) => sum + Number(item.price), 0) / items.length)
+        : undefined;
+      const zap = valid.filter(item => /zapimoveis/i.test(item.link || ''));
+      const quinto = valid.filter(item => /quintoandar/i.test(item.link || ''));
+      await onUpdateProperty({
+        id: auc.id,
+        streetPortalAvgSqm: Math.round(valid.reduce((sum, item) => sum + Number(item.unitValueSqm), 0) / valid.length),
+        portalZapAvg: averagePrice(zap),
+        portalQuintoAndarAvg: averagePrice(quinto),
+        portalSampleCount: valid.length,
+        portalDataVerifiedAt: data.checkedAt || new Date().toISOString(),
+        portalDataSource: 'Anúncios individuais ativos confirmados na rua'
+      });
+    } catch (error) {
+      console.error('[Dashboard] Falha ao atualizar anúncios do card:', error);
+    } finally {
+      setPortalSearchIds(prev => {
+        const next = new Set(prev);
+        next.delete(auc.id);
+        return next;
+      });
+    }
+  }, [onUpdateProperty, portalSearchIds]);
 
   const getSaleModeBadge = React.useCallback((auc: AuctionProperty) => {
     const isCaixaAuction = auc.origin === 'caixa' || auc.origin === 'caixa_radar' || auc.id.startsWith('auc-caixa');
@@ -342,8 +399,10 @@ export default function Dashboard({
     }
 
     const getSortScore = (prop: AuctionProperty, sortKey: string) => {
-      if (sortKey === 'profit') return Math.max(0, prop.calculatedProfit || 0);
-      if (sortKey === 'roi') return Math.max(0, prop.calculatedRoi || 0);
+      const confidenceFactor = prop.valuationConfidence === 'verified' ? 1 : 0;
+      const territorialEligibility = prop.isCommunityRisk ? 0 : 1;
+      if (sortKey === 'profit') return Math.max(0, prop.calculatedProfit || 0) * confidenceFactor * territorialEligibility;
+      if (sortKey === 'roi') return Math.max(0, prop.calculatedRoi || 0) * confidenceFactor * territorialEligibility;
       if (sortKey === 'liquidity') return Math.max(0, prop.liquidityScore || 0);
       if (sortKey === 'price_asc') return -prop.auctionPrice;
       if (sortKey === 'price_desc') return prop.auctionPrice;
@@ -391,11 +450,12 @@ export default function Dashboard({
   // Aggregate stats dynamically based on filtered auctions
   const stats = React.useMemo(() => {
     const totalCount = filteredAndSortedAuctions.length;
-    const avgRoi = totalCount > 0 
-      ? Math.round(filteredAndSortedAuctions.reduce((acc, a) => acc + (a.calculatedRoi || 0), 0) / totalCount)
+    const verified = filteredAndSortedAuctions.filter(a => a.valuationConfidence === 'verified' && !a.isCommunityRisk);
+    const avgRoi = verified.length > 0
+      ? Math.round(verified.reduce((acc, a) => acc + (a.calculatedRoi || 0), 0) / verified.length)
       : 0;
-    const totalPotentialProfit = filteredAndSortedAuctions.reduce((acc, a) => acc + (a.calculatedProfit || 0), 0);
-    const highLiquidityCount = filteredAndSortedAuctions.filter(a => (a.liquidityScore || 0) >= 8).length;
+    const totalPotentialProfit = verified.reduce((acc, a) => acc + (a.calculatedProfit || 0), 0);
+    const highLiquidityCount = verified.filter(a => (a.liquidityScore || 0) >= 8).length;
 
     return { totalCount, avgRoi, totalPotentialProfit, highLiquidityCount };
   }, [filteredAndSortedAuctions]);
@@ -445,7 +505,7 @@ export default function Dashboard({
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">ROI Médio Estimado</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">ROI Médio Verificado</p>
             <h3 className="text-2xl font-bold text-emerald-400 font-mono">{stats.avgRoi}%</h3>
           </div>
         </motion.div>
@@ -458,7 +518,7 @@ export default function Dashboard({
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Ganhos Potenciais</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Ganhos Verificados</p>
             <h3 className="text-2xl font-bold text-slate-100 font-mono">{formatBRL(stats.totalPotentialProfit)}</h3>
           </div>
         </motion.div>
@@ -601,7 +661,7 @@ export default function Dashboard({
                     onClick={onSyncExtrajudiciaisAuto}
                     disabled={isMining}
                     className="px-4 sm:px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center space-x-2 cursor-pointer disabled:opacity-50 border border-emerald-400/30"
-                    title="Sincronizar leilões de bancos dos portais parceiros (Mega Leilões, Biasi, Frazão, Zuk, Sold, Pestana, MGL)"
+                    title="Sincronizar imóveis de bancos e alienações fiduciárias nos portais configurados"
                   >
                     {isMining ? (
                       <RefreshCw className="w-4 h-4 animate-spin text-white" />
@@ -625,7 +685,7 @@ export default function Dashboard({
                         <button onClick={() => setActiveTooltip(null)} className="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
                       </div>
                       <p className="text-[11px] leading-relaxed text-slate-300">
-                        Varre os 7 principais portais de leiloeiros (Mega Leilões, Biasi, Frazão, Portal Zuk, Sold, Pestana, MGL) capturando imóveis de bancos (Santander, Itaú, Bradesco, etc.) e alienação fiduciária. Audita com ITBI da Prefeitura e calcula ROI real.
+                        Varre os 24 portais configurados, incluindo Santander Imóveis e os leiloeiros oficiais indicados, capturando imóveis de bancos e alienações fiduciárias. Só importa lotes com link, preço, metragem e endereço auditáveis.
                       </p>
                     </div>
                   )}
@@ -703,7 +763,7 @@ export default function Dashboard({
             </div>
 
             {/* Grupo de Ordenação com Seleção Dupla (Sem botões extras) */}
-            <div data-tour="sorting-map" className="flex flex-col gap-2 bg-slate-950/90 p-2 sm:px-3 sm:py-2.5 rounded-xl border border-slate-800/90 ml-auto w-full sm:w-[36rem] shrink-0">
+            <div data-tour="sorting-map" className="flex flex-col gap-2 bg-slate-950/90 p-2 sm:px-3 sm:py-2.5 rounded-xl border border-slate-800/90 ml-auto w-full lg:w-[40rem] max-w-full min-h-[5rem] shrink-0 overflow-hidden">
               <div className="flex items-center justify-between">
                 <span className="text-xs uppercase font-bold text-slate-300 font-mono tracking-wider shrink-0 flex items-center gap-1.5">
                   <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
@@ -720,28 +780,29 @@ export default function Dashboard({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {[
-                  { id: 'profit', label: 'Lucro', icon: '💎', color: 'bg-emerald-600 border-emerald-500 shadow-emerald-600/30' },
-                  { id: 'roi', label: 'Maior ROI', icon: '🚀', color: 'bg-indigo-600 border-indigo-500 shadow-indigo-600/30' },
-                  { id: 'liquidity', label: 'Liquidez', icon: '📊', color: 'bg-amber-600 border-amber-500 shadow-amber-600/30' },
-                  { id: 'price_asc', label: 'Menor Preço', icon: '💵', color: 'bg-blue-600 border-blue-500 shadow-blue-600/30' }
+                  { id: 'profit', label: 'Lucro', icon: Gem, color: 'bg-emerald-600 border-emerald-500 shadow-emerald-600/30' },
+                  { id: 'roi', label: 'Maior ROI', icon: TrendingUp, color: 'bg-indigo-600 border-indigo-500 shadow-indigo-600/30' },
+                  { id: 'liquidity', label: 'Liquidez', icon: Gauge, color: 'bg-amber-600 border-amber-500 shadow-amber-600/30' },
+                  { id: 'price_asc', label: 'Menor Preço', icon: DollarSign, color: 'bg-blue-600 border-blue-500 shadow-blue-600/30' }
                 ].map(item => {
                   const isSelected = activeSorts.includes(item.id);
                   const orderIndex = activeSorts.indexOf(item.id);
+                  const SortIcon = item.icon;
                   return (
                     <button
                       key={item.id}
                       onClick={() => handleToggleSort(item.id)}
-                      className={`min-w-0 h-9 px-2.5 rounded-lg text-[11px] sm:text-xs font-bold transition-colors cursor-pointer border flex items-center justify-center gap-1 ${
+                      className={`relative w-full min-w-0 h-9 px-7 rounded-lg text-[11px] sm:text-xs font-bold transition-colors cursor-pointer border flex items-center justify-center overflow-hidden ${
                         isSelected
                           ? `${item.color} text-white shadow-md ring-1 ring-white/30`
                           : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-750'
                       }`}
                       title={isSelected && activeSorts.length > 1 ? `Critério ${orderIndex + 1} de ordenação combinada` : `Ordenar por ${item.label}`}
                     >
-                      <span className="truncate">{item.icon} {item.label}</span>
+                      <span className="min-w-0 flex items-center justify-center gap-1.5 truncate"><SortIcon className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{item.label}</span></span>
                       <span
                         aria-hidden={!isSelected || activeSorts.length === 1}
-                        className={`w-4 h-4 shrink-0 rounded bg-black/50 text-[9px] font-mono leading-4 text-center text-amber-300 font-black border border-amber-400/40 transition-opacity ${
+                        className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded bg-black/50 text-[9px] font-mono leading-4 text-center text-amber-300 font-black border border-amber-400/40 transition-opacity ${
                           isSelected && activeSorts.length > 1 ? 'opacity-100' : 'opacity-0'
                         }`}
                       >
@@ -971,7 +1032,9 @@ export default function Dashboard({
               const condoDebt = auc.pendingCondoCost || (auc.origin === 'caixa' ? Math.round(((auc as any).evaluationPrice || auc.estimatedValue || auc.auctionPrice * 1.5) * 0.10) : (auc.pendingDebts || 0));
               const totalCost = auc.auctionPrice + repairCost + condoDebt + (auc.otherCosts || (auc.itbiCost || 0) + (auc.notaryCost || 0));
               const isSelected = selectedAuctionId === auc.id;
-              const isFeatured = (auc.calculatedRoi || 0) >= 40 && (auc.liquidityScore || 0) >= 7;
+              const isVerifiedValuation = auc.valuationConfidence === 'verified' && (auc.itbiStreetCount || 0) > 0;
+              const isProjectedValuation = auc.valuationConfidence === 'projected';
+              const isFeatured = isVerifiedValuation && (auc.calculatedRoi || 0) >= 40 && (auc.liquidityScore || 0) >= 7;
               const isCaixaAuction = auc.origin === 'caixa' || auc.origin === 'caixa_radar' || auc.id.startsWith('auc-caixa');
 
               return (
@@ -982,7 +1045,7 @@ export default function Dashboard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className={`bg-slate-900 border rounded-2xl shadow-[0_15px_35px_rgba(0,0,0,0.7),0_5px_15px_rgba(0,0,0,0.5)] hover:shadow-[0_25px_50px_rgba(0,0,0,0.9),0_10px_25px_rgba(15,23,42,0.8)] hover:-translate-y-2 hover:scale-[1.008] transition-all duration-300 overflow-visible relative flex flex-col justify-between ${
+                  className={`bg-slate-900/95 border rounded-2xl shadow-xl hover:-translate-y-1 transition-all duration-200 overflow-hidden relative flex flex-col ${
                     isSelected 
                       ? 'border-indigo-400 ring-2 ring-indigo-400/60 shadow-[0_25px_55px_rgba(99,102,241,0.25)] -translate-y-1.5' 
                       : isFeatured 
@@ -1046,23 +1109,6 @@ export default function Dashboard({
                             </span>
                           )}
 
-                          {/* Alerta de Comunidade no Parâmetro Crítico (<= 30m) */}
-                          {auc.isCommunityRisk && (
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/60 flex items-center gap-1">
-                              ⛔ {auc.communityName ? `${auc.communityName}` : 'Comunidade'} {auc.factionName ? `(${auc.factionName})` : ''}
-                            </span>
-                          )}
-
-                          {/* Alerta Informativo de Proximidade (31m a 500m): NÃO altera valor nem liquidez */}
-                          {!auc.isCommunityRisk && auc.nearbyCommunityName && (
-                            <span
-                              className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800/50 flex items-center gap-1 cursor-help"
-                              title={`Localizado a ~${auc.nearbyCommunityDistanceM || 300}m da comunidade ${auc.nearbyCommunityName}. Por estar fora do raio crítico de 30m, não afeta o valor do imóvel nem a liquidez.`}
-                            >
-                              ⚠️ Próx. Comunidade: {auc.nearbyCommunityName} (~{auc.nearbyCommunityDistanceM || 300}m)
-                            </span>
-                          )}
-
                           {isFeatured && (
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
                               Destaque ★
@@ -1104,8 +1150,8 @@ export default function Dashboard({
                       </div>
 
                       {/* Foto do Imóvel / Thumbnail na DIREITA */}
-                      <div className="shrink-0 pt-0.5">
-                        <PropertyThumbnail property={auc} size="md" />
+                      <div className="shrink-0">
+                        <PropertyThumbnail property={auc} size="lg" className="rounded-lg" />
                       </div>
                     </div>
 
@@ -1133,13 +1179,13 @@ export default function Dashboard({
                       {/* Col 3: Lucro Estimado */}
                       <div className="flex flex-col justify-center">
                         <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Lucro Estimado</span>
-                        <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${auc.hasMicroBenchmark === false ? 'text-slate-400' : (auc.calculatedProfit || 0) >= 0 ? 'text-white' : 'text-rose-400'}`}>
-                          {auc.hasMicroBenchmark === false || auc.calculatedProfit === undefined ? 'Sob consulta' : formatBRL(auc.calculatedProfit || 0)}
+                        <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${!isVerifiedValuation ? 'text-rose-400' : (auc.calculatedProfit || 0) >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                          {!isVerifiedValuation || auc.calculatedProfit === undefined ? (isProjectedValuation ? 'Projeção não ranqueada' : 'Sob consulta') : formatBRL(auc.calculatedProfit || 0)}
                         </span>
                       </div>
 
                       {/* Col 4: Gabarito ITBI (Topo) */}
-                      <div className="relative group/itbi bg-amber-950/30 p-2 rounded-lg border border-amber-500/40 shadow-xs flex flex-col justify-center cursor-help">
+                      <div className={`relative group/itbi p-2 rounded-lg border shadow-xs flex flex-col justify-center cursor-help ${isVerifiedValuation ? 'bg-amber-950/30 border-amber-500/40' : 'bg-rose-950/40 border-rose-500/70'}`}>
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] text-amber-400 block uppercase font-bold tracking-wider flex items-center space-x-0.5 truncate">
                             <Sparkles className="w-2.5 h-2.5 text-amber-400 shrink-0" />
@@ -1147,10 +1193,10 @@ export default function Dashboard({
                           </span>
                           <span className="text-[8.5px] text-amber-400/80 font-mono">ℹ️</span>
                         </div>
-                        <span className="text-xs sm:text-sm font-black text-amber-300 font-mono block mt-0.5">
-                          {auc.hasMicroBenchmark === false || (!auc.estimatedValue && !auc.itbiStreetAvgSqm)
-                            ? <span className="text-amber-400/90 font-mono text-[11px]">Sem amostragem</span>
-                            : (auc.estimatedValue ? formatBRL(auc.estimatedValue) : (auc.itbiUnitValueAvg ? formatBRL(auc.itbiUnitValueAvg * auc.sizeSqm) : 'N/A'))}
+                        <span className={`text-xs sm:text-sm font-black font-mono block mt-0.5 ${isVerifiedValuation ? 'text-amber-300' : 'text-rose-300'}`}>
+                          {!auc.estimatedValue
+                            ? <span className="text-rose-300 font-mono text-[11px]">Sem fonte segura</span>
+                            : <>{formatBRL(auc.estimatedValue)}{!isVerifiedValuation && <span className="block text-[8px]">PROJEÇÃO - BAIRRO</span>}</>}
                         </span>
 
                         {/* Tooltip flutuante no hover */}
@@ -1175,11 +1221,11 @@ export default function Dashboard({
                       <div className="flex flex-col justify-center">
                         <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">ROI Projetado</span>
                         <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
-                          auc.hasMicroBenchmark === false ? 'text-slate-400' :
+                          !isVerifiedValuation ? 'text-rose-400' :
                           (auc.calculatedRoi || 0) > 40 ? 'text-emerald-400' : 
                           (auc.calculatedRoi || 0) > 20 ? 'text-indigo-400' : 'text-slate-200'
                         }`}>
-                          {auc.hasMicroBenchmark === false || auc.calculatedRoi === undefined ? 'Sob consulta' : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
+                          {!isVerifiedValuation || auc.calculatedRoi === undefined ? (isProjectedValuation ? 'Projeção' : 'Sob consulta') : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
                         </span>
                       </div>
 
@@ -1200,7 +1246,9 @@ export default function Dashboard({
                           
                           // A nota é calculada e persistida no servidor. O card
                           // só a exibe, evitando regras concorrentes de 1/10.
-                          const effScore = Math.max(1, Math.min(10, auc.liquidityScore ?? 5));
+                          const localSamples = auc.itbiStreetCount || 0;
+                          const sourceCeiling = localSamples === 0 ? 4 : localSamples < 3 ? 6 : 10;
+                          const effScore = Math.max(1, Math.min(sourceCeiling, auc.liquidityScore ?? 1));
 
                           return (
                             <>
@@ -1228,12 +1276,6 @@ export default function Dashboard({
                                     <strong className="font-mono text-slate-200">{streetCount} transações</strong>
                                   </div>
                                   <div className="flex justify-between border-b border-slate-850 pb-0.5">
-                                    <span>Risco Territorial:</span>
-                                    <strong className={`font-mono ${auc.isCommunityRisk ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                      {auc.isCommunityRisk ? 'Comunidade (Teto 2/10)' : 'Sem risco crítico'}
-                                    </strong>
-                                  </div>
-                                  <div className="flex justify-between border-b border-slate-850 pb-0.5">
                                     <span>Margem / Retorno:</span>
                                     <strong className="font-mono text-emerald-400">ROI {roi}% / R$ {profit.toLocaleString('pt-BR')}</strong>
                                   </div>
@@ -1248,18 +1290,18 @@ export default function Dashboard({
                       </div>
 
                       {/* Col 4: Flip Rápido (60d) - EXATAMENTE EMBAIXO DO GABARITO ITBI & DO MESMO TAMANHO */}
-                      <div className="relative group/flip bg-emerald-950/30 p-2 rounded-lg border border-emerald-500/40 shadow-xs flex flex-col justify-center cursor-help">
+                      <div className={`relative group/flip p-2 rounded-lg border shadow-xs flex flex-col justify-center cursor-help ${isVerifiedValuation ? 'bg-emerald-950/30 border-emerald-500/40' : 'bg-rose-950/40 border-rose-500/70'}`}>
                         <div className="flex items-center justify-between">
-                          <span className="text-[9px] text-emerald-400 block uppercase font-bold tracking-wider truncate" title="Flip Rápido (60d)">
+                          <span className={`text-[9px] block uppercase font-bold tracking-wider truncate ${isVerifiedValuation ? 'text-emerald-400' : 'text-rose-300'}`} title="Flip Rápido (60d)">
                             Flip Rápido (60d)
                           </span>
                           <span className="text-[8.5px] text-emerald-400/80 font-mono">ℹ️</span>
                         </div>
-                        <span className="text-xs sm:text-sm font-black text-emerald-300 font-mono block mt-0.5">
-                          {auc.hasMicroBenchmark === false || !auc.vendaBaixaPrice ? (
-                            <span className="text-slate-400 font-mono text-[11px]">Sem amostragem</span>
+                        <span className={`text-xs sm:text-sm font-black font-mono block mt-0.5 ${isVerifiedValuation ? 'text-emerald-300' : 'text-rose-300'}`}>
+                          {!auc.vendaBaixaPrice ? (
+                            <span className="text-rose-300 font-mono text-[11px]">Sem fonte segura</span>
                           ) : (
-                            formatBRL(auc.vendaBaixaPrice)
+                            <>{formatBRL(auc.vendaBaixaPrice)}{!isVerifiedValuation && <span className="block text-[8px]">PROJEÇÃO NÃO RANQUEADA</span>}</>
                           )}
                         </span>
 
@@ -1269,7 +1311,7 @@ export default function Dashboard({
                             <span>⚡ Preço Sugerido p/ Revenda Rápida</span>
                           </div>
                           <p className="text-[10px] text-slate-300 leading-relaxed font-sans">
-                            85% ITBI (Piso Real de Cartório) + 15% Portais (Teto de Anúncios) calibrado para liquidez imediata em até 60 dias.
+                            90% do corte ITBI verificado no nível disponível (prédio, rua ou raio), com depreciação de idade quando aplicável. Portais não participam deste cálculo.
                           </p>
                           {auc.ageDepreciationPct && auc.ageDepreciationPct > 0 ? (
                             <div className="mt-2 pt-1.5 border-t border-slate-800 text-[9.5px] font-mono text-amber-300 flex justify-between">
@@ -1285,14 +1327,6 @@ export default function Dashboard({
                       </div>
                     </div>
 
-                    {!auc.isCommunityRisk && auc.isNearbyCommunity && auc.nearbyCommunityName && (
-                      <div className="border border-amber-700/50 bg-amber-950/30 px-3 py-2 rounded-lg text-[10px] text-amber-200 flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <strong>Proximidade informativa:</strong>
-                        <span>{auc.nearbyCommunityName}{auc.nearbyFactionName ? ` (${auc.nearbyFactionName})` : ''} a aproximadamente {auc.nearbyCommunityDistanceM || 300} m.</span>
-                        <span className="text-amber-300/80">Fora do critério crítico: não altera valor nem liquidez.</span>
-                      </div>
-                    )}
-
                     {auc.streetRadiusCalibrated && auc.itbiSurroundingAvgSqm && auc.itbiStreetAvgSqm && (
                       <div className="border border-indigo-700/50 bg-indigo-950/30 px-3 py-2 rounded-lg text-[10px] text-indigo-200 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <strong>Calibragem rua–raio:</strong>
@@ -1303,26 +1337,42 @@ export default function Dashboard({
 
                     {/* Real Estate Portals Comparison (Sem Links Externos que abrem páginas em branco) */}
                     <div data-tour={idx === 0 ? "card-portals" : undefined} className="border-t border-slate-800/80 pt-2.5 flex flex-col space-y-2 text-xs">
-                      <div className="flex justify-between items-center text-slate-400">
+                      <div className="flex justify-between items-center gap-2 text-slate-400">
                         <span className="font-semibold text-slate-400">Média m² Anunciado na Rua:</span>
-                        <span className="font-bold text-white font-mono bg-slate-800 text-slate-200 px-2 py-0.5 rounded border border-slate-700 text-[11px]">
-                          {auc.streetPortalAvgSqm ? `${formatBRL(auc.streetPortalAvgSqm)}/m²` : '-'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="font-bold text-white font-mono bg-slate-800 text-slate-200 px-2 py-0.5 rounded border border-slate-700 text-[11px]">
+                            {auc.streetPortalAvgSqm && auc.portalDataVerifiedAt ? `${formatBRL(auc.streetPortalAvgSqm)}/m²` : 'Sem anúncios confirmados'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => refreshCardPortalData(auc)}
+                            disabled={portalSearchIds.has(auc.id)}
+                            className="w-7 h-7 inline-flex items-center justify-center rounded border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:border-indigo-500 disabled:opacity-50"
+                            title="Buscar anúncios individuais ativos nesta rua"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${portalSearchIds.has(auc.id) ? 'animate-spin' : ''}`} />
+                          </button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-1">
                         <div className="bg-slate-950/40 border border-slate-850 p-2 rounded-lg text-center">
                           <span className="text-[9px] text-slate-400 block font-medium uppercase tracking-wide">Média ZapImóveis</span>
                           <span className="font-bold text-white text-xs font-mono">
-                            {auc.portalZapAvg ? formatBRL(auc.portalZapAvg) : '-'}
+                            {auc.portalZapAvg && auc.portalDataVerifiedAt ? formatBRL(auc.portalZapAvg) : '-'}
                           </span>
                         </div>
                         <div className="bg-slate-950/40 border border-slate-850 p-2 rounded-lg text-center">
                           <span className="text-[9px] text-slate-400 block font-medium uppercase tracking-wide">Média QuintoAndar</span>
                           <span className="font-bold text-white text-xs font-mono">
-                            {auc.portalQuintoAndarAvg ? formatBRL(auc.portalQuintoAndarAvg) : '-'}
+                            {auc.portalQuintoAndarAvg && auc.portalDataVerifiedAt ? formatBRL(auc.portalQuintoAndarAvg) : '-'}
                           </span>
                         </div>
                       </div>
+                      {auc.portalDataVerifiedAt && auc.portalSampleCount ? (
+                        <div className="text-[9px] text-emerald-700 font-semibold">{auc.portalSampleCount} anúncios individuais confirmados • conferência visual, fora do cálculo</div>
+                      ) : (
+                        <div className="text-[9px] text-rose-500 font-semibold">Sem fonte de anúncio auditável; nenhuma estimativa foi fabricada.</div>
+                      )}
                     </div>
 
                     {/* Meta-metrics tags */}
@@ -1334,22 +1384,6 @@ export default function Dashboard({
                       }`}>
                         <span>● {auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
                       </span>
-                      {(() => {
-                        const risk = checkPropertyCommunityRisk(auc);
-                        if (!risk.isRisk) return null;
-                        return (
-                          <span
-                            className={`text-[11px] px-2 py-0.5 rounded font-bold border flex items-center gap-1 ${
-                              risk.level === 'high_risk'
-                                ? 'bg-rose-955/80 text-rose-300 border-rose-700/60 shadow-xs'
-                                : 'bg-amber-955/70 text-amber-300 border-amber-700/50'
-                            }`}
-                            title={risk.communityName ? `Área identificada: ${risk.communityName} ${risk.faction ? `(${risk.faction})` : ''}` : 'Área com alerta de risco'}
-                          >
-                            <span>{risk.badgeLabel || '⚠️ Área de Risco'}</span>
-                          </span>
-                        );
-                      })()}
                       {auc.allowsFinancing && (
                         <span className="text-[11px] bg-blue-950/40 text-blue-300 border border-blue-800/40 px-2 py-0.5 rounded font-medium">
                           ✓ Financiamento
@@ -1371,6 +1405,21 @@ export default function Dashboard({
                         <MapPin className="w-3 h-3 text-emerald-400" />
                         <span>Ver no Mapa</span>
                       </button>
+                      {(() => {
+                        const communityName = auc.isCommunityRisk ? auc.communityName : auc.nearbyCommunityName;
+                        const faction = auc.isCommunityRisk ? auc.factionName : auc.nearbyFactionName;
+                        const distance = auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM;
+                        if (!communityName) return null;
+                        return (
+                          <span
+                            className="text-[11px] px-2 py-0.5 rounded font-bold border border-rose-600/60 bg-rose-950/60 text-rose-300 flex items-center gap-1"
+                            title={auc.isCommunityRisk ? 'Faixa crítica abaixo de 200m: reduz valor de venda e liquidez.' : 'Entre 200m e 350m: aviso informativo, sem alteração de valor ou liquidez.'}
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{auc.isCommunityRisk ? 'ÁREA CRÍTICA' : 'PRÓX. COMUNIDADE'}: {communityName}{faction ? ` (${faction})` : ''} • {distance === 0 ? 'dentro' : `~${distance || 0}m`}</span>
+                          </span>
+                        );
+                      })()}
                       <span className="text-[11px] bg-slate-850 text-slate-300 border border-slate-750 px-2 py-0.5 rounded font-mono" title="Média oficial por m² apurada no registro de transações municipais de ITBI da prefeitura (rua e entorno)">
                         🏛️ ITBI RUA: <span className="text-white font-bold">{auc.itbiStreetAvgSqm ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²` : 'Sem dados'}</span> | ITBI ENTORNO (RAIO): <span className="text-white font-bold">{auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiUnitValueAvg)}/m²` : '-'}</span>
                       </span>
@@ -1492,6 +1541,7 @@ export default function Dashboard({
                   city: simulatingAuction.city,
                   neighborhood: simulatingAuction.neighborhood,
                   address: simulatingAuction.address,
+                  matriculaText: simulatingAuction.matriculaText,
                   propertyType: simulatingAuction.propertyType,
                   sizeSqm: simulatingAuction.sizeSqm,
                   bedrooms: (simulatingAuction as any).bedrooms,
@@ -1508,6 +1558,17 @@ export default function Dashboard({
                   portalQuintoAndarAvg: simulatingAuction.portalQuintoAndarAvg,
                   vendaBaixaPrice: simulatingAuction.vendaBaixaPrice,
                   vendaMediaPrice: simulatingAuction.vendaMediaPrice,
+                  valuationConfidence: simulatingAuction.valuationConfidence,
+                  valuationBasis: simulatingAuction.valuationBasis,
+                  valuationSampleCount: simulatingAuction.valuationSampleCount,
+                  valuationRadiusKm: simulatingAuction.valuationRadiusKm,
+                  portalDataVerifiedAt: simulatingAuction.portalDataVerifiedAt,
+                  portalSampleCount: simulatingAuction.portalSampleCount,
+                  portalDataSource: simulatingAuction.portalDataSource,
+                  streetPortalAvgSqm: simulatingAuction.streetPortalAvgSqm,
+                  isCommunityRisk: simulatingAuction.isCommunityRisk,
+                  communityName: simulatingAuction.communityName,
+                  communityDistanceM: simulatingAuction.communityDistanceM,
                   ageDepreciationPct: simulatingAuction.ageDepreciationPct,
                   buildingAge: (simulatingAuction as any).buildingAge,
                 }}

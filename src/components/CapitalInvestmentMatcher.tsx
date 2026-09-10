@@ -23,12 +23,14 @@ interface CapitalInvestmentMatcherProps {
   itbiStats: ItbiStats[];
   onSelectProperty: (auc: AuctionProperty) => void;
   onSimulateProperty: (auc: AuctionProperty) => void;
+  onUpdateProperty: (updates: Partial<AuctionProperty>) => Promise<void>;
 }
 
 export default function CapitalInvestmentMatcher({
   auctions,
   itbiStats = [],
-  onSimulateProperty
+  onSimulateProperty,
+  onUpdateProperty
 }: CapitalInvestmentMatcherProps) {
   const [availableCapitalStr, setAvailableCapitalStr] = useState<string>(() => {
     return localStorage.getItem('matcher_capital') || '150.000';
@@ -185,7 +187,12 @@ export default function CapitalInvestmentMatcher({
         continue;
       }
 
-      if ((auc.liquidityScore || 5) < minLiquidity) {
+      const auditedLiquidity = Number(auc.liquidityScore) || 1;
+      const hasStreetEvidence = (auc.itbiStreetCount || 0) > 0;
+      const hasAuditedExit = auc.valuationConfidence === 'verified' && hasStreetEvidence && (auc.vendaBaixaPrice || 0) > 0;
+      const effectiveLiquidity = hasAuditedExit ? auditedLiquidity : Math.min(4, auditedLiquidity);
+
+      if (effectiveLiquidity < minLiquidity) {
         continue;
       }
 
@@ -219,14 +226,16 @@ export default function CapitalInvestmentMatcher({
       const actualOutlay = primaryMode === 'avista' ? totalAcquisitionCostAVista : initialOutlayFinanciado;
       const capitalLeftover = availableCapital - actualOutlay;
 
-      const gabaritoITBI = auc.estimatedValue || Math.round(auc.sizeSqm * (auc.itbiUnitValueAvg || 4500));
-      const vendaPortais = Math.round(gabaritoITBI * 1.215);
+      // Use the exact audited outputs shown in Garimpo. Never invent a resale
+      // value from a generic multiplier inside the capital allocator.
+      const gabaritoITBI = auc.estimatedValue || 0;
+      const vendaPortais = auc.vendaBaixaPrice || 0;
 
       const brokerFee = Math.round(vendaPortais * 0.06);
       const grossProfit = vendaPortais - totalAcquisitionCostAVista - brokerFee;
       const capitalGainsTax = grossProfit > 0 ? Math.round(grossProfit * 0.15) : 0;
       const netProfit = grossProfit - capitalGainsTax;
-      const roiPct = Math.round((netProfit / actualOutlay) * 100);
+      const roiPct = vendaPortais > 0 ? Math.round((netProfit / actualOutlay) * 100) : 0;
 
       const monthlyRent = Math.round(gabaritoITBI * 0.0055);
       const annualRent = monthlyRent * 12;
@@ -258,7 +267,9 @@ export default function CapitalInvestmentMatcher({
           netProfit,
           roiPct,
           yieldPct
-        }
+        },
+        hasAuditedExit,
+        effectiveLiquidity
       });
     }
 
@@ -511,13 +522,13 @@ export default function CapitalInvestmentMatcher({
       ) : (
         <div data-tour="capital-results" className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {matchedOpportunities.slice(0, visibleCount).map((match) => {
-            const { auction: auc, primaryMode, actualOutlay, capitalLeftover, costs, valuation } = match;
-            const isFeatured = valuation.roiPct >= 40 && (auc.liquidityScore || 5) >= 7;
+            const { auction: auc, primaryMode, actualOutlay, capitalLeftover, costs, valuation, hasAuditedExit, effectiveLiquidity } = match;
+            const isFeatured = hasAuditedExit && valuation.roiPct >= 40 && effectiveLiquidity >= 7;
 
             return (
               <div
                 key={auc.id}
-                className={`bg-slate-900 border rounded-2xl shadow-[0_15px_35px_rgba(0,0,0,0.7),0_5px_15px_rgba(0,0,0,0.5)] hover:shadow-[0_25px_50px_rgba(0,0,0,0.9),0_10px_25px_rgba(15,23,42,0.8)] hover:-translate-y-2 hover:scale-[1.008] transition-all duration-300 overflow-hidden flex flex-col justify-between ${
+                className={`bg-slate-900 border rounded-xl shadow-md transition-colors overflow-hidden flex flex-col justify-between ${
                   isFeatured 
                     ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-slate-900/95' 
                     : 'border-slate-750 hover:border-indigo-400'
@@ -548,6 +559,14 @@ export default function CapitalInvestmentMatcher({
                     <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>{auc.address || 'Endereço'}, {auc.neighborhood} - {auc.city}/{auc.state}</span>
                   </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${hasAuditedExit ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40' : 'bg-rose-950/50 text-rose-300 border-rose-700/50'}`}>
+                      {auc.valuationConfidence === 'verified' ? 'ITBI verificado' : 'Projeção não ranqueada'}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-950 text-slate-300 border-slate-700">
+                      Liquidez {effectiveLiquidity}/10
+                    </span>
+                  </div>
                 </div>
 
                 <div className="px-5 py-3 bg-slate-950/50 border-y border-slate-800/60 grid grid-cols-2 gap-3">
@@ -574,23 +593,23 @@ export default function CapitalInvestmentMatcher({
 
                 <div className="p-5 py-3.5 space-y-3 flex-1">
                   {strategy === 'revenda' ? (
-                    <div className="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-850">
+                    <div className={`grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-lg border ${hasAuditedExit ? 'border-slate-850' : 'border-rose-700/60'}`}>
                       <div>
                         <span className="text-[9.5px] text-slate-400 font-mono uppercase block">Gabarito de Venda ITBI</span>
                         <span className="text-xs font-bold text-white font-mono block">
-                          {formatBRL(valuation.gabaritoITBI)}
+                          {valuation.gabaritoITBI > 0 ? formatBRL(valuation.gabaritoITBI) : 'Sob consulta'}
                         </span>
                       </div>
                       <div>
                         <span className="text-[9.5px] text-slate-400 font-mono uppercase block">Lucro Líquido</span>
                         <span className="text-xs font-bold text-white font-mono block">
-                          {formatBRL(valuation.netProfit)}
+                          {hasAuditedExit ? formatBRL(valuation.netProfit) : 'Não calculado'}
                         </span>
                       </div>
                       <div>
                         <span className="text-[9.5px] text-slate-400 font-mono uppercase block">ROI Projetado</span>
                         <span className="text-xs font-black text-emerald-400 font-mono block">
-                          +{valuation.roiPct}%
+                          {hasAuditedExit ? `${valuation.roiPct}%` : 'Não ranqueado'}
                         </span>
                       </div>
                     </div>
@@ -734,7 +753,22 @@ export default function CapitalInvestmentMatcher({
                   itbiUnitValueAvg: simulatingProperty.itbiUnitValueAvg,
                   portalZapAvg: simulatingProperty.portalZapAvg,
                   portalQuintoAndarAvg: simulatingProperty.portalQuintoAndarAvg,
+                  vendaBaixaPrice: simulatingProperty.vendaBaixaPrice,
+                  vendaMediaPrice: simulatingProperty.vendaMediaPrice,
+                  valuationConfidence: simulatingProperty.valuationConfidence,
+                  valuationBasis: simulatingProperty.valuationBasis,
+                  valuationSampleCount: simulatingProperty.valuationSampleCount,
+                  valuationRadiusKm: simulatingProperty.valuationRadiusKm,
+                  portalDataVerifiedAt: simulatingProperty.portalDataVerifiedAt,
+                  portalSampleCount: simulatingProperty.portalSampleCount,
+                  portalDataSource: simulatingProperty.portalDataSource,
+                  streetPortalAvgSqm: simulatingProperty.streetPortalAvgSqm,
+                  isCommunityRisk: simulatingProperty.isCommunityRisk,
+                  communityName: simulatingProperty.communityName,
+                  communityDistanceM: simulatingProperty.communityDistanceM,
+                  matriculaText: simulatingProperty.matriculaText,
                 }}
+                onUpdateProperty={onUpdateProperty}
                 onClose={() => setSimulatingProperty(null)}
               />
             </motion.div>

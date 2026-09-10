@@ -46,12 +46,16 @@ export function checkPropertyCommunityRisk(
     const kwNorm = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const regex = new RegExp(`\\b${kwNorm}\\b`, 'i');
     if (regex.test(fullText)) {
-      return {
-        isRisk: true,
-        level: 'high_risk',
-        communityName: kw.toUpperCase(),
-        badgeLabel: '⚠️ Em Comunidade / Área de Risco'
-      };
+      // Text alone is not precise enough to change value or liquidity. Keep it
+      // as an informational warning until coordinates confirm the distance.
+      if (!prop.lat && !resolvedCoords) {
+        return {
+          isRisk: false,
+          level: 'warning',
+          communityName: kw.toUpperCase(),
+          badgeLabel: 'Referência a comunidade - distância não confirmada'
+        };
+      }
     }
   }
 
@@ -77,16 +81,25 @@ export function checkPropertyCommunityRisk(
 
     if (closestPoint) {
       const distMeters = Math.round(minDistanceKm * 1000);
-      // Regra Estrita Solicitada: Fator de comunidade SÓ se aplica dentro ou até 100m.
-      // Passou de 100m, NÃO é considerado risco de comunidade!
-      if (distMeters <= 100) {
+      // Faixa crítica: dentro ou a menos de 200m reduz valor e liquidez.
+      if (distMeters < 200) {
         return {
           isRisk: true,
           level: 'high_risk',
           communityName: closestPoint.n,
           faction: closestPoint.f || undefined,
           distanceMeters: distMeters,
-          badgeLabel: `⚠️ Em Comunidade / ${distMeters}m (${closestPoint.n}${closestPoint.f ? ` - ${closestPoint.f}` : ''})`
+          badgeLabel: `Em comunidade / ${distMeters}m (${closestPoint.n}${closestPoint.f ? ` - ${closestPoint.f}` : ''})`
+        };
+      }
+      if (distMeters <= 350) {
+        return {
+          isRisk: false,
+          level: 'warning',
+          communityName: closestPoint.n,
+          faction: closestPoint.f || undefined,
+          distanceMeters: distMeters,
+          badgeLabel: `Próximo a ${closestPoint.n} - ${distMeters}m (informativo)`
         };
       }
     }

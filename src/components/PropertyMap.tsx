@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { AuctionProperty } from '../types.ts';
 import { 
   MapPin, Layers, Compass, Building, ExternalLink, X, Search, 
@@ -43,6 +44,8 @@ export default function PropertyMap({
   const handleSearchInAreaRef = useRef<() => void>(() => {});
   const spiderfyLayerRef = useRef<any>(null);
   const geocodeAttemptedRef = useRef<Set<string>>(new Set());
+  const focusedLocationRef = useRef('');
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     autoSearchOnMoveRef.current = autoSearchOnMove;
@@ -263,6 +266,7 @@ export default function PropertyMap({
 
       const map = L.map(mapContainerRef.current).setView(initialCenter, initialZoom);
       mapRef.current = map;
+      setMapReady(true);
 
       const tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
@@ -282,7 +286,8 @@ export default function PropertyMap({
             if (inside.length >= 150) break;
           }
         }
-        setAreaFilteredProps(inside);
+        const pendingSelected = auctions.find(a => a.id === initialSelectedPropertyId && !getPropertyCoordinates(a));
+        setAreaFilteredProps(pendingSelected ? [pendingSelected, ...inside] : inside);
       };
 
       map.on('moveend', () => {
@@ -444,7 +449,7 @@ export default function PropertyMap({
               geo?.precision &&
               Number.isFinite(geo.lat) &&
               Number.isFinite(geo.lng) &&
-              isSubscribed
+              mapRef.current
             ) {
               setResolvedCoordinates(current => (
                 current[prop.id]
@@ -628,13 +633,6 @@ export default function PropertyMap({
     }
   });
 
-  if (selectedPropId && markersRef.current[selectedPropId]) {
-    const target = auctions.find(a => a.id === selectedPropId);
-    if (target) {
-      const coords = getMapCoordinates(target);
-      if (coords) mapRef.current.setView(coords, 16, { animate: true });
-    }
-  }
 }, [displayedList, selectedPropId, getMapCoordinates]);
 
 useEffect(() => {
@@ -642,8 +640,13 @@ useEffect(() => {
   const target = auctions.find(a => a.id === selectedPropId);
   if (!target) return;
   const coords = getMapCoordinates(target);
-  if (coords) mapRef.current.setView(coords, 16, { animate: true });
-}, [selectedPropId, auctions, getMapCoordinates]);
+  const focusKey = coords ? `${selectedPropId}:${coords.join(',')}` : '';
+  if (coords && focusKey !== focusedLocationRef.current) {
+    focusedLocationRef.current = focusKey;
+    mapRef.current.invalidateSize();
+    mapRef.current.setView(coords, 16, { animate: false });
+  }
+}, [selectedPropId, auctions, getMapCoordinates, mapReady]);
 
   const handleCardClick = (prop: AuctionProperty) => {
     setSelectedPropId(prop.id);
@@ -1222,12 +1225,6 @@ useEffect(() => {
                                       <strong className="font-mono text-slate-200">{streetCount} tx</strong>
                                     </div>
                                     <div className="flex justify-between border-b border-slate-850 pb-0.5">
-                                      <span>Risco Territorial:</span>
-                                      <strong className={`font-mono ${auc.isCommunityRisk ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                        {auc.isCommunityRisk ? 'Comunidade (Teto 2)' : 'Sem risco crítico'}
-                                      </strong>
-                                    </div>
-                                    <div className="flex justify-between border-b border-slate-850 pb-0.5">
                                       <span>Margem de Retorno:</span>
                                       <strong className="font-mono text-emerald-400">ROI {roi}%</strong>
                                     </div>
@@ -1338,14 +1335,14 @@ useEffect(() => {
       </div>
 
       {/* Simulator Side Drawer (Abre da direita para a esquerda ocupando 50% da tela) */}
-      {simulatingProperty && (
+      {simulatingProperty && createPortal(
         <div className="fixed inset-0 z-[9999] overflow-hidden">
           <div 
             onClick={() => setSimulatingProperty(null)}
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs cursor-pointer animate-in fade-in duration-200"
           />
-          <div className="absolute inset-y-0 right-0 max-w-full flex pl-4 sm:pl-10 pointer-events-none">
-            <div className="pointer-events-auto w-screen max-w-full md:max-w-[50vw] lg:max-w-[50vw] bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden animate-in slide-in-from-right duration-300">
+          <div className="absolute inset-0 flex p-2 sm:p-4 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-[1440px] mx-auto bg-slate-900 border border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden">
               <div className="bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
@@ -1376,7 +1373,7 @@ useEffect(() => {
                     purchasePrice: simulatingProperty.auctionPrice,
                     evaluationPrice: (simulatingProperty as any).evaluationPrice,
                     estimatedValue: simulatingProperty.estimatedValue,
-                    vendaBaixaPrice: simulatingProperty.vendaBaixaPrice || Math.round((simulatingProperty.estimatedValue || 0) * 0.90),
+                    vendaBaixaPrice: simulatingProperty.vendaBaixaPrice,
                     vendaMediaPrice: simulatingProperty.vendaMediaPrice,
                     ageDepreciationPct: simulatingProperty.ageDepreciationPct,
                     acquisitionRule: simulatingProperty.origin === 'caixa' || (simulatingProperty.id && simulatingProperty.id.includes('caixa')) ? 'caixa' : 'leilao',
@@ -1386,7 +1383,7 @@ useEffect(() => {
                     setSimulatingProperty(prev => prev ? { ...prev, ...updates } : null);
                     try {
                       fetch(`/api/auctions/${simulatingProperty.id}`, {
-                        method: 'PATCH',
+                        method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(updates)
                       }).catch(() => {});
@@ -1397,7 +1394,7 @@ useEffect(() => {
               </div>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
       {/* Pending Review Drawer / Modal (Regra de Ouro: Imóveis bloqueados para evitar falsa precisão) */}
       {showPendingDrawer && (

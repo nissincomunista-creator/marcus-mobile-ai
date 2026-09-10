@@ -56,6 +56,8 @@ export interface AuctionProperty {
   auctionDate: string;
   auctionLink?: string;
   auctioneerName?: string;
+  matriculaText?: string;
+  matriculaUrl?: string;
   description?: string;
   status: 'Pendente' | 'Analisado' | 'Arrematado' | 'Arquivado';
   occupied: boolean;
@@ -65,6 +67,9 @@ export interface AuctionProperty {
   portalZapAvg?: number; // Estimated average total price for similar type in same street on ZapImoveis
   portalQuintoAndarAvg?: number; // Estimated average total price for similar type in same street on QuintoAndar
   streetPortalAvgSqm?: number; // General average price per sqm of active listings on the street
+  portalDataVerifiedAt?: string; // Timestamp of the last confirmed portal scrape
+  portalSampleCount?: number; // Number of individual, auditable listing URLs
+  portalDataSource?: string; // Human-readable source/scope label
   
   // Derived / Calculated values
   itbiUnitValueAvg?: number; // Average $/m2 in the neighborhood from ITBI
@@ -75,11 +80,14 @@ export interface AuctionProperty {
   streetRadiusDeviationPct?: number; // Street versus surrounding-radius divergence
   streetRadiusCalibrated?: boolean; // Street value was statistically blended with radius
   valuationBasis?: string; // Audit label for the source used in the valuation
+  valuationConfidence?: 'verified' | 'projected' | 'unavailable';
+  valuationSampleCount?: number;
+  valuationRadiusKm?: number;
   calculatedRoi?: number; // ROI percentage
   calculatedProfit?: number; // Capital gains
   liquidityScore?: number; // 1-10 score
   riskLevel?: 'Baixo' | 'Médio' | 'Alto';
-  isCommunityRisk?: boolean; // True if inside or adjacent to identified community/faction area
+  isCommunityRisk?: boolean; // True only if inside or less than 200m from an identified community area
   communityName?: string; // e.g. Morro do São João
   factionName?: string; // e.g. CV, TCP, ADA
   buildingAge?: number; // Estimated age of building in years
@@ -90,7 +98,7 @@ export interface AuctionProperty {
   divergentNeighborhoodNotice?: string; // Notice explaining divergence (e.g. Santa Rosa -> Cubango)
   imageUrl?: string; // Direct real photo URL of the property
   zone?: string; // Macro urban zone (Zona Sul, Zona Norte, Região Oceânica, etc.)
-  isNearbyCommunity?: boolean; // True if within ~500m of community (does NOT reduce valuation/liquidity)
+  isNearbyCommunity?: boolean; // True if between 200m and 350m (informational only)
   nearbyCommunityName?: string; // Name of nearby community
   nearbyFactionName?: string; // Controlling faction if known
   nearbyCommunityDistanceM?: number; // Distance in meters

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { auditRegistryText } from '../utils/registryAudit.ts';
 import { 
   Calculator, 
   Search, 
@@ -74,6 +75,7 @@ export interface PrefilledCalculatorData {
   title?: string;
   description?: string;
   auctionLink?: string;
+  matriculaText?: string;
   state?: string;
   city?: string;
   neighborhood?: string;
@@ -94,6 +96,17 @@ export interface PrefilledCalculatorData {
   portalQuintoAndarAvg?: number;
   vendaBaixaPrice?: number;
   vendaMediaPrice?: number;
+  valuationConfidence?: 'verified' | 'projected' | 'unavailable';
+  valuationBasis?: string;
+  valuationSampleCount?: number;
+  valuationRadiusKm?: number;
+  portalDataVerifiedAt?: string;
+  portalSampleCount?: number;
+  portalDataSource?: string;
+  streetPortalAvgSqm?: number;
+  isCommunityRisk?: boolean;
+  communityName?: string;
+  communityDistanceM?: number;
   ageDepreciationPct?: number;
   buildingAge?: number;
 }
@@ -556,15 +569,21 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     }
 
     // Auto-análise 100% imediata da Matrícula e Edital ao abrir o simulador
-    const initialCorpus = `${prefillData.description || ''}\n${prefillData.title || ''}\n${prefillData.address || ''}`.trim();
+    const initialCorpus = `${prefillData.matriculaText || ''}\n${prefillData.description || ''}\n${prefillData.title || ''}\n${prefillData.address || ''}`.trim();
     if (initialCorpus) {
       executeRealEditalAnalysis(initialCorpus, `Edital_${prefillData.id || 'Imovel'}.pdf`);
-      executeRealMatriculaAnalysis(initialCorpus, `Matricula_${prefillData.id || 'Imovel'}.pdf`);
+      const containsRegistryEvidence = /(?:matr[ií]cula|livro\s*2|registro\s+de\s+im[oó]veis|certid[aã]o|\b(?:R|AV)[-.\s]?\d+)/i.test(initialCorpus);
+      if (containsRegistryEvidence) {
+        setMatriculaText(prefillData.matriculaText || prefillData.description || '');
+        executeRealMatriculaAnalysis(initialCorpus, `Matricula_${prefillData.id || 'Imovel'}.pdf`);
+      } else {
+        setDueDiligenceNotice('Matrícula não fornecida: não é possível certificar ausência de ônus, gravames ou penhoras apenas pelo anúncio.');
+      }
     }
 
     // Auto-fetch authentic Caixa Matrícula & Edital PDF if Caixa property
     let timerId: any = null;
-    if (prefillData.auctionLink?.includes('caixa.gov.br') || prefillData.id?.includes('caixa')) {
+    if (prefillData.auctionLink && !prefillData.matriculaText) {
       timerId = setTimeout(() => {
         handleFetchCaixaDocs();
       }, 800);
@@ -572,7 +591,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     return () => {
       if (timerId) clearTimeout(timerId);
     };
-  }, [prefillData, neighborhoodsList]);
+  }, [prefillData?.id]);
 
   // Unified report generator combining real Matrícula and Edital audit data
   const buildUnifiedReport = (mat: MatriculaAuditData | null, edit: EditalAuditData | null): MatriculaAnalysisReport | null => {
@@ -583,14 +602,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const gravames = mat ? mat.gravames : [];
     const overallStatus: 'REGULAR' | 'ATENCAO' | 'ALTO_RISCO' = mat ? mat.overallStatus : (edit ? 'ATENCAO' : 'REGULAR');
 
-    let parecer = '';
-    if (mat && edit) {
-      parecer = `Auditoria Completa (Matrícula + Edital): A certidão imobiliária nº ${mat.matriculaNumber} no ${mat.registryOffice} aponta situação ${mat.overallStatus === 'REGULAR' ? 'plenamente regularizada' : 'com averbações saneáveis por ordem do juízo da arrematação'}. O edital do processo ${edit.processNumber || 'judicial'} conduzido por ${edit.leiloeiro || 'leiloeiro oficial'} (${edit.court || 'Vara Judicial'}) confirma aquisição originária com sub-rogação de débitos tributários (art. 130, parágrafo único do CTN) e cancelamento das constrições no R.I. (art. 908, §1º do CPC). O imóvel apresenta viabilidade jurídica com segurança patrimonial ao arrematante.`;
-    } else if (mat) {
-      parecer = `Auditoria da Matrícula: Certidão nº ${mat.matriculaNumber} examinada no ${mat.registryOffice}. ${mat.overallStatus === 'REGULAR' ? 'Não foram localizados ônus reais impeditivos ou indisponibilidades registradas.' : `Foram identificados ${mat.gravames.length} registros/averbações de constrições passíveis de cancelamento via Carta de Arrematação.`} Cadeia dominial sem quebras no princípio da continuidade registral.`;
-    } else if (edit) {
-      parecer = `Auditoria do Edital: Edital do processo ${edit.processNumber || 'judicial'} sob condução de ${edit.leiloeiro || 'leiloeiro oficial'} (${edit.court || 'Juízo Cível'}). Regras procedimentais em conformidade com o Código de Processo Civil. ${edit.occupationStatus} Comissão de 5% e sub-rogação fiscal aplicável nos termos do art. 130 do CTN.`;
-    }
+    const parecer = mat
+      ? `Leitura documental de ${mat.matriculaNumber}: ${mat.gravames.length} referências a ônus ou direitos identificadas. Confira os registros, as averbações posteriores e as condições específicas do edital antes da aquisição. A análise automática não confirma baixa de gravames nem regularidade da cadeia dominial.`
+      : 'Edital disponível; matrícula ainda não examinada. Situação registral pendente de confirmação.';
 
     return {
       matriculaNumber: activeMatNumber,
@@ -612,161 +626,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Real Matrícula Analyzer (Deterministic analysis on real document text + Caixa description + Edital)
   const executeRealMatriculaAnalysis = (rawText: string, fileName?: string) => {
     const text = rawText.trim();
-    const combinedCorpus = [
-      text,
-      matriculaText,
-      editalText,
-      prefillData?.description || '',
-      prefillData?.title || '',
-      fileName || ''
-    ].filter(Boolean).join('\n');
-
-    if (!combinedCorpus.trim() && !matriculaNumber.trim() && !fileName) {
-      setDueDiligenceNotice('Nenhum arquivo ou texto de matrícula informado. Anexe o PDF ou preencha o número da matrícula.');
+    if (!text) {
+      setDueDiligenceNotice('Matrícula ainda não disponível para leitura.');
       return;
     }
-
-    setDueDiligenceNotice('');
-    setIsAuditingMatricula(true);
-
-    setTimeout(() => {
-      let matNum = matriculaNumber.trim();
-      if (!matNum) {
-        const matMatch = combinedCorpus.match(/matr[íi]cula\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
-        if (matMatch && matMatch[1]) {
-          matNum = `Matrícula nº ${matMatch[1]} / Livro 2`;
-        } else {
-          const numOnly = (fileName || '').match(/\d{4,7}/);
-          matNum = numOnly ? `Matrícula nº ${numOnly[0]} / Livro 2` : (fileName ? `Matrícula extraída: ${fileName.replace(/\.[^/.]+$/, '')}` : 'Matrícula apurada');
-        }
-      }
-
-      let regOffice = registryOffice.trim();
-      if (!regOffice) {
-        const cartMatch = combinedCorpus.match(/([0-9ºª\s\w]+Ofici[ao]l?\s+de\s+Registro\s+de\s+Im[oó]veis[\w\s\-\/\.]*)/i);
-        if (cartMatch && cartMatch[1]) {
-          regOffice = cartMatch[1].trim();
-        } else {
-          regOffice = `Ofício de Registro de Imóveis de ${selectedCity || 'Capital'}/${selectedState || 'UF'}`;
-        }
-      }
-
-      const gravamesFound: MatriculaGravame[] = [];
-      const findings: string[] = [];
-      const lower = combinedCorpus.toLowerCase();
-
-      // Penhoras & Execuções & Gravames Registrados
-      if (lower.includes('penhora') || lower.includes('gravame') || lower.includes('constri') || lower.includes('execu') || lower.includes('regularizacao por conta do adquirente') || lower.includes('regularização por conta do adquirente')) {
-        const isFiscal = lower.includes('fiscal') || lower.includes('fazenda') || lower.includes('tribut');
-        const isTrab = lower.includes('trabalh') || lower.includes('trt');
-        const isCondo = lower.includes('condom');
-        const isCaixaNotice = lower.includes('regularizacao por conta do adquirente') || lower.includes('regularização por conta do adquirente');
-
-        // Extract specific R-XX / Av-XX if referenced (e.g. "R-19", "Av-5")
-        const rMatch = combinedCorpus.match(/(?:penhora\s+gravada\s+(?:no\s+)?|gravame\s+(?:no\s+)?|(?:constri[çc][ãa]o\s+(?:no\s+)?))?([RA]v?[-.]?\s*\d+)/i);
-        const specificCode = rMatch && rMatch[1] ? rMatch[1].replace(/\s+/g, '').toUpperCase() : 'Av.Penhora';
-
-        gravamesFound.push({
-          code: specificCode,
-          type: isCaixaNotice
-            ? `Penhora / Gravame Registrado (${specificCode}) - Caixa (Regularização por Conta do Adquirente)`
-            : isFiscal 
-              ? 'Penhora em Execução Fiscal' 
-              : isTrab 
-                ? 'Penhora em Ação Trabalhista (TRT)' 
-                : isCondo 
-                  ? 'Penhora de Quotas Condominiais (Propter Rem)' 
-                  : `Penhora / Constrição Registrada (${specificCode})`,
-          beneficiaryOrCourt: `Juízo da Execução / Cartório Imobiliário (${selectedCity || 'Capital'})`,
-          severity: isCaixaNotice || isTrab ? 'Alta' : 'Média',
-          legalSolution: isCaixaNotice
-            ? 'Atenção: A Caixa aponta expressamente que a regularização do gravame corre por conta do adquirente. Cancelamento do gravame/penhora através de expedição de Mandado de Cancelamento de Ônus e Carta de Arrematação / peticionamento ao juízo originário.'
-            : isFiscal 
-              ? 'Sub-rogação legal dos débitos fiscais no preço arrematado (art. 130, parágrafo único do CTN).'
-              : 'Aquisição originária; cancelamento das penhoras concorrentes via Mandado de Cancelamento e Carta de Arrematação (art. 908, §1º do CPC).'
-        });
-      }
-
-      // Hipoteca
-      if (lower.includes('hipoteca') || lower.includes('hipotec')) {
-        const rMatch = combinedCorpus.match(/(R[-.]?\s*\d+)/i);
-        const code = rMatch ? rMatch[1].toUpperCase() : 'R.Hipoteca';
-        gravamesFound.push({
-          code,
-          type: 'Hipoteca Imobiliária Registrada',
-          beneficiaryOrCourt: 'Instituição Bancária Credora Hipotecária',
-          severity: 'Média',
-          legalSolution: 'Extinção de pleno direito da hipoteca por efeito da arrematação judicial (art. 1.499, VI do Código Civil).'
-        });
-      }
-
-      // Alienação Fiduciária
-      if (lower.includes('aliena') || lower.includes('fiduci')) {
-        const rMatch = combinedCorpus.match(/(R[-.]?\s*\d+)/i);
-        const code = rMatch ? rMatch[1].toUpperCase() : 'R.Alienação';
-        gravamesFound.push({
-          code,
-          type: 'Alienação Fiduciária em Garantia (Lei 9.514/97)',
-          beneficiaryOrCourt: 'Credor Fiduciário Registrado',
-          severity: 'Média',
-          legalSolution: 'Verificar intimação do credor fiduciário nos autos (art. 889, V do CPC). Os créditos sub-rogam no produto do leilão.'
-        });
-      }
-
-      // Indisponibilidade / CNIB (Central Nacional de Indisponibilidade de Bens)
-      if (lower.includes('indisponibilidade') || lower.includes('cnib') || lower.includes('bloqueio')) {
-        const avMatch = combinedCorpus.match(/(Av[-.]?\s*\d+)/i);
-        const avCode = avMatch ? avMatch[1].toUpperCase() : 'Av.CNIB';
-
-        // Extract process number if mentioned near indisponibilidade
-        const procMatch = combinedCorpus.match(/(?:processo|autos|proc)[.:\s]+([0-9.-]{10,25})/i);
-        const procNum = procMatch ? procMatch[1] : (processNumberInput.trim() || 'Origem Judicial Centralizada');
-
-        // Extract court / origin if mentioned
-        const varaMatch = combinedCorpus.match(/(\d+ª?\s+vara\s+[a-zçãõ\s]+(?:\/[a-z]{2})?)/i);
-        const varaName = varaMatch ? varaMatch[1].trim() : 'Juízo da Execução / Vara Cível ou do Trabalho';
-
-        gravamesFound.push({
-          code: avCode,
-          type: 'Averbação de Indisponibilidade de Bens (CNIB)',
-          beneficiaryOrCourt: `${varaName} • Autos ${procNum}`,
-          severity: 'Média',
-          legalSolution: 'Cancelamento ope legis decorrente de aquisição originária em hasta pública (art. 908, §1º do CPC c/c Provimento CNJ nº 39/2014, art. 16). O magistrado condutor do leilão expedirá mandado de cancelamento e comunicação eletrônica à Central CNIB para baixa imediata do gravame.'
-        });
-
-        findings.push(`⚠️ Consta averbação de indisponibilidade de bens (${avCode} - CNIB) vinculada aos autos ${procNum} (${varaName}).`);
-        findings.push('⚖️ Saneamento Jurídico CNIB: Conforme Provimento CNJ nº 39/2014 e Art. 908 do CPC, a arrematação judicial extingue constrições anteriores. O juízo expedirá ofício eletrônico à Central CNIB para liberação do imóvel.');
-      } else {
-        findings.push('✓ Não constam indisponibilidades ativas na Central Nacional de Indisponibilidade de Bens (CNIB).');
-      }
-
-      if (gravamesFound.length === 0) {
-        findings.unshift('✓ Certidão desprovida de penhoras, hipotecas ou ônus reais gravosos.');
-        findings.push('✓ Princípio da continuidade registral e cadeia dominial plenamente regulares.');
-      } else {
-        findings.unshift(`⚠️ Identificadas ${gravamesFound.length} averbações/gravames na certidão ou edital oficial (requer regularização e baixa registral).`);
-      }
-
-      const overallStatus: 'REGULAR' | 'ATENCAO' | 'ALTO_RISCO' = 
-        gravamesFound.some(g => g.severity === 'Alta') ? 'ALTO_RISCO' :
-        gravamesFound.length > 0 ? 'ATENCAO' : 'REGULAR';
-
-      const result: MatriculaAuditData = {
-        matriculaNumber: matNum,
-        registryOffice: regOffice,
-        overallStatus,
-        gravames: gravamesFound,
-        pontosApurados: findings,
-        rawText: text,
-        analyzedAt: new Date().toISOString()
-      };
-
-      setMatriculaAuditResult(result);
-      setMatriculaNumber(matNum);
-      setRegistryOffice(regOffice);
-      setMatriculaReport(prev => buildUnifiedReport(result, prev?.editalData || editalAuditResult));
-      setIsAuditingMatricula(false);
-    }, 200);
+    const result = auditRegistryText(text);
+    setMatriculaText(text);
+    setMatriculaAuditResult(result);
+    setMatriculaNumber(result.matriculaNumber);
+    setRegistryOffice(result.registryOffice);
+    setMatriculaReport(prev => buildUnifiedReport(result, prev?.editalData || editalAuditResult));
+    setIsAuditingMatricula(false);
   };
 
   // Real Edital Analyzer (Deterministic analysis on real document text)
@@ -981,7 +851,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     setDueDiligenceNotice('Conectando aos servidores da Caixa para baixar a certidão de matrícula e edital oficial...');
 
     try {
-      const res = await fetch('/api/caixa/fetch-documentos', {
+      const isCaixa = prefillData.auctionLink?.includes('caixa.gov.br') || prefillData.id?.includes('caixa');
+      const res = await fetch(isCaixa ? '/api/caixa/fetch-documentos' : '/api/auctions/fetch-documentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1003,6 +874,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           setUploadedFileName(fname);
           setDueDiligenceNotice('✓ Matrícula oficial baixada diretamente da Caixa com sucesso!');
           executeRealMatriculaAnalysis(data.matriculaText, fname);
+          if (prefillData.id && onUpdateProperty) await onUpdateProperty({ id: prefillData.id, matriculaText: data.matriculaText });
         } else {
           setDueDiligenceNotice('Aviso: A certidão em PDF não foi anexada pela Caixa na página deste imóvel. Caso possua o documento, anexe o arquivo ou cole as averbações.');
         }
@@ -1014,7 +886,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           executeRealEditalAnalysis(data.editalText, `Edital_${data.editalNumber || 'Caixa'}.pdf`);
         }
       } else {
-        setDueDiligenceNotice('Não foi possível obter o documento automaticamente da Caixa.');
+        const failure = await res.json().catch(() => ({}));
+        setDueDiligenceNotice(failure.error || 'Não foi possível obter o documento automaticamente.');
       }
     } catch (e: any) {
       setDueDiligenceNotice('Erro de conexão ao buscar documentos da Caixa.');
@@ -1154,7 +1027,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           url += `&propertyType=${encodeURIComponent(propertyType)}`;
         }
         if (selectedStreet) {
-          url += `&targetStreet=${encodeURIComponent(selectedStreet)}&radiusKm=${encodeURIComponent(radiusKm.toFixed(1))}`;
+          // Hydrate the maximum supported radius once; changing the selector is
+          // then an immediate client-side filter instead of another network crawl.
+          url += `&targetStreet=${encodeURIComponent(selectedStreet)}&radiusKm=2.0`;
         }
         
         const res = await fetch(url, { signal: controller.signal });
@@ -1178,7 +1053,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     loadTransactions();
     setAiReport(''); // Reset AI report on filter change
     return () => controller.abort();
-  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet, radiusKm]);
+  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet]);
 
   const exactStreetTxs = useMemo(() => {
     if (!selectedStreet || rawTransactions.length === 0) return [];
@@ -1254,7 +1129,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const similarAvgSqm = similarValues.length > 0 ? Math.round(similarValues.reduce((a, b) => a + b, 0) / similarValues.length) : rawAvgSqm;
 
     // Seleciona conjunto de trabalho com base no filtro do usuário (Similar vs Todas)
-    const workingTxs = (sizeMode === 'similar' && similarValues.length > 0) ? similarTxs : txs;
+    const workingTxs = sizeMode === 'similar' ? similarTxs : txs;
+    if (workingTxs.length === 0) return null;
     const workingValues = workingTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v > 0);
 
     // 3. Saneamento Pericial NBR 14.653 de Outliers (Chauvenet / Tukey IQR Ponderado)
@@ -1716,12 +1592,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   }, [calculatedStats, sizeSqm]);
 
   // Active statistics context
-  const activeStats = useMemo(() => {
-    if (activeTab === 'local') {
-      return calculatedStats;
-    }
-    return onlineStats || calculatedStats;
-  }, [activeTab, calculatedStats, onlineStats]);
+  // Portal searches are a visual cross-check only. Financial calculations are
+  // always anchored to official ITBI statistics, regardless of the open tab.
+  const activeStats = calculatedStats;
 
   // Dynamic calculated value scaling directly with area sizeSqm
   const averageValue = activeStats.avgSqm * sizeSqm;
@@ -1792,7 +1665,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         (tx.transactionValue || '').toString().includes(txSearch);
       
       const matchesSize = txSizeFilter === 'all' ||
-        (tx.sizeSqm >= sizeSqm * 0.75 && tx.sizeSqm <= sizeSqm * 1.25);
+        (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33));
 
       return matchesSearch && matchesSize;
     });
@@ -2042,6 +1915,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     return exactBuildingTxs.length > 0 || (exactStreetStats !== null && exactStreetStats.count > 0);
   }, [bidiBenchmark, exactBuildingTxs.length, exactStreetStats]);
 
+  const hasVerifiedStreetOrBuildingData = useMemo(() => {
+    if (bidiBenchmark) {
+      return bidiBenchmark.predio.validas > 0 || bidiBenchmark.rua.validas > 0;
+    }
+    return exactBuildingTxs.length > 0 || (exactStreetStats !== null && exactStreetStats.count > 0);
+  }, [bidiBenchmark, exactBuildingTxs.length, exactStreetStats]);
+
   // 2. Balizador Portais (ZapImóveis / QuintoAndar)
   const portalBenchmarkSqm = useMemo(() => {
     if (portalStreetStats && portalStreetStats.avgSqm > 0) {
@@ -2050,32 +1930,22 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     if (portalResults?.close?.avgSqm && portalResults.close.avgSqm > 0) {
       return portalResults.close.avgSqm;
     }
-    if (hasRealMicroData && itbiWeightedStats.itbiCompositeSqm > 0) {
-      return Math.round(itbiWeightedStats.itbiCompositeSqm * 1.10);
-    }
     return 0;
-  }, [portalStreetStats, portalResults, hasRealMicroData, itbiWeightedStats.itbiCompositeSqm]);
+  }, [portalStreetStats, portalResults]);
 
   // 3. Preço Sugerido Flip (Giro rápido em até 60 dias):
   // 100% Ancorado no Gabarito Real de Cartório (Corte Bidirecional) com Deságio Tático de 10% para Liquidez Imediata
   const baseQuickSaleSqm = bidiBenchmark ? bidiBenchmark.flipRapidoSqm : Math.round(itbiWeightedStats.itbiCompositeSqm * 0.90);
-  const persistedQuickSaleTotal = prefillData?.vendaBaixaPrice && prefillData.vendaBaixaPrice > 0
-    ? prefillData.vendaBaixaPrice
-    : null;
-
   const suggestedQuickSaleTotal = useMemo(() => {
-    // O card e o simulador compartilham o mesmo valor soberano já auditado no servidor.
-    if (persistedQuickSaleTotal !== null) {
-      return persistedQuickSaleTotal;
-    }
     if (!hasRealMicroData) {
-      return 0; // Regra Estrita: Sem dados da rua e prédio, NÃO gerar flip nem gabarito!
+      return 0;
     }
     const baseSqm = (bidiBenchmark && bidiBenchmark.hasMicroData && bidiBenchmark.flipRapidoSqm > 0)
       ? bidiBenchmark.flipRapidoSqm
       : baseQuickSaleSqm;
-    return Math.round(Math.round(baseSqm * buildingAgeData.factor) * sizeSqm);
-  }, [persistedQuickSaleTotal, hasRealMicroData, bidiBenchmark, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor]);
+    const territorialFactor = prefillData?.isCommunityRisk ? 0.85 : 1;
+    return Math.round(Math.round(baseSqm * buildingAgeData.factor * territorialFactor) * sizeSqm);
+  }, [hasRealMicroData, bidiBenchmark, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor, prefillData?.isCommunityRisk]);
 
   const suggestedQuickSaleSqm = useMemo(() => {
     if (!hasRealMicroData || suggestedQuickSaleTotal === 0) {
@@ -2089,22 +1959,40 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Sincronização Pericial em Tempo Real: O Flip Rápido e Gabarito da Calculadora atualizam soberanamente o Card do Imóvel
   useEffect(() => {
+    if (isLoadingTransactions || rawTransactions.length === 0) return;
     if (prefillData?.id && onUpdateProperty) {
-      if (persistedQuickSaleTotal === null && suggestedQuickSaleTotal > 0 && hasRealMicroData) {
-        if (prefillData.vendaBaixaPrice !== suggestedQuickSaleTotal) {
+      if (suggestedQuickSaleTotal > 0 && hasRealMicroData && bidiBenchmark) {
+        const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
+        if (prefillData.vendaBaixaPrice !== suggestedQuickSaleTotal || prefillData.estimatedValue !== gabaritoTotal || prefillData.valuationRadiusKm !== radiusKm) {
           onUpdateProperty({
+            id: prefillData.id,
             vendaBaixaPrice: suggestedQuickSaleTotal,
-            estimatedValue: bidiBenchmark?.gabaritoTotal || Math.round(suggestedQuickSaleTotal / 0.90)
+            vendaMediaPrice: suggestedQuickSaleTotal,
+            estimatedValue: gabaritoTotal,
+            valuationConfidence: bidiBenchmark.predio.validas > 0 || bidiBenchmark.rua.validas > 0 ? 'verified' : 'projected',
+            valuationBasis: `ITBI verificado - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
+            valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.raio.validas,
+            valuationRadiusKm: radiusKm,
+            itbiSurroundingAvgSqm: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.saneada || undefined) : undefined,
+            itbiSurroundingCount: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.validas || undefined) : undefined,
+            streetRadiusDeviationPct: bidiBenchmark.radiusVerified ? (bidiBenchmark.ruaRaioDesvioPct || undefined) : undefined,
+            streetRadiusCalibrated: bidiBenchmark.radiusVerified && bidiBenchmark.ruaRaioCalibrada
           });
         }
-      } else if (!hasRealMicroData && (prefillData.vendaBaixaPrice !== undefined || prefillData.estimatedValue !== undefined)) {
+      } else if (!hasRealMicroData && prefillData.valuationConfidence === 'verified') {
         onUpdateProperty({
+          id: prefillData.id,
           vendaBaixaPrice: undefined,
-          estimatedValue: undefined
+          vendaMediaPrice: undefined,
+          estimatedValue: undefined,
+          valuationConfidence: 'unavailable',
+          valuationBasis: 'Sem amostras ITBI verificadas na rua ou no raio selecionado',
+          valuationSampleCount: undefined,
+          valuationRadiusKm: radiusKm
         });
       }
     }
-  }, [persistedQuickSaleTotal, suggestedQuickSaleTotal, hasRealMicroData, bidiBenchmark?.gabaritoTotal, prefillData?.id, prefillData?.vendaBaixaPrice, prefillData?.estimatedValue, onUpdateProperty]);
+  }, [suggestedQuickSaleTotal, hasRealMicroData, bidiBenchmark, buildingAgeData.factor, radiusKm, prefillData?.id, prefillData?.vendaBaixaPrice, prefillData?.estimatedValue, prefillData?.valuationConfidence, prefillData?.valuationRadiusKm, prefillData?.isCommunityRisk, onUpdateProperty]);
 
   const activeFlipExitPrice = (customExitPrice !== null && customExitPrice > 0) ? customExitPrice : suggestedQuickSaleTotal;
 
@@ -2404,9 +2292,6 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
       if (response.ok) {
         setOnlineResults(responseData);
-        if (responseData.foundMatches && responseData.foundMatches.length > 0) {
-          setCustomValue(responseData.foundMatches[0].value);
-        }
       } else {
         setOnlineError(responseData.error || 'Erro ao realizar busca online.');
       }
@@ -2454,6 +2339,32 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
       if (response.ok) {
         setPortalResults(responseData);
+        if (prefillData?.id && onUpdateProperty && responseData.verified) {
+          const allMatches = [
+            ...(responseData.below?.matches || []),
+            ...(responseData.close?.matches || []),
+            ...(responseData.above?.matches || [])
+          ];
+          const uniqueMatches = Array.from(new Map(allMatches.map((match: any) => [match.link, match])).values()) as any[];
+          const valid = uniqueMatches.filter((match: any) => Number(match.unitValueSqm) > 0 && Number(match.price) > 0);
+          if (valid.length > 0) {
+            const avgSqm = Math.round(valid.reduce((sum: number, match: any) => sum + Number(match.unitValueSqm), 0) / valid.length);
+            const zap = valid.filter((match: any) => /zapimoveis/i.test(match.link || ''));
+            const quinto = valid.filter((match: any) => /quintoandar/i.test(match.link || ''));
+            const averageTotal = (matches: any[]) => matches.length > 0
+              ? Math.round(matches.reduce((sum: number, match: any) => sum + Number(match.price), 0) / matches.length)
+              : undefined;
+            await onUpdateProperty({
+              id: prefillData.id,
+              streetPortalAvgSqm: avgSqm,
+              portalZapAvg: averageTotal(zap),
+              portalQuintoAndarAvg: averageTotal(quinto),
+              portalSampleCount: valid.length,
+              portalDataVerifiedAt: responseData.checkedAt || new Date().toISOString(),
+              portalDataSource: 'Anúncios individuais ativos confirmados na rua'
+            });
+          }
+        }
       } else {
         setPortalError(responseData.error || 'Erro ao buscar imóveis similares.');
       }
@@ -4471,7 +4382,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               </div>
 
               {/* Synthesis Summary Metric Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 pt-2">
                 {/* CARD 1: Valor Unitário Saneado com cálculo explícito e métricas informativas */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -4566,9 +4477,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </div>
                 </div>
 
-                {/* CARD 3: Média Geral do Bairro */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
-                  <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">3. Média Geral do Bairro</span>
+                  <span className="text-[9px] text-violet-300 font-mono uppercase block font-bold">3. Ruas do Entorno (Raio ~{radiusKm}km)</span>
+                  <span className="text-base font-black text-violet-400 font-mono block">
+                    {bidiBenchmark?.radiusVerified && bidiBenchmark.raio.validas > 0 ? `${formatBRL(bidiBenchmark.raio.saneada)}/m²` : 'Sem amostras geolocalizadas'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">{bidiBenchmark?.radiusVerified ? bidiBenchmark.raio.validas : 0} transações no raio</span>
+                </div>
+                {/* CARD 4: Média Geral do Bairro */}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
+                  <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">4. Média Geral do Bairro</span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     <span className="text-base font-black text-amber-400 font-mono">
                       R$ {(neighborhoodStats?.avgSqm || nearbyStats.avgSqm).toLocaleString('pt-BR')}/m²
@@ -4590,18 +4508,18 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
                 {/* CARD 4: Preço Sugerido para Revenda Rápida (Flip) */}
                 <div className={`p-3.5 rounded-xl border space-y-1.5 ${
-                  (!hasRealMicroData || suggestedQuickSaleTotal === 0)
-                    ? 'bg-amber-950/20 border-amber-500/40'
+                  (!hasRealMicroData || suggestedQuickSaleTotal === 0 || !hasVerifiedStreetOrBuildingData)
+                    ? 'bg-rose-950/20 border-rose-500/50'
                     : 'bg-slate-950 border-slate-850'
                 }`}>
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">4. Preço Sugerido p/ Revenda (Flip Rápido)</span>
                     <span className={`text-[8px] px-2 py-0.5 rounded border font-mono font-bold ${
-                      (!hasRealMicroData || suggestedQuickSaleTotal === 0)
-                        ? 'bg-amber-950/80 text-amber-300 border-amber-800/40'
+                      (!hasRealMicroData || suggestedQuickSaleTotal === 0 || !hasVerifiedStreetOrBuildingData)
+                        ? 'bg-rose-950/80 text-rose-300 border-rose-800/50'
                         : 'bg-emerald-950/80 text-emerald-300 border-emerald-800/40'
                     }`}>
-                      {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? 'Amostragem Insuficiente' : 'Giro em até 60 dias'}
+                      {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? 'Amostragem Insuficiente' : !hasVerifiedStreetOrBuildingData ? 'Projeção pelo entorno' : 'Giro em até 60 dias'}
                     </span>
                   </div>
 
@@ -4624,6 +4542,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           • R$ {suggestedQuickSaleSqm.toLocaleString('pt-BR')}/m²
                         </span>
                       </div>
+
+                      {!hasVerifiedStreetOrBuildingData && (
+                        <p className="text-[9.5px] font-bold text-rose-300 border-t border-rose-800/40 pt-1.5">
+                          Fonte local insuficiente: valor projetado pelo entorno, sem confirmação no prédio ou na rua.
+                        </p>
+                      )}
 
                       {buildingAgeData.detectedYear !== null ? (
                         <div className="text-[9px] bg-slate-900 text-slate-300 px-2 py-1 rounded border border-slate-800 font-mono flex items-center justify-between">
@@ -4681,7 +4605,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       <h3 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
                         <span>Transações Oficiais no Mesmo Prédio / Endereço (Nº {cleanNumber(streetNumber)})</span>
                         <span className="text-[10px] bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded font-mono font-bold">
-                          {exactBuildingTxs.length} {exactBuildingTxs.length === 1 ? 'imóvel transacionado' : 'imóveis transacionados'}
+                          {exactBuildingTxs.filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.round(sizeSqm * 0.67) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))).length} imóveis no recorte
                         </span>
                       </h3>
                       <p className="text-[10px] text-emerald-400/80 mt-0.5">
@@ -4706,7 +4630,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </thead>
                     <tbody className="divide-y divide-emerald-900/30 text-slate-300">
                       {exactBuildingTxs
-                        .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= sizeSqm * 0.75 && tx.sizeSqm <= sizeSqm * 1.25))
+                        .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))
                         .map((tx) => (
                         <tr 
                           key={tx.id}
@@ -4783,7 +4707,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         </tr>
                       ) : (
                         exactStreetTxs
-                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= sizeSqm * 0.75 && tx.sizeSqm <= sizeSqm * 1.25))
+                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))
                           .slice(0, 35)
                           .map((tx) => (
                             <tr 
@@ -4886,7 +4810,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         </tr>
                       ) : (
                         nearbyStreetTxs
-                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= sizeSqm * 0.75 && tx.sizeSqm <= sizeSqm * 1.25))
+                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))
                           .slice(0, 35)
                           .map((tx) => {
                             const distMeters = tx.distanceMeters || (typeof tx.distanceKm === 'number' ? Math.round(tx.distanceKm * 1000) : null);

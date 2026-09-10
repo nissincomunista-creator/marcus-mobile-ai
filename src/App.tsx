@@ -280,13 +280,27 @@ export default function App() {
     }
     fetchData();
 
+    // Startup source refresh runs in the server background. Keep the visible
+    // opportunity list in step with it without requiring a manual reload.
+    const auctionsRefreshTimer = token ? setInterval(async () => {
+      try {
+        const response = await authFetch('/api/auctions');
+        if (response.ok) setAuctions(await response.json());
+      } catch (error) {
+        console.error('Background auctions refresh error:', error);
+      }
+    }, 30000) : undefined;
+
     // Minor clock update relative to user timezone
     const timer = setInterval(() => {
       const now = new Date();
       const formatStr = now.toISOString().replace('T', ' ').substring(0, 19);
       setCurrentTime(formatStr);
     }, 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      if (auctionsRefreshTimer) clearInterval(auctionsRefreshTimer);
+    };
   }, [token]);
 
   const fetchAccessCodes = async () => {
@@ -1213,9 +1227,6 @@ export default function App() {
                       onGarimparJudiciais={handleGarimparJudiciais}
                       onGarimparCaixa={handleGarimparCaixa}
                       onGarimparPortais={handleGarimparPortais}
-                      onSyncCaixaAuto={handleSyncCaixaAuto}
-                      onSyncExtrajudiciaisAuto={handleSyncExtrajudiciaisAuto}
-                      onSyncJudiciaisAuto={handleSyncJudiciaisAuto}
                       isMining={isMining}
                       itbiCount={itbiCount}
                       onUpdateProperty={handleUpdatePropertyDirectly}
@@ -1273,7 +1284,19 @@ export default function App() {
                           portalQuintoAndarAvg: activeSelectedAuction.portalQuintoAndarAvg,
                           vendaBaixaPrice: activeSelectedAuction.vendaBaixaPrice,
                           vendaMediaPrice: activeSelectedAuction.vendaMediaPrice,
+                          valuationConfidence: activeSelectedAuction.valuationConfidence,
+                          valuationBasis: activeSelectedAuction.valuationBasis,
+                          valuationSampleCount: activeSelectedAuction.valuationSampleCount,
+                          valuationRadiusKm: activeSelectedAuction.valuationRadiusKm,
+                          portalDataVerifiedAt: activeSelectedAuction.portalDataVerifiedAt,
+                          portalSampleCount: activeSelectedAuction.portalSampleCount,
+                          portalDataSource: activeSelectedAuction.portalDataSource,
+                          streetPortalAvgSqm: activeSelectedAuction.streetPortalAvgSqm,
+                          isCommunityRisk: activeSelectedAuction.isCommunityRisk,
+                          communityName: activeSelectedAuction.communityName,
+                          communityDistanceM: activeSelectedAuction.communityDistanceM,
                         }}
+                        onUpdateProperty={handleUpdatePropertyDirectly}
                         onClose={() => setSelectedAuctionId(null)}
                       />
                     </div>
@@ -1358,6 +1381,7 @@ export default function App() {
                   <CapitalInvestmentMatcher
                     auctions={auctions}
                     itbiStats={itbiStats}
+                    onUpdateProperty={handleUpdatePropertyDirectly}
                     onSelectProperty={(auc) => {
                       setSelectedAuctionId(auc.id);
                       setActiveTab('garimpo');

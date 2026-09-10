@@ -23,6 +23,7 @@ export interface BidirectionalBenchmarkResult {
   flipTotal: number;
   ruaRaioDesvioPct: number;
   ruaRaioCalibrada: boolean;
+  radiusVerified: boolean;
   minSimilarSize: number;
   maxSimilarSize: number;
   hasMicroData: boolean;
@@ -44,7 +45,7 @@ export function isGenericStreet(str?: string | null): boolean {
   const genericKeywords = [
     'projetad', 'sem nome', 's/n', 'nao informado', 'nao informada', 
     'loteamento', 'quadra', 'gleba', 'chacara', 'sitio', 'estrada municipal',
-    'zona rural', 'area rural', 'area de posse', 'vila nova', 'povoado'
+    'zona rural', 'area rural', 'area de posse', 'vila nova', 'povoado', 'extracao documental', 'apartamento em', 'casa de condominio em'
   ];
   if (genericKeywords.some(k => s.includes(k))) return true;
 
@@ -57,7 +58,7 @@ export function isGenericStreet(str?: string | null): boolean {
 export function cleanStreetCore(s: string | undefined | null): string {
   if (!s) return '';
   let str = s.split(',')[0].trim();
-  str = str.replace(/\b(n[ºo°.]?|\d+).*$/, '').trim();
+  str = str.replace(/\s+n[ºo°.]?\s*\d+.*$/i, '').trim();
   return str
     .toLowerCase()
     .normalize('NFD')
@@ -123,6 +124,7 @@ export function computeBidirectionalBenchmarks(
       flipTotal: 0,
       ruaRaioDesvioPct: 0,
       ruaRaioCalibrada: false,
+      radiusVerified: false,
       minSimilarSize: minSize,
       maxSimilarSize: maxSize,
       hasMicroData: false
@@ -136,9 +138,7 @@ export function computeBidirectionalBenchmarks(
   let typeTxs = allNeighborhoodTxs;
   if (targetPropType) {
     const exactTypeTxs = allNeighborhoodTxs.filter(t => t.propertyType === targetPropType);
-    if (exactTypeTxs.length >= 2) {
-      typeTxs = exactTypeTxs;
-    }
+    typeTxs = exactTypeTxs;
   }
 
   // Filtro de Metragem Similar (±33% da área privativa do imóvel)
@@ -146,7 +146,7 @@ export function computeBidirectionalBenchmarks(
   const filterByArea = (txs: ItbiTransaction[]) => {
     if (sizeMode === 'all') return txs;
     const filtered = txs.filter(t => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
-    return filtered.length >= 2 ? filtered : txs;
+    return filtered;
   };
 
   const poolTxs = filterByArea(typeTxs);
@@ -164,7 +164,15 @@ export function computeBidirectionalBenchmarks(
 
   // Segmentação Geoespacial
   const ruaTxs = targetCore ? poolTxs.filter(t => cleanStreetCore(t.street) === targetCore) : [];
-  const raioTxs = targetCore ? poolTxs.filter(t => cleanStreetCore(t.street) !== targetCore) : poolTxs;
+  const surroundingPool = targetCore ? poolTxs.filter(t => cleanStreetCore(t.street) !== targetCore) : poolTxs;
+  const geolocatedSurrounding = surroundingPool.filter(t => t.distanceKm !== null && t.distanceKm !== undefined && Number.isFinite(Number(t.distanceKm)));
+  // When the API supplied verified coordinates, radius is a hard spatial filter.
+  // Legacy server-side batches do not have distanceKm and therefore cannot claim
+  // a radius-level microbenchmark; they may still support street/building levels.
+  const raioTxs = geolocatedSurrounding.length > 0
+    ? geolocatedSurrounding.filter(t => Number(t.distanceKm) <= radiusKm)
+    : surroundingPool;
+  const hasVerifiedRadius = geolocatedSurrounding.length > 0;
 
   // 2. Nível Raio (Ruas do Entorno). O expurgo usa Chauvenet operacional
   // em 2 desvios-padrão, sem uma faixa percentual que descarte comparáveis válidos.
@@ -195,10 +203,21 @@ export function computeBidirectionalBenchmarks(
   let refCorteRua = raioSaneada;
 
   if (ruaVals.length >= 2) {
-    const ruaMed = computeMedian(ruaVals);
+    // Cada prédio contribui uma vez para a referência de corte: lançamentos
+    // com muitas unidades não podem expulsar os demais prédios da rua.
+    const buildings = new Map<string, number[]>();
+    ruaTxs.forEach(t => {
+      if (!(t.unitValueSqm >= 800 && t.unitValueSqm <= 80000)) return;
+      const key = cleanStreetNumber(t.number) || t.id;
+      buildings.set(key, [...(buildings.get(key) || []), t.unitValueSqm]);
+    });
+    const ruaMed = computeMedian(Array.from(buildings.values()).map(computeMedian));
     refCorteRua = ruaMed;
-    ruaCorteMin = Math.round(ruaMed * 0.65);
-    ruaCorteMax = Math.round(ruaMed * 1.35);
+    // Preserve distinct price groups along a long street. A fixed median band
+    // otherwise removes the cheaper buildings and raises the reported mean.
+    const deviation = Math.sqrt(ruaVals.reduce((sum, value) => sum + (value - ruaPrelim) ** 2, 0) / ruaVals.length);
+    ruaCorteMin = Math.max(800, Math.round(ruaPrelim - 2.2 * deviation));
+    ruaCorteMax = Math.round(ruaPrelim + 2.2 * deviation);
     ruaValid = ruaVals.filter(v => v >= ruaCorteMin && v <= ruaCorteMax);
     if (ruaValid.length === 0) ruaValid = ruaVals;
     ruaSaneada = Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length);
@@ -243,7 +262,7 @@ export function computeBidirectionalBenchmarks(
     const pAnchor = ruaSaneada > 0 ? ruaSaneada : (raioSaneada > 0 ? raioSaneada : bSaneada);
     predioCorteMin = Math.round(pAnchor * 0.55);
     predioCorteMax = Math.round(pAnchor * 1.45);
-    if (predioVals[0] >= predioCorteMin && predioVals[0] <= predioCorteMax) {
+    if (predioVals[0] <= predioCorteMax) {
       predioValid = [predioVals[0]];
       predioSaneada = predioVals[0];
     } else {
@@ -264,7 +283,7 @@ export function computeBidirectionalBenchmarks(
   let mediaCorteReal = 0;
   let nivelUtilizado: 'Prédio' | 'Rua' | 'Raio Entorno' | 'Bairro' | 'Sem Dados Suficientes' = 'Sem Dados Suficientes';
   let hasMicroData = false;
-  const ruaRaioDesvioPct = ruaSaneada > 0 && raioSaneada > 0
+  const ruaRaioDesvioPct = hasVerifiedRadius && ruaSaneada > 0 && raioSaneada > 0
     ? Math.round(((ruaSaneada - raioSaneada) / raioSaneada) * 100)
     : 0;
   let ruaRaioCalibrada = false;
@@ -317,13 +336,18 @@ export function computeBidirectionalBenchmarks(
     if (Math.abs(ruaRaioDesvioPct) > 25 && raioSaneada > 0) {
       const blended = (ruaSaneada * 0.65) + (raioSaneada * 0.35);
       const neighborhoodCeiling = bSaneada > 0 ? bSaneada * 1.30 : Number.POSITIVE_INFINITY;
-      mediaCorteReal = Math.round(Math.min(neighborhoodCeiling, blended));
+      mediaCorteReal = Math.round(Math.min(mediaCorteReal, neighborhoodCeiling, blended));
       ruaRaioCalibrada = true;
     }
     nivelUtilizado = 'Rua';
     hasMicroData = true;
+  } else if (hasVerifiedRadius && raioValid.length >= 3 && raioSaneada > 0) {
+    mediaCorteReal = raioSaneada;
+    nivelUtilizado = 'Raio Entorno';
+    hasMicroData = true;
   } else {
-    // Sem amostragem fática na rua ou no edifício: NBR 14.653 veda arbitramento de Flip e Gabarito
+    // Without building, street or a geolocated radius sample, a neighborhood
+    // average is contextual information only and cannot become a verified flip.
     mediaCorteReal = 0;
     nivelUtilizado = 'Sem Dados Suficientes';
     hasMicroData = false;
@@ -379,6 +403,7 @@ export function computeBidirectionalBenchmarks(
     flipTotal,
     ruaRaioDesvioPct,
     ruaRaioCalibrada,
+    radiusVerified: hasVerifiedRadius,
     minSimilarSize: minSize,
     maxSimilarSize: maxSize,
     hasMicroData

@@ -5,7 +5,7 @@ import { AuctionProperty } from '../types.ts';
 interface PropertyThumbnailProps {
   property: AuctionProperty;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'cover';
 }
 
 export default function PropertyThumbnail({
@@ -44,7 +44,9 @@ export default function PropertyThumbnail({
   const isCasa = propType.includes('casa');
   const isTerreno = propType.includes('terreno') || propType.includes('lote');
 
-  const dimClasses = size === 'sm'
+  const dimClasses = size === 'cover'
+    ? 'w-full h-44 sm:h-48'
+    : size === 'sm'
     ? 'w-16 h-16 min-w-[64px]'
     : size === 'lg'
     ? 'w-28 h-28 sm:w-32 sm:h-32 min-w-[112px]'
@@ -52,7 +54,7 @@ export default function PropertyThumbnail({
 
   return (
     <div
-      className={`relative ${dimClasses} rounded-2xl overflow-hidden shrink-0 border border-slate-800 bg-slate-950 shadow-md group ${className}`}
+      className={`relative ${dimClasses} ${size === 'cover' ? 'rounded-none' : 'rounded-2xl'} overflow-hidden shrink-0 border border-slate-800 bg-slate-950 shadow-md group ${className}`}
     >
       {currentUrl ? (
         <>
