@@ -209,13 +209,17 @@ export default function CapitalInvestmentMatcher({
 
       const totalAcquisitionCostAVista = bidPrice + leiloeiroCost + itbiCost + notaryCost + repairCost + condoCost;
 
-      const allowsFinancing = auc.allowsFinancing || isCaixa;
-      const downpaymentPct = isCaixa ? 0.05 : 0.20;
+      const allowsFinancing = auc.allowsFinancing === true;
+      const allowsInstallments = auc.allowsInstallments === true;
+      const configuredDownpayment = auc.minDownpaymentPercent ?? auc.downpaymentPercent;
+      const downpaymentPct = Math.min(1, Math.max(0, configuredDownpayment !== undefined
+        ? configuredDownpayment / 100
+        : (allowsFinancing && isCaixa ? 0.05 : 0.20)));
       const downpaymentVal = Math.round(bidPrice * downpaymentPct);
       const initialOutlayFinanciado = downpaymentVal + itbiCost + notaryCost + repairCost + condoCost;
 
       const fitsAVista = totalAcquisitionCostAVista <= availableCapital;
-      const fitsFinanciado = allowsFinancing && initialOutlayFinanciado <= availableCapital;
+      const fitsFinanciado = (allowsFinancing || allowsInstallments) && initialOutlayFinanciado <= availableCapital;
 
       if (!fitsAVista && !fitsFinanciado) continue;
 
@@ -247,6 +251,11 @@ export default function CapitalInvestmentMatcher({
         primaryMode,
         fitsAVista,
         fitsFinanciado,
+        paymentLabel: allowsFinancing
+          ? 'Financiamento confirmado'
+          : allowsInstallments
+            ? 'Parcelamento confirmado'
+            : 'Somente à vista',
         actualOutlay,
         capitalLeftover,
         costs: {
@@ -522,7 +531,7 @@ export default function CapitalInvestmentMatcher({
       ) : (
         <div data-tour="capital-results" className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {matchedOpportunities.slice(0, visibleCount).map((match) => {
-            const { auction: auc, primaryMode, actualOutlay, capitalLeftover, costs, valuation, hasAuditedExit, effectiveLiquidity } = match;
+            const { auction: auc, primaryMode, paymentLabel, actualOutlay, capitalLeftover, costs, valuation, hasAuditedExit, effectiveLiquidity } = match;
             const isFeatured = hasAuditedExit && valuation.roiPct >= 40 && effectiveLiquidity >= 7;
 
             return (
@@ -547,7 +556,7 @@ export default function CapitalInvestmentMatcher({
 
                     <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded flex items-center gap-1 bg-slate-800 text-slate-200 border border-slate-700">
                       <CheckCircle2 className="w-3 h-3" />
-                      <span>{primaryMode === 'avista' ? 'Cabe à Vista' : 'Financiado (5% Caixa)'}</span>
+                      <span>{paymentLabel}</span>
                     </span>
                   </div>
 
@@ -576,7 +585,9 @@ export default function CapitalInvestmentMatcher({
                       {formatBRL(actualOutlay)}
                     </p>
                     <span className="text-[9.5px] text-slate-500 font-mono">
-                      {primaryMode === 'avista' ? 'Lance + todas as custas' : 'Entrada 5% + todas as custas'}
+                      {primaryMode === 'avista'
+                        ? 'Lance + todas as custas'
+                        : `Entrada ${Math.round((costs.downpaymentVal / Math.max(1, costs.bidPrice)) * 100)}% + todas as custas`}
                     </span>
                   </div>
 
