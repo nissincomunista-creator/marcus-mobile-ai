@@ -611,7 +611,9 @@ export default function App() {
         body: JSON.stringify(updates)
       });
 
-      if (!response.ok) throw new Error('Falha ao sincronizar simulação.');
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, 'Falha ao sincronizar simulação.'));
+      }
       
       // Fast updates locally
       const data = await response.json();

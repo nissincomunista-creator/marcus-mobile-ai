@@ -4074,7 +4074,10 @@ app.put("/api/auctions/:id", authMiddleware, (req, res) => {
   if (idx === -1) {
     return res.status(404).json({ error: "Leil\xE3o n\xE3o encontrado." });
   }
-  if (store.auctions[idx].userId !== req.userId) {
+  const existingAuction = store.auctions[idx];
+  const sharedOrigins = /* @__PURE__ */ new Set(["caixa", "caixa_radar", "judicial", "extrajudicial", "portal"]);
+  const isSharedCatalogAuction = !existingAuction.userId || existingAuction.userId === "system" || sharedOrigins.has(String(existingAuction.origin || "").toLowerCase());
+  if (!isSharedCatalogAuction && existingAuction.userId !== req.userId) {
     return res.status(403).json({ error: "Acesso negado. Este leil\xE3o n\xE3o pertence a voc\xEA." });
   }
   const updatedFields = req.body;

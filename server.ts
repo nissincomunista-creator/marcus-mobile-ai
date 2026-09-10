@@ -2452,7 +2452,13 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
     return res.status(404).json({ error: 'Leilão não encontrado.' });
   }
 
-  if (store.auctions[idx].userId !== req.userId) {
+  const existingAuction = store.auctions[idx];
+  const sharedOrigins = new Set(['caixa', 'caixa_radar', 'judicial', 'extrajudicial', 'portal']);
+  const isSharedCatalogAuction = !existingAuction.userId ||
+    existingAuction.userId === 'system' ||
+    sharedOrigins.has(String(existingAuction.origin || '').toLowerCase());
+
+  if (!isSharedCatalogAuction && existingAuction.userId !== req.userId) {
     return res.status(403).json({ error: 'Acesso negado. Este leilão não pertence a você.' });
   }
 
