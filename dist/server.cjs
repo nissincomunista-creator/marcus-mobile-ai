@@ -1528,6 +1528,34 @@ function extractSaleMode(text) {
   if (normalized.includes("leilao sfi") || normalized.includes("leil\xE3o sfi")) return "Leil\xE3o SFI";
   return "Leil\xE3o Online";
 }
+function parseBrazilianMoney(value) {
+  const parsed = Number(value.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : 0;
+}
+function extractFinancialTerms(text) {
+  const normalized = normalizeStr(text).replace(/\s+/g, " ");
+  const deniesFinancing = /(?:nao\s+(?:aceita|admite|permite)|sem)\s+financiamento|pagamento\s+exclusivamente\s+a\s+vista/.test(normalized);
+  const allowsFinancing = !deniesFinancing && /(?:aceita|admite|permite|possibilidade\s+de|podera\s+ser)\s+(?:o\s+)?financiamento|financiamento\s+(?:bancario|imobiliario|habitacional)/.test(normalized);
+  const allowsInstallments = /(?:parcelamento|parcelado|pagamento\s+em\s+ate\s+\d+\s+parcelas|\d+\s+parcelas)/.test(normalized) && !/(?:nao\s+(?:aceita|admite|permite)|sem)\s+parcelamento/.test(normalized);
+  const installmentMatch = normalized.match(/(?:ate\s+)?(\d{1,3})\s+parcelas/);
+  const entryMatch = normalized.match(/(?:entrada|sinal)[^%]{0,50}(\d{1,3}(?:[.,]\d+)?)\s*%/) || normalized.match(/(\d{1,3}(?:[.,]\d+)?)\s*%[^.]{0,40}(?:entrada|sinal)/);
+  const sellerClearsDebts = /(?:debitos?|dividas?|condominio|iptu)[^.]{0,160}(?:quitad[oa]s?|por\s+conta|responsabilidade)[^.]{0,80}(?:vendedor|credor|banco|alienante)|(?:vendedor|credor|banco|alienante)[^.]{0,100}(?:quitara|assumira|responsavel)[^.]{0,80}(?:debitos?|dividas?|condominio|iptu)/.test(normalized);
+  const iptuMatch = text.match(/(?:IPTU|tributos?\s+municipais?)[^R$\n]{0,80}R\$\s*([\d.]+(?:,\d{2})?)/i);
+  const condoMatch = text.match(/(?:condom[ií]nio|cotas?\s+condominiais?)[^R$\n]{0,80}R\$\s*([\d.]+(?:,\d{2})?)/i);
+  let paymentTerms = "Condi\xE7\xE3o de pagamento n\xE3o confirmada na fonte";
+  if (allowsFinancing) paymentTerms = "Financiamento permitido conforme fonte do lote";
+  else if (allowsInstallments) paymentTerms = installmentMatch ? `Parcelamento em at\xE9 ${installmentMatch[1]} parcelas` : "Parcelamento permitido conforme fonte do lote";
+  else if (deniesFinancing || /(?:somente|apenas|exclusivamente)\s+a\s+vista/.test(normalized)) paymentTerms = "Somente \xE0 vista";
+  return {
+    allowsFinancing,
+    allowsInstallments,
+    paymentTerms,
+    maxInstallments: allowsInstallments && installmentMatch ? Number(installmentMatch[1]) : void 0,
+    minDownpaymentPercent: entryMatch ? Number(entryMatch[1].replace(",", ".")) : void 0,
+    pendingIptuCost: sellerClearsDebts ? 0 : iptuMatch ? parseBrazilianMoney(iptuMatch[1]) : void 0,
+    pendingCondoCost: sellerClearsDebts ? 0 : condoMatch ? parseBrazilianMoney(condoMatch[1]) : void 0
+  };
+}
 function isConfiguredAuctionLink(link) {
   try {
     const host = new URL(link).hostname.replace(/^www\./, "").toLowerCase();
@@ -1627,6 +1655,7 @@ ${extracted}`;
     }
     const combinedText = `${detailData.text}
 ${officialDocumentText}`;
+    const financialTerms = extractFinancialTerms(combinedText);
     const dates = extractAuctionDates(combinedText);
     const sizeMatch = combinedText.match(/[aá]rea\s+privativa\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
     const detailedSize = sizeMatch ? Math.round(Number(sizeMatch[1].replace(",", "."))) : 0;
@@ -1644,6 +1673,7 @@ ${officialDocumentText}`;
       firstAuctionDate: dates.first || draft.firstAuctionDate,
       secondAuctionDate: dates.second || draft.secondAuctionDate,
       saleMode: extractSaleMode(combinedText || draft.description || ""),
+      ...financialTerms,
       description: enrichedDescription || draft.description
     };
   } catch (err) {
@@ -2112,7 +2142,14 @@ async function syncAuctioneersPipeline(targetType, state = "RJ", city = "Rio de 
           sizeSqm: draft.sizeSqm,
           description: draft.description,
           matriculaText: draft.matriculaText || existing.matriculaText,
-          matriculaUrl: draft.matriculaUrl || existing.matriculaUrl
+          matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
+          allowsFinancing: draft.allowsFinancing ?? existing.allowsFinancing ?? false,
+          allowsInstallments: draft.allowsInstallments ?? existing.allowsInstallments ?? false,
+          paymentTerms: draft.paymentTerms || existing.paymentTerms,
+          maxInstallments: draft.maxInstallments ?? existing.maxInstallments,
+          minDownpaymentPercent: draft.minDownpaymentPercent ?? existing.minDownpaymentPercent,
+          pendingIptuCost: draft.pendingIptuCost ?? existing.pendingIptuCost,
+          pendingCondoCost: draft.pendingCondoCost ?? existing.pendingCondoCost
         }));
       }
       continue;
@@ -2146,8 +2183,14 @@ async function syncAuctioneersPipeline(targetType, state = "RJ", city = "Rio de 
       status: "Pendente",
       occupied: true,
       origin: targetType,
-      allowsFinancing: targetType === "extrajudicial",
-      downpaymentPercent: targetType === "extrajudicial" ? 20 : 25
+      allowsFinancing: draft.allowsFinancing ?? false,
+      allowsInstallments: draft.allowsInstallments ?? false,
+      paymentTerms: draft.paymentTerms || "Condi\xE7\xE3o de pagamento n\xE3o confirmada na fonte",
+      maxInstallments: draft.maxInstallments,
+      minDownpaymentPercent: draft.minDownpaymentPercent,
+      pendingIptuCost: draft.pendingIptuCost,
+      pendingCondoCost: draft.pendingCondoCost,
+      downpaymentPercent: draft.minDownpaymentPercent
     };
     const calculated = recalculateFn(rawAuc);
     newAuctions.push(calculated);

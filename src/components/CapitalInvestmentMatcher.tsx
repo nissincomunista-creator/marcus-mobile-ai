@@ -42,8 +42,8 @@ export default function CapitalInvestmentMatcher({
     return (localStorage.getItem('matcher_strategy') as any) || 'revenda';
   });
   const [minLiquidity, setMinLiquidity] = useState<number>(() => {
-    const saved = localStorage.getItem('matcher_liquidity');
-    return saved ? Number(saved) : 5;
+    const saved = localStorage.getItem('matcher_liquidity_v2');
+    return saved ? Number(saved) : 1;
   });
   const [selectedState, setSelectedState] = useState<string>(() => {
     return localStorage.getItem('matcher_state') || '';
@@ -76,7 +76,7 @@ export default function CapitalInvestmentMatcher({
   }, [strategy]);
 
   useEffect(() => {
-    localStorage.setItem('matcher_liquidity', String(minLiquidity));
+    localStorage.setItem('matcher_liquidity_v2', String(minLiquidity));
   }, [minLiquidity]);
 
   useEffect(() => {
@@ -550,7 +550,13 @@ export default function CapitalInvestmentMatcher({
                         {auc.propertyType || 'Imóvel'} • {auc.sizeSqm}m²
                       </span>
                       <span className="text-[10px] font-black uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700">
-                        {match.isCaixa ? 'Caixa Retomado' : 'Leilão Judicial'}
+                        {auc.origin === 'caixa' || auc.origin === 'caixa_radar'
+                          ? 'Caixa Retomado'
+                          : auc.origin === 'extrajudicial'
+                            ? 'Leilão Extrajudicial'
+                            : auc.origin === 'judicial'
+                              ? 'Leilão Judicial'
+                              : 'Portal Imobiliário'}
                       </span>
                     </div>
 

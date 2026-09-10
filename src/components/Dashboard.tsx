@@ -1247,9 +1247,11 @@ export default function Dashboard({
                         </span>
                       </div>
 
-                      {/* Col 2: Avaliação Caixa */}
+                      {/* Col 2: Avaliação da fonte */}
                       <div className="flex flex-col justify-center">
-                        <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Avaliação Caixa</span>
+                        <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                          {auc.origin === 'caixa' || auc.origin === 'caixa_radar' ? 'Avaliação Caixa' : 'Avaliação do Edital'}
+                        </span>
                         <span className="text-xs sm:text-sm font-black text-slate-300 font-mono mt-0.5">
                           {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
                         </span>
