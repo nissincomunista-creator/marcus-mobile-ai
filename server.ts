@@ -5964,11 +5964,10 @@ async function start() {
         const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
         let auctioneerAdded = 0;
 
-        const auctioneerTargets = [
-          { state: 'RJ', city: 'Rio de Janeiro' },
-          { state: 'RJ', city: 'Niterói' },
-          { state: 'MG', city: 'Juiz de Fora' }
-        ];
+        const auctioneerTargets = Array.from(new Map(
+          store.itbiTransactions.filter(tx => tx.state && tx.city)
+            .map(tx => [`${tx.state}|${tx.city}`, { state: tx.state!, city: tx.city! }] as const)
+        ).values());
         for (const target of auctioneerTargets) {
           for (const targetType of ['extrajudicial', 'judicial'] as const) {
             try {

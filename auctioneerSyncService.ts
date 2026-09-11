@@ -107,11 +107,11 @@ function detectBankOrJudicial(text: string): { origin: 'extrajudicial' | 'judici
   if (norm.includes('itau') || norm.includes('itaú')) return { origin: 'extrajudicial', bank: 'Itaú' };
   if (norm.includes('bradesco')) return { origin: 'extrajudicial', bank: 'Bradesco' };
   if (norm.includes('caixa')) return { origin: 'extrajudicial', bank: 'Caixa' };
-  if (norm.includes('inter')) return { origin: 'extrajudicial', bank: 'Banco Inter' };
-  if (norm.includes('pan')) return { origin: 'extrajudicial', bank: 'Banco Pan' };
+  if (/\bbanco inter\b/.test(norm)) return { origin: 'extrajudicial', bank: 'Banco Inter' };
+  if (/\bbanco pan\b/.test(norm)) return { origin: 'extrajudicial', bank: 'Banco Pan' };
   if (norm.includes('safra')) return { origin: 'extrajudicial', bank: 'Safra' };
-  if (norm.includes('banco do brasil') || norm.includes('bb')) return { origin: 'extrajudicial', bank: 'Banco do Brasil' };
-  if (norm.includes('alienacao fiduciaria') || norm.includes('alienação fiduciária') || norm.includes('extrajudicial') || norm.includes('banco')) {
+  if (norm.includes('banco do brasil')) return { origin: 'extrajudicial', bank: 'Banco do Brasil' };
+  if (/\b(?:comitente|vendedor|credor)\s*:?\s*banco\b/.test(norm)) {
     return { origin: 'extrajudicial', bank: 'Instituição Financeira' };
   }
 
@@ -119,7 +119,7 @@ function detectBankOrJudicial(text: string): { origin: 'extrajudicial' | 'judici
     return { origin: 'judicial' };
   }
 
-  return { origin: 'extrajudicial' };
+  return { origin: 'judicial' };
 }
 
 export function extractAddress(text: string, fallback: string): string {
@@ -187,6 +187,8 @@ function extractAuctionDate(text: string): string {
 }
 
 function extractMinimumBid(text: string): number {
+  const initial = text.match(/valor\s+inicial\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (initial) return parseBrazilianMoney(initial[1]);
   const values = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)]
     .map(match => Number(match[1].replace(/\./g, '').replace(',', '.')))
     .filter(value => Number.isFinite(value) && value > 0);
@@ -360,7 +362,7 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
             if (mapAddress && !/^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/.test(mapAddress)) addresses.push(normalizeValue(mapAddress));
           } catch { /* mapa sem URL válida */ }
         });
-      return { text: document.body?.innerText || '', documentLinks: Array.from(links), structuredAddresses: addresses, structuredSizes: sizes };
+      return { text: document.body?.innerText || '', title: document.querySelector('h1')?.textContent || '', image: document.querySelector('meta[property="og:image"]')?.getAttribute('content') || '', documentLinks: Array.from(links), structuredAddresses: addresses, structuredSizes: sizes };
     });
 
     let officialDocumentText = '';
@@ -371,7 +373,9 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
         const priority = (url: string) => /matr[ií]cula|certid[aã]o|\brgi\b/i.test(url) ? 0 : 1;
         return priority(a) - priority(b);
       });
-      for (const documentUrl of orderedLinks.slice(0, 3)) {
+      const needsDocumentAddress = !hasAuditableAddress(extractAddress(detailData.text, ''));
+      const usefulLinks = orderedLinks.filter((url: string) => needsDocumentAddress || /matr[ií]cula|certid[aã]o|\brgi\b/i.test(url));
+      for (const documentUrl of usefulLinks.slice(0, 3)) {
         const extracted = await extractOfficialDocumentText(detailPage, documentUrl);
         if (extracted) officialDocumentText += `\n${extracted}`;
         if (extracted && /matr[ií]cula|certid[aã]o|\brgi\b/i.test(documentUrl)) {
@@ -381,23 +385,34 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
       }
     }
 
-    const combinedText = `${detailData.text}\n${officialDocumentText}`;
+    // Collective notices and recommended lots are not the property description.
+    const lotText = detailData.text.split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Você também pode|Veja também)/i)[0];
+    const combinedText = lotText;
     const financialTerms = extractFinancialTerms(combinedText);
+    const sellerSection = combinedText.match(/comitente\s*:?\s*([^\n]+(?:\n[^\n]+)?)/i)?.[1] || '';
+    const classification = detectBankOrJudicial(sellerSection || combinedText);
     const dates = extractAuctionDates(combinedText);
-    const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa|[uú]til|constru[ií]da)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i)
+    const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i)
       || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i)
       || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
     const structuredSize = detailData.structuredSizes.find((value: number) => value >= 10 && value <= 5000) || 0;
-    const detailedSize = structuredSize || (sizeMatch ? Math.round(Number(sizeMatch[1].replace(',', '.'))) : 0);
+    const headlineArea = detailData.title.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+    const detailedSize = (sizeMatch ? Number(sizeMatch[1].replace(',', '.')) : 0) ||
+      (headlineArea ? Number(headlineArea[1].replace(',', '.')) : 0) || structuredSize;
     const structuredAddress = detailData.structuredAddresses
       .map((value: string) => extractAddress(value, ''))
       .find((value: string) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
-    const textAddress = extractAddress(combinedText, '');
-    const verifiedAddress = structuredAddress || (hasAuditableAddress(textAddress) ? textAddress : '');
+    const textAddress = extractAddress(combinedText, '') || extractAddress(matriculaText, '');
+    const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : '') || structuredAddress;
     const detailedMinimumBid = extractMinimumBid(combinedText);
     const enrichedDescription = combinedText.trim().slice(0, 30000);
     return {
       ...draft,
+      title: detailData.title.trim() || draft.title,
+      imageUrl: detailData.image || draft.imageUrl,
+      propertyType: parseType(detailData.title || draft.title),
+      origin: classification.origin,
+      sellerBank: classification.bank,
       address: verifiedAddress || draft.address,
       addressVerified: Boolean(verifiedAddress),
       matriculaText,
@@ -423,6 +438,26 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
 }
 
 // 1. Scraper Mega Leilões
+async function collectListingPages<T extends { link: string }>(page: any, read: () => Promise<T[]>): Promise<T[]> {
+  const lots = new Map<string, T>();
+  const visited = new Set<string>();
+  while (!visited.has(page.url())) {
+    visited.add(page.url());
+    for (const lot of await read()) if (lot.link) lots.set(lot.link, lot);
+    const next = await page.evaluate(() => {
+      const links = Array.from(document.querySelectorAll('a[href]')) as HTMLAnchorElement[];
+      const candidate = links.find(a => a.rel === 'next') || links.find(a =>
+        /^(pr[oó]xim[ao]|seguinte|next|›|»|>)/i.test((a.innerText || a.getAttribute('aria-label') || '').trim()) &&
+        !a.closest('.disabled, [aria-disabled="true"]'));
+      return candidate?.href || '';
+    });
+    if (!next || visited.has(next) || new URL(next).origin !== new URL(page.url()).origin) break;
+    await page.goto(next, { waitUntil: 'domcontentloaded', timeout: 25000 });
+    await page.waitForNetworkIdle({ idleTime: 500, timeout: 6000 }).catch(() => undefined);
+  }
+  return [...lots.values()];
+}
+
 export async function scrapeMegaLeiloes(
   targetType: 'extrajudicial' | 'judicial',
   state: string = 'RJ',
@@ -446,7 +481,7 @@ export async function scrapeMegaLeiloes(
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 });
     await new Promise(r => setTimeout(r, 4000));
 
-    const rawLots = await page.evaluate(() => {
+    const rawLots = await collectListingPages(page, () => page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('.card.open, .card'));
       return cards.map(c => {
         const link = (c.querySelector('a') as HTMLAnchorElement | null)?.href || '';
@@ -464,15 +499,13 @@ export async function scrapeMegaLeiloes(
 
         return { title, text, price, size, link, img };
       });
-    });
+    })) as any[];
 
     for (const raw of rawLots) {
       if (!raw.link || raw.price <= 0) continue;
       const propType = parseType(raw.title + ' ' + raw.text);
       const detection = detectBankOrJudicial(raw.text);
 
-      if (targetType === 'extrajudicial' && detection.origin !== 'extrajudicial') continue;
-      if (targetType === 'judicial' && detection.origin !== 'judicial') continue;
 
       // Extract neighborhood from " - Bairro - Cidade - UF"
       let neigh = '';
@@ -501,7 +534,8 @@ export async function scrapeMegaLeiloes(
         origin: targetType,
         sellerBank: detection.bank
       };
-      results.push(results.length < 12 ? await enrichLotDetails(browser, draft) : draft);
+      const enriched = await enrichLotDetails(browser, draft);
+      if (enriched.origin === targetType) results.push(enriched);
     }
   } catch (err: any) {
     console.error('[Mega Leilões Scraper] Erro:', err.message);
@@ -532,7 +566,7 @@ export async function scrapeFrazao(
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 });
     await new Promise(r => setTimeout(r, 4000));
 
-    const rawLots = await page.evaluate(() => {
+    const rawLots = await collectListingPages(page, () => page.evaluate(() => {
       const anchors = Array.from(document.querySelectorAll('a')).filter(a => a.href && a.href.includes('/lote/'));
       const unique = [];
       const seen = new Set();
@@ -556,15 +590,13 @@ export async function scrapeFrazao(
         }
       }
       return unique;
-    });
+    })) as any[];
 
     for (const raw of rawLots) {
       if (!raw.link || raw.price <= 0) continue;
       const propType = parseType(raw.title + ' ' + raw.text);
       const detection = detectBankOrJudicial(raw.text);
 
-      if (targetType === 'extrajudicial' && detection.origin !== 'extrajudicial') continue;
-      if (targetType === 'judicial' && detection.origin !== 'judicial') continue;
 
       let neigh = '';
       const mNeigh = raw.title.match(/(?:em|no|na)\s+([A-Za-zÀ-ÿ\s]+),\s*(?:Rio de Janeiro|RJ)/i);
@@ -592,7 +624,8 @@ export async function scrapeFrazao(
         origin: targetType,
         sellerBank: detection.bank
       };
-      results.push(results.length < 12 ? await enrichLotDetails(browser, draft) : draft);
+      const enriched = await enrichLotDetails(browser, draft);
+      if (enriched.origin === targetType) results.push(enriched);
     }
   } catch (err: any) {
     console.error('[Frazão Scraper] Erro:', err.message);
@@ -626,7 +659,7 @@ export async function scrapeBiasi(
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 });
     await new Promise(r => setTimeout(r, 4000));
 
-    const rawLots = await page.evaluate(() => {
+    const rawLots = await collectListingPages(page, () => page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('a.leilao-lote'));
       return cards.map(a => {
         const link = (a as HTMLAnchorElement).href || '';
@@ -648,15 +681,13 @@ export async function scrapeBiasi(
 
         return { text: descText, price, link, img };
       });
-    });
+    })) as any[];
 
     for (const raw of rawLots) {
       if (!raw.link || raw.price <= 0) continue;
       const propType = parseType(raw.text);
       const detection = detectBankOrJudicial(raw.text);
 
-      if (targetType === 'extrajudicial' && detection.origin !== 'extrajudicial') continue;
-      if (targetType === 'judicial' && detection.origin !== 'judicial') continue;
 
       let neigh = '';
       const parts = raw.text.split('-').map(p => p.trim());
@@ -684,7 +715,8 @@ export async function scrapeBiasi(
         origin: targetType,
         sellerBank: detection.bank
       };
-      results.push(results.length < 12 ? await enrichLotDetails(browser, draft) : draft);
+      const enriched = await enrichLotDetails(browser, draft);
+      if (enriched.origin === targetType) results.push(enriched);
     }
   } catch (err: any) {
     console.error('[Biasi Scraper] Erro:', err.message);
@@ -702,7 +734,7 @@ export async function scrapeConfiguredAuctioneers(
   state: string = 'RJ',
   city: string = 'Rio de Janeiro'
 ): Promise<ScrapedAuctionDraft[]> {
-  const configs = AUCTIONEER_PORTALS.filter(portal => portal.enabled && portal.genericScrape);
+  const configs = AUCTIONEER_PORTALS.filter(portal => portal.enabled && !['megaleiloes', 'frazao', 'biasi'].includes(portal.id));
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
 
@@ -727,12 +759,20 @@ export async function scrapeConfiguredAuctioneers(
             else request.continue();
           });
 
-          const url = config.searchUrl || config.baseUrl;
+          const searchUrl = new URL(config.searchUrl || config.baseUrl);
+          if (searchUrl.searchParams.has('address_uf')) {
+            searchUrl.searchParams.set('address_uf', state);
+            const cityCodes: Record<string, string> = { 'rio de janeiro': '3304557', 'niteroi': '3303302', 'juiz de fora': '3136702' };
+            const cityCode = cityCodes[normalizeStr(city)];
+            if (cityCode) searchUrl.searchParams.set('address_cidade_ibge', cityCode);
+            else searchUrl.searchParams.delete('address_cidade_ibge');
+          }
+          const url = searchUrl.href;
           console.log(`[Auctioneer Generic] Acessando ${config.name}: ${url}`);
           await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 18000 });
           await new Promise(resolve => setTimeout(resolve, 1200));
 
-          const rawLots = await page.evaluate(() => {
+          const rawLots = await collectListingPages(page, () => page.evaluate(() => {
             const propertyWords = /\b(im[oó]vel|apartamento|apto|casa|terreno|lote|sala|loja|galp[aã]o|pr[eé]dio|cobertura)\b/i;
             const priceWords = /R\$\s*[\d.]+(?:,\d{2})?/i;
             const ignored = /(?:login|entrar|cadastro|contato|quem somos|pol[ií]tica|termos)/i;
@@ -757,12 +797,11 @@ export async function scrapeConfiguredAuctioneers(
               const image = container.querySelector('img') as HTMLImageElement | null;
               seen.add(link);
               lots.push({ text, link, img: image?.src || '', price, size });
-              if (lots.length >= 20) break;
             }
             return lots;
-          });
+          })) as any[];
 
-          for (const raw of rawLots.slice(0, 8)) {
+          for (const raw of rawLots) {
             const cityNorm = normalizeStr(city);
             const detection = detectBankOrJudicial(raw.text);
             const lines = raw.text.split(/\s{2,}|\n/).map(line => line.trim()).filter(Boolean);
@@ -949,15 +988,14 @@ export async function syncAuctioneersPipeline(
   console.log(`Portais configurados: ${AUCTIONEER_PORTALS.map(p => p.name).join(', ')}`);
   console.log(`======================================================\n`);
 
-  const [megaList, frazaoList, biasiList, configuredList, groundedList] = await Promise.all([
+  const [megaList, frazaoList, biasiList, configuredList] = await Promise.all([
     scrapeMegaLeiloes(targetType, state, city).catch(() => []),
     scrapeFrazao(targetType, state, city).catch(() => []),
     scrapeBiasi(targetType, state, city).catch(() => []),
-    scrapeConfiguredAuctioneers(targetType, state, city).catch(() => []),
-    scrapeGroundedAuctioneers(targetType, state, city).catch(() => [])
+    scrapeConfiguredAuctioneers(targetType, state, city).catch(() => [])
   ]);
 
-  const allDrafts = [...megaList, ...frazaoList, ...biasiList, ...configuredList, ...groundedList];
+  const allDrafts = [...megaList, ...frazaoList, ...biasiList, ...configuredList];
   console.log(`[Auctioneer Master Sync] Total bruto capturado nos portais: ${allDrafts.length}`);
 
   const existingLinks = new Set(existingAuctions.map(a => a.auctionLink).filter(Boolean));
@@ -977,7 +1015,7 @@ export async function syncAuctioneersPipeline(
     if (existingLinks.has(draft.auctionLink)) {
       const existing = existingAuctions.find(item => item.auctionLink === draft.auctionLink);
       if (existing && draft.addressVerified && draft.sizeVerified && draft.priceVerified && hasAuditableAddress(draft.address)) {
-        Object.assign(existing, recalculateFn({ ...existing, address: completeAddress, sizeSqm: draft.sizeSqm, auctionPrice: draft.auctionPrice,
+        Object.assign(existing, recalculateFn({ ...existing, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress, sizeSqm: draft.sizeSqm, auctionPrice: draft.auctionPrice,
           description: draft.description, matriculaText: draft.matriculaText || existing.matriculaText,
           matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
           allowsFinancing: draft.allowsFinancing ?? existing.allowsFinancing ?? false,

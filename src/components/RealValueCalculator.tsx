@@ -468,8 +468,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const isHouseProperty = normalizeString(propertyType).includes('casa');
 
   useEffect(() => {
-    if (isHouseProperty && condoDebtInput !== 0) setCondoDebtInput(0);
-  }, [isHouseProperty, condoDebtInput]);
+    if (isHouseProperty) setCondoDebtInput(0);
+  }, [isHouseProperty]);
 
   // Extract unique neighborhoods for selected state and city
   const neighborhoodsList = useMemo(() => {
@@ -3071,7 +3071,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 </div>
 
                 {/* Casas não recebem custo condominial presumido. */}
-                {!isHouseProperty && <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
+                <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
                   <span className="text-slate-300 font-bold">
                     {acquisitionMode === 'caixa' ? 'Condomínio em atraso: limite do arrematante (até 10% da avaliação):' : 'Condomínio em Atraso:'}
                   </span>
@@ -3085,7 +3085,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       placeholder="0"
                     />
                   </div>
-                </div>}
+                </div>
 
                 {/* Configurable Renovation Cost */}
                 <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
