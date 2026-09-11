@@ -187,6 +187,7 @@ function phoneticStreet(street: string | null | undefined): string {
   s = s.split(',')[0].split('-')[0].replace(/\s+\d+.*$/, '').trim();
   s = s.replace(/^(rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i, '');
   s = s.replace(/^(engenheiro|eng|doutor|dr|dra|professor|prof|profa|general|gen|gal|coronel|cel|major|maj|capitao|cap|tenente|ten|almirante|alm|brigadeiro|brg|governador|gov|senador|sen|deputado|dep|padre|pe|pastor|bispo|dom|dona|d|sao|santa|sto|sta)\b\.?\s*/gi, '');
+  s = s.replace(/\b(?:da|de|do|das|dos|e)\b/g, ' ');
   s = s.replace(/ph/g, 'f').replace(/th/g, 't').replace(/y/g, 'i').replace(/w/g, 'v').replace(/z/g, 's').replace(/ck/g, 'k').replace(/ç/g, 's');
   s = s.replace(/([a-z])\1+/g, (m, c) => c);
   s = s.replace(/[^a-z0-9]/g, '');
@@ -1933,13 +1934,26 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     return Math.round(baseQuickSaleSqm * buildingAgeData.factor);
   }, [hasRealMicroData, suggestedQuickSaleTotal, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor]);
 
+  // This is the exact 60-day flip shown by the calculator and therefore the
+  // only profit/ROI pair allowed to be persisted to the auction card.
+  const flip60BrokerFee = Math.round(suggestedQuickSaleTotal * 0.04);
+  const flip60Holding = totalMonthlyHolding * 3;
+  const flip60GrossGain = suggestedQuickSaleTotal - totalArremateAcquisitionCost - flip60Holding - flip60BrokerFee;
+  const flip60CapitalGainsTax = flip60GrossGain > 0 ? Math.round(flip60GrossGain * 0.15) : 0;
+  const flip60NetProfit = flip60GrossGain - flip60CapitalGainsTax;
+  const flip60Roi = totalArremateAcquisitionCost > 0
+    ? Number((flip60NetProfit / (totalArremateAcquisitionCost + flip60Holding) * 100).toFixed(2))
+    : 0;
+
   // Sincronização Pericial em Tempo Real: O Flip Rápido e Gabarito da Calculadora atualizam soberanamente o Card do Imóvel
   useEffect(() => {
     if (isLoadingTransactions || rawTransactions.length === 0) return;
     if (prefillData?.id && onUpdateProperty) {
       if (suggestedQuickSaleTotal > 0 && hasRealMicroData && bidiBenchmark) {
         const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
-        if (prefillData.vendaBaixaPrice !== suggestedQuickSaleTotal || prefillData.estimatedValue !== gabaritoTotal || prefillData.valuationRadiusKm !== radiusKm) {
+        const verifiedStreetCount = bidiBenchmark.rua.validas || bidiBenchmark.predio.validas || 0;
+        const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
+        if (prefillData.vendaBaixaPrice !== suggestedQuickSaleTotal || prefillData.estimatedValue !== gabaritoTotal || prefillData.valuationRadiusKm !== radiusKm || prefillData.itbiStreetCount !== verifiedStreetCount || prefillData.calculatedProfit !== flip60NetProfit || prefillData.calculatedRoi !== flip60Roi) {
           onUpdateProperty({
             id: prefillData.id,
             vendaBaixaPrice: suggestedQuickSaleTotal,
@@ -1949,10 +1963,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             valuationBasis: `ITBI verificado - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
             valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.raio.validas,
             valuationRadiusKm: radiusKm,
+            itbiStreetCount: verifiedStreetCount || undefined,
+            itbiStreetAvgSqm: verifiedStreetAvgSqm || undefined,
             itbiSurroundingAvgSqm: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.saneada || undefined) : undefined,
             itbiSurroundingCount: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.validas || undefined) : undefined,
             streetRadiusDeviationPct: bidiBenchmark.radiusVerified ? (bidiBenchmark.ruaRaioDesvioPct || undefined) : undefined,
-            streetRadiusCalibrated: bidiBenchmark.radiusVerified && bidiBenchmark.ruaRaioCalibrada
+            streetRadiusCalibrated: bidiBenchmark.radiusVerified && bidiBenchmark.ruaRaioCalibrada,
+            calculatedProfit: flip60NetProfit,
+            calculatedRoi: flip60Roi
           });
         }
       } else if (!hasRealMicroData && prefillData.valuationConfidence === 'verified') {
@@ -1968,7 +1986,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         });
       }
     }
-  }, [suggestedQuickSaleTotal, hasRealMicroData, bidiBenchmark, buildingAgeData.factor, radiusKm, prefillData?.id, prefillData?.vendaBaixaPrice, prefillData?.estimatedValue, prefillData?.valuationConfidence, prefillData?.valuationRadiusKm, prefillData?.isCommunityRisk, onUpdateProperty]);
+  }, [suggestedQuickSaleTotal, hasRealMicroData, bidiBenchmark, buildingAgeData.factor, radiusKm, prefillData?.id, prefillData?.vendaBaixaPrice, prefillData?.estimatedValue, prefillData?.valuationConfidence, prefillData?.valuationRadiusKm, prefillData?.itbiStreetCount, prefillData?.calculatedProfit, prefillData?.calculatedRoi, prefillData?.isCommunityRisk, flip60NetProfit, flip60Roi, onUpdateProperty]);
 
   const activeFlipExitPrice = (customExitPrice !== null && customExitPrice > 0) ? customExitPrice : suggestedQuickSaleTotal;
 

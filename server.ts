@@ -104,6 +104,9 @@ function phoneticStreet(street: string | null | undefined): string {
   s = s.split(',')[0].split('-')[0].replace(/\s+\d+.*$/, '').trim();
   s = s.replace(/^(rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i, '');
   s = s.replace(/^(engenheiro|eng|doutor|dr|dra|professor|prof|profa|general|gen|gal|coronel|cel|major|maj|capitao|cap|tenente|ten|almirante|alm|brigadeiro|brg|governador|gov|senador|sen|deputado|dep|padre|pe|pastor|bispo|dom|dona|d|sao|santa|sto|sta)\b\.?\s*/gi, '');
+  // ITBI frequentemente omite conectivos (ex.: "Fábio da Luz" -> "Fábio Luz").
+  // Eles não identificam a via e precisam gerar a mesma chave nos dois lados.
+  s = s.replace(/\b(?:da|de|do|das|dos|e)\b/g, ' ');
   s = s.replace(/ph/g, 'f').replace(/th/g, 't').replace(/y/g, 'i').replace(/w/g, 'v').replace(/z/g, 's').replace(/ck/g, 'k').replace(/ç/g, 's');
   s = s.replace(/([a-z])\1+/g, (m, c) => c);
   s = s.replace(/[^a-z0-9]/g, '');
@@ -2511,8 +2514,18 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
     recalculated.vendaBaixaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.vendaMediaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.estimatedValue = Number(updatedFields.estimatedValue);
-    recalculated.valuationConfidence = updatedFields.valuationConfidence === 'verified' && (recalculated.itbiStreetCount || 0) > 0 ? 'verified' : 'projected';
-    if (recalculated.valuationConfidence !== 'verified') recalculated.liquidityScore = Math.min(4, recalculated.liquidityScore || 1);
+    const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || Number(updatedFields.valuationSampleCount) || 0;
+    const calculatorStreetAvgSqm = Number(updatedFields.itbiStreetAvgSqm) || 0;
+    if (calculatorStreetCount > 0) recalculated.itbiStreetCount = calculatorStreetCount;
+    if (calculatorStreetAvgSqm > 0) recalculated.itbiStreetAvgSqm = calculatorStreetAvgSqm;
+    recalculated.valuationConfidence = updatedFields.valuationConfidence === 'verified' && calculatorStreetCount > 0 ? 'verified' : 'projected';
+    if (recalculated.valuationConfidence === 'verified') {
+      // A calculadora validou as escrituras por geolocalização; não rebaixe
+      // esse imóvel só porque a chave em lote não encontrou a grafia da via.
+      recalculated.liquidityScore = Math.max(recalculated.liquidityScore || 1, calculatorStreetCount >= 3 ? 6 : 5);
+    } else {
+      recalculated.liquidityScore = Math.min(4, recalculated.liquidityScore || 1);
+    }
     recalculated.hasMicroBenchmark = true;
     recalculated.valuationBasis = String(updatedFields.valuationBasis || 'ITBI verificado pela calculadora');
     recalculated.valuationSampleCount = Number(updatedFields.valuationSampleCount) || undefined;
@@ -2533,8 +2546,17 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
       (recalculated.itbiCost || 0) - (recalculated.notaryCost || 0) -
       (recalculated.caixaContractCost || 0) - (recalculated.certificatesCost || 0);
     const gainTax = gainTaxBase > 0 ? Math.round(gainTaxBase * 0.15) : 0;
-    recalculated.calculatedProfit = exitPrice - brokerCost - gainTax - recalculated.auctionPrice - purchaseExtraCosts;
-    recalculated.calculatedRoi = Number((recalculated.calculatedProfit / ((recalculated.auctionPrice + purchaseExtraCosts) || 1) * 100).toFixed(2));
+    const calculatorProfit = Number(updatedFields.calculatedProfit);
+    const calculatorRoi = Number(updatedFields.calculatedRoi);
+    if (Number.isFinite(calculatorProfit) && Number.isFinite(calculatorRoi)) {
+      // Flip Rápido (60d) é calculado uma única vez na calculadora e exibido
+      // literalmente igual no card, sem uma segunda fórmula no servidor.
+      recalculated.calculatedProfit = calculatorProfit;
+      recalculated.calculatedRoi = calculatorRoi;
+    } else {
+      recalculated.calculatedProfit = exitPrice - brokerCost - gainTax - recalculated.auctionPrice - purchaseExtraCosts;
+      recalculated.calculatedRoi = Number((recalculated.calculatedProfit / ((recalculated.auctionPrice + purchaseExtraCosts) || 1) * 100).toFixed(2));
+    }
   }
   store.auctions[idx] = recalculated;
   saveStore(store);
