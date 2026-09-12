@@ -25,6 +25,8 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: 'pestana', name: 'Pestana Leilões', domain: 'pestanaleiloes.com.br', baseUrl: 'https://www.pestanaleiloes.com.br', enabled: true },
   { id: 'mgl', name: 'MGL Leilões', domain: 'mgl.com.br', baseUrl: 'https://www.mgl.com.br', enabled: true },
   { id: 'santander', name: 'Santander Imóveis', domain: 'santanderimoveis.com.br', baseUrl: 'https://www.santanderimoveis.com.br', genericScrape: true, enabled: true },
+  { id: 'emgea', name: 'EMGEA Imóveis', domain: 'emgeaimoveis.com.br', baseUrl: 'https://www.emgeaimoveis.com.br', searchUrl: 'https://www.emgeaimoveis.com.br/busca', genericScrape: true, enabled: true },
+  { id: 'bb', name: 'Seu Imóvel BB', domain: 'seuimovelbb.com.br', baseUrl: 'https://seuimovelbb.com.br', genericScrape: true, enabled: true },
   { id: 'ricart', name: 'Ricart Leilões', domain: 'ricartleiloes.com.br', baseUrl: 'https://www.ricartleiloes.com.br', genericScrape: true, enabled: true },
   { id: 'pamela', name: 'Pamela Leiloeira', domain: 'pamelaleiloeira.com.br', baseUrl: 'https://www.pamelaleiloeira.com.br', genericScrape: true, enabled: true },
   { id: 'gustavo', name: 'Gustavo Leiloeiro', domain: 'gustavoleiloeiro.com.br', baseUrl: 'https://gustavoleiloeiro.com.br', genericScrape: true, enabled: true },
