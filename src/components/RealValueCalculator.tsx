@@ -1945,48 +1945,37 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     ? Number((flip60NetProfit / (totalArremateAcquisitionCost + flip60Holding) * 100).toFixed(2))
     : 0;
 
-  // Sincronização Pericial em Tempo Real: O Flip Rápido e Gabarito da Calculadora atualizam soberanamente o Card do Imóvel
-  useEffect(() => {
-    if (isLoadingTransactions || rawTransactions.length === 0) return;
-    if (prefillData?.id && onUpdateProperty) {
-      if (suggestedQuickSaleTotal > 0 && hasRealMicroData && bidiBenchmark) {
-        const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
-        const verifiedStreetCount = bidiBenchmark.rua.validas || bidiBenchmark.predio.validas || 0;
-        const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
-        if (prefillData.vendaBaixaPrice !== suggestedQuickSaleTotal || prefillData.estimatedValue !== gabaritoTotal || prefillData.valuationRadiusKm !== radiusKm || prefillData.itbiStreetCount !== verifiedStreetCount || prefillData.calculatedProfit !== flip60NetProfit || prefillData.calculatedRoi !== flip60Roi) {
-          onUpdateProperty({
-            id: prefillData.id,
-            vendaBaixaPrice: suggestedQuickSaleTotal,
-            vendaMediaPrice: suggestedQuickSaleTotal,
-            estimatedValue: gabaritoTotal,
-            valuationConfidence: bidiBenchmark.predio.validas > 0 || bidiBenchmark.rua.validas > 0 ? 'verified' : 'projected',
-            valuationBasis: `ITBI verificado - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
-            valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.raio.validas,
-            valuationRadiusKm: radiusKm,
-            itbiStreetCount: verifiedStreetCount || undefined,
-            itbiStreetAvgSqm: verifiedStreetAvgSqm || undefined,
-            itbiSurroundingAvgSqm: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.saneada || undefined) : undefined,
-            itbiSurroundingCount: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.validas || undefined) : undefined,
-            streetRadiusDeviationPct: bidiBenchmark.radiusVerified ? (bidiBenchmark.ruaRaioDesvioPct || undefined) : undefined,
-            streetRadiusCalibrated: bidiBenchmark.radiusVerified && bidiBenchmark.ruaRaioCalibrada,
-            calculatedProfit: flip60NetProfit,
-            calculatedRoi: flip60Roi
-          });
-        }
-      } else if (!hasRealMicroData && prefillData.valuationConfidence === 'verified') {
-        onUpdateProperty({
-          id: prefillData.id,
-          vendaBaixaPrice: undefined,
-          vendaMediaPrice: undefined,
-          estimatedValue: undefined,
-          valuationConfidence: 'unavailable',
-          valuationBasis: 'Sem amostras ITBI verificadas na rua ou no raio selecionado',
-          valuationSampleCount: undefined,
-          valuationRadiusKm: radiusKm
-        });
-      }
+  // Explorar cenários na calculadora nunca pode mudar o ranking do garimpo.
+  // Persistência só ocorre por uma ação deliberada do analista.
+  const applyAnalysisToCard = async () => {
+    if (!prefillData?.id || !onUpdateProperty || isLoadingTransactions) return;
+    if (!hasRealMicroData || !bidiBenchmark || suggestedQuickSaleTotal <= 0) {
+      alert('Não há amostras ITBI locais suficientes para aplicar esta análise ao card.');
+      return;
     }
-  }, [suggestedQuickSaleTotal, hasRealMicroData, bidiBenchmark, buildingAgeData.factor, radiusKm, prefillData?.id, prefillData?.vendaBaixaPrice, prefillData?.estimatedValue, prefillData?.valuationConfidence, prefillData?.valuationRadiusKm, prefillData?.itbiStreetCount, prefillData?.calculatedProfit, prefillData?.calculatedRoi, prefillData?.isCommunityRisk, flip60NetProfit, flip60Roi, onUpdateProperty]);
+
+    const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
+    const verifiedStreetCount = bidiBenchmark.rua.validas || bidiBenchmark.predio.validas || 0;
+    const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
+    await onUpdateProperty({
+      id: prefillData.id,
+      vendaBaixaPrice: suggestedQuickSaleTotal,
+      vendaMediaPrice: suggestedQuickSaleTotal,
+      estimatedValue: gabaritoTotal,
+      valuationConfidence: verifiedStreetCount > 0 ? 'verified' : 'projected',
+      valuationBasis: `ITBI verificado - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
+      valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.raio.validas,
+      valuationRadiusKm: radiusKm,
+      itbiStreetCount: verifiedStreetCount || undefined,
+      itbiStreetAvgSqm: verifiedStreetAvgSqm || undefined,
+      itbiSurroundingAvgSqm: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.saneada || undefined) : undefined,
+      itbiSurroundingCount: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.validas || undefined) : undefined,
+      streetRadiusDeviationPct: bidiBenchmark.radiusVerified ? (bidiBenchmark.ruaRaioDesvioPct || undefined) : undefined,
+      streetRadiusCalibrated: bidiBenchmark.radiusVerified && bidiBenchmark.ruaRaioCalibrada,
+      calculatedProfit: flip60NetProfit,
+      calculatedRoi: flip60Roi
+    });
+  };
 
   const activeFlipExitPrice = (customExitPrice !== null && customExitPrice > 0) ? customExitPrice : suggestedQuickSaleTotal;
 
@@ -2536,6 +2525,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
         {/* Action Buttons: Save to Profile & Generate PDF */}
         <div className="flex items-center gap-2.5 flex-wrap justify-center md:justify-end shrink-0">
+          {prefillData?.id && onUpdateProperty && (
+            <button
+              onClick={applyAnalysisToCard}
+              disabled={isLoadingTransactions || !hasRealMicroData}
+              className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-black text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all shadow-md cursor-pointer border border-emerald-300/30 shrink-0"
+              title="Confirma os valores desta análise no card e no ranking"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Aplicar ao Card</span>
+            </button>
+          )}
           <button
             onClick={handleSaveAnalysisToProfile}
             disabled={isSavingAnalysis}
