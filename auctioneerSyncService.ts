@@ -1724,6 +1724,14 @@ export function auditAndRepairAuctions(
   for (let index = 0; index < auctions.length; index++) {
     const current = auctions[index];
     const recalculated = recalculateFn({ ...current });
+    if (current.precisa_revisao) Object.assign(recalculated, {
+      precisa_revisao: true,
+      valuationConfidence: 'unavailable',
+      liquidityScore: 1,
+      riskLevel: 'Alto',
+      calculatedRoi: undefined,
+      calculatedProfit: undefined
+    });
     if (JSON.stringify(current) === JSON.stringify(recalculated)) continue;
     auctions[index] = recalculated;
     repaired++;
