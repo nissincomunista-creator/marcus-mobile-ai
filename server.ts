@@ -24,7 +24,7 @@ import { scrapeLivePortals } from './portalScraper.ts';
 import { geocodeAddress, getCachedCoords, cleanQuery } from './geocodeService.ts';
 import { computeBidirectionalBenchmarks, isGenericStreet } from './src/utils/bidirectionalBenchmark.ts';
 import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
-import { syncAuctioneersPipeline, AUCTIONEER_PORTALS, enrichLotDetails } from './auctioneerSyncService.ts';
+import { syncAuctioneersPipeline, syncIsaiasOfficialLots, AUCTIONEER_PORTALS, enrichLotDetails } from './auctioneerSyncService.ts';
 
 dotenv.config();
 
@@ -6028,6 +6028,20 @@ async function start() {
       console.log('[Server] Iniciando atualização automática das fontes...');
       try {
         let auctioneerAdded = 0;
+
+        // Persist confirmed official JF judicial lots before the broader portal
+        // sweep. The latter can take minutes when a third-party portal stalls.
+        const fastJf = await syncIsaiasOfficialLots(
+          'judicial', 'MG', 'Juiz de Fora', store.auctions,
+          (auc) => recalculateAuction(auc, store.itbiTransactions)
+        );
+        if (fastJf.newAuctions.length > 0) {
+          fastJf.newAuctions.forEach((auction) => { auction.userId = auction.userId || 'system'; });
+          store.auctions.unshift(...fastJf.newAuctions);
+          auctioneerAdded += fastJf.newAuctions.length;
+          saveStore(store);
+          console.log(`[Server] Juiz de Fora: ${fastJf.newAuctions.length} lotes judiciais oficiais disponibilizados antes da varredura ampla.`);
+        }
 
         // A busca genérica nacional não informa os filtros de município para
         // Mega, Frazão e Biasi e acabava deixando Juiz de Fora sem importação.

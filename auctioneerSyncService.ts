@@ -1564,3 +1564,13 @@ export async function syncAuctioneersPipeline(
     return { ...result, sources, partial: sources.length === 0 || sources.some(source => !source.complete) };
   });
 }
+
+// Fast, source-specific import used at startup so an official city lot is not
+// held hostage by slower or unavailable portals in the broad audit sweep.
+export async function syncIsaiasOfficialLots(
+  targetType: 'extrajudicial' | 'judicial', state: string, city: string,
+  existingAuctions: AuctionProperty[], recalculateFn: (auc: AuctionProperty) => AuctionProperty
+) {
+  const drafts = await scrapeIsaiasAuctioneer(targetType, state, city);
+  return reconcileAuctionDrafts(drafts, targetType, state, city, existingAuctions, recalculateFn, false);
+}
