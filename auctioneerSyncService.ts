@@ -828,6 +828,35 @@ export async function collectListingPages<T extends { link: string }>(page: any,
   return [...lots.values()];
 }
 
+// Homepages frequently contain only navigation. Resolve the portal's own
+// property catalogue before reading cards; official lot details still decide
+// whether a record can be imported.
+async function openPropertyCatalogue(page: any, config: AuctioneerPortalConfig): Promise<void> {
+  const configured = new URL(config.searchUrl || config.baseUrl);
+  if (/(?:lotes?\/(?:imoveis?|search)|buscador|imoveis?|imovel|properties)/i.test(configured.pathname + configured.search)) return;
+  const candidate = await page.evaluate(() => {
+    const ignored = /(?:login|entrar|cadastro|contato|politica|termos|privacidade|institucional|quem-somos)/i;
+    const links = (Array.from(document.querySelectorAll('a[href]')) as HTMLAnchorElement[]).map(anchor => {
+      const href = anchor.href;
+      const label = `${anchor.innerText || ''} ${anchor.getAttribute('aria-label') || ''} ${href}`.replace(/\s+/g, ' ').trim();
+      if (!href || new URL(href).origin !== location.origin || ignored.test(label)) return null;
+      let score = 0;
+      if (/\/lotes?\/imoveis?(?:[/?]|$)/i.test(href)) score += 12;
+      if (/\/(?:imoveis?|properties)(?:[/?]|$)/i.test(href)) score += 10;
+      if (/buscador|busca|pesquisa|catalogo|ofertas?/i.test(href)) score += 6;
+      if (/\b(imoveis?|lotes?|bens)\b/i.test(label)) score += 5;
+      if (/\bleil(?:ao|oes)\b/i.test(label)) score += 2;
+      return score ? { href, score } : null;
+    }).filter(Boolean) as Array<{ href: string; score: number }>;
+    links.sort((a, b) => b.score - a.score || a.href.length - b.href.length);
+    return links[0]?.href || '';
+  });
+  if (!candidate || candidate === page.url()) return;
+  const response = await page.goto(candidate, { waitUntil: 'domcontentloaded', timeout: 18000 });
+  if (response && response.status() >= 400) throw new Error(`Catálogo de imóveis retornou HTTP ${response.status()}`);
+  await page.waitForNetworkIdle({ idleTime: 500, timeout: 6000 }).catch(() => undefined);
+}
+
 export async function scrapeMegaLeiloes(
   targetType: 'extrajudicial' | 'judicial',
   state: string = 'RJ',
@@ -1108,19 +1137,12 @@ export async function scrapeConfiguredAuctioneers(
   city: string = 'Rio de Janeiro'
 ): Promise<ScrapedAuctionDraft[]> {
   const cityCode = municipalityId(city, state);
-  const priorityPortals = new Set([
-    'isaias', 'alexandrecosta', 'ayupp', 'rioleiloes',
-    'portalzuk', 'sold', 'pestana', 'mgl', 'santander', 'emgea', 'bb',
-    'ricart', 'pamela', 'gustavo', 'onildo', 'schulmann', 'saraiva',
-    'rymer', 'depaula', 'jv', 'paulobotelho', 'alexandro', 'portella',
-    'silas', 'joaoemilio', 'facanha'
-  ]);
-  // A broad homepage crawl of every registered auctioneer takes many minutes
-  // and does not prove a municipality. Prefer portals with an IBGE-compatible
-  // city endpoint, plus the explicitly configured official portals above.
+  // Every configured official portal enters the collection queue. Portals with
+  // a dedicated scraper stay out of this generic pass to avoid duplicate hits.
+  // A failed or incomplete source is audited instead of silently disappearing.
   const configs = AUCTIONEER_PORTALS.filter(portal => {
     if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias'].includes(portal.id)) return false;
-    return portal.domain.endsWith('.lel.br') || priorityPortals.has(portal.id);
+    return portal.genericScrape === true;
   });
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
@@ -1165,6 +1187,7 @@ export async function scrapeConfiguredAuctioneers(
           console.log(`[Auctioneer Generic] Acessando ${config.name}: ${url}`);
           await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 18000 });
           await new Promise(resolve => setTimeout(resolve, 1200));
+          if (!isLelPortal) await openPropertyCatalogue(page, config);
 
           const rawLots = await collectListingPages(page, () => page.evaluate((requestedCity: string) => {
             const propertyWords = /\b(im[oó]vel|apartamento|apto|casa|terreno|lote|sala|loja|galp[aã]o|pr[eé]dio|cobertura)\b/i;
@@ -1552,6 +1575,24 @@ export function reconcileAuctionDrafts(
     newAuctions,
     totalScraped: allDrafts.length, updated, pending: pendingReview.length
   };
+}
+
+// Server startup and the maintenance endpoint use this to re-run the single
+// calculation path without inventing missing source facts. It only replaces an
+// item when the supplied calculation actually changes persisted fields.
+export function auditAndRepairAuctions(
+  auctions: AuctionProperty[],
+  recalculateFn: (auction: AuctionProperty) => AuctionProperty
+): { total: number; repaired: number } {
+  let repaired = 0;
+  for (let index = 0; index < auctions.length; index++) {
+    const current = auctions[index];
+    const recalculated = recalculateFn({ ...current });
+    if (JSON.stringify(current) === JSON.stringify(recalculated)) continue;
+    auctions[index] = recalculated;
+    repaired++;
+  }
+  return { total: auctions.length, repaired };
 }
 
 export async function syncAuctioneersPipeline(
