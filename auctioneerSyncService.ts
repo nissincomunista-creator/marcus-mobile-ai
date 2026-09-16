@@ -341,6 +341,13 @@ function parseType(text: string): PropertyType {
   return 'Apartamento';
 }
 
+function isPropertyLotEvidence(text: string): boolean {
+  const normalized = normalizeStr(text);
+  const property = /\b(imovel|apartamento|apto|casa|terreno|lote\s+(?:de\s+)?terreno|sala|loja|galpao|predio|cobertura)\b/.test(normalized);
+  const movableOnly = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao)\b/.test(normalized);
+  return property && !movableOnly;
+}
+
 function detectBankOrJudicial(text: string): { origin: 'extrajudicial' | 'judicial'; bank?: string } {
   const norm = normalizeStr(text);
   if (/(?:^|\n)\s*judicial\s*(?:\n|$)|\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}/i.test(norm)) return { origin: 'judicial' };
@@ -1355,7 +1362,7 @@ export async function scrapeConfiguredAuctioneers(
 
             const enriched = await enrichLotDetails(browser, draft);
             const combinedEvidence = `${enriched.description || ''}\n${raw.text}`;
-            if (!/\b(im[oó]vel|apartamento|apto|casa|terreno|lote|sala|loja|galp[aã]o|pr[eé]dio|cobertura)\b/i.test(combinedEvidence)) continue;
+            if (!isPropertyLotEvidence(`${enriched.title}\n${combinedEvidence}`)) continue;
             const finalDetection = {origin:enriched.origin, bank:enriched.sellerBank};
             if (finalDetection.origin !== targetType) continue;
             const declaredCity = enriched.city || ((enriched.locationScopeVerified && hasCityEvidence(combinedEvidence, city)) || hasRequestedLocationEvidence(combinedEvidence, state, city) ? city : '');
@@ -1569,21 +1576,20 @@ export function reconcileAuctionDrafts(
     }
     if (declared) Object.assign(draft, declared);
 
+    if (!isPropertyLotEvidence(`${draft.title}\n${draft.description || ''}`)) { pendingReview.push({draft, reason:'not_a_property_lot'}); continue; }
     if (draft.origin !== targetType) { pendingReview.push({draft, reason:'different_origin'}); continue; }
     if (draft.sourceClosed) { pendingReview.push({draft, reason:'closed_at_source'}); continue; }
     if (!draft.originVerified) { pendingReview.push({draft, reason:'unconfirmed_origin'}); continue; }
     if (!draft.sourceVerified) { pendingReview.push({draft, reason:'detail_unavailable'}); continue; }
     if (!draft.city || !draft.state || (state && draft.state !== state) || (city && normalizeStr(draft.city) !== normalizeStr(city))) { pendingReview.push({draft, reason:'unconfirmed_location'}); continue; }
-    if (!draft.sizeVerified) { pendingReview.push({draft, reason:'unconfirmed_area'}); continue; }
-    if (!draft.priceVerified) { pendingReview.push({draft, reason:'unconfirmed_price'}); continue; }
     let lastKnownDate = draft.secondAuctionDate || draft.firstAuctionDate || draft.auctionDate;
     if (!isConfiguredAuctionLink(draft.auctionLink)) { pendingReview.push({draft,reason:'unverified_link'}); continue; }
     if (lastKnownDate && lastKnownDate < today) { pendingReview.push({draft,reason:'past_date'}); continue; }
-
-    if (draft.sizeSqm <= 0 || draft.auctionPrice <= 0 || !lastKnownDate) {
-      pendingReview.push({draft,reason: draft.auctionPrice <= 0 ? 'missing_price' : draft.sizeSqm <= 0 ? 'missing_area' : 'missing_date'});
-      continue;
-    }
+    // A confirmed official lot is never lost because a complementary field is
+    // absent. It enters as pending, but cannot receive calculated ROI,
+    // liquidity or recommendation until price, area and date are verified.
+    const calculationReady = Boolean(draft.sizeVerified && draft.priceVerified && draft.sizeSqm > 0 && draft.auctionPrice > 0 && lastKnownDate);
+    if (!calculationReady) pendingReview.push({draft,reason: !draft.priceVerified || draft.auctionPrice <= 0 ? 'unconfirmed_price' : !draft.sizeVerified || draft.sizeSqm <= 0 ? 'unconfirmed_area' : 'missing_date'});
 
     const addressCity = extractDeclaredCity(draft.address, draft.state);
     if (addressCity && normalizeStr(addressCity) !== normalizeStr(draft.city)) { pendingReview.push({draft,reason:'outside_requested_city'}); continue; }
@@ -1606,6 +1612,14 @@ export function reconcileAuctionDrafts(
           minDownpaymentPercent: draft.minDownpaymentPercent ?? existing.minDownpaymentPercent,
           pendingIptuCost: draft.pendingIptuCost ?? existing.pendingIptuCost,
           pendingCondoCost: draft.pendingCondoCost ?? existing.pendingCondoCost }));
+        if (!calculationReady) Object.assign(existing, {
+          precisa_revisao: true,
+          valuationConfidence: 'unavailable',
+          liquidityScore: 1,
+          riskLevel: 'Alto',
+          calculatedRoi: undefined,
+          calculatedProfit: undefined
+        });
       }
       continue;
     }
@@ -1640,6 +1654,10 @@ export function reconcileAuctionDrafts(
       imageUrl: draft.imageUrl,
       description: draft.description || `${draft.title} - Leiloeiro: ${draft.auctioneerName}`,
       status: 'Pendente',
+      precisa_revisao: !calculationReady,
+      valuationConfidence: calculationReady ? undefined : 'unavailable',
+      liquidityScore: calculationReady ? undefined : 1,
+      riskLevel: calculationReady ? undefined : 'Alto',
       occupied: true,
       origin: targetType,
       allowsFinancing: draft.allowsFinancing ?? false,
@@ -1655,9 +1673,8 @@ export function reconcileAuctionDrafts(
       priceVerified: draft.priceVerified ?? (draft.auctionPrice > 0)
     };
 
-    // Calculate official ITBI benchmarks, Flip Rápido, Gabarito, Lucro, ROI, etc.
-    const calculated = recalculateFn(rawAuc);
-    newAuctions.push(calculated);
+    // Never let incomplete official lots inherit a speculative valuation.
+    newAuctions.push(calculationReady ? recalculateFn(rawAuc) : rawAuc);
   }
 
   if (writeAudit) {
