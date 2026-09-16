@@ -6064,8 +6064,11 @@ async function start() {
             priority.newAuctions.forEach(auction => { auction.userId = auction.userId || 'system'; });
             store.auctions.unshift(...priority.newAuctions);
             auctioneerAdded += priority.newAuctions.length;
-            saveStore(store);
           }
+          // Detail refreshes update existing lots too (for example, replacing
+          // an unverified building area with "a verificar"). Persist those
+          // corrections even when this pass found no brand-new auction.
+          if (priority.newAuctions.length > 0 || priority.updated > 0) saveStore(store);
         }
         const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
 
