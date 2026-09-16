@@ -6027,7 +6027,6 @@ async function start() {
     if (process.env.SKIP_STARTUP_SYNC !== 'true') setTimeout(async () => {
       console.log('[Server] Iniciando atualização automática das fontes...');
       try {
-        const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
         let auctioneerAdded = 0;
 
         // A busca genérica nacional não informa os filtros de município para
@@ -6035,9 +6034,9 @@ async function start() {
         // Estas são as cidades com base ITBI local; a rotina é executada só
         // uma vez por inicialização e cada portal recebe o filtro correto.
         const auctioneerTargets = [
+          { state: 'MG', city: 'Juiz de Fora' },
           { state: 'RJ', city: 'Rio de Janeiro' },
-          { state: 'RJ', city: 'Niterói' },
-          { state: 'MG', city: 'Juiz de Fora' }
+          { state: 'RJ', city: 'Niterói' }
         ];
         for (const target of auctioneerTargets) {
           for (const targetType of ['extrajudicial', 'judicial'] as const) {
@@ -6059,6 +6058,11 @@ async function start() {
             }
           }
         }
+
+        // Caixa is intentionally processed after the municipality-scoped
+        // auction sweep so a full spreadsheet refresh cannot leave a city
+        // tab apparently empty for the whole startup period.
+        const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
 
         // The scraper also enriches existing matching records, so persist even
         // when no new lot was inserted.

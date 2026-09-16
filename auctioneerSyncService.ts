@@ -1068,6 +1068,7 @@ export async function scrapeConfiguredAuctioneers(
 ): Promise<ScrapedAuctionDraft[]> {
   const cityCode = municipalityId(city, state);
   const priorityPortals = new Set([
+    'isaias', 'alexandrecosta', 'ayupp', 'rioleiloes',
     'portalzuk', 'sold', 'pestana', 'mgl', 'santander', 'emgea', 'bb',
     'ricart', 'pamela', 'gustavo', 'onildo', 'schulmann', 'saraiva',
     'rymer', 'depaula', 'jv', 'paulobotelho', 'alexandro', 'portella',
@@ -1124,7 +1125,7 @@ export async function scrapeConfiguredAuctioneers(
           await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 18000 });
           await new Promise(resolve => setTimeout(resolve, 1200));
 
-          const rawLots = await collectListingPages(page, () => page.evaluate(() => {
+          const rawLots = await collectListingPages(page, () => page.evaluate((requestedCity: string) => {
             const propertyWords = /\b(im[oó]vel|apartamento|apto|casa|terreno|lote|sala|loja|galp[aã]o|pr[eé]dio|cobertura)\b/i;
             const priceWords = /R\$\s*[\d.]+(?:,\d{2})?/i;
             const ignored = /(?:login|entrar|cadastro|contato|quem somos|pol[ií]tica|termos)/i;
@@ -1136,7 +1137,16 @@ export async function scrapeConfiguredAuctioneers(
               if (!link || seen.has(link) || ignored.test(link) || new URL(link).origin !== location.origin || /\/(?:leilao|eventos\/leilao)\//.test(new URL(link).pathname) && !/\/(?:lote|item)\//.test(new URL(link).pathname)) continue;
               const container = anchor.closest('article, [class*="card"], [class*="lote"], [class*="lot"], [class*="item"], li') || anchor;
               const text = ((container as HTMLElement).innerText || anchor.innerText || '').replace(/\s+/g, ' ').trim();
-              if (text.length < 20 || !propertyWords.test(text)) continue;
+              const path = new URL(link).pathname;
+              const directLot = /\/(?:item|lote)\//i.test(path);
+              // Some official portals (notably Isaías) show only the bid and
+              // city on the listing card. Keep a priced direct lot for the
+              // requested municipality and classify it only after reading the
+              // official detail page below.
+              const cityOnListing = new URL(location.href).searchParams.get('address_cidade_ibge')
+                ? true
+                : new RegExp(`(^|[^a-z])${requestedCity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^a-z])`, 'i').test(text.normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+              if (text.length < 20 || (!propertyWords.test(text) && !(directLot && priceWords.test(text) && cityOnListing))) continue;
 
               const bidMatches = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)];
               const fallbackPrice = text.match(/R\$\s*([\d.]+(?:,\d{2})?)/i);
@@ -1144,14 +1154,14 @@ export async function scrapeConfiguredAuctioneers(
               const bidValues = bidMatches.map(match => Number(match[1].replace(/\./g, '').replace(',', '.'))).filter(value => Number.isFinite(value) && value > 0);
               const price = bidValues.length > 0 ? Math.round(Math.min(...bidValues)) : fallbackPrice ? Math.round(Number(fallbackPrice[1].replace(/\./g, '').replace(',', '.'))) : 0;
               const size = sizeMatch ? Math.round(Number(sizeMatch[1].replace(',', '.'))) : 0;
-              if (!/\/(?:item|lote|leilao|imoveis|imovel|eventos|anuncio|auction)/i.test(new URL(link).pathname)) continue;
+              if (!/\/(?:item|lote|leilao|imoveis|imovel|eventos|anuncio|auction)/i.test(path)) continue;
 
               const image = container.querySelector('img') as HTMLImageElement | null;
               seen.add(link);
               lots.push({ text, link, img: image?.src || '', price, size });
             }
             return lots;
-          })) as any[];
+          }, city)) as any[];
 
           for (const raw of rawLots) {
             const listingLocation = sourceAuctionLocation(raw.text);
@@ -1188,6 +1198,7 @@ export async function scrapeConfiguredAuctioneers(
 
             const enriched = await enrichLotDetails(browser, draft);
             const combinedEvidence = `${enriched.description || ''}\n${raw.text}`;
+            if (!/\b(im[oó]vel|apartamento|apto|casa|terreno|lote|sala|loja|galp[aã]o|pr[eé]dio|cobertura)\b/i.test(combinedEvidence)) continue;
             const finalDetection = {origin:enriched.origin, bank:enriched.sellerBank};
             if (finalDetection.origin !== targetType) continue;
             const declaredCity = enriched.city || ((enriched.locationScopeVerified && hasCityEvidence(combinedEvidence, city)) || hasRequestedLocationEvidence(combinedEvidence, state, city) ? city : '');
