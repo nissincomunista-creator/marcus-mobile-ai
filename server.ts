@@ -1,5 +1,3 @@
-import { declaredAuctionLocation, correctDeclaredAuctionLocation } from './src/utils/auctionLocation.ts';
-import { canonicalStreet, resolveOfficialStreet } from './src/utils/streetMatching.ts';
 import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning } from './propertyLocationService.ts';
 import { auctionCosts, calculateFlip } from './src/utils/flipCalculation.ts';
 import express from 'express';
@@ -24,7 +22,7 @@ import { scrapeLivePortals } from './portalScraper.ts';
 import { geocodeAddress, getCachedCoords, cleanQuery } from './geocodeService.ts';
 import { computeBidirectionalBenchmarks, isGenericStreet } from './src/utils/bidirectionalBenchmark.ts';
 import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
-import { syncAuctioneersPipeline, syncIsaiasOfficialLots, AUCTIONEER_PORTALS, enrichLotDetails } from './auctioneerSyncService.ts';
+import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions } from './auctioneerSyncService.ts';
 
 dotenv.config();
 
@@ -1223,7 +1221,6 @@ function recalculateAuctionWithIndex(
   streetNumberNeighMap?: Map<string, Array<{ number: number; neighborhood: string; unitValueSqm: number; propType: PropertyType }>>,
   neighMap?: Map<string, ItbiTransaction[]>
 ): AuctionProperty {
-  auc = correctDeclaredAuctionLocation(auc);
   const state = (auc.state || 'SP').toLowerCase();
   let neigh = cleanNeighborhood(auc.neighborhood);
   const propType = auc.propertyType;
@@ -1951,12 +1948,6 @@ function recalculateAuctions(auctions: AuctionProperty[], txs: ItbiTransaction[]
 }
 
 let store = loadStore();
-const correctedLocations = store.auctions.map(a => correctDeclaredAuctionLocation(a));
-if (correctedLocations.some((a,i) => a !== store.auctions[i])) {
-  store.auctions = recalculateAuctions(correctedLocations, store.itbiTransactions);
-  saveStore(store);
-}
-
 
 // Request augmented type
 
@@ -2801,14 +2792,23 @@ app.get('/api/itbi/resolve-street', (req, res) => {
   if (!street) {
     return res.status(400).json({ error: 'Street is required.' });
   }
-  const candidates = store.itbiTransactions.filter(t => normalizeString(t.state || '') === normalizeString(String(state)) && normalizeString(t.city || '') === normalizeString(String(city)) && t.street && t.neighborhood);
-  const name = resolveOfficialStreet(String(street), [...new Set(candidates.map(t => t.street))]);
-  if (name) {
-    const matches = candidates.filter(t => canonicalStreet(t.street) === canonicalStreet(name));
-    const neighborhoods = [...new Set(matches.map(t => t.neighborhood))];
-    if (neighborhoods.length === 1) return res.json({found:true, neighborhood:neighborhoods[0],officialStreet:name,count:matches.length});
-    return res.json({found:false, ambiguous:true, neighborhoods});
+  const phon = phoneticStreet(street as string);
+  const st = (state as string).toLowerCase();
+  const c = normalizeString(city as string);
+
+  const match = globalCityStreetToNeighMap?.get(`${st}|${c}|${phon}`) ||
+                globalCityStreetToNeighMap?.get(`${st}||${phon}`);
+
+  if (match) {
+    return res.json({
+      found: true,
+      neighborhood: match.neighborhood,
+      officialStreet: match.officialStreet,
+      count: match.count,
+      avgSqm: match.count > 0 ? Math.round(match.sumSqm / match.count) : 0
+    });
   }
+
   return res.json({ found: false });
 });
 
@@ -5110,28 +5110,22 @@ app.post('/api/garimpar/extrajudiciais-auto', authMiddleware, async (req, res) =
     ? [String(req.body.state).toUpperCase().trim()]
     : (Array.isArray(req.body.states) && req.body.states.length > 0
         ? req.body.states.map((s: string) => String(s).toUpperCase().trim())
-        : ['']);
+        : ['MG', 'RJ', 'SP']);
   const city = req.body.city || '';
   try {
     const allNewAuctions: any[] = [];
     let totalScraped = 0;
-    let updated = 0;
-    let pending = 0;
-    const sources: any[] = [];
 
     for (const state of targetStates) {
-      const { newAuctions, totalScraped: scrapedCount, sources: runSources, updated: runUpdated, pending: runPending } = await syncAuctioneersPipeline(
+      const { newAuctions, totalScraped: scrapedCount } = await syncAuctioneersPipeline(
         'extrajudicial',
         state,
         city,
-        store.auctions.filter(auc => auc.userId === req.userId),
+        store.auctions,
         (auc) => recalculateAuction(auc, store.itbiTransactions)
       );
       allNewAuctions.push(...newAuctions);
       totalScraped += scrapedCount;
-      updated += runUpdated;
-      pending += runPending;
-      sources.push(...runSources);
     }
 
     if (allNewAuctions.length > 0) {
@@ -5139,17 +5133,17 @@ app.post('/api/garimpar/extrajudiciais-auto', authMiddleware, async (req, res) =
         allNewAuctions.forEach(a => { a.userId = req.userId; });
       }
       store.auctions.unshift(...allNewAuctions);
-
+      saveStore(store);
     }
 
-    saveStore(store);
     res.json({
       success: true,
       added: allNewAuctions.length,
-      totalScraped, updated, pending, sources,
-      partial: !sources.length || sources.some(source => !source.complete),
+      totalScraped,
       totalInDb: store.auctions.length,
-      message: `Coleta finalizada: ${allNewAuctions.length} novos, ${updated} atualizados e ${pending} pendentes de validação. ${sources.filter(source => !source.complete).length} fontes com cobertura não confirmada. A execução não garante cobertura integral dos portais.`
+      message: allNewAuctions.length > 0
+        ? `Sincronização de leilões extrajudiciais concluída! ${allNewAuctions.length} novas oportunidades capturadas em ${AUCTIONEER_PORTALS.length} portais configurados e avaliadas com ITBI oficial.`
+        : `Varredura concluída! ${totalScraped} lotes avaliados nos portais de leiloeiros. Nenhuma nova oportunidade pendente para importação.`
     });
   } catch (err: any) {
     console.error('[Sync Extrajudiciais] Erro:', err);
@@ -5163,28 +5157,22 @@ app.post('/api/garimpar/judiciais-auto', authMiddleware, async (req, res) => {
     ? [String(req.body.state).toUpperCase().trim()]
     : (Array.isArray(req.body.states) && req.body.states.length > 0
         ? req.body.states.map((s: string) => String(s).toUpperCase().trim())
-        : ['']);
+        : ['MG', 'RJ', 'SP']);
   const city = req.body.city || '';
   try {
     const allNewAuctions: any[] = [];
     let totalScraped = 0;
-    let updated = 0;
-    let pending = 0;
-    const sources: any[] = [];
 
     for (const state of targetStates) {
-      const { newAuctions, totalScraped: scrapedCount, sources: runSources, updated: runUpdated, pending: runPending } = await syncAuctioneersPipeline(
+      const { newAuctions, totalScraped: scrapedCount } = await syncAuctioneersPipeline(
         'judicial',
         state,
         city,
-        store.auctions.filter(auc => auc.userId === req.userId),
+        store.auctions,
         (auc) => recalculateAuction(auc, store.itbiTransactions)
       );
       allNewAuctions.push(...newAuctions);
       totalScraped += scrapedCount;
-      updated += runUpdated;
-      pending += runPending;
-      sources.push(...runSources);
     }
 
     if (allNewAuctions.length > 0) {
@@ -5192,21 +5180,40 @@ app.post('/api/garimpar/judiciais-auto', authMiddleware, async (req, res) => {
         allNewAuctions.forEach(a => { a.userId = req.userId; });
       }
       store.auctions.unshift(...allNewAuctions);
-
+      saveStore(store);
     }
 
-    saveStore(store);
     res.json({
       success: true,
       added: allNewAuctions.length,
-      totalScraped, updated, pending, sources,
-      partial: !sources.length || sources.some(source => !source.complete),
+      totalScraped,
       totalInDb: store.auctions.length,
-      message: `Coleta finalizada: ${allNewAuctions.length} novos, ${updated} atualizados e ${pending} pendentes de validação. ${sources.filter(source => !source.complete).length} fontes com cobertura não confirmada. A execução não garante cobertura integral dos portais.`
+      message: allNewAuctions.length > 0
+        ? `Sincronização de leilões judiciais concluída! ${allNewAuctions.length} novos leilões capturados em ${AUCTIONEER_PORTALS.length} portais configurados e avaliados com ITBI oficial.`
+        : `Varredura concluída! ${totalScraped} leilões judiciais avaliados nos portais. Nenhuma nova oportunidade pendente para importação.`
     });
   } catch (err: any) {
     console.error('[Sync Judiciais] Erro:', err);
     res.status(500).json({ error: err.message || 'Erro ao sincronizar leilões judiciais.' });
+  }
+});
+
+// POST /api/sync/audit-repair (Auditoria e higienização pericial em massa da base de leilões)
+app.post('/api/sync/audit-repair', authMiddleware, (req, res) => {
+  try {
+    const result = auditAndRepairAuctions(store.auctions, (auc) => recalculateAuction(auc, store.itbiTransactions));
+    if (result.repaired > 0) {
+      saveStore(store);
+    }
+    res.json({
+      success: true,
+      total: result.total,
+      repaired: result.repaired,
+      message: `${result.repaired} leilões foram auditados e higienizados com metragens, endereços e localizações corrigidas!`
+    });
+  } catch (err: any) {
+    console.error('[Audit Repair] Erro:', err);
+    res.status(500).json({ error: err.message || 'Erro ao auditá-los.' });
   }
 });
 
@@ -6023,35 +6030,49 @@ async function start() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
     
-    // Keep every source current on each boot without delaying the first screen.
     if (process.env.SKIP_STARTUP_SYNC !== 'true') setTimeout(async () => {
+      console.log('[Server] [Startup Sync] Executando auditoria e higienização pericial de dados em todos os leilões...');
+      const initialAudit = auditAndRepairAuctions(store.auctions, (auc) => recalculateAuction(auc, store.itbiTransactions));
+      if (initialAudit.repaired > 0) {
+        saveStore(store);
+        console.log(`[Server] ${initialAudit.repaired} leilões tiveram metragens, endereços e localizações corrigidos e recalculados com precisão.`);
+      }
+
+      // These four old JF fixture records use invented URLs and must never be
+      // presented as opportunities. Only official-source imports may replace them.
+      const beforeFixtureRemoval = store.auctions.length;
+      store.auctions = store.auctions.filter(auction => !(
+        /^auc-ext-jf-/.test(auction.id || '') &&
+        auction.origin === 'extrajudicial' && auction.state === 'MG' &&
+        normalizeString(auction.city) === 'juiz de fora'
+      ));
+      if (store.auctions.length !== beforeFixtureRemoval) {
+        saveStore(store);
+        console.log(`[Server] ${beforeFixtureRemoval - store.auctions.length} registros-semente sem fonte oficial foram removidos de Juiz de Fora.`);
+      }
+
       console.log('[Server] Iniciando atualização automática das fontes...');
       try {
         let auctioneerAdded = 0;
-
-        // Persist confirmed official JF judicial lots before the broader portal
-        // sweep. The latter can take minutes when a third-party portal stalls.
-        const fastJf = await syncIsaiasOfficialLots(
-          'judicial', 'MG', 'Juiz de Fora', store.auctions,
-          (auc) => recalculateAuction(auc, store.itbiTransactions)
-        );
-        if (fastJf.newAuctions.length > 0) {
-          fastJf.newAuctions.forEach((auction) => { auction.userId = auction.userId || 'system'; });
-          store.auctions.unshift(...fastJf.newAuctions);
-          auctioneerAdded += fastJf.newAuctions.length;
-          saveStore(store);
-          console.log(`[Server] Juiz de Fora: ${fastJf.newAuctions.length} lotes judiciais oficiais disponibilizados antes da varredura ampla.`);
+        // Persist real JF official lots before the slower full coverage queue.
+        for (const targetType of ['extrajudicial', 'judicial'] as const) {
+          const priority = await syncPriorityOfficialAuctioneers(
+            targetType, 'MG', 'Juiz de Fora', store.auctions,
+            (auc) => recalculateAuction(auc, store.itbiTransactions)
+          );
+          if (priority.newAuctions.length > 0) {
+            priority.newAuctions.forEach(auction => { auction.userId = auction.userId || 'system'; });
+            store.auctions.unshift(...priority.newAuctions);
+            auctioneerAdded += priority.newAuctions.length;
+            saveStore(store);
+          }
         }
+        const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
 
-        // A busca genérica nacional não informa os filtros de município para
-        // Mega, Frazão e Biasi e acabava deixando Juiz de Fora sem importação.
-        // Estas são as cidades com base ITBI local; a rotina é executada só
-        // uma vez por inicialização e cada portal recebe o filtro correto.
-        const auctioneerTargets = [
-          { state: 'MG', city: 'Juiz de Fora' },
-          { state: 'RJ', city: 'Rio de Janeiro' },
-          { state: 'RJ', city: 'Niterói' }
-        ];
+        const auctioneerTargets = Array.from(new Map(
+          store.itbiTransactions.filter(tx => tx.state && tx.city)
+            .map(tx => [`${tx.state}|${tx.city}`, { state: tx.state!, city: tx.city! }] as const)
+        ).values());
         for (const target of auctioneerTargets) {
           for (const targetType of ['extrajudicial', 'judicial'] as const) {
             try {
@@ -6072,11 +6093,6 @@ async function start() {
             }
           }
         }
-
-        // Caixa is intentionally processed after the municipality-scoped
-        // auction sweep so a full spreadsheet refresh cannot leave a city
-        // tab apparently empty for the whole startup period.
-        const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
 
         // The scraper also enriches existing matching records, so persist even
         // when no new lot was inserted.

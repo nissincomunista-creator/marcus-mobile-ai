@@ -866,7 +866,13 @@ export async function scrapeSantanderOfficial(
         imageUrl: item.image, description: `${item.title}\n${item.address}\n${item.neighborhood}\n${item.city} - ${item.state}`,
         saleMode: 'Venda Direta', origin: 'extrajudicial', sellerBank: 'Santander', locationScopeVerified: true
       });
-      if (enriched.origin === 'extrajudicial') results.push({ ...enriched, priceVerified: item.price > 0 || enriched.priceVerified });
+      if (enriched.origin === 'extrajudicial') results.push({
+        ...enriched,
+        // The detail can expose the condominium/enterprise land area. Keep it
+        // out of the unit card unless the detail identified a private area.
+        sizeSqm: enriched.sizeVerified ? enriched.sizeSqm : item.size,
+        priceVerified: item.price > 0 || enriched.priceVerified
+      });
     }
     recordSourceAudit({ source: 'Santander Imóveis', url: catalogueUrl.href, pages: totalPages, found: items.filter(item => item.state === state && normalizeStr(item.city) === cityNorm).length, complete: true });
   } catch (error: any) {
@@ -1554,6 +1560,25 @@ async function runAuctioneersPipeline(
   console.log(`[Auctioneer Master Sync] Total bruto capturado nos portais: ${allDrafts.length}`);
 
   return reconcileAuctionDrafts(allDrafts, targetType, state, city, existingAuctions, recalculateFn);
+}
+
+// Runs sources with dedicated official collectors before the broad portal
+// queue. This gives the requested comarca real, persisted lots immediately;
+// the heterogeneous crawler can then continue without holding them hostage.
+export async function syncPriorityOfficialAuctioneers(
+  targetType: 'extrajudicial' | 'judicial', state: string, city: string,
+  existingAuctions: AuctionProperty[], recalculateFn: (auc: AuctionProperty) => AuctionProperty
+) {
+  return auctionSyncAudit.run([], async () => {
+    const [isaias, santander, mega, frazao, biasi] = await Promise.all([
+      scrapeIsaiasAuctioneer(targetType, state, city),
+      scrapeSantanderOfficial(targetType, state, city),
+      scrapeMegaLeiloes(targetType, state, city),
+      scrapeFrazao(targetType, state, city),
+      scrapeBiasi(targetType, state, city)
+    ]);
+    return reconcileAuctionDrafts([...isaias, ...santander, ...mega, ...frazao, ...biasi], targetType, state, city, existingAuctions, recalculateFn);
+  });
 }
 
 export function reconcileAuctionDrafts(
