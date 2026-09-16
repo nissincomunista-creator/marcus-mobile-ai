@@ -1,3 +1,7 @@
+import { declaredAuctionLocation, correctDeclaredAuctionLocation } from './src/utils/auctionLocation.ts';
+import { canonicalStreet, resolveOfficialStreet } from './src/utils/streetMatching.ts';
+import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning } from './propertyLocationService.ts';
+import { auctionCosts, calculateFlip } from './src/utils/flipCalculation.ts';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -776,7 +780,11 @@ function loadStore(): DataStore {
       }
 
       // Sanitize and recalculate auctions with verified ITBI benchmark whenever calibration version changes
-      const STORE_CALIBRATION_VERSION = 'v18_verified_age_only';
+      // Reconcile numeric source cells before any benchmark or ranking is built.
+      const sourcePath = path.join(process.cwd(), 'itbi_source_corrections.json');
+      const sourceCorrections = fs.existsSync(sourcePath) ? JSON.parse(fs.readFileSync(sourcePath, 'utf8')) : {};
+      storeData.itbiTransactions = storeData.itbiTransactions.filter(t => !/-sim-/.test(t.id)).map(t => ({ ...t, ...(sourceCorrections[t.id] || {}) }));
+      const STORE_CALIBRATION_VERSION = 'v19_source_precision_shared_matching';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -1215,6 +1223,7 @@ function recalculateAuctionWithIndex(
   streetNumberNeighMap?: Map<string, Array<{ number: number; neighborhood: string; unitValueSqm: number; propType: PropertyType }>>,
   neighMap?: Map<string, ItbiTransaction[]>
 ): AuctionProperty {
+  auc = correctDeclaredAuctionLocation(auc);
   const state = (auc.state || 'SP').toLowerCase();
   let neigh = cleanNeighborhood(auc.neighborhood);
   const propType = auc.propertyType;
@@ -1315,6 +1324,8 @@ function recalculateAuctionWithIndex(
   //    Nº > 3200 (ex: 4013, 4106): Engenho da Rainha / Tomás Coelho
   // 2. Rua Noronha Torrezão (Niterói):
   //    Nº >= 340 pertence oficialmente ao bairro CUBANGO (Caixa lista Santa Rosa)
+  const sourceLabel = (auc.origin === 'caixa' || auc.origin === 'caixa_radar') ? 'Caixa' : 'Edital';
+
   if (rawStreet) {
     const normSt = normalizeString(rawStreet);
     const normC = normalizeString(auc.city || '');
@@ -1324,7 +1335,7 @@ function recalculateAuctionWithIndex(
         if (cleanNeighborhood(auc.neighborhood) !== 'inhauma') {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = 'Inhaúma';
-          auc.divergentNeighborhoodNotice = `Bairro Real: Inhaúma (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = `Bairro Real: Inhaúma (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
           auc.neighborhood = 'Inhaúma';
           neigh = 'inhauma';
         }
@@ -1332,7 +1343,7 @@ function recalculateAuctionWithIndex(
         if (cleanNeighborhood(auc.neighborhood) !== 'engenhodarainha') {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = 'Engenho da Rainha';
-          auc.divergentNeighborhoodNotice = `Bairro Real: Engenho da Rainha (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = `Bairro Real: Engenho da Rainha (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
           auc.neighborhood = 'Engenho da Rainha';
           neigh = 'engenhodarainha';
         }
@@ -1342,7 +1353,7 @@ function recalculateAuctionWithIndex(
         if (cleanNeighborhood(auc.neighborhood) !== 'cubango') {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = 'Cubango';
-          auc.divergentNeighborhoodNotice = `Bairro Real: Cubango (Caixa listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = `Bairro Real: Cubango (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
           auc.neighborhood = 'Cubango';
           neigh = 'cubango';
         }
@@ -1375,7 +1386,7 @@ function recalculateAuctionWithIndex(
       if (correctedClean && correctedClean !== neigh) {
         auc.originalListedNeighborhood = auc.neighborhood;
         auc.officialNeighborhood = closest.neighborhood;
-        auc.divergentNeighborhoodNotice = `Bairro Real: ${closest.neighborhood} (Caixa listou ${auc.originalListedNeighborhood})`;
+        auc.divergentNeighborhoodNotice = `Bairro Real: ${closest.neighborhood} (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
         auc.neighborhood = closest.neighborhood;
         neigh = correctedClean;
       }
@@ -1410,7 +1421,7 @@ function recalculateAuctionWithIndex(
         // Correct the neighborhood to official ITBI municipal registry
         auc.originalListedNeighborhood = auc.neighborhood;
         auc.officialNeighborhood = csEntry.neighborhood;
-        auc.divergentNeighborhoodNotice = `Bairro Real: ${csEntry.neighborhood} (Caixa listou ${auc.originalListedNeighborhood})`;
+        auc.divergentNeighborhoodNotice = `Bairro Real: ${csEntry.neighborhood} (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
         auc.neighborhood = csEntry.neighborhood;
         neigh = correctedCleanNeigh;
 
@@ -1660,8 +1671,8 @@ function recalculateAuctionWithIndex(
     if (nTxs && nTxs.length > 0) {
       hasExactNeighborhoodReference = true;
       const rawAddr = auc.address || '';
-      const numMatch = rawAddr.match(/,\s*n[ºo°]?\s*(\d+)/i) || rawAddr.match(/n[ºo°]?\s*(\d+)/i) || rawAddr.match(/,\s*(\d+)/i);
-      const sNum = numMatch ? numMatch[1] : '';
+      const numExtracted = extractAddressNumber(rawAddr);
+      const sNum = numExtracted !== null ? String(numExtracted) : '';
       const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 50, 'similar', 0.5, auc.propertyType);
       if (bidi && bidi.hasMicroData && bidi.flipRapidoSqm > 0) {
         bidiSqm = bidi.flipRapidoSqm;
@@ -1677,18 +1688,20 @@ function recalculateAuctionWithIndex(
     }
   }
 
-  // Bairro oficial é uma projeção contextual, nunca uma amostra microregional.
+  // Fallback pericial: Se não houver amostras na rua/prédio, baliza pela mediana oficial saneada do bairro
   const canUseOfficialNeighborhoodFallback = !hasMicroData &&
     hasExactNeighborhoodReference &&
-    neighborhoodAvgSqm > 0 &&
-    (origin === 'caixa' || origin === 'caixa_radar' || origin === 'extrajudicial');
+    neighborhoodAvgSqm > 0;
   if (canUseOfficialNeighborhoodFallback) {
     bidiGabaritoSqm = neighborhoodAvgSqm;
     bidiSqm = Math.round(neighborhoodAvgSqm * 0.90);
+    hasMicroData = true;
+    valuationSampleCount = nEntry?.count || 1;
+    valuationLevel = 'Bairro';
     auc.valuationConfidence = 'projected';
     auc.valuationBasis = isGeneric
-      ? 'PROJEÇÃO pela mediana do bairro - rua não identificada'
-      : 'PROJEÇÃO pela mediana do bairro - sem amostras na rua/raio';
+      ? 'Balizado pela Mediana Oficial do Bairro (Logradouro não informado no edital)'
+      : 'Balizado pela Mediana Oficial do Bairro (Sem escrituras recentes nesta via)';
   }
 
   // Endereço genérico não pode reutilizar uma média de rua/prédio incorreta.
@@ -1715,7 +1728,7 @@ function recalculateAuctionWithIndex(
   if ((hasMicroData || canUseOfficialNeighborhoodFallback) && bidiSqm > 0) {
     auc.vendaBaixaPrice = Math.round(Math.round(bidiSqm * ageFactor * territorialFactor) * (auc.sizeSqm || 50));
     if (bidiGabaritoSqm > 0) {
-      auc.estimatedValue = Math.round(bidiGabaritoSqm * territorialFactor * (auc.sizeSqm || 50));
+      auc.estimatedValue = Math.round(bidiGabaritoSqm * ageFactor * territorialFactor * (auc.sizeSqm || 50));
       // A média factual da rua é preservada para auditoria; o gabarito é o composto.
       auc.itbiStreetAvgSqm = isGeneric ? undefined : (itbiStreetAvgSqm || undefined);
     }
@@ -1803,14 +1816,11 @@ function recalculateAuctionWithIndex(
   const totalAcquisitionCost = bidPrice + purchaseCostsTotal;
 
   if (vMediaPrice && vMediaPrice > 0) {
-    const brokerCommM = Math.round(vMediaPrice * (brokerCommissionPct / 100));
-    const taxGainBaseM = vMediaPrice - brokerCommM - bidPrice - calculatedItbiCost - cartCd - caixCd - certCd;
-    const capitalGainTaxM = taxGainBaseM > 0 ? Math.round(taxGainBaseM * 0.15) : 0;
-    const montanteM = vMediaPrice - brokerCommM - capitalGainTaxM;
-    const lucroM = montanteM - bidPrice - purchaseCostsTotal;
-
-    auc.calculatedProfit = lucroM;
-    auc.calculatedRoi = Number(((lucroM / (totalAcquisitionCost || 1)) * 100).toFixed(2));
+    const costs = auctionCosts(auc);
+    const total = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo;
+    const flip = calculateFlip(vMediaPrice, total);
+    auc.calculatedProfit = flip.netProfit;
+    auc.calculatedRoi = flip.roi;
   } else {
     auc.calculatedProfit = undefined;
     auc.calculatedRoi = undefined;
@@ -1941,6 +1951,12 @@ function recalculateAuctions(auctions: AuctionProperty[], txs: ItbiTransaction[]
 }
 
 let store = loadStore();
+const correctedLocations = store.auctions.map(a => correctDeclaredAuctionLocation(a));
+if (correctedLocations.some((a,i) => a !== store.auctions[i])) {
+  store.auctions = recalculateAuctions(correctedLocations, store.itbiTransactions);
+  saveStore(store);
+}
+
 
 // Request augmented type
 
@@ -2325,7 +2341,7 @@ app.delete('/api/user/arrematacoes/:id', authMiddleware, (req, res) => {
 
 // GET /api/auctions
 app.get('/api/auctions', authMiddleware, (req, res) => {
-  const userAuctions = store.auctions.filter(a => !a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'portal');
+  const userAuctions = store.auctions.filter(a => !a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal');
   const enriched = userAuctions.map(a => {
     // Sanitize distorted rural terrains or runaway ROIs
     if ((a.propertyType === 'Terreno' || (a.sizeSqm && a.sizeSqm > 1000)) && a.evaluationPrice && a.evaluationPrice > 0) {
@@ -2354,7 +2370,19 @@ app.get('/api/auctions', authMiddleware, (req, res) => {
   res.json(enriched);
 });
 
-// GET /api/auctions/bbox - Bounding Box estilo Zap Imóveis / Airbnb (Cap estrito de 150 imóveis)
+// All verified building locations; no viewport or listing cap.
+app.get('/api/map/locations', authMiddleware, (req, res) => {
+  ensureOfficialLocationCoverage(store.auctions);
+  res.setHeader('X-Map-Refreshing', isMapLocationRefreshRunning() ? '1' : '0');
+  res.setHeader('Cache-Control', 'no-store');
+  const locations = store.auctions.filter(a => !a.userId || a.userId === req.userId || ['caixa_radar','caixa','judicial','extrajudicial','portal'].includes(a.origin || '')).flatMap(a => {
+    const point = getOfficialPropertyLocation(a);
+    return [point];
+  });
+  res.json(locations);
+});
+
+// All verified locations inside the requested viewport. No silent truncation.
 app.get('/api/auctions/bbox', (req, res) => {
   const minLat = parseFloat(req.query.minLat as string);
   const maxLat = parseFloat(req.query.maxLat as string);
@@ -2374,29 +2402,20 @@ app.get('/api/auctions/bbox', (req, res) => {
   }
 
   const userAuctions = store.auctions.filter(a => 
-    !a.userId || a.userId === requestUserId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'portal'
+    !a.userId || a.userId === requestUserId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal'
   );
 
   const inside: AuctionProperty[] = [];
   for (const a of userAuctions) {
-    let lat = a.lat;
-    let lng = a.lng;
-    let geocodeStatus = a.status_geocodificacao;
-    if ((!lat || !lng || isNaN(lat)) && a.address) {
-      const cached = getCachedCoords(a.address, a.neighborhood, a.city, a.state);
-      if (cached) {
-        lat = cached.lat;
-        lng = cached.lng;
-        geocodeStatus = geocodeStatus || (cached.precision === 'rooftop' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA');
-      }
-    }
-
+    const point = getOfficialPropertyLocation(a);
+    if (point.status !== 'located') continue;
+    const lat = point.lat;
+    const lng = point.lng;
+    const geocodeStatus = 'GEOCODE_NUMERO';
     if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
       if (lat >= minLat && lat <= maxLat && lng >= minLon && lng <= maxLon) {
-        inside.push({ ...a, lat, lng, status_geocodificacao: geocodeStatus });
-        if (inside.length >= 150) {
-          break; // Cap estrito de 150 para garantir 60 FPS
-        }
+        inside.push({ ...a, lat, lng, status_geocodificacao: geocodeStatus, precisa_revisao: false, mapLocation: point } as AuctionProperty);
+
       }
     }
   }
@@ -2700,7 +2719,7 @@ app.get('/api/geocode', async (req, res) => {
   if (!q) {
     return res.status(400).json({ error: 'Query q ou address é obrigatória.' });
   }
-  const geo = await geocodeAddress(q, { neighborhood, city, state });
+  const geo = await geocodeAddress(q, { neighborhood, city, state, allowStreetFallback: req.query.exact !== 'true' });
   if (geo) {
     return res.json(geo);
   }
@@ -2782,23 +2801,14 @@ app.get('/api/itbi/resolve-street', (req, res) => {
   if (!street) {
     return res.status(400).json({ error: 'Street is required.' });
   }
-  const phon = phoneticStreet(street as string);
-  const st = (state as string).toLowerCase();
-  const c = normalizeString(city as string);
-
-  const match = globalCityStreetToNeighMap?.get(`${st}|${c}|${phon}`) ||
-                globalCityStreetToNeighMap?.get(`${st}||${phon}`);
-
-  if (match) {
-    return res.json({
-      found: true,
-      neighborhood: match.neighborhood,
-      officialStreet: match.officialStreet,
-      count: match.count,
-      avgSqm: match.count > 0 ? Math.round(match.sumSqm / match.count) : 0
-    });
+  const candidates = store.itbiTransactions.filter(t => normalizeString(t.state || '') === normalizeString(String(state)) && normalizeString(t.city || '') === normalizeString(String(city)) && t.street && t.neighborhood);
+  const name = resolveOfficialStreet(String(street), [...new Set(candidates.map(t => t.street))]);
+  if (name) {
+    const matches = candidates.filter(t => canonicalStreet(t.street) === canonicalStreet(name));
+    const neighborhoods = [...new Set(matches.map(t => t.neighborhood))];
+    if (neighborhoods.length === 1) return res.json({found:true, neighborhood:neighborhoods[0],officialStreet:name,count:matches.length});
+    return res.json({found:false, ambiguous:true, neighborhoods});
   }
-
   return res.json({ found: false });
 });
 
@@ -5094,35 +5104,52 @@ app.post('/api/garimpar/caixa-auto', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/garimpar/extrajudiciais-auto (Varredura nos 7 portais de leiloeiros para leilões de bancos / extrajudiciais)
+// POST /api/garimpar/extrajudiciais-auto (Varredura nos portais de leiloeiros para leilões de bancos / extrajudiciais)
 app.post('/api/garimpar/extrajudiciais-auto', authMiddleware, async (req, res) => {
-  const state = (req.body.state || 'RJ').toUpperCase().trim();
-  const city = req.body.city || (state === 'RJ' ? 'Rio de Janeiro' : state === 'MG' ? 'Juiz de Fora' : 'São Paulo');
+  const targetStates: string[] = req.body.state
+    ? [String(req.body.state).toUpperCase().trim()]
+    : (Array.isArray(req.body.states) && req.body.states.length > 0
+        ? req.body.states.map((s: string) => String(s).toUpperCase().trim())
+        : ['']);
+  const city = req.body.city || '';
   try {
-    const { newAuctions, totalScraped } = await syncAuctioneersPipeline(
-      'extrajudicial',
-      state,
-      city,
-      store.auctions,
-      (auc) => recalculateAuction(auc, store.itbiTransactions)
-    );
+    const allNewAuctions: any[] = [];
+    let totalScraped = 0;
+    let updated = 0;
+    let pending = 0;
+    const sources: any[] = [];
 
-    if (newAuctions.length > 0) {
-      if (req.userId) {
-        newAuctions.forEach(a => { a.userId = req.userId; });
-      }
-      store.auctions.unshift(...newAuctions);
-      saveStore(store);
+    for (const state of targetStates) {
+      const { newAuctions, totalScraped: scrapedCount, sources: runSources, updated: runUpdated, pending: runPending } = await syncAuctioneersPipeline(
+        'extrajudicial',
+        state,
+        city,
+        store.auctions.filter(auc => auc.userId === req.userId),
+        (auc) => recalculateAuction(auc, store.itbiTransactions)
+      );
+      allNewAuctions.push(...newAuctions);
+      totalScraped += scrapedCount;
+      updated += runUpdated;
+      pending += runPending;
+      sources.push(...runSources);
     }
 
+    if (allNewAuctions.length > 0) {
+      if (req.userId) {
+        allNewAuctions.forEach(a => { a.userId = req.userId; });
+      }
+      store.auctions.unshift(...allNewAuctions);
+
+    }
+
+    saveStore(store);
     res.json({
       success: true,
-      added: newAuctions.length,
-      totalScraped,
+      added: allNewAuctions.length,
+      totalScraped, updated, pending, sources,
+      partial: !sources.length || sources.some(source => !source.complete),
       totalInDb: store.auctions.length,
-      message: newAuctions.length > 0
-        ? `Sincronização de leilões extrajudiciais concluída! ${newAuctions.length} novas oportunidades capturadas em ${AUCTIONEER_PORTALS.length} portais configurados e avaliadas com ITBI oficial.`
-        : `Varredura concluída! ${totalScraped} lotes avaliados nos portais de leiloeiros. Nenhuma nova oportunidade pendente para importação.`
+      message: `Coleta finalizada: ${allNewAuctions.length} novos, ${updated} atualizados e ${pending} pendentes de validação. ${sources.filter(source => !source.complete).length} fontes com cobertura não confirmada. A execução não garante cobertura integral dos portais.`
     });
   } catch (err: any) {
     console.error('[Sync Extrajudiciais] Erro:', err);
@@ -5130,35 +5157,52 @@ app.post('/api/garimpar/extrajudiciais-auto', authMiddleware, async (req, res) =
   }
 });
 
-// POST /api/garimpar/judiciais-auto (Varredura nos 7 portais de leiloeiros para leilões judiciais)
+// POST /api/garimpar/judiciais-auto (Varredura nos portais de leiloeiros para leilões judiciais)
 app.post('/api/garimpar/judiciais-auto', authMiddleware, async (req, res) => {
-  const state = (req.body.state || 'RJ').toUpperCase().trim();
-  const city = req.body.city || (state === 'RJ' ? 'Rio de Janeiro' : state === 'MG' ? 'Juiz de Fora' : 'São Paulo');
+  const targetStates: string[] = req.body.state
+    ? [String(req.body.state).toUpperCase().trim()]
+    : (Array.isArray(req.body.states) && req.body.states.length > 0
+        ? req.body.states.map((s: string) => String(s).toUpperCase().trim())
+        : ['']);
+  const city = req.body.city || '';
   try {
-    const { newAuctions, totalScraped } = await syncAuctioneersPipeline(
-      'judicial',
-      state,
-      city,
-      store.auctions,
-      (auc) => recalculateAuction(auc, store.itbiTransactions)
-    );
+    const allNewAuctions: any[] = [];
+    let totalScraped = 0;
+    let updated = 0;
+    let pending = 0;
+    const sources: any[] = [];
 
-    if (newAuctions.length > 0) {
-      if (req.userId) {
-        newAuctions.forEach(a => { a.userId = req.userId; });
-      }
-      store.auctions.unshift(...newAuctions);
-      saveStore(store);
+    for (const state of targetStates) {
+      const { newAuctions, totalScraped: scrapedCount, sources: runSources, updated: runUpdated, pending: runPending } = await syncAuctioneersPipeline(
+        'judicial',
+        state,
+        city,
+        store.auctions.filter(auc => auc.userId === req.userId),
+        (auc) => recalculateAuction(auc, store.itbiTransactions)
+      );
+      allNewAuctions.push(...newAuctions);
+      totalScraped += scrapedCount;
+      updated += runUpdated;
+      pending += runPending;
+      sources.push(...runSources);
     }
 
+    if (allNewAuctions.length > 0) {
+      if (req.userId) {
+        allNewAuctions.forEach(a => { a.userId = req.userId; });
+      }
+      store.auctions.unshift(...allNewAuctions);
+
+    }
+
+    saveStore(store);
     res.json({
       success: true,
-      added: newAuctions.length,
-      totalScraped,
+      added: allNewAuctions.length,
+      totalScraped, updated, pending, sources,
+      partial: !sources.length || sources.some(source => !source.complete),
       totalInDb: store.auctions.length,
-      message: newAuctions.length > 0
-        ? `Sincronização de leilões judiciais concluída! ${newAuctions.length} novos leilões capturados em ${AUCTIONEER_PORTALS.length} portais configurados e avaliados com ITBI oficial.`
-        : `Varredura concluída! ${totalScraped} leilões judiciais avaliados nos portais. Nenhuma nova oportunidade pendente para importação.`
+      message: `Coleta finalizada: ${allNewAuctions.length} novos, ${updated} atualizados e ${pending} pendentes de validação. ${sources.filter(source => !source.complete).length} fontes com cobertura não confirmada. A execução não garante cobertura integral dos portais.`
     });
   } catch (err: any) {
     console.error('[Sync Judiciais] Erro:', err);
@@ -5980,16 +6024,21 @@ async function start() {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
     
     // Keep every source current on each boot without delaying the first screen.
-    if (process.env.RENDER !== 'true') setTimeout(async () => {
+    if (process.env.RENDER !== 'true' && process.env.SKIP_STARTUP_SYNC !== 'true') setTimeout(async () => {
       console.log('[Server] Iniciando atualização automática das fontes...');
       try {
         const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
         let auctioneerAdded = 0;
 
-        const auctioneerTargets = Array.from(new Map(
-          store.itbiTransactions.filter(tx => tx.state && tx.city)
-            .map(tx => [`${tx.state}|${tx.city}`, { state: tx.state!, city: tx.city! }] as const)
-        ).values());
+        // A busca genérica nacional não informa os filtros de município para
+        // Mega, Frazão e Biasi e acabava deixando Juiz de Fora sem importação.
+        // Estas são as cidades com base ITBI local; a rotina é executada só
+        // uma vez por inicialização e cada portal recebe o filtro correto.
+        const auctioneerTargets = [
+          { state: 'RJ', city: 'Rio de Janeiro' },
+          { state: 'RJ', city: 'Niterói' },
+          { state: 'MG', city: 'Juiz de Fora' }
+        ];
         for (const target of auctioneerTargets) {
           for (const targetType of ['extrajudicial', 'judicial'] as const) {
             try {
