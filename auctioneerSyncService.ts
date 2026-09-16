@@ -314,6 +314,9 @@ export interface ScrapedAuctionDraft {
   sourceVerified?: boolean;
   sourceClosed?: boolean;
   originVerified?: boolean;
+  // True only when the portal itself applied the requested IBGE municipality
+  // filter. It permits a detail page that spells the city without the UF.
+  locationScopeVerified?: boolean;
 }
 
 function normalizeStr(str: string | undefined | null): string {
@@ -417,6 +420,12 @@ function hasRequestedLocationEvidence(text: string, state: string, city: string)
     new RegExp(`\\b${state.toLowerCase()}\\b`).test(normalized) ||
     Boolean(fullStateName && normalized.includes(fullStateName))
   );
+}
+
+function hasCityEvidence(text: string, city: string): boolean {
+  const normalizedText = normalizeStr(text).replace(/\s+/g, ' ');
+  const normalizedCity = normalizeStr(city).replace(/\s+/g, ' ');
+  return Boolean(normalizedCity) && new RegExp(`(^|[^a-z])${normalizedCity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^a-z])`).test(normalizedText);
 }
 
 export function extractAuctionDates(text: string): { first?: string; second?: string } {
@@ -666,7 +675,7 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
     const dates = extractAuctionDates(combinedText);
     const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i)
       || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i)
-      || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+      || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
     const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
     const headlineArea = detailData.title.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
     const landArea = parseType(detailData.title || draft.title) === 'Terreno' ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
@@ -686,7 +695,7 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
     const detectedLocation = sourceAuctionLocation(detailData.title)
       || sourceAuctionLocation(verifiedAddress || '')
       || sourceAuctionLocation(lotText)
-      || (hasRequestedLocationEvidence(combinedText, draft.state, draft.city)
+      || ((draft.locationScopeVerified && hasCityEvidence(combinedText, draft.city)) || hasRequestedLocationEvidence(combinedText, draft.state, draft.city)
         ? { city: draft.city, state: draft.state }
         : null);
 
@@ -1057,7 +1066,20 @@ export async function scrapeConfiguredAuctioneers(
   state: string = 'RJ',
   city: string = 'Rio de Janeiro'
 ): Promise<ScrapedAuctionDraft[]> {
-  const configs = AUCTIONEER_PORTALS.filter(portal => portal.enabled && !['megaleiloes', 'frazao', 'biasi'].includes(portal.id));
+  const cityCode = municipalityId(city, state);
+  const priorityPortals = new Set([
+    'portalzuk', 'sold', 'pestana', 'mgl', 'santander', 'emgea', 'bb',
+    'ricart', 'pamela', 'gustavo', 'onildo', 'schulmann', 'saraiva',
+    'rymer', 'depaula', 'jv', 'paulobotelho', 'alexandro', 'portella',
+    'silas', 'joaoemilio', 'facanha'
+  ]);
+  // A broad homepage crawl of every registered auctioneer takes many minutes
+  // and does not prove a municipality. Prefer portals with an IBGE-compatible
+  // city endpoint, plus the explicitly configured official portals above.
+  const configs = AUCTIONEER_PORTALS.filter(portal => {
+    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi'].includes(portal.id)) return false;
+    return portal.domain.endsWith('.lel.br') || priorityPortals.has(portal.id);
+  });
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
 
@@ -1083,13 +1105,20 @@ export async function scrapeConfiguredAuctioneers(
           });
 
           const searchUrl = new URL(config.searchUrl || config.baseUrl);
-          if (searchUrl.searchParams.has('address_uf')) {
+          const isLelPortal = config.domain.endsWith('.lel.br');
+          if (isLelPortal && state && cityCode) {
+            searchUrl.pathname = '/lotes/imovel';
+            searchUrl.search = '';
+            searchUrl.searchParams.set('tipo', 'imovel');
+            searchUrl.searchParams.set('address_uf', state);
+            searchUrl.searchParams.set('address_cidade_ibge', cityCode);
+          } else if (searchUrl.searchParams.has('address_uf')) {
             if (state) searchUrl.searchParams.set('address_uf', state);
             else searchUrl.searchParams.delete('address_uf');
-            const cityCode = municipalityId(city, state);
             if (cityCode) searchUrl.searchParams.set('address_cidade_ibge', cityCode);
             else searchUrl.searchParams.delete('address_cidade_ibge');
           }
+          const portalFilteredByMunicipality = Boolean(cityCode) && searchUrl.searchParams.get('address_cidade_ibge') === cityCode;
           const url = searchUrl.href;
           console.log(`[Auctioneer Generic] Acessando ${config.name}: ${url}`);
           await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 18000 });
@@ -1153,14 +1182,15 @@ export async function scrapeConfiguredAuctioneers(
               description: raw.text.slice(0, 500),
               saleMode: extractSaleMode(raw.text),
               origin: targetType,
-              sellerBank: detection.bank
+              sellerBank: detection.bank,
+              locationScopeVerified: portalFilteredByMunicipality
             };
 
             const enriched = await enrichLotDetails(browser, draft);
             const combinedEvidence = `${enriched.description || ''}\n${raw.text}`;
             const finalDetection = {origin:enriched.origin, bank:enriched.sellerBank};
             if (finalDetection.origin !== targetType) continue;
-            const declaredCity = enriched.city || (hasRequestedLocationEvidence(combinedEvidence, state, city) ? city : '');
+            const declaredCity = enriched.city || ((enriched.locationScopeVerified && hasCityEvidence(combinedEvidence, city)) || hasRequestedLocationEvidence(combinedEvidence, state, city) ? city : '');
             // A city-specific collection must be proven by the lot itself.
             // Unknown locality goes to the audit queue, never to the wrong city.
             if (state && city && !declaredCity) continue;

@@ -6024,7 +6024,7 @@ async function start() {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
     
     // Keep every source current on each boot without delaying the first screen.
-    if (process.env.RENDER !== 'true' && process.env.SKIP_STARTUP_SYNC !== 'true') setTimeout(async () => {
+    if (process.env.SKIP_STARTUP_SYNC !== 'true') setTimeout(async () => {
       console.log('[Server] Iniciando atualização automática das fontes...');
       try {
         const caixaAdded = await syncCaixaDirect(['RJ', 'SP', 'MG']);
