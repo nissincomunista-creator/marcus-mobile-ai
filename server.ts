@@ -6075,7 +6075,10 @@ async function start() {
         const auctioneerTargets = Array.from(new Map(
           store.itbiTransactions.filter(tx => tx.state && tx.city)
             .map(tx => [`${tx.state}|${tx.city}`, { state: tx.state!, city: tx.city! }] as const)
-        ).values());
+        ).values()).sort((a, b) => {
+          const rank = (target: { state: string; city: string }) => target.state === 'MG' && normalizeString(target.city) === 'juiz de fora' ? 0 : 1;
+          return rank(a) - rank(b);
+        });
         for (const target of auctioneerTargets) {
           for (const targetType of ['extrajudicial', 'judicial'] as const) {
             try {
