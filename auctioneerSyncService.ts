@@ -737,6 +737,47 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
   }
 }
 
+// Isaías exposes active lots on its official home page, but its listing tiles
+// contain only the bid and municipality. This adapter deliberately opens every
+// matching official lot before deciding its type or importing any field.
+export async function scrapeIsaiasAuctioneer(
+  targetType: 'extrajudicial' | 'judicial', state: string, city: string
+): Promise<ScrapedAuctionDraft[]> {
+  const results: ScrapedAuctionDraft[] = [];
+  let browser: any = null;
+  let page: any = null;
+  try {
+    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+    page = await createAuctionPage(browser);
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+    await page.goto('https://www.isaiasleiloes.com.br/', { waitUntil: 'networkidle2', timeout: 30000 });
+    const normalizedCity = normalizeStr(city);
+    const rows = await page.evaluate((requestedCity: string) => Array.from(document.querySelectorAll('a[href*="/item/"]'))
+      .map((anchor: any) => ({
+        link: anchor.href,
+        text: (anchor.innerText || '').replace(/\s+/g, ' ').trim(),
+        image: anchor.querySelector('img')?.src || ''
+      }))
+      .filter((row: any) => /lance\s+(?:inicial|m[ií]nimo).*R\$\s*[\d.]+(?:,\d{2})?/i.test(row.text) && row.text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(requestedCity)), normalizedCity);
+
+    for (const row of rows) {
+      const price = extractMinimumBid(row.text);
+      const enriched = await enrichLotDetails(browser, {
+        portalId: 'isaias', auctioneerName: 'Isaías Leilões', title: row.text || 'Lote em leilão', address: '', neighborhood: '', city, state,
+        propertyType: 'Apartamento', sizeSqm: 0, auctionPrice: price, auctionDate: '', auctionLink: row.link, imageUrl: row.image,
+        description: row.text, origin: targetType, locationScopeVerified: false
+      });
+      if (enriched.origin === targetType && /\b(im[oó]vel|apartamento|apto|casa|terreno|lote|sala|loja|galp[aã]o|pr[eé]dio|cobertura)\b/i.test(enriched.description || '')) results.push(enriched);
+    }
+  } catch (error: any) {
+    recordSourceAudit({ source: 'Isaías Leilões', complete: false, error: error.message });
+  } finally {
+    if (page) await page.close().catch(() => undefined);
+    if (browser) await browser.close().catch(() => undefined);
+  }
+  return results;
+}
+
 // 1. Scraper Mega Leilões
 export async function collectListingPages<T extends { link: string }>(page: any, read: () => Promise<T[]>): Promise<T[]> {
   const lots = new Map<string, T>();
@@ -1078,7 +1119,7 @@ export async function scrapeConfiguredAuctioneers(
   // and does not prove a municipality. Prefer portals with an IBGE-compatible
   // city endpoint, plus the explicitly configured official portals above.
   const configs = AUCTIONEER_PORTALS.filter(portal => {
-    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi'].includes(portal.id)) return false;
+    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias'].includes(portal.id)) return false;
     return portal.domain.endsWith('.lel.br') || priorityPortals.has(portal.id);
   });
   const results: ScrapedAuctionDraft[] = [];
@@ -1376,7 +1417,8 @@ async function runAuctioneersPipeline(
   console.log(`Portais configurados: ${AUCTIONEER_PORTALS.map(p => p.name).join(', ')}`);
   console.log(`======================================================\n`);
 
-  const [megaList, frazaoList, biasiList, configuredList, groundedList] = await Promise.all([
+  const [isaiasList, megaList, frazaoList, biasiList, configuredList, groundedList] = await Promise.all([
+    scrapeIsaiasAuctioneer(targetType, state, city).catch(error => { recordSourceAudit({source:'Isaías Leilões',complete:false,error:String(error)}); return []; }),
     scrapeMegaLeiloes(targetType, state, city).catch(error => { recordSourceAudit({source:'Mega Leilões',complete:false,error:String(error)}); return []; }),
     scrapeFrazao(targetType, state, city).catch(error => { recordSourceAudit({source:'Frazão',complete:false,error:String(error)}); return []; }),
     scrapeBiasi(targetType, state, city).catch(error => { recordSourceAudit({source:'Biasi',complete:false,error:String(error)}); return []; }),
@@ -1384,7 +1426,7 @@ async function runAuctioneersPipeline(
     Promise.resolve([] as ScrapedAuctionDraft[]) // AI-generated fields are not source evidence.
   ]);
 
-  const allDrafts = [...megaList, ...frazaoList, ...biasiList, ...configuredList, ...groundedList];
+  const allDrafts = [...isaiasList, ...megaList, ...frazaoList, ...biasiList, ...configuredList, ...groundedList];
   console.log(`[Auctioneer Master Sync] Total bruto capturado nos portais: ${allDrafts.length}`);
 
   return reconcileAuctionDrafts(allDrafts, targetType, state, city, existingAuctions, recalculateFn);
