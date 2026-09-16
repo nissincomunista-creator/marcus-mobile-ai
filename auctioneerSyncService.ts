@@ -778,6 +778,99 @@ export async function scrapeIsaiasAuctioneer(
   return results;
 }
 
+// Santander publishes its complete inventory as structured data on the
+// official outlet page. Reading that payload prevents the generic card parser
+// from mixing a price, address or area from neighbouring cards.
+export async function scrapeSantanderOfficial(
+  targetType: 'extrajudicial' | 'judicial', state: string, city: string
+): Promise<ScrapedAuctionDraft[]> {
+  if (targetType !== 'extrajudicial') return [];
+  const results: ScrapedAuctionDraft[] = [];
+  let browser: any = null;
+  let page: any = null;
+  try {
+    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+    page = await createAuctionPage(browser);
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+    const catalogueUrl = new URL('https://www.santanderimoveis.com.br/');
+    catalogueUrl.searchParams.set('cidade', city);
+    catalogueUrl.searchParams.set('uf', state);
+    catalogueUrl.searchParams.set('pag', '1');
+    const listingResponse = await fetch(catalogueUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1'
+      }
+    });
+    if (!listingResponse.ok) throw new Error(`Catálogo Santander retornou HTTP ${listingResponse.status}`);
+    const listingHtml = await listingResponse.text();
+    const payload = listingHtml.match(/var\s+allImoveis\s*=\s*(\[[\s\S]*?\]);\s*var\s+allFiltros\s*=/i)?.[1];
+    if (!payload) throw new Error('Inventário estruturado não encontrado na página oficial do Santander.');
+    const sourceItems: any[] = JSON.parse(payload);
+    const totalRecords = Number(listingHtml.match(/var\s+totalReg\s*=\s*["']?(\d+)/i)?.[1] || sourceItems.length);
+    const pageSize = Math.max(sourceItems.length, 1);
+    const totalPages = Math.min(Math.max(1, Math.ceil(totalRecords / pageSize)), 250);
+    // `pag` is the official portal pagination. Continue until the declared
+    // total is covered, while deduplicating source URLs below.
+    for (let pageNumber = 2; pageNumber <= totalPages; pageNumber++) {
+      const pageUrl = new URL(catalogueUrl);
+      pageUrl.searchParams.set('pag', String(pageNumber));
+      const response = await fetch(pageUrl, { headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9', 'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none', 'Upgrade-Insecure-Requests': '1'
+      }});
+      if (!response.ok) throw new Error(`Página ${pageNumber} do Santander retornou HTTP ${response.status}`);
+      const html = await response.text();
+      const nextPayload = html.match(/var\s+allImoveis\s*=\s*(\[[\s\S]*?\]);\s*var\s+allFiltros\s*=/i)?.[1];
+      if (!nextPayload) throw new Error(`Inventário ausente na página ${pageNumber} do Santander.`);
+      const nextItems = JSON.parse(nextPayload);
+      if (!Array.isArray(nextItems) || nextItems.length === 0) break;
+      sourceItems.push(...nextItems);
+    }
+    const items = Array.isArray(sourceItems) ? sourceItems.map((item: any) => ({
+        title: String(item.seoH1 || item.descTipoImovel || 'Imóvel Santander'),
+        address: [item.logradrouro, item.numeroResidencia].filter(Boolean).join(', '),
+        neighborhood: String(item.bairroDeclarado || ''),
+        city: String(item.descCidade || ''),
+        state: String(item.uf || '').toUpperCase(),
+        type: String(item.descTipoImovel || item.usoPrimario || ''),
+        size: Number(item.areaPrivativa || item.areaUtil || item.areaTotal || item.area || 0),
+        price: Number(item.valorVenda || 0),
+        appraisal: Number(item.valorAvaliado || 0),
+        date: String(item.dataLeilao || ''),
+        link: String(item.urlLink || ''),
+        image: String(item.thumbnail || '')
+      })) : [] as Array<{ title:string; address:string; neighborhood:string; city:string; state:string; type:string; size:number; price:number; appraisal:number; date:string; link:string; image:string }>;
+    const cityNorm = normalizeStr(city);
+    for (const item of items) {
+      if (item.state !== state || normalizeStr(item.city) !== cityNorm || !item.link || item.price <= 0) continue;
+      const enriched = await enrichLotDetails(browser, {
+        portalId: 'santander', auctioneerName: 'Santander Imóveis', title: item.title,
+        address: item.address, neighborhood: item.neighborhood, city: item.city, state: item.state,
+        propertyType: parseType(item.type || item.title), sizeSqm: item.size, auctionPrice: Math.round(item.price),
+        estimatedValue: item.appraisal || undefined, auctionDate: item.date.slice(0, 10), auctionLink: item.link,
+        imageUrl: item.image, description: `${item.title}\n${item.address}\n${item.neighborhood}\n${item.city} - ${item.state}`,
+        saleMode: 'Venda Direta', origin: 'extrajudicial', sellerBank: 'Santander', locationScopeVerified: true
+      });
+      if (enriched.origin === 'extrajudicial') results.push({ ...enriched, priceVerified: item.price > 0 || enriched.priceVerified });
+    }
+    recordSourceAudit({ source: 'Santander Imóveis', url: catalogueUrl.href, pages: totalPages, found: items.filter(item => item.state === state && normalizeStr(item.city) === cityNorm).length, complete: true });
+  } catch (error: any) {
+    recordSourceAudit({ source: 'Santander Imóveis', url: 'https://www.santanderimoveis.com.br/', complete: false, error: error.message });
+  } finally {
+    if (page) await page.close().catch(() => undefined);
+    if (browser) await browser.close().catch(() => undefined);
+  }
+  return results;
+}
+
 // 1. Scraper Mega Leilões
 export async function collectListingPages<T extends { link: string }>(page: any, read: () => Promise<T[]>): Promise<T[]> {
   const lots = new Map<string, T>();
@@ -1141,7 +1234,7 @@ export async function scrapeConfiguredAuctioneers(
   // a dedicated scraper stay out of this generic pass to avoid duplicate hits.
   // A failed or incomplete source is audited instead of silently disappearing.
   const configs = AUCTIONEER_PORTALS.filter(portal => {
-    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias'].includes(portal.id)) return false;
+    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias', 'santander'].includes(portal.id)) return false;
     return portal.genericScrape === true;
   });
   const results: ScrapedAuctionDraft[] = [];
@@ -1440,8 +1533,9 @@ async function runAuctioneersPipeline(
   console.log(`Portais configurados: ${AUCTIONEER_PORTALS.map(p => p.name).join(', ')}`);
   console.log(`======================================================\n`);
 
-  const [isaiasList, megaList, frazaoList, biasiList, configuredList, groundedList] = await Promise.all([
+  const [isaiasList, santanderList, megaList, frazaoList, biasiList, configuredList, groundedList] = await Promise.all([
     scrapeIsaiasAuctioneer(targetType, state, city).catch(error => { recordSourceAudit({source:'Isaías Leilões',complete:false,error:String(error)}); return []; }),
+    scrapeSantanderOfficial(targetType, state, city).catch(error => { recordSourceAudit({source:'Santander Imóveis',complete:false,error:String(error)}); return []; }),
     scrapeMegaLeiloes(targetType, state, city).catch(error => { recordSourceAudit({source:'Mega Leilões',complete:false,error:String(error)}); return []; }),
     scrapeFrazao(targetType, state, city).catch(error => { recordSourceAudit({source:'Frazão',complete:false,error:String(error)}); return []; }),
     scrapeBiasi(targetType, state, city).catch(error => { recordSourceAudit({source:'Biasi',complete:false,error:String(error)}); return []; }),
@@ -1449,7 +1543,7 @@ async function runAuctioneersPipeline(
     Promise.resolve([] as ScrapedAuctionDraft[]) // AI-generated fields are not source evidence.
   ]);
 
-  const allDrafts = [...isaiasList, ...megaList, ...frazaoList, ...biasiList, ...configuredList, ...groundedList];
+  const allDrafts = [...isaiasList, ...santanderList, ...megaList, ...frazaoList, ...biasiList, ...configuredList, ...groundedList];
   console.log(`[Auctioneer Master Sync] Total bruto capturado nos portais: ${allDrafts.length}`);
 
   return reconcileAuctionDrafts(allDrafts, targetType, state, city, existingAuctions, recalculateFn);
