@@ -1,0 +1,8 @@
+node_modules
+.git
+.cache
+package-lock.json
+sync-audits
+tests
+work
+data_store.json
