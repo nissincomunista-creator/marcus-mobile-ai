@@ -1,7 +1,12 @@
 node_modules/
-__pycache__/
-*.pyc
-.env
+build/
+coverage/
 .DS_Store
 *.log
 data_store.json
+.cache/
+sync-audits/
+tests/
+work/
+.env*
+!.env.example
