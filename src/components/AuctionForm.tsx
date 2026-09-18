@@ -88,7 +88,7 @@ export default function AuctionForm({
       setOccupied(true);
       setAllowsFinancing(false);
       setAllowsInstallments(false);
-      setState('SP');
+      setState('RJ');
       setPortalZapAvg('');
       setPortalQuintoAndarAvg('');
       setStreetPortalAvgSqm('');
@@ -126,7 +126,7 @@ export default function AuctionForm({
         occupied,
         allowsFinancing,
         allowsInstallments,
-        state: state.toUpperCase().trim() || 'SP',
+        state: state.toUpperCase().trim() || 'RJ',
         portalZapAvg: portalZapAvg !== '' ? Number(portalZapAvg) : undefined,
         portalQuintoAndarAvg: portalQuintoAndarAvg !== '' ? Number(portalQuintoAndarAvg) : undefined,
         streetPortalAvgSqm: streetPortalAvgSqm !== '' ? Number(streetPortalAvgSqm) : undefined,
@@ -224,7 +224,7 @@ export default function AuctionForm({
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="Ex. São Paulo"
+                placeholder="Ex. Rio de Janeiro"
                 className="w-full text-sm border border-gray-300 rounded-lg p-2.5 focus:ring-1 focus:ring-blue-500 transition-shadow outline-none"
               />
             </div>

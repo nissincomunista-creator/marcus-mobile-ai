@@ -375,27 +375,10 @@ export function applySpiderfyClustering(records: GeocodedRecord[]): Map<string, 
       return;
     }
 
-    const radiusMeters = Math.min(35, 12 + count * 2.5);
-    const latDelta = radiusMeters / 111000;
-    const centerLat = group[0].lat!;
-    const centerLon = group[0].lon!;
-    const lonDelta = radiusMeters / (111000 * Math.cos((centerLat * Math.PI) / 180));
-
-    group.forEach((item, idx) => {
-      const angle = (2 * Math.PI * idx) / count;
-      const displayLat = Number((centerLat + latDelta * Math.sin(angle)).toFixed(6));
-      const displayLon = Number((centerLon + lonDelta * Math.cos(angle)).toFixed(6));
-
-      resultMap.set(item.id, {
-        id: item.id,
-        originalLat: centerLat,
-        originalLon: centerLon,
-        displayLat,
-        displayLon,
-        isSpiderfied: true,
-        spiderClusterCount: count
-      });
-    });
+    group.forEach(item => resultMap.set(item.id, {
+      id: item.id, originalLat: item.lat!, originalLon: item.lon!,
+      displayLat: item.lat!, displayLon: item.lon!, isSpiderfied: false, spiderClusterCount: count
+    }));
   });
 
   return resultMap;
@@ -412,7 +395,7 @@ export function exportToGeoJSON(records: GeocodedRecord[]): any {
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: [sp ? sp.displayLon : r.lon, sp ? sp.displayLat : r.lat]
+          coordinates: [r.lon, r.lat]
         },
         properties: {
           id: r.id,

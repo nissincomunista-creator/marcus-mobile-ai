@@ -32,9 +32,16 @@ export default function Simulator({
               <ChevronLeft className="w-4 h-4 text-indigo-400" />
               <span>Voltar para Lista de Leilões</span>
             </button>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-500/30">
-              {property.neighborhood}, {property.city} - {property.state || 'RJ'}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {property.divergentNeighborhoodNotice && (
+                <span className="text-xs font-mono text-amber-300 bg-amber-950/80 px-2.5 py-1 rounded-md border border-amber-800/60 font-bold" title="Bairro cadastrado no edital difere do endereço real">
+                  ⚠️ {property.divergentNeighborhoodNotice}
+                </span>
+              )}
+              <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-500/30">
+                {property.neighborhood}, {property.city} - {property.state || 'RJ'}
+              </span>
+            </div>
           </div>
         )}
 

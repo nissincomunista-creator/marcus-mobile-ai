@@ -1,0 +1,6 @@
+{
+  "name": "Garimpeiro de Leilões de Imóveis",
+  "description": "Plataforma de garimpo de leilões imobiliários comparados com dados reais de transações de ITBI. Avalia ganho de capital, ROI e liquidez com auxílio de inteligência artificial.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,3 +1,4 @@
+import AuctionSyncStatus from './components/AuctionSyncStatus.tsx';
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuctionProperty, ItbiTransaction, PropertyType, BRAZIL_STATES, User as UserType, AccessCode } from './types.ts';
 import Dashboard from './components/Dashboard.tsx';
@@ -102,11 +103,17 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 export default function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [user, setUser] = useState<UserType | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token') || 'marcus-free-access');
+  const [user, setUser] = useState<Omit<UserType, 'passwordHash' | 'salt'> | null>(() => ({
+    id: 'admin-marcus',
+    name: 'Marcus',
+    email: 'marcus@assessoria.com',
+    role: 'admin',
+    createdAt: new Date().toISOString()
+  }));
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+    return (localStorage.getItem('theme') as 'dark' | 'light') || 'light';
   });
 
   useEffect(() => {
@@ -132,11 +139,11 @@ export default function App() {
   const [selectedZoneFilter, setSelectedZoneFilter] = useState('');
   const [selectedCityFilter, setSelectedCityFilter] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState('');
-  const [selectedStateFilter, setSelectedStateFilter] = useState('RJ');
+  const [selectedStateFilter, setSelectedStateFilter] = useState('');
   const [maxPriceFilter, setMaxPriceFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [sortBy, setSortBy] = useState('roi');
-  const [selectedOriginFilter, setSelectedOriginFilter] = useState<'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal'>('caixa');
+  const [selectedOriginFilter, setSelectedOriginFilter] = useState<'todos' | 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal'>('todos');
 
   // Modal toggle state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -186,8 +193,11 @@ export default function App() {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [rpcError, setRpcError] = useState<string | null>(null);
 
-  // Time stamp state
-  const [currentTime, setCurrentTime] = useState('2026-05-22 15:10:00');
+  // Time stamp & Sync states
+  const [currentTime, setCurrentTime] = useState(() => new Date().toLocaleDateString('pt-BR'));
+  const [lastSyncTime, setLastSyncTime] = useState(() => {
+    return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  });
 
   // Custom fetch with auth header
   const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -210,29 +220,27 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
+    // Modo de acesso livre (sem senha ativo por hora): reseta filtros e seleção
+    setSelectedAuctionId(null);
+    setActiveTab('garimpo');
   };
 
   // Load backend stores on startup
   useEffect(() => {
     async function fetchData() {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
       setIsLoading(true);
       setRpcError(null);
       try {
-        // Auto login check
-        const meRes = await authFetch('/api/auth/me');
-        if (!meRes.ok) {
-          handleLogout();
-          return;
+        // Auto login check (silencioso e sem bloqueio)
+        try {
+          const meRes = await authFetch('/api/auth/me');
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            if (meData?.user) setUser(meData.user);
+          }
+        } catch {
+          // Mantém usuário Marcus admin por padrão
         }
-        const meData = await meRes.json();
-        setUser(meData.user);
 
         const [aucRes, itbiRes] = await Promise.all([
           authFetch('/api/auctions'),
@@ -279,6 +287,7 @@ export default function App() {
       }
     }
     fetchData();
+    authFetch('/api/sync/start', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({reason:'app-open'})}).catch(error => console.error('Falha ao iniciar sincronização:', error));
 
     // Minor clock update relative to user timezone
     const timer = setInterval(() => {
@@ -354,10 +363,15 @@ export default function App() {
   const handleSyncExtrajudiciaisAuto = async () => {
     setIsMining(true);
     try {
+      const payload: any = {};
+      if (selectedStateFilter) payload.state = selectedStateFilter;
+      if (selectedCityFilter) payload.city = selectedCityFilter;
+      if (!payload.state) payload.states = ['MG', 'RJ', 'SP'];
+
       const res = await authFetch('/api/garimpar/extrajudiciais-auto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ states: ['RJ', 'SP'] })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok) {
@@ -377,10 +391,15 @@ export default function App() {
   const handleSyncJudiciaisAuto = async () => {
     setIsMining(true);
     try {
+      const payload: any = {};
+      if (selectedStateFilter) payload.state = selectedStateFilter;
+      if (selectedCityFilter) payload.city = selectedCityFilter;
+      if (!payload.state) payload.states = ['MG', 'RJ', 'SP'];
+
       const res = await authFetch('/api/garimpar/judiciais-auto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ states: ['RJ', 'SP'] })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok) {
@@ -430,6 +449,7 @@ export default function App() {
         const itbiData = await itbiRes.json();
         setItbiStats(itbiData.stats || []);
         setItbiCount(itbiData.totalCount || 0);
+        setLastSyncTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
       }
     } catch (e) {
       console.error(e);
@@ -758,92 +778,117 @@ export default function App() {
   // Identify active selected listing object for Simulator pane
   const activeSelectedAuction = auctions.find(a => a.id === selectedAuctionId);
 
-  if (!token) {
-    return (
-      <LoginPage onLoginSuccess={(newToken, newUser) => {
-        setToken(newToken);
-        setUser(newUser);
-        localStorage.setItem('token', newToken);
-      }} />
-    );
-  }
+  // Modo Livre: acesso direto sem exigência de senha por hora
 
   return (
     <div className={`min-h-screen font-sans flex flex-col justify-between transition-colors duration-200 ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-[#0F172A] text-slate-100'}`}>
       
-      {/* 1. Header Toolbar (Navigation & Logo) */}
-      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md px-4 sm:px-6 py-3.5 sticky top-0 z-40">
-        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+      {/* 1. Header Toolbar: Slim Executive Bar */}
+      <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md px-4 sm:px-6 py-2.5 sticky top-0 z-40">
+        <div className="max-w-[1780px] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3 relative">
           
-          {/* Logo & Clock details */}
-          <div className="flex items-center space-x-3 cursor-pointer justify-start" onClick={() => setSelectedAuctionId(null)}>
-            <img 
-              src="/marcus_logo.png" 
-              alt="Marcus Assessoria Imobiliária" 
-              className="w-10 h-10 rounded-xl object-cover border border-emerald-500/40 shadow-md ring-1 ring-emerald-500/20" 
-            />
-            <div>
-              <h1 className="text-base font-black text-slate-100 tracking-tight flex items-center gap-2">
-                <span>Marcus</span>
-                <span className="text-[10px] text-emerald-400 font-bold font-mono tracking-normal bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  Assessoria Imobiliária
-                </span>
-              </h1>
-              <span className="text-[10px] text-slate-400 font-medium font-mono flex items-center space-x-1">
-                <Clock className="w-3 h-3 text-slate-500" />
-                <span>UTC: {currentTime}</span>
-              </span>
+          {/* Left: Logo & Discrete Sync Indicator */}
+          <div className="flex items-center space-x-4">
+            <div 
+              className="flex items-center space-x-3 cursor-pointer group select-none" 
+              onClick={() => {
+                setSelectedAuctionId(null);
+                setActiveTab('garimpo');
+              }}
+            >
+              <img 
+                src="/marcus_logo.png" 
+                alt="Marcus Assessoria Imobiliária" 
+                className="w-9 h-9 rounded-xl object-cover border border-emerald-500/40 shadow-md ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform" 
+              />
+              <div>
+                <h1 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
+                  <span>MARCUS</span>
+                  <span className="text-[10px] text-emerald-400 font-bold font-mono tracking-normal bg-emerald-500/10 px-2 py-0.2 rounded-full border border-emerald-500/30">
+                    INTELIGÊNCIA EM LEILÕES
+                  </span>
+                </h1>
+                <p className="text-[10px] text-slate-400 font-medium">
+                  Assessoria Pericial & Flip Imobiliário
+                </p>
+              </div>
+            </div>
+
+            {/* Discrete Sync Live Indicator */}
+            <div className="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-slate-400 shadow-inner">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span>Sync: Atualizado hoje às <strong className="text-slate-200">{lastSyncTime}</strong></span>
+              <span className="text-slate-600">|</span>
+              <span className="text-emerald-400 font-bold">{auctions.length} lotes</span>
             </div>
           </div>
-             {/* Right: All tabs grouped in a responsive flex-wrap row */}
-          <div data-tour="header-nav" className="flex flex-wrap items-center gap-2">
+
+          {/* Right: Slim Nav Tabs, Profile Badge & Theme Toggle */}
+          <div data-tour="header-nav" className="flex flex-wrap items-center gap-1.5 justify-end">
+            
             <button
               id="tab-garimpo"
               onClick={() => {
                 setActiveTab('garimpo');
-                setSelectedAuctionId(null); // Back to listings
-                setSelectedOriginFilter('caixa');
+                setSelectedAuctionId(null);
               }}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
                 activeTab === 'garimpo'
-                  ? 'bg-indigo-650 text-white border-indigo-650 shadow-md'
-                  : 'bg-slate-800 text-slate-350 border-slate-700 hover:bg-slate-700 hover:text-slate-100'
+                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
               }`}
             >
-              <Building2 className={`w-3.5 h-3.5 ${activeTab === 'garimpo' ? 'text-white' : 'text-slate-400'}`} />
-              <span>Garimpar Leilões</span>
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Garimpar</span>
             </button>
- 
+
+            <button
+              id="tab-mapa"
+              onClick={() => {
+                setActiveTab('mapa');
+                setSelectedAuctionId(null);
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
+                activeTab === 'mapa'
+                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
+              }`}
+              title="Visualizar oportunidades no Mapa Georreferenciado"
+            >
+              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Mapa</span>
+            </button>
+
             <button
               id="tab-calculadora"
               onClick={() => {
                 setActiveTab('calculadora');
                 setSelectedAuctionId(null);
               }}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
                 activeTab === 'calculadora'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                  : 'bg-slate-800 text-slate-355 border-slate-700 hover:bg-slate-700 hover:text-slate-100'
+                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
               }`}
             >
-              <Calculator className={`w-3.5 h-3.5 ${activeTab === 'calculadora' ? 'text-white' : 'text-slate-400'}`} />
-              <span>Calculadora Valor Real</span>
+              <Calculator className="w-3.5 h-3.5" />
+              <span>Calculadora</span>
             </button>
- 
+
             <button
               id="tab-itbi"
               onClick={() => {
                 setActiveTab('itbi');
                 setSelectedAuctionId(null);
               }}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
                 activeTab === 'itbi'
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                  : 'bg-slate-800 text-slate-350 border-slate-700 hover:bg-slate-700 hover:text-slate-100'
+                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
               }`}
             >
-              <Database className={`w-3.5 h-3.5 ${activeTab === 'itbi' ? 'text-white' : 'text-slate-400'}`} />
-              <span>Base ITBI Municipal</span>
+              <Database className="w-3.5 h-3.5" />
+              <span>ITBI</span>
             </button>
 
             <button
@@ -852,97 +897,89 @@ export default function App() {
                 setActiveTab('capital');
                 setSelectedAuctionId(null);
               }}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
                 activeTab === 'capital'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                  : 'bg-slate-800 text-slate-350 border-slate-700 hover:bg-slate-700 hover:text-slate-100'
+                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
               }`}
             >
-              <DollarSign className={`w-3.5 h-3.5 ${activeTab === 'capital' ? 'text-white' : 'text-slate-400'}`} />
-              <span>Alocação de Capital</span>
+              <DollarSign className="w-3.5 h-3.5" />
+              <span>Capital</span>
             </button>
- 
+
             <button
               id="tab-perfil"
               onClick={() => {
                 setActiveTab('perfil');
                 setSelectedAuctionId(null);
               }}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
                 activeTab === 'perfil'
-                  ? 'bg-teal-600 text-white border-teal-600 shadow-md'
-                  : 'bg-slate-800 text-slate-350 border-slate-700 hover:bg-slate-700 hover:text-slate-100'
+                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
               }`}
             >
-              <User className={`w-3.5 h-3.5 ${activeTab === 'perfil' ? 'text-white' : 'text-slate-400'}`} />
+              <User className="w-3.5 h-3.5" />
               <span>Perfil</span>
             </button>
 
-            {/* Mobile App Install Button */}
+            {/* Mobile / PWA App Install */}
             <button
               onClick={() => setIsInstallModalOpen(true)}
-              className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-600/25 to-teal-600/25 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/35 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
-              title="Instalar aplicativo no celular ou escanear QR Code"
+              className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-slate-800 text-emerald-300 border border-emerald-500/30 hover:bg-slate-700 transition-all flex items-center space-x-1 cursor-pointer"
+              title="Instalar no celular / Escanear QR Code"
             >
               <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              <span>📱 Baixar no Celular</span>
+              <span className="hidden xl:inline">Celular</span>
             </button>
 
-            {/* Interactive Gamified Tour Button */}
+            {/* Tutorial */}
             <button
               onClick={() => setIsTourOpen(true)}
-              className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-300 border border-blue-500/40 hover:bg-blue-600/30 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
-              title="Tutorial Interativo Passo a Passo do Sistema"
+              className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-slate-800 text-blue-300 border border-blue-500/30 hover:bg-slate-700 transition-all flex items-center space-x-1 cursor-pointer"
+              title="Tutorial Guiado"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>🎓 Tutorial</span>
+              <span className="hidden xl:inline">Tutorial</span>
             </button>
 
-            {/* Theme Toggle Button */}
+            {/* Theme Toggle */}
             <button
               onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              className={`px-3 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs border ${
-                theme === 'light'
-                  ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
-                  : 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-750'
-              }`}
-              title={theme === 'dark' ? 'Alternar para Tema Claro' : 'Alternar para Tema Escuro'}
+              className="p-1.5 rounded-xl font-bold text-xs bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-750 transition-all cursor-pointer"
+              title={theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
             >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden sm:inline">Claro</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 text-indigo-600" />
-                  <span className="hidden sm:inline">Escuro</span>
-                </>
-              )}
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
             </button>
 
-            {/* Server / Matrix Mode Trigger: ONLY for Admin */}
+            {/* Server / Admin Matriz */}
             {user?.role === 'admin' && (
               <button
                 onClick={() => setIsHostModalOpen(true)}
-                className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 text-amber-300 border border-amber-500/30 hover:bg-amber-950/30 hover:border-amber-500/50 transition-all flex items-center space-x-1.5 cursor-pointer shadow-xs"
-                title="Central da Matriz - Gerenciar Licenças e Conectar PC"
+                className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-amber-950/40 text-amber-300 border border-amber-500/40 hover:bg-amber-900/50 transition-all flex items-center space-x-1 cursor-pointer"
+                title="Central da Matriz - Gerenciar Licenças"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Painel Matriz</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                <span className="hidden sm:inline">Matriz</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </button>
             )}
- 
-            <div className="h-6 w-px bg-slate-855 mx-1 hidden sm:block"></div>
- 
+
+            {/* User Operator Badge */}
+            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
+              <div className="w-5 h-5 rounded-full bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 font-bold flex items-center justify-center text-[10px]">
+                {(user?.name || 'M').charAt(0).toUpperCase()}
+              </div>
+              <span className="font-semibold text-slate-200 text-[11px] truncate max-w-[90px]">{user?.name || 'Marcus'}</span>
+            </div>
+
+            {/* Sair */}
             <button
               onClick={handleLogout}
-              className="px-3.5 py-2.5 rounded-xl font-bold text-xs text-slate-400 hover:bg-rose-950/20 hover:text-rose-450 transition-all flex items-center space-x-1.5 cursor-pointer border border-transparent hover:border-rose-900/30"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition-all cursor-pointer border border-transparent hover:border-rose-900/30"
               title="Sair"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sair</span>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
 
@@ -1192,6 +1229,7 @@ export default function App() {
               >
                 {!activeSelectedAuction ? (
                   <ErrorBoundary fallbackTitle="Erro ao carregar o Painel de Garimpo">
+                    <AuctionSyncStatus onUpdated={refreshMarketData} />
                     <Dashboard
                       auctions={auctions}
                       selectedAuctionId={selectedAuctionId}
@@ -1395,6 +1433,8 @@ export default function App() {
                 transition={{ duration: 0.15 }}
               >
                 <PropertyMap
+                  itbiStats={itbiStats}
+                  onUpdateProperty={handleUpdatePropertyDirectly}
                   auctions={auctions}
                   onSelectPropertyFromMap={(id) => {
                     setSelectedAuctionId(id);

@@ -53,14 +53,14 @@ export default function ItbiManager({
   const [area, setArea] = useState('');
   const [valor, setValor] = useState('');
   const [dataTx, setDataTx] = useState(new Date().toISOString().split('T')[0]);
-  const [estado, setEstado] = useState('SP');
-  const [municipio, setMunicipio] = useState('São Paulo');
+  const [estado, setEstado] = useState('RJ');
+  const [municipio, setMunicipio] = useState('Rio de Janeiro');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   // Batch Default Context
-  const [batchState, setBatchState] = useState('SP');
-  const [batchCity, setBatchCity] = useState('São Paulo');
+  const [batchState, setBatchState] = useState('RJ');
+  const [batchCity, setBatchCity] = useState('Rio de Janeiro');
 
   // UI Filters for reference viewing (allows switching municipality dynamically)
   const [uiStateFilter, setUiStateFilter] = useState('');
@@ -121,20 +121,20 @@ export default function ItbiManager({
 
   // Calculate unique regions existing in current ITBI database
   const uniqueTxStates = useMemo(() => {
-    const states = itbiStats.map(tx => (tx.state || 'SP').toUpperCase());
+    const states = itbiStats.map(tx => (tx.state || 'RJ').toUpperCase());
     return Array.from(new Set(states)).filter(Boolean).sort();
   }, [itbiStats]);
 
   const uniqueTxCities = useMemo(() => {
-    const matchingTxs = itbiStats.filter(tx => !uiStateFilter || (tx.state || 'SP').toUpperCase() === uiStateFilter.toUpperCase());
-    const cities = matchingTxs.map(tx => tx.city || 'São Paulo');
+    const matchingTxs = itbiStats.filter(tx => !uiStateFilter || (tx.state || 'RJ').toUpperCase() === uiStateFilter.toUpperCase());
+    const cities = matchingTxs.map(tx => tx.city || 'Rio de Janeiro');
     return Array.from(new Set(cities)).filter(Boolean).sort();
   }, [itbiStats, uiStateFilter]);
 
   const uniqueTxNeighborhoods = useMemo(() => {
     const matchingTxs = itbiStats.filter(tx => {
-      const matchState = !uiStateFilter || (tx.state || 'SP').toUpperCase() === uiStateFilter.toUpperCase();
-      const matchCity = !uiCityFilter || (tx.city || 'São Paulo').toLowerCase() === uiCityFilter.toLowerCase();
+      const matchState = !uiStateFilter || (tx.state || 'RJ').toUpperCase() === uiStateFilter.toUpperCase();
+      const matchCity = !uiCityFilter || (tx.city || 'Rio de Janeiro').toLowerCase() === uiCityFilter.toLowerCase();
       return matchState && matchCity;
     });
     const neighborhoods = matchingTxs.map(tx => tx.neighborhood);
@@ -144,8 +144,8 @@ export default function ItbiManager({
   // Filtered stats for the statistical views and charts
   const filteredStats = useMemo(() => {
     return itbiStats.filter(tx => {
-      const matchState = !uiStateFilter || (tx.state || 'SP').toUpperCase() === uiStateFilter.toUpperCase();
-      const matchCity = !uiCityFilter || (tx.city || 'São Paulo').toLowerCase() === uiCityFilter.toLowerCase();
+      const matchState = !uiStateFilter || (tx.state || 'RJ').toUpperCase() === uiStateFilter.toUpperCase();
+      const matchCity = !uiCityFilter || (tx.city || 'Rio de Janeiro').toLowerCase() === uiCityFilter.toLowerCase();
       const matchNeighborhood = !uiNeighborhoodFilter || (tx.neighborhood || '').toLowerCase() === uiNeighborhoodFilter.toLowerCase();
       return matchState && matchCity && matchNeighborhood;
     });
@@ -165,8 +165,8 @@ export default function ItbiManager({
     }> = {};
     
     filteredStats.forEach(stat => {
-      const state = stat.state || 'SP';
-      const city = stat.city || 'São Paulo';
+      const state = stat.state || 'RJ';
+      const city = stat.city || 'Rio de Janeiro';
       const b = stat.neighborhood;
       const key = `${state}|${city}|${b}`;
       
@@ -710,8 +710,8 @@ export default function ItbiManager({
                 ) : (
                   neighborhoodStats.map((s, idx) => (
                     <tr 
-                      key={`${s.state || 'SP'}|${s.city || 'São Paulo'}|${s.neighborhood}`} 
-                      onClick={() => handleNeighborhoodClick(s.neighborhood, s.state || 'SP', s.city || 'São Paulo')}
+                      key={`${s.state || 'RJ'}|${s.city || 'Rio de Janeiro'}|${s.neighborhood}`} 
+                      onClick={() => handleNeighborhoodClick(s.neighborhood, s.state || 'RJ', s.city || 'Rio de Janeiro')}
                       className="hover:bg-slate-100/70 transition-colors cursor-pointer"
                       title="Clique para ver o valor de m² por ruas"
                     >
@@ -721,7 +721,7 @@ export default function ItbiManager({
                           <span className="text-indigo-600 hover:underline">{s.neighborhood}</span>
                         </div>
                         <span className="text-[10px] text-gray-400 font-normal pl-6">
-                          {s.city || 'São Paulo'} - {s.state || 'SP'}
+                          {s.city || 'Rio de Janeiro'} - {s.state || 'RJ'}
                         </span>
                       </td>
                       <td className="py-3 text-right font-mono font-bold text-indigo-700">R$ {s.averageValueSqm.toLocaleString('pt')}/m²</td>
@@ -773,7 +773,7 @@ export default function ItbiManager({
                 required
                 value={batchCity}
                 onChange={(e) => setBatchCity(e.target.value)}
-                placeholder="Ex. São Paulo, Niterói"
+                placeholder="Ex. Rio de Janeiro, Juiz de Fora, Niterói"
                 className="w-full text-xs font-bold bg-white border border-gray-300 rounded-lg p-2 text-slate-800 outline-none focus:border-emerald-500"
               />
             </div>
@@ -962,7 +962,7 @@ Pinheiros;Apartamento;60;750000;2026-04-12"
                   required
                   value={municipio}
                   onChange={(e) => setMunicipio(e.target.value)}
-                  placeholder="Ex. São Paulo"
+                  placeholder="Ex. Rio de Janeiro"
                   className="w-full text-xs font-bold border border-gray-300 bg-white rounded-lg p-2 focus:ring-1 focus:ring-blue-500 transition-shadow outline-none"
                 />
               </div>

@@ -137,7 +137,7 @@ export default function CapitalInvestmentMatcher({
   const uniqueNeighborhoods = useMemo(() => {
     const subset = safeAuctions.filter(a => {
       if (!a) return false;
-      if (selectedState && (a.state || 'SP').toUpperCase() !== selectedState.toUpperCase()) return false;
+      if (selectedState && (a.state || 'RJ').toUpperCase() !== selectedState.toUpperCase()) return false;
       if (selectedCity && (a.city || '').toLowerCase() !== selectedCity.toLowerCase()) return false;
       return true;
     });
@@ -174,7 +174,7 @@ export default function CapitalInvestmentMatcher({
     const results: any[] = [];
 
     for (const auc of auctions) {
-      if (selectedState && (auc.state || 'SP').toUpperCase() !== selectedState.toUpperCase()) {
+      if (selectedState && (auc.state || 'RJ').toUpperCase() !== selectedState.toUpperCase()) {
         continue;
       }
       if (selectedCity && (auc.city || '').toLowerCase() !== selectedCity.toLowerCase()) {

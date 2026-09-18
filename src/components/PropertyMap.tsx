@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { AuctionProperty } from '../types.ts';
@@ -13,6 +14,8 @@ import RealValueCalculator from './RealValueCalculator.tsx';
 
 interface PropertyMapProps {
   auctions: AuctionProperty[];
+  itbiStats?: any[];
+  onUpdateProperty?: (updates: Partial<AuctionProperty>) => Promise<void> | void;
   initialFilteredAuctions?: AuctionProperty[];
   onSelectPropertyFromMap: (id: string) => void;
   initialSelectedPropertyId?: string;
@@ -21,6 +24,8 @@ interface PropertyMapProps {
 
 export default function PropertyMap({ 
   auctions, 
+  itbiStats = [],
+  onUpdateProperty,
   initialFilteredAuctions,
   onSelectPropertyFromMap,
   initialSelectedPropertyId,
@@ -35,52 +40,42 @@ export default function PropertyMap({
   const [activeTab, setActiveTab] = useState<'both' | 'map' | 'list'>(() => typeof window !== 'undefined' && window.innerWidth < 1024 ? 'map' : 'both');
   const [buildingClusterModal, setBuildingClusterModal] = useState<{ address: string; properties: AuctionProperty[] } | null>(null);
   const [showPendingDrawer, setShowPendingDrawer] = useState<boolean>(false);
-  const [isViewportDirty, setIsViewportDirty] = useState<boolean>(false);
-  const [isSearchingArea, setIsSearchingArea] = useState<boolean>(false);
-  const [autoSearchOnMove, setAutoSearchOnMove] = useState<boolean>(true);
   const [resolvedCoordinates, setResolvedCoordinates] = useState<Record<string, [number, number]>>({});
-  const autoSearchOnMoveRef = useRef<boolean>(true);
-  const autoSearchTimerRef = useRef<any>(null);
-  const handleSearchInAreaRef = useRef<() => void>(() => {});
-  const spiderfyLayerRef = useRef<any>(null);
-  const geocodeAttemptedRef = useRef<Set<string>>(new Set());
+  const clusterGroupRef = useRef<any>(null);
+  const [locationError, setLocationError] = useState(false);
+  const [locationsLoaded, setLocationsLoaded] = useState(false);
+  const [visibleCardCount, setVisibleCardCount] = useState(100);
+  const [inViewportCount, setInViewportCount] = useState<number>(0);
   const focusedLocationRef = useRef('');
+  const initialFitRef = useRef('');
+  const [locationRecords, setLocationRecords] = useState<Record<string, any>>({});
   const [mapReady, setMapReady] = useState(false);
 
-  useEffect(() => {
-    autoSearchOnMoveRef.current = autoSearchOnMove;
-  }, [autoSearchOnMove]);
-
   const getMapCoordinates = useCallback((property: AuctionProperty): [number, number] | null => {
-    return resolvedCoordinates[property.id] || getPropertyCoordinates(property);
-  }, [resolvedCoordinates]);
+    return getPropertyCoordinates({ ...property, mapLocation: locationRecords[property.id] || (property as any).mapLocation } as AuctionProperty);
+  }, [locationRecords]);
   
   const pendingReviewProps = useMemo(() => {
     return auctions.filter(a => getMapCoordinates(a) === null);
   }, [auctions, getMapCoordinates]);
   
   const factionsGeoJsonRef = useRef<any>(null);
-  const [areaFilteredProps, setAreaFilteredProps] = useState<AuctionProperty[] | null>(() => {
-    if (initialSelectedPropertyId) {
-      const found = auctions.find(a => a.id === initialSelectedPropertyId);
-      return found ? [found] : null;
-    }
-    if (initialFilteredAuctions && initialFilteredAuctions.length !== auctions.length && initialFilteredAuctions.length > 0) {
-      return initialFilteredAuctions;
-    }
-    return null;
-  });
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<Record<string, any>>({});
   const activeTileLayerRef = useRef<any>(null);
 
-  const baseList = areaFilteredProps !== null ? areaFilteredProps : auctions;
+  const baseList = useMemo(() => {
+    if (initialFilteredAuctions && initialFilteredAuctions.length > 0) {
+      return initialFilteredAuctions;
+    }
+    return auctions;
+  }, [initialFilteredAuctions, auctions]);
 
   const filteredList = useMemo(() => {
     return baseList.filter(a => {
-      if (stateFilter && (a.state || 'SP').toUpperCase() !== stateFilter.toUpperCase()) {
+      if (stateFilter && (a.state || 'RJ').toUpperCase() !== stateFilter.toUpperCase()) {
         return false;
       }
       if (selectedTypologyFilter) {
@@ -94,140 +89,19 @@ export default function PropertyMap({
     });
   }, [baseList, stateFilter, selectedTypologyFilter]);
 
-  const displayedList = useMemo(() => {
-    if (areaFilteredProps !== null) {
-      if (selectedPropId) {
-        const sel = filteredList.find(p => p.id === selectedPropId);
-        const others = filteredList.filter(p => p.id !== selectedPropId);
-        return sel ? [sel, ...others.slice(0, 199)] : filteredList.slice(0, 200);
-      }
-      return filteredList.slice(0, 200);
-    }
+  const orderedList = useMemo(() => {
     const sorted = [...filteredList].sort((a, b) => (b.calculatedRoi || 0) - (a.calculatedRoi || 0));
-    const top = sorted.slice(0, 100);
     if (selectedPropId) {
       const sel = filteredList.find(p => p.id === selectedPropId);
       if (sel) {
-        return [sel, ...top.filter(p => p.id !== selectedPropId)];
+        return [sel, ...sorted.filter(p => p.id !== selectedPropId)];
       }
     }
-    return top;
-  }, [filteredList, areaFilteredProps, selectedPropId]);
+    return sorted;
+  }, [filteredList, selectedPropId]);
 
-  const clearSpiderfy = () => {
-    if (spiderfyLayerRef.current && mapRef.current) {
-      mapRef.current.removeLayer(spiderfyLayerRef.current);
-      spiderfyLayerRef.current = null;
-    }
-  };
-
-  const applyVisualSpiderfy = (cluster: { address: string; coords: [number, number]; properties: AuctionProperty[] }) => {
-    const L = (window as any).L;
-    if (!L || !mapRef.current) return;
-
-    clearSpiderfy();
-
-    const spiderGroup = L.layerGroup();
-    const count = cluster.properties.length;
-    const [centerLat, centerLng] = cluster.coords;
-
-    cluster.properties.forEach((prop, idx) => {
-      const angle = (2.0 * Math.PI * idx) / count;
-      const radiusMeters = Math.min(42.0, 16.0 + count * 2.8);
-      const latDelta = radiusMeters / 111000.0;
-      const lonDelta = radiusMeters / (111000.0 * Math.cos(centerLat * Math.PI / 180.0));
-
-      const spiderLat = centerLat + latDelta * Math.sin(angle);
-      const spiderLon = centerLng + lonDelta * Math.cos(angle);
-
-      // Linha pontilhada conectando o centro físico ao marcador visual expandido
-      const leg = L.polyline([[centerLat, centerLng], [spiderLat, spiderLon]], {
-        color: '#818cf8',
-        weight: 2,
-        dashArray: '3, 4',
-        opacity: 0.85
-      });
-      leg.addTo(spiderGroup);
-
-      const aptMatch = prop.address?.match(/\b(apto|apt|ap|casa|unidade|loja)\s*[\d\w]+/i);
-      const label = aptMatch ? aptMatch[0].toUpperCase() : `U${idx + 1}`;
-
-      const spiderIcon = L.divIcon({
-        className: 'custom-spider-marker',
-        html: `
-          <div class="flex items-center justify-center px-2 py-1 rounded-lg bg-indigo-950/95 border-2 border-amber-400 text-amber-300 font-mono font-black text-[10px] shadow-2xl hover:scale-125 transition-all cursor-pointer whitespace-nowrap">
-            🏢 ${label}
-          </div>
-        `,
-        iconSize: [52, 24],
-        iconAnchor: [26, 12]
-      });
-
-      const spMarker = L.marker([spiderLat, spiderLon], { icon: spiderIcon }).addTo(spiderGroup);
-
-      spMarker.bindTooltip(`
-        <div style="font-family: sans-serif; font-size: 11px; padding: 2px 4px;">
-          <strong>${prop.title}</strong><br/>
-          <span style="color: #0284c7;">Lance: ${formatBRL(prop.auctionPrice)}</span> | 
-          <span style="color: #16a34a;">ROI: ${(prop.calculatedRoi || 0).toFixed(0)}%</span>
-        </div>
-      `, { direction: 'top', offset: [0, -12] });
-
-      spMarker.on('click', (e: any) => {
-        if (e && e.originalEvent) e.originalEvent.stopPropagation();
-        setSelectedPropId(prop.id);
-        const el = document.getElementById(`side-card-${prop.id}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
-    });
-
-    spiderGroup.addTo(mapRef.current);
-    spiderfyLayerRef.current = spiderGroup;
-  };
-
-  const handleSearchInArea = async () => {
-    if (!mapRef.current) return;
-    setIsSearchingArea(true);
-    try {
-      const bounds = mapRef.current.getBounds();
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-
-      clearSpiderfy();
-
-      let fetchedProps: AuctionProperty[] = [];
-      try {
-        const token = localStorage.getItem('token');
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const res = await fetch(`/api/auctions/bbox?minLat=${sw.lat}&maxLat=${ne.lat}&minLon=${sw.lng}&maxLon=${ne.lng}`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          fetchedProps = Array.isArray(data) ? data : (data.properties || []);
-        }
-      } catch (err) {
-        console.warn('Fallback local para busca viewport:', err);
-      }
-
-      if (!fetchedProps || fetchedProps.length === 0) {
-        fetchedProps = auctions.filter(a => {
-          const coords = getMapCoordinates(a);
-          return coords ? bounds.contains(coords) : false;
-        });
-      }
-
-      setAreaFilteredProps(fetchedProps.slice(0, 150));
-      setIsViewportDirty(false);
-    } catch (e) {
-      console.error('Erro na busca por viewport:', e);
-    } finally {
-      setIsSearchingArea(false);
-    }
-  };
-
-  useEffect(() => {
-    handleSearchInAreaRef.current = handleSearchInArea;
-  });
+  const displayedList = orderedList.slice(0, visibleCardCount);
+  useEffect(() => { setVisibleCardCount(100); }, [stateFilter, selectedTypologyFilter]);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
@@ -274,48 +148,55 @@ export default function PropertyMap({
       tileRoad.addTo(map);
       activeTileLayerRef.current = tileRoad;
 
-      let syncTimer: any = null;
-      const syncBounds = () => {
+      // Stable Cluster Group Layer (L.markerClusterGroup with custom executive styling)
+      let clusterGroup: any = null;
+      if (L.markerClusterGroup) {
+        clusterGroup = L.markerClusterGroup({
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: true,
+          spiderfyOnMaxZoom: true,
+          removeOutsideVisibleBounds: true,
+          animate: true,
+          animateAddingMarkers: false,
+          maxClusterRadius: 42,
+          iconCreateFunction: (cluster: any) => {
+            const count = cluster.getChildCount();
+            const countLabel = count > 999 ? `+${(count / 1000).toFixed(1)}k` : `+${count}`;
+            const badgeClass = count > 100
+              ? 'bg-gradient-to-br from-indigo-600 to-indigo-800 border-indigo-200 text-white shadow-indigo-500/40'
+              : (count > 25
+                ? 'bg-gradient-to-br from-emerald-600 to-emerald-800 border-emerald-200 text-white shadow-emerald-500/40'
+                : 'bg-gradient-to-br from-slate-800 to-slate-950 border-slate-400 text-white shadow-slate-900/50');
+            return L.divIcon({
+              html: `<div class="executive-cluster-pin flex items-center justify-center w-10 h-10 rounded-full ${badgeClass} border-2 shadow-2xl ring-4 ring-black/25 font-mono font-black text-xs cursor-pointer hover:scale-110 transition-transform">${countLabel}</div>`,
+              className: 'custom-executive-cluster',
+              iconSize: [40, 40],
+              iconAnchor: [20, 20]
+            });
+          }
+        });
+      } else {
+        clusterGroup = L.layerGroup();
+      }
+      clusterGroup.addTo(map);
+      clusterGroupRef.current = clusterGroup;
+
+      const updateViewportCounter = () => {
         if (!mapRef.current) return;
         const bounds = mapRef.current.getBounds();
-        const inside: AuctionProperty[] = [];
-        for (const a of auctions) {
-          const coords = getPropertyCoordinates(a);
-          if (coords && bounds.contains(coords)) {
-            inside.push(a);
-            if (inside.length >= 150) break;
-          }
-        }
-        const pendingSelected = auctions.find(a => a.id === initialSelectedPropertyId && !getPropertyCoordinates(a));
-        setAreaFilteredProps(pendingSelected ? [pendingSelected, ...inside] : inside);
+        const inView = (initialFilteredAuctions || auctions).filter(a => {
+          const c = getPropertyCoordinates(a);
+          return c && bounds.contains(c);
+        }).length;
+        setInViewportCount(inView);
       };
 
-      map.on('moveend', () => {
-        setIsViewportDirty(true);
-        if (autoSearchOnMoveRef.current) {
-          if (autoSearchTimerRef.current) clearTimeout(autoSearchTimerRef.current);
-          autoSearchTimerRef.current = setTimeout(() => {
-            if (handleSearchInAreaRef.current) handleSearchInAreaRef.current();
-          }, 450);
-        }
-      });
-      map.on('zoomend', () => {
-        setIsViewportDirty(true);
-        if (autoSearchOnMoveRef.current) {
-          if (autoSearchTimerRef.current) clearTimeout(autoSearchTimerRef.current);
-          autoSearchTimerRef.current = setTimeout(() => {
-            if (handleSearchInAreaRef.current) handleSearchInAreaRef.current();
-          }, 450);
-        }
-      });
-      map.on('click', () => {
-        clearSpiderfy();
-      });
+      map.on('moveend zoomend', updateViewportCounter);
 
       setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.invalidateSize();
-          syncBounds();
+          updateViewportCounter();
         }
       }, 300);
     }
@@ -415,238 +296,247 @@ export default function PropertyMap({
   }, [showFactionsLayer]);
 
   useEffect(() => {
-    const unlocated = displayedList.filter(p => getMapCoordinates(p) === null);
-    if (unlocated.length === 0) return;
-
-    let isSubscribed = true;
-    async function geocodeBatch() {
-      // Requests are deliberately bounded and only accept an address-level
-      // answer. A missing result remains in the review drawer instead of being
-      // placed at a neighborhood/city centroid.
-      for (const prop of unlocated.slice(0, 12)) {
-        if (!isSubscribed) break;
-        if (geocodeAttemptedRef.current.has(prop.id)) continue;
-
-        const address = prop.address?.trim() || '';
-        if (!address || !/^(?:rua|r\.|avenida|av\.|estrada|est\.|travessa|trav\.|alameda|al\.|praca|praça|pca\.|rodovia|rod\.|largo|beco|ladeira)\b/i.test(address)) {
-          geocodeAttemptedRef.current.add(prop.id);
-          continue;
-        }
-
-        geocodeAttemptedRef.current.add(prop.id);
-        try {
-          const params = new URLSearchParams({
-            q: address,
-            address,
-            neighborhood: prop.neighborhood || '',
-            city: prop.city || '',
-            state: prop.state || 'RJ'
-          });
-          const res = await fetch(`/api/geocode?${params.toString()}`);
-          if (res.ok) {
-            const geo = await res.json();
-            if (
-              geo?.precision &&
-              Number.isFinite(geo.lat) &&
-              Number.isFinite(geo.lng) &&
-              mapRef.current
-            ) {
-              setResolvedCoordinates(current => (
-                current[prop.id]
-                  ? current
-                  : { ...current, [prop.id]: [geo.lat, geo.lng] }
-              ));
-            }
-          }
-        } catch (e) {}
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const controller = new AbortController();
+    const token = localStorage.getItem('token');
+    const headers: Record<string,string> = token ? { Authorization: `Bearer ${token}` } : {};
+    const load = () => fetch('/api/map/locations', { headers, signal: controller.signal }).then(r => {
+      if (!r.ok) throw new Error(String(r.status));
+      if (r.headers.get('X-Map-Refreshing') === '1' && !cancelled) timer = setTimeout(load, 15000);
+      return r.json();
+    }).then((locations: any[]) => {
+      if (cancelled || !Array.isArray(locations)) return;
+      const next: Record<string, [number, number]> = {};
+      const records: Record<string, any> = {};
+      const currentById = new Map(auctions.map(a => [a.id, a]));
+      for (const location of locations) {
+        const current = currentById.get(location.id);
+        if (current) records[location.id] = location;
+        if (current) { const point = getPropertyCoordinates({ ...current, mapLocation: location } as AuctionProperty); if (point) next[location.id] = point; }
       }
-    }
-    geocodeBatch();
-    return () => { isSubscribed = false; };
-  }, [displayedList, getMapCoordinates]);
+      setResolvedCoordinates(next);
+      setLocationRecords(records);
+      setLocationsLoaded(true);
+      setLocationError(false);
+    }).catch(err => { if (!cancelled) { setLocationError(true); setLocationsLoaded(true); } console.warn('Falha ao carregar localizações verificadas', err); });
+    load();
+    return () => { cancelled = true; controller.abort(); if (timer) clearTimeout(timer); };
+  }, [auctions, initialSelectedPropertyId, initialFilteredAuctions]);
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !locationsLoaded) return;
+    const key = initialSelectedPropertyId || 'initial';
+    if (initialFitRef.current === key) return;
+    const selected = initialSelectedPropertyId && resolvedCoordinates[initialSelectedPropertyId];
+    const points = (initialFilteredAuctions || auctions).map(a => resolvedCoordinates[a.id]).filter(Boolean);
+    if (selected) { mapRef.current.setView(selected, 18); initialFitRef.current = key; }
+    else if (points.length) { mapRef.current.fitBounds(points, { padding: [35,35], maxZoom: 17 }); initialFitRef.current = key; }
+  }, [mapReady, locationsLoaded, resolvedCoordinates, initialSelectedPropertyId, initialFilteredAuctions, auctions]);
+
+
 
   useEffect(() => {
     const L = (window as any).L;
-  if (!L || !mapRef.current) return;
+    if (!L || !mapRef.current || !clusterGroupRef.current) return;
 
-  Object.values(markersRef.current).forEach((m: any) => m.remove());
-  markersRef.current = {};
-
-  const createCustomIcon = (prop: AuctionProperty, isSelected: boolean) => {
-    const typeStr = (prop.propertyType || '').toLowerCase();
-    const isCaixa = prop.origin === 'caixa' || prop.id.includes('caixa');
-
-    let bg = 'bg-blue-600 border-blue-300 text-white';
-    if (typeStr.includes('casa') || typeStr.includes('sobrado')) {
-      bg = 'bg-emerald-600 border-emerald-300 text-white';
-    } else if (typeStr.includes('comercial') || typeStr.includes('loja') || typeStr.includes('sala') || typeStr.includes('galpao') || typeStr.includes('predio')) {
-      bg = 'bg-amber-500 border-amber-200 text-slate-950';
-    } else if (typeStr.includes('terreno') || typeStr.includes('lote') || typeStr.includes('gleba')) {
-      bg = 'bg-purple-600 border-purple-300 text-white';
+    const clusterGroup = clusterGroupRef.current;
+    if (clusterGroup.clearLayers) {
+      clusterGroup.clearLayers();
     }
+    markersRef.current = {};
 
-    const ringClass = isSelected ? 'ring-4 ring-white scale-125 z-50 shadow-2xl' : 'hover:scale-110 shadow-lg';
+    const createCustomIcon = (prop: AuctionProperty, isSelected: boolean) => {
+      const origin = prop.origin || (prop.id.includes('caixa') ? 'caixa' : 'judicial');
 
-    return L.divIcon({
-      className: 'custom-map-marker',
-      html: `<div class="flex items-center justify-center w-8 h-8 rounded-full ${bg} ${ringClass} font-black text-[12px] border-2 transition-all cursor-pointer">${isCaixa ? '🏦' : '⚖️'}</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
+      let bg = 'bg-indigo-600 border-indigo-300 text-white';
+      let iconEmoji = '⚖️';
+      if (origin === 'caixa' || origin === 'extrajudicial') {
+        bg = 'bg-emerald-600 border-emerald-300 text-white';
+        iconEmoji = origin === 'caixa' ? '🏦' : '📜';
+      } else if (origin === 'portal') {
+        bg = 'bg-amber-500 border-amber-200 text-slate-950';
+        iconEmoji = '✨';
+      }
+
+      const ringClass = isSelected ? 'ring-4 ring-white scale-125 z-50 shadow-2xl animate-pulse' : 'hover:scale-110 shadow-lg';
+
+      return L.divIcon({
+        className: 'custom-map-marker',
+        html: `<div class="flex items-center justify-center w-8 h-8 rounded-full ${bg} ${ringClass} font-black text-[12px] border-2 transition-all cursor-pointer shadow-md">${iconEmoji}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+    };
+
+    const buildingClusters: {
+      key: string;
+      address: string;
+      coords: [number, number];
+      properties: AuctionProperty[];
+    }[] = [];
+
+    const clusterMap: Record<string, {
+      key: string;
+      address: string;
+      coords: [number, number];
+      properties: AuctionProperty[];
+    }> = {};
+
+    const newMarkersList: any[] = [];
+
+    filteredList.forEach(prop => {
+      const baseCoords = getMapCoordinates(prop);
+      if (!baseCoords) return;
+
+      const addrClean = (prop.address || '').split(',')[0].trim().toLowerCase();
+      const numMatch = (prop.address || '').match(/,\s*n[ºo°.]?\s*(\d+)/i) || (prop.address || '').match(/\b(\d{2,5})\b/);
+      const numStr = numMatch ? numMatch[1] : '';
+      const cleanNeigh = (prop.neighborhood || '').toLowerCase().trim();
+      const cleanCity = (prop.city || '').toLowerCase().trim();
+
+      // Only group into building multi-units if they genuinely share the same street name and building number!
+      const hasSpecificNumber = numStr && numStr.length >= 1;
+      const buildingKey = hasSpecificNumber 
+        ? `${cleanCity}_${cleanNeigh}_${addrClean}_${numStr}`
+        : `${prop.id}`;
+
+      if (!clusterMap[buildingKey]) {
+        clusterMap[buildingKey] = {
+          key: buildingKey,
+          address: prop.address || prop.title,
+          coords: baseCoords,
+          properties: []
+        };
+        buildingClusters.push(clusterMap[buildingKey]);
+      }
+      clusterMap[buildingKey].properties.push(prop);
     });
-  };
 
-  const buildingClusters: {
-    key: string;
-    address: string;
-    coords: [number, number];
-    properties: AuctionProperty[];
-  }[] = [];
+    buildingClusters.forEach(cluster => {
+      const isMultiUnit = cluster.properties.length > 1;
+      const isSelected = cluster.properties.some(p => p.id === selectedPropId);
+      const firstProp = cluster.properties[0];
 
-  const clusterMap: Record<string, {
-    key: string;
-    address: string;
-    coords: [number, number];
-    properties: AuctionProperty[];
-  }> = {};
+      let marker: any;
 
-  displayedList.forEach(prop => {
-    const baseCoords = getMapCoordinates(prop);
-    if (!baseCoords) return; // REGRA DE OURO: Bloqueio rigoroso de falsa precisão
+      if (isMultiUnit) {
+        const count = cluster.properties.length;
+        const ringClass = isSelected ? 'ring-4 ring-amber-400 scale-125 z-50 shadow-2xl' : 'hover:scale-115 shadow-xl';
+        
+        const clusterIcon = L.divIcon({
+          className: 'custom-building-cluster',
+          html: `
+            <div class="relative flex items-center justify-center w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 border-2 border-indigo-200 text-white font-black text-sm ${ringClass} transition-all cursor-pointer shadow-xl">
+              🏢
+              <span class="absolute -top-2 -right-2 bg-amber-400 text-slate-950 text-[10.5px] font-black px-1.5 py-0.2 rounded-full border border-slate-950 shadow-md font-mono">
+                ${count}
+              </span>
+            </div>
+          `,
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        });
 
-    const addrClean = (prop.address || '').split(',')[0].trim().toLowerCase();
-    const numMatch = (prop.address || '').match(/,\s*n[ºo°.]?\s*(\d+)/i) || (prop.address || '').match(/\b(\d{2,5})\b/);
-    const numStr = numMatch ? numMatch[1] : '';
-    const clusterKey = `${baseCoords[0].toFixed(4)}_${baseCoords[1].toFixed(4)}_${addrClean}_${numStr}`;
+        marker = L.marker(cluster.coords, { icon: clusterIcon });
 
-    if (!clusterMap[clusterKey]) {
-      clusterMap[clusterKey] = {
-        key: clusterKey,
-        address: prop.address || prop.title,
-        coords: baseCoords,
-        properties: []
-      };
-      buildingClusters.push(clusterMap[clusterKey]);
-    }
-    clusterMap[clusterKey].properties.push(prop);
-  });
+        const minPrice = Math.min(...cluster.properties.map(p => p.auctionPrice));
+        const maxRoi = Math.max(...cluster.properties.map(p => p.calculatedRoi || 0));
 
-  buildingClusters.forEach(cluster => {
-    const isMultiUnit = cluster.properties.length > 1;
-    const isSelected = cluster.properties.some(p => p.id === selectedPropId);
-    const firstProp = cluster.properties[0];
-
-    let marker: any;
-
-    if (isMultiUnit) {
-      const count = cluster.properties.length;
-      const ringClass = isSelected ? 'ring-4 ring-amber-400 scale-125 z-50 shadow-2xl' : 'hover:scale-115 shadow-xl';
-      
-      const clusterIcon = L.divIcon({
-        className: 'custom-building-cluster',
-        html: `
-          <div class="relative flex items-center justify-center w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 border-2 border-indigo-200 text-white font-black text-sm ${ringClass} transition-all cursor-pointer shadow-xl">
-            🏢
-            <span class="absolute -top-2 -right-2 bg-amber-400 text-slate-950 text-[10.5px] font-black px-1.5 py-0.2 rounded-full border border-slate-950 shadow-md font-mono">
-              ${count}
-            </span>
+        const tooltipContent = `
+          <div style="font-family: sans-serif; font-size: 11.5px; line-height: 1.35; padding: 4px 6px; min-width: 175px;">
+            <div style="font-weight: 800; color: #4338ca; display: flex; align-items: center; gap: 4px; font-size: 12px;">
+              🏢 ${count} Imóveis em Leilão neste Prédio
+            </div>
+            <div style="color: #334155; font-size: 10.5px; margin-top: 2px; font-weight: 600;">${cluster.address}</div>
+            <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
+              <span style="color: #0369a1;">A partir de ${formatBRL(minPrice)}</span>
+              <span style="color: #15803d;">Top ROI: ${maxRoi.toFixed(0)}%</span>
+            </div>
+            <div style="font-size: 9.5px; color: #64748b; margin-top: 3px; text-align: center; font-weight: 600;">
+              Clique para abrir as ${count} unidades
+            </div>
           </div>
-        `,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
-      });
+        `;
+        marker.bindTooltip(tooltipContent, {
+          direction: 'top',
+          offset: [0, -20],
+          opacity: 0.98
+        });
 
-      marker = L.marker(cluster.coords, { icon: clusterIcon }).addTo(mapRef.current);
+        marker.on('click', (e: any) => {
+          if (e && e.originalEvent) e.originalEvent.stopPropagation();
+          setSelectedPropId(firstProp.id);
+          setBuildingClusterModal({ address: cluster.address, properties: cluster.properties });
+          mapRef.current.setView(cluster.coords, 18, { animate: true });
+          const el = document.getElementById(`side-card-${firstProp.id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
 
-      const minPrice = Math.min(...cluster.properties.map(p => p.auctionPrice));
-      const maxRoi = Math.max(...cluster.properties.map(p => p.calculatedRoi || 0));
+        cluster.properties.forEach(p => {
+          markersRef.current[p.id] = marker;
+        });
+        newMarkersList.push(marker);
 
-      const tooltipContent = `
-        <div style="font-family: sans-serif; font-size: 11.5px; line-height: 1.35; padding: 4px 6px; min-width: 175px;">
-          <div style="font-weight: 800; color: #4338ca; display: flex; align-items: center; gap: 4px; font-size: 12px;">
-            🏢 ${count} Imóveis em Leilão neste Prédio
+      } else {
+        const prop = firstProp;
+        const icon = createCustomIcon(prop, isSelected);
+        marker = L.marker(cluster.coords, { icon });
+
+        const aptMatch = prop.address?.match(/\b(apto|apt|ap|casa|unidade|loja)\s*[\d\w]+/i);
+        const unitLabel = aptMatch ? ` (${aptMatch[0].toUpperCase()})` : '';
+        const tooltipContent = `
+          <div style="font-family: sans-serif; font-size: 11.5px; line-height: 1.35; padding: 2px 4px; min-width: 160px;">
+            <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">${prop.title}${unitLabel}</div>
+            <div style="color: #64748b; font-size: 10.5px; margin-bottom: 4px;">${prop.address}</div>
+            <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 600; border-top: 1px solid #e2e8f0; padding-top: 3px;">
+              <span style="color: #0369a1;">Lance: ${formatBRL(prop.auctionPrice)}</span>
+              <span style="color: #15803d;">ROI: ${(prop.calculatedRoi || 0).toFixed(1)}%</span>
+            </div>
           </div>
-          <div style="color: #334155; font-size: 10.5px; margin-top: 2px; font-weight: 600;">${cluster.address}</div>
-          <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-            <span style="color: #0369a1;">A partir de ${formatBRL(minPrice)}</span>
-            <span style="color: #15803d;">Top ROI: ${maxRoi.toFixed(0)}%</span>
-          </div>
-          <div style="font-size: 9.5px; color: #64748b; margin-top: 3px; text-align: center; font-weight: 600;">
-            Clique para abrir as ${count} unidades
-          </div>
-        </div>
-      `;
-      marker.bindTooltip(tooltipContent, {
-        direction: 'top',
-        offset: [0, -20],
-        opacity: 0.98
-      });
+        `;
+        marker.bindTooltip(tooltipContent, {
+          direction: 'top',
+          offset: [0, -18],
+          opacity: 0.95
+        });
 
-      marker.on('click', (e: any) => {
-        if (e && e.originalEvent) e.originalEvent.stopPropagation();
-        setSelectedPropId(firstProp.id);
-        applyVisualSpiderfy(cluster);
-        setBuildingClusterModal({ address: cluster.address, properties: cluster.properties });
-        mapRef.current.setView(cluster.coords, 16, { animate: true });
-        const el = document.getElementById(`side-card-${firstProp.id}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      });
+        marker.on('click', () => {
+          setSelectedPropId(prop.id);
+          mapRef.current.setView(cluster.coords, 16, { animate: true });
+          const el = document.getElementById(`side-card-${prop.id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
 
-      cluster.properties.forEach(p => {
-        markersRef.current[p.id] = marker;
-      });
+        markersRef.current[prop.id] = marker;
+        newMarkersList.push(marker);
+      }
+    });
 
+    if (clusterGroup.addLayers) {
+      clusterGroup.addLayers(newMarkersList);
     } else {
-      const prop = firstProp;
-      const icon = createCustomIcon(prop, isSelected);
-      marker = L.marker(cluster.coords, { icon }).addTo(mapRef.current);
-
-      const aptMatch = prop.address?.match(/\b(apto|apt|ap|casa|unidade|loja)\s*[\d\w]+/i);
-      const unitLabel = aptMatch ? ` (${aptMatch[0].toUpperCase()})` : '';
-      const tooltipContent = `
-        <div style="font-family: sans-serif; font-size: 11.5px; line-height: 1.35; padding: 2px 4px; min-width: 160px;">
-          <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">${prop.title}${unitLabel}</div>
-          <div style="color: #64748b; font-size: 10.5px; margin-bottom: 4px;">${prop.address}</div>
-          <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 600; border-top: 1px solid #e2e8f0; padding-top: 3px;">
-            <span style="color: #0369a1;">Lance: ${formatBRL(prop.auctionPrice)}</span>
-            <span style="color: #15803d;">ROI: ${(prop.calculatedRoi || 0).toFixed(1)}%</span>
-          </div>
-        </div>
-      `;
-      marker.bindTooltip(tooltipContent, {
-        direction: 'top',
-        offset: [0, -18],
-        opacity: 0.95
-      });
-
-      marker.on('click', () => {
-        setSelectedPropId(prop.id);
-        mapRef.current.setView(cluster.coords, 16, { animate: true });
-        const el = document.getElementById(`side-card-${prop.id}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      });
-
-      markersRef.current[prop.id] = marker;
+      newMarkersList.forEach(m => clusterGroup.addLayer(m));
     }
-  });
+  }, [filteredList, selectedPropId, getMapCoordinates]);
 
-}, [displayedList, selectedPropId, getMapCoordinates]);
 
 useEffect(() => {
   if (!selectedPropId || !mapRef.current) return;
-  const target = auctions.find(a => a.id === selectedPropId);
+  const target = baseList.find(a => a.id === selectedPropId) || auctions.find(a => a.id === selectedPropId);
   if (!target) return;
   const coords = getMapCoordinates(target);
   const focusKey = coords ? `${selectedPropId}:${coords.join(',')}` : '';
   if (coords && focusKey !== focusedLocationRef.current) {
     focusedLocationRef.current = focusKey;
     mapRef.current.invalidateSize();
-    mapRef.current.setView(coords, 16, { animate: false });
+    mapRef.current.setView(coords, 18, { animate: false });
   }
-}, [selectedPropId, auctions, getMapCoordinates, mapReady]);
+}, [selectedPropId, auctions, baseList, getMapCoordinates, mapReady]);
 
   const handleCardClick = (prop: AuctionProperty) => {
     setSelectedPropId(prop.id);
@@ -660,8 +550,8 @@ useEffect(() => {
   };
 
   const selectedProp = useMemo(() => {
-    return auctions.find(a => a.id === selectedPropId) || null;
-  }, [auctions, selectedPropId]);
+    return baseList.find(a => a.id === selectedPropId) || auctions.find(a => a.id === selectedPropId) || null;
+  }, [auctions, baseList, selectedPropId]);
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[88vh] sm:h-[90vh] lg:h-[92vh] relative w-full">
@@ -674,9 +564,9 @@ useEffect(() => {
             <h2 className="font-black text-white text-sm sm:text-base tracking-tight flex items-center gap-2 flex-wrap">
               <span>Mapa Georreferenciado & Fichas</span>
               <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40">
-                {displayedList.length} Imóveis no Enquadramento
+                {filteredList.length} Imóveis Disponíveis {inViewportCount > 0 ? `• ${inViewportCount} no Enquadramento` : ''}
               </span>
-              {pendingReviewProps.length > 0 && (
+              {locationsLoaded && pendingReviewProps.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowPendingDrawer(true)}
@@ -689,7 +579,7 @@ useEffect(() => {
               )}
             </h2>
             <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block">
-              Navegue pelo mapa ou consulte as fichas detalhadas ao lado
+              {!locationsLoaded ? 'Carregando localizações…' : locationError ? 'Não foi possível carregar as localizações. Reabra o mapa para tentar novamente.' : `IBGE · Censo 2022 · ${auctions.length - pendingReviewProps.length} de ${auctions.length} endereços localizados. Pontos de acesso, sujeitos à precisão da coleta.`}
             </p>
           </div>
         </div>
@@ -840,39 +730,12 @@ useEffect(() => {
 
           {/* BARRA FLUTUANTE ESTILO ZAP IMÓVEIS / AIRBNB */}
           <div className="absolute top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-center gap-2 pointer-events-none animate-in fade-in slide-in-from-top-2 duration-150">
-            {(!autoSearchOnMove && isViewportDirty) && (
-              <button
-                type="button"
-                onClick={handleSearchInArea}
-                disabled={isSearchingArea}
-                className="pointer-events-auto bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-xs sm:text-sm px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 border-2 border-indigo-300 cursor-pointer backdrop-blur-md transition-all hover:shadow-indigo-500/50"
-              >
-                <Search className={`w-3.5 h-3.5 text-amber-300 ${isSearchingArea ? 'animate-spin' : 'animate-bounce'}`} />
-                <span>{isSearchingArea ? 'Buscando na área...' : '🔍 Buscar nesta área'}</span>
-              </button>
-            )}
 
-            <label className="pointer-events-auto flex items-center gap-2 bg-slate-950/95 hover:bg-slate-900 text-slate-200 px-3.5 py-2 rounded-full border border-slate-750 text-xs font-bold shadow-2xl backdrop-blur-md cursor-pointer select-none transition-colors">
-              <input
-                type="checkbox"
-                checked={autoSearchOnMove}
-                onChange={(e) => setAutoSearchOnMove(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-slate-600 text-indigo-600 focus:ring-0 cursor-pointer"
-              />
-              <span className="hidden sm:inline">Buscar ao mover o mapa</span>
-              <span className="sm:hidden">Auto-buscar</span>
-            </label>
 
-            {areaFilteredProps !== null && (
-              <button
-                onClick={() => setAreaFilteredProps(null)}
-                className="pointer-events-auto bg-slate-900/95 hover:bg-slate-850 text-slate-300 hover:text-white px-3 py-2 rounded-xl border border-slate-700 text-xs font-bold shadow-xl cursor-pointer backdrop-blur-md transition-all flex items-center gap-1.5"
-                title="Limpar filtro de área e exibir todos os imóveis"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Ver todos ({auctions.length})</span>
-              </button>
-            )}
+            <div className="pointer-events-auto flex items-center gap-2 bg-slate-950/95 text-slate-200 px-3.5 py-2 rounded-full border border-slate-750 text-xs font-bold shadow-2xl backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Alta Precisão Rooftop & Cluster Estável</span>
+            </div>
           </div>
 
           {buildingClusterModal && (
@@ -1329,6 +1192,11 @@ useEffect(() => {
                 );
               })
             )}
+            {displayedList.length < orderedList.length && (
+              <button type="button" onClick={() => setVisibleCardCount(count => count + 100)} className="w-full rounded-xl bg-slate-800 p-3 text-sm font-bold text-white hover:bg-slate-700">
+                Mostrar mais fichas ({displayedList.length} de {orderedList.length})
+              </button>
+            )}
           </div>
 
                   </div>
@@ -1341,8 +1209,8 @@ useEffect(() => {
             onClick={() => setSimulatingProperty(null)}
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs cursor-pointer animate-in fade-in duration-200"
           />
-          <div className="absolute inset-0 flex p-2 sm:p-4 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-[1440px] mx-auto bg-slate-900 border border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden">
+          <div className="absolute inset-0 flex justify-end pointer-events-none">
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="pointer-events-auto w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden">
               <div className="bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
@@ -1368,6 +1236,7 @@ useEffect(() => {
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-slate-950/50">
                 <RealValueCalculator
                   key={simulatingProperty.id}
+                  itbiStats={itbiStats}
                   prefillData={{
                     ...simulatingProperty,
                     purchasePrice: simulatingProperty.auctionPrice,
@@ -1379,20 +1248,13 @@ useEffect(() => {
                     acquisitionRule: simulatingProperty.origin === 'caixa' || (simulatingProperty.id && simulatingProperty.id.includes('caixa')) ? 'caixa' : 'leilao',
                   }}
                   onUpdateProperty={async (updates) => {
-                    setAreaFilteredProps(prev => prev ? prev.map(a => a.id === simulatingProperty.id ? { ...a, ...updates } : a) : null);
                     setSimulatingProperty(prev => prev ? { ...prev, ...updates } : null);
-                    try {
-                      fetch(`/api/auctions/${simulatingProperty.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(updates)
-                      }).catch(() => {});
-                    } catch (e) {}
+                    if (onUpdateProperty) await onUpdateProperty({ ...updates, id: simulatingProperty.id });
                   }}
                   onClose={() => setSimulatingProperty(null)}
                 />
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>, document.body
       )}
@@ -1413,7 +1275,7 @@ useEffect(() => {
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Regra de Ouro Geoespacial: Bloqueio estrito de centroides fictícios para endereços sem validação cartográfica oficial.
+                    Estes anúncios continuam disponíveis. O ponto será exibido quando rua, número e localização puderem ser confirmados.
                   </p>
                 </div>
               </div>
@@ -1443,13 +1305,14 @@ useEffect(() => {
                           PENDENTE_REVISAO
                         </span>
                         <span className="text-xs font-semibold text-slate-300 truncate">
-                          {item.neighborhood || 'Bairro N/D'}, {item.city || 'Rio de Janeiro'} - {item.state || 'RJ'}
+                          {item.neighborhood || 'Bairro N/D'}, {item.city || 'Cidade não informada'} - {item.state || 'UF não informada'}
                         </span>
                       </div>
                       <p className="text-sm font-bold text-white truncate">{item.title}</p>
                       <p className="text-xs text-slate-400 font-mono mt-0.5 truncate">
-                        Endereço Bruto: {item.address || 'Não informado no edital'}
+                        Endereço: {item.address || 'Não informado no edital'}
                       </p>
+                      <p className="text-xs text-amber-300 mt-1">{({ missing_number: 'Número não informado no endereço', address_not_found: 'Rua e número ainda não encontrados na base oficial', block_not_confirmed: 'Bloco do condomínio ainda não confirmado', multiple_address_points: 'Mais de um ponto corresponde ao endereço', no_original_coordinate: 'A base dispõe apenas de coordenada estimada', municipality_not_found: 'Município ainda não localizado na base', not_yet_matched: 'Endereço aguardando cruzamento com a base oficial' } as Record<string,string>)[locationRecords[item.id]?.reason] || 'Localização pendente de confirmação'}</p>
                       <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-300">
                         <span>Lance: <b className="text-emerald-400">{formatBRL(item.auctionPrice)}</b></span>
                         {item.estimatedValue && <span>Avaliação: <b>{formatBRL(item.estimatedValue)}</b></span>}

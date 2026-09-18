@@ -11,6 +11,7 @@ export interface GeocodeResult {
   source?: 'nominatim' | 'photon' | 'local-cache';
   matchedCity?: string;
   matchedStreet?: string;
+  matchedNumber?: string;
 }
 
 const GEOCODE_CACHE_PATH = path.join(process.cwd(), 'geocode_cache.json');
@@ -70,7 +71,7 @@ function hasLocationTextMatch(expected: string, candidate: string): boolean {
 function hasStreetMatch(expectedStreet: string, candidateStreet: string): boolean {
   const expected = streetCore(expectedStreet);
   const candidate = streetCore(candidateStreet);
-  return hasLocationTextMatch(expected, candidate);
+  return !!expected && expected === candidate;
 }
 
 function hasCityMatch(expectedCity: string | undefined, candidateCity: string | undefined, displayName: string): boolean {
@@ -79,9 +80,9 @@ function hasCityMatch(expectedCity: string | undefined, candidateCity: string | 
 
   // Prefer the structured municipality field. This avoids accepting a result
   // from Itaguai merely because its state display name contains "Rio de Janeiro".
-  if (candidateCity) return hasLocationTextMatch(expected, candidateCity);
+  if (candidateCity) return expected === normalizeForMatch(candidateCity);
 
-  return hasLocationTextMatch(expected, displayName);
+  return false;
 }
 
 function hasValidCoordinates(result: Partial<GeocodeResult> | undefined, state?: string): result is GeocodeResult {
@@ -97,35 +98,40 @@ function isResultForAddress(
   state?: string
 ): result is GeocodeResult {
   if (!hasValidCoordinates(result, state)) return false;
-  const { street } = cleanBrazilianAddress(address);
+  const { street, number } = cleanBrazilianAddress(address);
+  if (number && result.matchedNumber && normalizeForMatch(result.matchedNumber) !== normalizeForMatch(number)) return false;
+  if (result.precision === 'rooftop' && (!number || normalizeForMatch(result.matchedNumber) !== normalizeForMatch(number))) return false;
   if (!street || streetCore(street).length < 3) return false;
 
-  const candidateStreet = `${result.matchedStreet || ''} ${result.displayName || ''}`;
+  const candidateStreet = result.matchedStreet || ''; 
   const candidateCity = result.matchedCity;
   return hasStreetMatch(street, candidateStreet) && hasCityMatch(city, candidateCity, result.displayName || '');
 }
 
 export function getCachedCoords(address: string, neighborhood?: string, city?: string, state?: string): GeocodeResult | null {
   const normKey = cleanQuery(address);
-  const { street } = cleanBrazilianAddress(address);
+  const { street, number } = cleanBrazilianAddress(address);
   const cityName = city || 'Rio de Janeiro';
   const uf = state || 'RJ';
 
-  // Accept a disk-cache item only when its returned address still agrees with
-  // the requested city and street. Older cache entries had no precision field,
-  // so they are conservatively treated as street-level matches.
   const cacheKeys = new Set<string>();
+  cacheKeys.add(cleanQuery(`${address}|${cityName}|${uf}`));
   if (normKey) cacheKeys.add(normKey);
   if (street) {
-    const streetKey = cleanQuery(street);
-    if (streetKey) cacheKeys.add(streetKey);
+    if (number) {
+      cacheKeys.add(cleanQuery(`${street} ${number}|${cityName}|${uf}`));
+      cacheKeys.add(cleanQuery(`${street}, ${number}|${cityName}|${uf}`));
+    } else {
+      const streetKey = cleanQuery(street);
+      if (streetKey) cacheKeys.add(streetKey);
 
-    if (neighborhood) {
-      const neighKey = cleanQuery(`${street}, ${neighborhood}`);
-      if (neighKey) cacheKeys.add(neighKey);
+      if (neighborhood) {
+        const neighKey = cleanQuery(`${street}, ${neighborhood}`);
+        if (neighKey) cacheKeys.add(neighKey);
 
-      const fullKey = cleanQuery(`${street}, ${neighborhood}, ${cityName} - ${uf}`);
-      if (fullKey) cacheKeys.add(fullKey);
+        const fullKey = cleanQuery(`${street}, ${neighborhood}, ${cityName} - ${uf}`);
+        if (fullKey) cacheKeys.add(fullKey);
+      }
     }
   }
 
@@ -134,7 +140,7 @@ export function getCachedCoords(address: string, neighborhood?: string, city?: s
     if (isResultForAddress(cached, address, neighborhood, cityName, uf)) {
       return {
         ...cached,
-        precision: cached.precision || 'street',
+        precision: cached.precision || (number && cached.matchedNumber === number ? 'rooftop' : 'street'),
         source: cached.source || 'local-cache'
       };
     }
@@ -202,14 +208,31 @@ export function cleanBrazilianAddress(raw: string): { street: string; number: st
 
   // Extract number if present: 'N. 6', 'Nº 6', ', 6', 'NUM 6', 'NRO 6', etc.
   let number = '';
-  const numMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+[a-z]?)\b/i) ||
-                   text.match(/,\s*(\d+[a-z]?)\b/i);
-  if (numMatch) {
-    number = numMatch[1];
+  const prefixMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+[a-z]?)\b/i);
+  if (prefixMatch) {
+    number = prefixMatch[1];
+  } else {
+    const commaNumMatch = text.match(/,\s*(\d+[a-z]?)\b/i);
+    if (commaNumMatch) {
+      number = commaNumMatch[1];
+    } else {
+      const spaceNumMatch = text.match(/\s+(\d{1,5}[a-z]?)(?:\s*[-,\/]|\s+(?:apto|apt|ap|bloco|bl|sala|loja|casa|unid|andar|qd|lote|fundos|centro|bairro)|$)/i);
+      if (spaceNumMatch) {
+        number = spaceNumMatch[1];
+      }
+    }
   }
 
-  // Extract street name before number or complement
-  let street = text.split(/,\s*(?:n[ºo°.]?|num|\d)/i)[0].trim();
+  let street = text;
+  if (number) {
+    const numRe = new RegExp('(?:,\\s*|\\s+)(?:n[ºo°.]?|num(?:ero)?\\.?|nro\\.?)?\\s*' + number + '(?=[,\\s-]|$)', 'i');
+    const numIdx = street.search(numRe);
+    if (numIdx > 0) {
+      street = street.slice(0, numIdx);
+    }
+  } else {
+    street = street.split(/,\s*(?:n[ºo°.]?|num|\d)/i)[0].trim();
+  }
   
   // Remove unit/apartment/block/room text
   street = street.replace(/\b(apto|apt|ap|apartamento|bloco|bl|sala|loja|cobertura|cob|unidade|unid|andar|pavimento|fundos|fds|casa\s*\d+)\b[.\s#\d\w\/-]*/gi, '').trim();
@@ -261,13 +284,14 @@ function buildCandidate(
     return null;
   }
 
-  if (!hasStreetMatch(context.street, `${matchedStreet || ''} ${displayName}`)) {
+  if (!hasStreetMatch(context.street, matchedStreet || '')) {
     return null;
   }
   if (!hasCityMatch(context.city, matchedCity, displayName)) {
     return null;
   }
 
+  if (context.number && normalizeForMatch(matchedNumber) !== normalizeForMatch(context.number)) return null;
   const exactNumber = context.number && normalizeForMatch(matchedNumber) === normalizeForMatch(context.number);
   return {
     lat,
@@ -276,7 +300,8 @@ function buildCandidate(
     precision: exactNumber ? 'rooftop' : 'street',
     source,
     matchedCity,
-    matchedStreet
+    matchedStreet,
+    matchedNumber
   };
 }
 
@@ -309,7 +334,7 @@ async function queryPhoton(query: string, context: GeocodeSearchContext): Promis
         'photon',
         context,
         properties.city || properties.municipality || properties.locality,
-        properties.street || properties.name,
+        properties.street,
         properties.housenumber
       );
       if (result) return result;
@@ -336,7 +361,7 @@ async function queryNominatim(query: string, context: GeocodeSearchContext): Pro
         'nominatim',
         context,
         address.city || address.town || address.village || address.municipality || address.county,
-        address.road || address.pedestrian || address.residential || address.footway || address.place,
+        address.road || address.pedestrian || address.residential,
         address.house_number
       );
       if (result) return result;
@@ -351,7 +376,7 @@ function cacheResolvedAddress(result: GeocodeResult, query: string, street: stri
   const keys = new Set([
     cleanQuery(query),
     cleanQuery(`${street}, ${neighborhood}, ${city} - ${state}`),
-    cleanQuery(street)
+    cleanQuery(`${query}|${city}|${state}`)
   ]);
   for (const key of keys) {
     if (key) geocodeCache[key] = result;
@@ -373,12 +398,12 @@ export async function geocodeAddress(
   if (!street || streetCore(street).length < 3) return null;
 
   const cached = getCachedCoords(query, neighborhood, city, state);
-  if (cached) return cached;
+  if (cached && (cached.precision === 'rooftop' || options?.allowStreetFallback !== false)) return cached;
 
   const context: GeocodeSearchContext = { street, number, city, state };
   const exactQuery = `${street}${number ? `, ${number}` : ''}, ${neighborhood ? `${neighborhood}, ` : ''}${city} - ${state}, Brasil`;
   const exactHit = await queryNominatim(exactQuery, context) || await queryPhoton(exactQuery, context);
-  if (exactHit) {
+  if (exactHit && (exactHit.precision === 'rooftop' || options?.allowStreetFallback !== false)) {
     cacheResolvedAddress(exactHit, query, street, neighborhood, city, state);
     return exactHit;
   }
@@ -386,7 +411,7 @@ export async function geocodeAddress(
   if (options?.allowStreetFallback === false) return null;
 
   const streetQuery = `${street}, ${neighborhood ? `${neighborhood}, ` : ''}${city} - ${state}, Brasil`;
-  const streetHit = await queryNominatim(streetQuery, context) || await queryPhoton(streetQuery, context);
+  const streetHit = await queryNominatim(streetQuery, { ...context, number: '' }) || await queryPhoton(streetQuery, { ...context, number: '' });
   if (streetHit) {
     cacheResolvedAddress({ ...streetHit, precision: 'street' }, query, street, neighborhood, city, state);
     return { ...streetHit, precision: 'street' };

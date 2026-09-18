@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Building2, Home, Landmark, Trees, Image as ImageIcon } from 'lucide-react';
 import { AuctionProperty } from '../types.ts';
 
@@ -6,12 +6,14 @@ interface PropertyThumbnailProps {
   property: AuctionProperty;
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'cover';
+  onClick?: () => void;
 }
 
 export default function PropertyThumbnail({
   property,
   className = '',
-  size = 'md'
+  size = 'md',
+  onClick
 }: PropertyThumbnailProps) {
   const [imgErrorCount, setImgErrorCount] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -54,7 +56,10 @@ export default function PropertyThumbnail({
 
   return (
     <div
-      className={`relative ${dimClasses} ${size === 'cover' ? 'rounded-none' : 'rounded-2xl'} overflow-hidden shrink-0 border border-slate-800 bg-slate-950 shadow-md group ${className}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={`relative ${dimClasses} ${size === 'cover' ? 'rounded-none' : 'rounded-2xl'} overflow-hidden shrink-0 border border-slate-800 bg-slate-950 shadow-md group ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {currentUrl ? (
         <>
@@ -75,6 +80,13 @@ export default function PropertyThumbnail({
           )}
           {/* Subtle overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
+          {onClick && (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <span className="p-1.5 rounded-full bg-slate-900/80 text-white border border-slate-700 shadow-md">
+                <ImageIcon className="w-3.5 h-3.5 text-indigo-300" />
+              </span>
+            </div>
+          )}
         </>
       ) : (
         /* Sleek Modern Architectural Placeholder */

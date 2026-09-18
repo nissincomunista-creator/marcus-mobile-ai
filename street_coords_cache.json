@@ -3750,5 +3750,197 @@
   "rj_sao joao de meriti_parque sao nicolau_rua sebastiao sobral": {
     "lat": -22.784532,
     "lng": -43.393478
+  },
+  "rj_niteroi_camboinhas_rua 4 (cond uba camboinhas)": {
+    "lat": -22.96,
+    "lng": -43.048
+  },
+  "rj_niteroi_camboinhas_rua achylles de a oliveira,dr": {
+    "lat": -22.961,
+    "lng": -43.051
+  },
+  "rj_niteroi_camboinhas_rua luiz lebreiro,tab": {
+    "lat": -22.9585,
+    "lng": -43.0515
+  },
+  "rj_niteroi_camboinhas_rua nilton vianna,eng": {
+    "lat": -22.959,
+    "lng": -43.0495
+  },
+  "rj_niteroi_camboinhas_rua pedro tavares d pessoa": {
+    "lat": -22.958,
+    "lng": -43.0505
+  },
+  "rj_niteroi_camboinhas_rua vitoria,me": {
+    "lat": -22.9615,
+    "lng": -43.049
+  },
+  "rj_niteroi_camboinhas_rua geografo amora": {
+    "lat": -22.9598,
+    "lng": -43.053
+  },
+  "rj_niteroi_inga_rua casimiro de abreu": {
+    "lat": -22.903,
+    "lng": -43.1255
+  },
+  "rj_niteroi_inga_fagundes varela": {
+    "lat": -22.9065,
+    "lng": -43.122
+  },
+  "rj_niteroi_santa rosa_travessa elzir almeida brandao": {
+    "lat": -22.906,
+    "lng": -43.0905
+  },
+  "rj_niteroi_santa rosa_travessa exp. tenente mesquita": {
+    "lat": -22.9051,
+    "lng": -43.0903
+  },
+  "rj_niteroi_santa rosa_travessa faria": {
+    "lat": -22.9033,
+    "lng": -43.0912
+  },
+  "rj_niteroi_santa rosa_travessa joaquim de oliveira rocha": {
+    "lat": -22.9041,
+    "lng": -43.091
+  },
+  "rj_niteroi_santa rosa_travessa rosa do viterbo,sta": {
+    "lat": -22.9045,
+    "lng": -43.0894
+  },
+  "rj_niteroi_santa rosa_rua noronha torrezao": {
+    "lat": -22.904,
+    "lng": -43.0885
+  },
+  "rj_niteroi_sape_estrada guilhermina bastos": {
+    "lat": -22.94639,
+    "lng": -43.08056
+  },
+  "rj_niteroi_sape_estrada washington luis": {
+    "lat": -22.9442,
+    "lng": -43.085
+  },
+  "rj_niteroi_sape_rua 1 (lirios do campo iv)": {
+    "lat": -22.94392,
+    "lng": -43.08984
+  },
+  "rj_niteroi_sape_rua 2 (lirios do campo iv)": {
+    "lat": -22.9442,
+    "lng": -43.08955
+  },
+  "rj_niteroi_sape_rua di cavalcanti": {
+    "lat": -22.94318,
+    "lng": -43.0883
+  },
+  "rj_niteroi_sape_rua e": {
+    "lat": -22.9427,
+    "lng": -43.0847
+  },
+  "rj_niteroi_sape_rua nilo pecanha": {
+    "lat": -22.9416,
+    "lng": -43.0855
+  },
+  "rj_rio de janeiro_agua santa_rua borja reis": {
+    "lat": -22.909,
+    "lng": -43.328
+  },
+  "rj_rio de janeiro_agua santa_rua projetada a paa 11894": {
+    "lat": -22.906,
+    "lng": -43.33
+  },
+  "rj_rio de janeiro_agua santa_rua violeta": {
+    "lat": -22.907,
+    "lng": -43.327
+  },
+  "rj_rio de janeiro_agua santa_rua fontoura chaves": {
+    "lat": -22.908,
+    "lng": -43.331
+  },
+  "rj_rio de janeiro_agua santa_rua monteiro da luz": {
+    "lat": -22.91,
+    "lng": -43.326
+  },
+  "rj_rio de janeiro_centro_lote": {
+    "lat": -22.9071536,
+    "lng": -43.1822706
+  },
+  "rj_rio de janeiro_condominio na vila valqueire_casa em condominio na vila valqueire, rio de janeiro, rj": {
+    "lat": -22.8797,
+    "lng": -43.3514
+  },
+  "rj_rio de janeiro_ramos_rua teixeira ribeiro": {
+    "lat": -22.868,
+    "lng": -43.25
+  },
+  "rj_rio de janeiro_ramos_rua soares tavares": {
+    "lat": -22.8637,
+    "lng": -43.252
+  },
+  "rj_rio de janeiro_ramos_rua emilio zaluar": {
+    "lat": -22.8624,
+    "lng": -43.2458
+  },
+  "rj_rio de janeiro_ramos_rua souza lobo": {
+    "lat": -22.8629,
+    "lng": -43.2475
+  },
+  "rj_rio de janeiro_ramos_rua aureliano lessa": {
+    "lat": -22.8633,
+    "lng": -43.2488
+  },
+  "rj_rio de janeiro_ramos_rua nossa senhora das gracas": {
+    "lat": -22.867,
+    "lng": -43.2513
+  },
+  "rj_rio de janeiro_ramos_rua nabor do rego": {
+    "lat": -22.8653,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_ramos_rua doutor miguel vieira ferreira": {
+    "lat": -22.866,
+    "lng": -43.251
+  },
+  "rj_rio de janeiro_ramos_rua sargento ferreira": {
+    "lat": -22.8665,
+    "lng": -43.2492
+  },
+  "rj_rio de janeiro_ramos_rua sargento pinto de oliveira": {
+    "lat": -22.8658,
+    "lng": -43.2485
+  },
+  "rj_rio de janeiro_ramos_rua pecanha povoas": {
+    "lat": -22.8674,
+    "lng": -43.2505
+  },
+  "rj_rio de janeiro_ramos_rua andiroba": {
+    "lat": -22.8645,
+    "lng": -43.2465
+  },
+  "rj_rio de janeiro_ramos_rua maria da gloria": {
+    "lat": -22.8529,
+    "lng": -43.25
+  },
+  "rj_rio de janeiro_ramos_rua leopoldina rego": {
+    "lat": -22.8504,
+    "lng": -43.2514
+  },
+  "rj_rio de janeiro_pavuna_rua sargento fernandes fontes": {
+    "lat": -22.8105,
+    "lng": -43.376
+  },
+  "rj_rio de janeiro_pavuna_rua mercurio": {
+    "lat": -22.8123,
+    "lng": -43.3711
+  },
+  "rj_rio de janeiro_pavuna_rua honorio hermeto": {
+    "lat": -22.8136,
+    "lng": -43.3678
+  },
+  "rj_rio de janeiro_pavuna_rua araguatins": {
+    "lat": -22.8164,
+    "lng": -43.3669
+  },
+  "rj_rio de janeiro_pavuna_rua antonio ribeiro": {
+    "lat": -22.818,
+    "lng": -43.3685
   }
 }

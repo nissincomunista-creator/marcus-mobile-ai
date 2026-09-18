@@ -1,3 +1,5 @@
+import { auctionCosts, calculateFlip } from '../utils/flipCalculation.ts';
+import { resolveOfficialStreet } from '../utils/streetMatching.ts';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { auditRegistryText } from '../utils/registryAudit.ts';
 import { 
@@ -71,6 +73,10 @@ export interface PortalScrapeResult {
 }
 
 export interface PrefilledCalculatorData {
+  origin?: string;
+  auctioneerName?: string;
+  saleMode?: string;
+  allowsInstallments?: boolean;
   id?: string;
   title?: string;
   description?: string;
@@ -195,69 +201,8 @@ function phoneticStreet(street: string | null | undefined): string {
 }
 
 function findBestStreetMatch(target: string | null | undefined, candidateList: any[]): any | null {
-  if (!target || !candidateList || candidateList.length === 0) return null;
-  const targetPhon = phoneticStreet(target);
-  
-  // 1. Direct phonetic exact match
-  if (targetPhon) {
-    for (const cand of candidateList) {
-      const candStreet = typeof cand === 'string' ? cand : (cand?.street || '');
-      if (phoneticStreet(candStreet) === targetPhon) {
-        return cand;
-      }
-    }
-  }
-
-  const targetTokens = extractCoreStreetTokens(target);
-  if (targetTokens.length === 0) return null;
-
-  const targetNorm = normalizeString(target).replace(/^(rua|r|avenida|av|estrada|est|travessa|trav|praca|alameda)\b\.?\s*/i, '').trim();
-
-  let bestMatch: any = null;
-  let bestScore = 0;
-
-  for (const cand of candidateList) {
-    const candStreet = typeof cand === 'string' ? cand : (cand?.street || '');
-    const candTokens = extractCoreStreetTokens(candStreet);
-    if (candTokens.length === 0) continue;
-
-    const candNorm = normalizeString(candStreet).replace(/^(rua|r|avenida|av|estrada|est|travessa|trav|praca|alameda)\b\.?\s*/i, '').trim();
-
-    // 1. Overall string similarity
-    const fullSim = stringSimilarity(targetNorm, candNorm);
-
-    // 2. Token overlap & fuzzy token similarity
-    let matchCount = 0;
-    for (const t of targetTokens) {
-      if (candTokens.includes(t)) {
-        matchCount += 1.0;
-      } else {
-        let maxTokSim = 0;
-        for (const c of candTokens) {
-          if (c.startsWith(t) || t.startsWith(c)) {
-            maxTokSim = Math.max(maxTokSim, 0.85);
-          } else {
-            const sim = stringSimilarity(t, c);
-            if (sim > maxTokSim) maxTokSim = sim;
-          }
-        }
-        if (maxTokSim >= 0.65) {
-          matchCount += maxTokSim;
-        }
-      }
-    }
-
-    const tokenScore = matchCount / Math.max(targetTokens.length, candTokens.length);
-    const combinedScore = Math.max(fullSim, tokenScore * 0.9);
-
-    // Require high confidence threshold (0.68) so that unrelated streets are never mistakenly matched
-    if (combinedScore > bestScore && combinedScore >= 0.68) {
-      bestScore = combinedScore;
-      bestMatch = cand;
-    }
-  }
-
-  return bestMatch;
+  const name = resolveOfficialStreet(target || '', candidateList.map(c => typeof c === 'string' ? c : c.street || ''));
+  return name ? candidateList.find(c => (typeof c === 'string' ? c : c.street) === name) || null : null;
 }
 
 function parseAddressComponents(rawAddress: string | null | undefined): {
@@ -266,47 +211,78 @@ function parseAddressComponents(rawAddress: string | null | undefined): {
   complement: string;
 } {
   if (!rawAddress) return { street: '', number: '', complement: '' };
-  let str = rawAddress.trim();
-  
-  // 1. Remove parenthetical notes like (Antiga Rua ...), (Lote ...), (Pavuna - RJ), etc.
-  str = str.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  let text = String(rawAddress).trim();
 
-  // 2. Extract number strictly
-  let num = '';
-  let street = str;
+  // 1. Remove parenthetical notes like (Antiga Rua ...), (Lote ...), (Pavuna - RJ), etc.
+  text = text.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // 2. Remove CEP and state abbreviations at the end
+  text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, '');
+  text = text.replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, '').trim();
+
+  // 3. Cut off legal registry text, PA/PAL, lote/quadra suffixes that pollute address
+  const legalCutoffs = [
+    /,\s*(?:constitu[ií]d[oa]|formad[oa]|inscrit[oa]|matriculado|objeto|lote\s+n?[ºo°]?\s*\d+|quadra\s+[a-z0-9]+|pa\s*n?[ºo°]?\s*\d+|pal\s*n?[ºo°]?\s*\d+|do\s+bairro\b|designad[oa]|sublote).*$/i,
+    /\b(?:constitu[ií]d[oa]|formad[oa])\s+pelo\s+lote.*$/i,
+    /\bdo\s+PA\s*n?[ºo°]?\s*\d+.*$/i,
+    /\bPA\s*n?[ºo°]?\s*\d+.*$/i,
+    /\bdo\s+bairro\s+[A-Za-zÀ-ÿ\s]+.*$/i,
+    /\bmatr[íi]cula:?.*$/i
+  ];
+
+  for (const cutoff of legalCutoffs) {
+    text = text.replace(cutoff, '').trim();
+  }
+
+  // 4. Handle concatenated streets like "Rua 02, Avenida Marechal Fontenele, nº 4.553, lote 472"
+  const multiStreetMatch = text.match(/(?:rua\s*\d{1,2}|casa\s*\d+|bloco\s*\w+),\s*((?:avenida|av\.|rua|r\.|estrada|est\.|travessa|trv\.|alameda|praca)\s+[^,]+),\s*(.*)/i);
+  if (multiStreetMatch) {
+    text = `${multiStreetMatch[1]}, ${multiStreetMatch[2]}`;
+  }
+
+  // 5. Extract number strictly
+  let number = '';
   let complement = '';
 
-  // Look for ', N. 123', ', Nº 123', ', 123', ', 425D', ', S/N'
-  const matchWithComma = str.match(/^(.*?),\s*(?:n[º°.]?|numero)?\s*(\d+[a-zA-Z]?|s\/?n)\b\s*(?:,\s*(.*))?$/i);
-  if (matchWithComma) {
-    street = matchWithComma[1].trim();
-    num = matchWithComma[2].trim().toUpperCase();
-    complement = (matchWithComma[3] || '').trim();
+  // Match pattern: ', nº 33 e 33- FUNDOS' or ', nº 4.553' or ', n. 123'
+  const numPrefixMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+(?:\.\d+)?)\s*(?:e\s*\d+)?\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sobrado)?/i);
+  if (numPrefixMatch) {
+    number = numPrefixMatch[1].replace(/\./g, '');
+    if (numPrefixMatch[2]) complement = numPrefixMatch[2].trim();
   } else {
-    // Look for ' N. 123' without comma
-    const matchWithoutComma = str.match(/^(.*?)\s+(?:n[º°.]?|numero)\s*(\d+[a-zA-Z]?|s\/?n)\b\s*(?:,\s*(.*))?$/i);
-    if (matchWithoutComma) {
-      street = matchWithoutComma[1].trim();
-      num = matchWithoutComma[2].trim().toUpperCase();
-      complement = (matchWithoutComma[3] || '').trim();
-    } else {
-      // Split by comma: if second element is just a number
-      const parts = str.split(',').map(p => p.trim());
-      if (parts.length > 1) {
-        const numOnlyMatch = parts[1].match(/^(\d+[a-zA-Z]?|s\/?n)$/i);
-        if (numOnlyMatch) {
-          street = parts[0];
-          num = numOnlyMatch[1].toUpperCase();
-          complement = parts.slice(2).join(', ');
-        }
-      }
+    // Match pattern: ', 123' or ', 4553'
+    const commaNumMatch = text.match(/,\s*(\d{1,6})\b(?:\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl))?/i);
+    if (commaNumMatch) {
+      number = commaNumMatch[1];
+      if (commaNumMatch[2]) complement = commaNumMatch[2].trim();
     }
   }
 
-  // Clean trailing punctuation, ', N.' or apto from street if any leaked
-  street = street.replace(/,\s*(?:n[º°.]?|numero)?\s*$/i, '').replace(/,\s*$/, '').trim();
+  // 6. Extract street name (everything before the number)
+  let street = text;
+  if (number) {
+    const numIdx = street.search(new RegExp('(?:,\\s*|\\s+)(?:n[ºo°.]?|num(?:ero)?\\.?|nro\\.?)?\\s*' + number.replace(/(\d+)/, '(?:$1|' + Number(number).toLocaleString('pt-BR') + ')'), 'i'));
+    if (numIdx > 0) {
+      street = street.slice(0, numIdx);
+    }
+  }
 
-  return { street, number: num, complement };
+  // Clean street punctuation
+  street = street
+    .replace(/,\s*(?:n[ºo°.]?|num|\d).*$/i, '')
+    .replace(/,\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Normalize common abbreviations
+  street = street
+    .replace(/^r\.\s*/i, 'Rua ')
+    .replace(/^av\.\s*/i, 'Avenida ')
+    .replace(/^est\.\s*/i, 'Estrada ')
+    .replace(/^tr\.\s*/i, 'Travessa ')
+    .replace(/^pca\.\s*/i, 'Praça ');
+
+  return { street, number, complement };
 }
 
 function cleanStreetName(street: string | null | undefined): string {
@@ -449,9 +425,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [paymentMethod, setPaymentMethod] = useState<'a_vista' | 'financiado'>('a_vista');
   const [arrematePrice, setArrematePrice] = useState<number>(0);
   const [arremateInputStr, setArremateInputStr] = useState<string>('');
-  const [auctioneerFeeInput, setAuctioneerFeeInput] = useState<number | null>(null);
-  const [itbiFeeInput, setItbiFeeInput] = useState<number | null>(null);
-  const [registryFeeInput, setRegistryFeeInput] = useState<number | null>(null);
+  const [auctioneerFeeInput, setAuctioneerFeeInput] = useState<number | '' | null>(null);
+  const [itbiFeeInput, setItbiFeeInput] = useState<number | '' | null>(null);
+  const [registryFeeInput, setRegistryFeeInput] = useState<number | '' | null>(null);
   const [iptuDebtInput, setIptuDebtInput] = useState<number>(0);
   const [condoDebtInput, setCondoDebtInput] = useState<number>(0);
   const [reformCostInput, setReformCostInput] = useState<number>(0);
@@ -548,7 +524,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const condoVal = isHouse ? 0 : isCaixa 
       ? (prefillData.pendingDebts !== undefined && prefillData.pendingDebts > 0 ? prefillData.pendingDebts : Math.round(evalVal * 0.10))
       : (prefillData.pendingDebts || 0);
-    setCondoDebtInput(condoVal);
+    const costs = auctionCosts(prefillData);
+    setAuctioneerFeeInput(costs.auctioneer);
+    setItbiFeeInput(costs.itbi);
+    setRegistryFeeInput(costs.registry);
+    setLegalCostInput(costs.legal);
+    setReformCostInput(costs.repair);
+    setIptuDebtInput(costs.iptu);
+    setCondoDebtInput(costs.condo);
 
     // Matrícula: ONLY if actually present in description/title, never invent dummy text!
     const descToScan = (prefillData.description || '') + ' ' + (prefillData.title || '');
@@ -570,15 +553,27 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     // Edital: if property description exists, place real description in editalText
     if (prefillData.description) {
       setEditalText(prefillData.description);
-      setLeiloeiroInput('Caixa Econômica Federal');
     } else {
       setEditalText('');
+    }
+
+    // Leiloeiro: get authentic auctioneer from property data or honest fallback
+    const isGenuineCaixaLot = prefillData.origin === 'caixa' ||
+      prefillData.id?.startsWith('auc-caixa') ||
+      (prefillData.auctionLink && prefillData.auctionLink.includes('caixa.gov.br'));
+    const prefillAuctioneer = prefillData.auctioneerName || (prefillData as any).auctioneer || '';
+    if (prefillAuctioneer) {
+      setLeiloeiroInput(prefillAuctioneer);
+    } else if (isGenuineCaixaLot) {
+      setLeiloeiroInput('Caixa Econômica Federal');
+    } else {
+      setLeiloeiroInput('');
     }
 
     // Auto-análise 100% imediata da Matrícula e Edital ao abrir o simulador
     const initialCorpus = `${prefillData.matriculaText || ''}\n${prefillData.description || ''}\n${prefillData.title || ''}\n${prefillData.address || ''}`.trim();
     if (initialCorpus) {
-      executeRealEditalAnalysis(initialCorpus, `Edital_${prefillData.id || 'Imovel'}.pdf`);
+      executeRealEditalAnalysis(initialCorpus, prefillData.id ? `Edital_${prefillData.id}.pdf` : 'Edital_Imovel.pdf');
       const containsRegistryEvidence = /(?:matr[ií]cula|livro\s*2|registro\s+de\s+im[oó]veis|certid[aã]o|\b(?:R|AV)[-.\s]?\d+)/i.test(initialCorpus);
       if (containsRegistryEvidence) {
         setMatriculaText(prefillData.matriculaText || prefillData.description || '');
@@ -588,9 +583,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       }
     }
 
-    // Auto-fetch authentic Caixa Matrícula & Edital PDF if Caixa property
+    // Auto-fetch authentic Caixa Matrícula & Edital PDF ONLY if genuine Caixa property
     let timerId: any = null;
-    if (prefillData.auctionLink && !prefillData.matriculaText) {
+    if (isGenuineCaixaLot && prefillData.auctionLink && !prefillData.matriculaText) {
       timerId = setTimeout(() => {
         handleFetchCaixaDocs();
       }, 800);
@@ -662,68 +657,127 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
     setTimeout(() => {
       try {
+        // Genuine Caixa check (NEVER slap Caixa on judicial or TRT auctions!)
+        const isCaixa = (acquisitionMode === 'caixa') ||
+          (prefillData?.origin === 'caixa') ||
+          (prefillData?.id?.startsWith('auc-caixa')) ||
+          (prefillData?.auctionLink?.includes('caixa.gov.br')) ||
+          (lower.includes('alienação fiduciária') && (lower.includes('caixa econômica') || lower.includes('cef')));
+
+        // 1. Process Number Extraction
         let proc = processNumberInput.trim();
         if (!proc) {
-          const procMatch = (text + ' ' + (fileName || '')).match(/processo\s*(?:n[ºo°]?\s*)?([0-9\.\-\/]+)/i);
-          proc = procMatch && procMatch[1] ? `Processo nº ${procMatch[1]}` : (fileName ? `Edital: ${fileName.replace(/\.[^/.]+$/, '')}` : 'Processo Judicial Apurado');
+          // Standard CNJ format: 0010482-19.2022.5.03.0035
+          const cnjMatch = (text + ' ' + (fileName || '')).match(/\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/);
+          // Court-prefixed process format: Processo TRT3 nº 0010482-19.2022.5.03.0035 or Processo nº ...
+          const procRegex = /(?:processo|autos|proc\.?)\s*(?:[a-z0-9ªº°\.\-\/]+\s*){0,3}?(?:n[ºo°]?\s*)?([0-9\.\-\/]{5,30})/i;
+          const procMatch = (text + ' ' + (fileName || '')).match(procRegex);
+
+          if (cnjMatch && cnjMatch[1]) {
+            proc = `Processo nº ${cnjMatch[1]}`;
+          } else if (procMatch && procMatch[1] && /\d{4}/.test(procMatch[1])) {
+            proc = `Processo nº ${procMatch[1]}`;
+          } else if (isCaixa) {
+            proc = 'Alienação Fiduciária (Execução Extrajudicial Lei 9.514/97)';
+          } else if (prefillData?.saleMode?.toLowerCase().includes('judicial') || prefillData?.origin === 'judicial') {
+            proc = 'Processo Judicial (Autos da Execução)';
+          } else {
+            proc = 'Leilão Extrajudicial / Venda Direta';
+          }
         }
 
-        let leil = leiloeiroInput.trim();
+        // 2. Leiloeiro Extraction
+        let leil = leiloeiroInput.trim() || prefillData?.auctioneerName || (prefillData as any)?.auctioneer || '';
         if (!leil) {
-          const leilMatch = text.match(/leiloeir[ao]\s*(?:oficial|p[úu]blic[ao])?\s*[:\-]?\s*([A-ZÀ-Ú\s]{3,35})/i);
-          leil = leilMatch && leilMatch[1] ? leilMatch[1].trim() : 'Leiloeiro Oficial Designado';
+          const leilMatch = text.match(/leiloeir[ao]\s*(?:oficial|p[úu]blic[ao])?\s*[:\-]?\s*([A-ZÀ-Ú][A-ZÀ-Úa-z\s]{3,40})/i);
+          if (leilMatch && leilMatch[1]) {
+            leil = leilMatch[1].trim();
+          } else if (isCaixa) {
+            leil = 'Caixa Econômica Federal';
+          } else {
+            leil = 'Leiloeiro Oficial Designado';
+          }
         }
 
-        const isCaixa = acquisitionMode === 'caixa' || lower.includes('caixa') || lower.includes('cpve');
+        // 3. Court / Juízo Extraction
+        let court = '';
+        if (isCaixa) {
+          court = 'Caixa Econômica Federal (CPVE/RE - Alienação Fiduciária)';
+        } else {
+          // Labor Court (TRT)
+          const trtMatch = text.match(/(\d+[ªa]?\s+Vara\s+do\s+Trabalho(?:[\w\s\-\.,]*?(?:de\s+[A-ZÀ-Úa-z\s]+)?)?)/i);
+          // Civil Court (TJ)
+          const civelMatch = text.match(/(\d+[ªa]?\s+Vara\s+C[íi]vel(?:[\w\s\-\.,]*?(?:de\s+[A-ZÀ-Úa-z\s]+)?)?)/i);
+          // Federal Court (TRF)
+          const federalMatch = text.match(/(\d+[ªa]?\s+Vara\s+Federal(?:[\w\s\-\.,]*?(?:de\s+[A-ZÀ-Úa-z\s]+)?)?)/i);
+          // Comarca
+          const comarcaMatch = text.match(/(?:Comarca\s+de\s+([A-ZÀ-Úa-z\s]{3,30}))/i);
 
-        let court = isCaixa 
-          ? 'Caixa Econômica Federal (CPVE/RE - Alienação Fiduciária)' 
-          : `Vara Cível da Comarca de ${selectedCity || 'Capital'}`;
-        const courtMatch = text.match(/(\d+[ªa]?\s+Vara\s+(?:C[íi]vel|do\s+Trabalho|Federal|de\s+Fam[íi]lia)[\w\s\-\.,]*)/i);
-        if (courtMatch && courtMatch[1] && !isCaixa) {
-          court = courtMatch[1].trim().substring(0, 45);
+          if (trtMatch && trtMatch[1]) {
+            const regionMatch = text.match(/TRT\s*(\d+)/i);
+            court = trtMatch[1].trim();
+            if (regionMatch && regionMatch[1]) {
+              court += ` (TRT ${regionMatch[1]}ª Região)`;
+            }
+          } else if (civelMatch && civelMatch[1]) {
+            court = civelMatch[1].trim();
+          } else if (federalMatch && federalMatch[1]) {
+            court = federalMatch[1].trim();
+          } else if (comarcaMatch && comarcaMatch[1]) {
+            court = `Vara Cível da Comarca de ${comarcaMatch[1].trim()}`;
+          } else if (prefillData?.origin === 'judicial' || prefillData?.saleMode?.toLowerCase().includes('judicial')) {
+            court = `Juízo Judicial de ${selectedCity || prefillData?.city || 'Comarca Competente'}`;
+          } else {
+            court = `Leilão Extrajudicial - ${selectedCity || prefillData?.city || 'Comarca Competente'}`;
+          }
         }
 
+        // 4. Honest Debt Rules
         const debtRules: string[] = [];
-
         if (isCaixa) {
           debtRules.push('✓ Débitos de Condomínio (Regra Expressa Caixa): Responsabilidade do arrematante limitada a no máximo 10% do valor de avaliação. A CAIXA quita integralmente qualquer valor excedente.');
-          debtRules.push('✓ Débitos Tributários (IPTU): A CAIXA realiza a quitação integral de tributos quando superiores a 10% da avaliação ou sub-rogados na data da venda.');
+          debtRules.push('✓ Débitos Tributários (IPTU): A CAIXA quita débitos fiscais pendentes superiores a 10% da avaliação ou sub-rogados na data da aquisição.');
         } else {
           if (lower.includes('sub-roga') || lower.includes('130') || !lower.includes('arrematante arcar')) {
-            debtRules.push('✓ Débitos de IPTU e taxas fiscais sub-rogam sobre o preço arrematado (art. 130, parágrafo único do CTN).');
+            debtRules.push('✓ Débitos Tributários (IPTU/Taxas): Sub-rogam sobre o preço da arrematação judicial (art. 130, parágrafo único do CTN).');
           } else {
-            debtRules.push('⚠️ Edital com cláusula especial de débitos: verificar se o arrematante assumirá impostos pendentes.');
+            debtRules.push('⚠️ Débitos Fiscais (IPTU): Edital com menção a impostos pendentes; verificar certidão negativa de débitos fiscais municipais.');
           }
 
           if (lower.includes('condom')) {
-            if (lower.includes('sub-roga') || lower.includes('preferência')) {
-              debtRules.push('✓ Débitos de condomínio preferenciais quitados com o saldo arrecadado.');
+            if (lower.includes('arrematante arcar') || lower.includes('responsabilidade do arrematante')) {
+              debtRules.push('⚠️ Débitos Condominiais: Edital estipula responsabilidade do arrematante; solicitar certidão de quitação condominial atualizada.');
             } else {
-              debtRules.push('⚠️ Verificar débito condominial atualizado com o síndico/administradora.');
+              debtRules.push('✓ Débitos de Condomínio: Crédito propter rem com preferência de quitação sobre o saldo arrecadado (art. 908, § 1º do CPC).');
             }
+          } else {
+            debtRules.push('✓ Débitos de Condomínio: Sem passivos extraordinários informados nos autos; confirmar situação com a administração predial.');
           }
+
+          debtRules.push('✓ Baixa de Gravames e Penhoras: Determinada pelo juízo da execução após a homologação e expedição da Carta de Arrematação.');
         }
 
+        // 5. Occupation Status
         let occupationStatus = '✓ Imóvel presumido Desocupado / A constatar no local';
         if (lower.includes('ocupado') || lower.includes('posse de terceiro') || lower.includes('morador')) {
           occupationStatus = isCaixa
             ? '⚠️ Imóvel Ocupado: Desocupação por conta do adquirente via Lei nº 9.514/97 (liminar para desocupação em 60 dias).'
-            : '⚠️ Imóvel Ocupado (Necessária expedição de Mandado de Imissão de Posse nos próprios autos).';
+            : '⚠️ Imóvel Ocupado (Necessária expedição de Mandado de Imissão de Posse nos próprios autos da arrematação).';
         } else if (lower.includes('desocupado') || lower.includes('livre de pessoas')) {
           occupationStatus = '✓ Imóvel Desocupado (Imissão imediata após emissão da Carta de Arrematação / Escritura).';
         }
 
+        // 6. Procedural Clauses
         const criticalClauses: string[] = isCaixa ? [
           '✓ Regra Expressa Caixa: Condomínio limitado a 10% da avaliação do bem (alimentado automaticamente no simulador).',
           '✓ Amparo legal pela Lei 9.514/97 com consolidação da propriedade em favor da Caixa Econômica Federal.',
           '✓ ITBI e emolumentos de registro da escritura/contrato correm por conta do adquirente.'
         ] : [
-          '✓ Comissão do Leiloeiro estipulada em 5% sobre o lance homologado.',
-          lower.includes('parcela') || lower.includes('895') 
-            ? '✓ Possibilidade de parcelamento judicial conforme art. 895 do CPC (25% de entrada + saldo em até 30 parcelas).'
-            : '✓ Pagamento na forma estipulada pelo juízo (à vista ou prazo regimental).',
-          '✓ Expedição de Carta de Arrematação com ordem expressa de cancelamento de constrições e imissão na posse.'
+          '✓ Comissão do Leiloeiro Oficial estipulada em 5% sobre o lance homologado (art. 884, parágrafo único do CPC).',
+          (lower.includes('parcela') || lower.includes('895') || prefillData?.allowsInstallments)
+            ? '✓ Possibilidade de parcelamento judicial conforme art. 895 do CPC (25% de entrada + saldo em até 30 parcelas mensais corrigidas).'
+            : '✓ Pagamento na forma homologada pelo juízo (à vista ou regimental conforme edital).',
+          '✓ Expedição de Carta de Arrematação com ordem expressa de cancelamento de constrições e mandado de imissão na posse expedido nos próprios autos.'
         ];
 
         const result: EditalAuditData = {
@@ -949,71 +1003,34 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [aiReport, setAiReport] = useState('');
   const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
 
-  // Sync neighborhood input text
-  useEffect(() => {
-    setNeighborhoodInput(selectedNeighborhood);
-  }, [selectedNeighborhood]);
-
-  // Sync street input text
-  useEffect(() => {
-    setStreetInput(selectedStreet);
-  }, [selectedStreet]);
-
-  // Load streets when neighborhood changes
+  // Load streets when neighborhood changes (strictly suggestions, never overwrite user-typed inputs)
   useEffect(() => {
     if (!selectedNeighborhood) {
       setStreetsList([]);
-      setSelectedStreet('');
       return;
     }
+
+    let isSubscribed = true;
 
     async function loadStreets() {
       setIsLoadingStreets(true);
       try {
         const res = await fetch(`/api/itbi/streets?state=${selectedState}&city=${selectedCity}&neighborhood=${encodeURIComponent(selectedNeighborhood)}`);
-        if (res.ok) {
+        if (res.ok && isSubscribed) {
           const data = await res.json();
-          setStreetsList(data);
-          // Auto-match and select the closest official ITBI street from suggestion list
-          let matched = null;
-          const queryStreet = streetInput || (prefillData?.address ? parseAddressComponents(prefillData.address).street : '');
-          if (queryStreet && Array.isArray(data) && data.length > 0) {
-            matched = findBestStreetMatch(queryStreet, data);
-            if (matched && matched.street) {
-              setSelectedStreet(matched.street);
-              setStreetInput(matched.street);
-            }
-          }
-
-          // If no high-confidence street match in current neighborhood, check cross-neighborhood resolver
-          if (!matched && queryStreet) {
-            try {
-              const checkRes = await fetch(`/api/itbi/resolve-street?state=${selectedState}&city=${encodeURIComponent(selectedCity)}&street=${encodeURIComponent(queryStreet)}`);
-              if (checkRes.ok) {
-                const resolved = await checkRes.json();
-                if (resolved.found && resolved.neighborhood && cleanNeighborhood(resolved.neighborhood) !== cleanNeighborhood(selectedNeighborhood)) {
-                  setSelectedNeighborhood(resolved.neighborhood);
-                  setNeighborhoodInput(resolved.neighborhood);
-                  if (resolved.officialStreet) {
-                    setSelectedStreet(resolved.officialStreet);
-                    setStreetInput(resolved.officialStreet);
-                  }
-                  return;
-                }
-              }
-            } catch (err) {
-              // ignore
-            }
-          }
+          setStreetsList(Array.isArray(data) ? data : []);
         }
       } catch (e) {
         console.error('Error fetching streets:', e);
       } finally {
-        setIsLoadingStreets(false);
+        if (isSubscribed) {
+          setIsLoadingStreets(false);
+        }
       }
     }
 
     loadStreets();
+    return () => { isSubscribed = false; };
   }, [selectedNeighborhood, selectedState, selectedCity]);
 
   // Load raw transactions when neighborhood/street changes (Local Mode)
@@ -1708,9 +1725,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const defaultItbiFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3%
   const defaultRegistryFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3% Cartório / RGI
 
-  const auctioneerFee = isAuction ? (auctioneerFeeInput !== null ? auctioneerFeeInput : defaultAuctioneerFee) : 0;
-  const itbiFee = itbiFeeInput !== null ? itbiFeeInput : defaultItbiFee;
-  const registryFee = registryFeeInput !== null ? registryFeeInput : defaultRegistryFee;
+  const auctioneerFee = typeof auctioneerFeeInput === 'number' ? auctioneerFeeInput : (auctioneerFeeInput === '' ? 0 : defaultAuctioneerFee);
+  const itbiFee = typeof itbiFeeInput === 'number' ? itbiFeeInput : (itbiFeeInput === '' ? 0 : defaultItbiFee);
+  const registryFee = typeof registryFeeInput === 'number' ? registryFeeInput : (registryFeeInput === '' ? 0 : defaultRegistryFee);
 
   // Downpayment Rates: Caixa 5%, Judicial 25% (CPC 895), Extrajudicial 30%
   const downpaymentRate = acquisitionMode === 'caixa' ? 0.05 : acquisitionMode === 'judicial' ? 0.25 : 0.30;
@@ -1912,38 +1929,58 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // 3. Preço Sugerido Flip (Giro rápido em até 60 dias):
   // 100% Ancorado no Gabarito Real de Cartório (Corte Bidirecional) com Deságio Tático de 10% para Liquidez Imediata
+  // O cálculo dinâmico sobre a metragem ativa (sizeSqm) é soberano para refletir a área real analisada.
   const baseQuickSaleSqm = bidiBenchmark ? bidiBenchmark.flipRapidoSqm : Math.round(itbiWeightedStats.itbiCompositeSqm * 0.90);
   const suggestedQuickSaleTotal = useMemo(() => {
-    if (!hasRealMicroData) {
-      return 0;
-    }
-    const baseSqm = (bidiBenchmark && bidiBenchmark.hasMicroData && bidiBenchmark.flipRapidoSqm > 0)
+    const baseSqm = (bidiBenchmark && bidiBenchmark.flipRapidoSqm > 0)
       ? bidiBenchmark.flipRapidoSqm
       : baseQuickSaleSqm;
     const territorialFactor = prefillData?.isCommunityRisk ? 0.85 : 1;
-    return Math.round(Math.round(baseSqm * buildingAgeData.factor * territorialFactor) * sizeSqm);
-  }, [hasRealMicroData, bidiBenchmark, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor, prefillData?.isCommunityRisk]);
 
-  const suggestedQuickSaleSqm = useMemo(() => {
-    if (!hasRealMicroData || suggestedQuickSaleTotal === 0) {
+    if (baseSqm > 0 && sizeSqm > 0) {
+      return Math.round(Math.round(baseSqm * buildingAgeData.factor * territorialFactor) * sizeSqm);
+    }
+
+    if (!hasRealMicroData && !bidiBenchmark?.mediaCorteReal) {
+      if (neighborhoodStats && neighborhoodStats.avgSqm > 0 && sizeSqm > 0) {
+        return Math.round(Math.round(neighborhoodStats.avgSqm * 0.90 * buildingAgeData.factor * territorialFactor) * sizeSqm);
+      }
+      // Fallback para o valor gravado no card SOMENTE se a metragem atual coincidir com a do card
+      if (prefillData?.vendaBaixaPrice && prefillData.vendaBaixaPrice > 0 && (!prefillData.sizeSqm || prefillData.sizeSqm === sizeSqm)) {
+        return prefillData.vendaBaixaPrice;
+      }
+      if (prefillData?.vendaMediaPrice && prefillData.vendaMediaPrice > 0 && (!prefillData.sizeSqm || prefillData.sizeSqm === sizeSqm)) {
+        return prefillData.vendaMediaPrice;
+      }
       return 0;
     }
-    if (sizeSqm > 0) {
+
+    if (baseSqm > 0 && sizeSqm > 0) {
+      return Math.round(Math.round(baseSqm * buildingAgeData.factor * territorialFactor) * sizeSqm);
+    }
+
+    return 0;
+  }, [bidiBenchmark, baseQuickSaleSqm, buildingAgeData.factor, prefillData?.isCommunityRisk, prefillData?.vendaBaixaPrice, prefillData?.vendaMediaPrice, prefillData?.sizeSqm, sizeSqm, hasRealMicroData, neighborhoodStats]);
+
+  const suggestedQuickSaleSqm = useMemo(() => {
+    if (suggestedQuickSaleTotal > 0 && sizeSqm > 0) {
       return Math.round(suggestedQuickSaleTotal / sizeSqm);
+    }
+    if (!hasRealMicroData || suggestedQuickSaleTotal === 0) {
+      return 0;
     }
     return Math.round(baseQuickSaleSqm * buildingAgeData.factor);
   }, [hasRealMicroData, suggestedQuickSaleTotal, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor]);
 
   // This is the exact 60-day flip shown by the calculator and therefore the
   // only profit/ROI pair allowed to be persisted to the auction card.
-  const flip60BrokerFee = Math.round(suggestedQuickSaleTotal * 0.04);
-  const flip60Holding = totalMonthlyHolding * 3;
-  const flip60GrossGain = suggestedQuickSaleTotal - totalArremateAcquisitionCost - flip60Holding - flip60BrokerFee;
-  const flip60CapitalGainsTax = flip60GrossGain > 0 ? Math.round(flip60GrossGain * 0.15) : 0;
-  const flip60NetProfit = flip60GrossGain - flip60CapitalGainsTax;
-  const flip60Roi = totalArremateAcquisitionCost > 0
-    ? Number((flip60NetProfit / (totalArremateAcquisitionCost + flip60Holding) * 100).toFixed(2))
-    : 0;
+  const flip60 = calculateFlip(suggestedQuickSaleTotal, totalArremateAcquisitionCost, totalMonthlyHolding);
+  const flip60BrokerFee = flip60.brokerFee;
+  const flip60Holding = flip60.holding;
+  const flip60GrossGain = flip60.grossGain;
+  const flip60CapitalGainsTax = flip60.tax;
+  const flip60NetProfit = flip60.netProfit;
+  const flip60Roi = flip60.roi;
 
   // Explorar cenários na calculadora nunca pode mudar o ranking do garimpo.
   // Persistência só ocorre por uma ação deliberada do analista.
@@ -1959,6 +1996,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
     await onUpdateProperty({
       id: prefillData.id,
+      sizeSqm: sizeSqm,
+      sizeVerified: true,
       vendaBaixaPrice: suggestedQuickSaleTotal,
       vendaMediaPrice: suggestedQuickSaleTotal,
       estimatedValue: gabaritoTotal,
@@ -2153,7 +2192,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Unified 3-in-1 Full Market Analysis Handler
   const handleExecuteFullAnalysis = async () => {
-    if (!selectedNeighborhood) return;
+    const activeNeighborhood = selectedNeighborhood || neighborhoodInput;
+    if (!activeNeighborhood) return;
     setIsExecutingFullAnalysis(true);
     setActiveTab('local'); // Lands automatically on Análise Precisa
     try {
@@ -2175,7 +2215,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Trigger Local AI Report Generation
   const handleGenerateAiReport = async () => {
-    if (!selectedNeighborhood) return;
+    const activeNeighborhood = selectedNeighborhood || neighborhoodInput;
+    const activeStreet = selectedStreet || streetInput;
+    if (!activeNeighborhood) return;
     setIsGeneratingAiReport(true);
     setAiReport('');
     try {
@@ -2185,8 +2227,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         body: JSON.stringify({
           state: selectedState,
           city: selectedCity,
-          neighborhood: selectedNeighborhood,
-          street: selectedStreet,
+          neighborhood: activeNeighborhood,
+          street: activeStreet,
           propertyType,
           sizeSqm,
           estimatedValue: averageValue,
@@ -2231,15 +2273,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Trigger Online Search Grounding
   const handleOnlineSearch = async () => {
-    if (!selectedNeighborhood) {
-      alert('Por favor, selecione um Bairro para iniciar a pesquisa.');
+    const activeNeighborhood = selectedNeighborhood || neighborhoodInput;
+    const activeStreet = selectedStreet || streetInput;
+    if (!activeNeighborhood && !activeStreet) {
+      alert('Por favor, informe o Bairro ou Logradouro para iniciar a pesquisa.');
       return;
     }
     
     // Construct search address query using selectors
     let searchAddr = '';
-    if (selectedStreet) searchAddr += `${selectedStreet}`;
-    else searchAddr += `Bairro ${selectedNeighborhood}`;
+    if (activeStreet) searchAddr += `${activeStreet}`;
+    else searchAddr += `Bairro ${activeNeighborhood}`;
     
     if (streetNumber.trim()) {
       searchAddr += `, ${streetNumber}`;
@@ -2591,7 +2635,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   onChange={(e) => {
                     const newState = e.target.value;
                     setSelectedState(newState);
-                    const cities = newState === 'RJ' ? ['Rio de Janeiro'] : newState === 'SP' ? ['São Paulo'] : ['Juiz de Fora', 'Santos Dumont'];
+                    const cities = newState === 'RJ' ? ['Rio de Janeiro', 'Niterói'] : ['Juiz de Fora'];
                     setSelectedCity(cities[0]);
                     setSelectedNeighborhood('');
                     setSelectedStreet('');
@@ -2599,7 +2643,6 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200 cursor-pointer"
                 >
                   <option value="RJ">RJ - Rio de Janeiro</option>
-                  <option value="SP">SP - São Paulo</option>
                   <option value="MG">MG - Minas Gerais</option>
                 </select>
               </div>
@@ -2615,18 +2658,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   }}
                   className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200 cursor-pointer"
                 >
-                  {selectedState === 'RJ' && (
+                  {selectedState === 'RJ' ? (
                     <>
                       <option value="Rio de Janeiro">Rio de Janeiro</option>
                       <option value="Niterói">Niterói</option>
                     </>
-                  )}
-                  {selectedState === 'SP' && <option value="São Paulo">São Paulo</option>}
-                  {selectedState === 'MG' && (
-                    <>
-                      <option value="Juiz de Fora">Juiz de Fora</option>
-                      <option value="Santos Dumont">Santos Dumont</option>
-                    </>
+                  ) : (
+                    <option value="Juiz de Fora">Juiz de Fora</option>
                   )}
                 </select>
               </div>
@@ -2661,6 +2699,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           setNeighborhoodInput(nb);
                           setShowNeighborhoodDropdown(false);
                           setSelectedStreet('');
+                          setStreetInput('');
                         }}
                         className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors"
                       >
@@ -2668,7 +2707,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </div>
                     ))}
                   {neighborhoodsList.filter(nb => normalizeString(nb).includes(normalizeString(neighborhoodInput))).length === 0 && (
-                    <div className="px-3 py-2 text-xs text-slate-500">Nenhum bairro encontrado</div>
+                    <div className="px-3 py-2 text-xs text-slate-500">Nenhum bairro no banco ITBI (usando busca livre)</div>
                   )}
                 </div>
               )}
@@ -2682,8 +2721,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               </div>
               <input
                 type="text"
-                placeholder={selectedNeighborhood ? "Digite o nome da rua..." : "Selecione o bairro primeiro"}
-                disabled={!selectedNeighborhood}
+                placeholder="Digite o nome da rua..."
                 value={streetInput}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -2693,9 +2731,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 }}
                 onFocus={() => setShowStreetDropdown(true)}
                 onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)}
-                className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200"
               />
-              {showStreetDropdown && selectedNeighborhood && (
+              {showStreetDropdown && (
                 <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 rounded-lg shadow-lg z-50 divide-y divide-slate-850">
                   <div
                     onClick={() => {
@@ -2723,7 +2761,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </div>
                     ))}
                   {streetsList.filter(st => normalizeString(st.street).includes(normalizeString(streetInput))).length === 0 && (
-                    <div className="px-3 py-2 text-xs text-slate-500">Nenhuma rua encontrada</div>
+                    <div className="px-3 py-2 text-xs text-slate-500">Nenhuma rua no banco ITBI (usando busca livre)</div>
                   )}
                 </div>
               )}
@@ -2762,8 +2800,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Área Privativa (m²):</label>
                 <input
                   type="number"
-                  value={sizeSqm}
-                  onChange={(e) => setSizeSqm(Number(e.target.value))}
+                  value={sizeSqm || ''}
+                  onChange={(e) => setSizeSqm(e.target.value === '' ? 0 : Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200"
                 />
               </div>
@@ -2829,7 +2867,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             <div className="pt-2 space-y-2">
               <button
                 onClick={handleExecuteFullAnalysis}
-                disabled={!selectedNeighborhood || isExecutingFullAnalysis}
+                disabled={(!selectedNeighborhood && !neighborhoodInput) || isExecutingFullAnalysis}
                 className="w-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-emerald-500 hover:from-indigo-400 hover:to-emerald-400 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 text-white font-black text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md hover:shadow-indigo-500/25 cursor-pointer disabled:cursor-not-allowed border border-indigo-400/40"
                 title="Executa automaticamente a análise de ITBI (Prédio/Rua), Varredura Online e Portais em simultâneo"
               >
@@ -3031,7 +3069,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       <input
                         type="number"
                         value={auctioneerFeeInput !== null ? auctioneerFeeInput : defaultAuctioneerFee}
-                        onChange={(e) => setAuctioneerFeeInput(e.target.value === '' ? null : Number(e.target.value))}
+                        onChange={(e) => setAuctioneerFeeInput(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
                       />
                     </div>
@@ -3053,7 +3091,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <input
                       type="number"
                       value={itbiFeeInput !== null ? itbiFeeInput : defaultItbiFee}
-                      onChange={(e) => setItbiFeeInput(e.target.value === '' ? null : Number(e.target.value))}
+                      onChange={(e) => setItbiFeeInput(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
                     />
                   </div>
@@ -3067,7 +3105,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <input
                       type="number"
                       value={registryFeeInput !== null ? registryFeeInput : defaultRegistryFee}
-                      onChange={(e) => setRegistryFeeInput(e.target.value === '' ? null : Number(e.target.value))}
+                      onChange={(e) => setRegistryFeeInput(e.target.value === '' ? '' : Number(e.target.value))}
                       className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
                     />
                   </div>
@@ -3080,8 +3118,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <span className="text-slate-500 mr-1 text-[9.5px]">R$</span>
                     <input
                       type="number"
-                      value={iptuDebtInput}
-                      onChange={(e) => setIptuDebtInput(Number(e.target.value))}
+                      value={iptuDebtInput === 0 ? '' : iptuDebtInput}
+                      onChange={(e) => setIptuDebtInput(e.target.value === '' ? 0 : Number(e.target.value))}
                       className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
                       placeholder="0"
                     />
@@ -3097,8 +3135,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <span className="text-slate-500 mr-1 text-[9.5px]">R$</span>
                     <input
                       type="number"
-                      value={condoDebtInput}
-                      onChange={(e) => setCondoDebtInput(Number(e.target.value))}
+                      value={condoDebtInput === 0 ? '' : condoDebtInput}
+                      onChange={(e) => setCondoDebtInput(e.target.value === '' ? 0 : Number(e.target.value))}
                       className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
                       placeholder="0"
                     />
@@ -3112,8 +3150,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <span className="text-slate-500 mr-1 text-[9.5px]">R$</span>
                     <input
                       type="number"
-                      value={reformCostInput}
-                      onChange={(e) => setReformCostInput(Number(e.target.value))}
+                      value={reformCostInput === 0 ? '' : reformCostInput}
+                      onChange={(e) => setReformCostInput(e.target.value === '' ? 0 : Number(e.target.value))}
                       className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
                     />
                   </div>
@@ -3126,8 +3164,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <span className="text-slate-500 mr-1 text-[9.5px]">R$</span>
                     <input
                       type="number"
-                      value={legalCostInput}
-                      onChange={(e) => setLegalCostInput(Number(e.target.value))}
+                      value={legalCostInput === 0 ? '' : legalCostInput}
+                      onChange={(e) => setLegalCostInput(e.target.value === '' ? 0 : Number(e.target.value))}
                       className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
                     />
                   </div>

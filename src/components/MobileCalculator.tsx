@@ -20,9 +20,7 @@ export const MobileCalculator: React.FC<MobileCalculatorProps> = ({
   const cities = [
     { name: 'Rio de Janeiro', state: 'RJ', itbi: 3 },
     { name: 'Niterói', state: 'RJ', itbi: 3 },
-    { name: 'Juiz de Fora', state: 'MG', itbi: 2 },
-    { name: 'Santos Dumont', state: 'MG', itbi: 2 },
-    { name: 'São Paulo', state: 'SP', itbi: 3 }
+    { name: 'Juiz de Fora', state: 'MG', itbi: 2 }
   ];
 
   return (

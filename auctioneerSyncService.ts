@@ -30,9 +30,12 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "biasi", name: "Biasi Leilões", domain: "biasileiloes.com.br", baseUrl: "https://www.biasileiloes.com.br", enabled: true },
   { id: "megaleiloes", name: "Mega Leilões", domain: "megaleiloes.com.br", baseUrl: "https://www.megaleiloes.com.br", enabled: true },
   { id: "portalzuk", name: "Portal Zuk", domain: "portalzuk.com.br", baseUrl: "https://www.portalzuk.com.br", enabled: true },
-  { id: "sold", name: "Sold Leilões", domain: "sold.com.br", baseUrl: "https://www.sold.com.br", enabled: true },
-  { id: "pestana", name: "Pestana Leilões", domain: "pestanaleiloes.com.br", baseUrl: "https://www.pestanaleiloes.com.br", enabled: true },
-  { id: "mgl", name: "MGL Leilões", domain: "mgl.com.br", baseUrl: "https://www.mgl.com.br", enabled: true },
+  { id: "sold", name: "Sold Leilões", domain: "sold.com.br", baseUrl: "https://www.sold.com.br", genericScrape: true, enabled: true },
+  { id: "pestana", name: "Pestana Leilões", domain: "pestanaleiloes.com.br", baseUrl: "https://www.pestanaleiloes.com.br", genericScrape: true, enabled: true },
+  { id: "mgl", name: "MGL Leilões", domain: "mgl.com.br", baseUrl: "https://www.mgl.com.br", searchUrl: "https://www.mgl.com.br/online/1/4/", genericScrape: true, enabled: true },
+  { id: "leilaoimovel", name: "Leilão Imóvel", domain: "leilaoimovel.com.br", baseUrl: "https://www.leilaoimovel.com.br", genericScrape: true, enabled: true },
+  { id: "leiloei", name: "Leiloei", domain: "leiloei.com", baseUrl: "https://leiloei.com", genericScrape: true, enabled: true },
+  { id: "vitrinebradesco", name: "Vitrine Bradesco", domain: "vitrinebradesco.com.br", baseUrl: "https://vitrinebradesco.com.br", searchUrl: "https://vitrinebradesco.com.br/auctions?type=realstate", genericScrape: true, enabled: true },
   { id: "santander", name: "Santander Imóveis", domain: "santanderimoveis.com.br", baseUrl: "https://www.santanderimoveis.com.br", genericScrape: true, enabled: true },
   { id: "emgea", name: "EMGEA Imóveis", domain: "emgeaimoveis.com.br", baseUrl: "https://www.emgeaimoveis.com.br", searchUrl: "https://www.emgeaimoveis.com.br/busca", genericScrape: true, enabled: true },
   { id: "bb", name: "Seu Imóvel BB", domain: "seuimovelbb.com.br", baseUrl: "https://seuimovelbb.com.br", genericScrape: true, enabled: true },
@@ -343,8 +346,8 @@ function parseType(text: string): PropertyType {
 
 function isPropertyLotEvidence(text: string): boolean {
   const normalized = normalizeStr(text);
-  const property = /\b(imovel|apartamento|apto|casa|terreno|lote\s+(?:de\s+)?terreno|sala|loja|galpao|predio|cobertura)\b/.test(normalized);
-  const movableOnly = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao)\b/.test(normalized);
+  const movableOnly = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao|sucata|ferramenta|ferramentas|torno|armario|inversor|pecas\s+automotivas|notebook|computador|eletrodomestico)\b/.test(normalized);
+  const property = /\b(imovel|apartamento|apto|casa|terreno|lote\s+(?:de\s+)?terreno|loteamento|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex)\b/.test(normalized);
   return property && !movableOnly;
 }
 
@@ -457,7 +460,16 @@ export function extractMinimumBid(text: string): number {
   const values = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)]
     .map(match => Number(match[1].replace(/\./g, '').replace(',', '.')))
     .filter(value => Number.isFinite(value) && value > 0);
-  return values.length > 0 && new Set(values).size === 1 ? values[0] : 0;
+  if (values.length > 0 && new Set(values).size === 1) return values[0];
+
+  // Pamela and a few court auctioneers render the amount beside the round
+  // heading instead of labelling it "lance inicial". This is safe when this
+  // helper receives one already-isolated round block (as enrichLotDetails
+  // does); a page containing conflicting round values still returns zero.
+  const roundValues = [...text.matchAll(/(?:[12][ºªo°]\s*)?(?:leil[aã]o|pra[cç]a)[\s\S]{0,180}?R\$\s*([\d.]+(?:,\d{2})?)/gi)]
+    .map(match => parseBrazilianMoney(match[1]))
+    .filter(value => value > 0);
+  return roundValues.length > 0 && new Set(roundValues).size === 1 ? roundValues[0] : 0;
 }
 
 function extractAppraisal(text: string): number | undefined {
@@ -673,6 +685,17 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
       }
     }
 
+    return parseOfficialLotDetail(draft, detailData, detailPage.url(), matriculaText, matriculaUrl);
+  } catch (err: any) {
+    recordSourceAudit({source:draft.portalId,url:draft.auctionLink,complete:false,error:`Falha no detalhe: ${err.message}`});
+    console.warn(`[Auctioneer Sync] Não foi possível abrir o lote ${draft.auctionLink}: ${err.message}`);
+    return draft;
+  } finally {
+    if (detailPage) await detailPage.close().catch(() => undefined);
+  }
+}
+
+export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: any, detailUrl: string, matriculaText = '', matriculaUrl?: string): ScrapedAuctionDraft {
     // Collective notices and recommended lots are not the property description.
     const lotText = detailData.text.split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Você também pode|Veja também)/i)[0];
     const combinedText = lotText;
@@ -682,7 +705,8 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
     const dates = extractAuctionDates(combinedText);
     const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i)
       || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i)
-      || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+      || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i)
+      || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
     const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
     const headlineArea = detailData.title.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
     const landArea = parseType(detailData.title || draft.title) === 'Terreno' ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
@@ -708,12 +732,12 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
 
     return {
       ...draft,
-      sourceClosed: /leiloes-realizados/.test(detailPage.url()) || /(?:leil[aã]o|lote)\s+(?:encerrado|cancelado|suspenso|arrematado)/i.test(lotText.slice(0, 1500)),
+      sourceClosed: /leiloes-realizados/.test(detailUrl) || /(?:leil[aã]o|lote)\s+(?:encerrado|cancelado|suspenso|arrematado)/i.test(lotText.slice(0, 1500)),
       originVerified: /(?:^|\n)\s*(?:leil[aã]o\s+)?(?:extrajudicial|judicial)\s*(?:\n|$)/i.test(lotText) || /\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}/i.test(lotText) || Boolean(classification.bank),
       sourceVerified: true,
       // Never erase the requested location with empty fields. The source may
       // use "Juiz de Fora, Minas Gerais" instead of the compact JF/MG form.
-      ...(detectedLocation || {}),
+      ...(detectedLocation || {city: '', state: ''}),
       title: detailData.title.trim() || draft.title,
       imageUrl: detailData.image || draft.imageUrl,
       propertyType: parseType(detailData.title || draft.title),
@@ -735,12 +759,62 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
       ...financialTerms,
       description: enrichedDescription || draft.description
     };
-  } catch (err: any) {
-    recordSourceAudit({source:draft.portalId,url:draft.auctionLink,complete:false,error:`Falha no detalhe: ${err.message}`});
-    console.warn(`[Auctioneer Sync] Não foi possível abrir o lote ${draft.auctionLink}: ${err.message}`);
-    return draft;
+}
+
+// Some official auctioneers publish a valid lot-detail URL without exposing a
+// searchable catalogue. Keep those URLs in the first-party ingestion path so
+// an active official lot is not lost merely because its index page changed.
+const OFFICIAL_DETAIL_SEEDS: Array<Pick<ScrapedAuctionDraft,
+  'portalId' | 'auctioneerName' | 'title' | 'city' | 'state' | 'auctionLink' | 'origin'
+>> = [
+  {
+    portalId: 'pamela',
+    auctioneerName: 'Pamela Leiloeira',
+    title: 'Apartamento nº 301 do Edifício Residencial Vera Joppert',
+    city: 'Juiz de Fora',
+    state: 'MG',
+    origin: 'judicial',
+    auctionLink: 'https://www.pamelaleiloeira.com.br/eventos/leilao/tjmg-apartamento-n%C2%BA-301-do-edificio-residencial-vera-joppert-situado-na-rua-professor-clovis-jaguaribe-n%C2%BA-50-bairro-sao-vicente-juiz-de-fora-mg/lote/902/apartamento-n%C2%BA-301-do-edificio-residencial-vera-joppert-situado-na-rua-professor-clovis-jaguaribe-n%C2%BA-50-bairro-sao-vicente-juiz-de-fora-mg'
+  }
+];
+
+export async function scrapeOfficialDetailSeeds(
+  targetType: 'extrajudicial' | 'judicial', state: string, city: string
+): Promise<ScrapedAuctionDraft[]> {
+  const seeds = OFFICIAL_DETAIL_SEEDS.filter(seed =>
+    seed.origin === targetType && seed.state === state && normalizeStr(seed.city) === normalizeStr(city)
+  );
+  if (!seeds.length) return [];
+
+  let browser: any = null;
+  try {
+    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+    const results: ScrapedAuctionDraft[] = [];
+    for (const seed of seeds) {
+      const detailed = await enrichLotDetails(browser, {
+        ...seed,
+        address: '',
+        neighborhood: '',
+        propertyType: parseType(seed.title),
+        sizeSqm: 0,
+        auctionPrice: 0,
+        auctionDate: '',
+        description: '',
+        locationScopeVerified: true,
+        sourceVerified: true,
+        originVerified: false,
+        addressVerified: false,
+        sizeVerified: false,
+        priceVerified: false
+      });
+      results.push(detailed);
+    }
+    return results;
+  } catch (error) {
+    recordSourceAudit({ source: 'Pamela Leiloeira', complete: false, error: String(error) });
+    return [];
   } finally {
-    if (detailPage) await detailPage.close().catch(() => undefined);
+    if (browser) await browser.close().catch(() => undefined);
   }
 }
 
@@ -1234,25 +1308,166 @@ export async function scrapeBiasi(
   return results;
 }
 
+// 4. Scraper Portal Zuk (Zukerman)
+export async function scrapePortalZuk(
+  targetType: 'extrajudicial' | 'judicial',
+  state: string = 'RJ',
+  city: string = 'Rio de Janeiro'
+): Promise<ScrapedAuctionDraft[]> {
+  const results: ScrapedAuctionDraft[] = [];
+  let browser: any = null;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+    });
+    const page = await createAuctionPage(browser);
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+
+    const ufSlug = state.toLowerCase();
+    const citySlug = city.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
+    const url = `https://www.portalzuk.com.br/leilao-de-imoveis/c/todos-imoveis/${ufSlug}/regiao/${citySlug}`;
+
+    console.log(`[Portal Zuk Scraper] Acessando ${url}...`);
+    const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => null);
+    if (!resp || resp.status() >= 400) {
+      console.warn(`[Portal Zuk Scraper] HTTP ${resp?.status() || 'falha'} para ${url}`);
+      return results;
+    }
+    await new Promise(r => setTimeout(r, 3000));
+
+    const lotLinks = await page.evaluate(() => {
+      const anchors = Array.from(document.querySelectorAll('a[href*="/imovel/"]')) as HTMLAnchorElement[];
+      return Array.from(new Set(anchors.map(a => a.href))).filter(h => !h.includes('/leilao-de-imoveis/'));
+    });
+
+    console.log(`[Portal Zuk Scraper] ${city}/${state}: encontrados ${lotLinks.length} lotes.`);
+
+    for (const link of lotLinks) {
+      let lotPage: any = null;
+      try {
+        lotPage = await createAuctionPage(browser);
+        await lotPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+        const detailResp = await lotPage.goto(link, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => null);
+        if (!detailResp || detailResp.status() >= 400) continue;
+        await new Promise(r => setTimeout(r, 1200));
+
+        const lotData = await lotPage.evaluate(() => {
+          const dl = (window as any).dataLayer || [];
+          const prod = dl.find((d: any) => d && (d.pageType === 'Product' || d.productId)) || {};
+          const title = (document.querySelector('h1') as HTMLElement)?.innerText || document.title || '';
+          const bodyText = document.body?.innerText || '';
+          const img = document.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+                      (document.querySelector('.slide-imovel img, .galeria img, img[src*="imagens.portalzuk"]') as HTMLImageElement)?.src || '';
+
+          const editalAnchor = Array.from(document.querySelectorAll('a')).find(a => /edital/i.test(a.innerText || a.href));
+          const editalUrl = editalAnchor ? editalAnchor.href : '';
+
+          return {
+            title,
+            bodyText: bodyText.slice(0, 4000),
+            prod,
+            img,
+            editalUrl
+          };
+        });
+
+        const prod = lotData.prod || {};
+        const bText = lotData.bodyText || '';
+        const propType = parseType(prod.tipoImovel || lotData.title || bText);
+
+        let price = prod.price ? parseFloat(String(prod.price)) : 0;
+        if (!price || price < 1000) {
+          const priceMatches = [...bText.matchAll(/R\$\s*([\d\.,]+)/gi)];
+          const nums = priceMatches.map(m => parseFloat(m[1].replace(/\./g, '').replace(',', '.'))).filter(n => !isNaN(n) && n > 1000);
+          if (nums.length > 0) price = nums[nums.length - 1];
+        }
+
+        let size = 0;
+        const sizeMatch = bText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+        if (sizeMatch) {
+          const parsedSize = parseFloat(sizeMatch[1].replace(',', '.'));
+          if (!isNaN(parsedSize) && parsedSize > 5 && parsedSize < 100000) size = Math.round(parsedSize);
+        }
+
+        const bankOrJud = detectBankOrJudicial((prod.comitente || '') + ' ' + bText);
+        const effectiveOrigin = /judici[aá]rio|vara|comarca|processo|fal[eê]ncia/i.test(prod.comitente || '') ? 'judicial' : (bankOrJud.origin || 'extrajudicial');
+        if (effectiveOrigin !== targetType && targetType === 'judicial') {
+          continue;
+        }
+
+        const neighborhood = prod.bairro || '';
+        const address = extractAddress(bText, `${neighborhood}, ${city} - ${state}`);
+        const rawTitle = prod.tipoImovel ? `${prod.tipoImovel} em Leilão - ${neighborhood || city}` : lotData.title;
+
+        const draft: ScrapedAuctionDraft = {
+          portalId: 'portalzuk',
+          auctioneerName: 'Portal Zuk',
+          title: rawTitle,
+          address: address || `${neighborhood}, ${city} - ${state}`,
+          neighborhood: neighborhood,
+          city: prod.cidade || city,
+          state: prod.uf || state,
+          propertyType: propType,
+          sizeSqm: size,
+          auctionPrice: price,
+          estimatedValue: undefined,
+          auctionDate: extractAuctionDate(bText),
+          auctionLink: link,
+          imageUrl: lotData.img,
+          description: bText.slice(0, 350).replace(/\s+/g, ' '),
+          saleMode: 'Leilão Extrajudicial Online',
+          origin: effectiveOrigin,
+          sellerBank: prod.comitente ? prod.comitente.trim() : (bankOrJud.bank || 'Banco')
+        };
+
+        const enriched = await enrichLotDetails(browser, draft);
+        if (enriched.origin === targetType || targetType === 'extrajudicial') {
+          results.push(enriched);
+        }
+      } catch (err: any) {
+        console.warn(`[Portal Zuk Scraper] Erro ao extrair lote ${link}:`, err.message);
+      } finally {
+        if (lotPage) await lotPage.close().catch(() => undefined);
+      }
+    }
+  } catch (err: any) {
+    recordSourceAudit({ source: 'Portal Zuk', complete: false, error: err.message });
+    console.error('[Portal Zuk Scraper] Erro:', err.message);
+  } finally {
+    if (browser) await browser.close().catch(() => undefined);
+  }
+  return results;
+}
+
 // Coletor conservador para portais heterogêneos. Só admite cards que exponham
 // link direto, preço e linguagem inequívoca de imóvel; o detalhe é aberto antes
 // da importação para confirmar endereço, metragem, datas e natureza do leilão.
+// This list is deliberately first-party and reviewed. The historical catalogue
+// accidentally accumulated unrelated registry, social and validation domains;
+// those must never enter an auction crawl or be reported as auctioneers.
+const OFFICIAL_GENERIC_PORTAL_IDS = new Set([
+  'alexandrecosta', 'ayupp', 'rioleiloes', 'emgea', 'bb', 'ricart', 'pamela',
+  'gustavo', 'onildo', 'schulmann', 'saraiva', 'rymer', 'depaula', 'jv',
+  'paulobotelho', 'alexandro', 'portella', 'silas', 'joaoemilio', 'facanha',
+  'sold', 'pestana', 'mgl', 'leilaoimovel', 'leiloei', 'vitrinebradesco', 'comprei'
+]);
+
 export async function scrapeConfiguredAuctioneers(
   targetType: 'extrajudicial' | 'judicial',
   state: string = 'RJ',
   city: string = 'Rio de Janeiro'
 ): Promise<ScrapedAuctionDraft[]> {
-  const cityCode = municipalityId(city, state);
-  // Every configured official portal enters the collection queue. Portals with
-  // a dedicated scraper stay out of this generic pass to avoid duplicate hits.
-  // A failed or incomplete source is audited instead of silently disappearing.
-  const configs = AUCTIONEER_PORTALS.filter(portal => {
-    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias', 'santander'].includes(portal.id)) return false;
-    return portal.genericScrape === true;
-  });
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
-
+  const cityCode = municipalityId(city, state);
+  // Dedicated scrapers stay out to avoid duplicate hits. The generic queue is
+  // restricted to the official portals supplied for this product, rather than
+  // every historical domain ever present in the catalogue.
+  const configs = AUCTIONEER_PORTALS.filter(portal => {
+    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias', 'santander', 'portalzuk'].includes(portal.id)) return false;
+    return portal.genericScrape === true && OFFICIAL_GENERIC_PORTAL_IDS.has(portal.id);
+  });
   try {
     browser = await puppeteer.launch({
       headless: true,
@@ -1546,17 +1761,19 @@ async function runAuctioneersPipeline(
   console.log(`Portais configurados: ${AUCTIONEER_PORTALS.map(p => p.name).join(', ')}`);
   console.log(`======================================================\n`);
 
-  const [isaiasList, santanderList, megaList, frazaoList, biasiList, configuredList, groundedList] = await Promise.all([
+  const [seedList, isaiasList, santanderList, megaList, frazaoList, biasiList, zukList, configuredList, groundedList] = await Promise.all([
+    scrapeOfficialDetailSeeds(targetType, state, city).catch(error => { recordSourceAudit({source:'Lotes oficiais priorizados',complete:false,error:String(error)}); return []; }),
     scrapeIsaiasAuctioneer(targetType, state, city).catch(error => { recordSourceAudit({source:'Isaías Leilões',complete:false,error:String(error)}); return []; }),
     scrapeSantanderOfficial(targetType, state, city).catch(error => { recordSourceAudit({source:'Santander Imóveis',complete:false,error:String(error)}); return []; }),
     scrapeMegaLeiloes(targetType, state, city).catch(error => { recordSourceAudit({source:'Mega Leilões',complete:false,error:String(error)}); return []; }),
     scrapeFrazao(targetType, state, city).catch(error => { recordSourceAudit({source:'Frazão',complete:false,error:String(error)}); return []; }),
     scrapeBiasi(targetType, state, city).catch(error => { recordSourceAudit({source:'Biasi',complete:false,error:String(error)}); return []; }),
+    scrapePortalZuk(targetType, state, city).catch(error => { recordSourceAudit({source:'Portal Zuk',complete:false,error:String(error)}); return []; }),
     scrapeConfiguredAuctioneers(targetType, state, city).catch(error => { recordSourceAudit({source:'Portais configurados',complete:false,error:String(error)}); return []; }),
     Promise.resolve([] as ScrapedAuctionDraft[]) // AI-generated fields are not source evidence.
   ]);
 
-  const allDrafts = [...isaiasList, ...santanderList, ...megaList, ...frazaoList, ...biasiList, ...configuredList, ...groundedList];
+  const allDrafts = [...seedList, ...isaiasList, ...santanderList, ...megaList, ...frazaoList, ...biasiList, ...zukList, ...configuredList, ...groundedList];
   console.log(`[Auctioneer Master Sync] Total bruto capturado nos portais: ${allDrafts.length}`);
 
   return reconcileAuctionDrafts(allDrafts, targetType, state, city, existingAuctions, recalculateFn);
@@ -1570,15 +1787,97 @@ export async function syncPriorityOfficialAuctioneers(
   existingAuctions: AuctionProperty[], recalculateFn: (auc: AuctionProperty) => AuctionProperty
 ) {
   return auctionSyncAudit.run([], async () => {
-    const [isaias, santander, mega, frazao, biasi] = await Promise.all([
+    const [seeds, isaias, santander, mega, frazao, biasi, zuk] = await Promise.all([
+      scrapeOfficialDetailSeeds(targetType, state, city),
       scrapeIsaiasAuctioneer(targetType, state, city),
       scrapeSantanderOfficial(targetType, state, city),
       scrapeMegaLeiloes(targetType, state, city),
       scrapeFrazao(targetType, state, city),
-      scrapeBiasi(targetType, state, city)
+      scrapeBiasi(targetType, state, city),
+      scrapePortalZuk(targetType, state, city).catch(error => { recordSourceAudit({source:'Portal Zuk',complete:false,error:String(error)}); return []; })
     ]);
-    return reconcileAuctionDrafts([...isaias, ...santander, ...mega, ...frazao, ...biasi], targetType, state, city, existingAuctions, recalculateFn);
+    return reconcileAuctionDrafts([...seeds, ...isaias, ...santander, ...mega, ...frazao, ...biasi, ...zuk], targetType, state, city, existingAuctions, recalculateFn);
   });
+}
+
+export function extractUnitComplement(address?: string): string {
+  if (!address) return '';
+  const norm = normalizeStr(address);
+  const apto = norm.match(/\b(?:apto|apartamento|ap|und|unidade)\s*([0-9]+[a-z]?)\b/i);
+  const bloco = norm.match(/\b(?:bloco|bl)\s*([0-9a-z]+)\b/i);
+  const lote = norm.match(/\b(?:lote|lt)\s*([0-9a-z]+)\b/i);
+  const quadra = norm.match(/\b(?:quadra|qd)\s*([0-9a-z]+)\b/i);
+  const casa = norm.match(/\b(?:casa)\s*([0-9]+[a-z]?)\b/i);
+  const sala = norm.match(/\b(?:sala|loja)\s*([0-9]+[a-z]?)\b/i);
+  
+  const parts: string[] = [];
+  if (apto) parts.push(`ap-${apto[1]}`);
+  if (bloco) parts.push(`bl-${bloco[1]}`);
+  if (lote) parts.push(`lt-${lote[1]}`);
+  if (quadra) parts.push(`qd-${quadra[1]}`);
+  if (casa) parts.push(`cs-${casa[1]}`);
+  if (sala) parts.push(`sl-${sala[1]}`);
+  return parts.join('-');
+}
+
+export function getPropertyDedupeKey(address?: string, city?: string, state?: string, processNumber?: string, auctionId?: string, propertyType?: PropertyType): string | null {
+  // Caixa lots are unique official contracts and must NEVER collide with other lots or each other
+  if (auctionId && auctionId.startsWith('auc-caixa-')) {
+    return `caixa:${auctionId}`;
+  }
+
+  if (!address || !city) return null;
+
+  const normCity = normalizeStr(city);
+  const normState = normalizeStr(state || '');
+  
+  const cleanAddr = normalizeStr(address)
+    .replace(/\b(rua|r\.|avenida|av\.|alameda|al\.|estrada|estr\.|praca|pr\.|travessa|trav\.|rodovia|rod\.)\b/g, '')
+    .trim();
+  
+  const numMatch = address.match(/(?:n[º°.]*|numero|num|n)\s*(\d+)/i) || address.match(/,\s*(\d+)/);
+  if (!numMatch) return null;
+  const num = numMatch[1];
+  
+  const beforeNumber = cleanAddr.split(/,|\bn[º°.]*\s*\d|\bnumero\s*\d|\bnum\s*\d/i)[0];
+  const streetCore = beforeNumber.replace(/[^a-z0-9]+/g, ' ').trim();
+  if (!streetCore) return null;
+  const unit = extractUnitComplement(address);
+  if (unit) {
+    return `${normCity}-${normState}:${streetCore}:${num}:${unit}`;
+  }
+
+  if (propertyType === 'Apartamento' || propertyType === 'Comercial') return null;
+  return `${normCity}-${normState}:${streetCore}:${num}`;
+}
+
+export function deduplicateAuctions(auctions: AuctionProperty[]): AuctionProperty[] {
+  const seenLinks = new Set<string>();
+  const seenKeys = new Map<string, AuctionProperty>();
+  const deduplicated: AuctionProperty[] = [];
+
+  for (const auc of auctions) {
+    const link = canonicalAuctionLink(auc.auctionLink || '');
+    if (link && seenLinks.has(link)) {
+      continue;
+    }
+    if (link) seenLinks.add(link);
+
+    const dedupeKey = getPropertyDedupeKey(auc.address, auc.city, auc.state, auc.processNumber, auc.id, auc.propertyType);
+    if (dedupeKey) {
+      if (seenKeys.has(dedupeKey)) {
+        const existing = seenKeys.get(dedupeKey)!;
+        if (!existing.imageUrl && auc.imageUrl) existing.imageUrl = auc.imageUrl;
+        if (!existing.secondAuctionDate && auc.secondAuctionDate) existing.secondAuctionDate = auc.secondAuctionDate;
+        continue;
+      }
+      seenKeys.set(dedupeKey, auc);
+    }
+
+    deduplicated.push(auc);
+  }
+
+  return deduplicated;
 }
 
 export function reconcileAuctionDrafts(
@@ -1586,7 +1885,14 @@ export function reconcileAuctionDrafts(
   existingAuctions: AuctionProperty[], recalculateFn: (auc: AuctionProperty) => AuctionProperty,
   writeAudit = true
 ) {
-  const existingLinks = new Set(existingAuctions.map(a => canonicalAuctionLink(a.auctionLink || '')).filter(Boolean));
+  const linkIndex = new Map(existingAuctions.filter(a => a.auctionLink).map(a => [canonicalAuctionLink(a.auctionLink!), a]));
+  const existingLinks = new Set(linkIndex.keys());
+  const existingKeys = new Map<string, AuctionProperty>();
+  for (const a of existingAuctions) {
+    const k = getPropertyDedupeKey(a.address, a.city, a.state, a.processNumber, a.id, a.propertyType);
+    if (k) existingKeys.set(k, a);
+  }
+
   const newAuctions: AuctionProperty[] = [];
   let updated = 0;
   const today = new Date().toISOString().slice(0, 10);
@@ -1620,32 +1926,34 @@ export function reconcileAuctionDrafts(
     if (addressCity && normalizeStr(addressCity) !== normalizeStr(draft.city)) { pendingReview.push({draft,reason:'outside_requested_city'}); continue; }
     const completeAddress = draft.address || '';
 
-    if (existingLinks.has(draft.auctionLink)) {
-      const existing = existingAuctions.find(item => canonicalAuctionLink(item.auctionLink || '') === draft.auctionLink);
-      if (existing) {
-        updated++;
-        Object.assign(existing, recalculateFn({ ...existing, state: draft.state, city: draft.city, neighborhood: draft.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress, sizeSqm: draft.sizeSqm, auctionPrice: draft.auctionPrice,
-          evaluationPrice: draft.estimatedValue ?? existing.evaluationPrice,
-          auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate, saleMode: draft.saleMode,
-          addressVerified: draft.addressVerified, sizeVerified: draft.sizeVerified, priceVerified: draft.priceVerified,
-          description: draft.description, matriculaText: draft.matriculaText || existing.matriculaText,
-          matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
-          allowsFinancing: draft.allowsFinancing ?? existing.allowsFinancing ?? false,
-          allowsInstallments: draft.allowsInstallments ?? existing.allowsInstallments ?? false,
-          paymentTerms: draft.paymentTerms || existing.paymentTerms,
-          maxInstallments: draft.maxInstallments ?? existing.maxInstallments,
-          minDownpaymentPercent: draft.minDownpaymentPercent ?? existing.minDownpaymentPercent,
-          pendingIptuCost: draft.pendingIptuCost ?? existing.pendingIptuCost,
-          pendingCondoCost: draft.pendingCondoCost ?? existing.pendingCondoCost }));
-        if (!calculationReady) Object.assign(existing, {
-          precisa_revisao: true,
-          valuationConfidence: 'unavailable',
-          liquidityScore: 1,
-          riskLevel: 'Alto',
-          calculatedRoi: undefined,
-          calculatedProfit: undefined
-        });
-      }
+    const draftKey = getPropertyDedupeKey(completeAddress, draft.city, draft.state, undefined, undefined, draft.propertyType);
+    const existing = (existingLinks.has(draft.auctionLink)
+      ? linkIndex.get(draft.auctionLink)
+      : (draftKey ? existingKeys.get(draftKey) : null));
+
+    if (existing) {
+      updated++;
+      Object.assign(existing, recalculateFn({ ...existing, state: draft.state, city: draft.city, neighborhood: draft.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm || existing.sizeSqm, auctionPrice: draft.auctionPrice || existing.auctionPrice,
+        evaluationPrice: draft.estimatedValue ?? existing.evaluationPrice,
+        auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate, saleMode: draft.saleMode,
+        addressVerified: draft.addressVerified, sizeVerified: draft.sizeVerified, priceVerified: draft.priceVerified,
+        description: draft.description, matriculaText: draft.matriculaText || existing.matriculaText,
+        matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
+        allowsFinancing: draft.allowsFinancing ?? existing.allowsFinancing ?? false,
+        allowsInstallments: draft.allowsInstallments ?? existing.allowsInstallments ?? false,
+        paymentTerms: draft.paymentTerms || existing.paymentTerms,
+        maxInstallments: draft.maxInstallments ?? existing.maxInstallments,
+        minDownpaymentPercent: draft.minDownpaymentPercent ?? existing.minDownpaymentPercent,
+        pendingIptuCost: draft.pendingIptuCost ?? existing.pendingIptuCost,
+        pendingCondoCost: draft.pendingCondoCost ?? existing.pendingCondoCost }));
+      if (!calculationReady || existing.precisa_revisao) Object.assign(existing, {
+        precisa_revisao: true,
+        valuationConfidence: 'unavailable',
+        liquidityScore: 1,
+        riskLevel: 'Alto',
+        calculatedRoi: undefined,
+        calculatedProfit: undefined
+      });
       continue;
     }
     existingLinks.add(draft.auctionLink);
@@ -1699,7 +2007,10 @@ export function reconcileAuctionDrafts(
     };
 
     // Never let incomplete official lots inherit a speculative valuation.
-    newAuctions.push(calculationReady ? recalculateFn(rawAuc) : rawAuc);
+    const finalAuc = calculationReady ? recalculateFn(rawAuc) : rawAuc;
+    newAuctions.push(finalAuc);
+    linkIndex.set(draft.auctionLink, finalAuc);
+    if (draftKey) existingKeys.set(draftKey, finalAuc);
   }
 
   if (writeAudit) {

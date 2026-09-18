@@ -2,8 +2,7 @@ export type PropertyType = 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno' | 'L
 
 export const VALID_ITBI_CITIES_BY_STATE: Record<string, string[]> = {
   RJ: ['Rio de Janeiro', 'Niterói'],
-  MG: ['Juiz de Fora'],
-  SP: ['São Paulo']
+  MG: ['Juiz de Fora']
 };
 
 
@@ -42,6 +41,13 @@ export interface Session {
 }
 
 export interface AuctionProperty {
+  processNumber?: string;
+  leiloeiro?: string;
+  sourceLinks?: string[];
+  lastSyncedAt?: string;
+  addressVerified?: boolean;
+  sizeVerified?: boolean;
+  priceVerified?: boolean;
   id: string;
   title: string;
   address: string;
