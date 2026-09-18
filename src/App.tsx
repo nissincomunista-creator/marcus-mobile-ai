@@ -1,4 +1,3 @@
-import AuctionSyncStatus from './components/AuctionSyncStatus.tsx';
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuctionProperty, ItbiTransaction, PropertyType, BRAZIL_STATES, User as UserType, AccessCode } from './types.ts';
 import Dashboard from './components/Dashboard.tsx';
@@ -287,7 +286,6 @@ export default function App() {
       }
     }
     fetchData();
-    authFetch('/api/sync/start', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({reason:'app-open'})}).catch(error => console.error('Falha ao iniciar sincronização:', error));
 
     // Minor clock update relative to user timezone
     const timer = setInterval(() => {
@@ -1229,7 +1227,6 @@ export default function App() {
               >
                 {!activeSelectedAuction ? (
                   <ErrorBoundary fallbackTitle="Erro ao carregar o Painel de Garimpo">
-                    <AuctionSyncStatus onUpdated={refreshMarketData} />
                     <Dashboard
                       auctions={auctions}
                       selectedAuctionId={selectedAuctionId}

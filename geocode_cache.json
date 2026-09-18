@@ -8597,5 +8597,32 @@
     "source": "nominatim",
     "matchedCity": "Niterói",
     "matchedStreet": "Alameda São Boaventura"
+  },
+  "rua mucio vieira": {
+    "lat": -21.7393711,
+    "lng": -43.3447152,
+    "displayName": "Rua Múcio Vieira, Bonfim, Juiz de Fora, Minas Gerais, Região Sudeste, 36051-450, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Múcio Vieira"
+  },
+  "rua mucio vieira, bonfim, juiz de fora - mg": {
+    "lat": -21.7393711,
+    "lng": -43.3447152,
+    "displayName": "Rua Múcio Vieira, Bonfim, Juiz de Fora, Minas Gerais, Região Sudeste, 36051-450, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Múcio Vieira"
+  },
+  "rua mucio vieira|juiz de fora|mg": {
+    "lat": -21.7393711,
+    "lng": -43.3447152,
+    "displayName": "Rua Múcio Vieira, Bonfim, Juiz de Fora, Minas Gerais, Região Sudeste, 36051-450, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Múcio Vieira"
   }
 }
