@@ -188,7 +188,7 @@ export default function LightboxModal({
             <div className="flex items-center gap-4 text-xs font-mono">
               <div>
                 <span className="text-slate-400 block text-[10px] uppercase font-sans">Lance Mínimo</span>
-                <span className="font-bold text-white text-sm">{formatBRL(property.auctionPrice)}</span>
+                <span className="font-bold text-white text-sm">{property.auctionPrice > 0 ? formatBRL(property.auctionPrice) : 'Aberto a Propostas'}</span>
               </div>
               <div className="h-6 w-px bg-slate-800 hidden sm:block" />
               <div>

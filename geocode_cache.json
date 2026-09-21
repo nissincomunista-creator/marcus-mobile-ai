@@ -8840,5 +8840,278 @@
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Avenida Comandante Júlio de Moura"
+  },
+  "rua sambaiba": {
+    "lat": -22.9859061,
+    "lng": -43.2304195,
+    "displayName": "Rua Sambaíba, Jardim Pernambuco, Leblon, Rio de Janeiro, Região Sudeste, 22450-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Sambaíba"
+  },
+  "rua sambaiba, leblon, rio de janeiro - rj": {
+    "lat": -22.9859061,
+    "lng": -43.2304195,
+    "displayName": "Rua Sambaíba, Jardim Pernambuco, Leblon, Rio de Janeiro, Região Sudeste, 22450-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Sambaíba"
+  },
+  "rua sambaiba|rio de janeiro|rj": {
+    "lat": -22.9859061,
+    "lng": -43.2304195,
+    "displayName": "Rua Sambaíba, Jardim Pernambuco, Leblon, Rio de Janeiro, Região Sudeste, 22450-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Sambaíba"
+  },
+  "rua aristides espinola": {
+    "lat": -22.9862509,
+    "lng": -43.2270088,
+    "displayName": "Rua Aristides Espínola, Leblon, Rio de Janeiro, Região Sudeste, 22440-035, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Aristides Espínola"
+  },
+  "rua aristides espinola, leblon, rio de janeiro - rj": {
+    "lat": -22.9862509,
+    "lng": -43.2270088,
+    "displayName": "Rua Aristides Espínola, Leblon, Rio de Janeiro, Região Sudeste, 22440-035, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Aristides Espínola"
+  },
+  "rua aristides espinola|rio de janeiro|rj": {
+    "lat": -22.9862509,
+    "lng": -43.2270088,
+    "displayName": "Rua Aristides Espínola, Leblon, Rio de Janeiro, Região Sudeste, 22440-035, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Aristides Espínola"
+  },
+  "rua professor antonio maria teixeira": {
+    "lat": -22.9828315,
+    "lng": -43.216698,
+    "displayName": "Rua Professor Antônio Maria Teixeira, Leblon, Rio de Janeiro, Região Sudeste, 22440-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Professor Antônio Maria Teixeira"
+  },
+  "rua professor antonio maria teixeira, leblon, rio de janeiro - rj": {
+    "lat": -22.9828315,
+    "lng": -43.216698,
+    "displayName": "Rua Professor Antônio Maria Teixeira, Leblon, Rio de Janeiro, Região Sudeste, 22440-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Professor Antônio Maria Teixeira"
+  },
+  "rua professor antonio maria teixeira|rio de janeiro|rj": {
+    "lat": -22.9828315,
+    "lng": -43.216698,
+    "displayName": "Rua Professor Antônio Maria Teixeira, Leblon, Rio de Janeiro, Região Sudeste, 22440-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Professor Antônio Maria Teixeira"
+  },
+  "rua juquia": {
+    "lat": -22.9803221,
+    "lng": -43.2231663,
+    "displayName": "Rua Juquiá, Leblon, Rio de Janeiro, Região Sudeste, 22430-220, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Juquiá"
+  },
+  "rua juquia, leblon, rio de janeiro - rj": {
+    "lat": -22.9803221,
+    "lng": -43.2231663,
+    "displayName": "Rua Juquiá, Leblon, Rio de Janeiro, Região Sudeste, 22430-220, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Juquiá"
+  },
+  "rua juquia|rio de janeiro|rj": {
+    "lat": -22.9803221,
+    "lng": -43.2231663,
+    "displayName": "Rua Juquiá, Leblon, Rio de Janeiro, Região Sudeste, 22430-220, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Juquiá"
+  },
+  "avenida epitacio pessoa": {
+    "lat": -22.980447,
+    "lng": -43.205702,
+    "displayName": "Avenida Epitácio Pessoa, Ipanema, Rio de Janeiro, Região Sudeste, 22411-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Epitácio Pessoa"
+  },
+  "avenida epitacio pessoa, ipanema, rio de janeiro - rj": {
+    "lat": -22.980447,
+    "lng": -43.205702,
+    "displayName": "Avenida Epitácio Pessoa, Ipanema, Rio de Janeiro, Região Sudeste, 22411-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Epitácio Pessoa"
+  },
+  "avenida epitacio pessoa|rio de janeiro|rj": {
+    "lat": -22.980447,
+    "lng": -43.205702,
+    "displayName": "Avenida Epitácio Pessoa, Ipanema, Rio de Janeiro, Região Sudeste, 22411-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Epitácio Pessoa"
+  },
+  "rua anibal de mendonca": {
+    "lat": -22.9833572,
+    "lng": -43.2112944,
+    "displayName": "Rua Aníbal de Mendonça, Ipanema, Rio de Janeiro, Região Sudeste, 22410-050, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Aníbal de Mendonça"
+  },
+  "rua anibal de mendonca, ipanema, rio de janeiro - rj": {
+    "lat": -22.9833572,
+    "lng": -43.2112944,
+    "displayName": "Rua Aníbal de Mendonça, Ipanema, Rio de Janeiro, Região Sudeste, 22410-050, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Aníbal de Mendonça"
+  },
+  "rua anibal de mendonca|rio de janeiro|rj": {
+    "lat": -22.9833572,
+    "lng": -43.2112944,
+    "displayName": "Rua Aníbal de Mendonça, Ipanema, Rio de Janeiro, Região Sudeste, 22410-050, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Aníbal de Mendonça"
+  },
+  "rua da passagem 72-a botafogo": {
+    "lat": -22.9528258,
+    "lng": -43.1823289,
+    "displayName": "72, Rua da Passagem, Botafogo, Rio de Janeiro, Região Sudeste, 22250-160, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Passagem",
+    "matchedNumber": "72"
+  },
+  "rua da passagem, botafogo, rio de janeiro - rj": {
+    "lat": -22.9528258,
+    "lng": -43.1823289,
+    "displayName": "72, Rua da Passagem, Botafogo, Rio de Janeiro, Região Sudeste, 22250-160, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Passagem",
+    "matchedNumber": "72"
+  },
+  "rua da passagem 72-a botafogo|rio de janeiro|rj": {
+    "lat": -22.9528258,
+    "lng": -43.1823289,
+    "displayName": "72, Rua da Passagem, Botafogo, Rio de Janeiro, Região Sudeste, 22250-160, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Passagem",
+    "matchedNumber": "72"
+  },
+  "rua clarice indio do brasil": {
+    "lat": -22.9399099,
+    "lng": -43.1795946,
+    "displayName": "Rua Clarice Índio do Brasil, Botafogo, Rio de Janeiro, Região Sudeste, 22230-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Clarice Índio do Brasil"
+  },
+  "rua clarice indio do brasil, botafogo, rio de janeiro - rj": {
+    "lat": -22.9399099,
+    "lng": -43.1795946,
+    "displayName": "Rua Clarice Índio do Brasil, Botafogo, Rio de Janeiro, Região Sudeste, 22230-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Clarice Índio do Brasil"
+  },
+  "rua clarice indio do brasil|rio de janeiro|rj": {
+    "lat": -22.9399099,
+    "lng": -43.1795946,
+    "displayName": "Rua Clarice Índio do Brasil, Botafogo, Rio de Janeiro, Região Sudeste, 22230-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Clarice Índio do Brasil"
+  },
+  "rua general gois monteiro": {
+    "lat": -22.9557537,
+    "lng": -43.1792397,
+    "displayName": "Rua General Góis Monteiro, Botafogo, Rio de Janeiro, Região Sudeste, 22290-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua General Góis Monteiro"
+  },
+  "rua general gois monteiro, botafogo, rio de janeiro - rj": {
+    "lat": -22.9557537,
+    "lng": -43.1792397,
+    "displayName": "Rua General Góis Monteiro, Botafogo, Rio de Janeiro, Região Sudeste, 22290-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua General Góis Monteiro"
+  },
+  "rua general gois monteiro|rio de janeiro|rj": {
+    "lat": -22.9557537,
+    "lng": -43.1792397,
+    "displayName": "Rua General Góis Monteiro, Botafogo, Rio de Janeiro, Região Sudeste, 22290-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua General Góis Monteiro"
+  },
+  "rua garcia d´avila": {
+    "lat": -22.9851834,
+    "lng": -43.2102696,
+    "displayName": "Rua Garcia d'Ávila, Ipanema, Rio de Janeiro, Região Sudeste, 22421-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Garcia d'Ávila"
+  },
+  "rua garcia d´avila, ipanema, rio de janeiro - rj": {
+    "lat": -22.9851834,
+    "lng": -43.2102696,
+    "displayName": "Rua Garcia d'Ávila, Ipanema, Rio de Janeiro, Região Sudeste, 22421-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Garcia d'Ávila"
+  },
+  "rua garcia d´avila|rio de janeiro|rj": {
+    "lat": -22.9851834,
+    "lng": -43.2102696,
+    "displayName": "Rua Garcia d'Ávila, Ipanema, Rio de Janeiro, Região Sudeste, 22421-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Garcia d'Ávila"
   }
 }

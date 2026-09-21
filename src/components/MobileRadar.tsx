@@ -153,7 +153,7 @@ export const MobileRadar: React.FC<MobileRadarProps> = ({
             <div className="bg-slate-950/70 rounded-xl p-2.5 grid grid-cols-3 gap-2 text-center border border-slate-800/80">
               <div>
                 <span className="text-[9px] text-slate-400 uppercase block font-medium">Preço Caixa</span>
-                <span className="text-xs font-bold text-slate-200 font-mono">{formatBRL(auc.auctionPrice)}</span>
+                <span className="text-xs font-bold text-slate-200 font-mono">{auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}</span>
               </div>
               <div>
                 <span className="text-[9px] text-slate-400 uppercase block font-medium">Valor ITBI</span>

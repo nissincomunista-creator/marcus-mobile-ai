@@ -381,12 +381,9 @@ function getCaixaCatalogField(row: Record<string, string>, ...keys: string[]): s
   return '';
 }
 
-function parseCaixaSizeSqm(descricao: string, propertyType: PropertyType): number {
-  if (!descricao) return 50;
-
-  const privMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*privativa/i);
-  const totalMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*total/i);
-  const terrenoMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*(?:do\s*)?terreno/i);
+function parseCaixaSizeSqm(descricao: string, propertyType: PropertyType, title = ''): number {
+  const combined = `${title || ''} ${descricao || ''}`.replace(/\s+/g, ' ');
+  if (!combined.trim()) return 50;
 
   function parseVal(match: RegExpMatchArray | null): number {
     if (!match) return 0;
@@ -395,20 +392,36 @@ function parseCaixaSizeSqm(descricao: string, propertyType: PropertyType): numbe
       s = s.replace(/\./g, '').replace(',', '.');
     } else if (s.includes(',')) {
       s = s.replace(',', '.');
+    } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+      s = s.replace(/\./g, '');
     }
     const v = parseFloat(s);
     return isNaN(v) ? 0 : v;
   }
 
+  const privMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*privativa/i);
+  const totalMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*total/i);
+  const terrenoMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*(?:do\s*)?terreno/i);
+
+  // Multi-portal patterns (Ricart, Portella, Alexandro, Zuk, Vitrine Bradesco, etc.)
+  const metragemMatch = combined.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total|área\s+privativa|área\s+constru[ií]da|[aá]rea\s+edificada|[aá]rea\s+[uú]til)\s*[:=]?\s*([\d\.,]+)\s*(?:m[²2]|metros)/i);
+  const areaDeMatch = combined.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s*(?:privativa|constru[ií]da|[uú]til|total)/i);
+  const titleMatch = (title || '').match(/(?:c\/|com|de)\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+  const simpleAreaMatch = combined.match(/[aá]rea\s*(?:de)?\s*[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+
   const privativa = parseVal(privMatch);
   const total = parseVal(totalMatch);
   const terreno = parseVal(terrenoMatch);
+  const metragem = parseVal(metragemMatch);
+  const areaDe = parseVal(areaDeMatch);
+  const titleSize = parseVal(titleMatch);
+  const simpleArea = parseVal(simpleAreaMatch);
 
   let size = 0;
   if (propertyType === 'Terreno') {
-    size = terreno || total || privativa;
+    size = terreno || total || metragem || privativa || areaDe || titleSize || simpleArea;
   } else {
-    size = privativa || total || terreno;
+    size = titleSize || metragem || privativa || areaDe || simpleArea || total || terreno;
   }
 
   // Anomaly fix: if residential size >= 1000 and is a round multiplier (e.g. 4500 for 45m²), normalize
@@ -1330,8 +1343,13 @@ function recalculateAuctionWithIndex(
       auc.sizeSqm = Math.round(auc.sizeSqm / 100);
     }
   }
-  if (!auc.sizeSqm || auc.sizeSqm <= 0) {
-    auc.sizeSqm = parseCaixaSizeSqm(auc.description || '', propType) || 50;
+  if (!auc.sizeSqm || auc.sizeSqm <= 0 || auc.sizeSqm === 50) {
+    const detected = parseCaixaSizeSqm(auc.description || '', propType, auc.title);
+    if (detected > 0 && detected !== 50) {
+      auc.sizeSqm = detected;
+    } else if (!auc.sizeSqm || auc.sizeSqm <= 0) {
+      auc.sizeSqm = detected || 50;
+    }
   }
 
   let itbiStreetAvgSqm = 0;
@@ -1512,24 +1530,62 @@ function recalculateAuctionWithIndex(
 
   // Parse evaluationPrice from description if missing
   let evalPrice = auc.evaluationPrice;
-  if (auc.description) {
-    const evm = auc.description.match(/avaliação\s*(?:original\s*caixa)?:\s*r\$\s*([\d\.,]+)/i);
-    if (evm) {
-      let str = evm[1].replace(/[\.,\s]+$/, '').trim();
-      if (str.includes(',') && str.includes('.')) {
-        str = str.replace(/\./g, '').replace(',', '.');
-      } else if (str.includes(',')) {
-        str = str.replace(',', '.');
-      } else if (/^\d+\.\d{1,2}$/.test(str)) {
-        // format with cents like 310000.00: keep dot
-      } else if (str.includes('.')) {
-        str = str.replace(/\./g, '');
-      }
+  if (!evalPrice || evalPrice <= 0) {
+    const desc = `${auc.title || ''} ${auc.description || ''}`;
+    // 1. Portella / standard R$ ... Avaliação
+    const m1 = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)(?:valor\s+(?:de\s+)?)?avalia[cç][aã]o/i);
+    // 2. Valor avaliado
+    const mValAv = desc.match(/valor\s+avaliado\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
+    // 3. Avaliação \n 369.800,00 or Avaliação: R$ 369.800,00
+    const m2 = desc.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*(?:r\$\s*)?([\d\.,]+)/i);
+    // 4. Laudo de avaliação
+    const m3 = desc.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,200}?(?:valor\s+(?:de\s+)?(?:r\$\s*)?|atribuo[^\d]{0,80}?valor\s+de\s*(?:r\$\s*)?)([\d\.,]+)/i);
+    // 5. Standard valor de avaliação
+    const m4 = desc.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+
+    const match = m1 || mValAv || m2 || m3 || m4;
+    if (match) {
+      let str = match[1].replace(/[\.,\s]+$/, '').trim();
+      if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+      else if (str.includes(',')) str = str.replace(',', '.');
+      else if (/^\d{1,3}(\.\d{3})+$/.test(str)) str = str.replace(/\./g, '');
       const v = parseFloat(str);
       if (!isNaN(v) && v > 0) evalPrice = v;
     }
   }
   auc.evaluationPrice = evalPrice || undefined;
+
+  // Recover auctionPrice from description if missing or 0
+  if (!auc.auctionPrice || auc.auctionPrice <= 0) {
+    const desc = `${auc.title || ''} ${auc.description || ''}`;
+    const m2nd = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*2[ºªo°]\s*leil[aã]o/i);
+    const m1st = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*1[ºªo°]\s*leil[aã]o/i);
+    const mZuk1 = desc.match(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s+R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const mZuk2 = desc.match(/lance\s+inicial\s*:?\s*(?:[^\n\r]{0,40}\n){0,3}\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const mSch = desc.match(/a\s+partir\s+de\s*(?:[\n\r\s]*)R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const mBb = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+para\s+proposta/i);
+    const mJv = desc.match(/(?:venda\s+direta\s*)?R\$\s*([\d.]+(?:,\d{2})?)\s*(?:total\s+a\s+pagar|incremento)/i);
+    const mProp = desc.match(/valor\s+m[ií]nimo\s+para\s+proposta\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i) ||
+                  desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*valor\s+m[ií]nimo\s+para\s+proposta/i);
+    const mLance = desc.match(/(?:lance\s+(?:inicial|m[ií]nimo)|valor\s+inicial)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+
+    const priceMatch = m2nd || m1st || mZuk1 || mZuk2 || mSch || mBb || mJv || mProp || mLance;
+    if (priceMatch) {
+      let str = priceMatch[1].replace(/[\.,\s]+$/, '').trim();
+      if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+      else if (str.includes(',')) str = str.replace(',', '.');
+      else if (/^\d{1,3}(\.\d{3})+$/.test(str)) str = str.replace(/\./g, '');
+      const v = parseFloat(str);
+      if (!isNaN(v) && v > 0) {
+        auc.auctionPrice = v;
+        auc.priceVerified = true;
+      }
+    } else if (evalPrice && evalPrice > 0 && (origin === 'judicial' || origin === 'extrajudicial')) {
+      const hasSecondRound = /2[ºªo°]\s*(?:leil[aã]o|pra[cç]a)/i.test(desc);
+      auc.auctionPrice = hasSecondRound ? Math.round(evalPrice * 0.5) : evalPrice;
+      auc.priceVerified = true;
+    }
+  }
 
   // Cascade Outlier Protection & Conservative Calibration:
   // When street has fewer than 5 transactions, apply strict Bayesian shrinkage + corridor capping
@@ -4523,6 +4579,13 @@ app.post('/api/auctions/fetch-documentos', async (req, res) => {
       ...(auction || {}),
       portalId: portal.id,
       auctioneerName: portal.name,
+      title: auction?.title || '',
+      address: auction?.address || '',
+      neighborhood: auction?.neighborhood || '',
+      propertyType: auction?.propertyType || 'Apartamento',
+      sizeSqm: auction?.sizeSqm || 0,
+      auctionPrice: auction?.auctionPrice || 0,
+      auctionDate: auction?.auctionDate || '',
       city: auction?.city || '',
       state: auction?.state || '',
       auctionLink: targetLink,

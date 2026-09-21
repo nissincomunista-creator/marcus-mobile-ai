@@ -38,6 +38,55 @@ module.exports = __toCommonJS(server_exports);
 
 // listedPortalSync.ts
 var import_node_fs2 = __toESM(require("node:fs"), 1);
+
+// officialLotPayload.ts
+function officialLotFinancials(html, url) {
+  let lot;
+  try {
+    const m = html.match(/(?:var|let|const)\s+lote\s*=\s*(\{[^\r\n]+\});/);
+    if (m) lot = JSON.parse(m[1]);
+  } catch {
+    return void 0;
+  }
+  if (!lot || typeof lot !== "object") return void 0;
+  const date = (val) => typeof val?.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(val.date) ? val.date.slice(0, 10) : void 0;
+  const evalAmount = Number(lot.valorAvaliacao) > 0 ? Number(lot.valorAvaliacao) : void 0;
+  let amount = 0;
+  let auctionDate = void 0;
+  let firstAuctionDate = void 0;
+  let secondAuctionDate = void 0;
+  if (lot.leilao) {
+    const round = Number(lot.leilao.praca) || 1;
+    firstAuctionDate = date(lot.leilao.data1);
+    secondAuctionDate = date(lot.leilao.data2);
+    auctionDate = date(lot.leilao["data" + round]) || firstAuctionDate || secondAuctionDate;
+    if (typeof lot.valorInicialAtual === "number" && lot.valorInicialAtual > 0) {
+      amount = lot.valorInicialAtual;
+    } else if (round === 2 && typeof lot.valorInicial2 === "number" && lot.valorInicial2 > 0) {
+      amount = lot.valorInicial2;
+    } else if (typeof lot.valorInicial === "number" && lot.valorInicial > 0) {
+      amount = lot.valorInicial;
+    }
+  } else {
+    const vInit = Number(lot.valorInicial);
+    const vMin = Number(lot.valorMinimo);
+    if (Number.isFinite(vInit) && vInit > 0) amount = vInit;
+    else if (Number.isFinite(vMin) && vMin > 0) amount = vMin;
+  }
+  if (amount <= 0 && evalAmount) {
+    amount = Math.round(evalAmount * 0.5);
+  }
+  if (amount <= 0 && !evalAmount) return void 0;
+  return {
+    ...amount > 0 ? { auctionPrice: amount, priceVerified: true } : {},
+    ...evalAmount ? { estimatedValue: evalAmount } : {},
+    ...auctionDate ? { auctionDate } : {},
+    ...firstAuctionDate ? { firstAuctionDate } : {},
+    ...secondAuctionDate ? { secondAuctionDate } : {}
+  };
+}
+
+// listedPortalSync.ts
 var import_node_path2 = __toESM(require("node:path"), 1);
 var cheerio2 = __toESM(require("cheerio"), 1);
 var import_puppeteer3 = __toESM(require("puppeteer"), 1);
@@ -533,18 +582,44 @@ function extractAuctionDate(text) {
   return extractAuctionDates(text).first || "";
 }
 function extractMinimumBid(text) {
-  const initials = [...text.matchAll(/valor\s+inicial\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((match) => parseBrazilianMoney(match[1]));
-  if (initials.length) return new Set(initials).size === 1 ? initials[0] : 0;
-  const values = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((match) => Number(match[1].replace(/\./g, "").replace(",", "."))).filter((value) => Number.isFinite(value) && value > 0);
-  if (values.length > 0 && new Set(values).size === 1) return values[0];
-  const roundValues = [...text.matchAll(/(?:[12][ºªo°]\s*)?(?:leil[aã]o|pra[cç]a)[\s\S]{0,180}?R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((match) => parseBrazilianMoney(match[1])).filter((value) => value > 0);
-  return roundValues.length > 0 && new Set(roundValues).size === 1 ? roundValues[0] : 0;
+  if (!text) return 0;
+  const m2nd = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*2[ºªo°]\s*leil[aã]o/i);
+  if (m2nd) return parseBrazilianMoney(m2nd[1]);
+  const m1st = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*1[ºªo°]\s*leil[aã]o/i);
+  if (m1st) return parseBrazilianMoney(m1st[1]);
+  const mZuk1 = text.match(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s+R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mZuk1) return parseBrazilianMoney(mZuk1[1]);
+  const mZuk2 = text.match(/lance\s+inicial\s*:?\s*(?:[^\n\r]{0,40}\n){0,3}\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mZuk2) return parseBrazilianMoney(mZuk2[1]);
+  const mSch = text.match(/a\s+partir\s+de\s*(?:[\n\r\s]*)R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mSch) return parseBrazilianMoney(mSch[1]);
+  const mBb = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+para\s+proposta/i);
+  if (mBb) return parseBrazilianMoney(mBb[1]);
+  const mJv = text.match(/(?:venda\s+direta\s*)?R\$\s*([\d.]+(?:,\d{2})?)\s*(?:total\s+a\s+pagar|incremento)/i);
+  if (mJv) return parseBrazilianMoney(mJv[1]);
+  const mProp = text.match(/valor\s+m[ií]nimo\s+para\s+proposta\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i) || text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*valor\s+m[ií]nimo\s+para\s+proposta/i);
+  if (mProp) return parseBrazilianMoney(mProp[1]);
+  const initials = [...text.matchAll(/valor\s+inicial\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((match) => parseBrazilianMoney(match[1])).filter((val) => val > 0);
+  if (initials.length) return initials[0];
+  const values = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((match) => parseBrazilianMoney(match[1])).filter((val) => val > 0);
+  if (values.length) return values[0];
+  const roundValues = [...text.matchAll(/(?:[12][ºªo°]\s*)?(?:leil[aã]o|pra[cç]a)[\s\S]{0,180}?R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((match) => parseBrazilianMoney(match[1])).filter((val) => val > 0);
+  if (roundValues.length) return roundValues[0];
+  return 0;
 }
 function extractAppraisal(text) {
-  const match = text.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (!match) return void 0;
-  const value = Number(match[1].replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(value) && value > 0 ? value : void 0;
+  if (!text) return void 0;
+  const m1 = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)(?:valor\s+(?:de\s+)?)?avalia[cç][aã]o/i);
+  if (m1) return parseBrazilianMoney(m1[1]);
+  const mValAv = text.match(/valor\s+avaliado\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
+  if (mValAv) return parseBrazilianMoney(mValAv[1]);
+  const m2 = text.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
+  if (m2) return parseBrazilianMoney(m2[1]);
+  const m3 = text.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,200}?(?:valor\s+(?:de\s+)?(?:R\$\s*)?|atribuo[^\d]{0,80}?valor\s+de\s*(?:R\$\s*)?)([\d.]+(?:,\d{2})?)/i);
+  if (m3) return parseBrazilianMoney(m3[1]);
+  const m4 = text.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (m4) return parseBrazilianMoney(m4[1]);
+  return void 0;
 }
 function extractSaleMode(text) {
   const normalized = normalizeStr(text);
@@ -744,7 +819,8 @@ ${extracted}`;
         }
       }
     }
-    return parseOfficialLotDetail(draft, detailData, detailPage.url(), matriculaText, matriculaUrl);
+    const officialFinancials = officialLotFinancials(await detailPage.content(), detailPage.url());
+    return parseOfficialLotDetail(draft, { ...detailData, officialFinancials }, detailPage.url(), matriculaText, matriculaUrl);
   } catch (err) {
     recordSourceAudit({ source: draft.portalId, url: draft.auctionLink, complete: false, error: `Falha no detalhe: ${err.message}` });
     console.warn(`[Auctioneer Sync] N\xE3o foi poss\xEDvel abrir o lote ${draft.auctionLink}: ${err.message}`);
@@ -768,7 +844,7 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const headlineSize = headlineArea ? parseOfficialArea(headlineArea[1]) : 0;
   const landArea = parseType(detailData.title || draft.title) === "Terreno" ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
   const landSize = landArea ? parseOfficialArea(landArea[1]) : 0;
-  const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+  const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
   const textMatchedSize = sizeMatch ? parseOfficialArea(sizeMatch[1]) : 0;
   const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
   const detailedSize = headlineSize || landSize || textMatchedSize || structuredSize;
@@ -779,6 +855,14 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const roundBlocks = combinedText.split(/(?=(?:1[ºªo°]|2[ºªo°]|primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a))/i);
   const rounds = roundBlocks.map((block) => ({ date: extractAuctionDates(block).first, price: extractMinimumBid(block) })).filter((round) => round.date && round.date >= today && round.price > 0).sort((a, b) => a.date.localeCompare(b.date));
   const detailedMinimumBid = rounds[0]?.price || extractMinimumBid(combinedText);
+  const extractedAppraisal = extractAppraisal(combinedText) || draft.estimatedValue;
+  let fallbackBid = detailedMinimumBid;
+  if (fallbackBid <= 0 && extractedAppraisal && extractedAppraisal > 0) {
+    const hasSecondRound = /2[ºªo°]\s*(?:leil[aã]o|pra[cç]a)/i.test(combinedText);
+    fallbackBid = hasSecondRound ? Math.round(extractedAppraisal * 0.5) : extractedAppraisal;
+  }
+  const finalBid = detailData.officialFinancials?.auctionPrice || fallbackBid || draft.auctionPrice;
+  const finalAppraisal = detailData.officialFinancials?.estimatedValue || extractedAppraisal || draft.estimatedValue;
   const enrichedDescription = combinedText.trim().slice(0, 3e4);
   const detectedLocation = sourceAuctionLocation(detailData.title) || sourceAuctionLocation(verifiedAddress || "") || sourceAuctionLocation(lotText) || (draft.locationScopeVerified && hasCityEvidence(combinedText, draft.city) || hasRequestedLocationEvidence(combinedText, draft.state, draft.city) ? { city: draft.city, state: draft.state } : null);
   return {
@@ -800,12 +884,13 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
     matriculaUrl,
     sizeSqm: detailedSize > 0 ? detailedSize : draft.sizeSqm,
     sizeVerified: detailedSize > 0,
-    auctionPrice: detailedMinimumBid || draft.auctionPrice,
-    priceVerified: detailedMinimumBid > 0,
-    estimatedValue: extractAppraisal(combinedText) || draft.estimatedValue,
-    auctionDate: [dates.first, dates.second].filter((date) => Boolean(date) && date >= today).sort()[0] || dates.first || "",
-    firstAuctionDate: dates.first,
-    secondAuctionDate: dates.second,
+    auctionPrice: finalBid,
+    priceVerified: finalBid > 0,
+    estimatedValue: finalAppraisal,
+    auctionDate: detailData.officialFinancials?.auctionDate || [dates.first, dates.second].filter((date) => Boolean(date) && date >= today).sort()[0] || dates.first || "",
+    firstAuctionDate: detailData.officialFinancials?.firstAuctionDate || dates.first,
+    secondAuctionDate: detailData.officialFinancials?.secondAuctionDate || dates.second,
+    ...detailData.officialFinancials,
     saleMode: extractSaleMode(combinedText || draft.description || ""),
     ...financialTerms,
     description: enrichedDescription || draft.description
@@ -1865,6 +1950,12 @@ var skipPattern = /login|entrar|cadastro|contato|politica|privacidade|termos|blo
 var bankIds = /* @__PURE__ */ new Set(["bb", "emgea", "santander", "vitrinebradesco"]);
 var portalConfigs = SYNC_SOURCE_IDS.map((id) => AUCTIONEER_PORTALS.find((p) => p.id === id)).filter(Boolean);
 var sameHost = (a, b) => new URL(a).hostname.replace(/^www\./, "") === new URL(b).hostname.replace(/^www\./, "");
+function isWithinMegaScope(url, detail) {
+  const pathname = new URL(url).pathname.replace(/\/$/, "");
+  if (!detail) return SYNC_TARGETS.some((t) => pathname === `/imoveis/${t.state.toLowerCase()}/${t.slug}`);
+  const match = pathname.match(/^\/imoveis\/(?:[^/]+\/)?([a-z]{2})\/([^/]+)/i);
+  return !match || SYNC_TARGETS.some((t) => t.state.toLowerCase() === match[1].toLowerCase() && t.slug === match[2]);
+}
 function separatedTargetLocation(text) {
   const normalized = normalizeAuctionText(text);
   const matches = SYNC_TARGETS.filter((t) => new RegExp(`\\b${normalizeAuctionText(t.city)}\\b`).test(normalized) && new RegExp(`\\b${t.state.toLowerCase()}\\b`).test(normalized));
@@ -1978,7 +2069,7 @@ function parseSourcePage(html, url) {
     const description = cheerio2.load(lotData.descricao).text();
     text = [eventData?.judicial === true ? "Judicial" : eventData?.judicial === false ? "Extrajudicial" : "", description, text].join("\n");
   }
-  return { links, text, title: lotData?.titulo || title, image, structuredAddresses, structuredSizes, documentLinks, lotDescription: lotData?.descricao ? cheerio2.load(lotData.descricao).text() : "" };
+  return { links, text, title: lotData?.titulo || title, image, structuredAddresses, structuredSizes, documentLinks, officialFinancials: officialLotFinancials(html, url), lotDescription: lotData?.descricao ? cheerio2.load(lotData.descricao).text() : "" };
 }
 async function runListedPortalSync(reason, onDrafts, options = {}) {
   const configs = portalConfigs.filter((p) => !options.ids || options.ids.includes(p.id));
@@ -2114,6 +2205,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
             import_node_fs2.default.writeFileSync(import_node_path2.default.join(dir, config.id + "-listing-" + progress.pages + ".html"), response.html);
             for (const link of page.links) {
               if (!sameHost(link.url, response.url) || skipPattern.test(link.url)) continue;
+              if (config.id === "megaleiloes" && !isWithinMegaScope(link.url, directPattern.test(link.url) && !link.pagination)) continue;
               const location2 = sourceAuctionLocation(link.text);
               if (location2 && !allowedSyncLocation(location2.city, location2.state)) continue;
               const relevant = propertyWords.test(normalizeAuctionText(link.text)) || /imoveis|imovel|tipo=imovel|categoria=2/i.test(link.url);
@@ -3874,11 +3966,9 @@ function getCaixaCatalogField(row, ...keys) {
   }
   return "";
 }
-function parseCaixaSizeSqm(descricao, propertyType) {
-  if (!descricao) return 50;
-  const privMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*privativa/i);
-  const totalMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*total/i);
-  const terrenoMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*(?:do\s*)?terreno/i);
+function parseCaixaSizeSqm(descricao, propertyType, title = "") {
+  const combined = `${title || ""} ${descricao || ""}`.replace(/\s+/g, " ");
+  if (!combined.trim()) return 50;
   function parseVal(match) {
     if (!match) return 0;
     let s = match[1].trim();
@@ -3886,18 +3976,31 @@ function parseCaixaSizeSqm(descricao, propertyType) {
       s = s.replace(/\./g, "").replace(",", ".");
     } else if (s.includes(",")) {
       s = s.replace(",", ".");
+    } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+      s = s.replace(/\./g, "");
     }
     const v = parseFloat(s);
     return isNaN(v) ? 0 : v;
   }
+  const privMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*privativa/i);
+  const totalMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*total/i);
+  const terrenoMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*(?:do\s*)?terreno/i);
+  const metragemMatch = combined.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total|área\s+privativa|área\s+constru[ií]da|[aá]rea\s+edificada|[aá]rea\s+[uú]til)\s*[:=]?\s*([\d\.,]+)\s*(?:m[²2]|metros)/i);
+  const areaDeMatch = combined.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s*(?:privativa|constru[ií]da|[uú]til|total)/i);
+  const titleMatch = (title || "").match(/(?:c\/|com|de)\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+  const simpleAreaMatch = combined.match(/[aá]rea\s*(?:de)?\s*[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
   const privativa = parseVal(privMatch);
   const total = parseVal(totalMatch);
   const terreno = parseVal(terrenoMatch);
+  const metragem = parseVal(metragemMatch);
+  const areaDe = parseVal(areaDeMatch);
+  const titleSize = parseVal(titleMatch);
+  const simpleArea = parseVal(simpleAreaMatch);
   let size = 0;
   if (propertyType === "Terreno") {
-    size = terreno || total || privativa;
+    size = terreno || total || metragem || privativa || areaDe || titleSize || simpleArea;
   } else {
-    size = privativa || total || terreno;
+    size = titleSize || metragem || privativa || areaDe || simpleArea || total || terreno;
   }
   if ((propertyType === "Apartamento" || propertyType === "Casa") && size >= 1e3 && size % 10 === 0 && size <= 5e4) {
     if (size % 100 === 0) {
@@ -4611,8 +4714,13 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       auc.sizeSqm = Math.round(auc.sizeSqm / 100);
     }
   }
-  if (!auc.sizeSqm || auc.sizeSqm <= 0) {
-    auc.sizeSqm = parseCaixaSizeSqm(auc.description || "", propType) || 50;
+  if (!auc.sizeSqm || auc.sizeSqm <= 0 || auc.sizeSqm === 50) {
+    const detected = parseCaixaSizeSqm(auc.description || "", propType, auc.title);
+    if (detected > 0 && detected !== 50) {
+      auc.sizeSqm = detected;
+    } else if (!auc.sizeSqm || auc.sizeSqm <= 0) {
+      auc.sizeSqm = detected || 50;
+    }
   }
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
@@ -4750,23 +4858,52 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     }
   }
   let evalPrice = auc.evaluationPrice;
-  if (auc.description) {
-    const evm = auc.description.match(/avaliação\s*(?:original\s*caixa)?:\s*r\$\s*([\d\.,]+)/i);
-    if (evm) {
-      let str = evm[1].replace(/[\.,\s]+$/, "").trim();
-      if (str.includes(",") && str.includes(".")) {
-        str = str.replace(/\./g, "").replace(",", ".");
-      } else if (str.includes(",")) {
-        str = str.replace(",", ".");
-      } else if (/^\d+\.\d{1,2}$/.test(str)) {
-      } else if (str.includes(".")) {
-        str = str.replace(/\./g, "");
-      }
+  if (!evalPrice || evalPrice <= 0) {
+    const desc = `${auc.title || ""} ${auc.description || ""}`;
+    const m1 = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)(?:valor\s+(?:de\s+)?)?avalia[cç][aã]o/i);
+    const mValAv = desc.match(/valor\s+avaliado\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
+    const m2 = desc.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*(?:r\$\s*)?([\d\.,]+)/i);
+    const m3 = desc.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,200}?(?:valor\s+(?:de\s+)?(?:r\$\s*)?|atribuo[^\d]{0,80}?valor\s+de\s*(?:r\$\s*)?)([\d\.,]+)/i);
+    const m4 = desc.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const match = m1 || mValAv || m2 || m3 || m4;
+    if (match) {
+      let str = match[1].replace(/[\.,\s]+$/, "").trim();
+      if (str.includes(",") && str.includes(".")) str = str.replace(/\./g, "").replace(",", ".");
+      else if (str.includes(",")) str = str.replace(",", ".");
+      else if (/^\d{1,3}(\.\d{3})+$/.test(str)) str = str.replace(/\./g, "");
       const v = parseFloat(str);
       if (!isNaN(v) && v > 0) evalPrice = v;
     }
   }
   auc.evaluationPrice = evalPrice || void 0;
+  if (!auc.auctionPrice || auc.auctionPrice <= 0) {
+    const desc = `${auc.title || ""} ${auc.description || ""}`;
+    const m2nd = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*2[ºªo°]\s*leil[aã]o/i);
+    const m1st = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*1[ºªo°]\s*leil[aã]o/i);
+    const mZuk1 = desc.match(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s+R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const mZuk2 = desc.match(/lance\s+inicial\s*:?\s*(?:[^\n\r]{0,40}\n){0,3}\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const mSch = desc.match(/a\s+partir\s+de\s*(?:[\n\r\s]*)R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const mBb = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+para\s+proposta/i);
+    const mJv = desc.match(/(?:venda\s+direta\s*)?R\$\s*([\d.]+(?:,\d{2})?)\s*(?:total\s+a\s+pagar|incremento)/i);
+    const mProp = desc.match(/valor\s+m[ií]nimo\s+para\s+proposta\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i) || desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*valor\s+m[ií]nimo\s+para\s+proposta/i);
+    const mLance = desc.match(/(?:lance\s+(?:inicial|m[ií]nimo)|valor\s+inicial)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+    const priceMatch = m2nd || m1st || mZuk1 || mZuk2 || mSch || mBb || mJv || mProp || mLance;
+    if (priceMatch) {
+      let str = priceMatch[1].replace(/[\.,\s]+$/, "").trim();
+      if (str.includes(",") && str.includes(".")) str = str.replace(/\./g, "").replace(",", ".");
+      else if (str.includes(",")) str = str.replace(",", ".");
+      else if (/^\d{1,3}(\.\d{3})+$/.test(str)) str = str.replace(/\./g, "");
+      const v = parseFloat(str);
+      if (!isNaN(v) && v > 0) {
+        auc.auctionPrice = v;
+        auc.priceVerified = true;
+      }
+    } else if (evalPrice && evalPrice > 0 && (origin === "judicial" || origin === "extrajudicial")) {
+      const hasSecondRound = /2[ºªo°]\s*(?:leil[aã]o|pra[cç]a)/i.test(desc);
+      auc.auctionPrice = hasSecondRound ? Math.round(evalPrice * 0.5) : evalPrice;
+      auc.priceVerified = true;
+    }
+  }
   let reliableStreetAvgSqm = 0;
   if (itbiStreetAvgSqm > 0) {
     if (neighborhoodAvgSqm > 0) {
@@ -7194,6 +7331,13 @@ app.post("/api/auctions/fetch-documentos", async (req, res) => {
       ...auction || {},
       portalId: portal.id,
       auctioneerName: portal.name,
+      title: auction?.title || "",
+      address: auction?.address || "",
+      neighborhood: auction?.neighborhood || "",
+      propertyType: auction?.propertyType || "Apartamento",
+      sizeSqm: auction?.sizeSqm || 0,
+      auctionPrice: auction?.auctionPrice || 0,
+      auctionDate: auction?.auctionDate || "",
       city: auction?.city || "",
       state: auction?.state || "",
       auctionLink: targetLink,

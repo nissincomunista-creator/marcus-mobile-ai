@@ -7536,5 +7536,555 @@
         ]
       }
     }
+  },
+  "portal_v4_rj_rio_de_janeiro_botafogo_comercial_50_2_1_rua_da_passagem_72_a_botafogo": {
+    "timestamp": 1790000002298,
+    "isFallback": false,
+    "data": {
+      "fallback": false,
+      "totalFound": 23,
+      "streetMatchesCount": 1,
+      "below": {
+        "range": "35m² - 45m²",
+        "avgPrice": 200000,
+        "avgSqm": 4545,
+        "matches": [
+          {
+            "title": "Imóvel com 1 qtos, 44m² em BOTAFOGO",
+            "price": 200000,
+            "sizeSqm": 44,
+            "unitValueSqm": 4545,
+            "address": "Rua Vinte E Quatro de Maio, Engenho Novo · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895407114/comprar/apartamento-1-quarto-engenho-novo-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento no Engenho Novo com 1 quarto, ideal para comprar. • R$ 200.000 • R$ 800 Condo. + IPTU • 44 m² · 1 quarto · 1 vaga • Rua Vinte E Quatro de Maio, Engenho Novo · Rio de Ja"
+          }
+        ]
+      },
+      "close": {
+        "range": "45m² - 55m²",
+        "avgPrice": 269667,
+        "avgSqm": 5547,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 46m² em BOTAFOGO",
+            "price": 369000,
+            "sizeSqm": 46,
+            "unitValueSqm": 8022,
+            "address": "Rua Luiz Carlos Sarolli · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895249552/comprar/apartamento-2-quartos-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Compra apartamento com 2 quartos e piscina no condomínio. Animais de estimação permitidos. • R$ 369.000 • R$ 670 Condo. + IPTU • 46 m² · 2 quartos · 1 vaga • Rua Lui"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 55m² em BOTAFOGO",
+            "price": 240000,
+            "sizeSqm": 55,
+            "unitValueSqm": 4364,
+            "address": "Rua Miguel Cervantes, Cachambi · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893775471/comprar/apartamento-2-quartos-cachambi-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Venda de apartamento, de 55 m² com 2 quartos, 1 banheiro e 1 vaga na garagem em Cachambi. • R$ 240.000 • R$ 381 Condo. + IPTU • 55 m² · 2 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 47m² em BOTAFOGO",
+            "price": 200000,
+            "sizeSqm": 47,
+            "unitValueSqm": 4255,
+            "address": "Rua Joaquim Rodrigues, Parada de Lucas · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895517473/comprar/casa-1-quarto-parada-de-lucas-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Casa à venda: 1 quarto, aceita animais. Oportunidades de compra imperdíveis! • R$ 200.000 • R$ 0 Condo. + IPTU • 47 m² · 1 quarto • Rua Joaquim Rodrigues, Parad"
+          }
+        ]
+      },
+      "above": {
+        "range": "55m² - 68m²",
+        "avgPrice": 740300,
+        "avgSqm": 5495,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 56m² em BOTAFOGO",
+            "price": 220000,
+            "sizeSqm": 56,
+            "unitValueSqm": 3929,
+            "address": "Rua Dionísio Fernandes, Engenho de Dentro · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892990086/comprar/apartamento-2-quartos-engenho-de-dentro-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda no Engenho de Dentro com 2 quartos. • R$ 220.000 • R$ 601 Condo. + IPTU • 56 m² · 2 quartos • Rua Dionísio Fernandes, Engenho de Dentro · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 400m² em BOTAFOGO",
+            "price": 680000,
+            "sizeSqm": 400,
+            "unitValueSqm": 1700,
+            "address": "Rua Augusto Nunes, Todos Os Santos · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894052658/comprar/casa-3-quartos-todos-os-santos-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda em Todos Os Santos com 3 quartos espaçosos. Ideal para quem deseja comprar o imóvel certo! • R$ 680.000 • R$ 134 Condo. + IPTU • 400 m² · 3 quartos · 6 vagas • Rua Aug"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 107m² em BOTAFOGO",
+            "price": 312700,
+            "sizeSqm": 107,
+            "unitValueSqm": 2922,
+            "address": "Rua Magalhães Castro, Riachuelo · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893602855/comprar/apartamento-3-quartos-riachuelo-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Apartamento em Riachuelo com 3 quartos, varanda gourmet, jardim e aceita animais. Ótima compra! • R$ 312.700 • R$ 478 Condo. + IPTU • 107 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 104m² em BOTAFOGO",
+            "price": 538000,
+            "sizeSqm": 104,
+            "unitValueSqm": 5173,
+            "address": "Rua Fábio Luz, Méier · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895483981/comprar/apartamento-3-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento com 3 quartos, varanda e piscina no condomínio. Excelente oportunidade de compra. • R$ 538.000 • R$ 1.545 Condo. + IPTU • 104 m² · 3 quartos · 2 vagas • Rua Fábio Luz, "
+          },
+          {
+            "title": "Imóvel com 3 qtos, 215m² em BOTAFOGO",
+            "price": 2550000,
+            "sizeSqm": 215,
+            "unitValueSqm": 11860,
+            "address": "Rua Da Passagem 72-a Botafogo, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892930361/comprar/apartamento-3-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Venda de apartamento na Barra da Tijuca com 3 quartos e churrasqueira. • R$ 2.550.000 • R$ 3.431 Condo. + IPTU • 215 m² · 3 quartos · 3 vagas • Av. Flamboyants da Pen"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 333m² em BOTAFOGO",
+            "price": 500000,
+            "sizeSqm": 333,
+            "unitValueSqm": 1502,
+            "address": "Avenida Amaro Cavalcanti, Engenho de Dentro · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895255196/comprar/casa-3-quartos-engenho-de-dentro-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar casa no Engenho de Dentro: 3 quartos, aceita animais. • R$ 500.000 • R$ 0 Condo. + IPTU • 333 m² · 3 quartos · 2 vagas • Avenida Amaro Cavalcanti, Engenho de Dentro · Rio d"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 142m² em BOTAFOGO",
+            "price": 530000,
+            "sizeSqm": 142,
+            "unitValueSqm": 3732,
+            "address": "Rua Senador Furtado, Maracanã · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893034973/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Maracanã: 3 quartos, 1 suíte, closet. • R$ 530.000 • R$ 980 Condo. + IPTU • 142 m² · 3 quartos · 1 vaga • Rua Senador Furtado, Maracanã · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 231m² em BOTAFOGO",
+            "price": 2310000,
+            "sizeSqm": 231,
+            "unitValueSqm": 10000,
+            "address": "Avenida Nossa Senhora de Copacabana, Copacabana · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895241094/comprar/apartamento-4-quartos-copacabana-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento em Copacabana com 4 quartos e varanda. • R$ 2.310.000 • R$ 2.795 Condo. + IPTU • 231 m² · 4 quartos · 1 vaga • Avenida Nossa Senhora de Copacabana, Copacabana ·"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 280m² em BOTAFOGO",
+            "price": 625000,
+            "sizeSqm": 280,
+            "unitValueSqm": 2232,
+            "address": "Avenida dos Mananciais, Taquara · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894874407/comprar/apartamento-4-quartos-taquara-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 4 quartos mobiliado à venda. Com 2 vagas na garagem. • R$ 625.000 • R$ 1.936 Condo. + IPTU • 280 m² · 4 quartos · 2 vagas • Avenida dos Mananciais, Taquara · Rio de "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 81m² em BOTAFOGO",
+            "price": 322000,
+            "sizeSqm": 81,
+            "unitValueSqm": 3975,
+            "address": "Avenida dos Mananciais, Taquara · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895250256/comprar/casa-2-quartos-taquara-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de casa em condomínio com 2 quartos. • R$ 322.000 • R$ 209 Condo. + IPTU • 81 m² · 2 quartos · 1 vaga • Avenida dos Mananciais, Taquara · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 91m² em BOTAFOGO",
+            "price": 640000,
+            "sizeSqm": 91,
+            "unitValueSqm": 7033,
+            "address": "Rua Silvia Pozzano, Recreio dos Bandeirantes · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894965357/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra apartamento mobiliado com 3 quartos, varanda, churrasqueira, piscina e churrasqueira no condomínio. • R$ 640.000 • R$ 1.849 Condo. + IPTU • 91 m² · 3 quartos · 2 vagas • Rua"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 83m² em BOTAFOGO",
+            "price": 630000,
+            "sizeSqm": 83,
+            "unitValueSqm": 7590,
+            "address": "Rua Antero Manoel de Sá Filho, Recreio dos Bandeirantes · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894686915/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento no Recreio dos Bandeirantes com 3 quartos para compra. Aceitam-se animais. • R$ 630.000 • R$ 1.367 Condo. + IPTU • 83 m² · 3 quartos · 1 vaga • Rua Antero Manoel de Sá "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 60m² em BOTAFOGO",
+            "price": 200000,
+            "sizeSqm": 60,
+            "unitValueSqm": 3333,
+            "address": "Rua Suruí, Brás de Pina · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895439414/comprar/apartamento-2-quartos-bras-de-pina-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento com 2 quartos para comprar. • R$ 200.000 • R$ 350 Condo. + IPTU • 60 m² · 2 quartos • Rua Suruí, Brás de Pina · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 60m² em BOTAFOGO",
+            "price": 440000,
+            "sizeSqm": 60,
+            "unitValueSqm": 7333,
+            "address": "Rua Clemente Falcão, Tijuca · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894975167/comprar/apartamento-3-quartos-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 3 quartos mobiliado à venda. • R$ 440.000 • R$ 264 Condo. + IPTU • 60 m² · 3 quartos • Rua Clemente Falcão, Tijuca · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 450m² em BOTAFOGO",
+            "price": 760000,
+            "sizeSqm": 450,
+            "unitValueSqm": 1689,
+            "address": "Estrada do Pau da Fome, Jacarepaguá · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895306868/comprar/casa-3-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa com 3 quartos, 2 suítes, varanda e piscina no condomínio. Ideal para compra. • R$ 760.000 • R$ 167 Condo. + IPTU • 450 m² · 3 quartos · 2 vagas • Estrada do Pau da Fome, Jacar"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 87m² em BOTAFOGO",
+            "price": 549000,
+            "sizeSqm": 87,
+            "unitValueSqm": 6310,
+            "address": "Rua Desembargador Wellington Jones Paiva, Vargem Pequena · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895683011/comprar/casa-3-quartos-vargem-pequena-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa em condomínio com piscina, quintal e 3 quartos para comprar. • R$ 549.000 • R$ 847 Condo. + IPTU • 87 m² · 3 quartos · 2 vagas • Rua Desembargador Wellington Jones Paiva, Varg"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 90m² em BOTAFOGO",
+            "price": 768000,
+            "sizeSqm": 90,
+            "unitValueSqm": 8533,
+            "address": "Rua Morais E Silva, Maracanã · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893934770/comprar/apartamento-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento com 2 quartos, varanda e churrasqueira no condomínio. • R$ 768.000 • R$ 827 Condo. + IPTU • 90 m² · 2 quartos · 2 vagas • Rua Morais E Silva, Maracanã · Rio de "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 79m² em BOTAFOGO",
+            "price": 950000,
+            "sizeSqm": 79,
+            "unitValueSqm": 12025,
+            "address": "Avenida Vice Presidente José Alencar, Barra Olímpica · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895412102/comprar/apartamento-2-quartos-barra-olimpica-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra apartamento mobiliado com 2 quartos, quintal, varanda e churrasqueira. Aceitam-se animais. • R$ 950.000 • R$ 1.576 Condo. + IPTU • 79 m² · 2 quartos · 1 vaga • Avenida Vice "
+          },
+          {
+            "title": "Imóvel com 3 qtos, 153m² em BOTAFOGO",
+            "price": 541000,
+            "sizeSqm": 153,
+            "unitValueSqm": 3536,
+            "address": "Rua Ituverava, Jacarepaguá · Rio de Janeiro, BOTAFOGO, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895359498/comprar/apartamento-3-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%22f24eeb26-fb89-473d-92cb-b1b652b4edf0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 3 quartos mobiliado à venda. Com 2 vagas na garagem. • R$ 541.000 • R$ 1.567 Condo. + IPTU • 153 m² · 3 quartos · 2 vagas • Rua Ituverava, Jacarepaguá · Rio de Janei"
+          }
+        ]
+      }
+    }
+  },
+  "portal_v4_rj_rio_de_janeiro_ipanema_apartamento_153_2_1_avenida_epitacio_pessoa": {
+    "timestamp": 1790000581532,
+    "isFallback": false,
+    "data": {
+      "fallback": false,
+      "totalFound": 23,
+      "streetMatchesCount": 1,
+      "below": {
+        "range": "107m² - 138m²",
+        "avgPrice": 438580,
+        "avgSqm": 5956,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 46m² em IPANEMA",
+            "price": 369000,
+            "sizeSqm": 46,
+            "unitValueSqm": 8022,
+            "address": "Rua Luiz Carlos Sarolli · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895249552/comprar/apartamento-2-quartos-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Compra apartamento com 2 quartos e piscina no condomínio. Animais de estimação permitidos. • R$ 369.000 • R$ 670 Condo. + IPTU • 46 m² · 2 quartos · 1 vaga • Rua Lui"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 56m² em IPANEMA",
+            "price": 220000,
+            "sizeSqm": 56,
+            "unitValueSqm": 3929,
+            "address": "Rua Dionísio Fernandes, Engenho de Dentro · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892990086/comprar/apartamento-2-quartos-engenho-de-dentro-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda no Engenho de Dentro com 2 quartos. • R$ 220.000 • R$ 601 Condo. + IPTU • 56 m² · 2 quartos • Rua Dionísio Fernandes, Engenho de Dentro · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 107m² em IPANEMA",
+            "price": 312700,
+            "sizeSqm": 107,
+            "unitValueSqm": 2922,
+            "address": "Rua Magalhães Castro, Riachuelo · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893602855/comprar/apartamento-3-quartos-riachuelo-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Apartamento em Riachuelo com 3 quartos, varanda gourmet, jardim e aceita animais. Ótima compra! • R$ 312.700 • R$ 478 Condo. + IPTU • 107 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 55m² em IPANEMA",
+            "price": 240000,
+            "sizeSqm": 55,
+            "unitValueSqm": 4364,
+            "address": "Rua Miguel Cervantes, Cachambi · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893775471/comprar/apartamento-2-quartos-cachambi-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Venda de apartamento, de 55 m² com 2 quartos, 1 banheiro e 1 vaga na garagem em Cachambi. • R$ 240.000 • R$ 381 Condo. + IPTU • 55 m² · 2 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 44m² em IPANEMA",
+            "price": 200000,
+            "sizeSqm": 44,
+            "unitValueSqm": 4545,
+            "address": "Rua Vinte E Quatro de Maio, Engenho Novo · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895407114/comprar/apartamento-1-quarto-engenho-novo-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento no Engenho Novo com 1 quarto, ideal para comprar. • R$ 200.000 • R$ 800 Condo. + IPTU • 44 m² · 1 quarto · 1 vaga • Rua Vinte E Quatro de Maio, Engenho Novo · Rio de Ja"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 104m² em IPANEMA",
+            "price": 538000,
+            "sizeSqm": 104,
+            "unitValueSqm": 5173,
+            "address": "Rua Fábio Luz, Méier · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895483981/comprar/apartamento-3-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento com 3 quartos, varanda e piscina no condomínio. Excelente oportunidade de compra. • R$ 538.000 • R$ 1.545 Condo. + IPTU • 104 m² · 3 quartos · 2 vagas • Rua Fábio Luz, "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 81m² em IPANEMA",
+            "price": 322000,
+            "sizeSqm": 81,
+            "unitValueSqm": 3975,
+            "address": "Avenida dos Mananciais, Taquara · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895250256/comprar/casa-2-quartos-taquara-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de casa em condomínio com 2 quartos. • R$ 322.000 • R$ 209 Condo. + IPTU • 81 m² · 2 quartos · 1 vaga • Avenida dos Mananciais, Taquara · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 91m² em IPANEMA",
+            "price": 640000,
+            "sizeSqm": 91,
+            "unitValueSqm": 7033,
+            "address": "Rua Silvia Pozzano, Recreio dos Bandeirantes · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894965357/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra apartamento mobiliado com 3 quartos, varanda, churrasqueira, piscina e churrasqueira no condomínio. • R$ 640.000 • R$ 1.849 Condo. + IPTU • 91 m² · 3 quartos · 2 vagas • Rua"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 47m² em IPANEMA",
+            "price": 200000,
+            "sizeSqm": 47,
+            "unitValueSqm": 4255,
+            "address": "Rua Joaquim Rodrigues, Parada de Lucas · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895517473/comprar/casa-1-quarto-parada-de-lucas-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Casa à venda: 1 quarto, aceita animais. Oportunidades de compra imperdíveis! • R$ 200.000 • R$ 0 Condo. + IPTU • 47 m² · 1 quarto • Rua Joaquim Rodrigues, Parad"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 83m² em IPANEMA",
+            "price": 630000,
+            "sizeSqm": 83,
+            "unitValueSqm": 7590,
+            "address": "Rua Antero Manoel de Sá Filho, Recreio dos Bandeirantes · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894686915/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento no Recreio dos Bandeirantes com 3 quartos para compra. Aceitam-se animais. • R$ 630.000 • R$ 1.367 Condo. + IPTU • 83 m² · 3 quartos · 1 vaga • Rua Antero Manoel de Sá "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 60m² em IPANEMA",
+            "price": 200000,
+            "sizeSqm": 60,
+            "unitValueSqm": 3333,
+            "address": "Rua Suruí, Brás de Pina · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895439414/comprar/apartamento-2-quartos-bras-de-pina-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento com 2 quartos para comprar. • R$ 200.000 • R$ 350 Condo. + IPTU • 60 m² · 2 quartos • Rua Suruí, Brás de Pina · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 60m² em IPANEMA",
+            "price": 440000,
+            "sizeSqm": 60,
+            "unitValueSqm": 7333,
+            "address": "Rua Clemente Falcão, Tijuca · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894975167/comprar/apartamento-3-quartos-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 3 quartos mobiliado à venda. • R$ 440.000 • R$ 264 Condo. + IPTU • 60 m² · 3 quartos • Rua Clemente Falcão, Tijuca · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 87m² em IPANEMA",
+            "price": 549000,
+            "sizeSqm": 87,
+            "unitValueSqm": 6310,
+            "address": "Rua Desembargador Wellington Jones Paiva, Vargem Pequena · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895683011/comprar/casa-3-quartos-vargem-pequena-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa em condomínio com piscina, quintal e 3 quartos para comprar. • R$ 549.000 • R$ 847 Condo. + IPTU • 87 m² · 3 quartos · 2 vagas • Rua Desembargador Wellington Jones Paiva, Varg"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 90m² em IPANEMA",
+            "price": 768000,
+            "sizeSqm": 90,
+            "unitValueSqm": 8533,
+            "address": "Rua Morais E Silva, Maracanã · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893934770/comprar/apartamento-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento com 2 quartos, varanda e churrasqueira no condomínio. • R$ 768.000 • R$ 827 Condo. + IPTU • 90 m² · 2 quartos · 2 vagas • Rua Morais E Silva, Maracanã · Rio de "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 79m² em IPANEMA",
+            "price": 950000,
+            "sizeSqm": 79,
+            "unitValueSqm": 12025,
+            "address": "Avenida Vice Presidente José Alencar, Barra Olímpica · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895412102/comprar/apartamento-2-quartos-barra-olimpica-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra apartamento mobiliado com 2 quartos, quintal, varanda e churrasqueira. Aceitam-se animais. • R$ 950.000 • R$ 1.576 Condo. + IPTU • 79 m² · 2 quartos · 1 vaga • Avenida Vice "
+          }
+        ]
+      },
+      "close": {
+        "range": "138m² - 168m²",
+        "avgPrice": 535500,
+        "avgSqm": 3634,
+        "matches": [
+          {
+            "title": "Imóvel com 3 qtos, 142m² em IPANEMA",
+            "price": 530000,
+            "sizeSqm": 142,
+            "unitValueSqm": 3732,
+            "address": "Rua Senador Furtado, Maracanã · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893034973/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Maracanã: 3 quartos, 1 suíte, closet. • R$ 530.000 • R$ 980 Condo. + IPTU • 142 m² · 3 quartos · 1 vaga • Rua Senador Furtado, Maracanã · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 153m² em IPANEMA",
+            "price": 541000,
+            "sizeSqm": 153,
+            "unitValueSqm": 3536,
+            "address": "Rua Ituverava, Jacarepaguá · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895359498/comprar/apartamento-3-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 3 quartos mobiliado à venda. Com 2 vagas na garagem. • R$ 541.000 • R$ 1.567 Condo. + IPTU • 153 m² · 3 quartos · 2 vagas • Rua Ituverava, Jacarepaguá · Rio de Janei"
+          }
+        ]
+      },
+      "above": {
+        "range": "168m² - 207m²",
+        "avgPrice": 1237500,
+        "avgSqm": 4831,
+        "matches": [
+          {
+            "title": "Imóvel com 3 qtos, 400m² em IPANEMA",
+            "price": 680000,
+            "sizeSqm": 400,
+            "unitValueSqm": 1700,
+            "address": "Rua Augusto Nunes, Todos Os Santos · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894052658/comprar/casa-3-quartos-todos-os-santos-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda em Todos Os Santos com 3 quartos espaçosos. Ideal para quem deseja comprar o imóvel certo! • R$ 680.000 • R$ 134 Condo. + IPTU • 400 m² · 3 quartos · 6 vagas • Rua Aug"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 215m² em IPANEMA",
+            "price": 2550000,
+            "sizeSqm": 215,
+            "unitValueSqm": 11860,
+            "address": "Avenida Epitácio Pessoa, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892930361/comprar/apartamento-3-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Venda de apartamento na Barra da Tijuca com 3 quartos e churrasqueira. • R$ 2.550.000 • R$ 3.431 Condo. + IPTU • 215 m² · 3 quartos · 3 vagas • Av. Flamboyants da Pen"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 333m² em IPANEMA",
+            "price": 500000,
+            "sizeSqm": 333,
+            "unitValueSqm": 1502,
+            "address": "Avenida Amaro Cavalcanti, Engenho de Dentro · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895255196/comprar/casa-3-quartos-engenho-de-dentro-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar casa no Engenho de Dentro: 3 quartos, aceita animais. • R$ 500.000 • R$ 0 Condo. + IPTU • 333 m² · 3 quartos · 2 vagas • Avenida Amaro Cavalcanti, Engenho de Dentro · Rio d"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 231m² em IPANEMA",
+            "price": 2310000,
+            "sizeSqm": 231,
+            "unitValueSqm": 10000,
+            "address": "Avenida Nossa Senhora de Copacabana, Copacabana · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895241094/comprar/apartamento-4-quartos-copacabana-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento em Copacabana com 4 quartos e varanda. • R$ 2.310.000 • R$ 2.795 Condo. + IPTU • 231 m² · 4 quartos · 1 vaga • Avenida Nossa Senhora de Copacabana, Copacabana ·"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 280m² em IPANEMA",
+            "price": 625000,
+            "sizeSqm": 280,
+            "unitValueSqm": 2232,
+            "address": "Avenida dos Mananciais, Taquara · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894874407/comprar/apartamento-4-quartos-taquara-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 4 quartos mobiliado à venda. Com 2 vagas na garagem. • R$ 625.000 • R$ 1.936 Condo. + IPTU • 280 m² · 4 quartos · 2 vagas • Avenida dos Mananciais, Taquara · Rio de "
+          },
+          {
+            "title": "Imóvel com 3 qtos, 450m² em IPANEMA",
+            "price": 760000,
+            "sizeSqm": 450,
+            "unitValueSqm": 1689,
+            "address": "Estrada do Pau da Fome, Jacarepaguá · Rio de Janeiro, IPANEMA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895306868/comprar/casa-3-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%22dd45b019-3c14-4117-995c-4a07a690f418%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa com 3 quartos, 2 suítes, varanda e piscina no condomínio. Ideal para compra. • R$ 760.000 • R$ 167 Condo. + IPTU • 450 m² · 3 quartos · 2 vagas • Estrada do Pau da Fome, Jacar"
+          }
+        ]
+      }
+    }
+  },
+  "portal_v4_rj_rio_de_janeiro_freguesia_jacarepagua_terreno_6086_2_1_av__geremario_dantas": {
+    "timestamp": 1790000648634,
+    "isFallback": true,
+    "data": {
+      "fallback": true,
+      "verified": false,
+      "checkedAt": "2026-09-21T14:24:08.634Z",
+      "totalFound": 0,
+      "streetMatchesCount": 0,
+      "message": "Nenhum anúncio individual com link e endereço confirmados foi encontrado nesta rua. Nenhum valor foi estimado.",
+      "below": {
+        "range": "4260m² - 5477m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      },
+      "close": {
+        "range": "5477m² - 6695m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      },
+      "above": {
+        "range": "6695m² - 8216m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      }
+    }
   }
 }

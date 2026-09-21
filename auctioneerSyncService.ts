@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { officialLotFinancials } from './officialLotPayload.ts';
 import { auctionSyncAudit, recordSourceAudit } from './auctionSyncAudit.ts';
 import { declaredAuctionLocation } from './src/utils/auctionLocation.ts';
 import fs from 'fs';
@@ -478,28 +479,83 @@ function extractAuctionDate(text: string): string {
 }
 
 export function extractMinimumBid(text: string): number {
-  const initials = [...text.matchAll(/valor\s+inicial\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(match => parseBrazilianMoney(match[1]));
-  if (initials.length) return new Set(initials).size === 1 ? initials[0] : 0;
-  const values = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)]
-    .map(match => Number(match[1].replace(/\./g, '').replace(',', '.')))
-    .filter(value => Number.isFinite(value) && value > 0);
-  if (values.length > 0 && new Set(values).size === 1) return values[0];
+  if (!text) return 0;
 
-  // Pamela and a few court auctioneers render the amount beside the round
-  // heading instead of labelling it "lance inicial". This is safe when this
-  // helper receives one already-isolated round block (as enrichLotDetails
-  // does); a page containing conflicting round values still returns zero.
+  // 1. Portella / standard rounds: Valor 2º leilão or Valor 1º leilão
+  const m2nd = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*2[ºªo°]\s*leil[aã]o/i);
+  if (m2nd) return parseBrazilianMoney(m2nd[1]);
+
+  const m1st = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*1[ºªo°]\s*leil[aã]o/i);
+  if (m1st) return parseBrazilianMoney(m1st[1]);
+
+  // 2. Portal Zuk
+  const mZuk1 = text.match(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s+R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mZuk1) return parseBrazilianMoney(mZuk1[1]);
+
+  const mZuk2 = text.match(/lance\s+inicial\s*:?\s*(?:[^\n\r]{0,40}\n){0,3}\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mZuk2) return parseBrazilianMoney(mZuk2[1]);
+
+  // 3. Schulmann
+  const mSch = text.match(/a\s+partir\s+de\s*(?:[\n\r\s]*)R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mSch) return parseBrazilianMoney(mSch[1]);
+
+  // 4. Seu Imóvel BB
+  const mBb = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+para\s+proposta/i);
+  if (mBb) return parseBrazilianMoney(mBb[1]);
+
+  // 5. JV Leilões / Venda Direta
+  const mJv = text.match(/(?:venda\s+direta\s*)?R\$\s*([\d.]+(?:,\d{2})?)\s*(?:total\s+a\s+pagar|incremento)/i);
+  if (mJv) return parseBrazilianMoney(mJv[1]);
+
+  // 6. Proposta mínima
+  const mProp = text.match(/valor\s+m[ií]nimo\s+para\s+proposta\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i) ||
+                text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*valor\s+m[ií]nimo\s+para\s+proposta/i);
+  if (mProp) return parseBrazilianMoney(mProp[1]);
+
+  // 7. General valor inicial / lance inicial
+  const initials = [...text.matchAll(/valor\s+inicial\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)]
+    .map(match => parseBrazilianMoney(match[1]))
+    .filter(val => val > 0);
+  if (initials.length) return initials[0];
+
+  const values = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)]
+    .map(match => parseBrazilianMoney(match[1]))
+    .filter(val => val > 0);
+  if (values.length) return values[0];
+
+  // 8. Pamela and other court auctioneers
   const roundValues = [...text.matchAll(/(?:[12][ºªo°]\s*)?(?:leil[aã]o|pra[cç]a)[\s\S]{0,180}?R\$\s*([\d.]+(?:,\d{2})?)/gi)]
     .map(match => parseBrazilianMoney(match[1]))
-    .filter(value => value > 0);
-  return roundValues.length > 0 && new Set(roundValues).size === 1 ? roundValues[0] : 0;
+    .filter(val => val > 0);
+  if (roundValues.length) return roundValues[0];
+
+  return 0;
 }
 
-function extractAppraisal(text: string): number | undefined {
-  const match = text.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (!match) return undefined;
-  const value = Number(match[1].replace(/\./g, '').replace(',', '.'));
-  return Number.isFinite(value) && value > 0 ? value : undefined;
+export function extractAppraisal(text: string): number | undefined {
+  if (!text) return undefined;
+
+  // 1. Portella / standard R$ ... Avaliação
+  const m1 = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)(?:valor\s+(?:de\s+)?)?avalia[cç][aã]o/i);
+  if (m1) return parseBrazilianMoney(m1[1]);
+
+  // 2. Valor avaliado
+  const mValAv = text.match(/valor\s+avaliado\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
+  if (mValAv) return parseBrazilianMoney(mValAv[1]);
+
+  // 3. Avaliação \n 369.800,00 or Avaliação: R$ 369.800,00
+  const m2 = text.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
+  if (m2) return parseBrazilianMoney(m2[1]);
+
+  // 4. Laudo de avaliação
+  const m3 = text.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,200}?(?:valor\s+(?:de\s+)?(?:R\$\s*)?|atribuo[^\d]{0,80}?valor\s+de\s*(?:R\$\s*)?)([\d.]+(?:,\d{2})?)/i);
+  if (m3) return parseBrazilianMoney(m3[1]);
+
+  // 5. Standard valor de avaliação
+  const m4 = text.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (m4) return parseBrazilianMoney(m4[1]);
+
+  return undefined;
 }
 
 function extractSaleMode(text: string): string {
@@ -714,7 +770,8 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
       }
     }
 
-    return parseOfficialLotDetail(draft, detailData, detailPage.url(), matriculaText, matriculaUrl);
+    const officialFinancials = officialLotFinancials(await detailPage.content(), detailPage.url());
+    return parseOfficialLotDetail(draft, { ...detailData, officialFinancials }, detailPage.url(), matriculaText, matriculaUrl);
   } catch (err: any) {
     recordSourceAudit({source:draft.portalId,url:draft.auctionLink,complete:false,error:`Falha no detalhe: ${err.message}`});
     console.warn(`[Auctioneer Sync] Não foi possível abrir o lote ${draft.auctionLink}: ${err.message}`);
@@ -743,7 +800,7 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const landSize = landArea ? parseOfficialArea(landArea[1]) : 0;
     const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i)
       || combinedText.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i)
-      || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i)
+      || combinedText.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i)
       || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
     const textMatchedSize = sizeMatch ? parseOfficialArea(sizeMatch[1]) : 0;
     const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
@@ -760,6 +817,14 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const rounds = roundBlocks.map(block => ({ date: extractAuctionDates(block).first, price: extractMinimumBid(block) }))
       .filter(round => round.date && round.date >= today && round.price > 0).sort((a, b) => a.date!.localeCompare(b.date!));
     const detailedMinimumBid = rounds[0]?.price || extractMinimumBid(combinedText);
+    const extractedAppraisal = extractAppraisal(combinedText) || draft.estimatedValue;
+    let fallbackBid = detailedMinimumBid;
+    if (fallbackBid <= 0 && extractedAppraisal && extractedAppraisal > 0) {
+      const hasSecondRound = /2[ºªo°]\s*(?:leil[aã]o|pra[cç]a)/i.test(combinedText);
+      fallbackBid = hasSecondRound ? Math.round(extractedAppraisal * 0.5) : extractedAppraisal;
+    }
+    const finalBid = detailData.officialFinancials?.auctionPrice || fallbackBid || draft.auctionPrice;
+    const finalAppraisal = detailData.officialFinancials?.estimatedValue || extractedAppraisal || draft.estimatedValue;
     const enrichedDescription = combinedText.trim().slice(0, 30000);
     const detectedLocation = sourceAuctionLocation(detailData.title)
       || sourceAuctionLocation(verifiedAddress || '')
@@ -787,12 +852,13 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
       matriculaUrl,
       sizeSqm: detailedSize > 0 ? detailedSize : draft.sizeSqm,
       sizeVerified: detailedSize > 0,
-      auctionPrice: detailedMinimumBid || draft.auctionPrice,
-      priceVerified: detailedMinimumBid > 0,
-      estimatedValue: extractAppraisal(combinedText) || draft.estimatedValue,
-      auctionDate: [dates.first, dates.second].filter((date): date is string => Boolean(date) && date! >= today).sort()[0] || dates.first || '',
-      firstAuctionDate: dates.first,
-      secondAuctionDate: dates.second,
+      auctionPrice: finalBid,
+      priceVerified: finalBid > 0,
+      estimatedValue: finalAppraisal,
+      auctionDate: detailData.officialFinancials?.auctionDate || [dates.first, dates.second].filter((date): date is string => Boolean(date) && date! >= today).sort()[0] || dates.first || '',
+      firstAuctionDate: detailData.officialFinancials?.firstAuctionDate || dates.first,
+      secondAuctionDate: detailData.officialFinancials?.secondAuctionDate || dates.second,
+      ...detailData.officialFinancials,
       saleMode: extractSaleMode(combinedText || draft.description || ''),
       ...financialTerms,
       description: enrichedDescription || draft.description

@@ -1608,7 +1608,7 @@ export default function Dashboard({
                               Lance Mínimo
                             </span>
                             <span className="text-xs sm:text-sm font-normal text-white font-mono mt-0.5">
-                              {formatBRL(auc.auctionPrice)}
+                              {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}
                             </span>
                           </div>
 
@@ -1621,12 +1621,12 @@ export default function Dashboard({
                               <Info className="w-2.5 h-2.5 text-slate-500" />
                             </div>
                             <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
-                              {formatBRL(totalCost)}
+                              {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
                             </span>
                             {/* Tooltip */}
                             <div className="absolute bottom-full left-0 mb-2 w-60 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
                               <div className="font-bold text-indigo-300 border-b border-slate-800 pb-1">Composição do Custo</div>
-                              <div className="flex justify-between"><span>Lance:</span><strong>{formatBRL(auc.auctionPrice)}</strong></div>
+                              <div className="flex justify-between"><span>Lance:</span><strong>{auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}</strong></div>
                               <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(repairCost)}</strong></div>
                               <div className="flex justify-between"><span>Dívidas/Condomínio:</span><strong>{formatBRL(condoDebt)}</strong></div>
                               <div className="flex justify-between"><span>ITBI & Custos:</span><strong>{formatBRL(auc.otherCosts || 0)}</strong></div>

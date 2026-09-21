@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuctionProperty, ItbiTransaction, PropertyType, BRAZIL_STATES, User as UserType, AccessCode } from './types.ts';
 import Dashboard from './components/Dashboard.tsx';
+import { useAuctionStartupSync } from './hooks/useAuctionStartupSync.ts';
 import ItbiManager from './components/ItbiManager.tsx';
 import AiReporter from './components/AiReporter.tsx';
 import PropertyMap from './components/PropertyMap.tsx';
@@ -455,6 +456,13 @@ export default function App() {
       setIsLoading(false);
     }
   };
+
+  useAuctionStartupSync(async () => {
+    const response = await authFetch('/api/auctions');
+    if (!response.ok) throw new Error('Falha ao atualizar imóveis sincronizados');
+    setAuctions(await response.json());
+    setLastSyncTime(new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}));
+  });
 
   const handleGarimparJudiciais = async (city?: string) => {
     setIsMining(true);

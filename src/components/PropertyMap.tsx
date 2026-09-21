@@ -494,7 +494,7 @@ export default function PropertyMap({
             <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">${prop.title}${unitLabel}</div>
             <div style="color: #64748b; font-size: 10.5px; margin-bottom: 4px;">${prop.address}</div>
             <div style="display: flex; justify-content: space-between; gap: 8px; font-weight: 600; border-top: 1px solid #e2e8f0; padding-top: 3px;">
-              <span style="color: #0369a1;">Lance: ${formatBRL(prop.auctionPrice)}</span>
+              <span style="color: #0369a1;">${prop.auctionPrice > 0 ? 'Lance: ' + formatBRL(prop.auctionPrice) : 'Aberto a Propostas'}</span>
               <span style="color: #15803d;">ROI: ${(prop.calculatedRoi || 0).toFixed(1)}%</span>
             </div>
           </div>
@@ -786,7 +786,7 @@ useEffect(() => {
                         <span className="text-[10px] font-black text-emerald-400 font-mono">ROI: {(item.calculatedRoi || 0).toFixed(0)}%</span>
                       </div>
                       <div className="flex justify-between items-center mt-1.5 text-[11px] font-mono">
-                        <span className="text-slate-400">Lance: <strong className="text-emerald-300">{formatBRL(item.auctionPrice)}</strong></span>
+                        <span className="text-slate-400">Lance: <strong className="text-emerald-300">{item.auctionPrice > 0 ? formatBRL(item.auctionPrice) : 'Aberto a Propostas'}</strong></span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -842,7 +842,7 @@ useEffect(() => {
                 <div>
                   <span className="text-[8px] text-slate-500 block uppercase font-semibold">Lance</span>
                   <span className="font-black text-emerald-400 text-xs">
-                    {formatBRL(selectedProp.auctionPrice)}
+                    {selectedProp.auctionPrice > 0 ? formatBRL(selectedProp.auctionPrice) : 'Aberto a Propostas'}
                   </span>
                 </div>
                 <div className="text-right">
@@ -994,13 +994,13 @@ useEffect(() => {
                         {/* Col 1: Lance Mínimo */}
                         <div className="flex flex-col justify-center">
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Lance Mínimo</span>
-                          <span className="text-xs font-black text-white font-mono mt-0.5">{formatBRL(auc.auctionPrice)}</span>
+                          <span className="text-xs font-black text-white font-mono mt-0.5">{auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}</span>
                         </div>
 
                         {/* Col 2: Custo Total */}
                         <div className="flex flex-col justify-center">
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Custo Total</span>
-                          <span className="text-xs font-black text-slate-300 font-mono mt-0.5">{formatBRL(totalCost)}</span>
+                          <span className="text-xs font-black text-slate-300 font-mono mt-0.5">{auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}</span>
                         </div>
 
                         {/* Col 3: Lucro Líquido */}
@@ -1316,7 +1316,7 @@ useEffect(() => {
                       </p>
                       <p className="text-xs text-amber-300 mt-1">{({ missing_number: 'Número não informado no endereço', address_not_found: 'Rua e número ainda não encontrados na base oficial', block_not_confirmed: 'Bloco do condomínio ainda não confirmado', multiple_address_points: 'Mais de um ponto corresponde ao endereço', no_original_coordinate: 'A base dispõe apenas de coordenada estimada', municipality_not_found: 'Município ainda não localizado na base', not_yet_matched: 'Endereço aguardando cruzamento com a base oficial' } as Record<string,string>)[locationRecords[item.id]?.reason] || 'Localização pendente de confirmação'}</p>
                       <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-300">
-                        <span>Lance: <b className="text-emerald-400">{formatBRL(item.auctionPrice)}</b></span>
+                        <span>Lance: <b className="text-emerald-400">{item.auctionPrice > 0 ? formatBRL(item.auctionPrice) : 'Aberto a Propostas'}</b></span>
                         {item.estimatedValue && <span>Avaliação: <b>{formatBRL(item.estimatedValue)}</b></span>}
                         {item.sizeSqm && <span>Área: <b>{item.sizeSqm}m²</b></span>}
                       </div>
