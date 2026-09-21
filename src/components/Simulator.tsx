@@ -2,6 +2,7 @@ import React from 'react';
 import { AuctionProperty } from '../types.ts';
 import RealValueCalculator from './RealValueCalculator.tsx';
 import { ChevronLeft } from 'lucide-react';
+import { cleanDivergentNotice } from '../utils/auctionLocation.ts';
 
 interface SimulatorProps {
   property: AuctionProperty;
@@ -33,9 +34,9 @@ export default function Simulator({
               <span>Voltar para Lista de Leilões</span>
             </button>
             <div className="flex flex-wrap items-center gap-2">
-              {property.divergentNeighborhoodNotice && (
+              {cleanDivergentNotice(property.divergentNeighborhoodNotice) && (
                 <span className="text-xs font-mono text-amber-300 bg-amber-950/80 px-2.5 py-1 rounded-md border border-amber-800/60 font-bold" title="Bairro cadastrado no edital difere do endereço real">
-                  ⚠️ {property.divergentNeighborhoodNotice}
+                  ⚠️ {cleanDivergentNotice(property.divergentNeighborhoodNotice)}
                 </span>
               )}
               <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-500/30">

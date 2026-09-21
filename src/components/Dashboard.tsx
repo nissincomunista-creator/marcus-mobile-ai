@@ -41,6 +41,7 @@ import SidebarMapWidget from './SidebarMapWidget.tsx';
 import PropertyThumbnail from './PropertyThumbnail.tsx';
 import LightboxModal from './LightboxModal.tsx';
 import { getAvailableZonesForCity, isNeighborhoodInZone } from '../utils/cityZones.ts';
+import { cleanDivergentNotice } from '../utils/auctionLocation.ts';
 
 interface DashboardProps {
   auctions: AuctionProperty[];
@@ -1541,12 +1542,6 @@ export default function Dashboard({
                                   ★ Destaque
                                 </span>
                               )}
-
-                              {auc.divergentNeighborhoodNotice && (
-                                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-500/60 flex items-center gap-1 shadow-xs" title="Bairro cadastrado no edital difere do endereço real">
-                                  <span>⚠️ {auc.divergentNeighborhoodNotice}</span>
-                                </span>
-                              )}
                             </div>
 
                             {/* Título e Endereço */}
@@ -1564,11 +1559,11 @@ export default function Dashboard({
                                   {auc.address} ({auc.neighborhood} - {auc.city}/{auc.state || 'RJ'})
                                 </span>
                               </div>
-                              {auc.divergentNeighborhoodNotice && (
+                              {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
                                 <div className="mt-1">
                                   <span className="text-[10.5px] bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1 shadow-xs" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
                                     <span>⚠️</span>
-                                    <span>{auc.divergentNeighborhoodNotice}</span>
+                                    <span>{cleanDivergentNotice(auc.divergentNeighborhoodNotice)}</span>
                                   </span>
                                 </div>
                               )}

@@ -570,22 +570,25 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       setLeiloeiroInput('');
     }
 
-    // Auto-análise 100% imediata da Matrícula e Edital ao abrir o simulador
-    const initialCorpus = `${prefillData.matriculaText || ''}\n${prefillData.description || ''}\n${prefillData.title || ''}\n${prefillData.address || ''}`.trim();
+    // Auto-análise do Edital ao abrir o simulador
+    const initialCorpus = `${prefillData.description || ''}\n${prefillData.title || ''}\n${prefillData.address || ''}`.trim();
     if (initialCorpus) {
       executeRealEditalAnalysis(initialCorpus, prefillData.id ? `Edital_${prefillData.id}.pdf` : 'Edital_Imovel.pdf');
-      const containsRegistryEvidence = /(?:matr[ií]cula|livro\s*2|registro\s+de\s+im[oó]veis|certid[aã]o|\b(?:R|AV)[-.\s]?\d+)/i.test(initialCorpus);
-      if (containsRegistryEvidence) {
-        setMatriculaText(prefillData.matriculaText || prefillData.description || '');
-        executeRealMatriculaAnalysis(initialCorpus, `Matricula_${prefillData.id || 'Imovel'}.pdf`);
-      } else {
-        setDueDiligenceNotice('Matrícula não fornecida: não é possível certificar ausência de ônus, gravames ou penhoras apenas pelo anúncio.');
-      }
     }
 
-    // Auto-fetch authentic Caixa Matrícula & Edital PDF ONLY if genuine Caixa property
+    // Matrícula: NUNCA analisar texto de anúncio como se fosse matrícula!
+    // Apenas analisa se houver texto autêntico extraído do PDF da matrícula
+    if (prefillData.matriculaText && prefillData.matriculaText.trim().length > 50) {
+      setMatriculaText(prefillData.matriculaText);
+      executeRealMatriculaAnalysis(prefillData.matriculaText, `Matricula_${prefillData.id || 'Imovel'}.pdf`);
+    } else {
+      setMatriculaText('');
+      setDueDiligenceNotice('Matrícula oficial em PDF ainda não anexada. Clique no botão abaixo para buscar nos documentos do leiloeiro ou faça o upload da certidão.');
+    }
+
+    // Auto-fetch authentic Matrícula & Edital PDF for any property with auctionLink
     let timerId: any = null;
-    if (isGenuineCaixaLot && prefillData.auctionLink && !prefillData.matriculaText) {
+    if (prefillData.auctionLink && (!prefillData.matriculaText || prefillData.matriculaText.trim().length < 50)) {
       timerId = setTimeout(() => {
         handleFetchCaixaDocs();
       }, 800);
@@ -905,14 +908,15 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   const handleFetchCaixaDocs = async () => {
     if (!prefillData?.auctionLink && !prefillData?.id) {
-      alert('Link ou identificador da Caixa não disponível para este lote.');
+      alert('Link ou identificador de leilão não disponível para este lote.');
       return;
     }
+    const isCaixa = prefillData.auctionLink?.includes('caixa.gov.br') || prefillData.id?.includes('caixa');
+    const sourceLabel = isCaixa ? 'Caixa Econômica' : (prefillData.auctioneerName || 'Leiloeiro');
     setIsFetchingCaixaDocs(true);
-    setDueDiligenceNotice('Conectando aos servidores da Caixa para baixar a certidão de matrícula e edital oficial...');
+    setDueDiligenceNotice(`Conectando aos servidores do ${sourceLabel} para baixar a certidão de matrícula e edital oficial...`);
 
     try {
-      const isCaixa = prefillData.auctionLink?.includes('caixa.gov.br') || prefillData.id?.includes('caixa');
       const res = await fetch(isCaixa ? '/api/caixa/fetch-documentos' : '/api/auctions/fetch-documentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -931,27 +935,27 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
         if (data.matriculaText) {
           setMatriculaText(data.matriculaText);
-          const fname = `Matricula_${data.matriculaNumber || 'Caixa'}.pdf`;
+          const fname = `Matricula_${data.matriculaNumber || (isCaixa ? 'Caixa' : 'Oficial')}.pdf`;
           setUploadedFileName(fname);
-          setDueDiligenceNotice('✓ Matrícula oficial baixada diretamente da Caixa com sucesso!');
+          setDueDiligenceNotice(`✓ Matrícula oficial baixada diretamente do ${sourceLabel} com sucesso!`);
           executeRealMatriculaAnalysis(data.matriculaText, fname);
           if (prefillData.id && onUpdateProperty) await onUpdateProperty({ id: prefillData.id, matriculaText: data.matriculaText });
         } else {
-          setDueDiligenceNotice('Aviso: A certidão em PDF não foi anexada pela Caixa na página deste imóvel. Caso possua o documento, anexe o arquivo ou cole as averbações.');
+          setDueDiligenceNotice(`Aviso: A certidão de matrícula em PDF não foi anexada publicamente pelo ${sourceLabel} na página deste lote. Caso possua o documento, anexe o arquivo PDF abaixo ou digite as averbações.`);
         }
 
         if (data.editalText) {
           setEditalText(data.editalText);
           if (data.editalNumber) setProcessNumberInput(`Edital nº ${data.editalNumber}`);
           if (data.leiloeiro) setLeiloeiroInput(data.leiloeiro);
-          executeRealEditalAnalysis(data.editalText, `Edital_${data.editalNumber || 'Caixa'}.pdf`);
+          executeRealEditalAnalysis(data.editalText, `Edital_${data.editalNumber || (isCaixa ? 'Caixa' : 'Oficial')}.pdf`);
         }
       } else {
         const failure = await res.json().catch(() => ({}));
-        setDueDiligenceNotice(failure.error || 'Não foi possível obter o documento automaticamente.');
+        setDueDiligenceNotice(failure.error || `Não foi possível obter a documentação automaticamente do ${sourceLabel}.`);
       }
     } catch (e: any) {
-      setDueDiligenceNotice('Erro de conexão ao buscar documentos da Caixa.');
+      setDueDiligenceNotice(`Erro de conexão ao buscar documentos do ${sourceLabel}.`);
     } finally {
       setIsFetchingCaixaDocs(false);
     }
@@ -3926,8 +3930,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               </div>
             )}
 
-            {/* Botão de Busca e Download Direto da Caixa */}
-            {(prefillData?.auctionLink?.includes('caixa.gov.br') || prefillData?.id?.includes('caixa')) && (
+            {/* Botão de Busca e Download Direto da Matrícula e Edital */}
+            {prefillData?.auctionLink && (
               <button
                 type="button"
                 onClick={handleFetchCaixaDocs}
@@ -3937,12 +3941,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 {isFetchingCaixaDocs ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>Baixando Matrícula & Edital da Caixa...</span>
+                    <span>Baixando Matrícula & Edital Oficial do Leiloeiro...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 text-slate-950" />
-                    <span>⚡ Baixar Matrícula & Edital da Caixa Automaticamente</span>
+                    <span>⚡ Baixar Matrícula & Edital Oficial Automaticamente</span>
                   </>
                 )}
               </button>

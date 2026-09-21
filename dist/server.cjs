@@ -37,10 +37,10 @@ __export(server_exports, {
 module.exports = __toCommonJS(server_exports);
 
 // listedPortalSync.ts
-var import_node_fs = __toESM(require("node:fs"), 1);
-var import_node_path = __toESM(require("node:path"), 1);
-var cheerio = __toESM(require("cheerio"), 1);
-var import_puppeteer2 = __toESM(require("puppeteer"), 1);
+var import_node_fs2 = __toESM(require("node:fs"), 1);
+var import_node_path2 = __toESM(require("node:path"), 1);
+var cheerio2 = __toESM(require("cheerio"), 1);
+var import_puppeteer3 = __toESM(require("puppeteer"), 1);
 
 // auctioneerSyncService.ts
 var import_node_crypto = require("node:crypto");
@@ -433,6 +433,8 @@ function parseType(text) {
 }
 function isPropertyLotEvidence(text) {
   const normalized = normalizeStr(text);
+  const headline = normalized.split("\n")[0];
+  if (/\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura)\b/.test(headline) && !/\b(veiculo|caminhao|automovel|motocicleta|trator|sucata|ferramenta)\b/.test(headline)) return true;
   const movableOnly = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao|sucata|ferramenta|ferramentas|torno|armario|inversor|pecas\s+automotivas|notebook|computador|eletrodomestico)\b/.test(normalized);
   const property = /\b(imovel|apartamento|apto|casa|terreno|lote\s+(?:de\s+)?terreno|loteamento|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex)\b/.test(normalized);
   return property && !movableOnly;
@@ -457,14 +459,24 @@ function detectBankOrJudicial(text) {
   }
   return { origin: "judicial" };
 }
+function unsquishText(str) {
+  if (!str) return "";
+  return str.replace(/([a-zà-ÿ])([A-ZÀ-Ý])/g, "$1 $2").replace(/([a-zA-ZÀ-ÿ0-9]),([a-zA-ZÀ-ÿ])/g, "$1, $2").replace(/(\d{1,5})([A-ZÀ-Ý][a-zà-ÿ]+)/g, "$1 $2").replace(/([a-zà-ÿ]+)(\d{1,5}\b)/g, "$1 $2");
+}
+function formatCleanAddress(addr) {
+  if (!addr) return "";
+  let cleaned = unsquishText(addr).replace(/\s+/g, " ").replace(/\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(Rio\s+de\s+Janeiro|Niterói|São\s+Gonçalo|Duque\s+de\s+Caxias|Nova\s+Iguaçu|Juiz\s+de\s+Fora|Belo\s+Horizonte|São\s+Paulo)\b/gi, "$1, $2").trim();
+  return cleaned;
+}
 function extractAddress(text, fallback) {
-  const lines = text.split(/\r?\n|\s{2,}/).map((line) => line.trim()).filter(Boolean);
+  const cleanInput = unsquishText(text || "");
+  const lines = cleanInput.split(/\r?\n|\s{2,}/).map((line) => line.trim()).filter(Boolean);
   const labeledLine = lines.find(
     (line) => /\bendere[cç]o\b/i.test(line) && !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|telefone|\btel\.?\b/i.test(line) && /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line)
   );
   if (labeledLine) {
     const labeledAddress = labeledLine.replace(/^.*?\bendere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?\s*:?\s*/i, "").split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+/g, " ").trim();
-    if (labeledAddress.length >= 8) return labeledAddress.slice(0, 180);
+    if (labeledAddress.length >= 8) return formatCleanAddress(labeledAddress.slice(0, 180));
   }
   const addressCandidates = lines.map((line, index) => {
     if (!/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
@@ -478,11 +490,12 @@ function extractAddress(text, fallback) {
   const addressLine = addressCandidates[0]?.line;
   if (addressLine) {
     const extracted = addressLine.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,180}/i)?.[0] || addressLine;
-    return extracted.split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+(?:bairro|cidade|estado)\s*[:\-].*$/i, "").trim();
+    const cleanExtracted = extracted.split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+(?:bairro|cidade|estado)\s*[:\-].*$/i, "").trim();
+    return formatCleanAddress(cleanExtracted);
   }
-  const normalized = text.replace(/\s+/g, " ").trim();
+  const normalized = cleanInput.replace(/\s+/g, " ").trim();
   const addressMatch = normalized.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
-  return addressMatch ? addressMatch[0].replace(/\s{2,}/g, " ").trim() : fallback;
+  return addressMatch ? formatCleanAddress(addressMatch[0].replace(/\s{2,}/g, " ").trim()) : formatCleanAddress(fallback);
 }
 function extractDeclaredCity(text, state) {
   return sourceAuctionLocation(text, state)?.city || "";
@@ -715,14 +728,19 @@ async function enrichLotDetails(browser, draft) {
         return priority(a) - priority(b);
       });
       const needsDocumentAddress = !hasAuditableAddress(extractAddress(detailData.text, ""));
-      const usefulLinks = orderedLinks.filter((url) => needsDocumentAddress || /matr[ií]cula|certid[aã]o|\brgi\b/i.test(url));
-      for (const documentUrl of usefulLinks.slice(0, 3)) {
+      const usefulLinks = orderedLinks.filter(
+        (url) => needsDocumentAddress || /matr[ií]cula|certid[aã]o|\brgi\b|edital|anexo|documento|\.pdf/i.test(url)
+      );
+      for (const documentUrl of usefulLinks.slice(0, 4)) {
         const extracted = await extractOfficialDocumentText(detailPage, documentUrl);
-        if (extracted) officialDocumentText += `
+        if (extracted) {
+          officialDocumentText += `
 ${extracted}`;
-        if (extracted && /matr[ií]cula|certid[aã]o|\brgi\b/i.test(documentUrl)) {
-          matriculaText = extracted;
-          matriculaUrl = documentUrl;
+          const isMatricula = /matr[ií]cula|certid[aã]o|\brgi\b/i.test(documentUrl) || /\b(?:matr[ií]cula\s+n[ºo°.]*|\bcart[oó]rio\s+do\s+\d+.*im[oó]veis|\bof[ií]cio\s+de\s+registro\s+de\s+im[oó]veis|\blivro\s+(?:n[ºo°.]*\s*)?2\b|\brgi\b)/i.test(extracted);
+          if (isMatricula && !matriculaText) {
+            matriculaText = extracted;
+            matriculaUrl = documentUrl;
+          }
         }
       }
     }
@@ -735,6 +753,10 @@ ${extracted}`;
     if (detailPage) await detailPage.close().catch(() => void 0);
   }
 }
+function parseOfficialArea(value) {
+  const raw = value.trim();
+  return Number(raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(?:\.\d{3})+$/.test(raw) ? raw.replace(/\./g, "") : raw);
+}
 function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = "", matriculaUrl) {
   const lotText = detailData.text.split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Você também pode|Veja também)/i)[0];
   const combinedText = lotText;
@@ -742,11 +764,14 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const sellerSection = combinedText.match(/comitente\s*:?\s*([^\n]+(?:\n[^\n]+)?)/i)?.[1] || "";
   const classification = detectBankOrJudicial(combinedText);
   const dates = extractAuctionDates(combinedText);
-  const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i) || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)?)\s*m[²2]/i);
-  const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
-  const headlineArea = detailData.title.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+  const headlineArea = detailData.title.match(/(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+  const headlineSize = headlineArea ? parseOfficialArea(headlineArea[1]) : 0;
   const landArea = parseType(detailData.title || draft.title) === "Terreno" ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
-  const detailedSize = (landArea ? Number(landArea[1].replace(/\./g, "").replace(",", ".")) : 0) || (sizeMatch ? Number(sizeMatch[1].replace(",", ".")) : 0) || (headlineArea ? Number(headlineArea[1].replace(",", ".")) : 0) || structuredSize;
+  const landSize = landArea ? parseOfficialArea(landArea[1]) : 0;
+  const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(?:metragem|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+  const textMatchedSize = sizeMatch ? parseOfficialArea(sizeMatch[1]) : 0;
+  const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
+  const detailedSize = headlineSize || landSize || textMatchedSize || structuredSize;
   const structuredAddress = detailData.structuredAddresses.map((value) => extractAddress(value, "")).find((value) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
   const textAddress = extractAddress(combinedText, "") || extractAddress(matriculaText, "");
   const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : "") || structuredAddress;
@@ -759,7 +784,7 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   return {
     ...draft,
     sourceClosed: /leiloes-realizados/.test(detailUrl) || /(?:leil[aã]o|lote)\s+(?:encerrado|cancelado|suspenso|arrematado)/i.test(lotText.slice(0, 1500)),
-    originVerified: /(?:^|\n)\s*(?:leil[aã]o\s+)?(?:extrajudicial|judicial)\s*(?:\n|$)/i.test(lotText) || /\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}/i.test(lotText) || Boolean(classification.bank),
+    originVerified: /(?:^|\n)\s*(?:leil[aã]o\s+)?(?:extrajudicial|judicial)\s*(?:\n|$)/i.test(lotText) || /\baliena[cç][aã]o\s+(?:judicial|fiduci[aá]ria)\b/i.test(lotText) || /\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}/i.test(lotText) || Boolean(classification.bank),
     sourceVerified: true,
     // Never erase the requested location with empty fields. The source may
     // use "Juiz de Fora, Minas Gerais" instead of the compact JF/MG form.
@@ -1077,7 +1102,7 @@ async function scrapeMegaLeiloes(targetType, state = "RJ", city = "Rio de Janeir
         const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
         const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
         const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
-        const size = sizeMatch ? Math.round(Number(sizeMatch[1].replace(",", "."))) : 0;
+        const size = sizeMatch ? Math.round(parseOfficialArea(sizeMatch[1])) : 0;
         const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
         const title = lines.find((l) => l.includes("Apartamento") || l.includes("Casa") || l.includes("Terreno") || l.includes("Comercial") || l.includes("Unid")) || lines[0] || "Im\xF3vel Mega Leil\xF5es";
         return { title, text, price, size, link, img };
@@ -1150,7 +1175,7 @@ async function scrapeFrazao(targetType, state = "RJ", city = "Rio de Janeiro") {
           const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
           const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
           const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
-          const size = sizeMatch ? Math.round(Number(sizeMatch[1].replace(",", "."))) : 0;
+          const size = sizeMatch ? Math.round(parseOfficialArea(sizeMatch[1])) : 0;
           const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
           const title = lines.find((l) => l.includes("Apartamento") || l.includes("Casa") || l.includes("Terreno") || l.includes("Comercial")) || lines[0] || "Im\xF3vel Fraz\xE3o";
           unique.push({ title, text, price, size, link: a.href, img });
@@ -1402,13 +1427,13 @@ async function syncPriorityOfficialAuctioneers(targetType, state, city, existing
 }
 function extractUnitComplement(address) {
   if (!address) return "";
-  const norm = normalizeStr(address);
-  const apto = norm.match(/\b(?:apto|apartamento|ap|und|unidade)\s*([0-9]+[a-z]?)\b/i);
+  const norm = normalizeStr(address).replace(/(\d)\.(?=\d{3}\b)/g, "$1");
+  const apto = norm.match(/\b(?:apto|apartamento|ap|und|unidade)\s*(?:n[ºo°.]*\s*)?([0-9]+(?:\.[0-9]{3})*[a-z]?)\b/i);
   const bloco = norm.match(/\b(?:bloco|bl)\s*([0-9a-z]+)\b/i);
   const lote = norm.match(/\b(?:lote|lt)\s*([0-9a-z]+)\b/i);
   const quadra = norm.match(/\b(?:quadra|qd)\s*([0-9a-z]+)\b/i);
-  const casa = norm.match(/\b(?:casa)\s*([0-9]+[a-z]?)\b/i);
-  const sala = norm.match(/\b(?:sala|loja)\s*([0-9]+[a-z]?)\b/i);
+  const casa = norm.match(/\b(?:casa)\s*(?:n[ºo°.]*\s*)?([0-9]+(?:\.[0-9]{3})*[a-z]?)\b/i);
+  const sala = norm.match(/\b(?:sala|loja)\s*(?:n[ºo°.]*\s*)?([0-9]+(?:\.[0-9]{3})*[a-z]?)\b/i);
   const parts = [];
   if (apto) parts.push(`ap-${apto[1]}`);
   if (bloco) parts.push(`bl-${bloco[1]}`);
@@ -1426,9 +1451,9 @@ function getPropertyDedupeKey(address, city, state, processNumber, auctionId, pr
   const normCity = normalizeStr(city);
   const normState = normalizeStr(state || "");
   const cleanAddr = normalizeStr(address).replace(/\b(rua|r\.|avenida|av\.|alameda|al\.|estrada|estr\.|praca|pr\.|travessa|trav\.|rodovia|rod\.)\b/g, "").trim();
-  const numMatch = address.match(/(?:n[º°.]*|numero|num|n)\s*(\d+)/i) || address.match(/,\s*(\d+)/);
+  const numMatch = address.match(/\b(?:n[º°.]*|numero|num)\s*(\d+(?:\.\d{3})*)/i) || address.match(/,\s*(\d+(?:\.\d{3})*)/);
   if (!numMatch) return null;
-  const num = numMatch[1];
+  const num = numMatch[1].replace(/\./g, "");
   const beforeNumber = cleanAddr.split(/,|\bn[º°.]*\s*\d|\bnumero\s*\d|\bnum\s*\d/i)[0];
   const streetCore2 = beforeNumber.replace(/[^a-z0-9]+/g, " ").trim();
   if (!streetCore2) return null;
@@ -1440,7 +1465,7 @@ function getPropertyDedupeKey(address, city, state, processNumber, auctionId, pr
   return `${normCity}-${normState}:${streetCore2}:${num}`;
 }
 function reconcileAuctionDrafts(allDrafts, targetType, state, city, existingAuctions, recalculateFn, writeAudit = true) {
-  const linkIndex = new Map(existingAuctions.filter((a) => a.auctionLink).map((a) => [canonicalAuctionLink(a.auctionLink), a]));
+  const linkIndex = new Map(existingAuctions.flatMap((a) => [a.auctionLink, ...a.sourceLinks || []].filter(Boolean).map((link) => [canonicalAuctionLink(link), a])));
   const existingLinks = new Set(linkIndex.keys());
   const existingKeys = /* @__PURE__ */ new Map();
   for (const a of existingAuctions) {
@@ -1507,9 +1532,13 @@ ${draft.description || ""}`)) {
       updated++;
       Object.assign(existing, recalculateFn({
         ...existing,
+        auctionLink: draft.auctionLink,
+        auctioneerName: draft.auctioneerName,
+        sourceLinks: [...new Set([...existing.sourceLinks || [], existing.auctionLink, draft.auctionLink].filter(Boolean))],
+        lastSyncedAt: (/* @__PURE__ */ new Date()).toISOString(),
         state: draft.state,
         city: draft.city,
-        neighborhood: draft.neighborhood,
+        neighborhood: draft.neighborhood || existing.neighborhood,
         origin: targetType,
         title: draft.title,
         imageUrl: draft.imageUrl || existing.imageUrl,
@@ -1544,6 +1573,9 @@ ${draft.description || ""}`)) {
         calculatedRoi: void 0,
         calculatedProfit: void 0
       });
+      linkIndex.set(draft.auctionLink, existing);
+      existingLinks.add(draft.auctionLink);
+      if (draftKey) existingKeys.set(draftKey, existing);
       continue;
     }
     existingLinks.add(draft.auctionLink);
@@ -1568,6 +1600,8 @@ ${draft.description || ""}`)) {
       firstAuctionDate: draft.firstAuctionDate,
       secondAuctionDate: draft.secondAuctionDate,
       auctionLink: draft.auctionLink,
+      sourceLinks: [draft.auctionLink],
+      lastSyncedAt: (/* @__PURE__ */ new Date()).toISOString(),
       auctioneerName: draft.auctioneerName,
       matriculaText: draft.matriculaText,
       matriculaUrl: draft.matriculaUrl,
@@ -1607,7 +1641,8 @@ ${draft.description || ""}`)) {
     newAuctions,
     totalScraped: allDrafts.length,
     updated,
-    pending: pendingReview.length
+    pending: pendingReview.length,
+    pendingReview
   };
 }
 function auditAndRepairAuctions(auctions, recalculateFn) {
@@ -1637,23 +1672,211 @@ var SYNC_TARGETS = [
   { city: "Juiz de Fora", state: "MG", ibge: "3136702", slug: "juiz-de-fora" }
 ];
 var SYNC_SOURCE_IDS = "leilaoimovel joaoemilio biasi silas portella rioleiloes alexandro paulobotelho jv depaula rymer megaleiloes ayupp portalzuk saraiva sold schulmann comprei pestana onildo gustavo mgl leiloei bb emgea santander vitrinebradesco ricart pamela facanha frazao".split(" ");
-var normalizeAuctionText = (value) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+var normalizeAuctionText = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 var allowedSyncLocation = (city, state) => SYNC_TARGETS.some((target) => target.state === state && normalizeAuctionText(city) === normalizeAuctionText(target.city));
+
+// listedPortalApis.ts
+var import_node_fs = __toESM(require("node:fs"), 1);
+var import_node_path = __toESM(require("node:path"), 1);
+var import_puppeteer2 = __toESM(require("puppeteer"), 1);
+var cheerio = __toESM(require("cheerio"), 1);
+var API = "https://yfvun6xbh1.execute-api.us-east-2.amazonaws.com/prod/emgea/property";
+var dateOnly = (value) => {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+  const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+};
+function bankApiDraft(id, row) {
+  const emgea = id === "emgea";
+  const city = emgea ? row.endereco?.cidade : row.city;
+  const state = emgea ? row.endereco?.estado : row.state;
+  if (!allowedSyncLocation(city, state)) return null;
+  const title = emgea ? row.nome_imovel : row.name;
+  const description = emgea ? row.descricao : row.description;
+  const address = emgea ? row.endereco?.endereco_completo : "";
+  const url = emgea ? `https://www.emgeaimoveis.com.br/imovel/${state}/${city.replace(/ /g, "-")}/${row.id_banco}` : `https://vitrinebradesco.com.br/auctions/${row.slug}`;
+  const dates = emgea ? [{ date: dateOnly(row.data_melhor_proposta || row.data_venda), price: Number(row.valores?.valor_venda) }] : !row.date_auction_1 && !row.date_auction_2 ? [{ date: dateOnly(row.auction_date), price: Number(row.price) }] : [
+    { date: dateOnly(row.date_auction_1), price: Number(row.min_auction_value_1) },
+    { date: dateOnly(row.date_auction_2), price: Number(row.min_auction_value_2) }
+  ];
+  const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  const next = dates.filter((d) => d.date >= today && d.price > 0).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const selected = next || dates[dates.length - 1];
+  const text = [title, description, address ? `Endere\xE7o: ${address}` : "", `${city}/${state}`].filter(Boolean).join("\n");
+  const base = { portalId: id, auctioneerName: emgea ? "EMGEA" : "Vitrine Bradesco", title, address: address || "", neighborhood: row.neighborhood || "", city, state, propertyType: "Apartamento", sizeSqm: 0, auctionPrice: 0, auctionDate: "", auctionLink: url, origin: "extrajudicial", locationScopeVerified: true };
+  const draft = parseOfficialLotDetail(base, { text, title, image: emgea ? row.foto_capa : typeof row.images?.[0] === "string" ? row.images[0] : "", structuredAddresses: address ? [address] : [], structuredSizes: [], documentLinks: [] }, url);
+  return {
+    ...draft,
+    city,
+    state,
+    origin: "extrajudicial",
+    originVerified: true,
+    sourceVerified: true,
+    sellerBank: emgea ? "EMGEA" : "Bradesco",
+    auctionPrice: selected?.price > 0 ? selected.price : 0,
+    priceVerified: selected?.price > 0,
+    auctionDate: selected?.date || "",
+    firstAuctionDate: dates[0]?.date || void 0,
+    secondAuctionDate: dates[1]?.date || void 0,
+    sourceClosed: emgea ? row.status_da_venda !== "ativo" : Boolean(dates.every((d) => d.date && d.date < today)),
+    estimatedValue: emgea && Number(row.valores?.valor_avaliado) > 0 ? Number(row.valores.valor_avaliado) : draft.estimatedValue,
+    ...emgea ? { saleMode: row.tags?.includes("Melhor Proposta") ? "Melhor Proposta" : draft.saleMode } : {}
+  };
+}
+async function collectBankApi(id, dir, onPage) {
+  let headers = {};
+  if (id === "emgea") {
+    const browser = await import_puppeteer2.default.launch({ headless: true, args: ["--no-sandbox"] });
+    try {
+      const page = await browser.newPage();
+      page.on("request", (request) => {
+        if (request.url().split("?")[0] === API) headers = request.headers();
+      });
+      await page.goto("https://www.emgeaimoveis.com.br/busca", { waitUntil: "networkidle2", timeout: 45e3 });
+      if (!headers["x-api-key"]) throw Error("A p\xE1gina oficial n\xE3o forneceu acesso \xE0 API p\xFAblica de im\xF3veis");
+    } finally {
+      await browser.close();
+    }
+  }
+  const seen = /* @__PURE__ */ new Set();
+  let maximum = 1;
+  let expected = 0;
+  for (let page = 1; page <= maximum; page++) {
+    const url = id === "emgea" ? `${API}?page=${page}` : `https://api.vitrinebradesco.com.br/v1/auctions?page=${page}&type=realstate`;
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(3e4) });
+    if (!response.ok) throw Error(`${url}: HTTP ${response.status}`);
+    const body = await response.json();
+    const records = body.data;
+    if (!Array.isArray(records)) throw Error("Resposta da API sem invent\xE1rio de im\xF3veis");
+    import_node_fs.default.writeFileSync(import_node_path.default.join(dir, `${id}-api-${page}.json`), JSON.stringify(body));
+    maximum = Number(id === "emgea" ? body.pagination.max_pages : body.total_pages);
+    expected = Number(body.pagination?.total_items || 0);
+    if (!Number.isInteger(maximum) || maximum < 1 || !records.length) throw Error("Pagina\xE7\xE3o inconsistente na API oficial");
+    const fresh = records.filter((row) => {
+      const key = String(row.id || row.guid);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    if (fresh.length !== records.length) throw Error("A API repetiu im\xF3veis entre p\xE1ginas; cobertura deve ser revisada");
+    await onPage(fresh.map((row) => bankApiDraft(id, row)).filter(Boolean), records.length);
+  }
+  if (expected && seen.size !== expected) throw Error(`Invent\xE1rio mudou durante a coleta: ${seen.size}/${expected}; nova confer\xEAncia necess\xE1ria`);
+}
+async function collectSoldApi(dir, onPage) {
+  const seen = /* @__PURE__ */ new Set();
+  let total = 1;
+  for (let page = 1; seen.size < total; page++) {
+    const url = new URL("https://offer-query.superbid.net/offers/");
+    Object.entries({ portalId: "[2,15]", requestOrigin: "store", locale: "pt_BR", timeZoneId: "America/Sao_Paulo", searchType: "opened", filter: "stores.id:[1161,1741];product.productType.description:imoveis;isShopping:false;auction.modalityId:[1,4,5,7]", pageNumber: String(page), pageSize: "24", orderBy: "price:desc;visits:desc", fieldList: "id;linkURL;price;endDate;offerStatus;product.shortDesc;product.template;product.productType;auction;offerDetail" }).forEach(([k, v]) => url.searchParams.set(k, v));
+    const response = await fetch(url, { signal: AbortSignal.timeout(3e4) });
+    if (!response.ok) throw Error(`Sold API: HTTP ${response.status}`);
+    const body = await response.json();
+    import_node_fs.default.writeFileSync(import_node_path.default.join(dir, `sold-api-${page}.json`), JSON.stringify(body));
+    total = Number(body.total);
+    if (!Array.isArray(body.offers) || !Number.isFinite(total)) throw Error("Resposta inv\xE1lida da API Sold");
+    const fresh = body.offers.filter((r) => !seen.has(r.id));
+    if (!fresh.length && seen.size < total) throw Error("Pagina\xE7\xE3o Sold interrompida antes do total informado");
+    const links = [];
+    for (const row of fresh) {
+      seen.add(row.id);
+      const properties = row.product?.template?.groups?.flatMap((g) => g.properties) || [];
+      const address = properties.find((p) => p.id === "endereco")?.value || "";
+      const title = row.product?.shortDesc || "";
+      const location2 = sourceAuctionLocation(address) || sourceAuctionLocation(title);
+      if (!location2 || !allowedSyncLocation(location2.city, location2.state)) continue;
+      const slug = title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      links.push({ url: row.linkURL || `https://www.sold.com.br/oferta/${slug}-${row.id}`, text: title + "\n" + address });
+    }
+    await onPage(links, fresh.length);
+  }
+}
+async function publicJson(url, body) {
+  const r = await fetch(url, { method: body ? "POST" : "GET", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : void 0, signal: AbortSignal.timeout(3e4) });
+  if (!r.ok) throw Error(`${url}: HTTP ${r.status}`);
+  return r.json();
+}
+async function collectRioLinks(dir, onPage) {
+  const inventory = await publicJson("https://www.rioleiloes.com.br/core/api/get-leiloes");
+  import_node_fs.default.writeFileSync(import_node_path.default.join(dir, "rioleiloes-events.json"), JSON.stringify(inventory));
+  if (!Array.isArray(inventory.items)) throw Error("Invent\xE1rio de leil\xF5es Rio indispon\xEDvel");
+  const incomplete = Number(inventory.totalPages) > 1;
+  for (const event of inventory.items) {
+    if (!event.categorialeilao?.some((c) => c.nm_categoria === "Im\xF3veis")) continue;
+    const lots = await publicJson(`https://www.rioleiloes.com.br/leilao/filtro-id/leilao_id/${event.id}?`);
+    import_node_fs.default.writeFileSync(import_node_path.default.join(dir, `rioleiloes-event-${event.id}.json`), JSON.stringify(lots));
+    if (!Array.isArray(lots.lotes)) throw Error(`Lotes indispon\xEDveis para leil\xE3o ${event.id}`);
+    await onPage(lots.lotes.map((lot) => ({ url: `https://www.rioleiloes.com.br/leilao/index/leilao_id/${event.id}/lote/${lot.lote_id}`, text: "Im\xF3vel: " + event.nm })), lots.lotes.length);
+  }
+  if (incomplete) throw Error("Invent\xE1rio Rio informou p\xE1ginas adicionais; cobertura ainda n\xE3o confirmada");
+}
+async function collectPestanaApi(dir, onPage) {
+  const events = await publicJson("https://www.pestanaleiloes.com.br/api/v2/leilao");
+  if (!Array.isArray(events)) throw Error("Invent\xE1rio Pestana inv\xE1lido");
+  import_node_fs.default.writeFileSync(import_node_path.default.join(dir, "pestana-events.json"), JSON.stringify(events));
+  const propertyEvents = events.filter((e) => !e.privado && e.subTipoBens?.some((t) => t.tipoBem === 462));
+  const ids = [...new Set(propertyEvents.flatMap((e) => e.lotes || []))];
+  for (let start2 = 0; start2 < ids.length; start2 += 80) {
+    const requested = ids.slice(start2, start2 + 80);
+    const cards = await publicJson("https://www.pestanaleiloes.com.br/api/v2/lote/cards-por-ids", { ids: requested });
+    if (!Array.isArray(cards)) throw Error("Resposta de lotes Pestana inv\xE1lida");
+    import_node_fs.default.writeFileSync(import_node_path.default.join(dir, `pestana-cards-${start2}.json`), JSON.stringify(cards));
+    const targets = cards.filter((c) => {
+      const l = sourceAuctionLocation(c.descricao || "");
+      return l && allowedSyncLocation(l.city, l.state);
+    });
+    if (targets.length) {
+      const details = await publicJson("https://www.pestanaleiloes.com.br/api/v2/lote/por-ids", { ids: targets.map((c) => c.id) });
+      import_node_fs.default.writeFileSync(import_node_path.default.join(dir, `pestana-details-${start2}.json`), JSON.stringify(details));
+      if (!Array.isArray(details)) throw Error("Detalhes Pestana inv\xE1lidos");
+      const rows = [];
+      for (const lot of details) {
+        const location2 = sourceAuctionLocation(lot.descricao || "");
+        if (!location2 || !allowedSyncLocation(location2.city, location2.state)) continue;
+        const event = propertyEvents.find((e) => e.id === lot.leilao);
+        if (!event) continue;
+        const property = lot.bens?.[0];
+        const description = (lot.bens || []).flatMap((b) => [b.descricao, b.observacao, ...(b.caracteristicas || []).map((c) => c.valor)]).filter(Boolean).join("\n");
+        const text = cheerio.load(description).text();
+        const origin = property?.origem === "Judicial" ? "judicial" : "extrajudicial";
+        const law = lot.informacoesLei9514, dates = event.informacoesLei9514;
+        const rounds = law?.pertenceLei ? [{ date: dateOnly(dates?.dataLeilao1 || ""), price: Number(law.valorLeilao1) }, { date: dateOnly(dates?.dataLeilao2 || ""), price: Number(law.valorLeilao2) }] : [{ date: dateOnly(event.data || ""), price: Number(lot.valorInicial) }];
+        const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+        const next = rounds.filter((r) => r.date >= today && r.price > 0).sort((a, b) => a.date.localeCompare(b.date))[0] || rounds.at(-1);
+        const url = `https://www.pestanaleiloes.com.br/agenda-de-leiloes/${lot.leilao}/${lot.id}`;
+        const base = { portalId: "pestana", auctioneerName: "Pestana Leil\xF5es", title: lot.descricao, ...location2, address: "", neighborhood: "", propertyType: "Apartamento", sizeSqm: 0, auctionPrice: 0, auctionDate: "", auctionLink: url, origin, locationScopeVerified: true };
+        const draft = parseOfficialLotDetail(base, { title: lot.descricao, text, image: "", structuredAddresses: [], structuredSizes: [], documentLinks: [] }, url);
+        rows.push({ ...draft, ...location2, origin, originVerified: property?.origem === "Judicial" || Boolean(law?.pertenceLei) || /banco|santander|bradesco|ita[uú]|sicredi/i.test(event.nome), sourceClosed: lot.visivel === false || /retirado|vendido|arrematado|cancelado|suspenso/i.test(lot.status), auctionPrice: next.price || 0, priceVerified: next.price > 0, auctionDate: next.date, firstAuctionDate: rounds[0]?.date, secondAuctionDate: rounds[1]?.date, matriculaUrl: property?.documentos?.find((d) => /matr[ií]cula/i.test(d.nome))?.link });
+      }
+      await onPage(rows, cards.length);
+      if (details.length !== targets.length) throw Error("Alguns detalhes Pestana n\xE3o retornaram; conferir relat\xF3rio");
+    } else await onPage([], cards.length);
+    if (cards.length !== requested.length) throw Error("Invent\xE1rio Pestana n\xE3o retornou todos os lotes anunciados");
+  }
+}
 
 // listedPortalSync.ts
 var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 var propertyWords = /\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba)\b/;
-var directPattern = /\/(?:item|lote|imovel|oferta|anuncio\/detalhe)\/|\/(?:detalhe|lote|leilao)\.(?:php|asp)\?|\/imoveis\/[^?#]+-\w*\d{4,}/i;
+var directPattern = /\/(?:item|lote|imovel|oferta|anuncio\/detalhe)\/|\/(?:detalhe|lote|Leilao_Lote)\.(?:php|asp)\?|\/sale\/detail\?|\/imoveis\/[^?#]+-\w*\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+/i;
 var navigationPattern = /\/(?:eventos\/leilao|leilao|leiloes|lotes)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|auctions|thumbs\.php|Principal\.asp)(?:\?|$)/i;
 var skipPattern = /login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|\.pdf(?:\?|$)/i;
 var bankIds = /* @__PURE__ */ new Set(["bb", "emgea", "santander", "vitrinebradesco"]);
 var portalConfigs = SYNC_SOURCE_IDS.map((id) => AUCTIONEER_PORTALS.find((p) => p.id === id)).filter(Boolean);
 var sameHost = (a, b) => new URL(a).hostname.replace(/^www\./, "") === new URL(b).hostname.replace(/^www\./, "");
+function separatedTargetLocation(text) {
+  const normalized = normalizeAuctionText(text);
+  const matches = SYNC_TARGETS.filter((t) => new RegExp(`\\b${normalizeAuctionText(t.city)}\\b`).test(normalized) && new RegExp(`\\b${t.state.toLowerCase()}\\b`).test(normalized));
+  return matches.length === 1 ? { city: matches[0].city, state: matches[0].state } : null;
+}
 function sourceSeedUrls(id, base) {
   const cityUrls = (fn) => SYNC_TARGETS.map(fn);
   if (id === "leilaoimovel") return [base + "/leilao-de-imoveis/rj", base + "/leilao-de-imoveis/mg"];
   if (id === "megaleiloes") return cityUrls((t) => `${base}/imoveis/${t.state.toLowerCase()}/${t.slug}`);
-  if (id === "biasi") return cityUrls((t) => `${base}/imoveis/${t.state.toLowerCase()}/${t.slug}/todos-os-bairros/todos-os-segmentos?pagina=1`);
+  if (id === "biasi") return cityUrls((t) => `${base}/Sale/LotListSearch?start=0&limit=48&buscaImovel=true&estado=${t.state.toLowerCase()}&cidade=${t.slug}&bairro=todos-os-bairros&segmento=todos-os-segmentos`);
+  if (id === "leiloei") return [base + "/busca/segmento/imoveis"];
+  if (id === "pestana") return [base + "/leilao-de-imoveis"];
   if (id === "frazao") return cityUrls((t) => `${base}/sale/searchLot?estado=${t.state}&cidade=${encodeURIComponent(t.city)}&pesquisaSimples=false`);
   if (id === "portalzuk") return cityUrls((t) => `${base}/leilao-de-imoveis/c/todos-imoveis/${t.state.toLowerCase()}/regiao/${t.slug}`);
   if (["jv", "joaoemilio"].includes(id)) return cityUrls((t) => `${base}/lotes/imovel?tipo=imovel&address_uf=${t.state}&address_cidade_ibge=${t.ibge}`);
@@ -1667,7 +1890,15 @@ function sourceSeedUrls(id, base) {
   return [config.searchUrl || base];
 }
 function parseSourcePage(html, url) {
-  const $ = cheerio.load(html);
+  const $ = cheerio2.load(html);
+  const literal = (name) => {
+    try {
+      return JSON.parse(html.match(new RegExp("(?:var|let|const) " + name + " = (\\{[^\\n]+\\});"))?.[1] || "null");
+    } catch {
+      return null;
+    }
+  };
+  const lotData = literal("lote"), eventData = literal("leilao");
   const links = [];
   $("a[href]").each((_, el) => {
     const raw = $(el).attr("href") || "";
@@ -1685,6 +1916,8 @@ function parseSourcePage(html, url) {
     const onclick = $(el).attr("onclick") || "";
     const legacy = onclick.match(/abrirDetalhesLeilao\(['"](\d+)['"]\)/i);
     if (legacy) links.push({ url: new URL("Leilao.asp?zz=" + legacy[1], url).href, text: $(el).parent().text().trim(), pagination: false });
+    const legacyLot = onclick.match(/acessarAuditorio\(['"](\d+)['"]/i);
+    if (legacyLot) links.push({ url: new URL("Leilao_Lote.asp?zz=" + legacyLot[1], url).href, text: $(el).closest("[id^=divLote]").text().trim(), pagination: false });
     const paging = onclick.match(/^pagina\((\d+)\)/i);
     if (paging) {
       const u = new URL(url);
@@ -1698,6 +1931,15 @@ function parseSourcePage(html, url) {
       }
     }
   });
+  const apiList = $("#leilao-lista-lote");
+  if (apiList.length && /LotListSearch/i.test(url)) {
+    const start2 = Number(apiList.attr("index")), limit = Number(apiList.attr("limit")), total = Number(apiList.attr("total"));
+    if (limit > 0 && start2 + limit < total) {
+      const next = new URL(url);
+      next.searchParams.set("start", String(start2 + limit));
+      links.push({ url: next.href, text: "Pr\xF3xima p\xE1gina", pagination: true });
+    }
+  }
   const structuredAddresses = [];
   const structuredSizes = [];
   $('script[type="application/ld+json"]').each((_, el) => {
@@ -1724,28 +1966,33 @@ function parseSourcePage(html, url) {
     const href = $(el).attr("href") || "";
     return /matr[ií]cula|edital/i.test($(el).text()) || /\.pdf(?:\?|$)/i.test(href) ? new URL(href, url).href : "";
   }).get().filter(Boolean);
-  $('script,style,noscript,header,footer,nav,aside,[class*="related"],[class*="recommend"]').remove();
+  $('script,style,noscript,header,footer,nav,aside,[class*="related"],[class*="recommend"],[id*="Modal"],[id*="PolPriv"],[id*="Login"],[id*="Rodape"],.modal').remove();
   $("br").replaceWith("\n");
   $("p,div,h1,h2,h3,h4,li,tr,dt,dd").each((_, el) => {
     $(el).append("\n");
   });
-  const title = $("h1,h2,h3,h4").map((_, el) => $(el).text().trim()).get().find((t) => propertyWords.test(normalizeAuctionText(t))) || $("h1").first().text().trim() || $("title").text().trim();
-  const text = ($("main").length ? $("main").text() : $("body").text()).replace(/[\t \u00a0]+/g, " ").replace(/\n\s*\n/g, "\n").trim();
-  return { links, text, title, image, structuredAddresses, structuredSizes, documentLinks };
+  const title = $("#divDescrLoteTexto").text().trim() || $("h1,h2,h3,h4").map((_, el) => $(el).text().trim()).get().find((t) => propertyWords.test(normalizeAuctionText(t))) || $("h1").first().text().trim() || $("title").text().trim();
+  let text = $("body").text().replace(/[\t \u00a0]+/g, " ").replace(/\n\s*\n/g, "\n").trim();
+  if ($("#divDescrLoteTexto").length) text = $("#divVisao1").text().replace(/\s+/g, " ").trim();
+  if (lotData?.descricao) {
+    const description = cheerio2.load(lotData.descricao).text();
+    text = [eventData?.judicial === true ? "Judicial" : eventData?.judicial === false ? "Extrajudicial" : "", description, text].join("\n");
+  }
+  return { links, text, title: lotData?.titulo || title, image, structuredAddresses, structuredSizes, documentLinks, lotDescription: lotData?.descricao ? cheerio2.load(lotData.descricao).text() : "" };
 }
 async function runListedPortalSync(reason, onDrafts, options = {}) {
   const configs = portalConfigs.filter((p) => !options.ids || options.ids.includes(p.id));
   const report = { id: (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-"), status: "running", reason, startedAt: (/* @__PURE__ */ new Date()).toISOString(), targets: SYNC_TARGETS, sources: configs.map((p) => ({ id: p.id, name: p.name, status: "queued", pages: 0, discovered: 0, fetched: 0, accepted: 0, imported: 0, updated: 0, pending: 0, errors: [] })) };
-  const dir = import_node_path.default.join("sync-audits", "runs", report.id);
-  import_node_fs.default.mkdirSync(dir, { recursive: true });
+  const dir = import_node_path2.default.join("sync-audits", "runs", report.id);
+  import_node_fs2.default.mkdirSync(dir, { recursive: true });
   const save = () => {
-    import_node_fs.default.writeFileSync(import_node_path.default.join(dir, "report.json"), JSON.stringify(report, null, 2));
-    import_node_fs.default.writeFileSync("sync-audits/latest-listed-sync.json", JSON.stringify(report, null, 2));
+    import_node_fs2.default.writeFileSync(import_node_path2.default.join(dir, "report.json"), JSON.stringify(report, null, 2));
+    import_node_fs2.default.writeFileSync("sync-audits/latest-listed-sync.json", JSON.stringify(report, null, 2));
   };
   save();
   let browserPromise = null;
   const rendered = async (url) => {
-    browserPromise ||= import_puppeteer2.default.launch({ headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    browserPromise ||= import_puppeteer3.default.launch({ headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     const browser = await browserPromise;
     const page = await browser.newPage();
     try {
@@ -1762,7 +2009,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       });
     }
   };
-  const load2 = async (url, render = false) => {
+  const load3 = async (url, render = false) => {
     if (render) return rendered(url);
     const parsedUrl = new URL(url);
     const legacyPage = /Principal\.asp/i.test(parsedUrl.pathname) && parsedUrl.searchParams.has("pag");
@@ -1795,7 +2042,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       const flush = async () => {
         if (!batches.length) return;
         const rows = batches.splice(0);
-        import_node_fs.default.appendFileSync(import_node_path.default.join(dir, config.id + ".jsonl"), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+        import_node_fs2.default.appendFileSync(import_node_path2.default.join(dir, config.id + ".jsonl"), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
         const counts = await onDrafts(rows, progress);
         progress.imported += counts.imported;
         progress.updated += counts.updated;
@@ -1803,6 +2050,38 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
         save();
       };
       try {
+        if (["emgea", "vitrinebradesco", "pestana"].includes(config.id)) {
+          const onPage = async (rows, total) => {
+            navigated = true;
+            progress.pages++;
+            progress.discovered += total;
+            progress.fetched += total;
+            progress.accepted += rows.length;
+            batches.push(...rows);
+            await flush();
+            save();
+          };
+          if (config.id === "pestana") await collectPestanaApi(dir, onPage);
+          else await collectBankApi(config.id, dir, onPage);
+          progress.status = "completed";
+          continue;
+        }
+        if (config.id === "sold") {
+          await collectSoldApi(dir, async (links) => {
+            navigated = true;
+            progress.pages++;
+            for (const link of links) details.set(link.url, link.text);
+            progress.discovered = details.size;
+            save();
+          });
+        }
+        if (config.id === "rioleiloes") await collectRioLinks(dir, async (links) => {
+          navigated = true;
+          progress.pages++;
+          for (const link of links) details.set(link.url, link.text);
+          progress.discovered = details.size;
+          save();
+        });
         while (listingQueue.length) {
           const requested = listingQueue.shift();
           const key = canonicalAuctionLink(requested);
@@ -1811,16 +2090,16 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
           try {
             let response;
             try {
-              response = await load2(requested);
+              response = await load3(requested);
             } catch (error) {
               if (renderedOnce) throw error;
               renderedOnce = true;
-              response = await load2(requested, true);
+              response = await load3(requested, true);
             }
             let page = parseSourcePage(response.html, response.url);
-            if (!page.links.some((link) => directPattern.test(link.url)) && !renderedOnce) {
+            if (!page.links.some((link) => directPattern.test(link.url)) && !renderedOnce && !/LotListSearch/i.test(requested)) {
               renderedOnce = true;
-              response = await load2(requested, true);
+              response = await load3(requested, true);
               page = parseSourcePage(response.html, response.url);
             }
             progress.pages++;
@@ -1832,7 +2111,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
               continue;
             }
             if (signature) pageSignatures.add(signature);
-            import_node_fs.default.writeFileSync(import_node_path.default.join(dir, config.id + "-listing-" + progress.pages + ".html"), response.html);
+            import_node_fs2.default.writeFileSync(import_node_path2.default.join(dir, config.id + "-listing-" + progress.pages + ".html"), response.html);
             for (const link of page.links) {
               if (!sameHost(link.url, response.url) || skipPattern.test(link.url)) continue;
               const location2 = sourceAuctionLocation(link.text);
@@ -1842,7 +2121,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
                 if (relevant && !seenDetails.has(link.url)) details.set(link.url, link.text);
                 continue;
               }
-              if (link.pagination || (navigationPattern.test(link.url) || /\/leilao-de-imoveis\/(?:rj|mg)(?:\/|$)/.test(link.url)) && relevant) {
+              if (link.pagination || (navigationPattern.test(link.url) || /\/Leilao\.asp\?|\/leilao-de-imoveis\/(?:rj|mg)(?:\/|$)/i.test(link.url)) && relevant) {
                 const current = new URL(response.url), next = new URL(link.url);
                 if (current.searchParams.has("address_cidade_ibge") && next.pathname === current.pathname && !next.searchParams.has("address_cidade_ibge")) continue;
                 if (!seenPages.has(link.url) && !listingQueue.includes(link.url)) listingQueue.push(link.url);
@@ -1860,15 +2139,20 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
             try {
               let response;
               try {
-                response = await load2(url);
+                response = await load3(url);
               } catch {
-                response = await load2(url, true);
+                response = await load3(url, true);
               }
-              const page = parseSourcePage(response.html, response.url);
+              let page = parseSourcePage(response.html, response.url);
               progress.fetched++;
+              if (config.id === "rioleiloes" || config.id === "sold") {
+                response = await load3(url, true);
+                page = parseSourcePage(response.html, response.url);
+              }
               if (page.text.length < 80) throw Error("Detalhe sem conte\xFAdo verific\xE1vel");
-              const location2 = sourceAuctionLocation(page.title) || sourceAuctionLocation(page.text) || sourceAuctionLocation(listingText);
+              const location2 = sourceAuctionLocation(page.title) || sourceAuctionLocation(extractAddress(page.text, "")) || sourceAuctionLocation(page.lotDescription) || separatedTargetLocation(page.lotDescription) || sourceAuctionLocation(page.text) || sourceAuctionLocation(listingText);
               if (!location2 || !allowedSyncLocation(location2.city, location2.state)) {
+                progress.errors.push({ url, message: location2 ? "Im\xF3vel fora das tr\xEAs cidades solicitadas" : "Localiza\xE7\xE3o do im\xF3vel n\xE3o confirmada no detalhe" });
                 continue;
               }
               if (!propertyWords.test(normalizeAuctionText(page.title + " " + page.text))) continue;
@@ -1883,7 +2167,10 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
                 draft.origin = "judicial";
                 draft.originVerified = true;
               }
-              if (!draft.city || !allowedSyncLocation(draft.city, draft.state)) continue;
+              if (!draft.city || !allowedSyncLocation(draft.city, draft.state)) {
+                progress.errors.push({ url, message: "Localiza\xE7\xE3o n\xE3o confirmada na descri\xE7\xE3o oficial" });
+                continue;
+              }
               const registryLink = page.documentLinks.find((link) => /matricula|certidao/i.test(link));
               if (registryLink) draft.matriculaUrl = registryLink;
               batches.push(draft);
@@ -1928,11 +2215,11 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
 }
 
 // propertyLocationService.ts
-var import_node_fs2 = __toESM(require("node:fs"), 1);
-var import_node_path2 = __toESM(require("node:path"), 1);
+var import_node_fs3 = __toESM(require("node:fs"), 1);
+var import_node_path3 = __toESM(require("node:path"), 1);
 var import_node_child_process = require("node:child_process");
 var import_node_crypto2 = require("node:crypto");
-var file = import_node_path2.default.join(process.cwd(), "official_property_locations.json");
+var file = import_node_path3.default.join(process.cwd(), "official_property_locations.json");
 var normalize2 = (s) => (s || "").normalize("NFC").trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
 var propertyLocationKey = (p) => JSON.stringify([normalize2(p.state), normalize2(p.city), normalize2(p.neighborhood), normalize2(p.address)]);
 function validOfficialLocation(r) {
@@ -1949,7 +2236,7 @@ var isMapLocationRefreshRunning = () => refreshing;
 function refresh() {
   let stat;
   try {
-    stat = import_node_fs2.default.statSync(file);
+    stat = import_node_fs3.default.statSync(file);
   } catch {
     byAddress = /* @__PURE__ */ new Map();
     stamp = -1;
@@ -1957,7 +2244,7 @@ function refresh() {
   }
   if (stat.mtimeMs === stamp) return;
   try {
-    const rows = JSON.parse(import_node_fs2.default.readFileSync(file, "utf8"));
+    const rows = JSON.parse(import_node_fs3.default.readFileSync(file, "utf8"));
     if (!Array.isArray(rows)) throw new Error("Expected an array of address records");
     const next = /* @__PURE__ */ new Map();
     for (const row of rows) next.set(propertyLocationKey(row), row);
@@ -1980,19 +2267,19 @@ function ensureOfficialLocationCoverage(properties) {
   const inputs = properties.map((p) => ({ id: p.id, address: p.address || "", city: p.city || "", state: p.state || "", neighborhood: p.neighborhood || "" }));
   const fingerprint = (0, import_node_crypto2.createHash)("sha256").update(JSON.stringify(inputs)).digest("hex");
   if (fingerprint === lastRefreshKey) return;
-  const cache2 = import_node_path2.default.join(process.cwd(), ".cache", "map-cnefe");
-  if (!import_node_fs2.default.existsSync(import_node_path2.default.join(cache2, "manifest.json"))) return;
+  const cache2 = import_node_path3.default.join(process.cwd(), ".cache", "map-cnefe");
+  if (!import_node_fs3.default.existsSync(import_node_path3.default.join(cache2, "manifest.json"))) return;
   let config = {};
   try {
-    config = JSON.parse(import_node_fs2.default.readFileSync(import_node_path2.default.join(process.cwd(), "map_sources_config.json"), "utf8"));
+    config = JSON.parse(import_node_fs3.default.readFileSync(import_node_path3.default.join(process.cwd(), "map_sources_config.json"), "utf8"));
   } catch {
   }
   const python = process.env.PYTHON_EXECUTABLE || config.pythonExecutable || "python";
-  const inputPath = import_node_path2.default.join(cache2, "refresh_targets.json");
-  import_node_fs2.default.writeFileSync(inputPath, JSON.stringify(inputs));
+  const inputPath = import_node_path3.default.join(cache2, "refresh_targets.json");
+  import_node_fs3.default.writeFileSync(inputPath, JSON.stringify(inputs));
   lastRefreshKey = fingerprint;
   refreshing = true;
-  const child = (0, import_node_child_process.spawn)(python, [import_node_path2.default.join(process.cwd(), "scripts", "refresh_map_locations.py"), inputPath], {
+  const child = (0, import_node_child_process.spawn)(python, [import_node_path3.default.join(process.cwd(), "scripts", "refresh_map_locations.py"), inputPath], {
     cwd: process.cwd(),
     windowsHide: true,
     stdio: ["ignore", "ignore", "pipe"],
@@ -2052,7 +2339,7 @@ var import_dotenv = __toESM(require("dotenv"), 1);
 var import_child_process = require("child_process");
 var import_crypto = __toESM(require("crypto"), 1);
 var import_os = __toESM(require("os"), 1);
-var import_puppeteer4 = __toESM(require("puppeteer"), 1);
+var import_puppeteer5 = __toESM(require("puppeteer"), 1);
 var import_pdf_parse2 = require("pdf-parse");
 
 // src/data.ts
@@ -2060,7 +2347,7 @@ var initialItbiTransactions = [];
 var initialAuctions = [];
 
 // portalScraper.ts
-var import_puppeteer3 = __toESM(require("puppeteer"), 1);
+var import_puppeteer4 = __toESM(require("puppeteer"), 1);
 var import_fs2 = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
 var PORTAL_LIVE_CACHE_PATH = import_path.default.join(process.cwd(), "portal_live_cache.json");
@@ -2104,7 +2391,7 @@ async function scrapeLivePortals(params) {
   const allListings = [];
   let browser = null;
   try {
-    browser = await import_puppeteer3.default.launch({
+    browser = await import_puppeteer4.default.launch({
       headless: true,
       args: [
         "--no-sandbox",
@@ -4347,6 +4634,13 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     auc.divergentNeighborhoodNotice = void 0;
   }
   const sourceLabel = auc.origin === "caixa" || auc.origin === "caixa_radar" ? "Caixa" : "Edital";
+  const formatDivergentNotice = (realNeigh, origNeigh) => {
+    const cleanOrig = origNeigh?.trim();
+    if (cleanOrig && cleanOrig.toLowerCase() !== realNeigh.toLowerCase()) {
+      return `Bairro Real: ${realNeigh} (${sourceLabel} listou ${cleanOrig})`;
+    }
+    return `Bairro Real: ${realNeigh}`;
+  };
   if (rawStreet) {
     const normSt2 = normalizeString2(rawStreet);
     const normC2 = normalizeString2(auc.city || "");
@@ -4355,7 +4649,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
         if (cleanNeighborhood(auc.neighborhood) !== "inhauma") {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = "Inha\xFAma";
-          auc.divergentNeighborhoodNotice = `Bairro Real: Inha\xFAma (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = formatDivergentNotice("Inha\xFAma", auc.originalListedNeighborhood);
           auc.neighborhood = "Inha\xFAma";
           neigh = "inhauma";
         }
@@ -4363,7 +4657,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
         if (cleanNeighborhood(auc.neighborhood) !== "engenhodarainha") {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = "Engenho da Rainha";
-          auc.divergentNeighborhoodNotice = `Bairro Real: Engenho da Rainha (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = formatDivergentNotice("Engenho da Rainha", auc.originalListedNeighborhood);
           auc.neighborhood = "Engenho da Rainha";
           neigh = "engenhodarainha";
         }
@@ -4373,7 +4667,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
         if (cleanNeighborhood(auc.neighborhood) !== "cubango") {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = "Cubango";
-          auc.divergentNeighborhoodNotice = `Bairro Real: Cubango (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = formatDivergentNotice("Cubango", auc.originalListedNeighborhood);
           auc.neighborhood = "Cubango";
           neigh = "cubango";
         }
@@ -4401,7 +4695,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       if (correctedClean && correctedClean !== neigh) {
         auc.originalListedNeighborhood = auc.neighborhood;
         auc.officialNeighborhood = closest.neighborhood;
-        auc.divergentNeighborhoodNotice = `Bairro Real: ${closest.neighborhood} (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+        auc.divergentNeighborhoodNotice = formatDivergentNotice(closest.neighborhood, auc.originalListedNeighborhood);
         auc.neighborhood = closest.neighborhood;
         neigh = correctedClean;
       }
@@ -4425,7 +4719,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       if (correctedCleanNeigh && correctedCleanNeigh !== neigh) {
         auc.originalListedNeighborhood = auc.neighborhood;
         auc.officialNeighborhood = csEntry.neighborhood;
-        auc.divergentNeighborhoodNotice = `Bairro Real: ${csEntry.neighborhood} (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+        auc.divergentNeighborhoodNotice = formatDivergentNotice(csEntry.neighborhood, auc.originalListedNeighborhood);
         auc.neighborhood = csEntry.neighborhood;
         neigh = correctedCleanNeigh;
         const correctedEntry = streetAvgSqmMap.get(`${state}|${normCity}|${correctedCleanNeigh}|${streetPhon}|${propType}`) || streetAvgSqmMap.get(`${state}|${normCity}|${correctedCleanNeigh}|${streetPhon}|${cat}`);
@@ -4823,31 +5117,42 @@ function readListedSyncStatus() {
     return null;
   }
 }
-function startListedSync(reason, ids) {
-  if (listedSyncRunning) return false;
-  import_fs4.default.mkdirSync("sync-audits/backups", { recursive: true });
-  const backup = "sync-audits/backups/before-listed-sync-" + (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-") + ".json";
-  import_fs4.default.writeFileSync(backup, JSON.stringify(store));
-  listedSyncRunning = runListedPortalSync(reason, async (drafts) => {
+function applyListedDrafts(drafts, auditPath) {
+  const previousAuctions = store.auctions;
+  store.auctions = structuredClone(previousAuctions);
+  try {
     let imported = 0, updated = 0, pending = 0;
     for (const origin of ["extrajudicial", "judicial"]) {
-      const rows = drafts.filter((row) => row.origin === origin && allowedSyncLocation(row.city, row.state));
-      if (!rows.length) continue;
-      const result = reconcileAuctionDrafts(rows, origin, "", "", store.auctions, (auc) => recalculateAuction(auc, store.itbiTransactions), false);
-      result.newAuctions.forEach((auction) => {
-        auction.userId = "system";
-        auction.lastSyncedAt = (/* @__PURE__ */ new Date()).toISOString();
-      });
-      store.auctions.unshift(...result.newAuctions);
-      imported += result.newAuctions.length;
-      updated += result.updated;
-      pending += result.pending;
+      for (const target of SYNC_TARGETS) {
+        const rows = drafts.filter((row) => row.origin === origin && row.state === target.state && row.city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === target.city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase());
+        if (!rows.length) continue;
+        const result = reconcileAuctionDrafts(rows, origin, target.state, target.city, store.auctions, (auc) => recalculateAuction(auc, store.itbiTransactions), false);
+        result.newAuctions.forEach((auction) => {
+          auction.userId = "system";
+          auction.lastSyncedAt = (/* @__PURE__ */ new Date()).toISOString();
+        });
+        store.auctions.unshift(...result.newAuctions);
+        if (result.pendingReview.length) import_fs4.default.appendFileSync(auditPath, result.pendingReview.map((row) => JSON.stringify(row)).join("\n") + "\n");
+        imported += result.newAuctions.length;
+        updated += result.updated;
+        pending += result.pending;
+      }
     }
     const temporary = STORE_PATH + ".sync-tmp";
     import_fs4.default.writeFileSync(temporary, JSON.stringify(store), "utf8");
     import_fs4.default.renameSync(temporary, STORE_PATH);
     return { imported, updated, pending };
-  }, { ids }).catch((error) => console.error("[Listed Sync] Falha:", error)).finally(() => {
+  } catch (error) {
+    store.auctions = previousAuctions;
+    throw error;
+  }
+}
+function startListedSync(reason, ids) {
+  if (listedSyncRunning) return false;
+  import_fs4.default.mkdirSync("sync-audits/backups", { recursive: true });
+  const backup = "sync-audits/backups/before-listed-sync-" + (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-") + ".json";
+  import_fs4.default.writeFileSync(backup, JSON.stringify(store));
+  listedSyncRunning = runListedPortalSync(reason, async (drafts, source) => applyListedDrafts(drafts, "sync-audits/pending-" + source.id + ".jsonl"), { ids }).catch((error) => console.error("[Listed Sync] Falha:", error)).finally(() => {
     listedSyncRunning = null;
   });
   return true;
@@ -6865,32 +7170,54 @@ app.post("/api/parse-pdf", async (req, res) => {
   }
 });
 app.post("/api/auctions/fetch-documentos", async (req, res) => {
-  const auction = store.auctions.find((item) => item.id === req.body.id);
-  if (!auction?.auctionLink) return res.status(404).json({ error: "Im\xF3vel n\xE3o encontrado." });
-  const host = new URL(auction.auctionLink).hostname.replace(/^www\./, "");
-  const portal = AUCTIONEER_PORTALS.find((item) => item.domain === host);
-  if (!portal) return res.status(400).json({ error: "Portal n\xE3o configurado." });
+  const auction = store.auctions.find((item) => item.id === req.body.id) || store.auctions.find((item) => item.auctionLink === req.body.auctionLink);
+  const targetLink = req.body.auctionLink || auction?.auctionLink;
+  if (!targetLink) return res.status(404).json({ error: "Im\xF3vel ou link de leil\xE3o n\xE3o informado." });
+  let host = "";
+  try {
+    host = new URL(targetLink).hostname.replace(/^www\./, "");
+  } catch {
+    return res.status(400).json({ error: "Link de leil\xE3o inv\xE1lido." });
+  }
+  const portal = AUCTIONEER_PORTALS.find((item) => item.domain === host) || {
+    id: host.replace(/\./g, "_"),
+    name: host,
+    domain: host,
+    baseUrl: targetLink,
+    genericScrape: true,
+    enabled: true
+  };
   let browser;
   try {
-    browser = await import_puppeteer4.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    browser = await import_puppeteer5.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
     const detail = await enrichLotDetails(browser, {
-      ...auction,
+      ...auction || {},
       portalId: portal.id,
       auctioneerName: portal.name,
-      city: auction.city || "",
-      auctionLink: auction.auctionLink,
-      origin: auction.origin === "judicial" ? "judicial" : "extrajudicial"
+      city: auction?.city || "",
+      state: auction?.state || "",
+      auctionLink: targetLink,
+      origin: auction?.origin === "judicial" ? "judicial" : "extrajudicial"
     });
-    Object.assign(auction, {
-      address: detail.address,
-      sizeSqm: detail.sizeSqm,
-      description: detail.description,
-      matriculaText: detail.matriculaText,
-      matriculaUrl: detail.matriculaUrl
+    if (auction) {
+      Object.assign(auction, {
+        address: detail.address || auction.address,
+        sizeSqm: detail.sizeSqm || auction.sizeSqm,
+        description: detail.description || auction.description,
+        matriculaText: detail.matriculaText || auction.matriculaText,
+        matriculaUrl: detail.matriculaUrl || auction.matriculaUrl
+      });
+      Object.assign(auction, recalculateAuction(auction, store.itbiTransactions));
+      saveStore(store);
+    }
+    return res.json({
+      success: true,
+      matriculaText: detail.matriculaText || "",
+      matriculaUrl: detail.matriculaUrl || "",
+      editalText: detail.description || "",
+      address: detail.address || auction?.address || "",
+      sizeSqm: detail.sizeSqm || auction?.sizeSqm || 0
     });
-    Object.assign(auction, recalculateAuction(auction, store.itbiTransactions));
-    saveStore(store);
-    return res.json({ matriculaText: detail.matriculaText || "", editalText: detail.description || "", address: detail.address, sizeSqm: detail.sizeSqm });
   } catch (error) {
     return res.status(502).json({ error: error.message });
   } finally {
@@ -6910,7 +7237,7 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
   let browser = null;
   try {
     console.log(`[Caixa Docs] Buscando certid\xE3o e edital oficial em: ${targetUrl}`);
-    browser = await import_puppeteer4.default.launch({
+    browser = await import_puppeteer5.default.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -7225,7 +7552,7 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
   let totalImported = 0;
   let browser = null;
   try {
-    browser = await import_puppeteer4.default.launch({
+    browser = await import_puppeteer5.default.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -8004,7 +8331,7 @@ app.post("/api/auctions/analyze-url", authMiddleware, async (req, res) => {
   let browser;
   try {
     console.log(`[URL Analyzer] Abrindo Puppeteer para: ${url}`);
-    browser = await import_puppeteer4.default.launch({
+    browser = await import_puppeteer5.default.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });

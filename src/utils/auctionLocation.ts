@@ -16,3 +16,8 @@ export function correctDeclaredAuctionLocation<T extends {title?:string;address?
   result.estimatedValue=result.evaluationPrice || 0;
   return result;
 }
+
+export function cleanDivergentNotice(text?: string): string {
+  if (!text) return '';
+  return text.replace(/\s*\((?:Edital|Caixa)\s+listou\s*(?:undefined)?\)/gi, '').trim();
+}

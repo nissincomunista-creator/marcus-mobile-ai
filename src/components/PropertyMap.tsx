@@ -11,6 +11,8 @@ import { getPropertyCoordinates } from '../utils/geoCoords.ts';
 import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
 import PropertyThumbnail from './PropertyThumbnail.tsx';
 import RealValueCalculator from './RealValueCalculator.tsx';
+import { cleanDivergentNotice } from '../utils/auctionLocation.ts';
+
 
 interface PropertyMapProps {
   auctions: AuctionProperty[];
@@ -970,11 +972,11 @@ useEffect(() => {
                               <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
                               <span>{auc.address || 'Endereço'} ({auc.neighborhood} - {auc.state || 'RJ'})</span>
                             </p>
-                            {auc.divergentNeighborhoodNotice && (
+                            {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
                               <div className="pt-0.5">
                                 <span className="text-[9px] bg-amber-950/80 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
                                   <span>⚠️</span>
-                                  <span>{auc.divergentNeighborhoodNotice}</span>
+                                  <span>{cleanDivergentNotice(auc.divergentNeighborhoodNotice)}</span>
                                 </span>
                               </div>
                             )}

@@ -6060,7 +6060,7 @@
     }
   },
   "portal_v4_rj_rio_de_janeiro_campo_grande_apartamento_9861_2_1_estrada_dos_caboclos": {
-    "timestamp": 1789681671323,
+    "timestamp": 1789946349012,
     "isFallback": false,
     "data": {
       "fallback": false,
@@ -6068,305 +6068,305 @@
       "streetMatchesCount": 0,
       "below": {
         "range": "6903m² - 8875m²",
-        "avgPrice": 1105026,
-        "avgSqm": 6007,
+        "avgPrice": 938404,
+        "avgSqm": 7224,
         "matches": [
           {
-            "title": "Imóvel com 1 qtos, 49m² em CAMPO GRANDE",
-            "price": 223600,
-            "sizeSqm": 49,
-            "unitValueSqm": 4563,
-            "address": "Estrada das Agulhas Negras, Campo Grande · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895531759/comprar/casa-1-quarto-campo-grande-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 1 qtos, 81m² em CAMPO GRANDE",
+            "price": 750000,
+            "sizeSqm": 81,
+            "unitValueSqm": 9259,
+            "address": "Rua Rodrigo de Brito, Botafogo · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895725533/comprar/apartamento-1-quarto-botafogo-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Anúncio novo • Comprar casa mobiliada em Campo Grande, Rio de Janeiro, com 1 quarto. • R$ 223.600 • R$ 0 Condo. + IPTU • 49 m² · 1 quarto · 1 vaga • Estrada das Agulhas Negras, Cam"
+            "description": "Anúncio novo • Comprar apartamento com 1 quarto. • R$ 750.000 • R$ 953 Condo. + IPTU • 81 m² · 1 quarto • Rua Rodrigo de Brito, Botafogo · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 3 qtos, 360m² em CAMPO GRANDE",
-            "price": 1200000,
-            "sizeSqm": 360,
-            "unitValueSqm": 3333,
-            "address": "Rua Francisca Júlia, Anil · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895713895/comprar/casa-3-quartos-anil-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Anúncio novo • Casa para comprar com 3 quartos, 1 suíte e quintal. • R$ 1.200.000 • R$ 414 Condo. + IPTU • 360 m² · 3 quartos · 3 vagas • Rua Francisca Júlia, Anil · Rio de Janeiro"
-          },
-          {
-            "title": "Imóvel com 4 qtos, 136m² em CAMPO GRANDE",
-            "price": 999000,
-            "sizeSqm": 136,
-            "unitValueSqm": 7346,
-            "address": "Rua Uruguai, Tijuca · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/893535245/comprar/apartamento-4-quartos-tijuca-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Anúncio novo • Apartamento à venda com 4 dormitórios. Oportunidade de compra ideal para quem busca espaço e conforto. • R$ 999.000 • R$ 2.867 Condo. + IPTU • 136 m² · 4 quartos · 1"
-          },
-          {
-            "title": "Imóvel com 2 qtos, 84m² em CAMPO GRANDE",
-            "price": 980000,
-            "sizeSqm": 84,
-            "unitValueSqm": 11667,
-            "address": "Rua do Catete, Glória · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895663693/comprar/casa-2-quartos-gloria-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Venda de casa mobiliada, de 84 m² com 2 quartos, 2 banheiros e 1 vaga na garagem em Glória. • R$ 980.000 • R$ 0 Condo. + IPTU • 84 m² · 2 quartos · 1 vaga • Rua do Catete, Glória ·"
-          },
-          {
-            "title": "Imóvel com 2 qtos, 50m² em CAMPO GRANDE",
-            "price": 280000,
-            "sizeSqm": 50,
-            "unitValueSqm": 5600,
-            "address": "Estrada dos Bandeirantes, Jacarepaguá · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/892894138/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Compre já alugado • Apartamento para comprar com 2 quartos, piscina e churrasqueira no condomínio. • R$ 280.000 • R$ 565 Condo. + IPTU • 50 m² · 2 quartos · 1 vaga • Estrada dos Ba"
-          },
-          {
-            "title": "Imóvel com 4 qtos, 270m² em CAMPO GRANDE",
-            "price": 1490000,
-            "sizeSqm": 270,
-            "unitValueSqm": 5519,
-            "address": "Rua José Américo de Almeida, Recreio dos Bandeirantes · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/894013343/comprar/apartamento-4-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Apartamento à venda com 4 quartos e closet espaçoso, ótimo para comprar. • R$ 1.490.000 • R$ 1.842 Condo. + IPTU • 270 m² · 4 quartos · 2 vagas • Rua José Américo de Almeida, Recre"
-          },
-          {
-            "title": "Imóvel com 3 qtos, 127m² em CAMPO GRANDE",
-            "price": 350000,
-            "sizeSqm": 127,
-            "unitValueSqm": 2756,
-            "address": "Rua Martins Lage, Engenho Novo · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/894782027/comprar/apartamento-3-quartos-engenho-novo-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Compre já alugado • Apartamento com 3 quartos, 1 suíte, permite animais. Ideal para comprar. • R$ 350.000 • R$ 1.108 Condo. + IPTU • 127 m² · 3 quartos · 1 vaga • Rua Martins Lage,"
-          },
-          {
-            "title": "Imóvel com 3 qtos, 107m² em CAMPO GRANDE",
-            "price": 450000,
-            "sizeSqm": 107,
-            "unitValueSqm": 4206,
-            "address": "Estrada Curumau, Taquara · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895525783/comprar/casa-3-quartos-taquara-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Compra casa em condomínio com 3 quartos, mobiliada, churrasqueira no condomínio. • R$ 450.000 • R$ 980 Condo. + IPTU • 107 m² · 3 quartos • Estrada Curumau, Taquara · Rio de Janeir"
-          },
-          {
-            "title": "Imóvel com 4 qtos, 250m² em CAMPO GRANDE",
-            "price": 1095000,
-            "sizeSqm": 250,
-            "unitValueSqm": 4380,
-            "address": "Estrada do Capenha, Freguesia (Jacarepaguá) · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895591829/comprar/casa-4-quartos-freguesia-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Casa com 4 quartos. • R$ 1.095.000 • R$ 1.000 Condo. + IPTU • 250 m² · 4 quartos · 4 vagas • Estrada do Capenha, Freguesia (Jacarepaguá) · Rio de Janeiro"
-          },
-          {
-            "title": "Imóvel com 4 qtos, 187m² em CAMPO GRANDE",
-            "price": 410000,
-            "sizeSqm": 187,
-            "unitValueSqm": 2193,
-            "address": "Rua Edgard Werneck, Jacarepaguá · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/892889464/comprar/casa-4-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Casa em condomínio à venda em Jacarepaguá, com 4 quartos. Perfeitamente localizada para sua próxima compra. • R$ 410.000 • R$ 250 Condo. + IPTU • 187 m² · 4 quartos · 1 vaga • Rua "
-          },
-          {
-            "title": "Imóvel com 3 qtos, 90m² em CAMPO GRANDE",
-            "price": 650000,
-            "sizeSqm": 90,
-            "unitValueSqm": 7222,
-            "address": "Rua Conselheiro Zenha, Tijuca · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895673264/comprar/apartamento-3-quartos-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
-            "portal": "QuintoAndar",
-            "description": "Venda de apartamento com 3 quartos. • R$ 650.000 • R$ 1.318 Condo. + IPTU • 90 m² · 3 quartos · 1 vaga • Rua Conselheiro Zenha, Tijuca · Rio de Janeiro"
-          },
-          {
-            "title": "Imóvel com 5 qtos, 250m² em CAMPO GRANDE",
-            "price": 900000,
-            "sizeSqm": 250,
+            "title": "Imóvel com 2 qtos, 75m² em CAMPO GRANDE",
+            "price": 270000,
+            "sizeSqm": 75,
             "unitValueSqm": 3600,
+            "address": "Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895730434/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento em Jacarepaguá com 2 quartos. • R$ 270.000 • R$ 462 Condo. + IPTU • 75 m² · 2 quartos • Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 70m² em CAMPO GRANDE",
+            "price": 275000,
+            "sizeSqm": 70,
+            "unitValueSqm": 3929,
+            "address": "Rua Darke de Matos, Higienópolis · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892896011/comprar/apartamento-3-quartos-higienopolis-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento de 3 quartos à venda. Aproveite essa oportunidade única para comprar! • R$ 275.000 • R$ 250 Condo. + IPTU • 70 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 96m² em CAMPO GRANDE",
+            "price": 1030000,
+            "sizeSqm": 96,
+            "unitValueSqm": 10729,
+            "address": "Rua Professor Gabizo, Maracanã · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894799122/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Venda de apartamento, de 96 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Maracanã. • R$ 1.030.000 • R$ 1.292 Condo. + IPTU • 96 m² · 3 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 65m² em CAMPO GRANDE",
+            "price": 445000,
+            "sizeSqm": 65,
+            "unitValueSqm": 6846,
+            "address": "Rua Santa Luíza, Maracanã · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894926702/comprar/casa-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Casa em condomínio à venda com 2 quartos, varanda e aceita animais. • R$ 445.000 • R$ 125 Condo. + IPTU • 65 m² · 2 quartos · 1 vaga • Rua Santa Luíza, Maracanã · Ri"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 35m² em CAMPO GRANDE",
+            "price": 233500,
+            "sizeSqm": 35,
+            "unitValueSqm": 6671,
+            "address": "Rua Sá Freire, Imperial de São Cristóvão · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895392612/comprar/apartamento-1-quarto-imperial-de-sao-cristovao-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento para comprar com piscina, churrasqueira, varanda e 1 quarto. Animais permitidos. • R$ 233.500 • R$ 570 Condo. + IPTU • 35 m² · 1 quar"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 61m² em CAMPO GRANDE",
+            "price": 200000,
+            "sizeSqm": 61,
+            "unitValueSqm": 3279,
+            "address": "Rua Lysâneas Maciel, Freguesia (jacarepaguá) · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894513084/comprar/apartamento-1-quarto-freguesia-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Apartamento com 1 quarto e varanda na Freguesia (Jacarepaguá). Excelente opção para venda na região. • R$ 200.000 • R$ 306 Condo. + IPTU • 61 m² · 1 quarto · 1 "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 82m² em CAMPO GRANDE",
+            "price": 622800,
+            "sizeSqm": 82,
+            "unitValueSqm": 7595,
+            "address": "Rua Francisco de Paula, Barra Olímpica · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895694784/comprar/apartamento-2-quartos-barra-olimpica-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Oportunidades de compra: apartamento mobiliado, 2 quartos, varanda e piscina no condomínio. • R$ 622.800 • R$ 994 Condo. + IPTU • 82 m² · 2 quartos · 1 vaga • Rua Francisco de Paul"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 40m² em CAMPO GRANDE",
+            "price": 509000,
+            "sizeSqm": 40,
+            "unitValueSqm": 12725,
+            "address": "Rua Riachuelo, Centro · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893206007/comprar/apartamento-1-quarto-centro-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda no Centro com 1 suíte. Aceita animais de estimação. Pronto para comprar! • R$ 509.000 • R$ 450 Condo. + IPTU • 40 m² · 1 quarto • Rua Riachuelo, Centro · Rio de"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 238m² em CAMPO GRANDE",
+            "price": 690000,
+            "sizeSqm": 238,
+            "unitValueSqm": 2899,
+            "address": "Estrada do Rio Grande, Taquara · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894731490/comprar/casa-4-quartos-taquara-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa mobiliada com 4 quartos para comprar. • R$ 690.000 • R$ 452 Condo. + IPTU • 238 m² · 4 quartos · 3 vagas • Estrada do Rio Grande, Taquara · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 271m² em CAMPO GRANDE",
+            "price": 4190000,
+            "sizeSqm": 271,
+            "unitValueSqm": 15461,
+            "address": "Rua Oliveira Fausto, Botafogo · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894948803/comprar/apartamento-4-quartos-botafogo-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda com 4 quartos, varanda gourmet e academia. Mobiliada e perfeita para você. • R$ 4.190.000 • R$ 1.980 Condo. + IPTU • 271 m² · 4 quartos · 4 vagas • Rua Oliveira Fausto"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 44m² em CAMPO GRANDE",
+            "price": 200000,
+            "sizeSqm": 44,
+            "unitValueSqm": 4545,
             "address": "Estrada dos Bandeirantes, Vargem Grande · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895056713/comprar/casa-5-quartos-vargem-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "link": "https://www.quintoandar.com.br/imovel/895692515/comprar/apartamento-2-quartos-vargem-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Casa em condomínio para comprar em Vargem Grande, com 5 quartos, mobiliada, quintal e jardim. • R$ 900.000 • R$ 292 Condo. + IPTU • 250 m² · 5 quartos · 2 vagas • Estrada dos Bande"
+            "description": "Comprar apartamento com 2 quartos, 1 suíte. • R$ 200.000 • R$ 659 Condo. + IPTU • 44 m² · 2 quartos • Estrada dos Bandeirantes, Vargem Grande · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 3 qtos, 200m² em CAMPO GRANDE",
-            "price": 1580000,
-            "sizeSqm": 200,
-            "unitValueSqm": 7900,
-            "address": "Rua Senador Euzébio, Flamengo · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/894974800/comprar/apartamento-3-quartos-flamengo-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 3 qtos, 240m² em CAMPO GRANDE",
+            "price": 1330000,
+            "sizeSqm": 240,
+            "unitValueSqm": 5542,
+            "address": "Rua Albano de Carvalho, Recreio dos Bandeirantes · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895181103/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Venda de apartamento mobiliado com 3 quartos. • R$ 1.580.000 • R$ 2.025 Condo. + IPTU • 200 m² · 3 quartos • Rua Senador Euzébio, Flamengo · Rio de Janeiro"
+            "description": "Venda de apartamento no Recreio dos Bandeirantes com 3 quartos, 1 suíte e closet. • R$ 1.330.000 • R$ 2.616 Condo. + IPTU • 240 m² · 3 quartos · 3 vagas • Rua Albano de Carvalho, R"
           },
           {
-            "title": "Imóvel com 3 qtos, 146m² em CAMPO GRANDE",
-            "price": 560000,
-            "sizeSqm": 146,
-            "unitValueSqm": 3836,
-            "address": "Avenida Gilka Machado, Recreio dos Bandeirantes · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895117811/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 2 qtos, 78m² em CAMPO GRANDE",
+            "price": 750000,
+            "sizeSqm": 78,
+            "unitValueSqm": 9615,
+            "address": "Estrada da Gávea, São Conrado · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895544357/comprar/apartamento-2-quartos-sao-conrado-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Comprar apartamento com 3 quartos, varanda e churrasqueira no condomínio. Animais permitidos. • R$ 560.000 • R$ 1.328 Condo. + IPTU • 146 m² · 3 quartos · 2 vagas • Avenida Gilka M"
+            "description": "Ótimo preço • Apartamento mobiliado à venda em São Conrado, com 2 quartos. • R$ 750.000 • R$ 1.936 Condo. + IPTU • 78 m² · 2 quartos · 1 vaga • Estrada da Gávea, São Conrado · Rio "
           },
           {
-            "title": "Imóvel com 3 qtos, 125m² em CAMPO GRANDE",
-            "price": 689000,
-            "sizeSqm": 125,
-            "unitValueSqm": 5512,
-            "address": "Rua Almirante Cochrane, Tijuca · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/893127783/comprar/apartamento-3-quartos-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 2 qtos, 59m² em CAMPO GRANDE",
+            "price": 290000,
+            "sizeSqm": 59,
+            "unitValueSqm": 4915,
+            "address": "Rua Noêmia Nunes, Olaria · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895327568/comprar/apartamento-2-quartos-olaria-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Venda de apartamento, de 125 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Tijuca. • R$ 689.000 • R$ 1.367 Condo. + IPTU • 125 m² · 3 quartos · 1 vaga • Rua Almirante Cochra"
+            "description": "Comprar apartamento em Olaria com 2 quartos. • R$ 290.000 • R$ 350 Condo. + IPTU • 59 m² · 2 quartos · 2 vagas • Rua Noêmia Nunes, Olaria · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 5 qtos, 233m² em CAMPO GRANDE",
-            "price": 2600000,
-            "sizeSqm": 233,
-            "unitValueSqm": 11159,
-            "address": "Rua Francisco Gross, Recreio dos Bandeirantes · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895646568/comprar/casa-5-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 2 qtos, 53m² em CAMPO GRANDE",
+            "price": 200000,
+            "sizeSqm": 53,
+            "unitValueSqm": 3774,
+            "address": "Rua Tangará, Bonsucesso · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895293802/comprar/apartamento-2-quartos-bonsucesso-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Casa de 5 quartos mobiliada à venda. Com piscina e churrasqueira. • R$ 2.600.000 • R$ 2.300 Condo. + IPTU • 233 m² · 5 quartos • Rua Francisco Gross, Recreio dos Bandeirantes · Rio"
+            "description": "Apartamento em Bonsucesso com 2 quartos para comprar. • R$ 200.000 • R$ 160 Condo. + IPTU • 53 m² · 2 quartos • Rua Tangará, Bonsucesso · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 2 qtos, 60m² em CAMPO GRANDE",
-            "price": 320000,
-            "sizeSqm": 60,
-            "unitValueSqm": 5333,
-            "address": "Rua Engenheiro Edmundo Regis Bittencourt, Olaria · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/893163449/comprar/apartamento-2-quartos-olaria-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 5 qtos, 369m² em CAMPO GRANDE",
+            "price": 838000,
+            "sizeSqm": 369,
+            "unitValueSqm": 2271,
+            "address": "Rua Bueno de Paiva, Méier · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895506025/comprar/casa-5-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Venda de apartamento com 2 quartos, uma ótima oportunidade para comprar seu novo lar. • R$ 320.000 • R$ 180 Condo. + IPTU • 60 m² · 2 quartos · 1 vaga • Rua Engenheiro Edmundo Regi"
+            "description": "Ótimo preço • Compra de casa no Méier com 5 quartos, 1 suíte e varanda. • R$ 838.000 • R$ 755 Condo. + IPTU • 369 m² · 5 quartos · 2 vagas • Rua Bueno de Paiva, Méier · Rio de Jane"
           },
           {
-            "title": "Imóvel com 3 qtos, 137m² em CAMPO GRANDE",
-            "price": 650000,
-            "sizeSqm": 137,
-            "unitValueSqm": 4745,
-            "address": "Rua Honório, Cachambi · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895126759/comprar/apartamento-3-quartos-cachambi-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 3 qtos, 180m² em CAMPO GRANDE",
+            "price": 1970000,
+            "sizeSqm": 180,
+            "unitValueSqm": 10944,
+            "address": "Rua República do Peru, Copacabana · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893984483/comprar/apartamento-3-quartos-copacabana-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Apartamento no Cachambi com 3 quartos, 1 suíte. Excelente oportunidade para comprar com conforto e praticidades. • R$ 650.000 • R$ 1.966 Condo. + IPTU • 137 m² · 3 quartos · 2 vaga"
+            "description": "Compre já alugado • Comprar apartamento em Copacabana com 3 quartos, 1 suíte. • R$ 1.970.000 • R$ 1.825 Condo. + IPTU • 180 m² · 3 quartos · 1 vaga • Rua República do Peru, Copacab"
           },
           {
-            "title": "Imóvel com 3 qtos, 900m² em CAMPO GRANDE",
-            "price": 1830000,
-            "sizeSqm": 900,
-            "unitValueSqm": 2033,
-            "address": "Rua Comendador Siqueira, Campo Grande · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/893027351/comprar/casa-3-quartos-campo-grande-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 1 qtos, 42m² em CAMPO GRANDE",
+            "price": 675000,
+            "sizeSqm": 42,
+            "unitValueSqm": 16071,
+            "address": "Rua Cândido Mendes, Glória · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894979687/comprar/apartamento-1-quarto-gloria-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Ótimo preço • Comprar casa mobiliada em Campo Grande com 3 quartos, 1 suíte, aceita pets. • R$ 1.830.000 • R$ 358 Condo. + IPTU • 900 m² · 3 quartos · 5 vagas • Rua Comendador Siqu"
+            "description": "Compra apartamento mobiliado com varanda e 1 quarto. • R$ 675.000 • R$ 1.661 Condo. + IPTU • 42 m² · 1 quarto • Rua Cândido Mendes, Glória · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 2 qtos, 112m² em CAMPO GRANDE",
-            "price": 1590000,
-            "sizeSqm": 112,
-            "unitValueSqm": 14196,
-            "address": "Avenida Prefeito Dulcídio Cardoso, Barra da Tijuca · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895454040/comprar/apartamento-2-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 4 qtos, 300m² em CAMPO GRANDE",
+            "price": 700000,
+            "sizeSqm": 300,
+            "unitValueSqm": 2333,
+            "address": "Rua Angai, Vila Kosmos · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894248555/comprar/casa-4-quartos-vila-kosmos-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Apartamento à venda na Barra da Tijuca com 2 quartos e varanda. • R$ 1.590.000 • R$ 2.980 Condo. + IPTU • 112 m² · 2 quartos · 3 vagas • Avenida Prefeito Dulcídio Cardoso, Barra da"
+            "description": "Venda de casa em condomínio na Vila Kosmos com 4 quartos. A compra ideal para você! • R$ 700.000 • R$ 0 Condo. + IPTU • 300 m² · 4 quartos · 2 vagas • Rua Angai, Vila Kosmos · Rio "
           },
           {
-            "title": "Imóvel com 2 qtos, 135m² em CAMPO GRANDE",
-            "price": 339000,
-            "sizeSqm": 135,
-            "unitValueSqm": 2511,
-            "address": "Rua Renato Gabizo, Campo Grande · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895667339/comprar/casa-2-quartos-campo-grande-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 3 qtos, 184m² em CAMPO GRANDE",
+            "price": 695000,
+            "sizeSqm": 184,
+            "unitValueSqm": 3777,
+            "address": "Estrada do Galeão, Portuguesa · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894901482/comprar/casa-3-quartos-portuguesa-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Anúncio novo • Casa para comprar em Campo Grande, 2 quartos, quintal, aceita pets. • R$ 339.000 • R$ 0 Condo. + IPTU • 135 m² · 2 quartos · 1 vaga • Rua Renato Gabizo, Campo Grande"
+            "description": "Casa em condomínio para comprar, 3 quartos, varanda, mobiliada. • R$ 695.000 • R$ 231 Condo. + IPTU • 184 m² · 3 quartos · 2 vagas • Estrada do Galeão, Portuguesa · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 4 qtos, 200m² em CAMPO GRANDE",
-            "price": 2230000,
-            "sizeSqm": 200,
-            "unitValueSqm": 11150,
-            "address": "Avenida Érico Veríssimo, Barra da Tijuca · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/894640378/comprar/apartamento-4-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 2 qtos, 297m² em CAMPO GRANDE",
+            "price": 4500000,
+            "sizeSqm": 297,
+            "unitValueSqm": 15152,
+            "address": "Rua Morais E Vale, Lapa · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894717347/comprar/casa-2-quartos-lapa-rio-de-janeiro?from_route=%22search_results%22&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Apartamento mobiliado com 4 quartos na Barra da Tijuca, piscina no condomínio. Para comprar já! • R$ 2.230.000 • R$ 2.475 Condo. + IPTU • 200 m² · 4 quartos · 2 vagas • Avenida Éri"
+            "description": "Casa na Lapa, 2 quartos, varanda e mobiliada. Ideal para venda. Aproveite esta oportunidade única! • R$ 4.500.000 • R$ 389 Condo. + IPTU • 297 m² · 2 quartos • Rua Morais E Vale, L"
           },
           {
-            "title": "Imóvel com 7 qtos, 540m² em CAMPO GRANDE",
-            "price": 4000000,
-            "sizeSqm": 540,
-            "unitValueSqm": 7407,
-            "address": "Rua Marechal Píres Ferreira, Cosme Velho · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/894325183/comprar/casa-7-quartos-cosme-velho-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 2 qtos, 52m² em CAMPO GRANDE",
+            "price": 220000,
+            "sizeSqm": 52,
+            "unitValueSqm": 4231,
+            "address": "Rua Igarapé-açu, Jacarepaguá · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895147252/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Venda de casa com 7 quartos e varanda. • R$ 4.000.000 • R$ 750 Condo. + IPTU • 540 m² · 7 quartos · 1 vaga • Rua Marechal Píres Ferreira, Cosme Velho · Rio de Janeiro"
+            "description": "Compre já alugado • Comprar apartamento mobiliado com 2 quartos. • R$ 220.000 • R$ 490 Condo. + IPTU • 52 m² · 2 quartos · 1 vaga • Rua Igarapé-açu, Jacarepaguá · Rio de Janeiro"
           }
         ]
       },
       "close": {
         "range": "8875m² - 10847m²",
-        "avgPrice": 862100,
-        "avgSqm": 6338,
+        "avgPrice": 500583,
+        "avgSqm": 6839,
         "matches": [
           {
-            "title": "Imóvel com 1 qtos, 49m² em CAMPO GRANDE",
-            "price": 223600,
-            "sizeSqm": 49,
-            "unitValueSqm": 4563,
-            "address": "Estrada das Agulhas Negras, Campo Grande · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895531759/comprar/casa-1-quarto-campo-grande-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 1 qtos, 81m² em CAMPO GRANDE",
+            "price": 750000,
+            "sizeSqm": 81,
+            "unitValueSqm": 9259,
+            "address": "Rua Rodrigo de Brito, Botafogo · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895725533/comprar/apartamento-1-quarto-botafogo-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Anúncio novo • Comprar casa mobiliada em Campo Grande, Rio de Janeiro, com 1 quarto. • R$ 223.600 • R$ 0 Condo. + IPTU • 49 m² · 1 quarto · 1 vaga • Estrada das Agulhas Negras, Cam"
+            "description": "Anúncio novo • Comprar apartamento com 1 quarto. • R$ 750.000 • R$ 953 Condo. + IPTU • 81 m² · 1 quarto • Rua Rodrigo de Brito, Botafogo · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 3 qtos, 360m² em CAMPO GRANDE",
-            "price": 1200000,
-            "sizeSqm": 360,
-            "unitValueSqm": 3333,
-            "address": "Rua Francisca Júlia, Anil · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895713895/comprar/casa-3-quartos-anil-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 2 qtos, 75m² em CAMPO GRANDE",
+            "price": 270000,
+            "sizeSqm": 75,
+            "unitValueSqm": 3600,
+            "address": "Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895730434/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Anúncio novo • Casa para comprar com 3 quartos, 1 suíte e quintal. • R$ 1.200.000 • R$ 414 Condo. + IPTU • 360 m² · 3 quartos · 3 vagas • Rua Francisca Júlia, Anil · Rio de Janeiro"
+            "description": "Anúncio novo • Comprar apartamento em Jacarepaguá com 2 quartos. • R$ 270.000 • R$ 462 Condo. + IPTU • 75 m² · 2 quartos • Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro"
           },
           {
-            "title": "Imóvel com 4 qtos, 136m² em CAMPO GRANDE",
-            "price": 999000,
-            "sizeSqm": 136,
-            "unitValueSqm": 7346,
-            "address": "Rua Uruguai, Tijuca · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/893535245/comprar/apartamento-4-quartos-tijuca-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 3 qtos, 70m² em CAMPO GRANDE",
+            "price": 275000,
+            "sizeSqm": 70,
+            "unitValueSqm": 3929,
+            "address": "Rua Darke de Matos, Higienópolis · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892896011/comprar/apartamento-3-quartos-higienopolis-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Anúncio novo • Apartamento à venda com 4 dormitórios. Oportunidade de compra ideal para quem busca espaço e conforto. • R$ 999.000 • R$ 2.867 Condo. + IPTU • 136 m² · 4 quartos · 1"
+            "description": "Compre já alugado • Anúncio novo • Apartamento de 3 quartos à venda. Aproveite essa oportunidade única para comprar! • R$ 275.000 • R$ 250 Condo. + IPTU • 70 m² · 3 quartos · 1 vag"
           },
           {
-            "title": "Imóvel com 2 qtos, 84m² em CAMPO GRANDE",
-            "price": 980000,
-            "sizeSqm": 84,
-            "unitValueSqm": 11667,
-            "address": "Rua do Catete, Glória · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/895663693/comprar/casa-2-quartos-gloria-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 3 qtos, 96m² em CAMPO GRANDE",
+            "price": 1030000,
+            "sizeSqm": 96,
+            "unitValueSqm": 10729,
+            "address": "Rua Professor Gabizo, Maracanã · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894799122/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Venda de casa mobiliada, de 84 m² com 2 quartos, 2 banheiros e 1 vaga na garagem em Glória. • R$ 980.000 • R$ 0 Condo. + IPTU • 84 m² · 2 quartos · 1 vaga • Rua do Catete, Glória ·"
+            "description": "Anúncio novo • Venda de apartamento, de 96 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Maracanã. • R$ 1.030.000 • R$ 1.292 Condo. + IPTU • 96 m² · 3 quartos · 1 vaga • Rua"
           },
           {
-            "title": "Imóvel com 2 qtos, 50m² em CAMPO GRANDE",
-            "price": 280000,
-            "sizeSqm": 50,
-            "unitValueSqm": 5600,
-            "address": "Estrada dos Bandeirantes, Jacarepaguá · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/892894138/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 2 qtos, 65m² em CAMPO GRANDE",
+            "price": 445000,
+            "sizeSqm": 65,
+            "unitValueSqm": 6846,
+            "address": "Rua Santa Luíza, Maracanã · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894926702/comprar/casa-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Compre já alugado • Apartamento para comprar com 2 quartos, piscina e churrasqueira no condomínio. • R$ 280.000 • R$ 565 Condo. + IPTU • 50 m² · 2 quartos · 1 vaga • Estrada dos Ba"
+            "description": "Anúncio novo • Casa em condomínio à venda com 2 quartos, varanda e aceita animais. • R$ 445.000 • R$ 125 Condo. + IPTU • 65 m² · 2 quartos · 1 vaga • Rua Santa Luíza, Maracanã · Ri"
           },
           {
-            "title": "Imóvel com 4 qtos, 270m² em CAMPO GRANDE",
-            "price": 1490000,
-            "sizeSqm": 270,
-            "unitValueSqm": 5519,
-            "address": "Rua José Américo de Almeida, Recreio dos Bandeirantes · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
-            "link": "https://www.quintoandar.com.br/imovel/894013343/comprar/apartamento-4-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22680f2ebf-68dd-4c1d-bdbb-0e54be6afbb0%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "title": "Imóvel com 1 qtos, 35m² em CAMPO GRANDE",
+            "price": 233500,
+            "sizeSqm": 35,
+            "unitValueSqm": 6671,
+            "address": "Rua Sá Freire, Imperial de São Cristóvão · Rio de Janeiro, CAMPO GRANDE, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895392612/comprar/apartamento-1-quarto-imperial-de-sao-cristovao-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22c85c35ed-cf46-4c7a-868d-ffaa6c4c1635%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
-            "description": "Apartamento à venda com 4 quartos e closet espaçoso, ótimo para comprar. • R$ 1.490.000 • R$ 1.842 Condo. + IPTU • 270 m² · 4 quartos · 2 vagas • Rua José Américo de Almeida, Recre"
+            "description": "Compre já alugado • Anúncio novo • Apartamento para comprar com piscina, churrasqueira, varanda e 1 quarto. Animais permitidos. • R$ 233.500 • R$ 570 Condo. + IPTU • 35 m² · 1 quar"
           }
         ]
       },
@@ -6633,6 +6633,905 @@
             "link": "https://www.quintoandar.com.br/imovel/892875708/comprar/apartamento-3-quartos-vital-brasil-niteroi?from_route=%22search_results%22&search_id=%22866cafe7-10a0-4c0d-879f-2a0ede4b4a6e%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
             "portal": "QuintoAndar",
             "description": "Apartamento de 3 quartos à venda. Com 1 vaga na garagem, piscina e churrasqueira. • R$ 780.000 • R$ 1.347 Condo. + IPTU • 172 m² · 3 quartos · 1 vaga • Rua Maestro José Botelho, Vi"
+          }
+        ]
+      }
+    }
+  },
+  "portal_v4_rj_rio_de_janeiro_jacarepagua_comercial_50_2_1_estrada_coronel_pedro_correa": {
+    "timestamp": 1789946348994,
+    "isFallback": false,
+    "data": {
+      "fallback": false,
+      "totalFound": 23,
+      "streetMatchesCount": 0,
+      "below": {
+        "range": "35m² - 45m²",
+        "avgPrice": 370875,
+        "avgSqm": 10255,
+        "matches": [
+          {
+            "title": "Imóvel com 1 qtos, 35m² em JACAREPAGUA",
+            "price": 233500,
+            "sizeSqm": 35,
+            "unitValueSqm": 6671,
+            "address": "Rua Sá Freire, Imperial de São Cristóvão · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895392612/comprar/apartamento-1-quarto-imperial-de-sao-cristovao-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento para comprar com piscina, churrasqueira, varanda e 1 quarto. Animais permitidos. • R$ 233.500 • R$ 570 Condo. + IPTU • 35 m² · 1 quar"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 29m² em JACAREPAGUA",
+            "price": 450000,
+            "sizeSqm": 29,
+            "unitValueSqm": 15517,
+            "address": "Rua Hermenegildo de Barros, Santa Teresa · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894570911/comprar/kitnet-1-quarto-santa-teresa-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Venda de studio, de 29 m² com 1 quarto e 1 banheiro em Santa Teresa. • R$ 450.000 • R$ 510 Condo. + IPTU • 29 m² · 1 quarto • Rua Hermenegildo de Barros, Santa "
+          },
+          {
+            "title": "Imóvel com 1 qtos, 41m² em JACAREPAGUA",
+            "price": 200000,
+            "sizeSqm": 41,
+            "unitValueSqm": 4878,
+            "address": "Rua Doutor Pache de Faria, Méier · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895403604/comprar/apartamento-1-quarto-meier-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda em Méier de 41 m² com varanda. • R$ 200.000 • R$ 230 Condo. + IPTU • 41 m² · 1 quarto • Rua Doutor Pache de Faria, Méier · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 43m² em JACAREPAGUA",
+            "price": 600000,
+            "sizeSqm": 43,
+            "unitValueSqm": 13953,
+            "address": "Avenida Treze de Maio, Centro · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895617406/comprar/apartamento-2-quartos-centro-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento mobiliado com 2 quartos e closet. • R$ 600.000 • R$ 1.060 Condo. + IPTU • 43 m² · 2 quartos • Avenida Treze de Maio, Centro · Rio de Janeiro"
+          }
+        ]
+      },
+      "close": {
+        "range": "45m² - 55m²",
+        "avgPrice": 500583,
+        "avgSqm": 6839,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 75m² em JACAREPAGUA",
+            "price": 270000,
+            "sizeSqm": 75,
+            "unitValueSqm": 3600,
+            "address": "Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895730434/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento em Jacarepaguá com 2 quartos. • R$ 270.000 • R$ 462 Condo. + IPTU • 75 m² · 2 quartos • Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 81m² em JACAREPAGUA",
+            "price": 750000,
+            "sizeSqm": 81,
+            "unitValueSqm": 9259,
+            "address": "Rua Rodrigo de Brito, Botafogo · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895725533/comprar/apartamento-1-quarto-botafogo-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento com 1 quarto. • R$ 750.000 • R$ 953 Condo. + IPTU • 81 m² · 1 quarto • Rua Rodrigo de Brito, Botafogo · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 35m² em JACAREPAGUA",
+            "price": 233500,
+            "sizeSqm": 35,
+            "unitValueSqm": 6671,
+            "address": "Rua Sá Freire, Imperial de São Cristóvão · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895392612/comprar/apartamento-1-quarto-imperial-de-sao-cristovao-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento para comprar com piscina, churrasqueira, varanda e 1 quarto. Animais permitidos. • R$ 233.500 • R$ 570 Condo. + IPTU • 35 m² · 1 quar"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 70m² em JACAREPAGUA",
+            "price": 275000,
+            "sizeSqm": 70,
+            "unitValueSqm": 3929,
+            "address": "Rua Darke de Matos, Higienópolis · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892896011/comprar/apartamento-3-quartos-higienopolis-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento de 3 quartos à venda. Aproveite essa oportunidade única para comprar! • R$ 275.000 • R$ 250 Condo. + IPTU • 70 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 96m² em JACAREPAGUA",
+            "price": 1030000,
+            "sizeSqm": 96,
+            "unitValueSqm": 10729,
+            "address": "Rua Professor Gabizo, Maracanã · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894799122/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Venda de apartamento, de 96 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Maracanã. • R$ 1.030.000 • R$ 1.292 Condo. + IPTU • 96 m² · 3 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 65m² em JACAREPAGUA",
+            "price": 445000,
+            "sizeSqm": 65,
+            "unitValueSqm": 6846,
+            "address": "Rua Santa Luíza, Maracanã · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894926702/comprar/casa-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Casa em condomínio à venda com 2 quartos, varanda e aceita animais. • R$ 445.000 • R$ 125 Condo. + IPTU • 65 m² · 2 quartos · 1 vaga • Rua Santa Luíza, Maracanã · Ri"
+          }
+        ]
+      },
+      "above": {
+        "range": "55m² - 68m²",
+        "avgPrice": 883889,
+        "avgSqm": 6363,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 75m² em JACAREPAGUA",
+            "price": 270000,
+            "sizeSqm": 75,
+            "unitValueSqm": 3600,
+            "address": "Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895730434/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento em Jacarepaguá com 2 quartos. • R$ 270.000 • R$ 462 Condo. + IPTU • 75 m² · 2 quartos • Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 81m² em JACAREPAGUA",
+            "price": 750000,
+            "sizeSqm": 81,
+            "unitValueSqm": 9259,
+            "address": "Rua Rodrigo de Brito, Botafogo · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895725533/comprar/apartamento-1-quarto-botafogo-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento com 1 quarto. • R$ 750.000 • R$ 953 Condo. + IPTU • 81 m² · 1 quarto • Rua Rodrigo de Brito, Botafogo · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 70m² em JACAREPAGUA",
+            "price": 275000,
+            "sizeSqm": 70,
+            "unitValueSqm": 3929,
+            "address": "Rua Darke de Matos, Higienópolis · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892896011/comprar/apartamento-3-quartos-higienopolis-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento de 3 quartos à venda. Aproveite essa oportunidade única para comprar! • R$ 275.000 • R$ 250 Condo. + IPTU • 70 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 96m² em JACAREPAGUA",
+            "price": 1030000,
+            "sizeSqm": 96,
+            "unitValueSqm": 10729,
+            "address": "Rua Professor Gabizo, Maracanã · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894799122/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Venda de apartamento, de 96 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Maracanã. • R$ 1.030.000 • R$ 1.292 Condo. + IPTU • 96 m² · 3 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 65m² em JACAREPAGUA",
+            "price": 445000,
+            "sizeSqm": 65,
+            "unitValueSqm": 6846,
+            "address": "Rua Santa Luíza, Maracanã · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894926702/comprar/casa-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Casa em condomínio à venda com 2 quartos, varanda e aceita animais. • R$ 445.000 • R$ 125 Condo. + IPTU • 65 m² · 2 quartos · 1 vaga • Rua Santa Luíza, Maracanã · Ri"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 60m² em JACAREPAGUA",
+            "price": 400000,
+            "sizeSqm": 60,
+            "unitValueSqm": 6667,
+            "address": "Rua Borja Reis, Engenho de Dentro · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892934653/comprar/apartamento-2-quartos-engenho-de-dentro-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Apartamento para comprar no Engenho de Dentro com 2 quartos e varanda. • R$ 400.000 • R$ 0 Condo. + IPTU • 60 m² · 2 quartos • Rua Borja Reis, Engenho de Dentro"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 160m² em JACAREPAGUA",
+            "price": 1780000,
+            "sizeSqm": 160,
+            "unitValueSqm": 11125,
+            "address": "Rua Pinheiro Machado, Laranjeiras · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894644477/comprar/apartamento-3-quartos-laranjeiras-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra apartamento mobiliado com 4 quartos. • R$ 1.780.000 • R$ 2.400 Condo. + IPTU • 160 m² · 3 quartos · 1 vaga • Rua Pinheiro Machado, Laranjeiras · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 123m² em JACAREPAGUA",
+            "price": 430000,
+            "sizeSqm": 123,
+            "unitValueSqm": 3496,
+            "address": "Rua Martins Lage, Engenho Novo · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895151151/comprar/apartamento-2-quartos-engenho-novo-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre um apartamento no Engenho Novo com varanda, 2 quartos e piscina no condomínio. • R$ 430.000 • R$ 1.283 Condo. + IPTU • 123 m² · 2 quartos · 1 vaga • Rua Martins Lage, Engenh"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 160m² em JACAREPAGUA",
+            "price": 735000,
+            "sizeSqm": 160,
+            "unitValueSqm": 4594,
+            "address": "Rua Castro Alves, Méier · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894210543/comprar/apartamento-3-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 3 quartos disponível para compra. Excelente oportunidade de venda para quem deseja comprar. • R$ 735.000 • R$ 2.414 Condo. + IPTU • 160 m² · 3 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 60m² em JACAREPAGUA",
+            "price": 300000,
+            "sizeSqm": 60,
+            "unitValueSqm": 5000,
+            "address": "Rua Barão do Bom Retiro, Grajaú · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895604864/comprar/apartamento-1-quarto-grajau-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Compra apartamento mobiliado no Grajaú, 1 quarto. • R$ 300.000 • R$ 1.328 Condo. + IPTU • 60 m² · 1 quarto · 1 vaga • Rua Barão do Bom Retiro, Grajaú · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 5 qtos, 345m² em JACAREPAGUA",
+            "price": 3290000,
+            "sizeSqm": 345,
+            "unitValueSqm": 9536,
+            "address": "Avenida Lúcio Costa, Recreio dos Bandeirantes · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894639884/comprar/apartamento-5-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Apartamento à venda em Recreio dos Bandeirantes de 345 m². • R$ 3.290.000 • R$ 4.124 Condo. + IPTU • 345 m² · 5 quartos · 4 vagas • Avenida Lúcio Costa, Recreio dos B"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 350m² em JACAREPAGUA",
+            "price": 566000,
+            "sizeSqm": 350,
+            "unitValueSqm": 1617,
+            "address": "Rua Benjamin de Magalhães, Pilares · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895300322/comprar/casa-3-quartos-pilares-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda com 3 quartos. • R$ 566.000 • R$ 0 Condo. + IPTU • 350 m² · 3 quartos · 2 vagas • Rua Benjamin de Magalhães, Pilares · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 480m² em JACAREPAGUA",
+            "price": 1277000,
+            "sizeSqm": 480,
+            "unitValueSqm": 2660,
+            "address": "Rua José Paulino Pereira, Itanhangá · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895108627/comprar/casa-4-quartos-itanhanga-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Casa em condomínio no Itanhangá com 4 quartos, 3 suítes, varanda, closet e mobiliada. Ideal para compra. • R$ 1.277.000 • R$ 1.276 Condo. + IPTU • 480 m² · 4 quartos "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 74m² em JACAREPAGUA",
+            "price": 440000,
+            "sizeSqm": 74,
+            "unitValueSqm": 5946,
+            "address": "Rua Ouro Branco, Vila Valqueire · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895566527/comprar/apartamento-2-quartos-vila-valqueire-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento mobiliado com 2 quartos e piscina no condomínio. • R$ 440.000 • R$ 205 Condo. + IPTU • 74 m² · 2 quartos · 1 vaga • Rua Ouro Branco, Vila Valqueire · Rio de Jan"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 84m² em JACAREPAGUA",
+            "price": 1200000,
+            "sizeSqm": 84,
+            "unitValueSqm": 14286,
+            "address": "Avenida Prefeito Dulcídio Cardoso, Barra da Tijuca · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895367265/comprar/apartamento-3-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento na Barra da Tijuca: 3 quartos, varanda. • R$ 1.200.000 • R$ 1.839 Condo. + IPTU • 84 m² · 3 quartos · 2 vagas • Avenida Prefeito Dulcídio Cardoso, Barra da Tij"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 83m² em JACAREPAGUA",
+            "price": 632900,
+            "sizeSqm": 83,
+            "unitValueSqm": 7625,
+            "address": "Rua Castro Barbosa, Grajaú · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895465471/comprar/apartamento-3-quartos-grajau-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento com 3 quartos, varanda, piscina e academia no condomínio. Ideal para comprar. • R$ 632.900 • R$ 1.322 Condo. + IPTU • 83 m² · 3 quartos · 1 vaga • Rua Castro Barbosa, G"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 390m² em JACAREPAGUA",
+            "price": 860000,
+            "sizeSqm": 390,
+            "unitValueSqm": 2205,
+            "address": "Rua Pedro Luís, Tanque · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893965338/comprar/casa-3-quartos-tanque-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda no Tanque, com 3 quartos disponíveis. Excelente para quem quer comprar! • R$ 860.000 • R$ 224 Condo. + IPTU • 390 m² · 3 quartos · 4 vagas • Rua Pedro Luís, Tanque · R"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 130m² em JACAREPAGUA",
+            "price": 313000,
+            "sizeSqm": 130,
+            "unitValueSqm": 2408,
+            "address": "Rua Araújo Leitão, Engenho Novo · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895540567/comprar/apartamento-2-quartos-engenho-novo-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento para comprar no Engenho Novo com 2 quartos, piscina e academia no condomínio. • R$ 313.000 • R$ 1.460 Condo. + IPTU • 130 m² · 2 quartos · 1 vaga • Rua Araújo Leitão, E"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 192m² em JACAREPAGUA",
+            "price": 1800000,
+            "sizeSqm": 192,
+            "unitValueSqm": 9375,
+            "address": "Avenida Vice Presidente José Alencar, Barra Olímpica · Rio de Janeiro, JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894911121/comprar/casa-3-quartos-barra-olimpica-rio-de-janeiro?from_route=%22search_results%22&search_id=%225411aa6d-a6c8-4a60-b60c-8b188b8cac19%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar casa com 3 quartos, quintal e academia no condomínio. • R$ 1.800.000 • R$ 2.675 Condo. + IPTU • 192 m² · 3 quartos · 2 vagas • Avenida Vice Presidente José Alencar, Barra O"
+          }
+        ]
+      }
+    }
+  },
+  "portal_v4_rj_rio_de_janeiro_freguesia_jacarepagua_terreno_6028_2_1_av__geremario_dantas": {
+    "timestamp": 1789952174635,
+    "isFallback": false,
+    "data": {
+      "fallback": false,
+      "totalFound": 23,
+      "streetMatchesCount": 0,
+      "below": {
+        "range": "4220m² - 5425m²",
+        "avgPrice": 834191,
+        "avgSqm": 6884,
+        "matches": [
+          {
+            "title": "Imóvel com 1 qtos, 81m² em FREGUESIA JACAREPAGUA",
+            "price": 750000,
+            "sizeSqm": 81,
+            "unitValueSqm": 9259,
+            "address": "Rua Rodrigo de Brito, Botafogo · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895725533/comprar/apartamento-1-quarto-botafogo-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento com 1 quarto. • R$ 750.000 • R$ 953 Condo. + IPTU • 81 m² · 1 quarto • Rua Rodrigo de Brito, Botafogo · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 75m² em FREGUESIA JACAREPAGUA",
+            "price": 270000,
+            "sizeSqm": 75,
+            "unitValueSqm": 3600,
+            "address": "Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895730434/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento em Jacarepaguá com 2 quartos. • R$ 270.000 • R$ 462 Condo. + IPTU • 75 m² · 2 quartos • Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 70m² em FREGUESIA JACAREPAGUA",
+            "price": 275000,
+            "sizeSqm": 70,
+            "unitValueSqm": 3929,
+            "address": "Rua Darke de Matos, Higienópolis · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892896011/comprar/apartamento-3-quartos-higienopolis-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento de 3 quartos à venda. Aproveite essa oportunidade única para comprar! • R$ 275.000 • R$ 250 Condo. + IPTU • 70 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 96m² em FREGUESIA JACAREPAGUA",
+            "price": 1030000,
+            "sizeSqm": 96,
+            "unitValueSqm": 10729,
+            "address": "Rua Professor Gabizo, Maracanã · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894799122/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Venda de apartamento, de 96 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Maracanã. • R$ 1.030.000 • R$ 1.292 Condo. + IPTU • 96 m² · 3 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 65m² em FREGUESIA JACAREPAGUA",
+            "price": 445000,
+            "sizeSqm": 65,
+            "unitValueSqm": 6846,
+            "address": "Rua Santa Luíza, Maracanã · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894926702/comprar/casa-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Casa em condomínio à venda com 2 quartos, varanda e aceita animais. • R$ 445.000 • R$ 125 Condo. + IPTU • 65 m² · 2 quartos · 1 vaga • Rua Santa Luíza, Maracanã · Ri"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 35m² em FREGUESIA JACAREPAGUA",
+            "price": 233500,
+            "sizeSqm": 35,
+            "unitValueSqm": 6671,
+            "address": "Rua Sá Freire, Imperial de São Cristóvão · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895392612/comprar/apartamento-1-quarto-imperial-de-sao-cristovao-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento para comprar com piscina, churrasqueira, varanda e 1 quarto. Animais permitidos. • R$ 233.500 • R$ 570 Condo. + IPTU • 35 m² · 1 quar"
+          },
+          {
+            "title": "Imóvel com 5 qtos, 800m² em FREGUESIA JACAREPAGUA",
+            "price": 1497000,
+            "sizeSqm": 800,
+            "unitValueSqm": 1871,
+            "address": "Rua Lagoa Grande, Anil · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894391344/comprar/casa-5-quartos-anil-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa para compra no Anil com varanda e 5 quartos, 3 suítes. • R$ 1.497.000 • R$ 1.117 Condo. + IPTU • 800 m² · 5 quartos · 3 vagas • Rua Lagoa Grande, Anil · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 5 qtos, 345m² em FREGUESIA JACAREPAGUA",
+            "price": 3290000,
+            "sizeSqm": 345,
+            "unitValueSqm": 9536,
+            "address": "Avenida Lúcio Costa, Recreio dos Bandeirantes · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894639884/comprar/apartamento-5-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Apartamento à venda em Recreio dos Bandeirantes de 345 m². • R$ 3.290.000 • R$ 4.124 Condo. + IPTU • 345 m² · 5 quartos · 4 vagas • Avenida Lúcio Costa, Recreio dos B"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 480m² em FREGUESIA JACAREPAGUA",
+            "price": 1277000,
+            "sizeSqm": 480,
+            "unitValueSqm": 2660,
+            "address": "Rua José Paulino Pereira, Itanhangá · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895108627/comprar/casa-4-quartos-itanhanga-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Casa em condomínio no Itanhangá com 4 quartos, 3 suítes, varanda, closet e mobiliada. Ideal para compra. • R$ 1.277.000 • R$ 1.276 Condo. + IPTU • 480 m² · 4 quartos "
+          },
+          {
+            "title": "Imóvel com 3 qtos, 240m² em FREGUESIA JACAREPAGUA",
+            "price": 520000,
+            "sizeSqm": 240,
+            "unitValueSqm": 2167,
+            "address": "Rua Guaravera, Curicica · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894224691/comprar/casa-3-quartos-curicica-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa com três quartos à venda. Ideal para quem deseja comprar um imóvel espaçoso. • R$ 520.000 • R$ 0 Condo. + IPTU • 240 m² · 3 quartos • Rua Guaravera, Curicica · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 74m² em FREGUESIA JACAREPAGUA",
+            "price": 440000,
+            "sizeSqm": 74,
+            "unitValueSqm": 5946,
+            "address": "Rua Ouro Branco, Vila Valqueire · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895566527/comprar/apartamento-2-quartos-vila-valqueire-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento mobiliado com 2 quartos e piscina no condomínio. • R$ 440.000 • R$ 205 Condo. + IPTU • 74 m² · 2 quartos · 1 vaga • Rua Ouro Branco, Vila Valqueire · Rio de Jan"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 68m² em FREGUESIA JACAREPAGUA",
+            "price": 1285000,
+            "sizeSqm": 68,
+            "unitValueSqm": 18897,
+            "address": "Rua São Clemente, Botafogo · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894222738/comprar/apartamento-2-quartos-botafogo-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 2 quartos à venda. Com 1 vaga na garagem, piscina e churrasqueira. • R$ 1.285.000 • R$ 1.703 Condo. + IPTU • 68 m² · 2 quartos · 1 vaga • Rua São Clemente, Botafogo "
+          },
+          {
+            "title": "Imóvel com 3 qtos, 84m² em FREGUESIA JACAREPAGUA",
+            "price": 1200000,
+            "sizeSqm": 84,
+            "unitValueSqm": 14286,
+            "address": "Avenida Prefeito Dulcídio Cardoso, Barra da Tijuca · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895367265/comprar/apartamento-3-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento na Barra da Tijuca: 3 quartos, varanda. • R$ 1.200.000 • R$ 1.839 Condo. + IPTU • 84 m² · 3 quartos · 2 vagas • Avenida Prefeito Dulcídio Cardoso, Barra da Tij"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 109m² em FREGUESIA JACAREPAGUA",
+            "price": 734000,
+            "sizeSqm": 109,
+            "unitValueSqm": 6734,
+            "address": "Rua Professor Gabizo, Tijuca · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895702196/comprar/apartamento-3-quartos-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda em Tijuca de 109 m². • R$ 734.000 • R$ 1.890 Condo. + IPTU • 109 m² · 3 quartos · 2 vagas • Rua Professor Gabizo, Tijuca · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 26m² em FREGUESIA JACAREPAGUA",
+            "price": 370000,
+            "sizeSqm": 26,
+            "unitValueSqm": 14231,
+            "address": "Rua Riachuelo, Santa Teresa · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895732585/comprar/apartamento-1-quarto-santa-teresa-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Apartamento à venda em Santa Teresa de 26 m² com varanda e closet. • R$ 370.000 • R$ 425 Condo. + IPTU • 26 m² · 1 quarto • Rua Riachuelo, Santa Teresa · Rio de Jane"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 44m² em FREGUESIA JACAREPAGUA",
+            "price": 395000,
+            "sizeSqm": 44,
+            "unitValueSqm": 8977,
+            "address": "Estrada dos Bandeirantes, Barra Olímpica · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894665905/comprar/apartamento-2-quartos-barra-olimpica-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda em Barra Olímpica de 44 m². • R$ 395.000 • R$ 500 Condo. + IPTU • 44 m² · 2 quartos · 1 vaga • Estrada dos Bandeirantes, Barra Olímpica · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 75m² em FREGUESIA JACAREPAGUA",
+            "price": 202400,
+            "sizeSqm": 75,
+            "unitValueSqm": 2699,
+            "address": "Rua Mar de Espanha, Lins de Vasconcelos · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894942595/comprar/apartamento-2-quartos-lins-de-vasconcelos-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Lins de Vasconcelos com 2 quartos. • R$ 202.400 • R$ 355 Condo. + IPTU • 75 m² · 2 quartos · 2 vagas • Rua Mar de Espanha, Lins de Vasconcelos · Rio de Janei"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 110m² em FREGUESIA JACAREPAGUA",
+            "price": 590000,
+            "sizeSqm": 110,
+            "unitValueSqm": 5364,
+            "address": "Rua Jorge Rudge, Vila Isabel · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893598008/comprar/apartamento-2-quartos-vila-isabel-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Comprar apartamento mobiliado em Vila Isabel com 2 quartos. • R$ 590.000 • R$ 1.080 Condo. + IPTU • 110 m² · 2 quartos · 1 vaga • Rua Jorge Rudge, Vila Isabel ·"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 360m² em FREGUESIA JACAREPAGUA",
+            "price": 1899000,
+            "sizeSqm": 360,
+            "unitValueSqm": 5275,
+            "address": "Rua Orígenes Lessa, Recreio dos Bandeirantes · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895370661/comprar/casa-4-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de casa mobiliada, de 360 m² com 4 quartos, 5 banheiros e 3 vagas na garagem em Recreio dos Bandeirantes. • R$ 1.899.000 • R$ 3.518 Condo. + IPTU • 360 m² · 4 quartos · 3 vag"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 58m² em FREGUESIA JACAREPAGUA",
+            "price": 230000,
+            "sizeSqm": 58,
+            "unitValueSqm": 3966,
+            "address": "Rua Daniel Carneiro, Engenho de Dentro · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894811700/comprar/apartamento-2-quartos-engenho-de-dentro-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Venda de apartamento, de 58 m² com 2 quartos, 2 banheiros e 1 vaga na garagem em Engenho de Dentro. • R$ 230.000 • R$ 745 Condo. + IPTU • 58 m² · 2 quartos · 1 "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 49m² em FREGUESIA JACAREPAGUA",
+            "price": 463500,
+            "sizeSqm": 49,
+            "unitValueSqm": 9459,
+            "address": "Rua Equador, Santo Cristo · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895472828/comprar/apartamento-2-quartos-santo-cristo-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento com 2 quartos e academia no condomínio. • R$ 463.500 • R$ 917 Condo. + IPTU • 49 m² · 2 quartos • Rua Equador, Santo Cristo · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 230m² em FREGUESIA JACAREPAGUA",
+            "price": 390000,
+            "sizeSqm": 230,
+            "unitValueSqm": 1696,
+            "address": "Rua Macembu, Jacarepaguá · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895173645/comprar/casa-3-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa em Jacarepaguá com 3 quartos e varanda, perfeita para comprar. • R$ 390.000 • R$ 0 Condo. + IPTU • 230 m² · 3 quartos · 1 vaga • Rua Macembu, Jacarepaguá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 5 qtos, 395m² em FREGUESIA JACAREPAGUA",
+            "price": 1400000,
+            "sizeSqm": 395,
+            "unitValueSqm": 3544,
+            "address": "Avenida Gaspar de Lemos, Guaratiba · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895554994/comprar/casa-5-quartos-guaratiba-rio-de-janeiro?from_route=%22search_results%22&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda em Guaratiba de 395 m². • R$ 1.400.000 • R$ 250 Condo. + IPTU • 395 m² · 5 quartos · 2 vagas • Avenida Gaspar de Lemos, Guaratiba · Rio de Janeiro"
+          }
+        ]
+      },
+      "close": {
+        "range": "5425m² - 6631m²",
+        "avgPrice": 500583,
+        "avgSqm": 6839,
+        "matches": [
+          {
+            "title": "Imóvel com 1 qtos, 81m² em FREGUESIA JACAREPAGUA",
+            "price": 750000,
+            "sizeSqm": 81,
+            "unitValueSqm": 9259,
+            "address": "Rua Rodrigo de Brito, Botafogo · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895725533/comprar/apartamento-1-quarto-botafogo-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento com 1 quarto. • R$ 750.000 • R$ 953 Condo. + IPTU • 81 m² · 1 quarto • Rua Rodrigo de Brito, Botafogo · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 75m² em FREGUESIA JACAREPAGUA",
+            "price": 270000,
+            "sizeSqm": 75,
+            "unitValueSqm": 3600,
+            "address": "Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895730434/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento em Jacarepaguá com 2 quartos. • R$ 270.000 • R$ 462 Condo. + IPTU • 75 m² · 2 quartos • Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 70m² em FREGUESIA JACAREPAGUA",
+            "price": 275000,
+            "sizeSqm": 70,
+            "unitValueSqm": 3929,
+            "address": "Rua Darke de Matos, Higienópolis · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892896011/comprar/apartamento-3-quartos-higienopolis-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento de 3 quartos à venda. Aproveite essa oportunidade única para comprar! • R$ 275.000 • R$ 250 Condo. + IPTU • 70 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 96m² em FREGUESIA JACAREPAGUA",
+            "price": 1030000,
+            "sizeSqm": 96,
+            "unitValueSqm": 10729,
+            "address": "Rua Professor Gabizo, Maracanã · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894799122/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Venda de apartamento, de 96 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Maracanã. • R$ 1.030.000 • R$ 1.292 Condo. + IPTU • 96 m² · 3 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 65m² em FREGUESIA JACAREPAGUA",
+            "price": 445000,
+            "sizeSqm": 65,
+            "unitValueSqm": 6846,
+            "address": "Rua Santa Luíza, Maracanã · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894926702/comprar/casa-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Casa em condomínio à venda com 2 quartos, varanda e aceita animais. • R$ 445.000 • R$ 125 Condo. + IPTU • 65 m² · 2 quartos · 1 vaga • Rua Santa Luíza, Maracanã · Ri"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 35m² em FREGUESIA JACAREPAGUA",
+            "price": 233500,
+            "sizeSqm": 35,
+            "unitValueSqm": 6671,
+            "address": "Rua Sá Freire, Imperial de São Cristóvão · Rio de Janeiro, FREGUESIA JACAREPAGUA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895392612/comprar/apartamento-1-quarto-imperial-de-sao-cristovao-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22a12db36c-782a-4295-86a1-8861c1b3692b%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento para comprar com piscina, churrasqueira, varanda e 1 quarto. Animais permitidos. • R$ 233.500 • R$ 570 Condo. + IPTU • 35 m² · 1 quar"
+          }
+        ]
+      },
+      "above": {
+        "range": "6631m² - 8138m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      }
+    }
+  },
+  "portal_v4_rj_rio_de_janeiro_barra_da_tijuca_apartamento_185_2_1_av__afonso_de_taunay": {
+    "timestamp": 1789952174673,
+    "isFallback": false,
+    "data": {
+      "fallback": false,
+      "totalFound": 23,
+      "streetMatchesCount": 0,
+      "below": {
+        "range": "130m² - 167m²",
+        "avgPrice": 444687,
+        "avgSqm": 7186,
+        "matches": [
+          {
+            "title": "Imóvel com 1 qtos, 81m² em BARRA DA TIJUCA",
+            "price": 750000,
+            "sizeSqm": 81,
+            "unitValueSqm": 9259,
+            "address": "Rua Rodrigo de Brito, Botafogo · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895725533/comprar/apartamento-1-quarto-botafogo-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento com 1 quarto. • R$ 750.000 • R$ 953 Condo. + IPTU • 81 m² · 1 quarto • Rua Rodrigo de Brito, Botafogo · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 75m² em BARRA DA TIJUCA",
+            "price": 270000,
+            "sizeSqm": 75,
+            "unitValueSqm": 3600,
+            "address": "Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895730434/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Comprar apartamento em Jacarepaguá com 2 quartos. • R$ 270.000 • R$ 462 Condo. + IPTU • 75 m² · 2 quartos • Estrada de Jacarepaguá, Jacarepaguá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 70m² em BARRA DA TIJUCA",
+            "price": 275000,
+            "sizeSqm": 70,
+            "unitValueSqm": 3929,
+            "address": "Rua Darke de Matos, Higienópolis · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892896011/comprar/apartamento-3-quartos-higienopolis-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento de 3 quartos à venda. Aproveite essa oportunidade única para comprar! • R$ 275.000 • R$ 250 Condo. + IPTU • 70 m² · 3 quartos · 1 vag"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 96m² em BARRA DA TIJUCA",
+            "price": 1030000,
+            "sizeSqm": 96,
+            "unitValueSqm": 10729,
+            "address": "Rua Professor Gabizo, Maracanã · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894799122/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Venda de apartamento, de 96 m² com 3 quartos, 3 banheiros e 1 vaga na garagem em Maracanã. • R$ 1.030.000 • R$ 1.292 Condo. + IPTU • 96 m² · 3 quartos · 1 vaga • Rua"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 65m² em BARRA DA TIJUCA",
+            "price": 445000,
+            "sizeSqm": 65,
+            "unitValueSqm": 6846,
+            "address": "Rua Santa Luíza, Maracanã · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894926702/comprar/casa-2-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Casa em condomínio à venda com 2 quartos, varanda e aceita animais. • R$ 445.000 • R$ 125 Condo. + IPTU • 65 m² · 2 quartos · 1 vaga • Rua Santa Luíza, Maracanã · Ri"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 35m² em BARRA DA TIJUCA",
+            "price": 233500,
+            "sizeSqm": 35,
+            "unitValueSqm": 6671,
+            "address": "Rua Sá Freire, Imperial de São Cristóvão · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895392612/comprar/apartamento-1-quarto-imperial-de-sao-cristovao-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento para comprar com piscina, churrasqueira, varanda e 1 quarto. Animais permitidos. • R$ 233.500 • R$ 570 Condo. + IPTU • 35 m² · 1 quar"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 61m² em BARRA DA TIJUCA",
+            "price": 200000,
+            "sizeSqm": 61,
+            "unitValueSqm": 3279,
+            "address": "Rua Lysâneas Maciel, Freguesia (jacarepaguá) · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894513084/comprar/apartamento-1-quarto-freguesia-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Apartamento com 1 quarto e varanda na Freguesia (Jacarepaguá). Excelente opção para venda na região. • R$ 200.000 • R$ 306 Condo. + IPTU • 61 m² · 1 quarto · 1 "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 82m² em BARRA DA TIJUCA",
+            "price": 622800,
+            "sizeSqm": 82,
+            "unitValueSqm": 7595,
+            "address": "Rua Francisco de Paula, Barra Olímpica · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895694784/comprar/apartamento-2-quartos-barra-olimpica-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Oportunidades de compra: apartamento mobiliado, 2 quartos, varanda e piscina no condomínio. • R$ 622.800 • R$ 994 Condo. + IPTU • 82 m² · 2 quartos · 1 vaga • Rua Francisco de Paul"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 40m² em BARRA DA TIJUCA",
+            "price": 509000,
+            "sizeSqm": 40,
+            "unitValueSqm": 12725,
+            "address": "Rua Riachuelo, Centro · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893206007/comprar/apartamento-1-quarto-centro-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda no Centro com 1 suíte. Aceita animais de estimação. Pronto para comprar! • R$ 509.000 • R$ 450 Condo. + IPTU • 40 m² · 1 quarto • Rua Riachuelo, Centro · Rio de"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 44m² em BARRA DA TIJUCA",
+            "price": 200000,
+            "sizeSqm": 44,
+            "unitValueSqm": 4545,
+            "address": "Estrada dos Bandeirantes, Vargem Grande · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895692515/comprar/apartamento-2-quartos-vargem-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento com 2 quartos, 1 suíte. • R$ 200.000 • R$ 659 Condo. + IPTU • 44 m² · 2 quartos • Estrada dos Bandeirantes, Vargem Grande · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 78m² em BARRA DA TIJUCA",
+            "price": 750000,
+            "sizeSqm": 78,
+            "unitValueSqm": 9615,
+            "address": "Estrada da Gávea, São Conrado · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895544357/comprar/apartamento-2-quartos-sao-conrado-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Apartamento mobiliado à venda em São Conrado, com 2 quartos. • R$ 750.000 • R$ 1.936 Condo. + IPTU • 78 m² · 2 quartos · 1 vaga • Estrada da Gávea, São Conrado · Rio "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 59m² em BARRA DA TIJUCA",
+            "price": 290000,
+            "sizeSqm": 59,
+            "unitValueSqm": 4915,
+            "address": "Rua Noêmia Nunes, Olaria · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895327568/comprar/apartamento-2-quartos-olaria-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento em Olaria com 2 quartos. • R$ 290.000 • R$ 350 Condo. + IPTU • 59 m² · 2 quartos · 2 vagas • Rua Noêmia Nunes, Olaria · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 53m² em BARRA DA TIJUCA",
+            "price": 200000,
+            "sizeSqm": 53,
+            "unitValueSqm": 3774,
+            "address": "Rua Tangará, Bonsucesso · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895293802/comprar/apartamento-2-quartos-bonsucesso-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento em Bonsucesso com 2 quartos para comprar. • R$ 200.000 • R$ 160 Condo. + IPTU • 53 m² · 2 quartos • Rua Tangará, Bonsucesso · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 42m² em BARRA DA TIJUCA",
+            "price": 675000,
+            "sizeSqm": 42,
+            "unitValueSqm": 16071,
+            "address": "Rua Cândido Mendes, Glória · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894979687/comprar/apartamento-1-quarto-gloria-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra apartamento mobiliado com varanda e 1 quarto. • R$ 675.000 • R$ 1.661 Condo. + IPTU • 42 m² · 1 quarto • Rua Cândido Mendes, Glória · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 52m² em BARRA DA TIJUCA",
+            "price": 220000,
+            "sizeSqm": 52,
+            "unitValueSqm": 4231,
+            "address": "Rua Igarapé-açu, Jacarepaguá · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895147252/comprar/apartamento-2-quartos-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Comprar apartamento mobiliado com 2 quartos. • R$ 220.000 • R$ 490 Condo. + IPTU • 52 m² · 2 quartos · 1 vaga • Rua Igarapé-açu, Jacarepaguá · Rio de Janeiro"
+          }
+        ]
+      },
+      "close": {
+        "range": "167m² - 204m²",
+        "avgPrice": 1332500,
+        "avgSqm": 7361,
+        "matches": [
+          {
+            "title": "Imóvel com 3 qtos, 180m² em BARRA DA TIJUCA",
+            "price": 1970000,
+            "sizeSqm": 180,
+            "unitValueSqm": 10944,
+            "address": "Rua República do Peru, Copacabana · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893984483/comprar/apartamento-3-quartos-copacabana-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Comprar apartamento em Copacabana com 3 quartos, 1 suíte. • R$ 1.970.000 • R$ 1.825 Condo. + IPTU • 180 m² · 3 quartos · 1 vaga • Rua República do Peru, Copacab"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 184m² em BARRA DA TIJUCA",
+            "price": 695000,
+            "sizeSqm": 184,
+            "unitValueSqm": 3777,
+            "address": "Estrada do Galeão, Portuguesa · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894901482/comprar/casa-3-quartos-portuguesa-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa em condomínio para comprar, 3 quartos, varanda, mobiliada. • R$ 695.000 • R$ 231 Condo. + IPTU • 184 m² · 3 quartos · 2 vagas • Estrada do Galeão, Portuguesa · Rio de Janeiro"
+          }
+        ]
+      },
+      "above": {
+        "range": "204m² - 250m²",
+        "avgPrice": 2041333,
+        "avgSqm": 7276,
+        "matches": [
+          {
+            "title": "Imóvel com 4 qtos, 238m² em BARRA DA TIJUCA",
+            "price": 690000,
+            "sizeSqm": 238,
+            "unitValueSqm": 2899,
+            "address": "Estrada do Rio Grande, Taquara · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894731490/comprar/casa-4-quartos-taquara-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa mobiliada com 4 quartos para comprar. • R$ 690.000 • R$ 452 Condo. + IPTU • 238 m² · 4 quartos · 3 vagas • Estrada do Rio Grande, Taquara · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 271m² em BARRA DA TIJUCA",
+            "price": 4190000,
+            "sizeSqm": 271,
+            "unitValueSqm": 15461,
+            "address": "Rua Oliveira Fausto, Botafogo · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894948803/comprar/apartamento-4-quartos-botafogo-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda com 4 quartos, varanda gourmet e academia. Mobiliada e perfeita para você. • R$ 4.190.000 • R$ 1.980 Condo. + IPTU • 271 m² · 4 quartos · 4 vagas • Rua Oliveira Fausto"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 240m² em BARRA DA TIJUCA",
+            "price": 1330000,
+            "sizeSqm": 240,
+            "unitValueSqm": 5542,
+            "address": "Rua Albano de Carvalho, Recreio dos Bandeirantes · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895181103/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento no Recreio dos Bandeirantes com 3 quartos, 1 suíte e closet. • R$ 1.330.000 • R$ 2.616 Condo. + IPTU • 240 m² · 3 quartos · 3 vagas • Rua Albano de Carvalho, R"
+          },
+          {
+            "title": "Imóvel com 5 qtos, 369m² em BARRA DA TIJUCA",
+            "price": 838000,
+            "sizeSqm": 369,
+            "unitValueSqm": 2271,
+            "address": "Rua Bueno de Paiva, Méier · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895506025/comprar/casa-5-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Compra de casa no Méier com 5 quartos, 1 suíte e varanda. • R$ 838.000 • R$ 755 Condo. + IPTU • 369 m² · 5 quartos · 2 vagas • Rua Bueno de Paiva, Méier · Rio de Jane"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 300m² em BARRA DA TIJUCA",
+            "price": 700000,
+            "sizeSqm": 300,
+            "unitValueSqm": 2333,
+            "address": "Rua Angai, Vila Kosmos · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894248555/comprar/casa-4-quartos-vila-kosmos-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de casa em condomínio na Vila Kosmos com 4 quartos. A compra ideal para você! • R$ 700.000 • R$ 0 Condo. + IPTU • 300 m² · 4 quartos · 2 vagas • Rua Angai, Vila Kosmos · Rio "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 297m² em BARRA DA TIJUCA",
+            "price": 4500000,
+            "sizeSqm": 297,
+            "unitValueSqm": 15152,
+            "address": "Rua Morais E Vale, Lapa · Rio de Janeiro, BARRA DA TIJUCA, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894717347/comprar/casa-2-quartos-lapa-rio-de-janeiro?from_route=%22search_results%22&search_id=%22887497a6-53e1-461c-972f-18140f1b38a8%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa na Lapa, 2 quartos, varanda e mobiliada. Ideal para venda. Aproveite esta oportunidade única! • R$ 4.500.000 • R$ 389 Condo. + IPTU • 297 m² · 2 quartos • Rua Morais E Vale, L"
           }
         ]
       }

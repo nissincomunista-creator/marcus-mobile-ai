@@ -8624,5 +8624,221 @@
     "source": "nominatim",
     "matchedCity": "Juiz de Fora",
     "matchedStreet": "Rua Múcio Vieira"
+  },
+  "travessa padre damiao": {
+    "lat": -22.926827,
+    "lng": -43.2356524,
+    "displayName": "Travessa Padre Damião, Muda, Tijuca, Rio de Janeiro, Região Sudeste, 20520-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Travessa Padre Damião"
+  },
+  "travessa padre damiao, tijuca, rio de janeiro - rj": {
+    "lat": -22.926827,
+    "lng": -43.2356524,
+    "displayName": "Travessa Padre Damião, Muda, Tijuca, Rio de Janeiro, Região Sudeste, 20520-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Travessa Padre Damião"
+  },
+  "travessa padre damiao|rio de janeiro|rj": {
+    "lat": -22.926827,
+    "lng": -43.2356524,
+    "displayName": "Travessa Padre Damião, Muda, Tijuca, Rio de Janeiro, Região Sudeste, 20520-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Travessa Padre Damião"
+  },
+  "rua dias ferreira": {
+    "lat": -22.9842958,
+    "lng": -43.2274951,
+    "displayName": "Rua Dias Ferreira, Leblon, Rio de Janeiro, Região Sudeste, 22450-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Dias Ferreira"
+  },
+  "rua dias ferreira, leblon, rio de janeiro - rj": {
+    "lat": -22.9842958,
+    "lng": -43.2274951,
+    "displayName": "Rua Dias Ferreira, Leblon, Rio de Janeiro, Região Sudeste, 22450-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Dias Ferreira"
+  },
+  "rua dias ferreira|rio de janeiro|rj": {
+    "lat": -22.9842958,
+    "lng": -43.2274951,
+    "displayName": "Rua Dias Ferreira, Leblon, Rio de Janeiro, Região Sudeste, 22450-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Dias Ferreira"
+  },
+  "rua jose linhares": {
+    "lat": -22.982263,
+    "lng": -43.2218767,
+    "displayName": "Rua José Linhares, Leblon, Rio de Janeiro, Região Sudeste, 22430-190, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua José Linhares"
+  },
+  "rua jose linhares, leblon, rio de janeiro - rj": {
+    "lat": -22.982263,
+    "lng": -43.2218767,
+    "displayName": "Rua José Linhares, Leblon, Rio de Janeiro, Região Sudeste, 22430-190, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua José Linhares"
+  },
+  "rua jose linhares|rio de janeiro|rj": {
+    "lat": -22.982263,
+    "lng": -43.2218767,
+    "displayName": "Rua José Linhares, Leblon, Rio de Janeiro, Região Sudeste, 22430-190, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua José Linhares"
+  },
+  "rua mario ribeiro": {
+    "lat": -22.9774402,
+    "lng": -43.2209395,
+    "displayName": "Rua Mário Ribeiro, Leblon, Rio de Janeiro, Região Sudeste, 22430-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mário Ribeiro"
+  },
+  "rua mario ribeiro, leblon, rio de janeiro - rj": {
+    "lat": -22.9774402,
+    "lng": -43.2209395,
+    "displayName": "Rua Mário Ribeiro, Leblon, Rio de Janeiro, Região Sudeste, 22430-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mário Ribeiro"
+  },
+  "rua mario ribeiro|rio de janeiro|rj": {
+    "lat": -22.9774402,
+    "lng": -43.2209395,
+    "displayName": "Rua Mário Ribeiro, Leblon, Rio de Janeiro, Região Sudeste, 22430-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mário Ribeiro"
+  },
+  "estrada coronel pedro correa": {
+    "lat": -22.9633428,
+    "lng": -43.3904239,
+    "displayName": "Estrada Coronel Pedro Corrêa, Barra Olímpica, Rio de Janeiro, Região Sudeste, 22775-033, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Coronel Pedro Corrêa"
+  },
+  "estrada coronel pedro correa, jacarepagua, rio de janeiro - rj": {
+    "lat": -22.9633428,
+    "lng": -43.3904239,
+    "displayName": "Estrada Coronel Pedro Corrêa, Barra Olímpica, Rio de Janeiro, Região Sudeste, 22775-033, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Coronel Pedro Corrêa"
+  },
+  "estrada coronel pedro correa|rio de janeiro|rj": {
+    "lat": -22.9633428,
+    "lng": -43.3904239,
+    "displayName": "Estrada Coronel Pedro Corrêa, Barra Olímpica, Rio de Janeiro, Região Sudeste, 22775-033, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Coronel Pedro Corrêa"
+  },
+  "estrada do rio grande": {
+    "lat": -22.9190689,
+    "lng": -43.3939311,
+    "displayName": "Estrada do Rio Grande, Boiúna, Taquara, Rio de Janeiro, Região Sudeste, 22723-426, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada do Rio Grande"
+  },
+  "estrada do rio grande, jacarepagua, rio de janeiro - rj": {
+    "lat": -22.9190689,
+    "lng": -43.3939311,
+    "displayName": "Estrada do Rio Grande, Boiúna, Taquara, Rio de Janeiro, Região Sudeste, 22723-426, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada do Rio Grande"
+  },
+  "estrada do rio grande|rio de janeiro|rj": {
+    "lat": -22.9190689,
+    "lng": -43.3939311,
+    "displayName": "Estrada do Rio Grande, Boiúna, Taquara, Rio de Janeiro, Região Sudeste, 22723-426, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada do Rio Grande"
+  },
+  "av. afonso de taunay": {
+    "lat": -23.0104562,
+    "lng": -43.3126901,
+    "displayName": "Avenida Afonso de Taunay, Jardim Oceânico, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22640-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Afonso de Taunay"
+  },
+  "avenida afonso de taunay, barra da tijuca, rio de janeiro - rj": {
+    "lat": -23.0104562,
+    "lng": -43.3126901,
+    "displayName": "Avenida Afonso de Taunay, Jardim Oceânico, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22640-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Afonso de Taunay"
+  },
+  "av. afonso de taunay|rio de janeiro|rj": {
+    "lat": -23.0104562,
+    "lng": -43.3126901,
+    "displayName": "Avenida Afonso de Taunay, Jardim Oceânico, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22640-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Afonso de Taunay"
+  },
+  "avenida comandante julio de moura": {
+    "lat": -23.013662,
+    "lng": -43.3046221,
+    "displayName": "Avenida Comandante Júlio de Moura, Jardim Oceânico, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22621-200, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Comandante Júlio de Moura"
+  },
+  "avenida comandante julio de moura, barra da tijuca, rio de janeiro - rj": {
+    "lat": -23.013662,
+    "lng": -43.3046221,
+    "displayName": "Avenida Comandante Júlio de Moura, Jardim Oceânico, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22621-200, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Comandante Júlio de Moura"
+  },
+  "avenida comandante julio de moura|rio de janeiro|rj": {
+    "lat": -23.013662,
+    "lng": -43.3046221,
+    "displayName": "Avenida Comandante Júlio de Moura, Jardim Oceânico, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22621-200, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Comandante Júlio de Moura"
   }
 }

@@ -1,5 +1,5 @@
 import { runListedPortalSync } from './listedPortalSync.ts';
-import { allowedSyncLocation } from './src/utils/auctionSyncScope.ts';
+import { allowedSyncLocation, SYNC_TARGETS } from './src/utils/auctionSyncScope.ts';
 import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning } from './propertyLocationService.ts';
 import { auctionCosts, calculateFlip } from './src/utils/flipCalculation.ts';
 import express from 'express';
@@ -1365,6 +1365,13 @@ function recalculateAuctionWithIndex(
   // 2. Rua Noronha Torrezão (Niterói):
   //    Nº >= 340 pertence oficialmente ao bairro CUBANGO (Caixa lista Santa Rosa)
   const sourceLabel = (auc.origin === 'caixa' || auc.origin === 'caixa_radar') ? 'Caixa' : 'Edital';
+  const formatDivergentNotice = (realNeigh: string, origNeigh?: string): string => {
+    const cleanOrig = origNeigh?.trim();
+    if (cleanOrig && cleanOrig.toLowerCase() !== realNeigh.toLowerCase()) {
+      return `Bairro Real: ${realNeigh} (${sourceLabel} listou ${cleanOrig})`;
+    }
+    return `Bairro Real: ${realNeigh}`;
+  };
 
   if (rawStreet) {
     const normSt = normalizeString(rawStreet);
@@ -1375,7 +1382,7 @@ function recalculateAuctionWithIndex(
         if (cleanNeighborhood(auc.neighborhood) !== 'inhauma') {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = 'Inhaúma';
-          auc.divergentNeighborhoodNotice = `Bairro Real: Inhaúma (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = formatDivergentNotice('Inhaúma', auc.originalListedNeighborhood);
           auc.neighborhood = 'Inhaúma';
           neigh = 'inhauma';
         }
@@ -1383,7 +1390,7 @@ function recalculateAuctionWithIndex(
         if (cleanNeighborhood(auc.neighborhood) !== 'engenhodarainha') {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = 'Engenho da Rainha';
-          auc.divergentNeighborhoodNotice = `Bairro Real: Engenho da Rainha (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = formatDivergentNotice('Engenho da Rainha', auc.originalListedNeighborhood);
           auc.neighborhood = 'Engenho da Rainha';
           neigh = 'engenhodarainha';
         }
@@ -1393,7 +1400,7 @@ function recalculateAuctionWithIndex(
         if (cleanNeighborhood(auc.neighborhood) !== 'cubango') {
           auc.originalListedNeighborhood = auc.neighborhood;
           auc.officialNeighborhood = 'Cubango';
-          auc.divergentNeighborhoodNotice = `Bairro Real: Cubango (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+          auc.divergentNeighborhoodNotice = formatDivergentNotice('Cubango', auc.originalListedNeighborhood);
           auc.neighborhood = 'Cubango';
           neigh = 'cubango';
         }
@@ -1426,7 +1433,7 @@ function recalculateAuctionWithIndex(
       if (correctedClean && correctedClean !== neigh) {
         auc.originalListedNeighborhood = auc.neighborhood;
         auc.officialNeighborhood = closest.neighborhood;
-        auc.divergentNeighborhoodNotice = `Bairro Real: ${closest.neighborhood} (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+        auc.divergentNeighborhoodNotice = formatDivergentNotice(closest.neighborhood, auc.originalListedNeighborhood);
         auc.neighborhood = closest.neighborhood;
         neigh = correctedClean;
       }
@@ -1461,7 +1468,7 @@ function recalculateAuctionWithIndex(
         // Correct the neighborhood to official ITBI municipal registry
         auc.originalListedNeighborhood = auc.neighborhood;
         auc.officialNeighborhood = csEntry.neighborhood;
-        auc.divergentNeighborhoodNotice = `Bairro Real: ${csEntry.neighborhood} (${sourceLabel} listou ${auc.originalListedNeighborhood})`;
+        auc.divergentNeighborhoodNotice = formatDivergentNotice(csEntry.neighborhood, auc.originalListedNeighborhood);
         auc.neighborhood = csEntry.neighborhood;
         neigh = correctedCleanNeigh;
 
@@ -2024,27 +2031,36 @@ function readListedSyncStatus() {
     return report;
   } catch { return null; }
 }
-function startListedSync(reason: string, ids?: string[]) {
-  if (listedSyncRunning) return false;
-  fs.mkdirSync('sync-audits/backups', { recursive: true });
-  const backup = 'sync-audits/backups/before-listed-sync-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
-  fs.writeFileSync(backup, JSON.stringify(store));
-  listedSyncRunning = runListedPortalSync(reason, async (drafts) => {
+function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0], auditPath: string) {
+  const previousAuctions=store.auctions;
+  store.auctions=structuredClone(previousAuctions);
+  try {
     let imported = 0, updated = 0, pending = 0;
     for (const origin of ['extrajudicial', 'judicial'] as const) {
-      const rows = drafts.filter(row => row.origin === origin && allowedSyncLocation(row.city, row.state));
+     for (const target of SYNC_TARGETS) {
+      const rows = drafts.filter(row => row.origin === origin && row.state === target.state && row.city.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase() === target.city.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase());
       if (!rows.length) continue;
-      const result = reconcileAuctionDrafts(rows, origin, '', '', store.auctions, auc => recalculateAuction(auc, store.itbiTransactions), false);
+      const result = reconcileAuctionDrafts(rows, origin, target.state, target.city, store.auctions, auc => recalculateAuction(auc, store.itbiTransactions), false);
       result.newAuctions.forEach(auction => { auction.userId = 'system'; auction.lastSyncedAt = new Date().toISOString(); });
       store.auctions.unshift(...result.newAuctions);
+      if (result.pendingReview.length) fs.appendFileSync(auditPath, result.pendingReview.map(row => JSON.stringify(row)).join('\n')+'\n');
       imported += result.newAuctions.length; updated += result.updated; pending += result.pending;
+    }
     }
     // A failed write must fail the batch instead of reporting imports that were not saved.
     const temporary = STORE_PATH + '.sync-tmp';
     fs.writeFileSync(temporary, JSON.stringify(store), 'utf8');
     fs.renameSync(temporary, STORE_PATH);
     return { imported, updated, pending };
-  }, {ids}).catch(error => console.error('[Listed Sync] Falha:', error)).finally(() => { listedSyncRunning = null; });
+
+  } catch(error) { store.auctions=previousAuctions; throw error; }
+}
+function startListedSync(reason: string, ids?: string[]) {
+  if (listedSyncRunning) return false;
+  fs.mkdirSync('sync-audits/backups', { recursive: true });
+  const backup = 'sync-audits/backups/before-listed-sync-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+  fs.writeFileSync(backup, JSON.stringify(store));
+  listedSyncRunning = runListedPortalSync(reason, async (drafts,source) => applyListedDrafts(drafts, 'sync-audits/pending-'+source.id+'.jsonl')  , {ids}).catch(error => console.error('[Listed Sync] Falha:', error)).finally(() => { listedSyncRunning = null; });
   return true;
 }
 app.get('/api/sync/status', authMiddleware, (_req, res) => res.json(readListedSyncStatus()));
@@ -4483,26 +4499,54 @@ app.post('/api/parse-pdf', async (req, res) => {
 });
 
 app.post('/api/auctions/fetch-documentos', async (req, res) => {
-  const auction = store.auctions.find(item => item.id === req.body.id);
-  if (!auction?.auctionLink) return res.status(404).json({ error: 'Imóvel não encontrado.' });
-  const host = new URL(auction.auctionLink).hostname.replace(/^www\./, '');
-  const portal = AUCTIONEER_PORTALS.find(item => item.domain === host);
-  if (!portal) return res.status(400).json({ error: 'Portal não configurado.' });
+  const auction = store.auctions.find(item => item.id === req.body.id) || store.auctions.find(item => item.auctionLink === req.body.auctionLink);
+  const targetLink = req.body.auctionLink || auction?.auctionLink;
+  if (!targetLink) return res.status(404).json({ error: 'Imóvel ou link de leilão não informado.' });
+  let host = '';
+  try {
+    host = new URL(targetLink).hostname.replace(/^www\./, '');
+  } catch {
+    return res.status(400).json({ error: 'Link de leilão inválido.' });
+  }
+  const portal = AUCTIONEER_PORTALS.find(item => item.domain === host) || {
+    id: host.replace(/\./g, '_'),
+    name: host,
+    domain: host,
+    baseUrl: targetLink,
+    genericScrape: true,
+    enabled: true
+  };
   let browser: any;
   try {
     browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const detail = await enrichLotDetails(browser, {
-      ...auction, portalId: portal.id, auctioneerName: portal.name,
-      city: auction.city || '', auctionLink: auction.auctionLink,
-      origin: auction.origin === 'judicial' ? 'judicial' : 'extrajudicial'
+      ...(auction || {}),
+      portalId: portal.id,
+      auctioneerName: portal.name,
+      city: auction?.city || '',
+      state: auction?.state || '',
+      auctionLink: targetLink,
+      origin: (auction?.origin === 'judicial' ? 'judicial' : 'extrajudicial') as any
     });
-    Object.assign(auction, {
-      address: detail.address, sizeSqm: detail.sizeSqm, description: detail.description,
-      matriculaText: detail.matriculaText, matriculaUrl: detail.matriculaUrl
+    if (auction) {
+      Object.assign(auction, {
+        address: detail.address || auction.address,
+        sizeSqm: detail.sizeSqm || auction.sizeSqm,
+        description: detail.description || auction.description,
+        matriculaText: detail.matriculaText || auction.matriculaText,
+        matriculaUrl: detail.matriculaUrl || auction.matriculaUrl
+      });
+      Object.assign(auction, recalculateAuction(auction, store.itbiTransactions));
+      saveStore(store);
+    }
+    return res.json({
+      success: true,
+      matriculaText: detail.matriculaText || '',
+      matriculaUrl: detail.matriculaUrl || '',
+      editalText: detail.description || '',
+      address: detail.address || auction?.address || '',
+      sizeSqm: detail.sizeSqm || auction?.sizeSqm || 0
     });
-    Object.assign(auction, recalculateAuction(auction, store.itbiTransactions));
-    saveStore(store);
-    return res.json({ matriculaText: detail.matriculaText || '', editalText: detail.description || '', address: detail.address, sizeSqm: detail.sizeSqm });
   } catch (error: any) {
     return res.status(502).json({ error: error.message });
   } finally {

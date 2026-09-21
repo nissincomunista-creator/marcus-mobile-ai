@@ -4,5 +4,5 @@ export const SYNC_TARGETS = [
  {city:'Juiz de Fora',state:'MG',ibge:'3136702',slug:'juiz-de-fora'},
 ];
 export const SYNC_SOURCE_IDS = 'leilaoimovel joaoemilio biasi silas portella rioleiloes alexandro paulobotelho jv depaula rymer megaleiloes ayupp portalzuk saraiva sold schulmann comprei pestana onildo gustavo mgl leiloei bb emgea santander vitrinebradesco ricart pamela facanha frazao'.split(' ');
-export const normalizeAuctionText = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+export const normalizeAuctionText = (value: string) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 export const allowedSyncLocation = (city: string, state: string) => SYNC_TARGETS.some(target => target.state === state && normalizeAuctionText(city) === normalizeAuctionText(target.city));
