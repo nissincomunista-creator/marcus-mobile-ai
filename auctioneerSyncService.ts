@@ -299,6 +299,8 @@ export interface ScrapedAuctionDraft {
   auctionDate: string;
   firstAuctionDate?: string;
   secondAuctionDate?: string;
+  firstAuctionPrice?: number;
+  secondAuctionPrice?: number;
   auctionLink: string;
   saleMode?: string;
   imageUrl?: string;
@@ -483,24 +485,117 @@ function extractAuctionDate(text: string): string {
   return extractAuctionDates(text).first || '';
 }
 
+function normalizeDateStr(dStr: string): string | undefined {
+  const m = dStr.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+  if (!m) return undefined;
+  const y = m[3].length === 2 ? `20${m[3]}` : m[3];
+  const date = `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  const parsed = new Date(date);
+  return (!isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date) ? date : undefined;
+}
+
+export interface AuctionPriceAnalysis {
+  firstAuctionPrice?: number;
+  firstAuctionDate?: string;
+  secondAuctionPrice?: number;
+  secondAuctionDate?: string;
+  activePrice: number;
+  activeDate?: string;
+  appraisal?: number;
+  priceVerified: boolean;
+}
+
+export function extractAuctionRoundsAndPrices(text: string, todayParam?: string): AuctionPriceAnalysis {
+  if (!text) return { activePrice: 0, priceVerified: false };
+  const today = todayParam || new Date().toISOString().slice(0, 10);
+
+  // 1. Look for 1º leilão / praça price and date
+  let firstAuctionPrice: number | undefined;
+  let firstAuctionDate: string | undefined;
+
+  const m1Date = text.match(/(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,100}?(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+  if (m1Date) firstAuctionDate = normalizeDateStr(m1Date[1]);
+
+  const m1Price = text.match(/(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,120}?R\$\s*([\d.]+(?:,\d{2})?)/i)
+    || text.match(/R\$\s*([\d.]+(?:,\d{2})?)[\s\S]{0,80}?(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)/i);
+  if (m1Price) {
+    const p1 = parseBrazilianMoney(m1Price[1]);
+    if (p1 > 1000) firstAuctionPrice = p1;
+  }
+
+  // 2. Look for 2º leilão / praça price and date
+  let secondAuctionPrice: number | undefined;
+  let secondAuctionDate: string | undefined;
+
+  const m2Date = text.match(/(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,100}?(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+  if (m2Date) secondAuctionDate = normalizeDateStr(m2Date[1]);
+
+  const m2Price = text.match(/(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,120}?R\$\s*([\d.]+(?:,\d{2})?)/i)
+    || text.match(/ser[aá]\s+realizado\s+o\s+2[ºªo°]\s+leil[aã]o[\s\S]{0,120}?pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/i)
+    || text.match(/R\$\s*([\d.]+(?:,\d{2})?)[\s\S]{0,80}?(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)/i);
+  if (m2Price) {
+    const p2 = parseBrazilianMoney(m2Price[1]);
+    if (p2 > 1000) secondAuctionPrice = p2;
+  }
+
+  // Look for general auction dates if not yet found
+  const generalDates = extractAuctionDates(text);
+  if (!firstAuctionDate && generalDates.first) firstAuctionDate = generalDates.first;
+  if (!secondAuctionDate && generalDates.second) secondAuctionDate = generalDates.second;
+
+  // 3. Look for explicit generic lance inicial / lance mínimo / valor mínimo
+  const mGeneric = text.match(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*m[ií]nimo(?:\s*para\s*proposta)?|valor\s*inicial|maior\s*lance\s*atual|lance\s*atual)\s*:?\s*(?:<[^>]+>)*\s*R\$\s*([\d.]+(?:,\d{2})?)/i)
+    || text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:<[^>]+>)*\s*(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*m[ií]nimo)/i)
+    || text.match(/(?:Em\s+leil[aã]o\s+pelo\s+valor\s+de|venda\s+direta)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  let genericPrice = 0;
+  if (mGeneric) {
+    const pGen = parseBrazilianMoney(mGeneric[1]);
+    if (pGen > 1000) genericPrice = pGen;
+  }
+
+  // 4. Determine Active Price
+  let activePrice = 0;
+  let activeDate = '';
+
+  if (firstAuctionPrice && firstAuctionPrice > 0) {
+    if (firstAuctionDate && firstAuctionDate >= today) {
+      // 1st auction is in the future or today: it is the ACTIVE auction!
+      activePrice = firstAuctionPrice;
+      activeDate = firstAuctionDate;
+    } else if (firstAuctionDate && firstAuctionDate < today && secondAuctionPrice && secondAuctionPrice > 0) {
+      // 1st auction already happened: now 2nd auction is active!
+      activePrice = secondAuctionPrice;
+      activeDate = secondAuctionDate || firstAuctionDate;
+    } else {
+      activePrice = firstAuctionPrice;
+      activeDate = firstAuctionDate || secondAuctionDate || '';
+    }
+  } else if (secondAuctionPrice && secondAuctionPrice > 0) {
+    activePrice = secondAuctionPrice;
+    activeDate = secondAuctionDate || '';
+  } else if (genericPrice > 0) {
+    activePrice = genericPrice;
+    activeDate = firstAuctionDate || '';
+  }
+
+  // 5. Appraisal
+  const appraisal = extractAppraisal(text);
+
+  return {
+    firstAuctionPrice,
+    firstAuctionDate,
+    secondAuctionPrice,
+    secondAuctionDate,
+    activePrice,
+    activeDate,
+    appraisal,
+    priceVerified: activePrice > 0
+  };
+}
+
 export function extractMinimumBid(text: string): number {
   if (!text) return 0;
-  const amounts: number[] = [];
-  const patterns = [
-    /(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi,
-    /(?:Em\s+leil[aã]o\s+pelo\s+valor\s+de|valor\s+m[ií]nimo\s+para\s+proposta|venda\s+direta)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi,
-    /R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+(?:para\s+proposta|m[ií]nimo\s+para\s+proposta)/gi,
-  ];
-  for (const pattern of patterns) for (const match of text.matchAll(pattern)) amounts.push(parseBrazilianMoney(match[1]));
-  if (amounts.length) return new Set(amounts).size === 1 ? amounts[0] : 0;
-  // A round amount is usable only in an isolated block, without appraisal or
-  // increment labels between the heading and the price.
-  const headings = [...text.matchAll(/(?:[12][ºªo°]|primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)/gi)];
-  if (headings.length !== 1) return 0;
-  const after = text.slice(headings[0].index! + headings[0][0].length);
-  const match = after.match(/^([^R$]{0,180})R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (!match || /avalia|increment|d[ií]vida|condom|iptu/i.test(match[1])) return 0;
-  return parseBrazilianMoney(match[2]);
+  return extractAuctionRoundsAndPrices(text).activePrice;
 }
 
 export function extractAppraisal(text: string): number | undefined {
@@ -508,23 +603,38 @@ export function extractAppraisal(text: string): number | undefined {
 
   // 1. Portella / standard R$ ... Avaliação
   const m1 = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)(?:valor\s+(?:de\s+)?)?avalia[cç][aã]o/i);
-  if (m1) return parseBrazilianMoney(m1[1]);
+  if (m1) {
+    const val = parseBrazilianMoney(m1[1]);
+    if (val >= 10000 && val <= 150000000) return val;
+  }
 
-  // 2. Valor avaliado
-  const mValAv = text.match(/valor\s+avaliado\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
-  if (mValAv) return parseBrazilianMoney(mValAv[1]);
+  // 2. Standard valor de avaliação with explicit R$
+  const m4 = text.match(/(?:valor\s+(?:de\s+)?|laudo\s+de\s+)avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (m4) {
+    const val = parseBrazilianMoney(m4[1]);
+    if (val >= 10000 && val <= 150000000) return val;
+  }
 
-  // 3. Avaliação \n 369.800,00 or Avaliação: R$ 369.800,00
-  const m2 = text.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
-  if (m2) return parseBrazilianMoney(m2[1]);
+  // 3. Valor avaliado with explicit R$
+  const mValAv = text.match(/valor\s+avaliado\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mValAv) {
+    const val = parseBrazilianMoney(mValAv[1]);
+    if (val >= 10000 && val <= 150000000) return val;
+  }
 
-  // 4. Laudo de avaliação
-  const m3 = text.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,200}?(?:valor\s+(?:de\s+)?(?:R\$\s*)?|atribuo[^\d]{0,80}?valor\s+de\s*(?:R\$\s*)?)([\d.]+(?:,\d{2})?)/i);
-  if (m3) return parseBrazilianMoney(m3[1]);
+  // 4. Avaliação: R$ ...
+  const m2 = text.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (m2) {
+    const val = parseBrazilianMoney(m2[1]);
+    if (val >= 10000 && val <= 150000000) return val;
+  }
 
-  // 5. Standard valor de avaliação
-  const m4 = text.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (m4) return parseBrazilianMoney(m4[1]);
+  // 5. Laudo com atribuo valor
+  const m3 = text.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,100}?(?:valor\s+(?:de\s+)?R\$\s*|atribuo[^\d]{0,80}?valor\s+de\s*R\$\s*)([\d.]+(?:,\d{2})?)/i);
+  if (m3) {
+    const val = parseBrazilianMoney(m3[1]);
+    if (val >= 10000 && val <= 150000000) return val;
+  }
 
   return undefined;
 }
@@ -769,7 +879,7 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const headlineSize = headlineArea ? parseOfficialArea(headlineArea[1]) : 0;
     const landArea = parseType(detailData.title || draft.title) === 'Terreno' ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
     const landSize = landArea ? parseOfficialArea(landArea[1]) : 0;
-    const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i)
+    const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)(?:\s*\([^)]*\))?\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i)
       || combinedText.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i)
       || combinedText.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i)
       || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
@@ -786,13 +896,24 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const textAddress = extractAddress(combinedText, '') || extractAddress(matriculaText, '');
     const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : '') || structuredAddress;
     const today = new Date().toISOString().slice(0, 10);
-    const roundBlocks = combinedText.split(/(?=(?:1[ºªo°]|2[ºªo°]|primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a))/i);
-    const rounds = roundBlocks.map(block => ({ date: extractAuctionDates(block).first, price: extractMinimumBid(block) }))
-      .filter(round => round.date && round.date >= today && round.price > 0).sort((a, b) => a.date!.localeCompare(b.date!));
-    const detailedMinimumBid = rounds[0]?.price || extractMinimumBid(combinedText);
-    const extractedAppraisal = extractAppraisal(combinedText) || draft.estimatedValue;
-    const finalBid = detailData.officialFinancials?.auctionPrice || detailedMinimumBid || 0;
-    const finalAppraisal = detailData.officialFinancials?.estimatedValue || extractedAppraisal || draft.estimatedValue;
+    const roundAnalysis = extractAuctionRoundsAndPrices(combinedText, today);
+    const officialFin = detailData.officialFinancials;
+
+    const firstAuctionPrice = officialFin?.firstAuctionPrice || roundAnalysis.firstAuctionPrice || draft.firstAuctionPrice;
+    const secondAuctionPrice = officialFin?.secondAuctionPrice || roundAnalysis.secondAuctionPrice || draft.secondAuctionPrice;
+    const firstAuctionDate = officialFin?.firstAuctionDate || roundAnalysis.firstAuctionDate || dates.first || draft.firstAuctionDate;
+    const secondAuctionDate = officialFin?.secondAuctionDate || roundAnalysis.secondAuctionDate || dates.second || draft.secondAuctionDate;
+
+    // Determine active bid: if 1st auction is open/future, it is the active price on site
+    let finalBid = officialFin?.auctionPrice || roundAnalysis.activePrice || draft.auctionPrice || 0;
+    if (firstAuctionDate && firstAuctionDate >= today && firstAuctionPrice && firstAuctionPrice > 0) {
+      finalBid = firstAuctionPrice;
+    } else if (firstAuctionDate && firstAuctionDate < today && secondAuctionPrice && secondAuctionPrice > 0) {
+      finalBid = secondAuctionPrice;
+    }
+
+    const extractedAppraisal = roundAnalysis.appraisal || extractAppraisal(combinedText) || draft.estimatedValue;
+    const finalAppraisal = officialFin?.estimatedValue || extractedAppraisal;
     const enrichedDescription = combinedText.trim().slice(0, 30000);
     const detectedLocation = sourceAuctionLocation(detailData.title)
       || sourceAuctionLocation(verifiedAddress || '')
@@ -825,9 +946,11 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
       auctionPrice: finalBid,
       priceVerified: finalBid > 0,
       estimatedValue: finalAppraisal,
-      auctionDate: detailData.officialFinancials?.auctionDate || [dates.first, dates.second].filter((date): date is string => Boolean(date) && date! >= today).sort()[0] || dates.first || '',
-      firstAuctionDate: detailData.officialFinancials?.firstAuctionDate || dates.first,
-      secondAuctionDate: detailData.officialFinancials?.secondAuctionDate || dates.second,
+      firstAuctionPrice,
+      secondAuctionPrice,
+      firstAuctionDate,
+      secondAuctionDate,
+      auctionDate: officialFin?.auctionDate || roundAnalysis.activeDate || [firstAuctionDate, secondAuctionDate].filter((date): date is string => Boolean(date) && date! >= today).sort()[0] || firstAuctionDate || dates.first || draft.auctionDate || '',
       ...detailData.officialFinancials,
       saleMode: extractSaleMode(combinedText || draft.description || ''),
       ...financialTerms,
@@ -1141,8 +1264,11 @@ export async function scrapeMegaLeiloes(
         const text = (c as HTMLElement).innerText || '';
         const img = c.querySelector('img')?.src || '';
 
-        const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
-        const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, '').replace(',', '.'))) : 0;
+        const cardPriceEl = c.querySelector('.card-price, .card-instance-value, [class*="price"], [class*="valor"]');
+        const cardPriceText = (cardPriceEl as HTMLElement)?.innerText || '';
+        const priceMatches = [...(cardPriceText + ' ' + text).matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/gi)];
+        const validPrices = priceMatches.map(m => Math.round(Number(m[1].replace(/\./g, '').replace(',', '.')))).filter(p => p > 1000);
+        const price = validPrices[0] || 0;
 
         const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
         const size = sizeMatch ? Math.round(parseOfficialArea(sizeMatch[1])) : 0;
@@ -1231,8 +1357,9 @@ export async function scrapeFrazao(
           const text = card ? (card as HTMLElement).innerText : (a as HTMLElement).innerText;
           const img = card ? card.querySelector('img')?.src : null;
 
-          const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
-          const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, '').replace(',', '.'))) : 0;
+          const priceMatches = [...text.matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/gi)];
+          const validPrices = priceMatches.map(m => Math.round(Number(m[1].replace(/\./g, '').replace(',', '.')))).filter(p => p > 1000);
+          const price = validPrices[0] || 0;
 
           const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
           const size = sizeMatch ? Math.round(parseOfficialArea(sizeMatch[1])) : 0;
@@ -1328,8 +1455,9 @@ export async function scrapeBiasi(
         }
         if (!img) img = a.querySelector('img')?.src || '';
 
-        const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
-        const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, '').replace(',', '.'))) : 0;
+        const priceMatches = [...text.matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/gi)];
+        const validPrices = priceMatches.map(m => Math.round(Number(m[1].replace(/\./g, '').replace(',', '.')))).filter(p => p > 1000);
+        const price = validPrices[0] || 0;
 
         const descEl = a.querySelector('.text-descricao');
         const descText = descEl ? (descEl as HTMLElement).innerText : text;
@@ -1450,11 +1578,14 @@ export async function scrapePortalZuk(
         const bText = lotData.bodyText || '';
         const propType = parseType(prod.tipoImovel || lotData.title || bText);
 
-        let price = prod.price ? parseFloat(String(prod.price)) : 0;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const roundInfo = extractAuctionRoundsAndPrices(bText, todayStr);
+        let price = roundInfo.activePrice;
         if (!price || price < 1000) {
-          const priceMatches = [...bText.matchAll(/R\$\s*([\d\.,]+)/gi)];
-          const nums = priceMatches.map(m => parseFloat(m[1].replace(/\./g, '').replace(',', '.'))).filter(n => !isNaN(n) && n > 1000);
-          if (nums.length > 0) price = nums[nums.length - 1];
+          price = prod.price ? parseFloat(String(prod.price)) : 0;
+        }
+        if (!price || price < 1000) {
+          price = roundInfo.firstAuctionPrice || roundInfo.secondAuctionPrice || 0;
         }
 
         let size = 0;
@@ -1485,11 +1616,15 @@ export async function scrapePortalZuk(
           propertyType: propType,
           sizeSqm: size,
           auctionPrice: price,
-          estimatedValue: undefined,
-          auctionDate: extractAuctionDate(bText),
+          firstAuctionPrice: roundInfo.firstAuctionPrice,
+          secondAuctionPrice: roundInfo.secondAuctionPrice,
+          firstAuctionDate: roundInfo.firstAuctionDate,
+          secondAuctionDate: roundInfo.secondAuctionDate,
+          estimatedValue: roundInfo.appraisal || roundInfo.firstAuctionPrice,
+          auctionDate: roundInfo.activeDate || extractAuctionDate(bText),
           auctionLink: link,
           imageUrl: lotData.img,
-          description: bText.slice(0, 350).replace(/\s+/g, ' '),
+          description: bText.slice(0, 800).replace(/\s+/g, ' '),
           saleMode: 'Leilão Extrajudicial Online',
           origin: effectiveOrigin,
           sellerBank: prod.comitente ? prod.comitente.trim() : (bankOrJud.bank || 'Banco')
@@ -2010,7 +2145,9 @@ export function reconcileAuctionDrafts(
       updated++;
       Object.assign(existing, recalculateFn({ ...existing, auctionLink:draft.auctionLink, auctioneerName:draft.auctioneerName, sourceLinks:[...new Set([...(existing.sourceLinks||[]),existing.auctionLink,draft.auctionLink].filter(Boolean))], lastSyncedAt:new Date().toISOString(), state: draft.state, city: draft.city, neighborhood: draft.neighborhood || existing.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm, areaAudit: draft.areaAudit, sizeApproximate: draft.sizeApproximate, auctionPrice: draft.priceVerified ? draft.auctionPrice : 0,
         evaluationPrice: draft.estimatedValue ?? existing.evaluationPrice,
-        auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate, saleMode: draft.saleMode,
+        auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate,
+        firstAuctionPrice: draft.firstAuctionPrice ?? existing.firstAuctionPrice, secondAuctionPrice: draft.secondAuctionPrice ?? existing.secondAuctionPrice,
+        saleMode: draft.saleMode,
         addressVerified: draft.addressVerified, sizeVerified: draft.sizeVerified, priceVerified: draft.priceVerified,
         description: draft.description, matriculaText: draft.matriculaText || existing.matriculaText,
         matriculaUrl: draft.matriculaUrl || existing.matriculaUrl,
@@ -2056,6 +2193,8 @@ export function reconcileAuctionDrafts(
       auctionDate: draft.auctionDate,
       firstAuctionDate: draft.firstAuctionDate,
       secondAuctionDate: draft.secondAuctionDate,
+      firstAuctionPrice: draft.firstAuctionPrice,
+      secondAuctionPrice: draft.secondAuctionPrice,
       auctionLink: draft.auctionLink,
       sourceLinks: [draft.auctionLink],
       lastSyncedAt: new Date().toISOString(),

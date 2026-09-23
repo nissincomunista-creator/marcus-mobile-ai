@@ -62,6 +62,10 @@ export interface AuctionProperty {
   otherCosts: number;
   estimatedValue: number;
   auctionDate: string;
+  firstAuctionDate?: string;
+  secondAuctionDate?: string;
+  firstAuctionPrice?: number;
+  secondAuctionPrice?: number;
   auctionLink?: string;
   auctioneerName?: string;
   matriculaText?: string;

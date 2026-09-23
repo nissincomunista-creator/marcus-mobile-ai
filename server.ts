@@ -25,7 +25,7 @@ import { scrapeLivePortals } from './portalScraper.ts';
 import { geocodeAddress, getCachedCoords, cleanQuery } from './geocodeService.ts';
 import { computeBidirectionalBenchmarks, isGenericStreet } from './src/utils/bidirectionalBenchmark.ts';
 import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
-import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts } from './auctioneerSyncService.ts';
+import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts, extractAuctionRoundsAndPrices } from './auctioneerSyncService.ts';
 
 dotenv.config();
 
@@ -812,13 +812,42 @@ function loadStore(): DataStore {
       const sourcePath = path.join(process.cwd(), 'itbi_source_corrections.json');
       const sourceCorrections = fs.existsSync(sourcePath) ? JSON.parse(fs.readFileSync(sourcePath, 'utf8')) : {};
       storeData.itbiTransactions = storeData.itbiTransactions.filter(t => !/-sim-/.test(t.id)).map(t => ({ ...t, ...(sourceCorrections[t.id] || {}) }));
-      const STORE_CALIBRATION_VERSION = 'v21_evidence_based_area';
+      const STORE_CALIBRATION_VERSION = 'v22_active_round_and_condo_area_sanitization';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
         console.log('[Store] Migração integral adiada no Render Free; usando a base pré-calibrada e cálculo incremental para evitar estouro de memória.');
       } else if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
-        console.log(`[Store] Calibrando ${storeData.auctions.length} leilões com trava local e faixa crítica de comunidade em 200m (v16)...`);
+        console.log(`[Store] Calibrando ${storeData.auctions.length} leilões com correção de rodadas ativas e saneamento de área condominial (v22)...`);
+        const today = new Date().toISOString().slice(0, 10);
+        storeData.auctions.forEach(a => {
+          if ((a.propertyType === 'Apartamento' || a.propertyType === 'Comercial') && a.sizeSqm > 800) {
+            if (a.description) {
+              const audit = auditOfficialArea({
+                text: a.description,
+                title: a.title || '',
+                propertyType: a.propertyType,
+                url: a.auctionLink || '',
+                extractedValue: a.sizeSqm
+              });
+              if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
+                a.sizeSqm = Math.round(audit.selected.value * 100) / 100;
+                a.areaAudit = audit;
+              }
+            }
+          }
+          if (!(a.auctionPrice > 0)) {
+            const rounds = extractAuctionRoundsAndPrices((a.description || '') + ' ' + (a.title || ''), today);
+            if (rounds.activePrice > 0) {
+              a.auctionPrice = rounds.activePrice;
+              a.priceVerified = true;
+              if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
+              if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
+              if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
+              if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
+            }
+          }
+        });
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
         (storeData as any).calibrationVersion = STORE_CALIBRATION_VERSION;
@@ -826,7 +855,7 @@ function loadStore(): DataStore {
         try {
           const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(storeData)));
           fs.writeFileSync(GZ_STORE_PATH, compressed);
-          console.log('[Store] data_store.json.gz atualizado com faixa crítica de comunidade em 200m (v16)!');
+          console.log('[Store] data_store.json.gz atualizado com rodadas ativas e saneamento de área condominial (v22)!');
         } catch (gzErr) {
           console.error('[Store] Erro ao salvar data_store.json.gz:', gzErr);
         }
@@ -1291,6 +1320,53 @@ function recalculateAuctionWithIndex(
 
   // Area is a source measurement. Calibration cannot invent, round or scale it.
   if (!(auc.sizeSqm > 0)) auc.sizeSqm = 0;
+
+  // Proteção contra terreno do condomínio registrado indevidamente como área do apartamento/comercial
+  if ((auc.propertyType === 'Apartamento' || auc.propertyType === 'Comercial') && auc.sizeSqm > 800) {
+    if (auc.description) {
+      const audit = auditOfficialArea({
+        text: auc.description,
+        title: auc.title || '',
+        propertyType: auc.propertyType,
+        url: auc.auctionLink || '',
+        extractedValue: auc.sizeSqm
+      });
+      if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
+        auc.sizeSqm = Math.round(audit.selected.value * 100) / 100;
+        auc.areaAudit = audit;
+      }
+    }
+  }
+
+  // Garantir lance ativo correto caso esteja zerado ou haja rodadas identificadas
+  if (!(auc.auctionPrice > 0)) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (auc.firstAuctionPrice && auc.firstAuctionPrice > 0) {
+      if (auc.firstAuctionDate && auc.firstAuctionDate >= today) {
+        auc.auctionPrice = auc.firstAuctionPrice;
+        auc.priceVerified = true;
+      } else if (auc.secondAuctionPrice && auc.secondAuctionPrice > 0) {
+        auc.auctionPrice = auc.secondAuctionPrice;
+        auc.priceVerified = true;
+      } else {
+        auc.auctionPrice = auc.firstAuctionPrice;
+        auc.priceVerified = true;
+      }
+    } else if (auc.secondAuctionPrice && auc.secondAuctionPrice > 0) {
+      auc.auctionPrice = auc.secondAuctionPrice;
+      auc.priceVerified = true;
+    } else if (auc.description) {
+      const rounds = extractAuctionRoundsAndPrices(auc.description + ' ' + (auc.title || ''), today);
+      if (rounds.activePrice > 0) {
+        auc.auctionPrice = rounds.activePrice;
+        auc.priceVerified = true;
+        if (rounds.firstAuctionPrice) auc.firstAuctionPrice = rounds.firstAuctionPrice;
+        if (rounds.secondAuctionPrice) auc.secondAuctionPrice = rounds.secondAuctionPrice;
+        if (rounds.firstAuctionDate) auc.firstAuctionDate = rounds.firstAuctionDate;
+        if (rounds.secondAuctionDate) auc.secondAuctionDate = rounds.secondAuctionDate;
+      }
+    }
+  }
 
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
@@ -5275,6 +5351,39 @@ export async function runSecurityAuditAndFullSync(targetStore: DataStore, forceR
           a.origin = 'judicial';
           corruptedFieldsRepaired++;
         }
+      }
+    }
+
+    // 2b. Sanitize apartment and commercial condominium land plot size mismatch
+    if ((a.propertyType === 'Apartamento' || a.propertyType === 'Comercial') && a.sizeSqm > 800) {
+      if (a.description) {
+        const audit = auditOfficialArea({
+          text: a.description,
+          title: a.title || '',
+          propertyType: a.propertyType,
+          url: a.auctionLink || '',
+          extractedValue: a.sizeSqm
+        });
+        if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
+          a.sizeSqm = Math.round(audit.selected.value * 100) / 100;
+          a.areaAudit = audit;
+          corruptedFieldsRepaired++;
+        }
+      }
+    }
+
+    // 2c. Sanitize unconfirmed / zero bids if description contains valid prices
+    if (!(a.auctionPrice > 0)) {
+      const today = new Date().toISOString().slice(0, 10);
+      const rounds = extractAuctionRoundsAndPrices((a.description || '') + ' ' + (a.title || ''), today);
+      if (rounds.activePrice > 0) {
+        a.auctionPrice = rounds.activePrice;
+        a.priceVerified = true;
+        if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
+        if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
+        if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
+        if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
+        corruptedFieldsRepaired++;
       }
     }
   }

@@ -1604,12 +1604,28 @@ export default function Dashboard({
                           
                           {/* Lance Mínimo */}
                           <div className="flex flex-col justify-center">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                              Lance Mínimo
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                Lance Mínimo
+                              </span>
+                              {auc.firstAuctionPrice && auc.secondAuctionPrice ? (
+                                <span className={`text-[8px] font-bold px-1 py-0.5 rounded leading-none ${
+                                  auc.auctionPrice === auc.firstAuctionPrice
+                                    ? 'bg-amber-950/80 text-amber-300 border border-amber-700/50'
+                                    : 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/50'
+                                }`}>
+                                  {auc.auctionPrice === auc.firstAuctionPrice ? '1º Leilão' : '2º Leilão'}
+                                </span>
+                              ) : null}
+                            </div>
                             <span className="text-xs sm:text-sm font-normal text-white font-mono mt-0.5">
                               {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}
                             </span>
+                            {auc.firstAuctionPrice && auc.secondAuctionPrice && (
+                              <span className="text-[9px] text-slate-400 font-mono">
+                                1º: {formatBRL(auc.firstAuctionPrice)} | 2º: {formatBRL(auc.secondAuctionPrice)}
+                              </span>
+                            )}
                           </div>
 
                           {/* Custo Total Est. com Tooltip */}

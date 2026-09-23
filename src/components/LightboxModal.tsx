@@ -187,8 +187,24 @@ export default function LightboxModal({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 bg-slate-900 border-t border-slate-800 shrink-0">
             <div className="flex items-center gap-4 text-xs font-mono">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-sans">Lance Mínimo</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400 block text-[10px] uppercase font-sans">Lance Mínimo</span>
+                  {property.firstAuctionPrice && property.secondAuctionPrice && (
+                    <span className={`text-[8px] font-bold px-1 py-0.2 rounded leading-none ${
+                      property.auctionPrice === property.firstAuctionPrice
+                        ? 'bg-amber-950/80 text-amber-300 border border-amber-700/50'
+                        : 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/50'
+                    }`}>
+                      {property.auctionPrice === property.firstAuctionPrice ? '1º Leilão' : '2º Leilão'}
+                    </span>
+                  )}
+                </div>
                 <span className="font-bold text-white text-sm">{property.auctionPrice > 0 ? formatBRL(property.auctionPrice) : 'Aberto a Propostas'}</span>
+                {property.firstAuctionPrice && property.secondAuctionPrice && (
+                  <span className="text-[10px] text-slate-400 font-mono block">
+                    1º: {formatBRL(property.firstAuctionPrice)} | 2º: {formatBRL(property.secondAuctionPrice)}
+                  </span>
+                )}
               </div>
               <div className="h-6 w-px bg-slate-800 hidden sm:block" />
               <div>

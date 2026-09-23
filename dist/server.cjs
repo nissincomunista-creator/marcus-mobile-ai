@@ -39,12 +39,12 @@ module.exports = __toCommonJS(server_exports);
 // src/utils/officialAreaAudit.ts
 var numeric = (s) => Number(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(?:\.\d{3})+$/.test(s) ? s.replace(/\./g, "") : s);
 function auditOfficialArea(input) {
-  const candidates = [];
+  let candidates = [];
   const add = (value, kind2, excerpt) => {
     if (Number.isFinite(value) && value > 0) candidates.push({ value, kind: kind2, excerpt: excerpt.trim().slice(0, 220), approximate: /aproxim|cerca de|estimad/i.test(excerpt) });
   };
   const text = input.text.split(/Outros lotes|Lotes relacionados|Veja também|Imóveis similares/i)[0];
-  const label = "(?:[a\xE1]rea\\s+(?:privativa|[u\xFA]til|constru[i\xED]da|edificada|total|comum|do\\s+terreno|de\\s+terreno)|metragem\\s+constru[i\xED]da)";
+  const label = "(?:[a\xE1]rea\\s+(?:privativa|[u\xFA]til|constru[i\xED]da|edificada|total|comum|do\\s+terreno|de\\s+terreno)(?:\\s*\\([^)]*\\))?|metragem\\s+constru[i\xED]da)";
   const amount = "(\\d+(?:[.,]\\d+)*)";
   const unit = "(?:m[\xB22]|metros?\\s+quadrados?|ha|hectares?)";
   const kind = (s) => /comum/i.test(s) ? "common" : /terreno/i.test(s) ? "land" : /privativa/i.test(s) ? "private" : /[uú]til/i.test(s) ? "usable" : /constru|edificada/i.test(s) ? "built" : "total";
@@ -52,10 +52,16 @@ function auditOfficialArea(input) {
   for (const m of text.matchAll(new RegExp(amount + "\\s*(" + unit + ")\\s+de\\s+(" + label + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), kind(m[3]), m[0]);
   for (const m of text.matchAll(new RegExp("[a\xE1]rea\\s+de\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "unspecified", m[0]);
   for (const m of text.matchAll(new RegExp("(?:possui|mede|medindo)\\s+(?:aproximadamente\\s+)?" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "unspecified", m[0]);
-  for (const m of text.matchAll(new RegExp("\\b(privativa|priv\\.|constru[i\xED]da|constr\\.|edificada|terreno|terr\\.)\\s*(?:estimada|aproximada|de)?\\s*[:=]?\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[2]) * (/ha|hectare/i.test(m[3]) ? 1e4 : 1), /^priv/i.test(m[1]) ? "private" : /^terr/i.test(m[1]) ? "land" : "built", m[0]);
+  for (const m of text.matchAll(new RegExp("\\b(privativa|priv\\.|constru[i\xED]da|constr\\.|edificada|terreno|terr\\.)(?:\\s*\\([^)]*\\))?\\s*(?:estimada|aproximada|de)?\\s*[:=]?\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[2]) * (/ha|hectare/i.test(m[3]) ? 1e4 : 1), /^priv/i.test(m[1]) ? "private" : /^terr/i.test(m[1]) ? "land" : "built", m[0]);
   for (const m of input.title.matchAll(new RegExp(amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "title", m[0]);
   for (const value of input.structuredSizes || []) add(value, "structured", "\xC1rea publicada nos dados estruturados do lote");
   const land = /Terreno|Gleba|Fazenda/i.test(input.propertyType);
+  if (!land) {
+    const hasBuiltOrPrivate = candidates.some((c) => (c.kind === "private" || c.kind === "usable" || c.kind === "built") && c.value > 10 && c.value <= 800);
+    if (hasBuiltOrPrivate) {
+      candidates = candidates.filter((c) => c.kind !== "land" && c.value <= 800);
+    }
+  }
   const ranks = land ? ["land", "total", "unspecified", "structured", "title"] : ["private", "usable", "built", "structured", "unspecified", "title"];
   let selected;
   let conflict = false;
@@ -87,28 +93,55 @@ function officialLotFinancials(html, url) {
     return void 0;
   }
   if (!lot || typeof lot !== "object") return void 0;
-  const expectedId = new URL(url).pathname.match(/\/lote\/(\d+)(?:\/|$)/)?.[1];
-  if (!expectedId || String(lot.id) !== expectedId) return void 0;
+  try {
+    const urlObj = new URL(url);
+    const urlPath = urlObj.pathname;
+    const expectedId = urlPath.match(/(?:lote|id)[/-](\d+)(?:\/|$)/i)?.[1] || urlPath.match(/\/(\d+)(?:[/-]|$)/)?.[1];
+    const lotId = lot.id || lot.bemId || lot.aid;
+    if (lotId && expectedId && String(lotId) !== expectedId && !url.includes(String(lotId))) {
+      return void 0;
+    }
+  } catch {
+  }
   const date = (val) => typeof val?.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(val.date) ? val.date.slice(0, 10) : void 0;
   const evalAmount = Number(lot.valorAvaliacao) > 0 ? Number(lot.valorAvaliacao) : void 0;
   let amount = 0;
   let auctionDate = void 0;
   let firstAuctionDate = void 0;
   let secondAuctionDate = void 0;
+  let firstAuctionPrice = void 0;
+  let secondAuctionPrice = void 0;
+  const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   if (lot.leilao) {
     const round = Number(lot.leilao.praca);
-    if (![1, 2, 3].includes(round)) return void 0;
     firstAuctionDate = date(lot.leilao.data1);
     secondAuctionDate = date(lot.leilao.data2);
+    firstAuctionPrice = Number(lot.leilao.valor1) > 0 ? Number(lot.leilao.valor1) : void 0;
+    secondAuctionPrice = Number(lot.leilao.valor2) > 0 ? Number(lot.leilao.valor2) : void 0;
     auctionDate = date(lot.leilao["data" + round]) || firstAuctionDate || secondAuctionDate;
     if (typeof lot.valorInicialAtual === "number" && lot.valorInicialAtual > 0) {
       amount = lot.valorInicialAtual;
-    } else return void 0;
+    } else if (round === 2 && secondAuctionPrice) {
+      amount = secondAuctionPrice;
+    } else if (firstAuctionPrice) {
+      amount = firstAuctionPrice;
+    }
   } else {
     const vInit = Number(lot.valorInicial);
+    const vInit2 = Number(lot.valorInicial2);
     const vMin = Number(lot.valorMinimo);
-    if (Number.isFinite(vInit) && vInit > 0) amount = vInit;
-    else if (Number.isFinite(vMin) && vMin > 0) amount = vMin;
+    const vAtual = Number(lot.valorAtual);
+    if (vInit > 0) firstAuctionPrice = vInit;
+    if (vInit2 > 0) secondAuctionPrice = vInit2;
+    if (firstAuctionDate && firstAuctionDate >= today && firstAuctionPrice) {
+      amount = firstAuctionPrice;
+    } else if (Number.isFinite(vAtual) && vAtual > 0) {
+      amount = vAtual;
+    } else if (Number.isFinite(vInit) && vInit > 0) {
+      amount = vInit;
+    } else if (Number.isFinite(vMin) && vMin > 0) {
+      amount = vMin;
+    }
   }
   if (amount <= 0 && !evalAmount) return void 0;
   return {
@@ -116,7 +149,9 @@ function officialLotFinancials(html, url) {
     ...evalAmount ? { estimatedValue: evalAmount } : {},
     ...auctionDate ? { auctionDate } : {},
     ...firstAuctionDate ? { firstAuctionDate } : {},
-    ...secondAuctionDate ? { secondAuctionDate } : {}
+    ...secondAuctionDate ? { secondAuctionDate } : {},
+    ...firstAuctionPrice ? { firstAuctionPrice } : {},
+    ...secondAuctionPrice ? { secondAuctionPrice } : {}
   };
 }
 
@@ -617,35 +652,107 @@ function extractAuctionDates(text) {
 function extractAuctionDate(text) {
   return extractAuctionDates(text).first || "";
 }
+function normalizeDateStr(dStr) {
+  const m = dStr.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+  if (!m) return void 0;
+  const y = m[3].length === 2 ? `20${m[3]}` : m[3];
+  const date = `${y}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const parsed = new Date(date);
+  return !isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date ? date : void 0;
+}
+function extractAuctionRoundsAndPrices(text, todayParam) {
+  if (!text) return { activePrice: 0, priceVerified: false };
+  const today = todayParam || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  let firstAuctionPrice;
+  let firstAuctionDate;
+  const m1Date = text.match(/(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,100}?(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+  if (m1Date) firstAuctionDate = normalizeDateStr(m1Date[1]);
+  const m1Price = text.match(/(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,120}?R\$\s*([\d.]+(?:,\d{2})?)/i) || text.match(/R\$\s*([\d.]+(?:,\d{2})?)[\s\S]{0,80}?(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)/i);
+  if (m1Price) {
+    const p1 = parseBrazilianMoney(m1Price[1]);
+    if (p1 > 1e3) firstAuctionPrice = p1;
+  }
+  let secondAuctionPrice;
+  let secondAuctionDate;
+  const m2Date = text.match(/(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,100}?(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+  if (m2Date) secondAuctionDate = normalizeDateStr(m2Date[1]);
+  const m2Price = text.match(/(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,120}?R\$\s*([\d.]+(?:,\d{2})?)/i) || text.match(/ser[aá]\s+realizado\s+o\s+2[ºªo°]\s+leil[aã]o[\s\S]{0,120}?pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/i) || text.match(/R\$\s*([\d.]+(?:,\d{2})?)[\s\S]{0,80}?(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)/i);
+  if (m2Price) {
+    const p2 = parseBrazilianMoney(m2Price[1]);
+    if (p2 > 1e3) secondAuctionPrice = p2;
+  }
+  const generalDates = extractAuctionDates(text);
+  if (!firstAuctionDate && generalDates.first) firstAuctionDate = generalDates.first;
+  if (!secondAuctionDate && generalDates.second) secondAuctionDate = generalDates.second;
+  const mGeneric = text.match(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*m[ií]nimo(?:\s*para\s*proposta)?|valor\s*inicial|maior\s*lance\s*atual|lance\s*atual)\s*:?\s*(?:<[^>]+>)*\s*R\$\s*([\d.]+(?:,\d{2})?)/i) || text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:<[^>]+>)*\s*(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*m[ií]nimo)/i) || text.match(/(?:Em\s+leil[aã]o\s+pelo\s+valor\s+de|venda\s+direta)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  let genericPrice = 0;
+  if (mGeneric) {
+    const pGen = parseBrazilianMoney(mGeneric[1]);
+    if (pGen > 1e3) genericPrice = pGen;
+  }
+  let activePrice = 0;
+  let activeDate = "";
+  if (firstAuctionPrice && firstAuctionPrice > 0) {
+    if (firstAuctionDate && firstAuctionDate >= today) {
+      activePrice = firstAuctionPrice;
+      activeDate = firstAuctionDate;
+    } else if (firstAuctionDate && firstAuctionDate < today && secondAuctionPrice && secondAuctionPrice > 0) {
+      activePrice = secondAuctionPrice;
+      activeDate = secondAuctionDate || firstAuctionDate;
+    } else {
+      activePrice = firstAuctionPrice;
+      activeDate = firstAuctionDate || secondAuctionDate || "";
+    }
+  } else if (secondAuctionPrice && secondAuctionPrice > 0) {
+    activePrice = secondAuctionPrice;
+    activeDate = secondAuctionDate || "";
+  } else if (genericPrice > 0) {
+    activePrice = genericPrice;
+    activeDate = firstAuctionDate || "";
+  }
+  const appraisal = extractAppraisal(text);
+  return {
+    firstAuctionPrice,
+    firstAuctionDate,
+    secondAuctionPrice,
+    secondAuctionDate,
+    activePrice,
+    activeDate,
+    appraisal,
+    priceVerified: activePrice > 0
+  };
+}
 function extractMinimumBid(text) {
   if (!text) return 0;
-  const amounts = [];
-  const patterns2 = [
-    /(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi,
-    /(?:Em\s+leil[aã]o\s+pelo\s+valor\s+de|valor\s+m[ií]nimo\s+para\s+proposta|venda\s+direta)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi,
-    /R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+(?:para\s+proposta|m[ií]nimo\s+para\s+proposta)/gi
-  ];
-  for (const pattern of patterns2) for (const match2 of text.matchAll(pattern)) amounts.push(parseBrazilianMoney(match2[1]));
-  if (amounts.length) return new Set(amounts).size === 1 ? amounts[0] : 0;
-  const headings = [...text.matchAll(/(?:[12][ºªo°]|primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)/gi)];
-  if (headings.length !== 1) return 0;
-  const after = text.slice(headings[0].index + headings[0][0].length);
-  const match = after.match(/^([^R$]{0,180})R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (!match || /avalia|increment|d[ií]vida|condom|iptu/i.test(match[1])) return 0;
-  return parseBrazilianMoney(match[2]);
+  return extractAuctionRoundsAndPrices(text).activePrice;
 }
 function extractAppraisal(text) {
   if (!text) return void 0;
   const m1 = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)(?:valor\s+(?:de\s+)?)?avalia[cç][aã]o/i);
-  if (m1) return parseBrazilianMoney(m1[1]);
-  const mValAv = text.match(/valor\s+avaliado\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
-  if (mValAv) return parseBrazilianMoney(mValAv[1]);
-  const m2 = text.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*(?:R\$\s*)?([\d.]+(?:,\d{2})?)/i);
-  if (m2) return parseBrazilianMoney(m2[1]);
-  const m3 = text.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,200}?(?:valor\s+(?:de\s+)?(?:R\$\s*)?|atribuo[^\d]{0,80}?valor\s+de\s*(?:R\$\s*)?)([\d.]+(?:,\d{2})?)/i);
-  if (m3) return parseBrazilianMoney(m3[1]);
-  const m4 = text.match(/valor\s+(?:de\s+)?avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (m4) return parseBrazilianMoney(m4[1]);
+  if (m1) {
+    const val = parseBrazilianMoney(m1[1]);
+    if (val >= 1e4 && val <= 15e7) return val;
+  }
+  const m4 = text.match(/(?:valor\s+(?:de\s+)?|laudo\s+de\s+)avalia[cç][aã]o\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (m4) {
+    const val = parseBrazilianMoney(m4[1]);
+    if (val >= 1e4 && val <= 15e7) return val;
+  }
+  const mValAv = text.match(/valor\s+avaliado\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (mValAv) {
+    const val = parseBrazilianMoney(mValAv[1]);
+    if (val >= 1e4 && val <= 15e7) return val;
+  }
+  const m2 = text.match(/avalia[cç][aã]o\s*(?:judicial|do\s+im[oó]vel|original\s*caixa)?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (m2) {
+    const val = parseBrazilianMoney(m2[1]);
+    if (val >= 1e4 && val <= 15e7) return val;
+  }
+  const m3 = text.match(/laudo\s+de\s+avalia[cç][aã]o[^\d]{0,100}?(?:valor\s+(?:de\s+)?R\$\s*|atribuo[^\d]{0,80}?valor\s+de\s*R\$\s*)([\d.]+(?:,\d{2})?)/i);
+  if (m3) {
+    const val = parseBrazilianMoney(m3[1]);
+    if (val >= 1e4 && val <= 15e7) return val;
+  }
   return void 0;
 }
 function extractSaleMode(text) {
@@ -871,7 +978,7 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const headlineSize = headlineArea ? parseOfficialArea(headlineArea[1]) : 0;
   const landArea = parseType(detailData.title || draft.title) === "Terreno" ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
   const landSize = landArea ? parseOfficialArea(landArea[1]) : 0;
-  const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+  const sizeMatch = combinedText.match(/[aá]rea\s+(?:privativa(?:\s*\/\s*edificada)?|edificada|[uú]til|constru[ií]da)(?:\s*\([^)]*\))?\s*(?:de\s+)?[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s+privativa/i) || combinedText.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total)\s*:?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i) || combinedText.match(/(?:com\s+)?[aá]rea\s+de\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
   const textMatchedSize = sizeMatch ? parseOfficialArea(sizeMatch[1]) : 0;
   const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
   const extractedSize = headlineSize || landSize || textMatchedSize || structuredSize;
@@ -881,12 +988,20 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const textAddress = extractAddress(combinedText, "") || extractAddress(matriculaText, "");
   const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : "") || structuredAddress;
   const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-  const roundBlocks = combinedText.split(/(?=(?:1[ºªo°]|2[ºªo°]|primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a))/i);
-  const rounds = roundBlocks.map((block) => ({ date: extractAuctionDates(block).first, price: extractMinimumBid(block) })).filter((round) => round.date && round.date >= today && round.price > 0).sort((a, b) => a.date.localeCompare(b.date));
-  const detailedMinimumBid = rounds[0]?.price || extractMinimumBid(combinedText);
-  const extractedAppraisal = extractAppraisal(combinedText) || draft.estimatedValue;
-  const finalBid = detailData.officialFinancials?.auctionPrice || detailedMinimumBid || 0;
-  const finalAppraisal = detailData.officialFinancials?.estimatedValue || extractedAppraisal || draft.estimatedValue;
+  const roundAnalysis = extractAuctionRoundsAndPrices(combinedText, today);
+  const officialFin = detailData.officialFinancials;
+  const firstAuctionPrice = officialFin?.firstAuctionPrice || roundAnalysis.firstAuctionPrice || draft.firstAuctionPrice;
+  const secondAuctionPrice = officialFin?.secondAuctionPrice || roundAnalysis.secondAuctionPrice || draft.secondAuctionPrice;
+  const firstAuctionDate = officialFin?.firstAuctionDate || roundAnalysis.firstAuctionDate || dates.first || draft.firstAuctionDate;
+  const secondAuctionDate = officialFin?.secondAuctionDate || roundAnalysis.secondAuctionDate || dates.second || draft.secondAuctionDate;
+  let finalBid = officialFin?.auctionPrice || roundAnalysis.activePrice || draft.auctionPrice || 0;
+  if (firstAuctionDate && firstAuctionDate >= today && firstAuctionPrice && firstAuctionPrice > 0) {
+    finalBid = firstAuctionPrice;
+  } else if (firstAuctionDate && firstAuctionDate < today && secondAuctionPrice && secondAuctionPrice > 0) {
+    finalBid = secondAuctionPrice;
+  }
+  const extractedAppraisal = roundAnalysis.appraisal || extractAppraisal(combinedText) || draft.estimatedValue;
+  const finalAppraisal = officialFin?.estimatedValue || extractedAppraisal;
   const enrichedDescription = combinedText.trim().slice(0, 3e4);
   const detectedLocation = sourceAuctionLocation(detailData.title) || sourceAuctionLocation(verifiedAddress || "") || sourceAuctionLocation(lotText) || (draft.locationScopeVerified && hasCityEvidence(combinedText, draft.city) || hasRequestedLocationEvidence(combinedText, draft.state, draft.city) ? { city: draft.city, state: draft.state } : null);
   return {
@@ -913,9 +1028,11 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
     auctionPrice: finalBid,
     priceVerified: finalBid > 0,
     estimatedValue: finalAppraisal,
-    auctionDate: detailData.officialFinancials?.auctionDate || [dates.first, dates.second].filter((date) => Boolean(date) && date >= today).sort()[0] || dates.first || "",
-    firstAuctionDate: detailData.officialFinancials?.firstAuctionDate || dates.first,
-    secondAuctionDate: detailData.officialFinancials?.secondAuctionDate || dates.second,
+    firstAuctionPrice,
+    secondAuctionPrice,
+    firstAuctionDate,
+    secondAuctionDate,
+    auctionDate: officialFin?.auctionDate || roundAnalysis.activeDate || [firstAuctionDate, secondAuctionDate].filter((date) => Boolean(date) && date >= today).sort()[0] || firstAuctionDate || dates.first || draft.auctionDate || "",
     ...detailData.officialFinancials,
     saleMode: extractSaleMode(combinedText || draft.description || ""),
     ...financialTerms,
@@ -1210,8 +1327,11 @@ async function scrapeMegaLeiloes(targetType, state = "RJ", city = "Rio de Janeir
         const link = c.querySelector("a")?.href || "";
         const text = c.innerText || "";
         const img = c.querySelector("img")?.src || "";
-        const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
-        const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
+        const cardPriceEl = c.querySelector('.card-price, .card-instance-value, [class*="price"], [class*="valor"]');
+        const cardPriceText = cardPriceEl?.innerText || "";
+        const priceMatches = [...(cardPriceText + " " + text).matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/gi)];
+        const validPrices = priceMatches.map((m) => Math.round(Number(m[1].replace(/\./g, "").replace(",", ".")))).filter((p) => p > 1e3);
+        const price = validPrices[0] || 0;
         const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
         const size = sizeMatch ? Math.round(parseOfficialArea(sizeMatch[1])) : 0;
         const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -1283,8 +1403,9 @@ async function scrapeFrazao(targetType, state = "RJ", city = "Rio de Janeiro") {
           const card = a.closest(".card") || a.parentElement;
           const text = card ? card.innerText : a.innerText;
           const img = card ? card.querySelector("img")?.src : null;
-          const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
-          const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
+          const priceMatches = [...text.matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/gi)];
+          const validPrices = priceMatches.map((m) => Math.round(Number(m[1].replace(/\./g, "").replace(",", ".")))).filter((p) => p > 1e3);
+          const price = validPrices[0] || 0;
           const sizeMatch = text.match(/(\d+(?:[\.,]\d+)?)\s*m²/i);
           const size = sizeMatch ? Math.round(parseOfficialArea(sizeMatch[1])) : 0;
           const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -1362,8 +1483,9 @@ async function scrapeBiasi(targetType, state = "RJ", city = "Rio de Janeiro") {
           if (m) img = m[1];
         }
         if (!img) img = a.querySelector("img")?.src || "";
-        const priceMatch = text.match(/R\$\s*([\d\.,]+)/i);
-        const price = priceMatch ? Math.round(Number(priceMatch[1].replace(/\./g, "").replace(",", "."))) : 0;
+        const priceMatches = [...text.matchAll(/R\$\s*([\d.]+(?:,\d{2})?)/gi)];
+        const validPrices = priceMatches.map((m) => Math.round(Number(m[1].replace(/\./g, "").replace(",", ".")))).filter((p) => p > 1e3);
+        const price = validPrices[0] || 0;
         const descEl = a.querySelector(".text-descricao");
         const descText = descEl ? descEl.innerText : text;
         return { text: descText, price, link, img };
@@ -1461,11 +1583,14 @@ async function scrapePortalZuk(targetType, state = "RJ", city = "Rio de Janeiro"
         const prod = lotData.prod || {};
         const bText = lotData.bodyText || "";
         const propType = parseType(prod.tipoImovel || lotData.title || bText);
-        let price = prod.price ? parseFloat(String(prod.price)) : 0;
+        const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+        const roundInfo = extractAuctionRoundsAndPrices(bText, todayStr);
+        let price = roundInfo.activePrice;
         if (!price || price < 1e3) {
-          const priceMatches = [...bText.matchAll(/R\$\s*([\d\.,]+)/gi)];
-          const nums = priceMatches.map((m) => parseFloat(m[1].replace(/\./g, "").replace(",", "."))).filter((n) => !isNaN(n) && n > 1e3);
-          if (nums.length > 0) price = nums[nums.length - 1];
+          price = prod.price ? parseFloat(String(prod.price)) : 0;
+        }
+        if (!price || price < 1e3) {
+          price = roundInfo.firstAuctionPrice || roundInfo.secondAuctionPrice || 0;
         }
         let size = 0;
         const sizeMatch = bText.match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
@@ -1492,11 +1617,15 @@ async function scrapePortalZuk(targetType, state = "RJ", city = "Rio de Janeiro"
           propertyType: propType,
           sizeSqm: size,
           auctionPrice: price,
-          estimatedValue: void 0,
-          auctionDate: extractAuctionDate(bText),
+          firstAuctionPrice: roundInfo.firstAuctionPrice,
+          secondAuctionPrice: roundInfo.secondAuctionPrice,
+          firstAuctionDate: roundInfo.firstAuctionDate,
+          secondAuctionDate: roundInfo.secondAuctionDate,
+          estimatedValue: roundInfo.appraisal || roundInfo.firstAuctionPrice,
+          auctionDate: roundInfo.activeDate || extractAuctionDate(bText),
           auctionLink: link,
           imageUrl: lotData.img,
-          description: bText.slice(0, 350).replace(/\s+/g, " "),
+          description: bText.slice(0, 800).replace(/\s+/g, " "),
           saleMode: "Leil\xE3o Extrajudicial Online",
           origin: effectiveOrigin,
           sellerBank: prod.comitente ? prod.comitente.trim() : bankOrJud.bank || "Banco"
@@ -1663,6 +1792,8 @@ ${draft.description || ""}`)) {
         auctionDate: draft.auctionDate,
         firstAuctionDate: draft.firstAuctionDate,
         secondAuctionDate: draft.secondAuctionDate,
+        firstAuctionPrice: draft.firstAuctionPrice ?? existing.firstAuctionPrice,
+        secondAuctionPrice: draft.secondAuctionPrice ?? existing.secondAuctionPrice,
         saleMode: draft.saleMode,
         addressVerified: draft.addressVerified,
         sizeVerified: draft.sizeVerified,
@@ -1712,6 +1843,8 @@ ${draft.description || ""}`)) {
       auctionDate: draft.auctionDate,
       firstAuctionDate: draft.firstAuctionDate,
       secondAuctionDate: draft.secondAuctionDate,
+      firstAuctionPrice: draft.firstAuctionPrice,
+      secondAuctionPrice: draft.secondAuctionPrice,
       auctionLink: draft.auctionLink,
       sourceLinks: [draft.auctionLink],
       lastSyncedAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -4326,13 +4459,42 @@ function loadStore() {
       const sourcePath = import_path3.default.join(process.cwd(), "itbi_source_corrections.json");
       const sourceCorrections = import_fs4.default.existsSync(sourcePath) ? JSON.parse(import_fs4.default.readFileSync(sourcePath, "utf8")) : {};
       storeData.itbiTransactions = storeData.itbiTransactions.filter((t) => !/-sim-/.test(t.id)).map((t) => ({ ...t, ...sourceCorrections[t.id] || {} }));
-      const STORE_CALIBRATION_VERSION = "v21_evidence_based_area";
+      const STORE_CALIBRATION_VERSION = "v22_active_round_and_condo_area_sanitization";
       const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === "true";
       if (needsRecalibration && isMemoryConstrainedRender) {
         console.log("[Store] Migra\xE7\xE3o integral adiada no Render Free; usando a base pr\xE9-calibrada e c\xE1lculo incremental para evitar estouro de mem\xF3ria.");
       } else if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
-        console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com trava local e faixa cr\xEDtica de comunidade em 200m (v16)...`);
+        console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com corre\xE7\xE3o de rodadas ativas e saneamento de \xE1rea condominial (v22)...`);
+        const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+        storeData.auctions.forEach((a) => {
+          if ((a.propertyType === "Apartamento" || a.propertyType === "Comercial") && a.sizeSqm > 800) {
+            if (a.description) {
+              const audit = auditOfficialArea({
+                text: a.description,
+                title: a.title || "",
+                propertyType: a.propertyType,
+                url: a.auctionLink || "",
+                extractedValue: a.sizeSqm
+              });
+              if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
+                a.sizeSqm = Math.round(audit.selected.value * 100) / 100;
+                a.areaAudit = audit;
+              }
+            }
+          }
+          if (!(a.auctionPrice > 0)) {
+            const rounds = extractAuctionRoundsAndPrices((a.description || "") + " " + (a.title || ""), today);
+            if (rounds.activePrice > 0) {
+              a.auctionPrice = rounds.activePrice;
+              a.priceVerified = true;
+              if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
+              if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
+              if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
+              if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
+            }
+          }
+        });
         const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
         storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
         storeData.calibrationVersion = STORE_CALIBRATION_VERSION;
@@ -4340,7 +4502,7 @@ function loadStore() {
         try {
           const compressed = import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData)));
           import_fs4.default.writeFileSync(GZ_STORE_PATH, compressed);
-          console.log("[Store] data_store.json.gz atualizado com faixa cr\xEDtica de comunidade em 200m (v16)!");
+          console.log("[Store] data_store.json.gz atualizado com rodadas ativas e saneamento de \xE1rea condominial (v22)!");
         } catch (gzErr) {
           console.error("[Store] Erro ao salvar data_store.json.gz:", gzErr);
         }
@@ -4715,6 +4877,49 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     auc.city = matchedCity || (state === "rj" ? "Rio de Janeiro" : state === "mg" ? "Juiz de Fora" : "S\xE3o Paulo");
   }
   if (!(auc.sizeSqm > 0)) auc.sizeSqm = 0;
+  if ((auc.propertyType === "Apartamento" || auc.propertyType === "Comercial") && auc.sizeSqm > 800) {
+    if (auc.description) {
+      const audit = auditOfficialArea({
+        text: auc.description,
+        title: auc.title || "",
+        propertyType: auc.propertyType,
+        url: auc.auctionLink || "",
+        extractedValue: auc.sizeSqm
+      });
+      if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
+        auc.sizeSqm = Math.round(audit.selected.value * 100) / 100;
+        auc.areaAudit = audit;
+      }
+    }
+  }
+  if (!(auc.auctionPrice > 0)) {
+    const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    if (auc.firstAuctionPrice && auc.firstAuctionPrice > 0) {
+      if (auc.firstAuctionDate && auc.firstAuctionDate >= today) {
+        auc.auctionPrice = auc.firstAuctionPrice;
+        auc.priceVerified = true;
+      } else if (auc.secondAuctionPrice && auc.secondAuctionPrice > 0) {
+        auc.auctionPrice = auc.secondAuctionPrice;
+        auc.priceVerified = true;
+      } else {
+        auc.auctionPrice = auc.firstAuctionPrice;
+        auc.priceVerified = true;
+      }
+    } else if (auc.secondAuctionPrice && auc.secondAuctionPrice > 0) {
+      auc.auctionPrice = auc.secondAuctionPrice;
+      auc.priceVerified = true;
+    } else if (auc.description) {
+      const rounds = extractAuctionRoundsAndPrices(auc.description + " " + (auc.title || ""), today);
+      if (rounds.activePrice > 0) {
+        auc.auctionPrice = rounds.activePrice;
+        auc.priceVerified = true;
+        if (rounds.firstAuctionPrice) auc.firstAuctionPrice = rounds.firstAuctionPrice;
+        if (rounds.secondAuctionPrice) auc.secondAuctionPrice = rounds.secondAuctionPrice;
+        if (rounds.firstAuctionDate) auc.firstAuctionDate = rounds.firstAuctionDate;
+        if (rounds.secondAuctionDate) auc.secondAuctionDate = rounds.secondAuctionDate;
+      }
+    }
+  }
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
   let neighborhoodAvgSqm = 0;
@@ -7905,6 +8110,35 @@ async function runSecurityAuditAndFullSync(targetStore, forceResync = false) {
           a.origin = "judicial";
           corruptedFieldsRepaired++;
         }
+      }
+    }
+    if ((a.propertyType === "Apartamento" || a.propertyType === "Comercial") && a.sizeSqm > 800) {
+      if (a.description) {
+        const audit = auditOfficialArea({
+          text: a.description,
+          title: a.title || "",
+          propertyType: a.propertyType,
+          url: a.auctionLink || "",
+          extractedValue: a.sizeSqm
+        });
+        if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
+          a.sizeSqm = Math.round(audit.selected.value * 100) / 100;
+          a.areaAudit = audit;
+          corruptedFieldsRepaired++;
+        }
+      }
+    }
+    if (!(a.auctionPrice > 0)) {
+      const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      const rounds = extractAuctionRoundsAndPrices((a.description || "") + " " + (a.title || ""), today);
+      if (rounds.activePrice > 0) {
+        a.auctionPrice = rounds.activePrice;
+        a.priceVerified = true;
+        if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
+        if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
+        if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
+        if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
+        corruptedFieldsRepaired++;
       }
     }
   }
