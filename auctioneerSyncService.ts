@@ -61,7 +61,7 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "jonas", name: "Jonas Leiloeiro", domain: "jonasleiloeiro.com.br", baseUrl: "https://www.jonasleiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "fernandoleiloeiro", name: "Fernando Leiloeiro", domain: "fernandoleiloeiro.com.br", baseUrl: "https://www.fernandoleiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "comprei", name: "Comprei PGFN", domain: "comprei.pgfn.gov.br", baseUrl: "https://comprei.pgfn.gov.br", genericScrape: true, enabled: true },
-  { id: "rogeriomenezes", name: "Rogério Menezes", domain: "rogeriomenezes.com.br", baseUrl: "https://www.rogeriomenezes.com.br", genericScrape: true, enabled: true },
+  { id: "rogeriomenezes", name: "Rogério Menezes", domain: "rogeriomenezes.com.br", baseUrl: "https://www.rogeriomenezes.com.br", searchUrl: "https://www.rogeriomenezes.com.br/busca?interesse=imovel", enabled: true },
   { id: "edgardecarvalho", name: "Edgar de Carvalho", domain: "edgardecarvalholeiloeiro.com.br", baseUrl: "https://www.edgardecarvalholeiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "brame", name: "Brame Leilões", domain: "brameleiloes.com.br", baseUrl: "https://www.brameleiloes.com.br", genericScrape: true, enabled: true },
   { id: "lancejudicial", name: "Lance Judicial", domain: "lancejudicial.com.br", baseUrl: "https://www.lancejudicial.com.br", genericScrape: true, enabled: true },
@@ -228,7 +228,6 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "ourodoleilao_com_br", name: "Ivan Silveira Amorim", domain: "ourodoleilao.com.br", baseUrl: "https://www.ourodoleilao.com.br", genericScrape: true, enabled: true },
   { id: "versallesleiloes_com_br", name: "Janete Marques Roland", domain: "versallesleiloes.com.br", baseUrl: "https://www.versallesleiloes.com.br", genericScrape: true, enabled: true },
   { id: "simoesleiloes_com_br", name: "João Simões de Almeida Júnior", domain: "simoesleiloes.com.br", baseUrl: "https://www.simoesleiloes.com.br", genericScrape: true, enabled: true },
-  { id: "jotafilho87gmail_com", name: "Jorge José João Filho", domain: "jotafilho87gmail.com", baseUrl: "https://www.jotafilho87gmail.com", genericScrape: true, enabled: true },
   { id: "tradicaoleiloes_com_br", name: "Jorge José João Filho", domain: "tradicaoleiloes.com.br", baseUrl: "https://www.tradicaoleiloes.com.br", genericScrape: true, enabled: true },
   { id: "joserodovalholeiloes_com_br", name: "José Antônio Rodovalho Júnior", domain: "joserodovalholeiloes.com.br", baseUrl: "https://www.joserodovalholeiloes.com.br", genericScrape: true, enabled: true },
   { id: "arquimedesleiloes_com_br", name: "José Arquimedes Câmara", domain: "arquimedesleiloes.com.br", baseUrl: "https://www.arquimedesleiloes.com.br", genericScrape: true, enabled: true },
@@ -241,15 +240,12 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "londinaleiloes_com_br", name: "Luciana Londina da Silva", domain: "londinaleiloes.com.br", baseUrl: "https://www.londinaleiloes.com.br", genericScrape: true, enabled: true },
   { id: "luisleiloeiro_com_br", name: "Luis Otavio Marcolino Shinkawa", domain: "luisleiloeiro.com.br", baseUrl: "https://www.luisleiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "luizlobatoleiloeiro_com_br", name: "Luiz Felipe Perpétuo Lobato", domain: "luizlobatoleiloeiro.com.br", baseUrl: "https://www.luizlobatoleiloeiro.com.br", genericScrape: true, enabled: true },
-  { id: "luizfernandoborgesrocha1gmail_com", name: "Luiz Fernando Borges Rocha", domain: "luizfernandoborgesrocha1gmail.com", baseUrl: "https://www.luizfernandoborgesrocha1gmail.com", genericScrape: true, enabled: true },
   { id: "luizcampolina_com_br", name: "Luiz Washington Campolina Santos", domain: "luizcampolina.com.br", baseUrl: "https://www.luizcampolina.com.br", genericScrape: true, enabled: true },
   { id: "luizacardosoleiloeira_com_br", name: "Luiza Lima e Silva Mesquita Cardoso", domain: "luizacardosoleiloeira.com.br", baseUrl: "https://www.luizacardosoleiloeira.com.br", genericScrape: true, enabled: true },
   { id: "marcoantonioleiloeiro_com_br", name: "Marco Antônio Barbosa de Oliveira Junior", domain: "marcoantonioleiloeiro.com.br", baseUrl: "https://www.marcoantonioleiloeiro.com.br", genericScrape: true, enabled: true },
-  { id: "mpbmoraisgmail_com", name: "Marcos Paulo Branco de Morais", domain: "mpbmoraisgmail.com", baseUrl: "https://www.mpbmoraisgmail.com", genericScrape: true, enabled: true },
   { id: "saladeleiloes_com_br", name: "Marcos Paulo Branco de Morais", domain: "saladeleiloes.com.br", baseUrl: "https://www.saladeleiloes.com.br", genericScrape: true, enabled: true },
   { id: "leiloarialoucoporleiloes_com_br", name: "Matheus Werneck de Oliveira Santos", domain: "leiloarialoucoporleiloes.com.br", baseUrl: "https://www.leiloarialoucoporleiloes.com.br", genericScrape: true, enabled: true },
   { id: "mozarmirandaleiloes_com_br", name: "Mozar Miranda Almeida", domain: "mozarmirandaleiloes.com.br", baseUrl: "https://www.mozarmirandaleiloes.com.br", genericScrape: true, enabled: true },
-  { id: "guilhermeliohotmail_com", name: "Nilson Guilherme Silva Lio", domain: "guilhermeliohotmail.com", baseUrl: "https://www.guilhermeliohotmail.com", genericScrape: true, enabled: true },
   { id: "patricialeiloeira_com_br", name: "Patricia Graciele de Andrade Sousa", domain: "patricialeiloeira.com.br", baseUrl: "https://www.patricialeiloeira.com.br", genericScrape: true, enabled: true },
   { id: "agostinholeiloes_com_br", name: "Paulo César Agostinho", domain: "agostinholeiloes.com.br", baseUrl: "https://www.agostinholeiloes.com.br", genericScrape: true, enabled: true },
   { id: "pauloramosleiloeiro_com_br", name: "Paulo José da Costa Ramos", domain: "pauloramosleiloeiro.com.br", baseUrl: "https://www.pauloramosleiloeiro.com.br", genericScrape: true, enabled: true },
@@ -266,22 +262,11 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "sandrasantosleiloes_com_br", name: "Sandra de Fátima Santos", domain: "sandrasantosleiloes.com.br", baseUrl: "https://www.sandrasantosleiloes.com.br", genericScrape: true, enabled: true },
   { id: "saulojulioleiloeiro_com_br", name: "Saulo Júlio Ribeiro", domain: "saulojulioleiloeiro.com.br", baseUrl: "https://www.saulojulioleiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "bhleiloaria_com_br", name: "Sérgio Sousa Rodrigues", domain: "bhleiloaria.com.br", baseUrl: "https://www.bhleiloaria.com.br", genericScrape: true, enabled: true },
-  { id: "sonia_amarallhotmail_com", name: "Sonia Maria do Amaral", domain: "sonia.amarallhotmail.com", baseUrl: "https://www.sonia.amarallhotmail.com", genericScrape: true, enabled: true },
   { id: "ssleiloes_com", name: "Suellen Soares Ribeiro", domain: "ssleiloes.com", baseUrl: "https://www.ssleiloes.com", genericScrape: true, enabled: true },
   { id: "globoleiloes_com_br", name: "Vanderlia de Assis Carvalho Freitas", domain: "globoleiloes.com.br", baseUrl: "https://www.globoleiloes.com.br", genericScrape: true, enabled: true },
-  { id: "viniciusbiihrer_leiloesoutlook_com", name: "Vinicius Biihrer", domain: "viniciusbiihrer.leiloesoutlook.com", baseUrl: "https://www.viniciusbiihrer.leiloesoutlook.com", genericScrape: true, enabled: true },
   { id: "vitorcalableiloeiro_com_br", name: "Vítor Calab Nunes", domain: "vitorcalableiloeiro.com.br", baseUrl: "https://www.vitorcalableiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "bolsadeleiloes_com_br", name: "Viviane Garzon Corrêa", domain: "bolsadeleiloes.com.br", baseUrl: "https://www.bolsadeleiloes.com.br", genericScrape: true, enabled: true },
-  { id: "wsleiloes_com_br", name: "Wanderson Belmiro dos Reis", domain: "wsleiloes.com.br", baseUrl: "https://www.wsleiloes.com.br", genericScrape: true, enabled: true },
-  { id: "validator_w3_org", name: "10 Atualização da Política de Privacidade", domain: "validator.w3.org", baseUrl: "https://www.validator.w3.org", genericScrape: true, enabled: true },
-  { id: "jigsaw_w3_org", name: "10 Atualização da Política de Privacidade", domain: "jigsaw.w3.org", baseUrl: "https://www.jigsaw.w3.org", genericScrape: true, enabled: true },
-  { id: "acesso_umic_pt", name: "10 Atualização da Política de Privacidade", domain: "acesso.umic.pt", baseUrl: "https://www.acesso.umic.pt", genericScrape: true, enabled: true },
-  { id: "submitexpress_com", name: "10 Atualização da Política de Privacidade", domain: "submitexpress.com", baseUrl: "https://www.submitexpress.com", genericScrape: true, enabled: true },
-  { id: "sebraemg_com_br", name: "Ordem de Tabulação (Tab)", domain: "sebraemg.com.br", baseUrl: "https://www.sebraemg.com.br", genericScrape: true, enabled: true },
-  { id: "instagram_com", name: "Ordem de Tabulação (Tab)", domain: "instagram.com", baseUrl: "https://www.instagram.com", genericScrape: true, enabled: true },
-  { id: "youtube_com", name: "Ordem de Tabulação (Tab)", domain: "youtube.com", baseUrl: "https://www.youtube.com", genericScrape: true, enabled: true },
-  { id: "btcw_maxbot_com_br", name: "Ordem de Tabulação (Tab)", domain: "btcw.maxbot.com.br", baseUrl: "https://www.btcw.maxbot.com.br", genericScrape: true, enabled: true },
-  { id: "wa_me", name: "Ordem de Tabulação (Tab)", domain: "wa.me", baseUrl: "https://www.wa.me", genericScrape: true, enabled: true }
+  { id: "wsleiloes_com_br", name: "Wanderson Belmiro dos Reis", domain: "wsleiloes.com.br", baseUrl: "https://www.wsleiloes.com.br", genericScrape: true, enabled: true }
 ];
 
 export interface ScrapedAuctionDraft {
@@ -356,9 +341,9 @@ function isPropertyLotEvidence(text: string): boolean {
   const normalized = normalizeStr(text);
   // Furniture and cars mentioned inside a house inspection are not separate lots.
   const headline = normalized.split('\n')[0];
-  if (/\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura)\b/.test(headline) && !/\b(veiculo|caminhao|automovel|motocicleta|trator|sucata|ferramenta)\b/.test(headline)) return true;
+  if (/\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|agencia|agência)\b/.test(headline) && !/\b(veiculo|caminhao|automovel|motocicleta|trator|sucata|ferramenta)\b/.test(headline)) return true;
   const movableOnly = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao|sucata|ferramenta|ferramentas|torno|armario|inversor|pecas\s+automotivas|notebook|computador|eletrodomestico)\b/.test(normalized);
-  const property = /\b(imovel|apartamento|apto|casa|terreno|lote\s+(?:de\s+)?terreno|loteamento|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex)\b/.test(normalized);
+  const property = /\b(imovel|apartamento|apto|casa|terreno|lote\s+(?:de\s+)?terreno|loteamento|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex|agencia|agência)\b/.test(normalized);
   return property && !movableOnly;
 }
 
@@ -1649,18 +1634,225 @@ export async function scrapePortalZuk(
   return results;
 }
 
-// Coletor conservador para portais heterogêneos. Só admite cards que exponham
-// link direto, preço e linguagem inequívoca de imóvel; o detalhe é aberto antes
-// da importação para confirmar endereço, metragem, datas e natureza do leilão.
-// This list is deliberately first-party and reviewed. The historical catalogue
-// accidentally accumulated unrelated registry, social and validation domains;
-// those must never enter an auction crawl or be reported as auctioneers.
-const OFFICIAL_GENERIC_PORTAL_IDS = new Set([
-  'alexandrecosta', 'ayupp', 'rioleiloes', 'emgea', 'bb', 'ricart', 'pamela',
-  'gustavo', 'onildo', 'schulmann', 'saraiva', 'rymer', 'depaula', 'jv',
-  'paulobotelho', 'alexandro', 'portella', 'silas', 'joaoemilio', 'facanha',
-  'sold', 'pestana', 'mgl', 'leilaoimovel', 'leiloei', 'vitrinebradesco', 'comprei'
-]);
+// 5. Scraper dedicado para Rogério Menezes
+export async function scrapeRogerioMenezes(
+  targetType: 'extrajudicial' | 'judicial',
+  state: string = 'RJ',
+  city: string = 'Rio de Janeiro'
+): Promise<ScrapedAuctionDraft[]> {
+  const results: ScrapedAuctionDraft[] = [];
+  let browser: any = null;
+  const targetCityNorm = normalizeStr(city);
+  const targetStateNorm = (state || '').toUpperCase();
+
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+    });
+    const page = await createAuctionPage(browser);
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+
+    const searchTerms = ['imovel', 'apartamento', 'terreno', 'casa', 'comercial', 'loja'];
+    const lotLinks = new Set<string>();
+
+    for (const term of searchTerms) {
+      try {
+        const searchUrl = `https://www.rogeriomenezes.com.br/busca?interesse=${term}`;
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await new Promise(r => setTimeout(r, 800));
+
+        const links = await page.evaluate(() => {
+          return Array.from(document.querySelectorAll('a[href*="/lote/"]')).map(a => (a as HTMLAnchorElement).href.split('#')[0]);
+        });
+
+        for (const l of links) {
+          if (l && l.includes('/lote/')) lotLinks.add(l);
+        }
+      } catch (e: any) {
+        console.warn(`[Rogerio Menezes] Erro na busca com termo ${term}:`, e.message);
+      }
+    }
+
+    console.log(`[Rogerio Menezes] Total de lotes encontrados no portal: ${lotLinks.size}`);
+
+    for (const link of Array.from(lotLinks)) {
+      let lotPage: any = null;
+      try {
+        lotPage = await createAuctionPage(browser);
+        await lotPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+        const detailResp = await lotPage.goto(link, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => null);
+        if (!detailResp || detailResp.status() >= 400) continue;
+        await new Promise(r => setTimeout(r, 800));
+
+        const raw = await lotPage.evaluate(() => {
+          const h1 = (document.querySelector('h1') as HTMLElement)?.innerText?.trim() || '';
+          const itemTitle = (document.querySelector('.item-title') as HTMLElement)?.innerText?.trim() || '';
+          const title = h1 || itemTitle || document.title;
+          const bodyText = document.body?.innerText || '';
+          const itemDate = (document.querySelector('.item-date, .data-leilao, .info-data') as HTMLElement)?.innerText?.trim() || '';
+
+          const images = Array.from(document.querySelectorAll('img'))
+            .map(img => img.src)
+            .filter(src => src.includes('/bens/') || src.includes('/lote/') || src.includes('static.suporteleiloes'));
+
+          const docEl = Array.from(document.querySelectorAll('a[href*=".pdf"], a[href*="/documentos/"]'))
+            .find(a => (a as HTMLAnchorElement).href && (a as HTMLAnchorElement).href.includes('.pdf')) as HTMLAnchorElement | undefined;
+
+          return {
+            title,
+            bodyText,
+            itemDate,
+            images,
+            editalUrl: docEl ? docEl.href : ''
+          };
+        });
+
+        const lotText = raw.bodyText.split(/©\s*2018|Telefone:\s*\(21\)|Av\.\s*Brasil,\s*51\.467/i)[0];
+        if (!isPropertyLotEvidence(`${raw.title}\n${lotText}`)) continue;
+
+        // Parse location
+        let address = '';
+        let neighborhood = '';
+        let lotCity = '';
+        let lotState = 'RJ';
+
+        const lineMatch = lotText.match(/(?:endere[cç]o\s+do\s+im[oó]vel|situad[oa]\s+[aà])\s*:?\s*([^.\n]+)/i);
+        if (lineMatch) {
+          const rawLine = lineMatch[1].trim();
+          const ufMatch = rawLine.match(/(?:-|–|,|\/|\s)\s*(RJ|SP|MG|PR|SC|RS|ES|BA)\b/i);
+          if (ufMatch) lotState = ufMatch[1].toUpperCase();
+
+          const normLine = normalizeStr(rawLine);
+          if (normLine.includes('rio de janeiro')) lotCity = 'Rio de Janeiro';
+          else if (normLine.includes('niteroi')) lotCity = 'Niterói';
+          else if (normLine.includes('campos dos goytacazes')) lotCity = 'Campos dos Goytacazes';
+          else if (normLine.includes('sao joao de meriti')) lotCity = 'São João de Meriti';
+          else if (normLine.includes('duque de caxias')) lotCity = 'Duque de Caxias';
+          else if (normLine.includes('macae')) lotCity = 'Macaé';
+          else if (normLine.includes('curitiba')) { lotCity = 'Curitiba'; lotState = 'PR'; }
+          else if (normLine.includes('juiz de fora')) { lotCity = 'Juiz de Fora'; lotState = 'MG'; }
+
+          const parts = rawLine.split(/[-–]/).map(p => p.trim());
+          if (parts.length >= 3) {
+            address = parts[0];
+            neighborhood = parts[1];
+          } else {
+            address = rawLine;
+          }
+        }
+
+        if (!lotCity || !neighborhood) {
+          const normTitle = normalizeStr(raw.title);
+          if (normTitle.includes('rio de janeiro')) lotCity = 'Rio de Janeiro';
+          else if (normTitle.includes('niteroi')) lotCity = 'Niterói';
+          else if (normTitle.includes('campos dos goytacazes')) lotCity = 'Campos dos Goytacazes';
+          else if (normTitle.includes('sao joao de meriti')) lotCity = 'São João de Meriti';
+          else if (normTitle.includes('duque de caxias')) lotCity = 'Duque de Caxias';
+          else if (normTitle.includes('macae')) lotCity = 'Macaé';
+          else if (normTitle.includes('curitiba')) { lotCity = 'Curitiba'; lotState = 'PR'; }
+
+          const ufTitleMatch = raw.title.match(/(?:-|–|,|\/|\s)\s*(RJ|SP|MG|PR|SC|RS|ES|BA)\b/i);
+          if (ufTitleMatch) lotState = ufTitleMatch[1].toUpperCase();
+
+          const titleParts = raw.title.split(/[-–]/).map(p => p.trim());
+          if (titleParts.length >= 3) {
+            const candidateNeigh = titleParts[titleParts.length - 3] || titleParts[titleParts.length - 2];
+            if (candidateNeigh && !candidateNeigh.includes('ÁREA') && !candidateNeigh.includes('RJ') && !candidateNeigh.toUpperCase().includes('RIO DE JANEIRO')) {
+              if (!neighborhood) neighborhood = candidateNeigh;
+            }
+          }
+        }
+
+        // Apply state and city filter if requested
+        if (targetStateNorm && lotState !== targetStateNorm) continue;
+        if (targetCityNorm && normalizeStr(lotCity) !== targetCityNorm) continue;
+
+        // Parse date
+        let auctionDate = '';
+        const dateMatch = (raw.itemDate + ' ' + lotText).match(/(?:leil[aã]o|encerramento|preg[aã]o)\s*(?:ocorrer[aá]|realizado|previsto)?[^0-9]*?(?:\d+[ªºo°]\s*feira\s*,?\s*)?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i);
+        if (dateMatch) {
+          const day = dateMatch[1].padStart(2, '0');
+          const month = dateMatch[2].padStart(2, '0');
+          const year = dateMatch[3] ? (dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3]) : '2026';
+          auctionDate = `${year}-${month}-${day}`;
+        }
+
+        // Parse price
+        let price = 0;
+        const lanceMatch = lotText.match(/lance\s*inicial\s*:?\s*r\$\s*([\d.]+(?:,\d{2})?)/i) ||
+                           lotText.match(/valor\s*inicial\s*(?:r\$)?\s*([\d.]+(?:,\d{2})?)/i) ||
+                           lotText.match(/valor\s*(?:de\s*)?avalia[cç][aã]o\s*:?\s*r\$\s*([\d.]+(?:,\d{2})?)/i);
+        if (lanceMatch) {
+          price = parseBrazilianMoney(lanceMatch[1]);
+        }
+
+        // Parse area
+        let sizeSqm = 0;
+        const sizeMatch = (raw.title + ' ' + lotText).match(/(\d+(?:[.,]\d+)?)\s*m[²2]/i);
+        if (sizeMatch) {
+          sizeSqm = Math.round(parseFloat(sizeMatch[1].replace(',', '.')));
+        }
+
+        const isJudicial = /tribunal\s+de\s+justi[cç]a|processo\s*(?:n[ºo°.]*)?\s*:?\s*\d|vara\s+c[ií]vel|comarca/i.test(lotText);
+        const effectiveOrigin: 'judicial' | 'extrajudicial' = isJudicial ? 'judicial' : 'extrajudicial';
+
+        if (targetType && effectiveOrigin !== targetType) continue;
+
+        const condoMatch = lotText.match(/valor\s+do\s+condom[ií]nio[^:]*:\s*r\$\s*([\d.]+(?:,\d{2})?)/i);
+        const iptuMatch = lotText.match(/valor\s+do\s+iptu[^:]*:\s*r\$\s*([\d.]+(?:,\d{2})?)/i);
+
+        const draft: ScrapedAuctionDraft = {
+          portalId: 'rogeriomenezes',
+          auctioneerName: 'Rogério Menezes',
+          title: raw.title.replace(/\s+/g, ' ').trim(),
+          address: address || `${neighborhood || lotCity}, ${lotCity} - ${lotState}`,
+          neighborhood: neighborhood || '',
+          city: lotCity || city,
+          state: lotState || state,
+          propertyType: parseType(raw.title + ' ' + lotText),
+          sizeSqm,
+          auctionPrice: price,
+          estimatedValue: price,
+          auctionDate,
+          firstAuctionDate: auctionDate,
+          firstAuctionPrice: price,
+          auctionLink: link,
+          imageUrl: raw.images[0] || '',
+          description: lotText.slice(0, 1500).replace(/\s+/g, ' ').trim(),
+          saleMode: isJudicial ? 'Leilão Judicial Online' : 'Venda Direta / Extrajudicial',
+          origin: effectiveOrigin,
+          matriculaUrl: raw.editalUrl,
+          pendingCondoCost: condoMatch ? parseBrazilianMoney(condoMatch[1]) : undefined,
+          pendingIptuCost: iptuMatch ? parseBrazilianMoney(iptuMatch[1]) : undefined,
+          priceVerified: price > 0,
+          sizeVerified: sizeSqm > 0,
+          addressVerified: Boolean(address),
+          originVerified: true,
+          sourceVerified: true
+        };
+
+        const enriched = await enrichLotDetails(browser, draft);
+        if (enriched.origin === targetType || !targetType) {
+          results.push(enriched);
+        }
+      } catch (err: any) {
+        console.warn(`[Rogerio Menezes] Erro ao processar lote ${link}:`, err.message);
+      } finally {
+        if (lotPage) await lotPage.close().catch(() => undefined);
+      }
+    }
+
+    recordSourceAudit({ source: 'Rogério Menezes', url: 'https://www.rogeriomenezes.com.br/busca?interesse=imovel', found: results.length, complete: true });
+  } catch (err: any) {
+    recordSourceAudit({ source: 'Rogério Menezes', complete: false, error: err.message });
+    console.error('[Rogerio Menezes Scraper] Erro:', err.message);
+  } finally {
+    if (browser) await browser.close().catch(() => undefined);
+  }
+
+  return results;
+}
 
 export async function scrapeConfiguredAuctioneers(
   targetType: 'extrajudicial' | 'judicial',
@@ -1670,12 +1862,12 @@ export async function scrapeConfiguredAuctioneers(
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
   const cityCode = municipalityId(city, state);
-  // Dedicated scrapers stay out to avoid duplicate hits. The generic queue is
-  // restricted to the official portals supplied for this product, rather than
-  // every historical domain ever present in the catalogue.
+  // Dedicated scrapers stay out to avoid duplicate hits. All active and valid
+  // official portals configured with genericScrape are eligible.
   const configs = AUCTIONEER_PORTALS.filter(portal => {
-    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias', 'santander', 'portalzuk'].includes(portal.id)) return false;
-    return portal.genericScrape === true && OFFICIAL_GENERIC_PORTAL_IDS.has(portal.id);
+    if (!portal.enabled || ['megaleiloes', 'frazao', 'biasi', 'isaias', 'santander', 'portalzuk', 'rogeriomenezes'].includes(portal.id)) return false;
+    if (/(?:w3\.org|instagram\.com|youtube\.com|wa\.me|maxbot|submitexpress|umic\.pt|sebraemg|hotmail|outlook|gmail)/i.test(portal.domain)) return false;
+    return portal.genericScrape === true;
   });
   try {
     browser = await puppeteer.launch({
@@ -1970,7 +2162,7 @@ async function runAuctioneersPipeline(
   console.log(`Portais configurados: ${AUCTIONEER_PORTALS.map(p => p.name).join(', ')}`);
   console.log(`======================================================\n`);
 
-  const [seedList, isaiasList, santanderList, megaList, frazaoList, biasiList, zukList, configuredList, groundedList] = await Promise.all([
+  const [seedList, isaiasList, santanderList, megaList, frazaoList, biasiList, zukList, rogerioList, configuredList, groundedList] = await Promise.all([
     scrapeOfficialDetailSeeds(targetType, state, city).catch(error => { recordSourceAudit({source:'Lotes oficiais priorizados',complete:false,error:String(error)}); return []; }),
     scrapeIsaiasAuctioneer(targetType, state, city).catch(error => { recordSourceAudit({source:'Isaías Leilões',complete:false,error:String(error)}); return []; }),
     scrapeSantanderOfficial(targetType, state, city).catch(error => { recordSourceAudit({source:'Santander Imóveis',complete:false,error:String(error)}); return []; }),
@@ -1978,11 +2170,12 @@ async function runAuctioneersPipeline(
     scrapeFrazao(targetType, state, city).catch(error => { recordSourceAudit({source:'Frazão',complete:false,error:String(error)}); return []; }),
     scrapeBiasi(targetType, state, city).catch(error => { recordSourceAudit({source:'Biasi',complete:false,error:String(error)}); return []; }),
     scrapePortalZuk(targetType, state, city).catch(error => { recordSourceAudit({source:'Portal Zuk',complete:false,error:String(error)}); return []; }),
+    scrapeRogerioMenezes(targetType, state, city).catch(error => { recordSourceAudit({source:'Rogério Menezes',complete:false,error:String(error)}); return []; }),
     scrapeConfiguredAuctioneers(targetType, state, city).catch(error => { recordSourceAudit({source:'Portais configurados',complete:false,error:String(error)}); return []; }),
     Promise.resolve([] as ScrapedAuctionDraft[]) // AI-generated fields are not source evidence.
   ]);
 
-  const allDrafts = [...seedList, ...isaiasList, ...santanderList, ...megaList, ...frazaoList, ...biasiList, ...zukList, ...configuredList, ...groundedList];
+  const allDrafts = [...seedList, ...isaiasList, ...santanderList, ...megaList, ...frazaoList, ...biasiList, ...zukList, ...rogerioList, ...configuredList, ...groundedList];
   console.log(`[Auctioneer Master Sync] Total bruto capturado nos portais: ${allDrafts.length}`);
 
   return reconcileAuctionDrafts(allDrafts, targetType, state, city, existingAuctions, recalculateFn);
@@ -1996,16 +2189,17 @@ export async function syncPriorityOfficialAuctioneers(
   existingAuctions: AuctionProperty[], recalculateFn: (auc: AuctionProperty) => AuctionProperty
 ) {
   return auctionSyncAudit.run([], async () => {
-    const [seeds, isaias, santander, mega, frazao, biasi, zuk] = await Promise.all([
+    const [seeds, isaias, santander, mega, frazao, biasi, zuk, rogerio] = await Promise.all([
       scrapeOfficialDetailSeeds(targetType, state, city),
       scrapeIsaiasAuctioneer(targetType, state, city),
       scrapeSantanderOfficial(targetType, state, city),
       scrapeMegaLeiloes(targetType, state, city),
       scrapeFrazao(targetType, state, city),
       scrapeBiasi(targetType, state, city),
-      scrapePortalZuk(targetType, state, city).catch(error => { recordSourceAudit({source:'Portal Zuk',complete:false,error:String(error)}); return []; })
+      scrapePortalZuk(targetType, state, city).catch(error => { recordSourceAudit({source:'Portal Zuk',complete:false,error:String(error)}); return []; }),
+      scrapeRogerioMenezes(targetType, state, city).catch(error => { recordSourceAudit({source:'Rogério Menezes',complete:false,error:String(error)}); return []; })
     ]);
-    return reconcileAuctionDrafts([...seeds, ...isaias, ...santander, ...mega, ...frazao, ...biasi, ...zuk], targetType, state, city, existingAuctions, recalculateFn);
+    return reconcileAuctionDrafts([...seeds, ...isaias, ...santander, ...mega, ...frazao, ...biasi, ...zuk, ...rogerio], targetType, state, city, existingAuctions, recalculateFn);
   });
 }
 

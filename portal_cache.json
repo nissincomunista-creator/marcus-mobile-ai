@@ -8107,5 +8107,354 @@
         ]
       }
     }
+  },
+  "portal_v4_rj_rio_de_janeiro_centro_casa_596_2_1_avenida_nilo_pecanha": {
+    "timestamp": 1790145792056,
+    "isFallback": false,
+    "data": {
+      "fallback": false,
+      "totalFound": 23,
+      "streetMatchesCount": 0,
+      "below": {
+        "range": "417m² - 536m²",
+        "avgPrice": 985461,
+        "avgSqm": 6108,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 70m² em Centro",
+            "price": 417000,
+            "sizeSqm": 70,
+            "unitValueSqm": 5957,
+            "address": "Rua Barão de Itapagipe, Rio Comprido · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895470439/comprar/apartamento-2-quartos-rio-comprido-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento mobiliado com 2 quartos para comprar. • R$ 417.000 • R$ 1.394 Condo. + IPTU • 70 m² · 2 quartos · 1 vaga • Rua Barão de Itapagipe, Ri"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 180m² em Centro",
+            "price": 340000,
+            "sizeSqm": 180,
+            "unitValueSqm": 1889,
+            "address": "Rua Jose Leite Lopes, Vargem Grande · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895616053/comprar/casa-2-quartos-vargem-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa em condomínio com 2 quartos, quintal e varanda, piscina e churrasqueira. Vargem Grande, para comprar. • R$ 340.000 • R$ 84 Condo. + IPTU • 180 m² · 2 quartos · 2 vagas • Rua J"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 90m² em Centro",
+            "price": 552000,
+            "sizeSqm": 90,
+            "unitValueSqm": 6133,
+            "address": "Rua Ibituruna, Maracanã · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892850592/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra de apartamento no Maracanã com 3 quartos, 1 suíte. • R$ 552.000 • R$ 821 Condo. + IPTU • 90 m² · 3 quartos • Rua Ibituruna, Maracanã · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 52m² em Centro",
+            "price": 300000,
+            "sizeSqm": 52,
+            "unitValueSqm": 5769,
+            "address": "Rua Goianinha, Curicica · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895063122/comprar/apartamento-2-quartos-curicica-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento em Curicica, 2 quartos, piscina no condomínio. • R$ 300.000 • R$ 550 Condo. + IPTU • 52 m² · 2 quartos · 1 vaga • Rua Goianinha, Curicica · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 60m² em Centro",
+            "price": 240000,
+            "sizeSqm": 60,
+            "unitValueSqm": 4000,
+            "address": "Rua Frederico Méier, Méier · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894018956/comprar/apartamento-2-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Apartamento à venda em Méier de 60 m². • R$ 240.000 • R$ 261 Condo. + IPTU • 60 m² · 2 quartos • Rua Frederico Méier, Méier · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 129m² em Centro",
+            "price": 785000,
+            "sizeSqm": 129,
+            "unitValueSqm": 6085,
+            "address": "Rua Grão de Areia, Jardim Guanabara · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893380455/comprar/apartamento-4-quartos-jardim-guanabara-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda no Jardim Guanabara com 4 quartos. Excelente oportunidade de compra em localização privilegiada. • R$ 785.000 • R$ 1.003 Condo. + IPTU • 129 m² · 4 quartos · 2 "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 70m² em Centro",
+            "price": 380000,
+            "sizeSqm": 70,
+            "unitValueSqm": 5429,
+            "address": "Rua Ladislau Neto, Andaraí · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893011519/comprar/apartamento-2-quartos-andarai-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 2 quartos para comprar no Andaraí. Venda ideal para quem tem animais de estimação. • R$ 380.000 • R$ 1.022 Condo. + IPTU • 70 m² · 2 quartos • Rua Ladislau Neto, And"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 398m² em Centro",
+            "price": 12000000,
+            "sizeSqm": 398,
+            "unitValueSqm": 30151,
+            "address": "Rua Hilário de Gouveia, Copacabana · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894683249/comprar/apartamento-4-quartos-copacabana-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento em Copacabana, mobiliado, 4 quartos, piscina no condomínio. • R$ 12.000.000 • R$ 6.000 Condo. + IPTU • 398 m² · 4 quartos · 3 vagas • Rua Hilário de Gouveia, C"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 142m² em Centro",
+            "price": 1150000,
+            "sizeSqm": 142,
+            "unitValueSqm": 8099,
+            "address": "Rua Geminiano Góis, Freguesia (Jacarepaguá) · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894974858/comprar/casa-4-quartos-freguesia-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa de 4 quartos mobiliada à venda. Com 2 vagas na garagem, piscina e churrasqueira. • R$ 1.150.000 • R$ 1.837 Condo. + IPTU • 142 m² · 4 quartos · 2 vagas • Rua Geminiano Góis, F"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 150m² em Centro",
+            "price": 315000,
+            "sizeSqm": 150,
+            "unitValueSqm": 2100,
+            "address": "Rua Teodoro da Silva - Vila Isabel Rio de Janeiro - Rj Brasil, Vila Isabel · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895279213/comprar/apartamento-3-quartos-vila-isabel-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento mobiliado com 3 quartos, permite animais. Oportunidades para comprar. • R$ 315.000 • R$ 559 Condo. + IPTU • 150 m² · 3 quartos • Rua Teodoro da Silva - Vila Isabel Rio "
+          },
+          {
+            "title": "Imóvel com 4 qtos, 180m² em Centro",
+            "price": 630000,
+            "sizeSqm": 180,
+            "unitValueSqm": 3500,
+            "address": "Rua Pedro de Carvalho, Méier · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895287802/comprar/apartamento-4-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Méier com 4 quartos, 1 suíte e varanda. • R$ 630.000 • R$ 169 Condo. + IPTU • 180 m² · 4 quartos · 1 vaga • Rua Pedro de Carvalho, Méier · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 5 qtos, 190m² em Centro",
+            "price": 540000,
+            "sizeSqm": 190,
+            "unitValueSqm": 2842,
+            "address": "Rua Estevão Silva, Cachambi · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893138250/comprar/apartamento-5-quartos-cachambi-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Apartamento em Cachambi com 5 quartos, churrasqueira no condomínio, ideal para comprar. • R$ 540.000 • R$ 1.475 Condo. + IPTU • 190 m² · 5 quartos · 2 vagas • Rua Est"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 80m² em Centro",
+            "price": 210000,
+            "sizeSqm": 80,
+            "unitValueSqm": 2625,
+            "address": "Rua Doutor Alfredo Barcelos, Olaria · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895315370/comprar/apartamento-2-quartos-olaria-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Venda de apartamento em Olaria: 2 quartos, aceita pets. • R$ 210.000 • R$ 841 Condo. + IPTU • 80 m² · 2 quartos · 1 vaga • Rua Doutor Alfredo Barcelos, Olaria ·"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 96m² em Centro",
+            "price": 590000,
+            "sizeSqm": 96,
+            "unitValueSqm": 6146,
+            "address": "Rua Conselheiro Barros, Rio Comprido · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895433365/comprar/apartamento-3-quartos-rio-comprido-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento mobiliado no Rio Comprido com 3 quartos, varanda gourmet e piscina no condomínio. • R$ 590.000 • R$ 2.469 Condo. + IPTU • 96 m² · 3 quartos · 2 vagas • Rua Cons"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 91m² em Centro",
+            "price": 690000,
+            "sizeSqm": 91,
+            "unitValueSqm": 7582,
+            "address": "Rua Silvia Pozzano, Recreio dos Bandeirantes · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895663759/comprar/apartamento-3-quartos-recreio-dos-bandeirantes-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra de apartamento com 3 quartos. • R$ 690.000 • R$ 2.182 Condo. + IPTU • 91 m² · 3 quartos · 2 vagas • Rua Silvia Pozzano, Recreio dos Bandeirantes · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 120m² em Centro",
+            "price": 550000,
+            "sizeSqm": 120,
+            "unitValueSqm": 4583,
+            "address": "Rua Manuel Alves, Cachambi · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894302337/comprar/casa-3-quartos-cachambi-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótima casa de 3 quartos à venda em Cachambi. Aproveite essa oportunidade de compra! • R$ 550.000 • R$ 51 Condo. + IPTU • 120 m² · 3 quartos · 1 vaga • Rua Manuel Alves, Cachambi · "
+          },
+          {
+            "title": "Imóvel com 3 qtos, 180m² em Centro",
+            "price": 490000,
+            "sizeSqm": 180,
+            "unitValueSqm": 2722,
+            "address": "Rua Monte Pascoal, Cachambi · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893629435/comprar/casa-3-quartos-cachambi-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Para comprar: Casa em condomínio no Cachambi. Venda inclui 3 quartos e permissão para pets. • R$ 490.000 • R$ 385 Condo. + IPTU • 180 m² · 3 quartos · 1 vaga • "
+          },
+          {
+            "title": "Imóvel com 3 qtos, 90m² em Centro",
+            "price": 695000,
+            "sizeSqm": 90,
+            "unitValueSqm": 7722,
+            "address": "Rua Santa Alexandrina, Rio Comprido · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895190948/comprar/casa-3-quartos-rio-comprido-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda com 3 quartos e varanda. • R$ 695.000 • R$ 62 Condo. + IPTU • 90 m² · 3 quartos • Rua Santa Alexandrina, Rio Comprido · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 86m² em Centro",
+            "price": 615000,
+            "sizeSqm": 86,
+            "unitValueSqm": 7151,
+            "address": "Rua Joaquim Pinheiro, Freguesia (jacarepaguá) · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895548918/comprar/apartamento-3-quartos-freguesia-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra este apartamento com 3 quartos, varanda e piscina no condomínio. • R$ 615.000 • R$ 1.515 Condo. + IPTU • 86 m² · 3 quartos · 2 vagas • Rua Joaquim Pinheiro, Freguesia (jacar"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 65m² em Centro",
+            "price": 166600,
+            "sizeSqm": 65,
+            "unitValueSqm": 2563,
+            "address": "Rua Amandiu, Irajá · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893456342/comprar/casa-2-quartos-iraja-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Venda de casa, de 65 m² com 2 quartos e 1 banheiro em Irajá. • R$ 166.600 • R$ 0 Condo. + IPTU • 65 m² · 2 quartos • Rua Amandiu, Irajá · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 57m² em Centro",
+            "price": 280000,
+            "sizeSqm": 57,
+            "unitValueSqm": 4912,
+            "address": "Rua José Veríssimo, Méier · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894852496/comprar/apartamento-2-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Méier com 2 quartos. Ótima oportunidade para quem busca imóvel na região. • R$ 280.000 • R$ 750 Condo. + IPTU • 57 m² · 2 quartos • Rua José Veríssimo, Méier"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 150m² em Centro",
+            "price": 380000,
+            "sizeSqm": 150,
+            "unitValueSqm": 2533,
+            "address": "Estrada do Catonho, Jardim Sulacap · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895675718/comprar/casa-2-quartos-jardim-sulacap-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Casa com 2 quartos e varanda no Jardim Sulacap para comprar. • R$ 380.000 • R$ 25 Condo. + IPTU • 150 m² · 2 quartos · 1 vaga • Estrada do Catonho, Jardim Sulacap · "
+          },
+          {
+            "title": "Imóvel com 1 qtos, 35m² em Centro",
+            "price": 350000,
+            "sizeSqm": 35,
+            "unitValueSqm": 10000,
+            "address": "Estrada Coronel Pedro Corrêa, Jacarepaguá · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894761759/comprar/apartamento-1-quarto-jacarepagua-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento mobiliado com 1 quarto e piscina no condomínio. • R$ 350.000 • R$ 639 Condo. + IPTU • 35 m² · 1 quarto · 1 vaga • Estrada Coronel Pedro Corrêa, Jacarepaguá · Ri"
+          }
+        ]
+      },
+      "close": {
+        "range": "536m² - 656m²",
+        "avgPrice": 439000,
+        "avgSqm": 4972,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 70m² em Centro",
+            "price": 417000,
+            "sizeSqm": 70,
+            "unitValueSqm": 5957,
+            "address": "Rua Barão de Itapagipe, Rio Comprido · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895470439/comprar/apartamento-2-quartos-rio-comprido-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento mobiliado com 2 quartos para comprar. • R$ 417.000 • R$ 1.394 Condo. + IPTU • 70 m² · 2 quartos · 1 vaga • Rua Barão de Itapagipe, Ri"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 180m² em Centro",
+            "price": 340000,
+            "sizeSqm": 180,
+            "unitValueSqm": 1889,
+            "address": "Rua Jose Leite Lopes, Vargem Grande · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895616053/comprar/casa-2-quartos-vargem-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa em condomínio com 2 quartos, quintal e varanda, piscina e churrasqueira. Vargem Grande, para comprar. • R$ 340.000 • R$ 84 Condo. + IPTU • 180 m² · 2 quartos · 2 vagas • Rua J"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 90m² em Centro",
+            "price": 552000,
+            "sizeSqm": 90,
+            "unitValueSqm": 6133,
+            "address": "Rua Ibituruna, Maracanã · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/892850592/comprar/apartamento-3-quartos-maracana-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra de apartamento no Maracanã com 3 quartos, 1 suíte. • R$ 552.000 • R$ 821 Condo. + IPTU • 90 m² · 3 quartos • Rua Ibituruna, Maracanã · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 52m² em Centro",
+            "price": 300000,
+            "sizeSqm": 52,
+            "unitValueSqm": 5769,
+            "address": "Rua Goianinha, Curicica · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895063122/comprar/apartamento-2-quartos-curicica-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento em Curicica, 2 quartos, piscina no condomínio. • R$ 300.000 • R$ 550 Condo. + IPTU • 52 m² · 2 quartos · 1 vaga • Rua Goianinha, Curicica · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 60m² em Centro",
+            "price": 240000,
+            "sizeSqm": 60,
+            "unitValueSqm": 4000,
+            "address": "Rua Frederico Méier, Méier · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894018956/comprar/apartamento-2-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&house_tags=newAd&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Anúncio novo • Apartamento à venda em Méier de 60 m². • R$ 240.000 • R$ 261 Condo. + IPTU • 60 m² · 2 quartos • Rua Frederico Méier, Méier · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 4 qtos, 129m² em Centro",
+            "price": 785000,
+            "sizeSqm": 129,
+            "unitValueSqm": 6085,
+            "address": "Rua Grão de Areia, Jardim Guanabara · Rio de Janeiro, Centro, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/893380455/comprar/apartamento-4-quartos-jardim-guanabara-rio-de-janeiro?from_route=%22search_results%22&search_id=%223ff85722-2f68-4a88-9d34-8ad7e71d125c%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda no Jardim Guanabara com 4 quartos. Excelente oportunidade de compra em localização privilegiada. • R$ 785.000 • R$ 1.003 Condo. + IPTU • 129 m² · 4 quartos · 2 "
+          }
+        ]
+      },
+      "above": {
+        "range": "656m² - 805m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      }
+    }
+  },
+  "portal_v4_rj_rio_de_janeiro_santo_cristo_comercial_567_2_1_rua_pedro_alves": {
+    "timestamp": 1790145809201,
+    "isFallback": true,
+    "data": {
+      "fallback": true,
+      "verified": false,
+      "checkedAt": "2026-09-23T06:43:29.200Z",
+      "totalFound": 0,
+      "streetMatchesCount": 0,
+      "message": "Nenhum anúncio individual com link e endereço confirmados foi encontrado nesta rua. Nenhum valor foi estimado.",
+      "below": {
+        "range": "397m² - 510m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      },
+      "close": {
+        "range": "510m² - 624m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      },
+      "above": {
+        "range": "624m² - 765m²",
+        "avgPrice": 0,
+        "avgSqm": 0,
+        "matches": []
+      }
+    }
   }
 }

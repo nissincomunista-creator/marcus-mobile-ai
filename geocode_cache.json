@@ -9761,5 +9761,59 @@
     "source": "photon",
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Praça Tiradentes"
+  },
+  "rua pedro alves": {
+    "lat": -22.9031207,
+    "lng": -43.2057025,
+    "displayName": "Rua Pedro Alves, Santo Cristo, Rio de Janeiro, Região Sudeste, 20220-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Pedro Alves"
+  },
+  "rua pedro alves, santo cristo, rio de janeiro - rj": {
+    "lat": -22.9031207,
+    "lng": -43.2057025,
+    "displayName": "Rua Pedro Alves, Santo Cristo, Rio de Janeiro, Região Sudeste, 20220-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Pedro Alves"
+  },
+  "rua pedro alves|rio de janeiro|rj": {
+    "lat": -22.9031207,
+    "lng": -43.2057025,
+    "displayName": "Rua Pedro Alves, Santo Cristo, Rio de Janeiro, Região Sudeste, 20220-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Pedro Alves"
+  },
+  "rua general luis mendes de morais": {
+    "lat": -22.9028821,
+    "lng": -43.2083191,
+    "displayName": "Rua General Luís Mendes de Morais, Santo Cristo, Rio de Janeiro, Região Sudeste, 20220-281, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua General Luís Mendes de Morais"
+  },
+  "rua general luis mendes de morais, santo cristo, rio de janeiro - rj": {
+    "lat": -22.9028821,
+    "lng": -43.2083191,
+    "displayName": "Rua General Luís Mendes de Morais, Santo Cristo, Rio de Janeiro, Região Sudeste, 20220-281, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua General Luís Mendes de Morais"
+  },
+  "rua general luis mendes de morais|rio de janeiro|rj": {
+    "lat": -22.9028821,
+    "lng": -43.2083191,
+    "displayName": "Rua General Luís Mendes de Morais, Santo Cristo, Rio de Janeiro, Região Sudeste, 20220-281, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua General Luís Mendes de Morais"
   }
 }

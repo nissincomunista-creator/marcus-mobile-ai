@@ -51,6 +51,7 @@ export function sourceSeedUrls(id:string, base:string):string[] {
  if(id==='schulmann')return [base+'/thumbs.php?tipo=leiloes-online'];
  if(id==='paulobotelho')return [base+'/lotes/imoveis?page=1',base];
  if(id==='rioleiloes')return [base+'/leilao/index/imoveis'];
+ if(id==='rogeriomenezes')return [`${base}/busca?interesse=imovel`,`${base}/busca?interesse=apartamento`,`${base}/busca?interesse=terreno`,`${base}/busca?interesse=casa`,`${base}/busca?interesse=comercial`,`${base}/busca?interesse=loja`];
  const config=portalConfigs.find(p=>p.id===id)!;
  return [config.searchUrl||base];
 }
