@@ -7707,5 +7707,374 @@
         ]
       }
     }
+  },
+  "rj_rio-de-janeiro_guadalupe_rua-basilio-magalhaes_313_2": {
+    "timestamp": 1790121620476,
+    "data": {
+      "fallback": false,
+      "totalFound": 34,
+      "streetMatchesCount": 1,
+      "below": {
+        "range": "219m² - 282m²",
+        "avgPrice": 615877,
+        "avgSqm": 6251,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 70m² em Guadalupe",
+            "price": 417000,
+            "sizeSqm": 70,
+            "unitValueSqm": 5957,
+            "address": "Rua Barão de Itapagipe, Rio Comprido · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895470439/comprar/apartamento-2-quartos-rio-comprido-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&house_tags=newAd&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A0%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Anúncio novo • Apartamento mobiliado com 2 quartos para comprar. • R$ 417.000 • R$ 1.394 Condo. + IPTU • 70 m² · 2 quartos · 1 vaga • Rua Barão de Itapagipe, Ri"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 52m² em Guadalupe",
+            "price": 300000,
+            "sizeSqm": 52,
+            "unitValueSqm": 5769,
+            "address": "Rua Goianinha, Curicica · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895063122/comprar/apartamento-2-quartos-curicica-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A1%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento em Curicica, 2 quartos, piscina no condomínio. • R$ 300.000 • R$ 550 Condo. + IPTU • 52 m² · 2 quartos · 1 vaga • Rua Goianinha, Curicica · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 75m² em Guadalupe",
+            "price": 930000,
+            "sizeSqm": 75,
+            "unitValueSqm": 12400,
+            "address": "Rua Gustavo Sampaio, Leme · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895612445/comprar/apartamento-2-quartos-leme-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A2%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Leme, 2 quartos. Oportunidades únicas no mercado imobiliário. • R$ 930.000 • R$ 967 Condo. + IPTU • 75 m² · 2 quartos • Rua Gustavo Sampaio, Leme · Rio de Ja"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 64m² em Guadalupe",
+            "price": 409000,
+            "sizeSqm": 64,
+            "unitValueSqm": 6391,
+            "address": "Rua Uruguai, Andaraí · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895595788/comprar/apartamento-2-quartos-andarai-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A3%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Andaraí com 2 quartos, aceita animais. • R$ 409.000 • R$ 67 Condo. + IPTU • 64 m² · 2 quartos • Rua Uruguai, Andaraí · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 48m² em Guadalupe",
+            "price": 200000,
+            "sizeSqm": 48,
+            "unitValueSqm": 4167,
+            "address": "Avenida Darcy Bitencourt Costa, Olaria · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895647549/comprar/apartamento-2-quartos-olaria-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A4%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Comprar apartamento em Olaria com 2 quartos. • R$ 200.000 • R$ 150 Condo. + IPTU • 48 m² · 2 quartos • Avenida Darcy Bitencourt Costa, Olaria · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 44m² em Guadalupe",
+            "price": 200000,
+            "sizeSqm": 44,
+            "unitValueSqm": 4545,
+            "address": "Avenida Otávio Malta, Anil · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895257632/comprar/apartamento-2-quartos-anil-rio-de-janeiro?from_route=%22search_results%22&house_tags=buyRented&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A5%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compre já alugado • Apartamento com 2 quartos disponível para comprar. • R$ 200.000 • R$ 261 Condo. + IPTU • 44 m² · 2 quartos · 1 vaga • Avenida Otávio Malta, Anil · Rio de Janeir"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 81m² em Guadalupe",
+            "price": 1050000,
+            "sizeSqm": 81,
+            "unitValueSqm": 12963,
+            "address": "Rua Jornalista Henrique Cordeiro, Barra da Tijuca · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894986094/comprar/apartamento-2-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A6%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento mobiliado na Barra da Tijuca com 2 quartos, varanda e academia no condomínio. • R$ 1.050.000 • R$ 2.855 Condo. + IPTU • 81 m² · 2 quartos · 1 vaga • Rua Jornali"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 45m² em Guadalupe",
+            "price": 200000,
+            "sizeSqm": 45,
+            "unitValueSqm": 4444,
+            "address": "Rua Campína Grande, Campo Grande · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895234441/comprar/apartamento-2-quartos-campo-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A7%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento à venda: 2 quartos, 1 suíte. • R$ 200.000 • R$ 340 Condo. + IPTU • 45 m² · 2 quartos • Rua Campína Grande, Campo Grande · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 106m² em Guadalupe",
+            "price": 430000,
+            "sizeSqm": 106,
+            "unitValueSqm": 4057,
+            "address": "Rua Basílio Magalhães, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895599391/comprar/apartamento-3-quartos-grajau-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A9%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Comprar apartamento no Grajaú com 3 quartos, 1 suíte. • R$ 430.000 • R$ 1.625 Condo. + IPTU • 106 m² · 3 quartos · 1 vaga • R. Gurupi 65 - Grajaú Rio de Janeiro - Rj 20561-100 Bras"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 140m² em Guadalupe",
+            "price": 600000,
+            "sizeSqm": 140,
+            "unitValueSqm": 4286,
+            "address": "Rua Caroá, Curicica · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895308166/comprar/casa-3-quartos-curicica-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A10%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Casa à venda com 3 quartos. • R$ 600.000 • R$ 209 Condo. + IPTU • 140 m² · 3 quartos • Rua Caroá, Curicica · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 24m² em Guadalupe",
+            "price": 245000,
+            "sizeSqm": 24,
+            "unitValueSqm": 10208,
+            "address": "Rua André Cavalcanti, Centro · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895340355/comprar/apartamento-1-quarto-centro-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A11%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Compra apartamento mobiliado no Centro com 1 quarto. • R$ 245.000 • R$ 800 Condo. + IPTU • 24 m² · 1 quarto • Rua André Cavalcanti, Centro · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 79m² em Guadalupe",
+            "price": 500000,
+            "sizeSqm": 79,
+            "unitValueSqm": 6329,
+            "address": "Rua Retiro dos Artistas, Pechincha · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895423190/comprar/apartamento-3-quartos-pechincha-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A12%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento mobiliado com 3 quartos, varanda e academia. Piscina no condomínio. Venda imperdível! • R$ 500.000 • R$ 939 Condo. + IPTU • 79 m² · 3 quartos · 1 vaga • Rua Retiro dos "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 60m² em Guadalupe",
+            "price": 490000,
+            "sizeSqm": 60,
+            "unitValueSqm": 8167,
+            "address": "Avenida Adolpho de Vasconcellos, Barra da Tijuca · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894979578/comprar/apartamento-2-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A13%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 2 quartos à venda. Com 1 vaga na garagem. • R$ 490.000 • R$ 1.259 Condo. + IPTU • 60 m² · 2 quartos · 1 vaga • Avenida Adolpho de Vasconcellos, Barra da Tijuca · Rio"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 120m² em Guadalupe",
+            "price": 250000,
+            "sizeSqm": 120,
+            "unitValueSqm": 2083,
+            "address": "Rua das Árvores, Campo Grande · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895664580/comprar/casa-3-quartos-campo-grande-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A14%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Venda de casa mobiliada, de 120 m² com 3 quartos e 4 banheiros em Campo Grande. • R$ 250.000 • R$ 0 Condo. + IPTU • 120 m² · 3 quartos • Rua das Árvores, Campo Grande"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 55m² em Guadalupe",
+            "price": 180000,
+            "sizeSqm": 55,
+            "unitValueSqm": 3273,
+            "address": "Rua Araújo Leitão, Grajaú · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895124729/comprar/apartamento-2-quartos-grajau-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A15%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento mobiliado com 2 quartos e churrasqueira no condomínio. • R$ 180.000 • R$ 1.100 Condo. + IPTU • 55 m² · 2 quartos · 1 vaga • Rua Araújo Leitão, Grajaú · Rio de "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 100m² em Guadalupe",
+            "price": 235000,
+            "sizeSqm": 100,
+            "unitValueSqm": 2350,
+            "address": "Rua Irapuá, Penha Circular · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894750925/comprar/casa-2-quartos-penha-circular-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A16%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de casa com 2 quartos e varanda. • R$ 235.000 • R$ 0 Condo. + IPTU • 100 m² · 2 quartos • Rua Irapuá, Penha Circular · Rio de Janeiro"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 53m² em Guadalupe",
+            "price": 340000,
+            "sizeSqm": 53,
+            "unitValueSqm": 6415,
+            "address": "Rua Pompílio de Albuquerque, Encantado · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/894641972/comprar/apartamento-2-quartos-encantado-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A17%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de apartamento, de 53 m² com 2 quartos, 2 banheiros e 1 vaga na garagem em Encantado. • R$ 340.000 • R$ 633 Condo. + IPTU • 53 m² · 2 quartos · 1 vaga • Rua Pompílio de Albuq"
+          },
+          {
+            "title": "Imóvel com 1 qtos, 44m² em Guadalupe",
+            "price": 235000,
+            "sizeSqm": 44,
+            "unitValueSqm": 5341,
+            "address": "Estrada do Rio Grande, Taquara · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895341803/comprar/apartamento-1-quarto-taquara-rio-de-janeiro?from_route=%22search_results%22&house_tags=isSaleGoodPrice&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A18%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Ótimo preço • Venda de apartamento, de 44 m² com 1 quarto, 1 banheiro e 1 vaga na garagem em Taquara. • R$ 235.000 • R$ 1.059 Condo. + IPTU • 44 m² · 1 quarto · 1 vaga • Estrada do"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 100m² em Guadalupe",
+            "price": 400000,
+            "sizeSqm": 100,
+            "unitValueSqm": 4000,
+            "address": "Rua Getulio, Cachambi · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895651267/comprar/apartamento-2-quartos-cachambi-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A19%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 2 quartos mobiliado à venda. Com 1 vaga na garagem, piscina e churrasqueira. • R$ 400.000 • R$ 971 Condo. + IPTU • 100 m² · 2 quartos · 1 vaga • Rua Getulio, Cachamb"
+          },
+          {
+            "title": "Imóvel com 3 qtos, 104m² em Guadalupe",
+            "price": 538000,
+            "sizeSqm": 104,
+            "unitValueSqm": 5173,
+            "address": "Rua Fábio Luz, Méier · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895483981/comprar/apartamento-3-quartos-meier-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A20%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento com 3 quartos, varanda e piscina no condomínio. Excelente oportunidade de compra. • R$ 538.000 • R$ 1.545 Condo. + IPTU • 104 m² · 3 quartos · 2 vagas • Rua Fábio Luz, "
+          },
+          {
+            "title": "Imóvel com 2 qtos, 43m² em Guadalupe",
+            "price": 239000,
+            "sizeSqm": 43,
+            "unitValueSqm": 5558,
+            "address": "Rua Euclydes Caldas, Campo Grande · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895581467/comprar/apartamento-2-quartos-campo-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A21%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 2 quartos mobiliado à venda. Com 1 vaga na garagem. • R$ 239.000 • R$ 330 Condo. + IPTU • 43 m² · 2 quartos · 1 vaga • Rua Euclydes Caldas, Campo Grande · Rio de Jan"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 78m² em Guadalupe",
+            "price": 630000,
+            "sizeSqm": 78,
+            "unitValueSqm": 8077,
+            "address": "Avenida Embaixador Abelardo Bueno, Barra da Tijuca · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895466668/comprar/apartamento-2-quartos-barra-da-tijuca-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A22%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Apartamento de 2 quartos mobiliado à venda. Com 1 vaga na garagem, piscina e churrasqueira. • R$ 630.000 • R$ 236 Condo. + IPTU • 78 m² · 2 quartos · 1 vaga • Avenida Embaixador Ab"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 180m² em Rua Basílio Magalhães",
+            "price": 1500000,
+            "sizeSqm": 180,
+            "unitValueSqm": 8333,
+            "address": "Rua Doutor Oliveira Botelho, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-com-piscina-sao-francisco-niteroi-rj-180m2-id-2913635252/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +55 fotos • R$ 1.500.000 • Cond. R$ 965 • IPTU R$ 499 • Tamanho do imóvel 180 m² • Quantidade de quartos 4 • Quantidade de banheiros 4 • Quantidade de vagas de garagem 2 • São F"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 240m² em Rua Basílio Magalhães",
+            "price": 1570000,
+            "sizeSqm": 240,
+            "unitValueSqm": 6542,
+            "address": "Rua Doutor Oliveira Botelho, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-com-piscina-sao-francisco-niteroi-rj-240m2-id-2913547917/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +34 fotos • R$ 1.570.000 • Cond. R$ 750 • IPTU R$ 450 • Tamanho do imóvel 240 m² • Quantidade de quartos 4 • Quantidade de banheiros 4 • Quantidade de vagas de garagem 2 • São F"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 170m² em Rua Basílio Magalhães",
+            "price": 1400000,
+            "sizeSqm": 170,
+            "unitValueSqm": 8235,
+            "address": "Rua Eurico Batista, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-com-piscina-sao-francisco-niteroi-rj-170m2-id-2913542583/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +22 fotos • R$ 1.400.000 • Cond. isento • IPTU R$ 454 • Tamanho do imóvel 170 m² • Quantidade de quartos 4 • Quantidade de banheiros 2 • Quantidade de vagas de garagem 5 • São F"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 100m² em Rua Basílio Magalhães",
+            "price": 848310,
+            "sizeSqm": 100,
+            "unitValueSqm": 8483,
+            "address": "Avenida Rui Barbosa, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-com-churrasqueira-sao-francisco-niteroi-rj-100m2-id-2913668236/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +15 fotos • R$ 848.310 • Cond. R$ 1 • IPTU R$ 2.410 • Tamanho do imóvel 100 m² • Quantidade de quartos 4 • Quantidade de banheiros 1 • Quantidade de vagas de garagem 1 • São Fra"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 259m² em Rua Basílio Magalhães",
+            "price": 1150000,
+            "sizeSqm": 259,
+            "unitValueSqm": 4440,
+            "address": "Rua Brito, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-mobiliado-sao-francisco-niteroi-rj-259m2-id-2913619228/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +43 fotos • R$ 1.150.000 • Cond. R$ 955 • IPTU R$ 430 • Tamanho do imóvel 259 m² • Quantidade de quartos 4 • Quantidade de banheiros 5 • Quantidade de vagas de garagem 2 • São F"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 232m² em Rua Basílio Magalhães",
+            "price": 990000,
+            "sizeSqm": 232,
+            "unitValueSqm": 4267,
+            "address": "Rua Brito, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-com-lavanderia-coletiva-sao-francisco-niteroi-rj-232m2-id-2913543657/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +38 fotos • R$ 990.000 • Cond. R$ 940 • IPTU R$ 410 • Tamanho do imóvel 232 m² • Quantidade de quartos 4 • Quantidade de banheiros 2 • Quantidade de vagas de garagem 2 • São Fra"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 87m² em Rua Basílio Magalhães",
+            "price": 850000,
+            "sizeSqm": 87,
+            "unitValueSqm": 9770,
+            "address": "Avenida Rui Barbosa, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-apartamento-2-quartos-com-churrasqueira-sao-francisco-niteroi-rj-87m2-id-2913543556/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +25 fotos • R$ 850.000 • Cond. R$ 1.433 • IPTU R$ 283 • Tamanho do imóvel 87 m² • Quantidade de quartos 2 • Quantidade de banheiros 2 • Quantidade de vagas de garagem 1 • São Fr"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 209m² em Rua Basílio Magalhães",
+            "price": 1150000,
+            "sizeSqm": 209,
+            "unitValueSqm": 5502,
+            "address": "Rua Brito, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-com-ar-condicionado-sao-francisco-niteroi-rj-209m2-id-2913075131/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +36 fotos • R$ 1.150.000 • Cond. R$ 1.064 • IPTU R$ 431 • Tamanho do imóvel 209 m² • Quantidade de quartos 4 • Quantidade de banheiros 3 • Quantidade de vagas de garagem 1 • São"
+          }
+        ]
+      },
+      "close": {
+        "range": "282m² - 344m²",
+        "avgPrice": 1550000,
+        "avgSqm": 4668,
+        "matches": [
+          {
+            "title": "Imóvel com 2 qtos, 320m² em Rua Basílio Magalhães",
+            "price": 1350000,
+            "sizeSqm": 320,
+            "unitValueSqm": 4219,
+            "address": "Rua Desembargador Gastão Pache de Faria, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-4-quartos-com-piscina-sao-francisco-niteroi-rj-320m2-id-2913542027/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +10 fotos • R$ 1.350.000 • Cond. isento • IPTU R$ 417 • Ótimo preço • Tamanho do imóvel 320 m² • Quantidade de quartos 4 • Quantidade de banheiros 5 • Quantidade de vagas de gar"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 342m² em Rua Basílio Magalhães",
+            "price": 1750000,
+            "sizeSqm": 342,
+            "unitValueSqm": 5117,
+            "address": "Travessa Conrado Leopoldo Froes, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-6-quartos-sao-francisco-niteroi-rj-342m2-id-2913217231/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +36 fotos • R$ 1.750.000 • Cond. R$ 1 • IPTU R$ 11.200 • Tamanho do imóvel 342 m² • Quantidade de quartos 6 • Quantidade de banheiros 6 • Quantidade de vagas de garagem 7 • São "
+          }
+        ]
+      },
+      "above": {
+        "range": "344m² - 423m²",
+        "avgPrice": 3025000,
+        "avgSqm": 6528,
+        "matches": [
+          {
+            "title": "Imóvel com 5 qtos, 450m² em Guadalupe",
+            "price": 4300000,
+            "sizeSqm": 450,
+            "unitValueSqm": 9556,
+            "address": "Estrada Vereador Alceu de Carvalho, Vargem Grande · Rio de Janeiro, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.quintoandar.com.br/imovel/895351733/comprar/casa-5-quartos-vargem-grande-rio-de-janeiro?from_route=%22search_results%22&search_id=%2245921344-8bd4-4e01-8f98-f00961634a61%22&search_rank=%7B%22sortMode%22%3A%22relevance%22%2C%22searchMode%22%3A%22list%22%2C%22resultsOrigin%22%3A%22search%22%2C%22rank%22%3A8%2C%22personalization%22%3Afalse%7D",
+            "portal": "QuintoAndar",
+            "description": "Venda de casa mobiliada, de 450 m² com 5 quartos, 8 banheiros e 2 vagas na garagem em Vargem Grande. • R$ 4.300.000 • R$ 2.280 Condo. + IPTU • 450 m² · 5 quartos · 2 vagas • Estrad"
+          },
+          {
+            "title": "Imóvel com 2 qtos, 500m² em Rua Basílio Magalhães",
+            "price": 1750000,
+            "sizeSqm": 500,
+            "unitValueSqm": 3500,
+            "address": "Travessa Conrado Leopoldo Froes, Guadalupe, Rio de Janeiro - RJ",
+            "link": "https://www.zapimoveis.com.br/imovel/venda-casa-6-quartos-com-churrasqueira-sao-francisco-niteroi-rj-500m2-id-2913547814/?source=showcase%2CERROR+PAGE",
+            "portal": "ZapImóveis",
+            "description": " • +53 fotos • R$ 1.750.000 • Cond. isento • IPTU R$ 1.000 • Tamanho do imóvel 500 m² • Quantidade de quartos 6 • Quantidade de banheiros 9 • Quantidade de vagas de garagem 4 • São"
+          }
+        ]
+      }
+    }
   }
 }

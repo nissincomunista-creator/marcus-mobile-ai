@@ -1418,13 +1418,13 @@
     "matchedStreet": "Rua Conde de Lages"
   },
   "rua da lapa": {
-    "lat": -22.9021923,
-    "lng": -43.1752886,
-    "displayName": "Igreja de Nossa Senhora da Lapa dos Mercadores, Rua do Ouvidor, 35, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "lat": -22.9155886,
+    "lng": -43.1777324,
+    "displayName": "Rua da Lapa, Lapa, Rio de Janeiro, Região Sudeste, 20021-180, Brasil",
     "precision": "street",
-    "source": "photon",
+    "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
-    "matchedStreet": "Rua do Ouvidor"
+    "matchedStreet": "Rua da Lapa"
   },
   "rua da lapa, centro, rio de janeiro - rj": {
     "lat": -22.9021923,
@@ -9113,5 +9113,653 @@
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Rua Garcia d'Ávila"
+  },
+  "rua engenheiro enaldo cravo peixoto": {
+    "lat": -22.9220853,
+    "lng": -43.2347035,
+    "displayName": "Rua Engenheiro Enaldo Cravo Peixoto, Tijuca, Rio de Janeiro, Região Sudeste, 20511-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Engenheiro Enaldo Cravo Peixoto"
+  },
+  "rua engenheiro enaldo cravo peixoto, l, rio de janeiro - rj": {
+    "lat": -22.9220853,
+    "lng": -43.2347035,
+    "displayName": "Rua Engenheiro Enaldo Cravo Peixoto, Tijuca, Rio de Janeiro, Região Sudeste, 20511-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Engenheiro Enaldo Cravo Peixoto"
+  },
+  "rua engenheiro enaldo cravo peixoto|rio de janeiro|rj": {
+    "lat": -22.9220853,
+    "lng": -43.2347035,
+    "displayName": "Rua Engenheiro Enaldo Cravo Peixoto, Tijuca, Rio de Janeiro, Região Sudeste, 20511-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Engenheiro Enaldo Cravo Peixoto"
+  },
+  "rua da lapa, lapa, rio de janeiro - rj": {
+    "lat": -22.9155886,
+    "lng": -43.1777324,
+    "displayName": "Rua da Lapa, Lapa, Rio de Janeiro, Região Sudeste, 20021-180, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Lapa"
+  },
+  "rua da lapa|rio de janeiro|rj": {
+    "lat": -22.9155886,
+    "lng": -43.1777324,
+    "displayName": "Rua da Lapa, Lapa, Rio de Janeiro, Região Sudeste, 20021-180, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Lapa"
+  },
+  "rua da assembleia": {
+    "lat": -22.9036205,
+    "lng": -43.1738961,
+    "displayName": "Rua da Assembléia, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20010-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Assembléia"
+  },
+  "rua da assembleia, centro, rio de janeiro - rj": {
+    "lat": -22.9036205,
+    "lng": -43.1738961,
+    "displayName": "Rua da Assembléia, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20010-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Assembléia"
+  },
+  "rua da assembleia|rio de janeiro|rj": {
+    "lat": -22.9036205,
+    "lng": -43.1738961,
+    "displayName": "Rua da Assembléia, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20010-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua da Assembléia"
+  },
+  "rua do ouvidor": {
+    "lat": -22.9043248,
+    "lng": -43.1793885,
+    "displayName": "Rua do Ouvidor, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20050-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua do Ouvidor"
+  },
+  "rua do ouvidor, centro, rio de janeiro - rj": {
+    "lat": -22.9043248,
+    "lng": -43.1793885,
+    "displayName": "Rua do Ouvidor, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20050-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua do Ouvidor"
+  },
+  "rua do ouvidor|rio de janeiro|rj": {
+    "lat": -22.9043248,
+    "lng": -43.1793885,
+    "displayName": "Rua do Ouvidor, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20050-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua do Ouvidor"
+  },
+  "rua sao bento": {
+    "lat": -22.8983723,
+    "lng": -43.1797337,
+    "displayName": "Rua São Bento, Centro, Rio de Janeiro, Região Sudeste, 20090-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua São Bento"
+  },
+  "rua sao bento, centro, rio de janeiro - rj": {
+    "lat": -22.8983723,
+    "lng": -43.1797337,
+    "displayName": "Rua São Bento, Centro, Rio de Janeiro, Região Sudeste, 20090-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua São Bento"
+  },
+  "rua sao bento|rio de janeiro|rj": {
+    "lat": -22.8983723,
+    "lng": -43.1797337,
+    "displayName": "Rua São Bento, Centro, Rio de Janeiro, Região Sudeste, 20090-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua São Bento"
+  },
+  "rua silva jardim": {
+    "lat": -22.9084589,
+    "lng": -43.181863,
+    "displayName": "Rua Silva Jardim, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20060-050, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Jardim"
+  },
+  "rua silva jardim, centro, rio de janeiro - rj": {
+    "lat": -22.9084589,
+    "lng": -43.181863,
+    "displayName": "Rua Silva Jardim, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20060-050, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Jardim"
+  },
+  "rua silva jardim|rio de janeiro|rj": {
+    "lat": -22.9084589,
+    "lng": -43.181863,
+    "displayName": "Rua Silva Jardim, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20060-050, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Jardim"
+  },
+  "praca maua": {
+    "lat": -22.8967056,
+    "lng": -43.1817804,
+    "displayName": "Praça Mauá, Centro, Rio de Janeiro, Região Sudeste, 20090-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Praça Mauá"
+  },
+  "praca maua, centro, rio de janeiro - rj": {
+    "lat": -22.8967056,
+    "lng": -43.1817804,
+    "displayName": "Praça Mauá, Centro, Rio de Janeiro, Região Sudeste, 20090-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Praça Mauá"
+  },
+  "praca maua|rio de janeiro|rj": {
+    "lat": -22.8967056,
+    "lng": -43.1817804,
+    "displayName": "Praça Mauá, Centro, Rio de Janeiro, Região Sudeste, 20090-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Praça Mauá"
+  },
+  "rua tamoios": {
+    "lat": -22.9211877,
+    "lng": -43.0898977,
+    "displayName": "Rua Tamoios, São Francisco, Região Praias da Baía, Niterói, Rio de Janeiro, Região Sudeste, 24360-440, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Tamoios"
+  },
+  "rua tamoios, sao francisco, niteroi - rj": {
+    "lat": -22.9211877,
+    "lng": -43.0898977,
+    "displayName": "Rua Tamoios, São Francisco, Região Praias da Baía, Niterói, Rio de Janeiro, Região Sudeste, 24360-440, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Tamoios"
+  },
+  "rua tamoios|niteroi|rj": {
+    "lat": -22.9211877,
+    "lng": -43.0898977,
+    "displayName": "Rua Tamoios, São Francisco, Região Praias da Baía, Niterói, Rio de Janeiro, Região Sudeste, 24360-440, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Tamoios"
+  },
+  "rua arariboia": {
+    "lat": -22.9167334,
+    "lng": -43.092523,
+    "displayName": "Rua Arariboia, São Francisco, Região Praias da Baía, Niterói, Rio de Janeiro, Região Sudeste, 24360-022, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Arariboia"
+  },
+  "rua arariboia, sao francisco, niteroi - rj": {
+    "lat": -22.9167334,
+    "lng": -43.092523,
+    "displayName": "Rua Arariboia, São Francisco, Região Praias da Baía, Niterói, Rio de Janeiro, Região Sudeste, 24360-022, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Arariboia"
+  },
+  "rua arariboia|niteroi|rj": {
+    "lat": -22.9167334,
+    "lng": -43.092523,
+    "displayName": "Rua Arariboia, São Francisco, Região Praias da Baía, Niterói, Rio de Janeiro, Região Sudeste, 24360-022, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Arariboia"
+  },
+  "avenida nilo pecanha": {
+    "lat": -22.9062991,
+    "lng": -43.1738684,
+    "displayName": "Avenida Nilo Peçanha, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20020-100, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Nilo Peçanha"
+  },
+  "avenida nilo pecanha, centro, rio de janeiro - rj": {
+    "lat": -22.9062991,
+    "lng": -43.1738684,
+    "displayName": "Avenida Nilo Peçanha, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20020-100, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Nilo Peçanha"
+  },
+  "avenida nilo pecanha|rio de janeiro|rj": {
+    "lat": -22.9062991,
+    "lng": -43.1738684,
+    "displayName": "Avenida Nilo Peçanha, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20020-100, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Nilo Peçanha"
+  },
+  "rua auriflama": {
+    "lat": -22.8417297,
+    "lng": -43.3794597,
+    "displayName": "Rua Auriflama, Guadalupe, Rio de Janeiro, Região Sudeste, 21660-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Auriflama"
+  },
+  "rua auriflama, guadalupe, rio de janeiro - rj": {
+    "lat": -22.8417297,
+    "lng": -43.3794597,
+    "displayName": "Rua Auriflama, Guadalupe, Rio de Janeiro, Região Sudeste, 21660-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Auriflama"
+  },
+  "rua auriflama|rio de janeiro|rj": {
+    "lat": -22.8417297,
+    "lng": -43.3794597,
+    "displayName": "Rua Auriflama, Guadalupe, Rio de Janeiro, Região Sudeste, 21660-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Auriflama"
+  },
+  "rua xingu": {
+    "lat": -22.9379132,
+    "lng": -43.3412544,
+    "displayName": "Rua Xingu, Freguesia (Jacarepaguá), Rio de Janeiro, Região Sudeste, 22760-070, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Xingu"
+  },
+  "rua xingu, freguesia jacarepagua, rio de janeiro - rj": {
+    "lat": -22.9379132,
+    "lng": -43.3412544,
+    "displayName": "Rua Xingu, Freguesia (Jacarepaguá), Rio de Janeiro, Região Sudeste, 22760-070, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Xingu"
+  },
+  "rua xingu|rio de janeiro|rj": {
+    "lat": -22.9379132,
+    "lng": -43.3412544,
+    "displayName": "Rua Xingu, Freguesia (Jacarepaguá), Rio de Janeiro, Região Sudeste, 22760-070, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Xingu"
+  },
+  "rua bispo lacerda": {
+    "lat": -22.8772185,
+    "lng": -43.2675496,
+    "displayName": "Rua Bispo Lacerda, Del Castilho, Rio de Janeiro, Região Sudeste, 20765-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Bispo Lacerda"
+  },
+  "rua bispo lacerda, del castilho, rio de janeiro - rj": {
+    "lat": -22.8772185,
+    "lng": -43.2675496,
+    "displayName": "Rua Bispo Lacerda, Del Castilho, Rio de Janeiro, Região Sudeste, 20765-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Bispo Lacerda"
+  },
+  "rua bispo lacerda|rio de janeiro|rj": {
+    "lat": -22.8772185,
+    "lng": -43.2675496,
+    "displayName": "Rua Bispo Lacerda, Del Castilho, Rio de Janeiro, Região Sudeste, 20765-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Bispo Lacerda"
+  },
+  "rua atilio milano": {
+    "lat": -22.8800724,
+    "lng": -43.2655792,
+    "displayName": "Rua Atilio Milano, Del Castilho, Rio de Janeiro, Região Sudeste, 20785-510, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Atilio Milano"
+  },
+  "rua atilio milano, del castilho, rio de janeiro - rj": {
+    "lat": -22.8800724,
+    "lng": -43.2655792,
+    "displayName": "Rua Atilio Milano, Del Castilho, Rio de Janeiro, Região Sudeste, 20785-510, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Atilio Milano"
+  },
+  "rua atilio milano|rio de janeiro|rj": {
+    "lat": -22.8800724,
+    "lng": -43.2655792,
+    "displayName": "Rua Atilio Milano, Del Castilho, Rio de Janeiro, Região Sudeste, 20785-510, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Atilio Milano"
+  },
+  "rua miranda vale": {
+    "lat": -22.8825492,
+    "lng": -43.2707637,
+    "displayName": "Rua Miranda Vale, Del Castilho, Rio de Janeiro, Região Sudeste, 20765-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Miranda Vale"
+  },
+  "rua miranda vale, del castilho, rio de janeiro - rj": {
+    "lat": -22.8825492,
+    "lng": -43.2707637,
+    "displayName": "Rua Miranda Vale, Del Castilho, Rio de Janeiro, Região Sudeste, 20765-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Miranda Vale"
+  },
+  "rua miranda vale|rio de janeiro|rj": {
+    "lat": -22.8825492,
+    "lng": -43.2707637,
+    "displayName": "Rua Miranda Vale, Del Castilho, Rio de Janeiro, Região Sudeste, 20765-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Miranda Vale"
+  },
+  "rua lopes da cruz": {
+    "lat": -22.9061711,
+    "lng": -43.281427,
+    "displayName": "Rua Lopes da Cruz, Méier, Rio de Janeiro, Região Sudeste, 20725-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lopes da Cruz"
+  },
+  "rua lopes da cruz, meier, rio de janeiro - rj": {
+    "lat": -22.9061711,
+    "lng": -43.281427,
+    "displayName": "Rua Lopes da Cruz, Méier, Rio de Janeiro, Região Sudeste, 20725-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lopes da Cruz"
+  },
+  "rua lopes da cruz|rio de janeiro|rj": {
+    "lat": -22.9061711,
+    "lng": -43.281427,
+    "displayName": "Rua Lopes da Cruz, Méier, Rio de Janeiro, Região Sudeste, 20725-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lopes da Cruz"
+  },
+  "rua silva rabelo": {
+    "lat": -22.8990401,
+    "lng": -43.2826124,
+    "displayName": "Rua Silva Rabelo, Todos os Santos, Rio de Janeiro, Região Sudeste, 20735-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Rabelo"
+  },
+  "rua silva rabelo, meier, rio de janeiro - rj": {
+    "lat": -22.8990401,
+    "lng": -43.2826124,
+    "displayName": "Rua Silva Rabelo, Todos os Santos, Rio de Janeiro, Região Sudeste, 20735-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Rabelo"
+  },
+  "rua silva rabelo|rio de janeiro|rj": {
+    "lat": -22.8990401,
+    "lng": -43.2826124,
+    "displayName": "Rua Silva Rabelo, Todos os Santos, Rio de Janeiro, Região Sudeste, 20735-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Rabelo"
+  },
+  "rua tenente cerqueira leite": {
+    "lat": -22.9009359,
+    "lng": -43.2796725,
+    "displayName": "Rua Tenente Cerqueira Leite, Méier, Rio de Janeiro, Região Sudeste, 20735-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Tenente Cerqueira Leite"
+  },
+  "rua tenente cerqueira leite, meier, rio de janeiro - rj": {
+    "lat": -22.9009359,
+    "lng": -43.2796725,
+    "displayName": "Rua Tenente Cerqueira Leite, Méier, Rio de Janeiro, Região Sudeste, 20735-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Tenente Cerqueira Leite"
+  },
+  "rua tenente cerqueira leite|rio de janeiro|rj": {
+    "lat": -22.9009359,
+    "lng": -43.2796725,
+    "displayName": "Rua Tenente Cerqueira Leite, Méier, Rio de Janeiro, Região Sudeste, 20735-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Tenente Cerqueira Leite"
+  },
+  "rua manuela barbosa": {
+    "lat": -22.901487,
+    "lng": -43.2818659,
+    "displayName": "Rua Manuela Barbosa, Méier, Rio de Janeiro, Região Sudeste, 20735-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Manuela Barbosa"
+  },
+  "rua manuela barbosa, meier, rio de janeiro - rj": {
+    "lat": -22.901487,
+    "lng": -43.2818659,
+    "displayName": "Rua Manuela Barbosa, Méier, Rio de Janeiro, Região Sudeste, 20735-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Manuela Barbosa"
+  },
+  "rua manuela barbosa|rio de janeiro|rj": {
+    "lat": -22.901487,
+    "lng": -43.2818659,
+    "displayName": "Rua Manuela Barbosa, Méier, Rio de Janeiro, Região Sudeste, 20735-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Manuela Barbosa"
+  },
+  "avenida franklin roosevelt": {
+    "lat": -22.9096579,
+    "lng": -43.1701371,
+    "displayName": "Instituto Brasileiro de Geografia e Estatística, Avenida Franklin Roosevelt, 146, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Franklin Roosevelt",
+    "matchedNumber": "146"
+  },
+  "avenida franklin roosevelt, centro, rio de janeiro - rj": {
+    "lat": -22.9096579,
+    "lng": -43.1701371,
+    "displayName": "Instituto Brasileiro de Geografia e Estatística, Avenida Franklin Roosevelt, 146, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Franklin Roosevelt",
+    "matchedNumber": "146"
+  },
+  "avenida franklin roosevelt|rio de janeiro|rj": {
+    "lat": -22.9096579,
+    "lng": -43.1701371,
+    "displayName": "Instituto Brasileiro de Geografia e Estatística, Avenida Franklin Roosevelt, 146, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Franklin Roosevelt",
+    "matchedNumber": "146"
+  },
+  "rua mexico": {
+    "lat": -22.9113552,
+    "lng": -43.1744545,
+    "displayName": "My Place Office - Centro/RJ, Rua México, 31, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua México",
+    "matchedNumber": "31"
+  },
+  "rua mexico, centro, rio de janeiro - rj": {
+    "lat": -22.9113552,
+    "lng": -43.1744545,
+    "displayName": "My Place Office - Centro/RJ, Rua México, 31, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua México",
+    "matchedNumber": "31"
+  },
+  "rua mexico|rio de janeiro|rj": {
+    "lat": -22.9113552,
+    "lng": -43.1744545,
+    "displayName": "My Place Office - Centro/RJ, Rua México, 31, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua México",
+    "matchedNumber": "31"
+  },
+  "largo sao francisco de paula": {
+    "lat": -22.9056524,
+    "lng": -43.1805105,
+    "displayName": "Igreja de São Francisco de Paula, Largo São Francisco de Paula, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Largo São Francisco de Paula"
+  },
+  "largo sao francisco de paula, centro, rio de janeiro - rj": {
+    "lat": -22.9056524,
+    "lng": -43.1805105,
+    "displayName": "Igreja de São Francisco de Paula, Largo São Francisco de Paula, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Largo São Francisco de Paula"
+  },
+  "largo sao francisco de paula|rio de janeiro|rj": {
+    "lat": -22.9056524,
+    "lng": -43.1805105,
+    "displayName": "Igreja de São Francisco de Paula, Largo São Francisco de Paula, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Largo São Francisco de Paula"
+  },
+  "avenida erasmo braga": {
+    "lat": -22.9046009,
+    "lng": -43.1738039,
+    "displayName": "FAPERJ - Fundação Carlos Chagas Filho de Amparo à Pesquisa do Estado do Rio de Janeiro, Avenida Erasmo Braga, 118, Centro, Rio de Janeiro, RJ, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Erasmo Braga",
+    "matchedNumber": "118"
+  },
+  "avenida erasmo braga, centro, rio de janeiro - rj": {
+    "lat": -22.9046009,
+    "lng": -43.1738039,
+    "displayName": "FAPERJ - Fundação Carlos Chagas Filho de Amparo à Pesquisa do Estado do Rio de Janeiro, Avenida Erasmo Braga, 118, Centro, Rio de Janeiro, RJ, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Erasmo Braga",
+    "matchedNumber": "118"
+  },
+  "avenida erasmo braga|rio de janeiro|rj": {
+    "lat": -22.9046009,
+    "lng": -43.1738039,
+    "displayName": "FAPERJ - Fundação Carlos Chagas Filho de Amparo à Pesquisa do Estado do Rio de Janeiro, Avenida Erasmo Braga, 118, Centro, Rio de Janeiro, RJ, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Erasmo Braga",
+    "matchedNumber": "118"
+  },
+  "praca tiradentes": {
+    "lat": -22.906583,
+    "lng": -43.1828997,
+    "displayName": "Tiradentes, Praça Tiradentes, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Praça Tiradentes"
+  },
+  "praca tiradentes, centro, rio de janeiro - rj": {
+    "lat": -22.906583,
+    "lng": -43.1828997,
+    "displayName": "Tiradentes, Praça Tiradentes, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Praça Tiradentes"
+  },
+  "praca tiradentes|rio de janeiro|rj": {
+    "lat": -22.906583,
+    "lng": -43.1828997,
+    "displayName": "Tiradentes, Praça Tiradentes, Centro, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Praça Tiradentes"
   }
 }

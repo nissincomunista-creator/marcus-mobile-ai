@@ -1,3 +1,4 @@
+import { auditOfficialArea } from './src/utils/officialAreaAudit.ts';
 import { runListedPortalSync } from './listedPortalSync.ts';
 import { allowedSyncLocation, SYNC_TARGETS } from './src/utils/auctionSyncScope.ts';
 import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning } from './propertyLocationService.ts';
@@ -382,56 +383,7 @@ function getCaixaCatalogField(row: Record<string, string>, ...keys: string[]): s
 }
 
 function parseCaixaSizeSqm(descricao: string, propertyType: PropertyType, title = ''): number {
-  const combined = `${title || ''} ${descricao || ''}`.replace(/\s+/g, ' ');
-  if (!combined.trim()) return 50;
-
-  function parseVal(match: RegExpMatchArray | null): number {
-    if (!match) return 0;
-    let s = match[1].trim();
-    if (s.includes('.') && s.includes(',')) {
-      s = s.replace(/\./g, '').replace(',', '.');
-    } else if (s.includes(',')) {
-      s = s.replace(',', '.');
-    } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
-      s = s.replace(/\./g, '');
-    }
-    const v = parseFloat(s);
-    return isNaN(v) ? 0 : v;
-  }
-
-  const privMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*privativa/i);
-  const totalMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*total/i);
-  const terrenoMatch = descricao.match(/([\d\.,]+)\s*de\s*área\s*(?:do\s*)?terreno/i);
-
-  // Multi-portal patterns (Ricart, Portella, Alexandro, Zuk, Vitrine Bradesco, etc.)
-  const metragemMatch = combined.match(/(?:metragem(?:\s+constru[ií]da)?|[aá]rea\s+do\s+im[oó]vel|[aá]rea\s+total|área\s+privativa|área\s+constru[ií]da|[aá]rea\s+edificada|[aá]rea\s+[uú]til)\s*[:=]?\s*([\d\.,]+)\s*(?:m[²2]|metros)/i);
-  const areaDeMatch = combined.match(/(\d+(?:[.,]\d+)*)\s*m[²2]\s*(?:de\s+)?[aá]rea\s*(?:privativa|constru[ií]da|[uú]til|total)/i);
-  const titleMatch = (title || '').match(/(?:c\/|com|de)\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
-  const simpleAreaMatch = combined.match(/[aá]rea\s*(?:de)?\s*[:=]?\s*(\d+(?:[.,]\d+)*)\s*m[²2]/i);
-
-  const privativa = parseVal(privMatch);
-  const total = parseVal(totalMatch);
-  const terreno = parseVal(terrenoMatch);
-  const metragem = parseVal(metragemMatch);
-  const areaDe = parseVal(areaDeMatch);
-  const titleSize = parseVal(titleMatch);
-  const simpleArea = parseVal(simpleAreaMatch);
-
-  let size = 0;
-  if (propertyType === 'Terreno') {
-    size = terreno || total || metragem || privativa || areaDe || titleSize || simpleArea;
-  } else {
-    size = titleSize || metragem || privativa || areaDe || simpleArea || total || terreno;
-  }
-
-  // Anomaly fix: if residential size >= 1000 and is a round multiplier (e.g. 4500 for 45m²), normalize
-  if ((propertyType === 'Apartamento' || propertyType === 'Casa') && size >= 1000 && size % 10 === 0 && size <= 50000) {
-    if (size % 100 === 0) {
-      size = size / 100;
-    }
-  }
-
-  return Math.round(size) || 50;
+  return auditOfficialArea({text:descricao,title,propertyType,url:''}).selected?.value || 0;
 }
 
 function isValidStreetCoordinates(value: unknown): value is StreetCoordinates {
@@ -860,7 +812,7 @@ function loadStore(): DataStore {
       const sourcePath = path.join(process.cwd(), 'itbi_source_corrections.json');
       const sourceCorrections = fs.existsSync(sourcePath) ? JSON.parse(fs.readFileSync(sourcePath, 'utf8')) : {};
       storeData.itbiTransactions = storeData.itbiTransactions.filter(t => !/-sim-/.test(t.id)).map(t => ({ ...t, ...(sourceCorrections[t.id] || {}) }));
-      const STORE_CALIBRATION_VERSION = 'v19_source_precision_shared_matching';
+      const STORE_CALIBRATION_VERSION = 'v21_evidence_based_area';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -1337,20 +1289,8 @@ function recalculateAuctionWithIndex(
     auc.city = matchedCity || (state === 'rj' ? 'Rio de Janeiro' : state === 'mg' ? 'Juiz de Fora' : 'São Paulo');
   }
 
-  // Sanitize sizeSqm (fix legacy 4500 -> 45 bug or 0 -> parse from description)
-  if (auc.sizeSqm >= 1000 && (propType === 'Apartamento' || propType === 'Casa') && auc.sizeSqm <= 50000 && auc.sizeSqm % 10 === 0) {
-    if (auc.sizeSqm % 100 === 0) {
-      auc.sizeSqm = Math.round(auc.sizeSqm / 100);
-    }
-  }
-  if (!auc.sizeSqm || auc.sizeSqm <= 0 || auc.sizeSqm === 50) {
-    const detected = parseCaixaSizeSqm(auc.description || '', propType, auc.title);
-    if (detected > 0 && detected !== 50) {
-      auc.sizeSqm = detected;
-    } else if (!auc.sizeSqm || auc.sizeSqm <= 0) {
-      auc.sizeSqm = detected || 50;
-    }
-  }
+  // Area is a source measurement. Calibration cannot invent, round or scale it.
+  if (!(auc.sizeSqm > 0)) auc.sizeSqm = 0;
 
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
@@ -1555,37 +1495,7 @@ function recalculateAuctionWithIndex(
   }
   auc.evaluationPrice = evalPrice || undefined;
 
-  // Recover auctionPrice from description if missing or 0
-  if (!auc.auctionPrice || auc.auctionPrice <= 0) {
-    const desc = `${auc.title || ''} ${auc.description || ''}`;
-    const m2nd = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*2[ºªo°]\s*leil[aã]o/i);
-    const m1st = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*1[ºªo°]\s*leil[aã]o/i);
-    const mZuk1 = desc.match(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s+R\$\s*([\d.]+(?:,\d{2})?)/i);
-    const mZuk2 = desc.match(/lance\s+inicial\s*:?\s*(?:[^\n\r]{0,40}\n){0,3}\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-    const mSch = desc.match(/a\s+partir\s+de\s*(?:[\n\r\s]*)R\$\s*([\d.]+(?:,\d{2})?)/i);
-    const mBb = desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+para\s+proposta/i);
-    const mJv = desc.match(/(?:venda\s+direta\s*)?R\$\s*([\d.]+(?:,\d{2})?)\s*(?:total\s+a\s+pagar|incremento)/i);
-    const mProp = desc.match(/valor\s+m[ií]nimo\s+para\s+proposta\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i) ||
-                  desc.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*valor\s+m[ií]nimo\s+para\s+proposta/i);
-    const mLance = desc.match(/(?:lance\s+(?:inicial|m[ií]nimo)|valor\s+inicial)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-
-    const priceMatch = m2nd || m1st || mZuk1 || mZuk2 || mSch || mBb || mJv || mProp || mLance;
-    if (priceMatch) {
-      let str = priceMatch[1].replace(/[\.,\s]+$/, '').trim();
-      if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
-      else if (str.includes(',')) str = str.replace(',', '.');
-      else if (/^\d{1,3}(\.\d{3})+$/.test(str)) str = str.replace(/\./g, '');
-      const v = parseFloat(str);
-      if (!isNaN(v) && v > 0) {
-        auc.auctionPrice = v;
-        auc.priceVerified = true;
-      }
-    } else if (evalPrice && evalPrice > 0 && (origin === 'judicial' || origin === 'extrajudicial')) {
-      const hasSecondRound = /2[ºªo°]\s*(?:leil[aã]o|pra[cç]a)/i.test(desc);
-      auc.auctionPrice = hasSecondRound ? Math.round(evalPrice * 0.5) : evalPrice;
-      auc.priceVerified = true;
-    }
-  }
+  // Missing bids stay unconfirmed. Valuation/calibration must never create a source bid.
 
   // Cascade Outlier Protection & Conservative Calibration:
   // When street has fewer than 5 transactions, apply strict Bayesian shrinkage + corridor capping
@@ -1776,7 +1686,7 @@ function recalculateAuctionWithIndex(
       const rawAddr = auc.address || '';
       const numExtracted = extractAddressNumber(rawAddr);
       const sNum = numExtracted !== null ? String(numExtracted) : '';
-      const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 50, 'similar', 0.5, auc.propertyType);
+      const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 0, 'similar', 0.5, auc.propertyType);
       if (bidi && bidi.hasMicroData && bidi.flipRapidoSqm > 0) {
         bidiSqm = bidi.flipRapidoSqm;
         bidiGabaritoSqm = bidi.mediaCorteReal;
@@ -1829,9 +1739,9 @@ function recalculateAuctionWithIndex(
   const ageFactor = ageDepreciationPct > 0 ? (1 - ageDepreciationPct / 100) : 1.0;
   const territorialFactor = commRisk.isRisk ? 0.85 : 1.0;
   if ((hasMicroData || canUseOfficialNeighborhoodFallback) && bidiSqm > 0) {
-    auc.vendaBaixaPrice = Math.round(Math.round(bidiSqm * ageFactor * territorialFactor) * (auc.sizeSqm || 50));
+    auc.vendaBaixaPrice = Math.round(Math.round(bidiSqm * ageFactor * territorialFactor) * (auc.sizeSqm || 0));
     if (bidiGabaritoSqm > 0) {
-      auc.estimatedValue = Math.round(bidiGabaritoSqm * ageFactor * territorialFactor * (auc.sizeSqm || 50));
+      auc.estimatedValue = Math.round(bidiGabaritoSqm * ageFactor * territorialFactor * (auc.sizeSqm || 0));
       // A média factual da rua é preservada para auditoria; o gabarito é o composto.
       auc.itbiStreetAvgSqm = isGeneric ? undefined : (itbiStreetAvgSqm || undefined);
     }
@@ -2024,6 +1934,12 @@ function recalculateAuctionWithIndex(
     auc.riskLevel = 'Baixo';
   }
 
+  if (!(auc.auctionPrice > 0) || auc.priceVerified === false || !(auc.sizeSqm > 0) || auc.sizeVerified === false) {
+    auc.calculatedProfit = undefined;
+    auc.calculatedRoi = undefined;
+    auc.liquidityScore = 1;
+    auc.precisa_revisao = true;
+  }
   return auc;
 }
 
@@ -2476,7 +2392,7 @@ app.get('/api/auctions', authMiddleware, (req, res) => {
   const userAuctions = store.auctions.filter(a => (!a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state));
   const enriched = userAuctions.map(a => {
     // Sanitize distorted rural terrains or runaway ROIs
-    if ((a.propertyType === 'Terreno' || (a.sizeSqm && a.sizeSqm > 1000)) && a.evaluationPrice && a.evaluationPrice > 0) {
+    if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === 'Terreno' || (a.sizeSqm && a.sizeSqm > 1000)) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
         a.estimatedValue = Math.round(a.evaluationPrice * 1.25);
         const cost = (a.auctionPrice || 0) + (a.pendingDebts || 0) + (a.estimatedRepair || 0) + (a.otherCosts || 0);
@@ -4594,7 +4510,8 @@ app.post('/api/auctions/fetch-documentos', async (req, res) => {
     if (auction) {
       Object.assign(auction, {
         address: detail.address || auction.address,
-        sizeSqm: detail.sizeSqm || auction.sizeSqm,
+        sizeSqm: detail.areaAudit ? detail.sizeSqm : auction.sizeSqm,
+        ...(detail.areaAudit ? {areaAudit:detail.areaAudit,sizeVerified:detail.sizeVerified,sizeApproximate:detail.sizeApproximate} : {}),
         description: detail.description || auction.description,
         matriculaText: detail.matriculaText || auction.matriculaText,
         matriculaUrl: detail.matriculaUrl || auction.matriculaUrl
@@ -6198,7 +6115,7 @@ Por favor, retorne os dados formatados como um JSON estruturado no final da sua 
     const parsed = JSON.parse(jsonStr);
 
     const cleanBairro = neighborhoodOverride ? String(neighborhoodOverride).trim() : (parsed.neighborhood || 'Não informado');
-    const cleanSize = sizeSqmOverride ? Number(sizeSqmOverride) : (Number(parsed.sizeSqm) || 50);
+    const cleanSize = sizeSqmOverride ? Number(sizeSqmOverride) : (Number(parsed.sizeSqm) || 0);
     const cleanOrigin = reqOrigin && reqOrigin !== 'auto' ? reqOrigin : (parsed.origin || 'judicial');
 
     const newProperty: AuctionProperty = {

@@ -217,7 +217,7 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
         neighborhood: arremateForm.neighborhood || '',
         city: arremateForm.city || 'Rio de Janeiro',
         state: arremateForm.state || 'RJ',
-        sizeSqm: Number(arremateForm.sizeSqm) || 50,
+        sizeSqm: Number(arremateForm.sizeSqm) || 0,
         propertyType: (arremateForm.propertyType as PropertyType) || 'Apartamento',
         
         arrematePrice: bid,

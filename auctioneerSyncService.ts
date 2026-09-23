@@ -1,3 +1,4 @@
+import { auditOfficialArea, type AreaAudit } from './src/utils/officialAreaAudit.ts';
 import { createHash } from 'node:crypto';
 import { officialLotFinancials } from './officialLotPayload.ts';
 import { auctionSyncAudit, recordSourceAudit } from './auctionSyncAudit.ts';
@@ -23,6 +24,8 @@ export interface AuctioneerPortalConfig {
 }
 
 export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
+  { id: 'freitas', name: 'Freitas Leiloeiro', domain: 'freitasleiloeiro.com.br', baseUrl: 'https://www.freitasleiloeiro.com.br', genericScrape: true, enabled: true },
+  { id: 'leilaovip', name: 'Leilão VIP', domain: 'leilaovip.com.br', baseUrl: 'https://www.leilaovip.com.br', genericScrape: true, enabled: true },
   { id: "isaias", name: "Isaías Leilões", domain: "isaiasleiloes.com.br", baseUrl: "https://www.isaiasleiloes.com.br", genericScrape: true, enabled: true },
   { id: "alexandrecosta", name: "Alexandre Costa Leilões", domain: "alexandrecostaleiloes.com.br", baseUrl: "https://www.alexandrecostaleiloes.com.br", genericScrape: true, enabled: true },
   { id: "ayupp", name: "Fabiano Ayupp Leiloeiro", domain: "fabianoayuppleiloeiro.com.br", baseUrl: "https://fabianoayuppleiloeiro.com.br", genericScrape: true, enabled: true },
@@ -314,6 +317,8 @@ export interface ScrapedAuctionDraft {
   pendingCondoCost?: number;
   addressVerified?: boolean;
   sizeVerified?: boolean;
+  sizeApproximate?: boolean;
+  areaAudit?: AreaAudit;
   priceVerified?: boolean;
   sourceVerified?: boolean;
   sourceClosed?: boolean;
@@ -480,56 +485,22 @@ function extractAuctionDate(text: string): string {
 
 export function extractMinimumBid(text: string): number {
   if (!text) return 0;
-
-  // 1. Portella / standard rounds: Valor 2º leilão or Valor 1º leilão
-  const m2nd = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*2[ºªo°]\s*leil[aã]o/i);
-  if (m2nd) return parseBrazilianMoney(m2nd[1]);
-
-  const m1st = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:[\n\r\s]*)Valor\s*1[ºªo°]\s*leil[aã]o/i);
-  if (m1st) return parseBrazilianMoney(m1st[1]);
-
-  // 2. Portal Zuk
-  const mZuk1 = text.match(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s+R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (mZuk1) return parseBrazilianMoney(mZuk1[1]);
-
-  const mZuk2 = text.match(/lance\s+inicial\s*:?\s*(?:[^\n\r]{0,40}\n){0,3}\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (mZuk2) return parseBrazilianMoney(mZuk2[1]);
-
-  // 3. Schulmann
-  const mSch = text.match(/a\s+partir\s+de\s*(?:[\n\r\s]*)R\$\s*([\d.]+(?:,\d{2})?)/i);
-  if (mSch) return parseBrazilianMoney(mSch[1]);
-
-  // 4. Seu Imóvel BB
-  const mBb = text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+para\s+proposta/i);
-  if (mBb) return parseBrazilianMoney(mBb[1]);
-
-  // 5. JV Leilões / Venda Direta
-  const mJv = text.match(/(?:venda\s+direta\s*)?R\$\s*([\d.]+(?:,\d{2})?)\s*(?:total\s+a\s+pagar|incremento)/i);
-  if (mJv) return parseBrazilianMoney(mJv[1]);
-
-  // 6. Proposta mínima
-  const mProp = text.match(/valor\s+m[ií]nimo\s+para\s+proposta\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i) ||
-                text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*valor\s+m[ií]nimo\s+para\s+proposta/i);
-  if (mProp) return parseBrazilianMoney(mProp[1]);
-
-  // 7. General valor inicial / lance inicial
-  const initials = [...text.matchAll(/valor\s+inicial\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)]
-    .map(match => parseBrazilianMoney(match[1]))
-    .filter(val => val > 0);
-  if (initials.length) return initials[0];
-
-  const values = [...text.matchAll(/lance\s+(?:inicial|m[ií]nimo)(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)]
-    .map(match => parseBrazilianMoney(match[1]))
-    .filter(val => val > 0);
-  if (values.length) return values[0];
-
-  // 8. Pamela and other court auctioneers
-  const roundValues = [...text.matchAll(/(?:[12][ºªo°]\s*)?(?:leil[aã]o|pra[cç]a)[\s\S]{0,180}?R\$\s*([\d.]+(?:,\d{2})?)/gi)]
-    .map(match => parseBrazilianMoney(match[1]))
-    .filter(val => val > 0);
-  if (roundValues.length) return roundValues[0];
-
-  return 0;
+  const amounts: number[] = [];
+  const patterns = [
+    /(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))(?:\s+\d+[ªºo]?\s*(?:leil[aã]o|pra[cç]a))?\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi,
+    /(?:Em\s+leil[aã]o\s+pelo\s+valor\s+de|valor\s+m[ií]nimo\s+para\s+proposta|venda\s+direta)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi,
+    /R\$\s*([\d.]+(?:,\d{2})?)\s*Valor\s+(?:para\s+proposta|m[ií]nimo\s+para\s+proposta)/gi,
+  ];
+  for (const pattern of patterns) for (const match of text.matchAll(pattern)) amounts.push(parseBrazilianMoney(match[1]));
+  if (amounts.length) return new Set(amounts).size === 1 ? amounts[0] : 0;
+  // A round amount is usable only in an isolated block, without appraisal or
+  // increment labels between the heading and the price.
+  const headings = [...text.matchAll(/(?:[12][ºªo°]|primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)/gi)];
+  if (headings.length !== 1) return 0;
+  const after = text.slice(headings[0].index! + headings[0][0].length);
+  const match = after.match(/^([^R$]{0,180})R\$\s*([\d.]+(?:,\d{2})?)/i);
+  if (!match || /avalia|increment|d[ií]vida|condom|iptu/i.test(match[1])) return 0;
+  return parseBrazilianMoney(match[2]);
 }
 
 export function extractAppraisal(text: string): number | undefined {
@@ -806,7 +777,9 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const structuredSize = detailData.structuredSizes.length === 1 ? detailData.structuredSizes[0] : 0;
 
     // Headline area in title (e.g. "TERRENO COM 6.086M²") is authoritative and prevents picking up random numbers in edital text
-    const detailedSize = headlineSize || landSize || textMatchedSize || structuredSize;
+    const extractedSize = headlineSize || landSize || textMatchedSize || structuredSize;
+    const areaAudit = auditOfficialArea({text:combinedText,title:detailData.title,propertyType:parseType(detailData.title || draft.title),url:detailUrl,structuredSizes:detailData.structuredSizes,extractedValue:extractedSize});
+    const detailedSize = areaAudit.selected?.value || 0;
     const structuredAddress = detailData.structuredAddresses
       .map((value: string) => extractAddress(value, ''))
       .find((value: string) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
@@ -818,12 +791,7 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
       .filter(round => round.date && round.date >= today && round.price > 0).sort((a, b) => a.date!.localeCompare(b.date!));
     const detailedMinimumBid = rounds[0]?.price || extractMinimumBid(combinedText);
     const extractedAppraisal = extractAppraisal(combinedText) || draft.estimatedValue;
-    let fallbackBid = detailedMinimumBid;
-    if (fallbackBid <= 0 && extractedAppraisal && extractedAppraisal > 0) {
-      const hasSecondRound = /2[ºªo°]\s*(?:leil[aã]o|pra[cç]a)/i.test(combinedText);
-      fallbackBid = hasSecondRound ? Math.round(extractedAppraisal * 0.5) : extractedAppraisal;
-    }
-    const finalBid = detailData.officialFinancials?.auctionPrice || fallbackBid || draft.auctionPrice;
+    const finalBid = detailData.officialFinancials?.auctionPrice || detailedMinimumBid || 0;
     const finalAppraisal = detailData.officialFinancials?.estimatedValue || extractedAppraisal || draft.estimatedValue;
     const enrichedDescription = combinedText.trim().slice(0, 30000);
     const detectedLocation = sourceAuctionLocation(detailData.title)
@@ -850,8 +818,10 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
       addressVerified: Boolean(verifiedAddress),
       matriculaText,
       matriculaUrl,
-      sizeSqm: detailedSize > 0 ? detailedSize : draft.sizeSqm,
-      sizeVerified: detailedSize > 0,
+      sizeSqm: detailedSize,
+      areaAudit,
+      sizeApproximate: areaAudit.status === 'approximate',
+      sizeVerified: areaAudit.status === 'confirmed',
       auctionPrice: finalBid,
       priceVerified: finalBid > 0,
       estimatedValue: finalAppraisal,
@@ -1939,7 +1909,8 @@ export function getPropertyDedupeKey(address?: string, city?: string, state?: st
     .replace(/\b(rua|r\.|avenida|av\.|alameda|al\.|estrada|estr\.|praca|pr\.|travessa|trav\.|rodovia|rod\.)\b/g, '')
     .trim();
   
-  const numMatch = address.match(/\b(?:n[º°.]*|numero|num)\s*(\d+(?:\.\d{3})*)/i) || address.match(/,\s*(\d+(?:\.\d{3})*)/);
+  const numMatch = [address.match(/\b(?:n[º°.]*|numero|num)\s*(\d+(?:\.\d{3})*)/i), address.match(/,\s*(\d+(?:\.\d{3})*)/)]
+    .filter((match): match is RegExpMatchArray => Boolean(match)).sort((a,b)=>(a.index||0)-(b.index||0))[0];
   if (!numMatch) return null;
   const num = numMatch[1].replace(/\./g,'');
   
@@ -2037,7 +2008,7 @@ export function reconcileAuctionDrafts(
 
     if (existing) {
       updated++;
-      Object.assign(existing, recalculateFn({ ...existing, auctionLink:draft.auctionLink, auctioneerName:draft.auctioneerName, sourceLinks:[...new Set([...(existing.sourceLinks||[]),existing.auctionLink,draft.auctionLink].filter(Boolean))], lastSyncedAt:new Date().toISOString(), state: draft.state, city: draft.city, neighborhood: draft.neighborhood || existing.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm || existing.sizeSqm, auctionPrice: draft.auctionPrice || existing.auctionPrice,
+      Object.assign(existing, recalculateFn({ ...existing, auctionLink:draft.auctionLink, auctioneerName:draft.auctioneerName, sourceLinks:[...new Set([...(existing.sourceLinks||[]),existing.auctionLink,draft.auctionLink].filter(Boolean))], lastSyncedAt:new Date().toISOString(), state: draft.state, city: draft.city, neighborhood: draft.neighborhood || existing.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm, areaAudit: draft.areaAudit, sizeApproximate: draft.sizeApproximate, auctionPrice: draft.priceVerified ? draft.auctionPrice : 0,
         evaluationPrice: draft.estimatedValue ?? existing.evaluationPrice,
         auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate, saleMode: draft.saleMode,
         addressVerified: draft.addressVerified, sizeVerified: draft.sizeVerified, priceVerified: draft.priceVerified,
@@ -2110,8 +2081,10 @@ export function reconcileAuctionDrafts(
       pendingCondoCost: draft.pendingCondoCost,
       downpaymentPercent: draft.minDownpaymentPercent,
       addressVerified: draft.addressVerified ?? isAuditable,
-      sizeVerified: draft.sizeVerified ?? (draft.sizeSqm > 0),
-      priceVerified: draft.priceVerified ?? (draft.auctionPrice > 0)
+      sizeVerified: draft.sizeVerified === true,
+      areaAudit: draft.areaAudit,
+      sizeApproximate: draft.sizeApproximate,
+      priceVerified: draft.priceVerified === true
     };
 
     // Never let incomplete official lots inherit a speculative valuation.

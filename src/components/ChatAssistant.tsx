@@ -139,7 +139,7 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-18 right-0 w-96 h-[520px] bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="absolute bottom-18 right-0 w-[calc(100vw-3rem)] sm:w-96 max-w-sm h-[520px] bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header Panel */}
             <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 shrink-0 flex flex-col space-y-2">
@@ -284,7 +284,8 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={isLoading}
-                className="flex-1 text-xs border border-gray-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 focus:bg-white disabled:opacity-50"
+                style={{ color: '#0f172a' }}
+                className="flex-1 text-xs text-slate-900 font-medium placeholder:text-slate-400 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:opacity-50 caret-slate-900"
               />
               <button
                 type="submit"

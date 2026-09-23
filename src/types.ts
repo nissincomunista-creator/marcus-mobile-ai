@@ -47,6 +47,8 @@ export interface AuctionProperty {
   lastSyncedAt?: string;
   addressVerified?: boolean;
   sizeVerified?: boolean;
+  sizeApproximate?: boolean;
+  areaAudit?: import('./utils/officialAreaAudit').AreaAudit;
   priceVerified?: boolean;
   id: string;
   title: string;

@@ -1504,8 +1504,8 @@ export default function Dashboard({
                             
                             {/* Badges de Status e Avisos dos Cards */}
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="bg-slate-800 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-700">
-                                {auc.propertyType} • {auc.sizeSqm} m²
+                              <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-800 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-700">
+                                {auc.propertyType} • {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
                                 {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
                               </span>
 
@@ -1608,7 +1608,7 @@ export default function Dashboard({
                               Lance Mínimo
                             </span>
                             <span className="text-xs sm:text-sm font-normal text-white font-mono mt-0.5">
-                              {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}
+                              {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}
                             </span>
                           </div>
 
@@ -1626,7 +1626,7 @@ export default function Dashboard({
                             {/* Tooltip */}
                             <div className="absolute bottom-full left-0 mb-2 w-60 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
                               <div className="font-bold text-indigo-300 border-b border-slate-800 pb-1">Composição do Custo</div>
-                              <div className="flex justify-between"><span>Lance:</span><strong>{auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}</strong></div>
+                              <div className="flex justify-between"><span>Lance:</span><strong>{auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}</strong></div>
                               <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(repairCost)}</strong></div>
                               <div className="flex justify-between"><span>Dívidas/Condomínio:</span><strong>{formatBRL(condoDebt)}</strong></div>
                               <div className="flex justify-between"><span>ITBI & Custos:</span><strong>{formatBRL(auc.otherCosts || 0)}</strong></div>

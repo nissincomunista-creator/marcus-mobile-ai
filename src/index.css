@@ -13,6 +13,18 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Previne que inputs com fundo claro herdem a cor de texto branca do body */
+input.bg-white,
+input.bg-gray-50,
+input.bg-slate-50,
+input.bg-slate-100,
+textarea.bg-white,
+textarea.bg-gray-50,
+textarea.bg-slate-50,
+textarea.bg-slate-100 {
+  color: #0f172a;
+}
+
 /* ==========================================================================
    MODO CLARO (LIGHT THEME) PROFISSIONAL, COESO & ELEGANTE
    ========================================================================== */

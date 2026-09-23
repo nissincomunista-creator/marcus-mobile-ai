@@ -351,7 +351,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     initialAddr.number ? (initialAddr.complement ? `${initialAddr.number}, ${initialAddr.complement}` : initialAddr.number) : (initialAddr.complement || '')
   ); // Number & complement input
   const [propertyType, setPropertyType] = useState(prefillData?.propertyType || 'Apartamento');
-  const [sizeSqm, setSizeSqm] = useState(prefillData?.sizeSqm || 80);
+  const [sizeSqm, setSizeSqm] = useState(prefillData?.sizeSqm || 0);
   const [bedrooms, setBedrooms] = useState(2);
   const [parkingSpaces, setParkingSpaces] = useState(1);
   const [customValue, setCustomValue] = useState<number | ''>('');
@@ -1568,7 +1568,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       return null;
     }
     const validMatches = onlineResults.foundMatches.filter(m => m && m.value && m.area);
-    const size = sizeSqm || 80;
+    const size = sizeSqm || 0;
     if (validMatches.length === 0) {
       const values = onlineResults.foundMatches.map(m => m && m.value).filter(Boolean);
       if (values.length === 0) return null;

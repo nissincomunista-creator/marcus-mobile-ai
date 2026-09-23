@@ -117,7 +117,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
  const worker=async()=>{while(cursor<configs.length){const index=cursor++;const config=configs[index];const progress=report.sources[index];progress.status='running';progress.startedAt=new Date().toISOString();save();console.log(`[Listed Sync] ${config.name}: iniciando`);
   const listingQueue=sourceSeedUrls(config.id,config.baseUrl.replace(/\/$/,''));const seenPages=new Set<string>();const details=new Map<string,string>();const seenDetails=new Set<string>();const batches:ScrapedAuctionDraft[]=[];
   let renderedOnce=false;let navigated=false;const pageSignatures=new Set<string>();let confirmedEmpty=false;
-  const flush=async()=>{if(!batches.length)return;const rows=batches.splice(0);fs.appendFileSync(path.join(dir,config.id+'.jsonl'),rows.map(r=>JSON.stringify(r)).join('\n')+'\n');const counts=await onDrafts(rows,progress);progress.imported+=counts.imported;progress.updated+=counts.updated;progress.pending+=counts.pending;save();};
+  const flush=async()=>{if(!batches.length)return;const rows=batches.splice(0);fs.appendFileSync(path.join(dir,config.id+'.jsonl'),rows.map(r=>JSON.stringify(r)).join('\n')+'\n');const audits=rows.filter(r=>r.areaAudit).map(r=>JSON.stringify({source:config.id,url:r.auctionLink,...r.areaAudit}));if(audits.length)fs.appendFileSync(path.join(dir,'area-audit.jsonl'),audits.join('\n')+'\n');const counts=await onDrafts(rows,progress);progress.imported+=counts.imported;progress.updated+=counts.updated;progress.pending+=counts.pending;save();};
   try{
    if(['emgea','vitrinebradesco','pestana'].includes(config.id)){
     const onPage=async(rows:ScrapedAuctionDraft[],total:number)=>{navigated=true;progress.pages++;progress.discovered+=total;progress.fetched+=total;progress.accepted+=rows.length;batches.push(...rows);await flush();save();};
@@ -162,7 +162,11 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
       if(!location||!allowedSyncLocation(location.city,location.state)){progress.errors.push({url,message:location?'Imóvel fora das três cidades solicitadas':'Localização do imóvel não confirmada no detalhe'});continue;}
       if(!propertyWords.test(norm(page.title+' '+page.text)))continue;
       const initial:ScrapedAuctionDraft={portalId:config.id,auctioneerName:config.name,title:page.title,address:'',neighborhood:'',city:location.city,state:location.state,propertyType:'Apartamento',sizeSqm:0,auctionPrice:0,auctionDate:'',auctionLink:canonicalAuctionLink(response.url),description:page.text,origin:bankIds.has(config.id)?'extrajudicial':'judicial',locationScopeVerified:true};
-      const draft=parseOfficialLotDetail(initial,page,response.url);
+      let draft=parseOfficialLotDetail(initial,page,response.url);
+      if(draft.areaAudit?.status==='missing') {
+       try { const renderedResponse=await load(url,true);const renderedPage=parseSourcePage(renderedResponse.html,renderedResponse.url);const checked=parseOfficialLotDetail(initial,renderedPage,renderedResponse.url);if(checked.areaAudit?.selected){draft=checked;page=renderedPage;} }
+       catch(error:any){progress.errors.push({url,message:'Conferência de área no navegador: '+error.message});}
+      }
       if(bankIds.has(config.id)){draft.origin='extrajudicial';draft.originVerified=true;draft.sellerBank=config.name;}
       if(!draft.originVerified&&/(?:leilao|modalidade|natureza|tipo)\s*:?\s*judicial\b/.test(norm(page.text))){draft.origin='judicial';draft.originVerified=true;}
       if(!draft.city||!allowedSyncLocation(draft.city,draft.state)){progress.errors.push({url,message:'Localização não confirmada na descrição oficial'});continue;}

@@ -8,6 +8,8 @@ export function officialLotFinancials(html: string, url: string) {
     return undefined;
   }
   if (!lot || typeof lot !== 'object') return undefined;
+  const expectedId = new URL(url).pathname.match(/\/lote\/(\d+)(?:\/|$)/)?.[1];
+  if (!expectedId || String(lot.id) !== expectedId) return undefined;
 
   const date = (val: any) =>
     typeof val?.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val.date) ? val.date.slice(0, 10) : undefined;
@@ -19,18 +21,15 @@ export function officialLotFinancials(html: string, url: string) {
   let secondAuctionDate: string | undefined = undefined;
 
   if (lot.leilao) {
-    const round = Number(lot.leilao.praca) || 1;
+    const round = Number(lot.leilao.praca);
+    if (![1, 2, 3].includes(round)) return undefined;
     firstAuctionDate = date(lot.leilao.data1);
     secondAuctionDate = date(lot.leilao.data2);
     auctionDate = date(lot.leilao['data' + round]) || firstAuctionDate || secondAuctionDate;
 
     if (typeof lot.valorInicialAtual === 'number' && lot.valorInicialAtual > 0) {
       amount = lot.valorInicialAtual;
-    } else if (round === 2 && typeof lot.valorInicial2 === 'number' && lot.valorInicial2 > 0) {
-      amount = lot.valorInicial2;
-    } else if (typeof lot.valorInicial === 'number' && lot.valorInicial > 0) {
-      amount = lot.valorInicial;
-    }
+    } else return undefined;
   } else {
     // Portella / De Paula format
     const vInit = Number(lot.valorInicial);
@@ -39,10 +38,7 @@ export function officialLotFinancials(html: string, url: string) {
     else if (Number.isFinite(vMin) && vMin > 0) amount = vMin;
   }
 
-  // Legal default for judicial auctions: 50% of appraisal if 2nd round / no bid explicit
-  if (amount <= 0 && evalAmount) {
-    amount = Math.round(evalAmount * 0.5);
-  }
+  // An appraisal never supplies a missing bid; only explicit source amounts do.
 
   if (amount <= 0 && !evalAmount) return undefined;
 
@@ -54,4 +50,3 @@ export function officialLotFinancials(html: string, url: string) {
     ...(secondAuctionDate ? { secondAuctionDate } : {})
   };
 }
-
