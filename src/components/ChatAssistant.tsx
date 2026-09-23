@@ -8,7 +8,10 @@ import {
   HelpCircle, 
   Building2, 
   AlertCircle,
-  RefreshCw 
+  RefreshCw,
+  Search,
+  ChevronDown,
+  Check 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -36,8 +39,22 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
   const [selectedPropId, setSelectedPropId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasNewNotification, setHasNewNotification] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Sync with main app selection
   useEffect(() => {
@@ -107,6 +124,30 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
 
   const selectedProperty = auctions.find(a => a.id === selectedPropId);
 
+  const filteredAuctions = auctions.filter(auc => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const neighborhood = (auc.neighborhood || '').toLowerCase();
+    const propertyType = (auc.propertyType || '').toLowerCase();
+    const city = (auc.city || '').toLowerCase();
+    const state = (auc.state || '').toLowerCase();
+    const address = (auc.address || '').toLowerCase();
+    const auctioneer = ((auc as any).auctioneer || (auc as any).leiloeiro || '').toLowerCase();
+    const title = (auc.title || '').toLowerCase();
+    const id = (auc.id || '').toLowerCase();
+    const processNumber = ((auc as any).processNumber || '').toLowerCase();
+
+    return neighborhood.includes(q) ||
+           propertyType.includes(q) ||
+           city.includes(q) ||
+           state.includes(q) ||
+           address.includes(q) ||
+           auctioneer.includes(q) ||
+           title.includes(q) ||
+           id.includes(q) ||
+           processNumber.includes(q);
+  });
+
   return (
     <div className="fixed bottom-6 right-6 z-50 font-sans">
       
@@ -139,13 +180,13 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-18 right-0 w-[calc(100vw-3rem)] sm:w-96 max-w-sm h-[520px] bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="absolute bottom-18 right-0 w-[calc(100vw-3rem)] sm:w-96 max-w-sm h-[540px] max-h-[82vh] bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header Panel */}
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-4 shrink-0 flex flex-col space-y-2">
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-3.5 shrink-0 flex flex-col space-y-2 relative z-20">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2">
-                  <div className="bg-indigo-600 p-1.5 rounded-lg">
+                  <div className="bg-indigo-600 p-1.5 rounded-lg shadow-sm">
                     <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
                   </div>
                   <div>
@@ -155,27 +196,168 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
                 </div>
                 <button 
                   onClick={() => setIsOpen(false)}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Context Selector Dropdown */}
-              <div className="flex items-center space-x-1.5 bg-slate-800/80 p-1.5 rounded-lg border border-slate-700">
-                <Building2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <select
-                  value={selectedPropId}
-                  onChange={(e) => setSelectedPropId(e.target.value)}
-                  className="w-full text-[10.5px] bg-transparent text-white focus:outline-none font-medium border-0 cursor-pointer"
-                >
-                  <option value="" className="bg-slate-800 text-white">Análise Geral (Todos os Imóveis)</option>
-                  {auctions.map(auc => (
-                    <option key={auc.id} value={auc.id} className="bg-slate-800 text-white truncate">
-                      {auc.neighborhood} - {auc.propertyType} ({auc.sizeSqm}m²)
-                    </option>
-                  ))}
-                </select>
+              {/* Searchable Context Selector */}
+              <div className="relative" ref={searchDropdownRef}>
+                <div className="flex items-center space-x-1.5 bg-slate-800/90 px-2.5 py-1.5 rounded-lg border border-slate-700/80 focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400/40 transition-all">
+                  <Search className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setIsSearchOpen(true);
+                    }}
+                    onFocus={() => setIsSearchOpen(true)}
+                    placeholder={
+                      selectedProperty 
+                        ? `Buscar para trocar imóvel...` 
+                        : "Digite para procurar imóvel (bairro, tipo, rua)..."
+                    }
+                    style={{ color: '#ffffff' }}
+                    className="w-full text-[11px] bg-transparent text-white placeholder:text-slate-400 focus:outline-none font-medium caret-white"
+                  />
+                  {searchQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      title="Limpar pesquisa"
+                      className="text-slate-400 hover:text-white hover:bg-slate-700 p-0.5 rounded transition-colors cursor-pointer shrink-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setIsSearchOpen(prev => !prev)}
+                    className="text-slate-400 hover:text-white hover:bg-slate-700 p-0.5 rounded transition-colors cursor-pointer shrink-0"
+                    title={isSearchOpen ? "Fechar busca" : "Listar imóveis"}
+                  >
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isSearchOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Selected Property Status Badge */}
+                {selectedProperty ? (
+                  <div className="flex items-center justify-between mt-1.5 px-2 py-1 bg-indigo-950/70 border border-indigo-500/30 rounded-md text-[10.5px] text-indigo-200">
+                    <div className="flex items-center space-x-1.5 truncate">
+                      <Building2 className="w-3 h-3 text-indigo-400 shrink-0" />
+                      <span className="truncate font-medium">
+                        <strong>{selectedProperty.neighborhood || selectedProperty.city}</strong> • {selectedProperty.propertyType}
+                        {selectedProperty.sizeSqm > 0 ? ` (${selectedProperty.sizeSqm}m²)` : ''}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPropId('');
+                        setSearchQuery('');
+                      }}
+                      className="text-indigo-300 hover:text-white ml-2 text-[9.5px] underline shrink-0 cursor-pointer"
+                      title="Desvincular e voltar para Análise Geral"
+                    >
+                      Geral
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-1.5 mt-1 px-1 text-[9.5px] text-slate-400">
+                    <span>🌐</span>
+                    <span>Análise Geral ativada (perguntas amplas sobre os leilões)</span>
+                  </div>
+                )}
+
+                {/* Search Results Dropdown */}
+                <AnimatePresence>
+                  {isSearchOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-800"
+                    >
+                      {/* Option: Análise Geral */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedPropId('');
+                          setSearchQuery('');
+                          setIsSearchOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-slate-800 cursor-pointer ${
+                          !selectedPropId ? 'bg-indigo-950/80 text-indigo-300 font-semibold' : 'text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm">🌐</span>
+                          <div>
+                            <p className="font-semibold text-[11px] text-white">Análise Geral (Todos os Imóveis)</p>
+                            <p className="text-[9.5px] text-slate-400">Sem imóvel fixo: média de preços, bairros e regras</p>
+                          </div>
+                        </div>
+                        {!selectedPropId && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                      </button>
+
+                      {/* Filtered Auctions List */}
+                      {filteredAuctions.length === 0 ? (
+                        <div className="p-3 text-center text-slate-400 text-[11px]">
+                          Nenhum imóvel encontrado para "<strong>{searchQuery}</strong>"
+                        </div>
+                      ) : (
+                        filteredAuctions.map(auc => {
+                          const isCurrent = selectedPropId === auc.id;
+                          return (
+                            <button
+                              key={auc.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPropId(auc.id);
+                                setSearchQuery('');
+                                setIsSearchOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-slate-800 cursor-pointer ${
+                                isCurrent ? 'bg-indigo-950/70 text-indigo-200' : 'text-slate-200'
+                              }`}
+                            >
+                              <div className="truncate pr-2">
+                                <div className="flex items-center space-x-1.5 truncate">
+                                  <span className="font-bold text-[11px] text-white">
+                                    {auc.neighborhood || auc.city || 'Sem bairro'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">•</span>
+                                  <span className="text-[10.5px] text-slate-300">{auc.propertyType}</span>
+                                  {auc.sizeSqm > 0 && (
+                                    <>
+                                      <span className="text-[10px] text-slate-500">•</span>
+                                      <span className="text-[10px] text-amber-400 font-semibold">{auc.sizeSqm}m²</span>
+                                    </>
+                                  )}
+                                </div>
+                                <div className="text-[9.5px] text-slate-400 truncate flex items-center space-x-1.5 mt-0.5">
+                                  {auc.city && <span>{auc.city}{auc.state ? `/${auc.state}` : ''}</span>}
+                                  {auc.auctionPrice > 0 && (
+                                    <span className="text-emerald-400 font-medium">
+                                      Lance: R$ {Number(auc.auctionPrice).toLocaleString('pt-BR')}
+                                    </span>
+                                  )}
+                                  {auc.address && (
+                                    <span className="text-slate-500 truncate max-w-[130px]">{auc.address}</span>
+                                  )}
+                                </div>
+                              </div>
+                              {isCurrent && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                            </button>
+                          );
+                        })
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
