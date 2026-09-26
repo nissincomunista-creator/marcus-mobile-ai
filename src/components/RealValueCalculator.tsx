@@ -2042,7 +2042,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
     const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
     const verifiedStreetCount = bidiBenchmark.rua.validas || bidiBenchmark.predio.validas || 0;
-    const verifiedLocalCount = Math.max(verifiedStreetCount, bidiBenchmark.nivelUtilizado === 'Raio Entorno' ? bidiBenchmark.raio.validas : 0);
+    const verifiedBuildingCount = bidiBenchmark.predio.validas || 0;
+    const verifiedLocalCount = Math.max(verifiedStreetCount, verifiedBuildingCount);
     const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
     await onUpdateProperty({
       id: prefillData.id,
@@ -2056,6 +2057,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.nivelUtilizado === 'Raio Entorno' ? bidiBenchmark.raio.validas : 0,
       valuationRadiusKm: radiusKm,
       itbiStreetCount: verifiedStreetCount || undefined,
+      itbiBuildingCount: verifiedBuildingCount || undefined,
       itbiStreetAvgSqm: verifiedStreetAvgSqm || undefined,
       itbiSurroundingAvgSqm: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.saneada || undefined) : undefined,
       itbiSurroundingCount: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.validas || undefined) : undefined,

@@ -1746,9 +1746,12 @@ function recalculateAuctionWithIndex(
         valuationLevel = bidi.nivelUtilizado;
         auc.itbiSurroundingAvgSqm = bidi.radiusVerified ? (bidi.raio.saneada || undefined) : undefined;
         auc.itbiSurroundingCount = bidi.radiusVerified ? (bidi.raio.validas || undefined) : undefined;
+        auc.itbiBuildingCount = bidi.predio.validas || undefined;
         auc.streetRadiusDeviationPct = bidi.radiusVerified ? (bidi.ruaRaioDesvioPct || undefined) : undefined;
         auc.streetRadiusCalibrated = bidi.radiusVerified && bidi.ruaRaioCalibrada;
       }
+    } else {
+      auc.itbiBuildingCount = undefined;
     }
   }
 
@@ -1891,8 +1894,8 @@ function recalculateAuctionWithIndex(
   }
 
   // Multi-factor Empirical Real Estate Liquidity Score: 1 to 10
-  // Balanced baseline centered at 5/10
-  let score = 5;
+  // Base neutra baixa; falta de microdados locais nunca começa em 5/10.
+  let score = 3;
 
   const streetTxs = auc.itbiStreetCount || 0;
   const volKey = `${state}|${normCity}|${neigh}`;
@@ -1951,7 +1954,6 @@ function recalculateAuctionWithIndex(
   if (streetTxs <= 1) score -= 0.5;
 
   // Fonte insuficiente não pode promover um imóvel ao topo do garimpo.
-  const verifiedComparableCount = Math.max(streetTxs, auc.itbiSurroundingCount || 0, auc.valuationSampleCount || 0);
   if (auc.valuationConfidence === 'projected') {
     score = Math.min(score - 1.5, 4);
   } else if (auc.valuationConfidence !== 'verified') {
@@ -1961,21 +1963,10 @@ function recalculateAuctionWithIndex(
   // Trava de confiança local: giro do bairro ou comparáveis apenas no raio
   // não comprovam liquidez na via do imóvel. A faixa alta exige pelo menos
   // três escrituras válidas na rua/prédio; uma amostra isolada não basta.
-  if (verifiedComparableCount === 0) {
-    score = Math.min(score, 4);
-  } else if (verifiedComparableCount < 2) {
-    score = Math.min(score, 6);
-  }
-
-  // Trava Documental Anti-Falso Positivo:
-  // Imóvel sem certidão de matrícula auditada não pode receber nota 8, 9 ou 10
-  const hasAuditedMatricula = Boolean(
-    auc.matriculaText && auc.matriculaText.trim().length >= 50 &&
-    /matr[ií]cula|registro de im[oó]veis|certid[aã]o|rgi/i.test(auc.matriculaText)
-  );
-  if (!hasAuditedMatricula) {
-    score = Math.min(score, 5);
-  }
+  const streetOrBuildingCount = Math.max(streetTxs, auc.itbiBuildingCount || 0);
+  if (streetOrBuildingCount === 0) score = Math.min(score, 3);
+  else if (streetOrBuildingCount < 2) score = Math.min(score, 4);
+  else if (streetOrBuildingCount < 5) score = Math.min(score, 6);
 
   // 11. Se for comunidade / área de risco: teto estrito 2/10
   if (commRisk.isRisk) {
@@ -2691,20 +2682,19 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
   // exactly equal, then recompute profit from the same exit value.
   if (['verified', 'projected'].includes(updatedFields.valuationConfidence) && !isGenericStreet(merged.address) && Number(updatedFields.vendaBaixaPrice) > 0 && Number(updatedFields.estimatedValue) > 0) {
     const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || 0;
+    const calculatorBuildingCount = Number(updatedFields.itbiBuildingCount) || 0;
     const calculatorRadiusCount = Number(updatedFields.itbiSurroundingCount) || 0;
-    const calculatorBuildingCount = Number(updatedFields.valuationSampleCount) || 0;
-    const hasVerifiedLocalComparables = calculatorBuildingCount >= 2 || calculatorStreetCount >= 2 || calculatorRadiusCount >= 2;
+    const hasVerifiedLocalComparables = calculatorBuildingCount >= 2 || calculatorStreetCount >= 2;
     recalculated.vendaBaixaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.vendaMediaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.estimatedValue = Number(updatedFields.estimatedValue);
     const calculatorStreetAvgSqm = Number(updatedFields.itbiStreetAvgSqm) || 0;
     if (calculatorStreetCount > 0) recalculated.itbiStreetCount = calculatorStreetCount;
+    if (calculatorBuildingCount > 0) recalculated.itbiBuildingCount = calculatorBuildingCount;
     if (calculatorStreetAvgSqm > 0) recalculated.itbiStreetAvgSqm = calculatorStreetAvgSqm;
     recalculated.valuationConfidence = updatedFields.valuationConfidence === 'verified' && hasVerifiedLocalComparables ? 'verified' : 'projected';
     // A nota não sobe por amostras de bairro, um único comparável ou campos enviados pelo browser.
-    recalculated.liquidityScore = hasVerifiedLocalComparables
-      ? Math.min(recalculated.liquidityScore || 1, calculatorBuildingCount >= 2 || calculatorStreetCount >= 2 ? 6 : 5)
-      : Math.min(3, recalculated.liquidityScore || 1);
+    recalculated.liquidityScore = Math.min(recalculated.liquidityScore || 1, hasVerifiedLocalComparables ? 6 : calculatorRadiusCount >= 2 ? 4 : 3);
     recalculated.hasMicroBenchmark = true;
     recalculated.valuationBasis = String(updatedFields.valuationBasis || 'ITBI verificado pela calculadora');
     recalculated.valuationSampleCount = Number(updatedFields.valuationSampleCount) || undefined;

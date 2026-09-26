@@ -97,6 +97,7 @@ export interface AuctionProperty {
   itbiUnitValueAvg?: number; // Average $/m2 in the neighborhood from ITBI
   itbiStreetAvgSqm?: number; // Average $/m2 on the same street
   itbiStreetCount?: number; // Number of transactions on the same street
+  itbiBuildingCount?: number; // Number of verified transactions in the same building/number
   itbiSurroundingAvgSqm?: number; // Average $/m2 on surrounding streets (within 1km radius)
   itbiSurroundingCount?: number; // Number of transactions on surrounding streets
   streetRadiusDeviationPct?: number; // Street versus surrounding-radius divergence

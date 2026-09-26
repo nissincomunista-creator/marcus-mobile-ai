@@ -474,7 +474,7 @@ export default function Dashboard({
 
     // Yield / Profit filters
     if (onlyHighReturn) {
-      result = result.filter(a => (a.calculatedRoi || 0) >= 40 && (a.liquidityScore || 0) >= 7);
+      result = result.filter(a => (a.calculatedRoi || 0) >= 40 && Math.min(a.liquidityScore || 1, assessDataQuality(a).liquidityCeiling) >= 7);
     }
 
     if (minRoiFilter > 0) {
