@@ -536,9 +536,9 @@ function officialLotFinancials(html, url) {
   }
   if (!lot || typeof lot !== "object") return void 0;
   try {
-    const path8 = new URL(url).pathname;
-    const offer = path8.match(/\/(\d+)\/id-(\d+)(?:\/|$)/i);
-    const lotId = path8.match(/\/lote\/(\d+)(?:\/|$)/i)?.[1];
+    const path9 = new URL(url).pathname;
+    const offer = path9.match(/\/(\d+)\/id-(\d+)(?:\/|$)/i);
+    const lotId = path9.match(/\/lote\/(\d+)(?:\/|$)/i)?.[1];
     if (offer) {
       if (String(lot.aid) !== offer[2] || String(lot.bemId ?? lot.id) !== offer[1]) return void 0;
     } else if (!lotId || String(lot.id) !== lotId) return void 0;
@@ -601,6 +601,101 @@ function officialLotFinancials(html, url) {
 var import_node_path3 = __toESM(require("node:path"), 1);
 var cheerio3 = __toESM(require("cheerio"), 1);
 var import_puppeteer3 = __toESM(require("puppeteer"), 1);
+
+// src/utils/puppeteerConfig.ts
+var import_fs = __toESM(require("fs"), 1);
+var import_path = __toESM(require("path"), 1);
+function findSystemChromium() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH && import_fs.default.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  const linuxPaths = [
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/snap/bin/chromium"
+  ];
+  const windowsPaths = [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    import_path.default.join(process.env.LOCALAPPDATA || "", "Google", "Chrome", "Application", "chrome.exe"),
+    import_path.default.join(process.env.PROGRAMFILES || "", "Google", "Chrome", "Application", "chrome.exe"),
+    import_path.default.join(process.env["PROGRAMFILES(X86)"] || "", "Google", "Chrome", "Application", "chrome.exe")
+  ];
+  const macPaths = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium"
+  ];
+  const candidates = process.platform === "win32" ? windowsPaths : process.platform === "darwin" ? macPaths : linuxPaths;
+  for (const p of candidates) {
+    try {
+      if (p && import_fs.default.existsSync(p)) return p;
+    } catch {
+    }
+  }
+  return void 0;
+}
+function getPuppeteerLaunchOptions(extraArgs = []) {
+  const systemChrome = findSystemChromium();
+  const baseArgs = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-software-rasterizer",
+    "--no-zygote"
+  ];
+  const combinedArgs = Array.from(/* @__PURE__ */ new Set([...baseArgs, ...extraArgs]));
+  const options = {
+    headless: true,
+    args: combinedArgs
+  };
+  if (systemChrome) {
+    options.executablePath = systemChrome;
+  }
+  return options;
+}
+async function launchPuppeteer(puppeteerInstance, customOptions = {}) {
+  const defaultOpts = getPuppeteerLaunchOptions();
+  const mergedOpts = {
+    ...defaultOpts,
+    ...customOptions,
+    args: Array.from(/* @__PURE__ */ new Set([...defaultOpts.args || [], ...customOptions.args || []]))
+  };
+  try {
+    return await puppeteerInstance.launch(mergedOpts);
+  } catch (err) {
+    const msg = String(err?.message || err);
+    if (msg.includes("Could not find Chrome") || msg.includes("browser was not found")) {
+      const fallbackPath = findSystemChromium();
+      if (fallbackPath && fallbackPath !== mergedOpts.executablePath) {
+        console.warn(`[Puppeteer] Tentando fallback para execut\xE1vel do sistema: ${fallbackPath}`);
+        return await puppeteerInstance.launch({
+          ...mergedOpts,
+          executablePath: fallbackPath
+        });
+      }
+      try {
+        console.warn("[Puppeteer] Tentando inicializa\xE7\xE3o via canal chrome...");
+        return await puppeteerInstance.launch({
+          ...mergedOpts,
+          channel: "chrome"
+        });
+      } catch {
+        if (process.platform === "win32") {
+          console.warn("[Puppeteer] Tentando inicializa\xE7\xE3o via canal msedge...");
+          return await puppeteerInstance.launch({
+            ...mergedOpts,
+            channel: "msedge"
+          });
+        }
+      }
+    }
+    throw err;
+  }
+}
 
 // auctionPipeline/aggregation.ts
 var import_node_crypto2 = require("node:crypto");
@@ -716,7 +811,7 @@ function recordSourceAudit(report) {
 }
 
 // auctioneerSyncService.ts
-var import_fs = __toESM(require("fs"), 1);
+var import_fs2 = __toESM(require("fs"), 1);
 var import_puppeteer = __toESM(require("puppeteer"), 1);
 var import_genai2 = require("@google/genai");
 
@@ -1546,7 +1641,7 @@ async function scrapeOfficialDetailSeeds(targetType, state, city) {
   if (!seeds.length) return [];
   let browser = null;
   try {
-    browser = await import_puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
+    browser = await launchPuppeteer(import_puppeteer.default, { headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
     const results = [];
     for (const seed of seeds) {
       const detailed = await enrichLotDetails(browser, {
@@ -1580,7 +1675,7 @@ async function scrapeIsaiasAuctioneer(targetType, state, city) {
   let browser = null;
   let page = null;
   try {
-    browser = await import_puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
+    browser = await launchPuppeteer(import_puppeteer.default, { headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
     page = await createAuctionPage(browser);
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
     await page.goto("https://www.isaiasleiloes.com.br/", { waitUntil: "networkidle2", timeout: 3e4 });
@@ -1626,7 +1721,7 @@ async function scrapeSantanderOfficial(targetType, state, city) {
   let browser = null;
   let page = null;
   try {
-    browser = await import_puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
+    browser = await launchPuppeteer(import_puppeteer.default, { headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"] });
     page = await createAuctionPage(browser);
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
     const catalogueUrl = new URL("https://www.santanderimoveis.com.br/");
@@ -1788,9 +1883,9 @@ async function collectListingPages(page, read) {
   } finally {
     report.found = lots.size;
     recordSourceAudit({ source: new URL(startUrl).hostname, url: startUrl, pages: report.pages, found: lots.size, complete: report.navigationExhausted && lots.size > 0, error: report.error || (!lots.size ? "Nenhum lote identificado; cobertura n\xE3o confirmada." : void 0) });
-    import_fs.default.mkdirSync("sync-audits/pages", { recursive: true });
+    import_fs2.default.mkdirSync("sync-audits/pages", { recursive: true });
     const name = new URL(startUrl).hostname.replace(/[^a-z0-9.-]/gi, "_");
-    import_fs.default.writeFileSync("sync-audits/pages/" + name + "-" + Date.now() + ".json", JSON.stringify(report, null, 2));
+    import_fs2.default.writeFileSync("sync-audits/pages/" + name + "-" + Date.now() + ".json", JSON.stringify(report, null, 2));
   }
   return [...lots.values()];
 }
@@ -1798,7 +1893,7 @@ async function scrapeMegaLeiloes(targetType, state = "RJ", city = "Rio de Janeir
   const results = [];
   let browser = null;
   try {
-    browser = await import_puppeteer.default.launch({
+    browser = await launchPuppeteer(import_puppeteer.default, {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -1872,7 +1967,7 @@ async function scrapeFrazao(targetType, state = "RJ", city = "Rio de Janeiro") {
   const results = [];
   let browser = null;
   try {
-    browser = await import_puppeteer.default.launch({
+    browser = await launchPuppeteer(import_puppeteer.default, {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -1948,7 +2043,7 @@ async function scrapeBiasi(targetType, state = "RJ", city = "Rio de Janeiro") {
   const results = [];
   let browser = null;
   try {
-    browser = await import_puppeteer.default.launch({
+    browser = await launchPuppeteer(import_puppeteer.default, {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -2024,7 +2119,7 @@ async function scrapePortalZuk(targetType, state = "RJ", city = "Rio de Janeiro"
   const results = [];
   let browser = null;
   try {
-    browser = await import_puppeteer.default.launch({
+    browser = await launchPuppeteer(import_puppeteer.default, {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -2143,7 +2238,7 @@ async function scrapeRogerioMenezes(targetType, state = "RJ", city = "Rio de Jan
   const targetCityNorm = normalizeStr(city);
   const targetStateNorm = (state || "").toUpperCase();
   try {
-    browser = await import_puppeteer.default.launch({
+    browser = await launchPuppeteer(import_puppeteer.default, {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -2540,8 +2635,8 @@ ${draft.description || ""}`)) {
     if (draftKey) existingKeys.set(draftKey, finalAuc);
   }
   if (writeAudit) {
-    import_fs.default.mkdirSync("sync-audits", { recursive: true });
-    import_fs.default.writeFileSync(`sync-audits/${targetType}-${state}-${normalizeStr(city).replace(/[^a-z0-9-]/g, "-") || "todas"}.json`, JSON.stringify({ checkedAt: (/* @__PURE__ */ new Date()).toISOString(), city, state, totalScraped: allDrafts.length, imported: newAuctions.length, updated, sources: auctionSyncAudit.getStore() || [], pendingReview }, null, 2));
+    import_fs2.default.mkdirSync("sync-audits", { recursive: true });
+    import_fs2.default.writeFileSync(`sync-audits/${targetType}-${state}-${normalizeStr(city).replace(/[^a-z0-9-]/g, "-") || "todas"}.json`, JSON.stringify({ checkedAt: (/* @__PURE__ */ new Date()).toISOString(), city, state, totalScraped: allDrafts.length, imported: newAuctions.length, updated, sources: auctionSyncAudit.getStore() || [], pendingReview }, null, 2));
   }
   console.log(`[Auctioneer Master Sync] Novos leil\xF5es ${targetType} adicionados e auditados com sucesso: ${newAuctions.length}`);
   return {
@@ -2634,7 +2729,7 @@ function bankApiDraft(id, row) {
 async function collectBankApi(id, dir, onPage) {
   let headers = {};
   if (id === "emgea") {
-    const browser = await import_puppeteer2.default.launch({ headless: true, args: ["--no-sandbox"] });
+    const browser = await launchPuppeteer(import_puppeteer2.default, { headless: true, args: ["--no-sandbox"] });
     try {
       const page = await browser.newPage();
       page.on("request", (request) => {
@@ -2925,7 +3020,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
   save();
   let browserPromise = null;
   const rendered = async (url) => {
-    browserPromise ||= import_puppeteer3.default.launch({ headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    browserPromise ||= launchPuppeteer(import_puppeteer3.default, { headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     const browser = await browserPromise;
     const page = await browser.newPage();
     try {
@@ -3279,8 +3374,8 @@ function calculateFlip(exitValue, acquisitionCost, monthlyHolding = 0) {
 
 // server.ts
 var import_express = __toESM(require("express"), 1);
-var import_path3 = __toESM(require("path"), 1);
-var import_fs4 = __toESM(require("fs"), 1);
+var import_path4 = __toESM(require("path"), 1);
+var import_fs5 = __toESM(require("fs"), 1);
 var import_csv_parser = __toESM(require("csv-parser"), 1);
 var import_iconv_lite = __toESM(require("iconv-lite"), 1);
 var import_stream = require("stream");
@@ -3300,20 +3395,20 @@ var initialAuctions = [];
 
 // portalScraper.ts
 var import_puppeteer4 = __toESM(require("puppeteer"), 1);
-var import_fs2 = __toESM(require("fs"), 1);
-var import_path = __toESM(require("path"), 1);
-var PORTAL_LIVE_CACHE_PATH = import_path.default.join(process.cwd(), "portal_live_cache.json");
+var import_fs3 = __toESM(require("fs"), 1);
+var import_path2 = __toESM(require("path"), 1);
+var PORTAL_LIVE_CACHE_PATH = import_path2.default.join(process.cwd(), "portal_live_cache.json");
 var liveCache = {};
-if (import_fs2.default.existsSync(PORTAL_LIVE_CACHE_PATH)) {
+if (import_fs3.default.existsSync(PORTAL_LIVE_CACHE_PATH)) {
   try {
-    liveCache = JSON.parse(import_fs2.default.readFileSync(PORTAL_LIVE_CACHE_PATH, "utf-8"));
+    liveCache = JSON.parse(import_fs3.default.readFileSync(PORTAL_LIVE_CACHE_PATH, "utf-8"));
   } catch (e) {
     console.error("Error reading portal_live_cache.json:", e);
   }
 }
 function saveLiveCache() {
   try {
-    import_fs2.default.writeFileSync(PORTAL_LIVE_CACHE_PATH, JSON.stringify(liveCache, null, 2), "utf-8");
+    import_fs3.default.writeFileSync(PORTAL_LIVE_CACHE_PATH, JSON.stringify(liveCache, null, 2), "utf-8");
   } catch (e) {
     console.error("Error saving portal_live_cache.json:", e);
   }
@@ -3343,7 +3438,7 @@ async function scrapeLivePortals(params) {
   const allListings = [];
   let browser = null;
   try {
-    browser = await import_puppeteer4.default.launch({
+    browser = await launchPuppeteer(import_puppeteer4.default, {
       headless: true,
       args: [
         "--no-sandbox",
@@ -3544,29 +3639,29 @@ async function scrapeLivePortals(params) {
 }
 
 // geocodeService.ts
-var import_fs3 = __toESM(require("fs"), 1);
-var import_path2 = __toESM(require("path"), 1);
-var GEOCODE_CACHE_PATH = import_path2.default.join(process.cwd(), "geocode_cache.json");
+var import_fs4 = __toESM(require("fs"), 1);
+var import_path3 = __toESM(require("path"), 1);
+var GEOCODE_CACHE_PATH = import_path3.default.join(process.cwd(), "geocode_cache.json");
 var geocodeCache = {};
-if (import_fs3.default.existsSync(GEOCODE_CACHE_PATH)) {
+if (import_fs4.default.existsSync(GEOCODE_CACHE_PATH)) {
   try {
-    geocodeCache = JSON.parse(import_fs3.default.readFileSync(GEOCODE_CACHE_PATH, "utf-8"));
+    geocodeCache = JSON.parse(import_fs4.default.readFileSync(GEOCODE_CACHE_PATH, "utf-8"));
   } catch (e) {
     console.error("Error reading geocode_cache.json:", e);
   }
 }
 function saveGeocodeCache() {
   try {
-    import_fs3.default.writeFileSync(GEOCODE_CACHE_PATH, JSON.stringify(geocodeCache, null, 2), "utf-8");
+    import_fs4.default.writeFileSync(GEOCODE_CACHE_PATH, JSON.stringify(geocodeCache, null, 2), "utf-8");
   } catch (e) {
     console.error("Error saving geocode_cache.json:", e);
   }
 }
 var streetCoordsData = {};
 try {
-  const sdPath = import_path2.default.join(process.cwd(), "src", "utils", "streetCoordsData.json");
-  if (import_fs3.default.existsSync(sdPath)) {
-    streetCoordsData = JSON.parse(import_fs3.default.readFileSync(sdPath, "utf-8"));
+  const sdPath = import_path3.default.join(process.cwd(), "src", "utils", "streetCoordsData.json");
+  if (import_fs4.default.existsSync(sdPath)) {
+    streetCoordsData = JSON.parse(import_fs4.default.readFileSync(sdPath, "utf-8"));
   }
 } catch (e) {
 }
@@ -3841,39 +3936,79 @@ async function geocodeAddress(query, options) {
 
 // src/utils/streetMatching.ts
 function canonicalStreet(value) {
-  const titles = { dr: "doutor", dra: "doutora", eng: "engenheiro", prof: "professor", profa: "professora", cel: "coronel", gen: "general", gal: "general", dep: "deputado", gov: "governador", pres: "presidente", sen: "senador", pe: "padre", sta: "santa", sto: "santo" };
-  return (value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(",")[0].replace(/\s+n[ºo°.]?\s*\d+.*$/i, "").replace(/^(rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|trav|praca|prc|pca|alameda|alm|al|rodovia|rod|largo)\b\.?\s*/, "").replace(/[^a-z0-9]/g, " ").split(/\s+/).filter((t) => t && !["de", "da", "do", "das", "dos", "e"].includes(t)).map((t) => titles[t] || t).join(" ");
+  if (!value) return "";
+  const titles = {
+    dr: "doutor",
+    dra: "doutora",
+    eng: "engenheiro",
+    enga: "engenheira",
+    prof: "professor",
+    profa: "professora",
+    cel: "coronel",
+    gen: "general",
+    gal: "general",
+    dep: "deputado",
+    gov: "governador",
+    pres: "presidente",
+    sen: "senador",
+    pe: "padre",
+    sta: "santa",
+    sto: "santo",
+    mal: "marechal",
+    cmdte: "comandante",
+    visc: "visconde",
+    bpo: "bispo",
+    dom: "dom"
+  };
+  let s = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  s = s.split(",")[0].replace(/\s+n[ºo°.]?\s*\d+.*$/i, "").replace(/\s+(?:apto|apt|ap|bloco|bl|casa|lote|qd|quadra)\b.*$/i, "");
+  s = s.replace(/^(?:rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|trav|praca|prc|pca|alameda|alm|al|rodovia|rod|largo|lrg|vila|vl|beco|servidao|passagem|psg|boulevard|blvd|via)\b\.?\s*/i, "");
+  const tokens = s.replace(/[^a-z0-9]/g, " ").split(/\s+/).filter((t) => t && !["de", "da", "do", "das", "dos", "e"].includes(t)).map((t) => titles[t] || t);
+  return tokens.join(" ").trim();
 }
 function editDistance(a, b) {
-  let row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
   for (let i = 1; i <= a.length; i++) {
     const next = [i];
-    for (let j = 1; j <= b.length; j++) next[j] = Math.min(next[j - 1] + 1, row[j] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    row = next;
+    for (let j = 1; j <= b.length; j++) {
+      next[j] = Math.min(next[j - 1] + 1, row[j] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    for (let j = 0; j <= b.length; j++) row[j] = next[j];
   }
   return row[b.length];
 }
 function resolveOfficialStreet(target, candidates) {
   const wanted = canonicalStreet(target);
   if (!wanted) return null;
-  const unique = [...new Set(candidates)].map((street) => ({ street, key: canonicalStreet(street) }));
+  const unique = [...new Set(candidates.filter(Boolean))].map((street) => ({
+    street,
+    key: canonicalStreet(street)
+  })).filter((c) => c.key.length > 0);
   const exact = unique.filter((c) => c.key === wanted);
   if (exact.length) return exact[0].street;
   const tokens = wanted.split(" ");
   const scored = unique.map((c) => {
     const ts = c.key.split(" ");
+    const simplifiedWanted = tokens.filter((t) => !["doutor", "doutora", "presidente", "general", "coronel", "padre", "santa", "santo", "marechal"].includes(t)).join(" ");
+    const simplifiedCandidate = ts.filter((t) => !["doutor", "doutora", "presidente", "general", "coronel", "padre", "santa", "santo", "marechal"].includes(t)).join(" ");
+    if (simplifiedWanted && simplifiedCandidate && simplifiedWanted === simplifiedCandidate) {
+      return { ...c, score: 0.95 };
+    }
     if (ts.length !== tokens.length) return { ...c, score: 0 };
     let score = 0;
     for (let i = 0; i < tokens.length; i++) {
-      const a = tokens[i], b = ts[i];
+      const a = tokens[i];
+      const b = ts[i];
       if (a === b) score += 1;
       else if (a.length >= 2 && b.length >= 2 && (a.startsWith(b) || b.startsWith(a))) score += 0.9;
-      else if (Math.min(a.length, b.length) >= 5 && editDistance(a, b) === 1) score += 0.85;
+      else if (Math.min(a.length, b.length) >= 4 && editDistance(a, b) === 1) score += 0.85;
       else return { ...c, score: 0 };
     }
     return { ...c, score: score / tokens.length };
   }).filter((c) => c.score >= 0.85).sort((a, b) => b.score - a.score);
-  if (!scored.length || scored[1] && scored[0].key !== scored[1].key && scored[0].score - scored[1].score < 0.08) return null;
+  if (!scored.length || scored[1] && scored[0].key !== scored[1].key && scored[0].score - scored[1].score < 0.08) {
+    return null;
+  }
   return scored[0].street;
 }
 
@@ -3950,8 +4085,45 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const ruaTxs = targetCore ? poolTxs.filter((t) => cleanStreetCore(t.street) === targetCore) : [];
   const surroundingPool = targetCore ? poolTxs.filter((t) => cleanStreetCore(t.street) !== targetCore) : poolTxs;
   const geolocatedSurrounding = surroundingPool.filter((t) => t.distanceKm !== null && t.distanceKm !== void 0 && Number.isFinite(Number(t.distanceKm)));
-  const raioTxs = geolocatedSurrounding.length > 0 ? geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= radiusKm) : surroundingPool;
+  let raioTxs = [];
+  let effectiveRadiusKm = radiusKm || 0.5;
+  let radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
+  let fallbackLevel = "0.5km";
   const hasVerifiedRadius = geolocatedSurrounding.length > 0;
+  if (hasVerifiedRadius) {
+    const tierInitial = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= (radiusKm || 0.5));
+    if (tierInitial.length >= 2) {
+      raioTxs = tierInitial;
+      effectiveRadiusKm = radiusKm || 0.5;
+      radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
+      fallbackLevel = "0.5km";
+    } else {
+      const tier1000 = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= 1);
+      if (tier1000.length >= 2) {
+        raioTxs = tier1000;
+        effectiveRadiusKm = 1;
+        radiusLabel = "Raio expandido para 1.0km por baixa amostragem local";
+        fallbackLevel = "1.0km";
+      } else {
+        const tier2000 = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= 2);
+        if (tier2000.length >= 2) {
+          raioTxs = tier2000;
+          effectiveRadiusKm = 2;
+          radiusLabel = "Raio expandido para 2.0km por baixa amostragem local";
+          fallbackLevel = "2.0km";
+        } else {
+          raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
+          effectiveRadiusKm = 2;
+          radiusLabel = "Mediana do bairro (sem amostras em raio at\xE9 2.0km)";
+          fallbackLevel = "bairro";
+        }
+      }
+    }
+  } else {
+    raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
+    radiusLabel = "Mediana do bairro (sem geolocaliza\xE7\xE3o exata)";
+    fallbackLevel = "bairro";
+  }
   const raioVals = raioTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
   const raioPrelim = raioVals.length > 0 ? raioVals.reduce((a, b) => a + b, 0) / raioVals.length : bSaneada;
   const raioVariance = raioVals.length > 0 ? raioVals.reduce((acc, value) => acc + Math.pow(value - raioPrelim, 2), 0) / raioVals.length : 0;
@@ -4120,7 +4292,10 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
       prelim: Math.round(raioPrelim),
       refCorte: Math.round(refCorteRaio),
       corteMin: raioCorteMin,
-      corteMax: raioCorteMax
+      corteMax: raioCorteMax,
+      effectiveRadiusKm,
+      radiusLabel,
+      fallbackLevel
     },
     rua: {
       saneada: ruaSaneada,
@@ -4149,6 +4324,9 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     ruaRaioDesvioPct,
     ruaRaioCalibrada,
     radiusVerified: hasVerifiedRadius,
+    effectiveRadiusKm,
+    radiusLabel,
+    fallbackLevel,
     minSimilarSize: minSize,
     maxSimilarSize: maxSize,
     hasMicroData
@@ -4652,17 +4830,17 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
 var factionFeatures = [];
 var communityCentroids = [];
 try {
-  const faccoesPath = import_path3.default.join(process.cwd(), "public", "faccoes_rj.json");
-  if (import_fs4.default.existsSync(faccoesPath)) {
-    const rawFaccoes = JSON.parse(import_fs4.default.readFileSync(faccoesPath, "utf-8"));
+  const faccoesPath = import_path4.default.join(process.cwd(), "public", "faccoes_rj.json");
+  if (import_fs5.default.existsSync(faccoesPath)) {
+    const rawFaccoes = JSON.parse(import_fs5.default.readFileSync(faccoesPath, "utf-8"));
     if (rawFaccoes && Array.isArray(rawFaccoes.features)) {
       factionFeatures = rawFaccoes.features;
       console.log(`[CommunityRisk] Loaded ${factionFeatures.length} faction/community polygons from faccoes_rj.json`);
     }
   }
-  const centroidsPath = import_path3.default.join(process.cwd(), "src", "utils", "communityCentroids.json");
-  if (import_fs4.default.existsSync(centroidsPath)) {
-    const parsedCentroids = JSON.parse(import_fs4.default.readFileSync(centroidsPath, "utf-8"));
+  const centroidsPath = import_path4.default.join(process.cwd(), "src", "utils", "communityCentroids.json");
+  if (import_fs5.default.existsSync(centroidsPath)) {
+    const parsedCentroids = JSON.parse(import_fs5.default.readFileSync(centroidsPath, "utf-8"));
     if (Array.isArray(parsedCentroids)) communityCentroids = parsedCentroids;
   }
 } catch (err) {
@@ -5030,7 +5208,7 @@ function buildStablePortalLink(portal, address, neighborhood, city, state, prope
 }
 var app = (0, import_express.default)();
 var PORT = Number(process.env.PORT) || 3e3;
-var STORE_PATH = import_path3.default.join(process.cwd(), "data_store.json");
+var STORE_PATH = import_path4.default.join(process.cwd(), "data_store.json");
 app.use(import_express.default.json({ limit: "50mb" }));
 function loadStore() {
   let storeData = {
@@ -5042,22 +5220,22 @@ function loadStore() {
     savedAnalyses: [],
     arrematacoes: []
   };
-  const GZ_STORE_PATH = import_path3.default.join(process.cwd(), "data_store.json.gz");
-  const shouldUnpackGz = import_fs4.default.existsSync(GZ_STORE_PATH) && (!import_fs4.default.existsSync(STORE_PATH) || import_fs4.default.statSync(STORE_PATH).size < 1e6);
+  const GZ_STORE_PATH = import_path4.default.join(process.cwd(), "data_store.json.gz");
+  const shouldUnpackGz = import_fs5.default.existsSync(GZ_STORE_PATH) && (!import_fs5.default.existsSync(STORE_PATH) || import_fs5.default.statSync(STORE_PATH).size < 1e6);
   if (shouldUnpackGz) {
     try {
       console.log("[Store] Descomprimindo base de dados oficial data_store.json.gz...");
-      const compressed = import_fs4.default.readFileSync(GZ_STORE_PATH);
+      const compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
       const decompressed = import_zlib.default.gunzipSync(compressed);
-      import_fs4.default.writeFileSync(STORE_PATH, decompressed);
+      import_fs5.default.writeFileSync(STORE_PATH, decompressed);
       console.log("[Store] Base de dados descompactada com sucesso (103k+ ITBI e leil\xF5es Caixa)!");
     } catch (gzErr) {
       console.error("[Store] Falha ao descompactar data_store.json.gz:", gzErr);
     }
   }
-  if (import_fs4.default.existsSync(STORE_PATH)) {
+  if (import_fs5.default.existsSync(STORE_PATH)) {
     try {
-      const data = import_fs4.default.readFileSync(STORE_PATH, "utf-8");
+      const data = import_fs5.default.readFileSync(STORE_PATH, "utf-8");
       const parsed = JSON.parse(data);
       storeData.auctions = parsed.auctions || storeData.auctions;
       storeData.itbiTransactions = parsed.itbiTransactions || storeData.itbiTransactions;
@@ -5066,9 +5244,9 @@ function loadStore() {
       storeData.accessCodes = parsed.accessCodes || [];
       storeData.savedAnalyses = parsed.savedAnalyses || [];
       storeData.arrematacoes = parsed.arrematacoes || [];
-      if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && import_fs4.default.existsSync(GZ_STORE_PATH)) {
+      if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && import_fs5.default.existsSync(GZ_STORE_PATH)) {
         try {
-          const compressed = import_fs4.default.readFileSync(GZ_STORE_PATH);
+          const compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
           const decompressed = import_zlib.default.gunzipSync(compressed);
           const gzParsed = JSON.parse(decompressed.toString("utf-8"));
           storeData.itbiTransactions = gzParsed.itbiTransactions || [];
@@ -5076,15 +5254,15 @@ function loadStore() {
             console.log(`[Store] Restaurando ${gzParsed.auctions.length} leil\xF5es do .gz com Niter\xF3i, Juiz de Fora, Santos Dumont...`);
             storeData.auctions = gzParsed.auctions;
           }
-          import_fs4.default.writeFileSync(STORE_PATH, decompressed);
+          import_fs5.default.writeFileSync(STORE_PATH, decompressed);
           console.log("[Store] Base recuperada do data_store.json.gz:", storeData.itbiTransactions.length, "ITBI");
         } catch (e2) {
           console.error("[Store] Erro ao for\xE7ar descompacta\xE7\xE3o do .gz:", e2);
         }
       }
-      if ((!storeData.auctions || storeData.auctions.length < 1e3) && import_fs4.default.existsSync(GZ_STORE_PATH)) {
+      if ((!storeData.auctions || storeData.auctions.length < 1e3) && import_fs5.default.existsSync(GZ_STORE_PATH)) {
         try {
-          const compressed = import_fs4.default.readFileSync(GZ_STORE_PATH);
+          const compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
           const gzParsed = JSON.parse(import_zlib.default.gunzipSync(compressed).toString("utf-8"));
           if (gzParsed.auctions && gzParsed.auctions.length > (storeData.auctions?.length || 0)) {
             console.log(`[Store] Restaurando base completa de ${gzParsed.auctions.length} leil\xF5es do .gz (incluindo Niter\xF3i, Juiz de Fora, Santos Dumont)...`);
@@ -5133,8 +5311,8 @@ function loadStore() {
           saveStore(storeData);
         }
       }
-      const sourcePath = import_path3.default.join(process.cwd(), "itbi_source_corrections.json");
-      const sourceCorrections = import_fs4.default.existsSync(sourcePath) ? JSON.parse(import_fs4.default.readFileSync(sourcePath, "utf8")) : {};
+      const sourcePath = import_path4.default.join(process.cwd(), "itbi_source_corrections.json");
+      const sourceCorrections = import_fs5.default.existsSync(sourcePath) ? JSON.parse(import_fs5.default.readFileSync(sourcePath, "utf8")) : {};
       storeData.itbiTransactions = storeData.itbiTransactions.filter((t) => !/-sim-/.test(t.id)).map((t) => ({ ...t, ...sourceCorrections[t.id] || {} }));
       const STORE_CALIBRATION_VERSION = "v22_active_round_and_condo_area_sanitization";
       const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
@@ -5178,7 +5356,7 @@ function loadStore() {
         saveStore(storeData);
         try {
           const compressed = import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData)));
-          import_fs4.default.writeFileSync(GZ_STORE_PATH, compressed);
+          import_fs5.default.writeFileSync(GZ_STORE_PATH, compressed);
           console.log("[Store] data_store.json.gz atualizado com rodadas ativas e saneamento de \xE1rea condominial (v22)!");
         } catch (gzErr) {
           console.error("[Store] Erro ao salvar data_store.json.gz:", gzErr);
@@ -5206,8 +5384,8 @@ function loadStore() {
     console.log("Base de ITBI vazia no JSON. Tentando importar dados da planilha Excel do Desktop...");
     try {
       (0, import_child_process.execSync)("python import_excel.py", { stdio: "inherit" });
-      if (import_fs4.default.existsSync(STORE_PATH)) {
-        const data = import_fs4.default.readFileSync(STORE_PATH, "utf-8");
+      if (import_fs5.default.existsSync(STORE_PATH)) {
+        const data = import_fs5.default.readFileSync(STORE_PATH, "utf-8");
         storeData = JSON.parse(data);
         console.log(`Sucesso: ${storeData.itbiTransactions.length} registros de ITBI carregados.`);
       }
@@ -5219,7 +5397,7 @@ function loadStore() {
 }
 function saveStore(targetStore) {
   try {
-    import_fs4.default.writeFileSync(STORE_PATH, JSON.stringify(targetStore), "utf-8");
+    import_fs5.default.writeFileSync(STORE_PATH, JSON.stringify(targetStore), "utf-8");
   } catch (e) {
     console.error("Failed to save data_store.json", e);
   }
@@ -6015,11 +6193,18 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   }
   if (streetTxs === 0) {
     score = Math.min(score, 4);
-  } else if (streetTxs < 3) {
+  } else if (streetTxs < 2) {
     score = Math.min(score, 6);
+  }
+  const hasAuditedMatricula = Boolean(auc.matriculaText && auc.matriculaText.trim().length >= 50);
+  if (!hasAuditedMatricula) {
+    score = Math.min(score - 1.5, 7);
   }
   if (commRisk.isRisk) {
     score = Math.min(score, 2);
+  }
+  if (auc.precisa_revisao) {
+    score = 1;
   }
   auc.liquidityScore = Math.round(Math.max(1, Math.min(10, score)));
   if (commRisk.isRisk) {
@@ -6128,8 +6313,8 @@ function startAvailabilityCheck() {
             }
           }
         }
-        import_fs4.default.mkdirSync("sync-audits", { recursive: true });
-        import_fs4.default.appendFileSync("sync-audits/availability.jsonl", JSON.stringify({ id: current.id, ...current.availability, ingestionStatus: current.ingestionStatus }) + "\n");
+        import_fs5.default.mkdirSync("sync-audits", { recursive: true });
+        import_fs5.default.appendFileSync("sync-audits/availability.jsonl", JSON.stringify({ id: current.id, ...current.availability, ingestionStatus: current.ingestionStatus }) + "\n");
         catalogRevision++;
       }
     }));
@@ -6146,7 +6331,7 @@ function startAvailabilityCheck() {
 }
 function readListedSyncStatus() {
   try {
-    const report = JSON.parse(import_fs4.default.readFileSync("sync-audits/latest-listed-sync.json", "utf8"));
+    const report = JSON.parse(import_fs5.default.readFileSync("sync-audits/latest-listed-sync.json", "utf8"));
     if (!listedSyncRunning && report.status === "running") report.status = "interrupted";
     return { ...report, catalogRevision, availabilityRunning: Boolean(availabilityRunning) };
   } catch {
@@ -6169,15 +6354,15 @@ function applyListedDrafts(drafts, auditPath) {
           auction.lastSyncedAt = (/* @__PURE__ */ new Date()).toISOString();
         });
         store.auctions.unshift(...result.newAuctions);
-        if (result.pendingReview.length) import_fs4.default.appendFileSync(auditPath, result.pendingReview.map((row) => JSON.stringify(row)).join("\n") + "\n");
+        if (result.pendingReview.length) import_fs5.default.appendFileSync(auditPath, result.pendingReview.map((row) => JSON.stringify(row)).join("\n") + "\n");
         imported += result.newAuctions.length;
         updated += result.updated;
         pending += result.pending;
       }
     }
     const temporary = STORE_PATH + ".sync-tmp";
-    import_fs4.default.writeFileSync(temporary, JSON.stringify(store), "utf8");
-    import_fs4.default.renameSync(temporary, STORE_PATH);
+    import_fs5.default.writeFileSync(temporary, JSON.stringify(store), "utf8");
+    import_fs5.default.renameSync(temporary, STORE_PATH);
     catalogRevision++;
     return { imported, updated, pending };
   } catch (error) {
@@ -6187,9 +6372,9 @@ function applyListedDrafts(drafts, auditPath) {
 }
 function startListedSync(reason, ids) {
   if (listedSyncRunning) return false;
-  import_fs4.default.mkdirSync("sync-audits/backups", { recursive: true });
+  import_fs5.default.mkdirSync("sync-audits/backups", { recursive: true });
   const backup = "sync-audits/backups/before-listed-sync-" + (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-") + ".json";
-  import_fs4.default.writeFileSync(backup, JSON.stringify(store));
+  import_fs5.default.writeFileSync(backup, JSON.stringify(store));
   listedSyncRunning = runListedPortalSync(reason, async (drafts, source) => applyListedDrafts(drafts, "sync-audits/pending-" + source.id + ".jsonl"), { ids }).catch((error) => console.error("[Listed Sync] Falha:", error)).finally(() => {
     listedSyncRunning = null;
   });
@@ -7649,11 +7834,11 @@ Foram identificadas **${simulatedMatches.length} amostras comparativas** para **
     });
   }
 });
-var PORTAL_CACHE_PATH = import_path3.default.join(process.cwd(), "portal_cache.json");
+var PORTAL_CACHE_PATH = import_path4.default.join(process.cwd(), "portal_cache.json");
 var portalSearchCache = {};
-if (import_fs4.default.existsSync(PORTAL_CACHE_PATH)) {
+if (import_fs5.default.existsSync(PORTAL_CACHE_PATH)) {
   try {
-    portalSearchCache = JSON.parse(import_fs4.default.readFileSync(PORTAL_CACHE_PATH, "utf-8"));
+    portalSearchCache = JSON.parse(import_fs5.default.readFileSync(PORTAL_CACHE_PATH, "utf-8"));
     let cleaned = 0;
     for (const key in portalSearchCache) {
       if (portalSearchCache[key] && portalSearchCache[key].isFallback) {
@@ -7664,7 +7849,7 @@ if (import_fs4.default.existsSync(PORTAL_CACHE_PATH)) {
     if (cleaned > 0) {
       console.log(`[Portal Cache] Cleaned ${cleaned} fallback entries from cache on startup.`);
       try {
-        import_fs4.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
+        import_fs5.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
       } catch (err) {
         console.error("Error writing cleaned portal cache:", err);
       }
@@ -7675,7 +7860,7 @@ if (import_fs4.default.existsSync(PORTAL_CACHE_PATH)) {
 }
 function savePortalCache() {
   try {
-    import_fs4.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
+    import_fs5.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
   } catch (e) {
     console.error("Error writing portal_cache.json:", e);
   }
@@ -8229,7 +8414,7 @@ app.post("/api/auctions/fetch-documentos", async (req, res) => {
   };
   let browser;
   try {
-    browser = await import_puppeteer5.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    browser = await launchPuppeteer(import_puppeteer5.default, { headless: true });
     const detail = await enrichLotDetails(browser, {
       ...auction || {},
       portalId: portal.id,
@@ -8285,7 +8470,7 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
   let browser = null;
   try {
     console.log(`[Caixa Docs] Buscando certid\xE3o e edital oficial em: ${targetUrl}`);
-    browser = await import_puppeteer5.default.launch({
+    browser = await launchPuppeteer(import_puppeteer5.default, {
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     });
@@ -8306,18 +8491,18 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
       const bodyText = document.body.innerText || "";
       let matriculaDocPath = "";
       let editalDocPath = "";
-      document.querySelectorAll("a").forEach((a) => {
-        const onclick = a.getAttribute("onclick") || "";
-        const href = a.getAttribute("href") || "";
-        const combined = onclick + " " + href;
-        if (/matr[ií]cula|certid[aã]o/i.test(combined + " " + a.textContent)) {
+      document.querySelectorAll("a, button, input[type=button], span, div, [onclick]").forEach((el) => {
+        const onclick = el.getAttribute("onclick") || "";
+        const href = el.getAttribute("href") || "";
+        const combined = onclick + " " + href + " " + (el.textContent || "");
+        if (/matr[ií]cula|certid[aã]o/i.test(combined)) {
           const directPdf = combined.match(/(?:https?:\/\/[^'"\s)]+|\/[^'"\s)]+)\.pdf(?:\?[^'"\s)]*)?/i);
-          if (directPdf) matriculaDocPath = new URL(directPdf[0], location.href).href;
-          const m = combined.match(/(\/editais\/matricula\/[^\'\"\)\s]+)/i);
-          if (m) matriculaDocPath = m[1];
+          if (directPdf && !matriculaDocPath) matriculaDocPath = new URL(directPdf[0], location.href).href;
+          const m = combined.match(/(?:ExibeDoc\s*\(\s*['"]|['"])(\/editais\/matricula\/[^\'\"\)\s]+)/i);
+          if (m && !matriculaDocPath) matriculaDocPath = m[1];
         } else if (combined.includes("/editais/") && (combined.includes(".pdf") || combined.includes(".PDF"))) {
-          const m = combined.match(/(\/editais\/[^\'\"\)\s]+\.pdf)/i);
-          if (m) editalDocPath = m[1];
+          const m = combined.match(/(?:ExibeDoc\s*\(\s*['"]|['"])(\/editais\/[^\'\"\)\s]+\.(?:pdf|PDF))/i);
+          if (m && !editalDocPath && !/matricula/i.test(m[1])) editalDocPath = m[1];
         }
       });
       const matMatch = bodyText.match(/Matr[íi]cula(?:\(s\))?\s*:\s*([0-9\.\-\/]+)/i);
@@ -8364,6 +8549,15 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
         rawBody: bodyText.slice(0, 3e3)
       };
     });
+    const rawPropertyNum = (id ? id.replace(/[^0-9]/g, "") : "") || (targetUrl ? targetUrl.match(/hdnimovel=([0-9]+)/i)?.[1] || "" : "");
+    if (!pageData.matriculaDocPath && rawPropertyNum) {
+      let stateCode = "RJ";
+      if (pageData.enderecoStr) {
+        const m = pageData.enderecoStr.match(/,\s*([A-Z]{2})\b/i) || pageData.enderecoStr.match(/\b([A-Z]{2})\b\s*$/i);
+        if (m) stateCode = m[1].toUpperCase();
+      }
+      pageData.matriculaDocPath = `/editais/matricula/${stateCode}/${rawPropertyNum}.pdf`;
+    }
     if (!pageData.enderecoStr && !pageData.matriculaNumber && !pageData.matriculaDocPath) {
       return res.status(502).json({ error: "A Caixa n\xE3o disponibilizou os dados nesta consulta. A p\xE1gina pode estar indispon\xEDvel ou exigir verifica\xE7\xE3o de acesso." });
     }
@@ -8375,13 +8569,17 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
       try {
         console.log(`[Caixa Docs] Baixando PDF da Matr\xEDcula: ${pageData.matriculaDocPath}`);
         const base64 = await page.evaluate(async (docPath) => {
-          const res2 = await fetch(docPath);
-          if (!res2.ok) return null;
-          const buf = await res2.arrayBuffer();
-          let bin = "";
-          const bytes = new Uint8Array(buf);
-          for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-          return btoa(bin);
+          try {
+            const res2 = await fetch(docPath);
+            if (!res2.ok) return null;
+            const buf = await res2.arrayBuffer();
+            let bin = "";
+            const bytes = new Uint8Array(buf);
+            for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin);
+          } catch {
+            return null;
+          }
         }, pageData.matriculaDocPath);
         if (base64) {
           const buffer = Buffer.from(base64, "base64");
@@ -8408,13 +8606,17 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
       try {
         console.log(`[Caixa Docs] Baixando PDF do Edital: ${pageData.editalDocPath}`);
         const base64 = await page.evaluate(async (docPath) => {
-          const res2 = await fetch(docPath);
-          if (!res2.ok) return null;
-          const buf = await res2.arrayBuffer();
-          let bin = "";
-          const bytes = new Uint8Array(buf);
-          for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-          return btoa(bin);
+          try {
+            const res2 = await fetch(docPath);
+            if (!res2.ok) return null;
+            const buf = await res2.arrayBuffer();
+            let bin = "";
+            const bytes = new Uint8Array(buf);
+            for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin);
+          } catch {
+            return null;
+          }
         }, pageData.editalDocPath);
         if (base64) {
           const buffer = Buffer.from(base64, "base64");
@@ -8473,6 +8675,33 @@ Tributos: Sob responsabilidade do arrematante quando inferior a 10% da avalia\xE
       `- ITBI e emolumentos cartor\xE1rios para registro da escritura/contrato correm por conta do adquirente.`
     ];
     const editalText = editalTextLines.filter(Boolean).join("\n");
+    const targetLotId = id || (auctionLink ? store.auctions.find((a) => a.auctionLink === auctionLink)?.id : void 0);
+    const matchedAuction = store.auctions.find((item) => item.id === targetLotId) || store.auctions.find((item) => item.auctionLink === targetUrl || item.auctionLink === auctionLink) || (rawPropertyNum ? store.auctions.find((item) => item.id.includes(rawPropertyNum) || item.auctionLink?.includes(rawPropertyNum)) : null);
+    if (matchedAuction) {
+      if (pageData.matriculaNumber) matchedAuction.matriculaNumber = pageData.matriculaNumber;
+      if (regOffice) matchedAuction.registryOffice = regOffice;
+      if (matriculaText) {
+        matchedAuction.matriculaText = matriculaText;
+        matchedAuction.matriculaUrl = pageData.matriculaDocPath ? pageData.matriculaDocPath.startsWith("http") ? pageData.matriculaDocPath : `https://venda-imoveis.caixa.gov.br${pageData.matriculaDocPath}` : matchedAuction.matriculaUrl;
+      }
+      if (pageData.editalDocPath) {
+        matchedAuction.editalUrl = pageData.editalDocPath.startsWith("http") ? pageData.editalDocPath : `https://venda-imoveis.caixa.gov.br${pageData.editalDocPath}`;
+      }
+      if (pageData.bedrooms && (!matchedAuction.bedrooms || matchedAuction.bedrooms === 0)) {
+        matchedAuction.bedrooms = pageData.bedrooms;
+      }
+      if (pageData.parkingSpaces !== void 0 && (!matchedAuction.parkingSpaces || matchedAuction.parkingSpaces === 0)) {
+        matchedAuction.parkingSpaces = pageData.parkingSpaces;
+      }
+      if (editalText) {
+        matchedAuction.description = matchedAuction.description ? `${matchedAuction.description}
+
+${editalText}` : editalText;
+      }
+      Object.assign(matchedAuction, recalculateAuction(matchedAuction, store.itbiTransactions));
+      saveStore(store);
+      console.log(`[Caixa Docs] Im\xF3vel ${matchedAuction.id} atualizado com documentos e recalculado no banco com sucesso.`);
+    }
     return res.json({
       success: true,
       matriculaNumber: pageData.matriculaNumber ? `Matr\xEDcula n\xBA ${pageData.matriculaNumber}` : "",
@@ -8600,9 +8829,8 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
   let totalImported = 0;
   let browser = null;
   try {
-    browser = await import_puppeteer5.default.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+    browser = await launchPuppeteer(import_puppeteer5.default, {
+      headless: true
     });
     const page = await browser.newPage();
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
@@ -9412,9 +9640,8 @@ app.post("/api/auctions/analyze-url", authMiddleware, async (req, res) => {
   let browser;
   try {
     console.log(`[URL Analyzer] Abrindo Puppeteer para: ${url}`);
-    browser = await import_puppeteer5.default.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    browser = await launchPuppeteer(import_puppeteer5.default, {
+      headless: true
     });
     const page = await browser.newPage();
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -9619,10 +9846,10 @@ Por favor, retorne os dados formatados como um JSON estruturado no final da sua 
 });
 async function start() {
   const isCjsBundle = typeof __filename !== "undefined" && __filename.endsWith(".cjs");
-  const distIndexExists = import_fs4.default.existsSync(import_path3.default.join(process.cwd(), "dist", "index.html"));
+  const distIndexExists = import_fs5.default.existsSync(import_path4.default.join(process.cwd(), "dist", "index.html"));
   const isProduction = process.env.NODE_ENV === "production" || isCjsBundle || distIndexExists;
   if (isProduction && distIndexExists) {
-    const distPath = import_path3.default.join(process.cwd(), "dist");
+    const distPath = import_path4.default.join(process.cwd(), "dist");
     app.use(import_express.default.static(distPath, {
       setHeaders: (res, filePath) => {
         if (filePath.endsWith(".html") || filePath.endsWith("sw.js")) {
@@ -9636,7 +9863,7 @@ async function start() {
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
-      res.sendFile(import_path3.default.join(distPath, "index.html"));
+      res.sendFile(import_path4.default.join(distPath, "index.html"));
     });
   } else {
     console.log("[Server] Iniciando servidor em modo desenvolvimento com Vite middleware...");

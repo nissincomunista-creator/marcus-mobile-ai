@@ -10,6 +10,9 @@ export interface TierStats {
   refCorte?: number;
   corteMin?: number;
   corteMax?: number;
+  effectiveRadiusKm?: number;
+  radiusLabel?: string;
+  fallbackLevel?: '0.5km' | '1.0km' | '2.0km' | 'bairro';
 }
 
 export interface BidirectionalBenchmarkResult {
@@ -25,6 +28,9 @@ export interface BidirectionalBenchmarkResult {
   ruaRaioDesvioPct: number;
   ruaRaioCalibrada: boolean;
   radiusVerified: boolean;
+  effectiveRadiusKm?: number;
+  radiusLabel?: string;
+  fallbackLevel?: '0.5km' | '1.0km' | '2.0km' | 'bairro';
   minSimilarSize: number;
   maxSimilarSize: number;
   hasMicroData: boolean;
@@ -139,17 +145,55 @@ export function computeBidirectionalBenchmarks(
   const bSaneada = bValid.length > 0 ? Math.round(bValid.reduce((a, b) => a + b, 0) / bValid.length) : Math.round(bPrelim);
   const bExpurgados = bVals.length - bValid.length;
 
-  // Segmentação Geoespacial
+  // Segmentação Geoespacial com Fallback Progressivo e Transparente (NBR 14.653)
   const ruaTxs = targetCore ? poolTxs.filter(t => cleanStreetCore(t.street) === targetCore) : [];
   const surroundingPool = targetCore ? poolTxs.filter(t => cleanStreetCore(t.street) !== targetCore) : poolTxs;
   const geolocatedSurrounding = surroundingPool.filter(t => t.distanceKm !== null && t.distanceKm !== undefined && Number.isFinite(Number(t.distanceKm)));
-  // When the API supplied verified coordinates, radius is a hard spatial filter.
-  // Legacy server-side batches do not have distanceKm and therefore cannot claim
-  // a radius-level microbenchmark; they may still support street/building levels.
-  const raioTxs = geolocatedSurrounding.length > 0
-    ? geolocatedSurrounding.filter(t => Number(t.distanceKm) <= radiusKm)
-    : surroundingPool;
+
+  let raioTxs: ItbiTransaction[] = [];
+  let effectiveRadiusKm = radiusKm || 0.5;
+  let radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
+  let fallbackLevel: '0.5km' | '1.0km' | '2.0km' | 'bairro' = '0.5km';
   const hasVerifiedRadius = geolocatedSurrounding.length > 0;
+
+  if (hasVerifiedRadius) {
+    // 1. Tenta o raio inicial solicitado (normalmente 0.5km)
+    const tierInitial = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= (radiusKm || 0.5));
+    if (tierInitial.length >= 2) {
+      raioTxs = tierInitial;
+      effectiveRadiusKm = radiusKm || 0.5;
+      radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
+      fallbackLevel = '0.5km';
+    } else {
+      // 2. Fallback progressivo para 1.0km
+      const tier1000 = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= 1.0);
+      if (tier1000.length >= 2) {
+        raioTxs = tier1000;
+        effectiveRadiusKm = 1.0;
+        radiusLabel = 'Raio expandido para 1.0km por baixa amostragem local';
+        fallbackLevel = '1.0km';
+      } else {
+        // 3. Fallback progressivo para 2.0km
+        const tier2000 = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= 2.0);
+        if (tier2000.length >= 2) {
+          raioTxs = tier2000;
+          effectiveRadiusKm = 2.0;
+          radiusLabel = 'Raio expandido para 2.0km por baixa amostragem local';
+          fallbackLevel = '2.0km';
+        } else {
+          // 4. Fallback pericial seguro para o pool de outras ruas do bairro/região
+          raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
+          effectiveRadiusKm = 2.0;
+          radiusLabel = 'Mediana do bairro (sem amostras em raio até 2.0km)';
+          fallbackLevel = 'bairro';
+        }
+      }
+    }
+  } else {
+    raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
+    radiusLabel = 'Mediana do bairro (sem geolocalização exata)';
+    fallbackLevel = 'bairro';
+  }
 
   // 2. Nível Raio (Ruas do Entorno). O expurgo usa Chauvenet operacional
   // em 2 desvios-padrão, sem uma faixa percentual que descarte comparáveis válidos.
@@ -362,7 +406,10 @@ export function computeBidirectionalBenchmarks(
       prelim: Math.round(raioPrelim),
       refCorte: Math.round(refCorteRaio),
       corteMin: raioCorteMin,
-      corteMax: raioCorteMax
+      corteMax: raioCorteMax,
+      effectiveRadiusKm,
+      radiusLabel,
+      fallbackLevel
     },
     rua: {
       saneada: ruaSaneada,
@@ -391,6 +438,9 @@ export function computeBidirectionalBenchmarks(
     ruaRaioDesvioPct,
     ruaRaioCalibrada,
     radiusVerified: hasVerifiedRadius,
+    effectiveRadiusKm,
+    radiusLabel,
+    fallbackLevel,
     minSimilarSize: minSize,
     maxSimilarSize: maxSize,
     hasMicroData

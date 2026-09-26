@@ -22,6 +22,8 @@ import { execSync } from 'child_process';
 import crypto from 'crypto';
 import os from 'os';
 import puppeteer from 'puppeteer';
+import { launchPuppeteer, getPuppeteerLaunchOptions } from './src/utils/puppeteerConfig.ts';
+import { assessDataQuality } from './src/utils/dataQuality.ts';
 import { PDFParse } from 'pdf-parse';
 import { readRegistryPdf } from './documentTextService.ts';
 import { AuctionProperty, ItbiTransaction, PropertyType, User, Session, AccessCode, SavedMarketAnalysis, ArrematacaoProperty } from './src/types.ts';
@@ -1960,13 +1962,25 @@ function recalculateAuctionWithIndex(
   // três escrituras válidas na rua/prédio; uma amostra isolada não basta.
   if (streetTxs === 0) {
     score = Math.min(score, 4);
-  } else if (streetTxs < 3) {
+  } else if (streetTxs < 2) {
     score = Math.min(score, 6);
+  }
+
+  // Trava Documental Anti-Falso Positivo:
+  // Imóvel sem certidão de matrícula auditada não pode receber nota 8, 9 ou 10
+  const hasAuditedMatricula = Boolean(auc.matriculaText && auc.matriculaText.trim().length >= 50);
+  if (!hasAuditedMatricula) {
+    score = Math.min(score - 1.5, 7);
   }
 
   // 11. Se for comunidade / área de risco: teto estrito 2/10
   if (commRisk.isRisk) {
     score = Math.min(score, 2);
+  }
+
+  // Imóvel com pendência de revisão: teto estrito 1/10
+  if (auc.precisa_revisao) {
+    score = 1;
   }
 
   // Final Clamp: realistic scores between 1 and 10
@@ -4584,7 +4598,7 @@ app.post('/api/auctions/fetch-documentos', async (req, res) => {
   };
   let browser: any;
   try {
-    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    browser = await launchPuppeteer(puppeteer, { headless: true });
     const detail = await enrichLotDetails(browser, {
       ...(auction || {}),
       portalId: portal.id,
@@ -4643,7 +4657,7 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
   let browser: any = null;
   try {
     console.log(`[Caixa Docs] Buscando certidão e edital oficial em: ${targetUrl}`);
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     });
@@ -4667,18 +4681,18 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
       let matriculaDocPath = '';
       let editalDocPath = '';
       
-      document.querySelectorAll('a').forEach(a => {
-        const onclick = a.getAttribute('onclick') || '';
-        const href = a.getAttribute('href') || '';
-        const combined = onclick + ' ' + href;
-        if (/matr[ií]cula|certid[aã]o/i.test(combined + ' ' + a.textContent)) {
+      document.querySelectorAll('a, button, input[type=button], span, div, [onclick]').forEach(el => {
+        const onclick = el.getAttribute('onclick') || '';
+        const href = el.getAttribute('href') || '';
+        const combined = onclick + ' ' + href + ' ' + (el.textContent || '');
+        if (/matr[ií]cula|certid[aã]o/i.test(combined)) {
           const directPdf = combined.match(/(?:https?:\/\/[^'"\s)]+|\/[^'"\s)]+)\.pdf(?:\?[^'"\s)]*)?/i);
-          if (directPdf) matriculaDocPath = new URL(directPdf[0], location.href).href;
-          const m = combined.match(/(\/editais\/matricula\/[^\'\"\)\s]+)/i);
-          if (m) matriculaDocPath = m[1];
+          if (directPdf && !matriculaDocPath) matriculaDocPath = new URL(directPdf[0], location.href).href;
+          const m = combined.match(/(?:ExibeDoc\s*\(\s*['"]|['"])(\/editais\/matricula\/[^\'\"\)\s]+)/i);
+          if (m && !matriculaDocPath) matriculaDocPath = m[1];
         } else if (combined.includes('/editais/') && (combined.includes('.pdf') || combined.includes('.PDF'))) {
-          const m = combined.match(/(\/editais\/[^\'\"\)\s]+\.pdf)/i);
-          if (m) editalDocPath = m[1];
+          const m = combined.match(/(?:ExibeDoc\s*\(\s*['"]|['"])(\/editais\/[^\'\"\)\s]+\.(?:pdf|PDF))/i);
+          if (m && !editalDocPath && !/matricula/i.test(m[1])) editalDocPath = m[1];
         }
       });
 
@@ -4728,6 +4742,16 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
       };
     });
 
+    const rawPropertyNum = (id ? id.replace(/[^0-9]/g, '') : '') || (targetUrl ? (targetUrl.match(/hdnimovel=([0-9]+)/i)?.[1] || '') : '');
+    if (!pageData.matriculaDocPath && rawPropertyNum) {
+      let stateCode = 'RJ';
+      if (pageData.enderecoStr) {
+        const m = pageData.enderecoStr.match(/,\s*([A-Z]{2})\b/i) || pageData.enderecoStr.match(/\b([A-Z]{2})\b\s*$/i);
+        if (m) stateCode = m[1].toUpperCase();
+      }
+      pageData.matriculaDocPath = `/editais/matricula/${stateCode}/${rawPropertyNum}.pdf`;
+    }
+
     if (!pageData.enderecoStr && !pageData.matriculaNumber && !pageData.matriculaDocPath) {
       return res.status(502).json({ error: 'A Caixa não disponibilizou os dados nesta consulta. A página pode estar indisponível ou exigir verificação de acesso.' });
     }
@@ -4740,13 +4764,17 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
       try {
         console.log(`[Caixa Docs] Baixando PDF da Matrícula: ${pageData.matriculaDocPath}`);
         const base64 = await page.evaluate(async (docPath) => {
-          const res = await fetch(docPath);
-          if (!res.ok) return null;
-          const buf = await res.arrayBuffer();
-          let bin = '';
-          const bytes = new Uint8Array(buf);
-          for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-          return btoa(bin);
+          try {
+            const res = await fetch(docPath);
+            if (!res.ok) return null;
+            const buf = await res.arrayBuffer();
+            let bin = '';
+            const bytes = new Uint8Array(buf);
+            for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin);
+          } catch {
+            return null;
+          }
         }, pageData.matriculaDocPath);
 
         if (base64) {
@@ -4775,13 +4803,17 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
       try {
         console.log(`[Caixa Docs] Baixando PDF do Edital: ${pageData.editalDocPath}`);
         const base64 = await page.evaluate(async (docPath) => {
-          const res = await fetch(docPath);
-          if (!res.ok) return null;
-          const buf = await res.arrayBuffer();
-          let bin = '';
-          const bytes = new Uint8Array(buf);
-          for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-          return btoa(bin);
+          try {
+            const res = await fetch(docPath);
+            if (!res.ok) return null;
+            const buf = await res.arrayBuffer();
+            let bin = '';
+            const bytes = new Uint8Array(buf);
+            for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin);
+          } catch {
+            return null;
+          }
         }, pageData.editalDocPath);
 
         if (base64) {
@@ -4848,6 +4880,36 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
     ];
 
     const editalText = editalTextLines.filter(Boolean).join('\n');
+
+    // Persistência direta no store de auctions para manter os documentos no card permanentemente
+    const targetLotId = id || (auctionLink ? store.auctions.find(a => a.auctionLink === auctionLink)?.id : undefined);
+    const matchedAuction = store.auctions.find(item => item.id === targetLotId) ||
+      store.auctions.find(item => item.auctionLink === targetUrl || item.auctionLink === auctionLink) ||
+      (rawPropertyNum ? store.auctions.find(item => item.id.includes(rawPropertyNum) || item.auctionLink?.includes(rawPropertyNum)) : null);
+
+    if (matchedAuction) {
+      if (pageData.matriculaNumber) matchedAuction.matriculaNumber = pageData.matriculaNumber;
+      if (regOffice) matchedAuction.registryOffice = regOffice;
+      if (matriculaText) {
+        matchedAuction.matriculaText = matriculaText;
+        matchedAuction.matriculaUrl = pageData.matriculaDocPath ? (pageData.matriculaDocPath.startsWith('http') ? pageData.matriculaDocPath : `https://venda-imoveis.caixa.gov.br${pageData.matriculaDocPath}`) : matchedAuction.matriculaUrl;
+      }
+      if (pageData.editalDocPath) {
+        matchedAuction.editalUrl = pageData.editalDocPath.startsWith('http') ? pageData.editalDocPath : `https://venda-imoveis.caixa.gov.br${pageData.editalDocPath}`;
+      }
+      if (pageData.bedrooms && (!matchedAuction.bedrooms || matchedAuction.bedrooms === 0)) {
+        matchedAuction.bedrooms = pageData.bedrooms;
+      }
+      if (pageData.parkingSpaces !== undefined && (!matchedAuction.parkingSpaces || matchedAuction.parkingSpaces === 0)) {
+        matchedAuction.parkingSpaces = pageData.parkingSpaces;
+      }
+      if (editalText) {
+        matchedAuction.description = matchedAuction.description ? `${matchedAuction.description}\n\n${editalText}` : editalText;
+      }
+      Object.assign(matchedAuction, recalculateAuction(matchedAuction, store.itbiTransactions));
+      saveStore(store);
+      console.log(`[Caixa Docs] Imóvel ${matchedAuction.id} atualizado com documentos e recalculado no banco com sucesso.`);
+    }
 
     return res.json({
       success: true,
@@ -5067,9 +5129,8 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
 
   let browser: any = null;
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+    browser = await launchPuppeteer(puppeteer, {
+      headless: true
     });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
@@ -6073,9 +6134,8 @@ app.post('/api/auctions/analyze-url', authMiddleware, async (req, res) => {
 
   try {
     console.log(`[URL Analyzer] Abrindo Puppeteer para: ${url}`);
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    browser = await launchPuppeteer(puppeteer, {
+      headless: true
     });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');

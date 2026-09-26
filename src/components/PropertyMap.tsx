@@ -12,6 +12,7 @@ import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
 import PropertyThumbnail from './PropertyThumbnail.tsx';
 import RealValueCalculator from './RealValueCalculator.tsx';
 import { cleanDivergentNotice } from '../utils/auctionLocation.ts';
+import { assessDataQuality } from '../utils/dataQuality.ts';
 
 
 interface PropertyMapProps {
@@ -908,7 +909,7 @@ useEffect(() => {
               displayedList.map(auc => {
                 const isSelected = auc.id === selectedPropId;
                 const totalCost = auc.auctionPrice + (auc.pendingDebts || 0) + (auc.estimatedRepair || 0) + (auc.otherCosts || 0);
-                const isFeatured = (auc.calculatedRoi || 0) > 50;
+                const isFeatured = assessDataQuality(auc).canBeFeatured;
 
                 return (
                   <div

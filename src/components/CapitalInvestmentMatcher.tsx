@@ -15,8 +15,9 @@ import {
   CheckCircle2, 
   AlertCircle,
   Building2,
-  X
+  X,
 } from 'lucide-react';
+import { assessDataQuality } from '../utils/dataQuality.ts';
 
 interface CapitalInvestmentMatcherProps {
   auctions: AuctionProperty[];
@@ -532,7 +533,7 @@ export default function CapitalInvestmentMatcher({
         <div data-tour="capital-results" className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {matchedOpportunities.slice(0, visibleCount).map((match) => {
             const { auction: auc, primaryMode, paymentLabel, actualOutlay, capitalLeftover, costs, valuation, hasAuditedExit, effectiveLiquidity } = match;
-            const isFeatured = hasAuditedExit && valuation.roiPct >= 40 && effectiveLiquidity >= 7;
+            const isFeatured = hasAuditedExit && valuation.roiPct >= 35 && effectiveLiquidity >= 7 && assessDataQuality(auc).canBeFeatured;
 
             return (
               <div

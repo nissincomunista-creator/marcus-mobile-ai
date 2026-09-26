@@ -77,6 +77,9 @@ export interface AuctionProperty {
   auctioneerName?: string;
   matriculaText?: string;
   matriculaUrl?: string;
+  matriculaNumber?: string;
+  registryOffice?: string;
+  editalUrl?: string;
   description?: string;
   status: 'Pendente' | 'Analisado' | 'Arrematado' | 'Arquivado';
   occupied: boolean;

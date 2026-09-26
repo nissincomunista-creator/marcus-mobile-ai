@@ -5,6 +5,7 @@ import { officialLotFinancials } from './officialLotPayload.ts';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
+import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import { AUCTIONEER_PORTALS, canonicalAuctionLink, parseOfficialLotDetail, extractAddress, type ScrapedAuctionDraft } from './auctioneerSyncService.ts';
 import { SYNC_SOURCE_IDS, SYNC_TARGETS, allowedSyncLocation, normalizeAuctionText as norm } from './src/utils/auctionSyncScope.ts';
 import { sourceAuctionLocation } from './src/utils/auctionGeography.ts';
@@ -123,7 +124,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
  const save=()=>{fs.writeFileSync(path.join(dir,'report.json'),JSON.stringify(report,null,2));fs.writeFileSync('sync-audits/latest-listed-sync.json',JSON.stringify(report,null,2));};save();
  let browserPromise:Promise<any>|null=null;
  const rendered=async(url:string)=>{
-  browserPromise ||= puppeteer.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});const browser=await browserPromise;const page=await browser.newPage();
+   browserPromise ||= launchPuppeteer(puppeteer, {headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});const browser=await browserPromise;const page=await browser.newPage();
   try{await page.setUserAgent(UA);const r=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});if(r&&r.status()>=400)throw Error(`HTTP ${r.status()}`);await page.waitForNetworkIdle({idleTime:600,timeout:10000}).catch(()=>{});const html=await page.content();if(/<title>Just a moment|Access Denied/i.test(html))throw Error('Acesso bloqueado pela fonte');return {html,url:page.url()};}finally{await page.close().catch(()=>{});}
  };
  const load=async(url:string,render=false)=>{

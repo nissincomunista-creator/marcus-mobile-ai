@@ -42,6 +42,7 @@ import PropertyThumbnail from './PropertyThumbnail.tsx';
 import LightboxModal from './LightboxModal.tsx';
 import { getAvailableZonesForCity, isNeighborhoodInZone } from '../utils/cityZones.ts';
 import { cleanDivergentNotice } from '../utils/auctionLocation.ts';
+import { assessDataQuality } from '../utils/dataQuality.ts';
 
 interface DashboardProps {
   auctions: AuctionProperty[];
@@ -525,6 +526,13 @@ export default function Dashboard({
                                   (strategyFilters.price ? 1 : 0);
 
     result.sort((a, b) => {
+      // Rebaixamento de lotes com pendência crítica (Auditoria Incompleta) para o final da fila de prioridade
+      const qualityA = assessDataQuality(a);
+      const qualityB = assessDataQuality(b);
+      if (qualityA.isIncompleto !== qualityB.isIncompleto) {
+        return qualityA.isIncompleto ? 1 : -1;
+      }
+
       if (activeStrategiesCount > 0) {
         if (activeStrategiesCount === 1) {
           if (strategyFilters.liquidity) return (b.liquidityScore || 0) - (a.liquidityScore || 0);
@@ -1475,8 +1483,8 @@ export default function Dashboard({
                   const condoDebt = auc.pendingCondoCost || (auc.origin === 'caixa' ? Math.round(((auc as any).evaluationPrice || auc.estimatedValue || auc.auctionPrice * 1.5) * 0.10) : (auc.pendingDebts || 0));
                   const totalCost = auc.auctionPrice + repairCost + condoDebt + (auc.otherCosts || (auc.itbiCost || 0) + (auc.notaryCost || 0));
                   const isSelected = selectedAuctionId === auc.id;
-                  const isVerifiedValuation = auc.valuationConfidence === 'verified' && (auc.itbiStreetCount || 0) > 0;
-                  const isFeatured = isVerifiedValuation && (auc.calculatedRoi || 0) >= 40 && (auc.liquidityScore || 0) >= 7;
+                  const quality = assessDataQuality(auc);
+                  const isFeatured = quality.canBeFeatured;
 
                   return (
                     <motion.div
@@ -1537,6 +1545,12 @@ export default function Dashboard({
                                 Risco {auc.riskLevel || 'Baixo'}
                               </span>
 
+                              {/* Badge de Qualidade de Dados */}
+                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${quality.badgeClass}`} title={quality.reasons.join('; ') || 'Auditoria pericial 100% verificada'}>
+                                {quality.status === 'Auditoria Incompleta' && '⚠️ '}
+                                {quality.badgeLabel}
+                              </span>
+
                               {isFeatured && (
                                 <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-950 border border-amber-400 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-500/50 flex items-center gap-0.5">
                                   ★ Destaque
@@ -1564,6 +1578,14 @@ export default function Dashboard({
                                   <span className="text-[10.5px] bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1 shadow-xs" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
                                     <span>⚠️</span>
                                     <span>{cleanDivergentNotice(auc.divergentNeighborhoodNotice)}</span>
+                                  </span>
+                                </div>
+                              )}
+                              {quality.isIncompleto && quality.reasons.length > 0 && (
+                                <div className="mt-1">
+                                  <span className="text-[10.5px] bg-rose-950/80 text-rose-300 px-2 py-0.5 rounded border border-rose-800/60 font-mono font-medium inline-flex items-center gap-1 shadow-xs" title={quality.reasons.join(' | ')}>
+                                    <span>⚠️</span>
+                                    <span>Necessita revisão documental / Amostragem insuficiente ({quality.reasons[0]})</span>
                                   </span>
                                 </div>
                               )}

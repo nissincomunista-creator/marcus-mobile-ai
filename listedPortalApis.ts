@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
+import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import * as cheerio from 'cheerio';
 import { parseOfficialLotDetail, type ScrapedAuctionDraft } from './auctioneerSyncService.ts';
 import { allowedSyncLocation } from './src/utils/auctionSyncScope.ts';
@@ -44,7 +45,7 @@ export function bankApiDraft(id:string, row:any):ScrapedAuctionDraft|null {
 export async function collectBankApi(id:string,dir:string,onPage:(rows:ScrapedAuctionDraft[],total:number)=>Promise<void>) {
   let headers:Record<string,string>={};
   if(id==='emgea'){
-    const browser=await puppeteer.launch({headless:true,args:['--no-sandbox']});
+    const browser=await launchPuppeteer(puppeteer, {headless:true,args:['--no-sandbox']});
     try{const page=await browser.newPage();page.on('request',request=>{if(request.url().split('?')[0]===API)headers=request.headers();});
       await page.goto('https://www.emgeaimoveis.com.br/busca',{waitUntil:'networkidle2',timeout:45000});
       if(!headers['x-api-key'])throw Error('A página oficial não forneceu acesso à API pública de imóveis');

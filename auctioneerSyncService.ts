@@ -11,6 +11,7 @@ import { declaredAuctionLocation } from './src/utils/auctionLocation.ts';
 import fs from 'fs';
 import { AUCTION_STATES, municipalityId, sourceAuctionLocation } from './src/utils/auctionGeography.ts';
 import puppeteer from 'puppeteer';
+import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import { GoogleGenAI } from '@google/genai';
 import { PDFParse } from 'pdf-parse';
 import { readRegistryPdf } from './documentTextService.ts';
@@ -945,7 +946,7 @@ export async function scrapeOfficialDetailSeeds(
 
   let browser: any = null;
   try {
-    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+    browser = await launchPuppeteer(puppeteer, { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
     const results: ScrapedAuctionDraft[] = [];
     for (const seed of seeds) {
       const detailed = await enrichLotDetails(browser, {
@@ -985,7 +986,7 @@ export async function scrapeIsaiasAuctioneer(
   let browser: any = null;
   let page: any = null;
   try {
-    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+    browser = await launchPuppeteer(puppeteer, { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
     page = await createAuctionPage(browser);
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
     await page.goto('https://www.isaiasleiloes.com.br/', { waitUntil: 'networkidle2', timeout: 30000 });
@@ -1027,7 +1028,7 @@ export async function scrapeSantanderOfficial(
   let browser: any = null;
   let page: any = null;
   try {
-    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+    browser = await launchPuppeteer(puppeteer, { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
     page = await createAuctionPage(browser);
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
     const catalogueUrl = new URL('https://www.santanderimoveis.com.br/');
@@ -1202,7 +1203,7 @@ export async function scrapeMegaLeiloes(
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
   try {
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     });
@@ -1294,7 +1295,7 @@ export async function scrapeFrazao(
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
   try {
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     });
@@ -1386,7 +1387,7 @@ export async function scrapeBiasi(
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
   try {
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     });
@@ -1479,7 +1480,7 @@ export async function scrapePortalZuk(
   const results: ScrapedAuctionDraft[] = [];
   let browser: any = null;
   try {
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     });
@@ -1621,7 +1622,7 @@ export async function scrapeRogerioMenezes(
   const targetStateNorm = (state || '').toUpperCase();
 
   try {
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     });
@@ -1845,7 +1846,7 @@ export async function scrapeConfiguredAuctioneers(
     return portal.genericScrape === true;
   });
   try {
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
     });

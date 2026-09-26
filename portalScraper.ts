@@ -1,4 +1,5 @@
 import puppeteer, { Browser } from 'puppeteer';
+import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import fs from 'fs';
 import path from 'path';
 
@@ -102,7 +103,7 @@ export async function scrapeLivePortals(params: {
   let browser: Browser | null = null;
 
   try {
-    browser = await puppeteer.launch({
+    browser = await launchPuppeteer(puppeteer, {
       headless: true,
       args: [
         '--no-sandbox',
