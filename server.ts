@@ -23,7 +23,7 @@ import crypto from 'crypto';
 import os from 'os';
 import puppeteer from 'puppeteer';
 import { launchPuppeteer, getPuppeteerLaunchOptions } from './src/utils/puppeteerConfig.ts';
-import { assessDataQuality } from './src/utils/dataQuality.ts';
+import { assessDataQuality, getVerifiedLocalComparableCount } from './src/utils/dataQuality.ts';
 import { PDFParse } from 'pdf-parse';
 import { readRegistryPdf } from './documentTextService.ts';
 import { AuctionProperty, ItbiTransaction, PropertyType, User, Session, AccessCode, SavedMarketAnalysis, ArrematacaoProperty } from './src/types.ts';
@@ -1346,6 +1346,13 @@ function recalculateAuctionWithIndex(
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
   let neighborhoodAvgSqm = 0;
+  // Derived local-comparable fields are rebuilt from the current ITBI index below.
+  // Old persisted counts survived code changes and could keep stale liquidity high.
+  auc.itbiBuildingCount = undefined;
+  auc.itbiSurroundingAvgSqm = undefined;
+  auc.itbiSurroundingCount = undefined;
+  auc.streetRadiusDeviationPct = undefined;
+  auc.streetRadiusCalibrated = false;
 
   const rawStreet = extractStreet(auc.address);
   const isGeneric = isGenericStreet(rawStreet);
@@ -1726,6 +1733,7 @@ function recalculateAuctionWithIndex(
   let bidiSqm = 0;
   let bidiGabaritoSqm = 0;
   let hasMicroData = false;
+  let hasVerifiedLocalMicroData = false;
   let valuationSampleCount = 0;
   let valuationLevel = '';
   let hasExactNeighborhoodReference = false;
@@ -1742,16 +1750,22 @@ function recalculateAuctionWithIndex(
         bidiSqm = bidi.flipRapidoSqm;
         bidiGabaritoSqm = bidi.mediaCorteReal;
         hasMicroData = true;
-        valuationSampleCount = bidi.nivelUtilizado === 'Prédio' ? bidi.predio.validas : bidi.rua.validas;
+        valuationSampleCount = bidi.nivelUtilizado === 'Prédio'
+          ? bidi.predio.validas
+          : bidi.nivelUtilizado === 'Rua'
+            ? bidi.rua.validas
+            : bidi.nivelUtilizado === 'Raio Entorno'
+              ? bidi.raio.validas
+              : 0;
         valuationLevel = bidi.nivelUtilizado;
+        hasVerifiedLocalMicroData = (valuationLevel === 'Prédio' && bidi.predio.validas > 0) ||
+          (valuationLevel === 'Rua' && bidi.rua.validas > 0);
         auc.itbiSurroundingAvgSqm = bidi.radiusVerified ? (bidi.raio.saneada || undefined) : undefined;
         auc.itbiSurroundingCount = bidi.radiusVerified ? (bidi.raio.validas || undefined) : undefined;
         auc.itbiBuildingCount = bidi.predio.validas || undefined;
         auc.streetRadiusDeviationPct = bidi.radiusVerified ? (bidi.ruaRaioDesvioPct || undefined) : undefined;
         auc.streetRadiusCalibrated = bidi.radiusVerified && bidi.ruaRaioCalibrada;
       }
-    } else {
-      auc.itbiBuildingCount = undefined;
     }
   }
 
@@ -1777,11 +1791,16 @@ function recalculateAuctionWithIndex(
     auc.itbiStreetCount = undefined;
   }
 
-  auc.hasMicroBenchmark = hasMicroData;
-  auc.valuationConfidence = hasMicroData ? 'verified' : (canUseOfficialNeighborhoodFallback ? 'projected' : 'unavailable');
-  auc.valuationSampleCount = hasMicroData ? valuationSampleCount : undefined;
+  auc.valuationLevel = (valuationLevel || 'Sem Dados Suficientes') as AuctionProperty['valuationLevel'];
+  auc.hasMicroBenchmark = hasVerifiedLocalMicroData;
+  auc.valuationConfidence = hasVerifiedLocalMicroData ? 'verified' : (canUseOfficialNeighborhoodFallback ? 'projected' : 'unavailable');
+  // Sample count is scoped to the selected level. Bairro/raio counts never
+  // masquerade as street/building comparables in liquidity or audit UI.
+  auc.valuationSampleCount = hasMicroData && valuationLevel !== 'Bairro' ? valuationSampleCount : undefined;
   auc.valuationRadiusKm = hasMicroData ? 0.5 : undefined;
-  if (hasMicroData) auc.valuationBasis = `ITBI verificado - ${valuationLevel} (${valuationSampleCount} amostras)`;
+  if (hasMicroData) auc.valuationBasis = hasVerifiedLocalMicroData
+    ? `ITBI verificado - ${valuationLevel} (${valuationSampleCount} amostras)`
+    : `Referência ITBI estimada - ${valuationLevel}${valuationSampleCount > 0 ? ` (${valuationSampleCount} amostras)` : ''}`;
 
   // Valores de portal só podem sobreviver quando vieram de anúncios individuais auditáveis.
   if (!auc.portalDataVerifiedAt || !auc.portalSampleCount) {
@@ -1897,7 +1916,8 @@ function recalculateAuctionWithIndex(
   // Base neutra baixa; falta de microdados locais nunca começa em 5/10.
   let score = 3;
 
-  const streetTxs = auc.itbiStreetCount || 0;
+  const localComparableCount = getVerifiedLocalComparableCount(auc);
+  const streetTxs = localComparableCount;
   const volKey = `${state}|${normCity}|${neigh}`;
   const neighVol = volMap.get(volKey) || 0;
 
@@ -1961,9 +1981,9 @@ function recalculateAuctionWithIndex(
   }
 
   // Trava de confiança local: giro do bairro ou comparáveis apenas no raio
-  // não comprovam liquidez na via do imóvel. A faixa alta exige pelo menos
-  // três escrituras válidas na rua/prédio; uma amostra isolada não basta.
-  const streetOrBuildingCount = Math.max(streetTxs, auc.itbiBuildingCount || 0);
+  // não comprovam liquidez na via do imóvel. Notas acima de 6 exigem pelo menos
+  // cinco escrituras válidas na rua/prédio; uma amostra isolada não basta.
+  const streetOrBuildingCount = localComparableCount;
   if (streetOrBuildingCount === 0) score = Math.min(score, 3);
   else if (streetOrBuildingCount < 2) score = Math.min(score, 4);
   else if (streetOrBuildingCount < 5) score = Math.min(score, 6);
@@ -2492,8 +2512,9 @@ app.delete('/api/user/arrematacoes/:id', authMiddleware, (req, res) => {
 // GET /api/auctions
 app.get('/api/auctions', authMiddleware, (req, res) => {
   const userAuctions = deduplicateAuctions(store.auctions.filter(a => catalogEligible(a) && (!a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible);
-  const enriched = userAuctions.map(original => {
-    const a=original.offers && original.offers.length>1?recalculateAuction(original,store.itbiTransactions):original;
+  // Rebuild scores and ITBI evidence for every returned card. Persisted scores are
+  // snapshots from older rules and must never outlive the current evidence gates.
+  const enriched = recalculateAuctions(userAuctions, store.itbiTransactions).map(a => {
     // Sanitize distorted rural terrains or runaway ROIs
     if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === 'Terreno' || (a.sizeSqm && a.sizeSqm > 1000)) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
@@ -2684,20 +2705,29 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
     const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || 0;
     const calculatorBuildingCount = Number(updatedFields.itbiBuildingCount) || 0;
     const calculatorRadiusCount = Number(updatedFields.itbiSurroundingCount) || 0;
-    const hasVerifiedLocalComparables = calculatorBuildingCount >= 2 || calculatorStreetCount >= 2;
+    const calculatorLevel = ['Prédio', 'Rua', 'Raio Entorno', 'Bairro', 'Sem Dados Suficientes'].includes(String(updatedFields.valuationLevel))
+      ? updatedFields.valuationLevel as AuctionProperty['valuationLevel']
+      : 'Sem Dados Suficientes';
+    const calculatorSampleCount = Number(updatedFields.valuationSampleCount) || 0;
+    const hasVerifiedLocalComparables =
+      (calculatorLevel === 'Prédio' && calculatorBuildingCount >= 2) ||
+      (calculatorLevel === 'Rua' && calculatorSampleCount >= 2);
     recalculated.vendaBaixaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.vendaMediaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.estimatedValue = Number(updatedFields.estimatedValue);
     const calculatorStreetAvgSqm = Number(updatedFields.itbiStreetAvgSqm) || 0;
     if (calculatorStreetCount > 0) recalculated.itbiStreetCount = calculatorStreetCount;
     if (calculatorBuildingCount > 0) recalculated.itbiBuildingCount = calculatorBuildingCount;
+    recalculated.valuationLevel = calculatorLevel;
+    recalculated.valuationSampleCount = calculatorSampleCount || undefined;
     if (calculatorStreetAvgSqm > 0) recalculated.itbiStreetAvgSqm = calculatorStreetAvgSqm;
     recalculated.valuationConfidence = updatedFields.valuationConfidence === 'verified' && hasVerifiedLocalComparables ? 'verified' : 'projected';
     // A nota não sobe por amostras de bairro, um único comparável ou campos enviados pelo browser.
-    recalculated.liquidityScore = Math.min(recalculated.liquidityScore || 1, hasVerifiedLocalComparables ? 6 : calculatorRadiusCount >= 2 ? 4 : 3);
+    const localCount = getVerifiedLocalComparableCount(recalculated);
+    const evidenceCeiling = localCount === 0 ? 3 : localCount === 1 ? 4 : 6;
+    recalculated.liquidityScore = Math.min(recalculated.liquidityScore || 1, evidenceCeiling);
     recalculated.hasMicroBenchmark = true;
     recalculated.valuationBasis = String(updatedFields.valuationBasis || 'ITBI verificado pela calculadora');
-    recalculated.valuationSampleCount = Number(updatedFields.valuationSampleCount) || undefined;
     recalculated.valuationRadiusKm = Number(updatedFields.valuationRadiusKm) || 0.5;
     recalculated.itbiSurroundingAvgSqm = Number(updatedFields.itbiSurroundingAvgSqm) || undefined;
     recalculated.itbiSurroundingCount = calculatorRadiusCount || undefined;

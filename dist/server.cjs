@@ -3398,6 +3398,415 @@ var import_child_process = require("child_process");
 var import_crypto = __toESM(require("crypto"), 1);
 var import_os = __toESM(require("os"), 1);
 var import_puppeteer5 = __toESM(require("puppeteer"), 1);
+
+// src/utils/streetMatching.ts
+function canonicalStreet(value) {
+  if (!value) return "";
+  const titles = {
+    dr: "doutor",
+    dra: "doutora",
+    eng: "engenheiro",
+    enga: "engenheira",
+    prof: "professor",
+    profa: "professora",
+    cel: "coronel",
+    gen: "general",
+    gal: "general",
+    dep: "deputado",
+    gov: "governador",
+    pres: "presidente",
+    sen: "senador",
+    pe: "padre",
+    sta: "santa",
+    sto: "santo",
+    mal: "marechal",
+    cmdte: "comandante",
+    visc: "visconde",
+    bpo: "bispo",
+    dom: "dom"
+  };
+  let s = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  s = s.split(",")[0].replace(/\s+n[ºo°.]?\s*\d+.*$/i, "").replace(/\s+(?:apto|apt|ap|bloco|bl|casa|lote|qd|quadra)\b.*$/i, "");
+  s = s.replace(/^(?:rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|trav|praca|prc|pca|alameda|alm|al|rodovia|rod|largo|lrg|vila|vl|beco|servidao|passagem|psg|boulevard|blvd|via)\b\.?\s*/i, "");
+  const tokens = s.replace(/[^a-z0-9]/g, " ").split(/\s+/).filter((t) => t && !["de", "da", "do", "das", "dos", "e"].includes(t)).map((t) => titles[t] || t);
+  return tokens.join(" ").trim();
+}
+function editDistance(a, b) {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= b.length; j++) {
+      next[j] = Math.min(next[j - 1] + 1, row[j] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    for (let j = 0; j <= b.length; j++) row[j] = next[j];
+  }
+  return row[b.length];
+}
+function resolveOfficialStreet(target, candidates) {
+  const wanted = canonicalStreet(target);
+  if (!wanted) return null;
+  const unique = [...new Set(candidates.filter(Boolean))].map((street) => ({
+    street,
+    key: canonicalStreet(street)
+  })).filter((c) => c.key.length > 0);
+  const exact = unique.filter((c) => c.key === wanted);
+  if (exact.length) return exact[0].street;
+  const tokens = wanted.split(" ");
+  const scored = unique.map((c) => {
+    const ts = c.key.split(" ");
+    const simplifiedWanted = tokens.filter((t) => !["doutor", "doutora", "presidente", "general", "coronel", "padre", "santa", "santo", "marechal"].includes(t)).join(" ");
+    const simplifiedCandidate = ts.filter((t) => !["doutor", "doutora", "presidente", "general", "coronel", "padre", "santa", "santo", "marechal"].includes(t)).join(" ");
+    if (simplifiedWanted && simplifiedCandidate && simplifiedWanted === simplifiedCandidate) {
+      return { ...c, score: 0.95 };
+    }
+    if (ts.length !== tokens.length) return { ...c, score: 0 };
+    let score = 0;
+    for (let i = 0; i < tokens.length; i++) {
+      const a = tokens[i];
+      const b = ts[i];
+      if (a === b) score += 1;
+      else if (a.length >= 2 && b.length >= 2 && (a.startsWith(b) || b.startsWith(a))) score += 0.9;
+      else if (Math.min(a.length, b.length) >= 4 && editDistance(a, b) === 1) score += 0.85;
+      else return { ...c, score: 0 };
+    }
+    return { ...c, score: score / tokens.length };
+  }).filter((c) => c.score >= 0.85).sort((a, b) => b.score - a.score);
+  if (!scored.length || scored[1] && scored[0].key !== scored[1].key && scored[0].score - scored[1].score < 0.08) {
+    return null;
+  }
+  return scored[0].street;
+}
+
+// src/utils/bidirectionalBenchmark.ts
+function isGenericStreet(str) {
+  if (!str) return true;
+  const s = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  if (s.length < 3) return true;
+  const genericPrefixRegex = /^(rua|r\b|avenida|av\b|estrada|estr\b|travessa|trav\b|alameda|al\b|via|beco|praca|pc\b)\s+([a-z]|[0-9]{1,3})$/i;
+  if (genericPrefixRegex.test(s)) return true;
+  const strictlyGenericKeywords = [
+    "projetad",
+    "sem nome",
+    "s/n",
+    "nao informado",
+    "nao informada",
+    "extracao documental",
+    "apartamento em",
+    "casa de condominio em"
+  ];
+  if (strictlyGenericKeywords.some((k) => s.includes(k))) return true;
+  const startGenericRegex = /^(?:quadra|qd\b|loteamento|gleba|chacara|sitio|estrada municipal|zona rural|area rural|area de posse|vila nova|povoado)\b/i;
+  if (startGenericRegex.test(s)) return true;
+  const core = cleanStreetCore(s);
+  if (core.length <= 2) return true;
+  return false;
+}
+function cleanStreetCore(s) {
+  return canonicalStreet(s);
+}
+function cleanStreetNumber(n) {
+  if (!n) return "";
+  const match = String(n).match(/\d+/);
+  return match ? match[0] : "";
+}
+function computeMedian(vals) {
+  if (vals.length === 0) return 0;
+  const sorted = [...vals].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, targetNumber, targetSize, sizeMode = "similar", radiusKm = 0.5, targetPropType) {
+  if (!allNeighborhoodTxs || allNeighborhoodTxs.length === 0) return null;
+  const size = targetSize > 0 ? targetSize : 60;
+  const minSize = Math.max(15, Math.round(size * 0.67));
+  const maxSize = Math.round(size * 1.33);
+  const officialStreet = resolveOfficialStreet(targetStreet, allNeighborhoodTxs.map((t) => t.street || ""));
+  const targetCore = cleanStreetCore(officialStreet || targetStreet);
+  const targetNum = cleanStreetNumber(targetNumber);
+  let typeTxs = allNeighborhoodTxs;
+  if (targetPropType) {
+    const exactTypeTxs = allNeighborhoodTxs.filter((t) => t.propertyType === targetPropType);
+    if (exactTypeTxs.length > 0) {
+      typeTxs = exactTypeTxs;
+    }
+  }
+  const filterByArea = (txs) => {
+    if (sizeMode === "all") return txs;
+    const filtered = txs.filter((t) => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
+    if (filtered.length === 0 && txs.length > 0) {
+      return txs;
+    }
+    return filtered;
+  };
+  const poolTxs = filterByArea(typeTxs);
+  const bVals = poolTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
+  if (bVals.length === 0) return null;
+  const bPrelim = bVals.reduce((a, b) => a + b, 0) / bVals.length;
+  const bVariance = bVals.reduce((acc, v) => acc + Math.pow(v - bPrelim, 2), 0) / bVals.length;
+  const bStd = Math.sqrt(bVariance);
+  const bValid = bVals.filter((v) => Math.abs(v - bPrelim) <= 2.2 * bStd);
+  const bSaneada = bValid.length > 0 ? Math.round(bValid.reduce((a, b) => a + b, 0) / bValid.length) : Math.round(bPrelim);
+  const bExpurgados = bVals.length - bValid.length;
+  const ruaTxs = targetCore ? poolTxs.filter((t) => cleanStreetCore(t.street) === targetCore) : [];
+  const surroundingPool = targetCore ? poolTxs.filter((t) => cleanStreetCore(t.street) !== targetCore) : poolTxs;
+  const geolocatedSurrounding = surroundingPool.filter((t) => t.distanceKm !== null && t.distanceKm !== void 0 && Number.isFinite(Number(t.distanceKm)));
+  let raioTxs = [];
+  let effectiveRadiusKm = radiusKm || 0.5;
+  let radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
+  let fallbackLevel = "0.5km";
+  const hasVerifiedRadius = geolocatedSurrounding.length >= 2;
+  if (geolocatedSurrounding.length > 0) {
+    const tierInitial = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= (radiusKm || 0.5));
+    if (tierInitial.length >= 2) {
+      raioTxs = tierInitial;
+      effectiveRadiusKm = radiusKm || 0.5;
+      radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
+      fallbackLevel = "0.5km";
+    } else {
+      const tier1000 = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= 1);
+      if (tier1000.length >= 2) {
+        raioTxs = tier1000;
+        effectiveRadiusKm = 1;
+        radiusLabel = "Raio expandido para 1.0km por baixa amostragem local";
+        fallbackLevel = "1.0km";
+      } else {
+        const tier2000 = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= 2);
+        if (tier2000.length >= 2) {
+          raioTxs = tier2000;
+          effectiveRadiusKm = 2;
+          radiusLabel = "Raio expandido para 2.0km por baixa amostragem local";
+          fallbackLevel = "2.0km";
+        } else {
+          raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
+          effectiveRadiusKm = 2;
+          radiusLabel = "Mediana do bairro (sem amostras em raio at\xE9 2.0km)";
+          fallbackLevel = "bairro";
+        }
+      }
+    }
+    raioTxs = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= (radiusKm || 0.5));
+  } else {
+    raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
+    radiusLabel = "Mediana do bairro (sem geolocaliza\xE7\xE3o exata)";
+    fallbackLevel = "bairro";
+  }
+  const raioVals = raioTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
+  const raioPrelim = raioVals.length > 0 ? raioVals.reduce((a, b) => a + b, 0) / raioVals.length : hasVerifiedRadius ? bSaneada : 0;
+  const raioVariance = raioVals.length > 0 ? raioVals.reduce((acc, value) => acc + Math.pow(value - raioPrelim, 2), 0) / raioVals.length : 0;
+  const raioStd = Math.sqrt(raioVariance);
+  const refCorteRaio = Math.round(raioPrelim || bSaneada);
+  const raioCorteMin = raioStd > 0 ? Math.round(raioPrelim - 2 * raioStd) : Math.round(raioPrelim);
+  const raioCorteMax = raioStd > 0 ? Math.round(raioPrelim + 2 * raioStd) : Math.round(raioPrelim);
+  const raioValid = raioVals.filter((v) => raioStd === 0 || Math.abs(v - raioPrelim) <= 2 * raioStd);
+  const raioSaneada = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : hasVerifiedRadius ? Math.round(refCorteRaio) : 0;
+  const raioExpurgados = raioVals.length - raioValid.length;
+  const ruaVals = ruaTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
+  const ruaPrelim = ruaVals.length > 0 ? Math.round(ruaVals.reduce((a, b) => a + b, 0) / ruaVals.length) : 0;
+  let ruaValid = [];
+  let ruaSaneada = 0;
+  let ruaCorteMin = 0;
+  let ruaCorteMax = 0;
+  let refCorteRua = raioSaneada;
+  if (ruaVals.length >= 2) {
+    const buildings = /* @__PURE__ */ new Map();
+    ruaTxs.forEach((t) => {
+      if (!(t.unitValueSqm >= 800 && t.unitValueSqm <= 8e4)) return;
+      const key = cleanStreetNumber(t.number) || t.id;
+      buildings.set(key, [...buildings.get(key) || [], t.unitValueSqm]);
+    });
+    const ruaMed = computeMedian(Array.from(buildings.values()).map(computeMedian));
+    refCorteRua = ruaMed;
+    const deviation = Math.sqrt(ruaVals.reduce((sum, value) => sum + (value - ruaPrelim) ** 2, 0) / ruaVals.length);
+    ruaCorteMin = Math.max(800, Math.round(ruaPrelim - 2.2 * deviation));
+    ruaCorteMax = Math.round(ruaPrelim + 2.2 * deviation);
+    ruaValid = ruaVals.filter((v) => v >= ruaCorteMin && v <= ruaCorteMax);
+    if (ruaValid.length === 0) ruaValid = ruaVals;
+    ruaSaneada = Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length);
+  } else if (ruaVals.length === 1) {
+    const anchor = raioSaneada > 0 ? raioSaneada : bSaneada;
+    refCorteRua = anchor;
+    ruaCorteMin = Math.round(anchor * 0.55);
+    ruaCorteMax = Math.round(anchor * 1.45);
+    ruaValid = [ruaVals[0]];
+    ruaSaneada = ruaVals[0];
+  } else {
+    ruaValid = [];
+    ruaSaneada = 0;
+    ruaCorteMin = 0;
+    ruaCorteMax = 0;
+  }
+  const ruaExpurgados = ruaVals.length - ruaValid.length;
+  const predioTxs = targetNum ? ruaTxs.filter((t) => cleanStreetNumber(t.number) === targetNum) : [];
+  const predioVals = predioTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
+  const predioPrelim = predioVals.length > 0 ? Math.round(predioVals.reduce((a, b) => a + b, 0) / predioVals.length) : 0;
+  let predioValid = [];
+  let predioSaneada = 0;
+  let predioCorteMin = 0;
+  let predioCorteMax = 0;
+  if (predioVals.length >= 2) {
+    const pMed = computeMedian(predioVals);
+    predioCorteMin = Math.round(pMed * 0.65);
+    predioCorteMax = Math.round(pMed * 1.35);
+    predioValid = predioVals.filter((v) => v >= predioCorteMin && v <= predioCorteMax);
+    if (predioValid.length === 0) predioValid = predioVals;
+    predioSaneada = Math.round(predioValid.reduce((a, b) => a + b, 0) / predioValid.length);
+  } else if (predioVals.length === 1) {
+    const pAnchor = ruaSaneada > 0 ? ruaSaneada : raioSaneada > 0 ? raioSaneada : bSaneada;
+    predioCorteMin = Math.round(pAnchor * 0.55);
+    predioCorteMax = Math.round(pAnchor * 1.45);
+    if (predioVals[0] <= predioCorteMax) {
+      predioValid = [predioVals[0]];
+      predioSaneada = predioVals[0];
+    } else {
+      predioValid = [];
+      predioSaneada = 0;
+    }
+  } else {
+    predioValid = [];
+    predioSaneada = 0;
+    predioCorteMin = 0;
+    predioCorteMax = 0;
+  }
+  const predioExpurgados = predioVals.length - predioValid.length;
+  let mediaCorteReal = 0;
+  let nivelUtilizado = "Sem Dados Suficientes";
+  let hasMicroData = false;
+  const refEntorno = raioSaneada > 0 ? raioSaneada : bSaneada;
+  const ruaRaioDesvioPct = ruaSaneada > 0 && refEntorno > 0 ? Math.round((ruaSaneada - refEntorno) / refEntorno * 100) : 0;
+  let ruaRaioCalibrada = false;
+  if (predioValid.length > 0) {
+    const anchor = ruaSaneada > 0 ? ruaSaneada : refEntorno;
+    if (predioValid.length === 1) {
+      if (predioSaneada <= anchor) {
+        mediaCorteReal = predioSaneada;
+      } else {
+        const blended = predioSaneada * 0.4 + anchor * 0.6;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
+      }
+    } else if (predioValid.length === 2) {
+      if (predioSaneada <= anchor) {
+        mediaCorteReal = predioSaneada;
+      } else {
+        const blended = predioSaneada * 0.7 + anchor * 0.3;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
+      }
+    } else {
+      mediaCorteReal = predioSaneada;
+    }
+    nivelUtilizado = "Pr\xE9dio";
+    hasMicroData = true;
+  } else if (ruaValid.length > 0) {
+    const anchor = refEntorno > 0 ? refEntorno : bSaneada;
+    if (ruaValid.length === 1) {
+      if (ruaSaneada <= anchor) {
+        mediaCorteReal = ruaSaneada;
+      } else {
+        const blended = ruaSaneada * 0.4 + anchor * 0.6;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
+      }
+    } else if (ruaValid.length === 2) {
+      if (ruaSaneada <= anchor) {
+        mediaCorteReal = ruaSaneada;
+      } else {
+        const blended = ruaSaneada * 0.7 + anchor * 0.3;
+        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
+      }
+    } else {
+      mediaCorteReal = ruaSaneada;
+    }
+    if (Math.abs(ruaRaioDesvioPct) > 25 && refEntorno > 0) {
+      if (ruaRaioDesvioPct > 0) {
+        const blended = ruaSaneada * 0.5 + refEntorno * 0.5;
+        const neighborhoodCeiling = bSaneada > 0 ? Math.round(bSaneada * 1.25) : blended;
+        mediaCorteReal = Math.round(Math.min(mediaCorteReal, neighborhoodCeiling, blended));
+      } else {
+        mediaCorteReal = Math.min(mediaCorteReal, ruaSaneada);
+      }
+      ruaRaioCalibrada = true;
+    }
+    nivelUtilizado = "Rua";
+    hasMicroData = true;
+  } else if (hasVerifiedRadius && raioValid.length >= 2 && raioSaneada > 0) {
+    mediaCorteReal = raioSaneada;
+    nivelUtilizado = "Raio Entorno";
+    hasMicroData = true;
+  } else if (bSaneada > 0) {
+    mediaCorteReal = bSaneada;
+    nivelUtilizado = "Bairro";
+    hasMicroData = false;
+  } else {
+    mediaCorteReal = 0;
+    nivelUtilizado = "Sem Dados Suficientes";
+    hasMicroData = false;
+  }
+  const flipRapidoSqm = mediaCorteReal > 0 ? Math.round(mediaCorteReal * 0.9) : 0;
+  const gabaritoTotal = mediaCorteReal > 0 ? mediaCorteReal * size : 0;
+  const flipTotal = flipRapidoSqm > 0 ? flipRapidoSqm * size : 0;
+  return {
+    bairro: {
+      saneada: bSaneada,
+      total: bVals.length,
+      validas: bValid.length,
+      expurgadas: bExpurgados,
+      prelim: Math.round(bPrelim)
+    },
+    raio: {
+      saneada: raioSaneada,
+      total: raioVals.length,
+      validas: hasVerifiedRadius ? raioValid.length : 0,
+      expurgadas: raioExpurgados,
+      prelim: Math.round(raioPrelim),
+      refCorte: Math.round(refCorteRaio),
+      corteMin: raioCorteMin,
+      corteMax: raioCorteMax,
+      effectiveRadiusKm,
+      radiusLabel,
+      fallbackLevel
+    },
+    rua: {
+      saneada: ruaSaneada,
+      total: ruaVals.length,
+      validas: ruaValid.length,
+      expurgadas: ruaExpurgados,
+      prelim: ruaPrelim,
+      refCorte: refCorteRua,
+      corteMin: ruaCorteMin,
+      corteMax: ruaCorteMax
+    },
+    predio: {
+      saneada: predioSaneada,
+      total: predioVals.length,
+      validas: predioValid.length,
+      expurgadas: predioExpurgados,
+      prelim: predioPrelim,
+      corteMin: predioCorteMin,
+      corteMax: predioCorteMax
+    },
+    mediaCorteReal,
+    nivelUtilizado,
+    flipRapidoSqm,
+    gabaritoTotal,
+    flipTotal,
+    ruaRaioDesvioPct,
+    ruaRaioCalibrada,
+    radiusVerified: hasVerifiedRadius,
+    effectiveRadiusKm,
+    radiusLabel,
+    fallbackLevel,
+    minSimilarSize: minSize,
+    maxSimilarSize: maxSize,
+    hasMicroData
+  };
+}
+
+// src/utils/dataQuality.ts
+function getVerifiedLocalComparableCount(auc) {
+  if (auc.valuationLevel === "Pr\xE9dio") return Math.max(0, Number(auc.itbiBuildingCount) || 0);
+  if (auc.valuationLevel === "Rua") return Math.max(0, Number(auc.valuationSampleCount) || 0);
+  return 0;
+}
+
+// server.ts
 var import_pdf_parse2 = require("pdf-parse");
 
 // src/data.ts
@@ -3943,406 +4352,6 @@ async function geocodeAddress(query, options) {
     return { ...streetHit, precision: "street" };
   }
   return null;
-}
-
-// src/utils/streetMatching.ts
-function canonicalStreet(value) {
-  if (!value) return "";
-  const titles = {
-    dr: "doutor",
-    dra: "doutora",
-    eng: "engenheiro",
-    enga: "engenheira",
-    prof: "professor",
-    profa: "professora",
-    cel: "coronel",
-    gen: "general",
-    gal: "general",
-    dep: "deputado",
-    gov: "governador",
-    pres: "presidente",
-    sen: "senador",
-    pe: "padre",
-    sta: "santa",
-    sto: "santo",
-    mal: "marechal",
-    cmdte: "comandante",
-    visc: "visconde",
-    bpo: "bispo",
-    dom: "dom"
-  };
-  let s = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-  s = s.split(",")[0].replace(/\s+n[ºo°.]?\s*\d+.*$/i, "").replace(/\s+(?:apto|apt|ap|bloco|bl|casa|lote|qd|quadra)\b.*$/i, "");
-  s = s.replace(/^(?:rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|trav|praca|prc|pca|alameda|alm|al|rodovia|rod|largo|lrg|vila|vl|beco|servidao|passagem|psg|boulevard|blvd|via)\b\.?\s*/i, "");
-  const tokens = s.replace(/[^a-z0-9]/g, " ").split(/\s+/).filter((t) => t && !["de", "da", "do", "das", "dos", "e"].includes(t)).map((t) => titles[t] || t);
-  return tokens.join(" ").trim();
-}
-function editDistance(a, b) {
-  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    const next = [i];
-    for (let j = 1; j <= b.length; j++) {
-      next[j] = Math.min(next[j - 1] + 1, row[j] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    }
-    for (let j = 0; j <= b.length; j++) row[j] = next[j];
-  }
-  return row[b.length];
-}
-function resolveOfficialStreet(target, candidates) {
-  const wanted = canonicalStreet(target);
-  if (!wanted) return null;
-  const unique = [...new Set(candidates.filter(Boolean))].map((street) => ({
-    street,
-    key: canonicalStreet(street)
-  })).filter((c) => c.key.length > 0);
-  const exact = unique.filter((c) => c.key === wanted);
-  if (exact.length) return exact[0].street;
-  const tokens = wanted.split(" ");
-  const scored = unique.map((c) => {
-    const ts = c.key.split(" ");
-    const simplifiedWanted = tokens.filter((t) => !["doutor", "doutora", "presidente", "general", "coronel", "padre", "santa", "santo", "marechal"].includes(t)).join(" ");
-    const simplifiedCandidate = ts.filter((t) => !["doutor", "doutora", "presidente", "general", "coronel", "padre", "santa", "santo", "marechal"].includes(t)).join(" ");
-    if (simplifiedWanted && simplifiedCandidate && simplifiedWanted === simplifiedCandidate) {
-      return { ...c, score: 0.95 };
-    }
-    if (ts.length !== tokens.length) return { ...c, score: 0 };
-    let score = 0;
-    for (let i = 0; i < tokens.length; i++) {
-      const a = tokens[i];
-      const b = ts[i];
-      if (a === b) score += 1;
-      else if (a.length >= 2 && b.length >= 2 && (a.startsWith(b) || b.startsWith(a))) score += 0.9;
-      else if (Math.min(a.length, b.length) >= 4 && editDistance(a, b) === 1) score += 0.85;
-      else return { ...c, score: 0 };
-    }
-    return { ...c, score: score / tokens.length };
-  }).filter((c) => c.score >= 0.85).sort((a, b) => b.score - a.score);
-  if (!scored.length || scored[1] && scored[0].key !== scored[1].key && scored[0].score - scored[1].score < 0.08) {
-    return null;
-  }
-  return scored[0].street;
-}
-
-// src/utils/bidirectionalBenchmark.ts
-function isGenericStreet(str) {
-  if (!str) return true;
-  const s = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  if (s.length < 3) return true;
-  const genericPrefixRegex = /^(rua|r\b|avenida|av\b|estrada|estr\b|travessa|trav\b|alameda|al\b|via|beco|praca|pc\b)\s+([a-z]|[0-9]{1,3})$/i;
-  if (genericPrefixRegex.test(s)) return true;
-  const strictlyGenericKeywords = [
-    "projetad",
-    "sem nome",
-    "s/n",
-    "nao informado",
-    "nao informada",
-    "extracao documental",
-    "apartamento em",
-    "casa de condominio em"
-  ];
-  if (strictlyGenericKeywords.some((k) => s.includes(k))) return true;
-  const startGenericRegex = /^(?:quadra|qd\b|loteamento|gleba|chacara|sitio|estrada municipal|zona rural|area rural|area de posse|vila nova|povoado)\b/i;
-  if (startGenericRegex.test(s)) return true;
-  const core = cleanStreetCore(s);
-  if (core.length <= 2) return true;
-  return false;
-}
-function cleanStreetCore(s) {
-  return canonicalStreet(s);
-}
-function cleanStreetNumber(n) {
-  if (!n) return "";
-  const match = String(n).match(/\d+/);
-  return match ? match[0] : "";
-}
-function computeMedian(vals) {
-  if (vals.length === 0) return 0;
-  const sorted = [...vals].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
-}
-function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, targetNumber, targetSize, sizeMode = "similar", radiusKm = 0.5, targetPropType) {
-  if (!allNeighborhoodTxs || allNeighborhoodTxs.length === 0) return null;
-  const size = targetSize > 0 ? targetSize : 60;
-  const minSize = Math.max(15, Math.round(size * 0.67));
-  const maxSize = Math.round(size * 1.33);
-  const officialStreet = resolveOfficialStreet(targetStreet, allNeighborhoodTxs.map((t) => t.street || ""));
-  const targetCore = cleanStreetCore(officialStreet || targetStreet);
-  const targetNum = cleanStreetNumber(targetNumber);
-  let typeTxs = allNeighborhoodTxs;
-  if (targetPropType) {
-    const exactTypeTxs = allNeighborhoodTxs.filter((t) => t.propertyType === targetPropType);
-    if (exactTypeTxs.length > 0) {
-      typeTxs = exactTypeTxs;
-    }
-  }
-  const filterByArea = (txs) => {
-    if (sizeMode === "all") return txs;
-    const filtered = txs.filter((t) => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
-    if (filtered.length === 0 && txs.length > 0) {
-      return txs;
-    }
-    return filtered;
-  };
-  const poolTxs = filterByArea(typeTxs);
-  const bVals = poolTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
-  if (bVals.length === 0) return null;
-  const bPrelim = bVals.reduce((a, b) => a + b, 0) / bVals.length;
-  const bVariance = bVals.reduce((acc, v) => acc + Math.pow(v - bPrelim, 2), 0) / bVals.length;
-  const bStd = Math.sqrt(bVariance);
-  const bValid = bVals.filter((v) => Math.abs(v - bPrelim) <= 2.2 * bStd);
-  const bSaneada = bValid.length > 0 ? Math.round(bValid.reduce((a, b) => a + b, 0) / bValid.length) : Math.round(bPrelim);
-  const bExpurgados = bVals.length - bValid.length;
-  const ruaTxs = targetCore ? poolTxs.filter((t) => cleanStreetCore(t.street) === targetCore) : [];
-  const surroundingPool = targetCore ? poolTxs.filter((t) => cleanStreetCore(t.street) !== targetCore) : poolTxs;
-  const geolocatedSurrounding = surroundingPool.filter((t) => t.distanceKm !== null && t.distanceKm !== void 0 && Number.isFinite(Number(t.distanceKm)));
-  let raioTxs = [];
-  let effectiveRadiusKm = radiusKm || 0.5;
-  let radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
-  let fallbackLevel = "0.5km";
-  const hasVerifiedRadius = geolocatedSurrounding.length >= 2;
-  if (geolocatedSurrounding.length > 0) {
-    const tierInitial = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= (radiusKm || 0.5));
-    if (tierInitial.length >= 2) {
-      raioTxs = tierInitial;
-      effectiveRadiusKm = radiusKm || 0.5;
-      radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
-      fallbackLevel = "0.5km";
-    } else {
-      const tier1000 = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= 1);
-      if (tier1000.length >= 2) {
-        raioTxs = tier1000;
-        effectiveRadiusKm = 1;
-        radiusLabel = "Raio expandido para 1.0km por baixa amostragem local";
-        fallbackLevel = "1.0km";
-      } else {
-        const tier2000 = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= 2);
-        if (tier2000.length >= 2) {
-          raioTxs = tier2000;
-          effectiveRadiusKm = 2;
-          radiusLabel = "Raio expandido para 2.0km por baixa amostragem local";
-          fallbackLevel = "2.0km";
-        } else {
-          raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
-          effectiveRadiusKm = 2;
-          radiusLabel = "Mediana do bairro (sem amostras em raio at\xE9 2.0km)";
-          fallbackLevel = "bairro";
-        }
-      }
-    }
-    raioTxs = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= (radiusKm || 0.5));
-  } else {
-    raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
-    radiusLabel = "Mediana do bairro (sem geolocaliza\xE7\xE3o exata)";
-    fallbackLevel = "bairro";
-  }
-  const raioVals = raioTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
-  const raioPrelim = raioVals.length > 0 ? raioVals.reduce((a, b) => a + b, 0) / raioVals.length : hasVerifiedRadius ? bSaneada : 0;
-  const raioVariance = raioVals.length > 0 ? raioVals.reduce((acc, value) => acc + Math.pow(value - raioPrelim, 2), 0) / raioVals.length : 0;
-  const raioStd = Math.sqrt(raioVariance);
-  const refCorteRaio = Math.round(raioPrelim || bSaneada);
-  const raioCorteMin = raioStd > 0 ? Math.round(raioPrelim - 2 * raioStd) : Math.round(raioPrelim);
-  const raioCorteMax = raioStd > 0 ? Math.round(raioPrelim + 2 * raioStd) : Math.round(raioPrelim);
-  const raioValid = raioVals.filter((v) => raioStd === 0 || Math.abs(v - raioPrelim) <= 2 * raioStd);
-  const raioSaneada = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : hasVerifiedRadius ? Math.round(refCorteRaio) : 0;
-  const raioExpurgados = raioVals.length - raioValid.length;
-  const ruaVals = ruaTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
-  const ruaPrelim = ruaVals.length > 0 ? Math.round(ruaVals.reduce((a, b) => a + b, 0) / ruaVals.length) : 0;
-  let ruaValid = [];
-  let ruaSaneada = 0;
-  let ruaCorteMin = 0;
-  let ruaCorteMax = 0;
-  let refCorteRua = raioSaneada;
-  if (ruaVals.length >= 2) {
-    const buildings = /* @__PURE__ */ new Map();
-    ruaTxs.forEach((t) => {
-      if (!(t.unitValueSqm >= 800 && t.unitValueSqm <= 8e4)) return;
-      const key = cleanStreetNumber(t.number) || t.id;
-      buildings.set(key, [...buildings.get(key) || [], t.unitValueSqm]);
-    });
-    const ruaMed = computeMedian(Array.from(buildings.values()).map(computeMedian));
-    refCorteRua = ruaMed;
-    const deviation = Math.sqrt(ruaVals.reduce((sum, value) => sum + (value - ruaPrelim) ** 2, 0) / ruaVals.length);
-    ruaCorteMin = Math.max(800, Math.round(ruaPrelim - 2.2 * deviation));
-    ruaCorteMax = Math.round(ruaPrelim + 2.2 * deviation);
-    ruaValid = ruaVals.filter((v) => v >= ruaCorteMin && v <= ruaCorteMax);
-    if (ruaValid.length === 0) ruaValid = ruaVals;
-    ruaSaneada = Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length);
-  } else if (ruaVals.length === 1) {
-    const anchor = raioSaneada > 0 ? raioSaneada : bSaneada;
-    refCorteRua = anchor;
-    ruaCorteMin = Math.round(anchor * 0.55);
-    ruaCorteMax = Math.round(anchor * 1.45);
-    ruaValid = [ruaVals[0]];
-    ruaSaneada = ruaVals[0];
-  } else {
-    ruaValid = [];
-    ruaSaneada = 0;
-    ruaCorteMin = 0;
-    ruaCorteMax = 0;
-  }
-  const ruaExpurgados = ruaVals.length - ruaValid.length;
-  const predioTxs = targetNum ? ruaTxs.filter((t) => cleanStreetNumber(t.number) === targetNum) : [];
-  const predioVals = predioTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
-  const predioPrelim = predioVals.length > 0 ? Math.round(predioVals.reduce((a, b) => a + b, 0) / predioVals.length) : 0;
-  let predioValid = [];
-  let predioSaneada = 0;
-  let predioCorteMin = 0;
-  let predioCorteMax = 0;
-  if (predioVals.length >= 2) {
-    const pMed = computeMedian(predioVals);
-    predioCorteMin = Math.round(pMed * 0.65);
-    predioCorteMax = Math.round(pMed * 1.35);
-    predioValid = predioVals.filter((v) => v >= predioCorteMin && v <= predioCorteMax);
-    if (predioValid.length === 0) predioValid = predioVals;
-    predioSaneada = Math.round(predioValid.reduce((a, b) => a + b, 0) / predioValid.length);
-  } else if (predioVals.length === 1) {
-    const pAnchor = ruaSaneada > 0 ? ruaSaneada : raioSaneada > 0 ? raioSaneada : bSaneada;
-    predioCorteMin = Math.round(pAnchor * 0.55);
-    predioCorteMax = Math.round(pAnchor * 1.45);
-    if (predioVals[0] <= predioCorteMax) {
-      predioValid = [predioVals[0]];
-      predioSaneada = predioVals[0];
-    } else {
-      predioValid = [];
-      predioSaneada = 0;
-    }
-  } else {
-    predioValid = [];
-    predioSaneada = 0;
-    predioCorteMin = 0;
-    predioCorteMax = 0;
-  }
-  const predioExpurgados = predioVals.length - predioValid.length;
-  let mediaCorteReal = 0;
-  let nivelUtilizado = "Sem Dados Suficientes";
-  let hasMicroData = false;
-  const refEntorno = raioSaneada > 0 ? raioSaneada : bSaneada;
-  const ruaRaioDesvioPct = ruaSaneada > 0 && refEntorno > 0 ? Math.round((ruaSaneada - refEntorno) / refEntorno * 100) : 0;
-  let ruaRaioCalibrada = false;
-  if (predioValid.length > 0) {
-    const anchor = ruaSaneada > 0 ? ruaSaneada : refEntorno;
-    if (predioValid.length === 1) {
-      if (predioSaneada <= anchor) {
-        mediaCorteReal = predioSaneada;
-      } else {
-        const blended = predioSaneada * 0.4 + anchor * 0.6;
-        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
-      }
-    } else if (predioValid.length === 2) {
-      if (predioSaneada <= anchor) {
-        mediaCorteReal = predioSaneada;
-      } else {
-        const blended = predioSaneada * 0.7 + anchor * 0.3;
-        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
-      }
-    } else {
-      mediaCorteReal = predioSaneada;
-    }
-    nivelUtilizado = "Pr\xE9dio";
-    hasMicroData = true;
-  } else if (ruaValid.length > 0) {
-    const anchor = refEntorno > 0 ? refEntorno : bSaneada;
-    if (ruaValid.length === 1) {
-      if (ruaSaneada <= anchor) {
-        mediaCorteReal = ruaSaneada;
-      } else {
-        const blended = ruaSaneada * 0.4 + anchor * 0.6;
-        mediaCorteReal = Math.round(Math.min(anchor * 1.12, blended));
-      }
-    } else if (ruaValid.length === 2) {
-      if (ruaSaneada <= anchor) {
-        mediaCorteReal = ruaSaneada;
-      } else {
-        const blended = ruaSaneada * 0.7 + anchor * 0.3;
-        mediaCorteReal = Math.round(Math.min(anchor * 1.18, blended));
-      }
-    } else {
-      mediaCorteReal = ruaSaneada;
-    }
-    if (Math.abs(ruaRaioDesvioPct) > 25 && refEntorno > 0) {
-      if (ruaRaioDesvioPct > 0) {
-        const blended = ruaSaneada * 0.5 + refEntorno * 0.5;
-        const neighborhoodCeiling = bSaneada > 0 ? Math.round(bSaneada * 1.25) : blended;
-        mediaCorteReal = Math.round(Math.min(mediaCorteReal, neighborhoodCeiling, blended));
-      } else {
-        mediaCorteReal = Math.min(mediaCorteReal, ruaSaneada);
-      }
-      ruaRaioCalibrada = true;
-    }
-    nivelUtilizado = "Rua";
-    hasMicroData = true;
-  } else if (hasVerifiedRadius && raioValid.length >= 2 && raioSaneada > 0) {
-    mediaCorteReal = raioSaneada;
-    nivelUtilizado = "Raio Entorno";
-    hasMicroData = true;
-  } else if (bSaneada > 0) {
-    mediaCorteReal = bSaneada;
-    nivelUtilizado = "Bairro";
-    hasMicroData = false;
-  } else {
-    mediaCorteReal = 0;
-    nivelUtilizado = "Sem Dados Suficientes";
-    hasMicroData = false;
-  }
-  const flipRapidoSqm = mediaCorteReal > 0 ? Math.round(mediaCorteReal * 0.9) : 0;
-  const gabaritoTotal = mediaCorteReal > 0 ? mediaCorteReal * size : 0;
-  const flipTotal = flipRapidoSqm > 0 ? flipRapidoSqm * size : 0;
-  return {
-    bairro: {
-      saneada: bSaneada,
-      total: bVals.length,
-      validas: bValid.length,
-      expurgadas: bExpurgados,
-      prelim: Math.round(bPrelim)
-    },
-    raio: {
-      saneada: raioSaneada,
-      total: raioVals.length,
-      validas: hasVerifiedRadius ? raioValid.length : 0,
-      expurgadas: raioExpurgados,
-      prelim: Math.round(raioPrelim),
-      refCorte: Math.round(refCorteRaio),
-      corteMin: raioCorteMin,
-      corteMax: raioCorteMax,
-      effectiveRadiusKm,
-      radiusLabel,
-      fallbackLevel
-    },
-    rua: {
-      saneada: ruaSaneada,
-      total: ruaVals.length,
-      validas: ruaValid.length,
-      expurgadas: ruaExpurgados,
-      prelim: ruaPrelim,
-      refCorte: refCorteRua,
-      corteMin: ruaCorteMin,
-      corteMax: ruaCorteMax
-    },
-    predio: {
-      saneada: predioSaneada,
-      total: predioVals.length,
-      validas: predioValid.length,
-      expurgadas: predioExpurgados,
-      prelim: predioPrelim,
-      corteMin: predioCorteMin,
-      corteMax: predioCorteMax
-    },
-    mediaCorteReal,
-    nivelUtilizado,
-    flipRapidoSqm,
-    gabaritoTotal,
-    flipTotal,
-    ruaRaioDesvioPct,
-    ruaRaioCalibrada,
-    radiusVerified: hasVerifiedRadius,
-    effectiveRadiusKm,
-    radiusLabel,
-    fallbackLevel,
-    minSimilarSize: minSize,
-    maxSimilarSize: maxSize,
-    hasMicroData
-  };
 }
 
 // src/utils/cityZones.ts
@@ -5763,6 +5772,11 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
   let neighborhoodAvgSqm = 0;
+  auc.itbiBuildingCount = void 0;
+  auc.itbiSurroundingAvgSqm = void 0;
+  auc.itbiSurroundingCount = void 0;
+  auc.streetRadiusDeviationPct = void 0;
+  auc.streetRadiusCalibrated = false;
   const rawStreet = extractStreet(auc.address);
   const isGeneric = isGenericStreet(rawStreet);
   const streetPhon = phoneticStreet(rawStreet);
@@ -6043,6 +6057,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   let bidiSqm = 0;
   let bidiGabaritoSqm = 0;
   let hasMicroData = false;
+  let hasVerifiedLocalMicroData = false;
   let valuationSampleCount = 0;
   let valuationLevel = "";
   let hasExactNeighborhoodReference = false;
@@ -6059,16 +6074,15 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
         bidiSqm = bidi.flipRapidoSqm;
         bidiGabaritoSqm = bidi.mediaCorteReal;
         hasMicroData = true;
-        valuationSampleCount = bidi.nivelUtilizado === "Pr\xE9dio" ? bidi.predio.validas : bidi.rua.validas;
+        valuationSampleCount = bidi.nivelUtilizado === "Pr\xE9dio" ? bidi.predio.validas : bidi.nivelUtilizado === "Rua" ? bidi.rua.validas : bidi.nivelUtilizado === "Raio Entorno" ? bidi.raio.validas : 0;
         valuationLevel = bidi.nivelUtilizado;
+        hasVerifiedLocalMicroData = valuationLevel === "Pr\xE9dio" && bidi.predio.validas > 0 || valuationLevel === "Rua" && bidi.rua.validas > 0;
         auc.itbiSurroundingAvgSqm = bidi.radiusVerified ? bidi.raio.saneada || void 0 : void 0;
         auc.itbiSurroundingCount = bidi.radiusVerified ? bidi.raio.validas || void 0 : void 0;
         auc.itbiBuildingCount = bidi.predio.validas || void 0;
         auc.streetRadiusDeviationPct = bidi.radiusVerified ? bidi.ruaRaioDesvioPct || void 0 : void 0;
         auc.streetRadiusCalibrated = bidi.radiusVerified && bidi.ruaRaioCalibrada;
       }
-    } else {
-      auc.itbiBuildingCount = void 0;
     }
   }
   const canUseOfficialNeighborhoodFallback = !hasMicroData && hasExactNeighborhoodReference && neighborhoodAvgSqm > 0;
@@ -6085,11 +6099,12 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     auc.itbiStreetAvgSqm = void 0;
     auc.itbiStreetCount = void 0;
   }
-  auc.hasMicroBenchmark = hasMicroData;
-  auc.valuationConfidence = hasMicroData ? "verified" : canUseOfficialNeighborhoodFallback ? "projected" : "unavailable";
-  auc.valuationSampleCount = hasMicroData ? valuationSampleCount : void 0;
+  auc.valuationLevel = valuationLevel || "Sem Dados Suficientes";
+  auc.hasMicroBenchmark = hasVerifiedLocalMicroData;
+  auc.valuationConfidence = hasVerifiedLocalMicroData ? "verified" : canUseOfficialNeighborhoodFallback ? "projected" : "unavailable";
+  auc.valuationSampleCount = hasMicroData && valuationLevel !== "Bairro" ? valuationSampleCount : void 0;
   auc.valuationRadiusKm = hasMicroData ? 0.5 : void 0;
-  if (hasMicroData) auc.valuationBasis = `ITBI verificado - ${valuationLevel} (${valuationSampleCount} amostras)`;
+  if (hasMicroData) auc.valuationBasis = hasVerifiedLocalMicroData ? `ITBI verificado - ${valuationLevel} (${valuationSampleCount} amostras)` : `Refer\xEAncia ITBI estimada - ${valuationLevel}${valuationSampleCount > 0 ? ` (${valuationSampleCount} amostras)` : ""}`;
   if (!auc.portalDataVerifiedAt || !auc.portalSampleCount) {
     auc.portalZapAvg = void 0;
     auc.portalQuintoAndarAvg = void 0;
@@ -6169,7 +6184,8 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     auc.calculatedRoi = void 0;
   }
   let score = 3;
-  const streetTxs = auc.itbiStreetCount || 0;
+  const localComparableCount = getVerifiedLocalComparableCount(auc);
+  const streetTxs = localComparableCount;
   const volKey = `${state}|${normCity}|${neigh}`;
   const neighVol = volMap.get(volKey) || 0;
   if (streetTxs >= 10) score += 1.5;
@@ -6206,7 +6222,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   } else if (auc.valuationConfidence !== "verified") {
     score = Math.min(score - 2, 2);
   }
-  const streetOrBuildingCount = Math.max(streetTxs, auc.itbiBuildingCount || 0);
+  const streetOrBuildingCount = localComparableCount;
   if (streetOrBuildingCount === 0) score = Math.min(score, 3);
   else if (streetOrBuildingCount < 2) score = Math.min(score, 4);
   else if (streetOrBuildingCount < 5) score = Math.min(score, 6);
@@ -6246,6 +6262,10 @@ function getOrBuildItbiIndexes(txs) {
 function recalculateAuction(auc, txs) {
   const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = getOrBuildItbiIndexes(txs);
   return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap);
+}
+function recalculateAuctions(auctions, txs) {
+  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = getOrBuildItbiIndexes(txs);
+  return auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
 }
 var store = loadStore();
 configureNeighborhoods(store.itbiTransactions);
@@ -6670,8 +6690,7 @@ app.delete("/api/user/arrematacoes/:id", authMiddleware, (req, res) => {
 });
 app.get("/api/auctions", authMiddleware, (req, res) => {
   const userAuctions = deduplicateAuctions(store.auctions.filter((a) => catalogEligible(a) && (!a.userId || a.userId === req.userId || a.origin === "caixa_radar" || a.origin === "caixa" || a.origin === "judicial" || a.origin === "extrajudicial" || a.origin === "portal") && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible);
-  const enriched = userAuctions.map((original) => {
-    const a = original.offers && original.offers.length > 1 ? recalculateAuction(original, store.itbiTransactions) : original;
+  const enriched = recalculateAuctions(userAuctions, store.itbiTransactions).map((a) => {
     if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === "Terreno" || a.sizeSqm && a.sizeSqm > 1e3) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
         a.estimatedValue = Math.round(a.evaluationPrice * 1.25);
@@ -6830,19 +6849,24 @@ app.put("/api/auctions/:id", authMiddleware, (req, res) => {
     const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || 0;
     const calculatorBuildingCount = Number(updatedFields.itbiBuildingCount) || 0;
     const calculatorRadiusCount = Number(updatedFields.itbiSurroundingCount) || 0;
-    const hasVerifiedLocalComparables = calculatorBuildingCount >= 2 || calculatorStreetCount >= 2;
+    const calculatorLevel = ["Pr\xE9dio", "Rua", "Raio Entorno", "Bairro", "Sem Dados Suficientes"].includes(String(updatedFields.valuationLevel)) ? updatedFields.valuationLevel : "Sem Dados Suficientes";
+    const calculatorSampleCount = Number(updatedFields.valuationSampleCount) || 0;
+    const hasVerifiedLocalComparables = calculatorLevel === "Pr\xE9dio" && calculatorBuildingCount >= 2 || calculatorLevel === "Rua" && calculatorSampleCount >= 2;
     recalculated.vendaBaixaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.vendaMediaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.estimatedValue = Number(updatedFields.estimatedValue);
     const calculatorStreetAvgSqm = Number(updatedFields.itbiStreetAvgSqm) || 0;
     if (calculatorStreetCount > 0) recalculated.itbiStreetCount = calculatorStreetCount;
     if (calculatorBuildingCount > 0) recalculated.itbiBuildingCount = calculatorBuildingCount;
+    recalculated.valuationLevel = calculatorLevel;
+    recalculated.valuationSampleCount = calculatorSampleCount || void 0;
     if (calculatorStreetAvgSqm > 0) recalculated.itbiStreetAvgSqm = calculatorStreetAvgSqm;
     recalculated.valuationConfidence = updatedFields.valuationConfidence === "verified" && hasVerifiedLocalComparables ? "verified" : "projected";
-    recalculated.liquidityScore = Math.min(recalculated.liquidityScore || 1, hasVerifiedLocalComparables ? 6 : calculatorRadiusCount >= 2 ? 4 : 3);
+    const localCount = getVerifiedLocalComparableCount(recalculated);
+    const evidenceCeiling = localCount === 0 ? 3 : localCount === 1 ? 4 : 6;
+    recalculated.liquidityScore = Math.min(recalculated.liquidityScore || 1, evidenceCeiling);
     recalculated.hasMicroBenchmark = true;
     recalculated.valuationBasis = String(updatedFields.valuationBasis || "ITBI verificado pela calculadora");
-    recalculated.valuationSampleCount = Number(updatedFields.valuationSampleCount) || void 0;
     recalculated.valuationRadiusKm = Number(updatedFields.valuationRadiusKm) || 0.5;
     recalculated.itbiSurroundingAvgSqm = Number(updatedFields.itbiSurroundingAvgSqm) || void 0;
     recalculated.itbiSurroundingCount = calculatorRadiusCount || void 0;

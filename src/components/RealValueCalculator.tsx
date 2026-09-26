@@ -2041,7 +2041,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     }
 
     const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
-    const verifiedStreetCount = bidiBenchmark.rua.validas || bidiBenchmark.predio.validas || 0;
+    const verifiedStreetCount = bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : 0;
     const verifiedBuildingCount = bidiBenchmark.predio.validas || 0;
     const verifiedLocalCount = Math.max(verifiedStreetCount, verifiedBuildingCount);
     const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
@@ -2053,7 +2053,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       vendaMediaPrice: suggestedQuickSaleTotal,
       estimatedValue: gabaritoTotal,
       valuationConfidence: verifiedLocalCount >= 2 ? 'verified' : 'projected',
-      valuationBasis: `ITBI verificado - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
+      valuationLevel: bidiBenchmark.nivelUtilizado,
+      valuationBasis: `ITBI ${verifiedLocalCount >= 2 ? 'verificado' : 'estimado'} - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
       valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.nivelUtilizado === 'Raio Entorno' ? bidiBenchmark.raio.validas : 0,
       valuationRadiusKm: radiusKm,
       itbiStreetCount: verifiedStreetCount || undefined,

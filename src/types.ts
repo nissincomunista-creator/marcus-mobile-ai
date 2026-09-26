@@ -104,6 +104,7 @@ export interface AuctionProperty {
   streetRadiusCalibrated?: boolean; // Street value was statistically blended with radius
   valuationBasis?: string; // Audit label for the source used in the valuation
   valuationConfidence?: 'verified' | 'projected' | 'unavailable';
+  valuationLevel?: 'Prédio' | 'Rua' | 'Raio Entorno' | 'Bairro' | 'Sem Dados Suficientes';
   valuationSampleCount?: number;
   valuationRadiusKm?: number;
   calculatedRoi?: number; // ROI percentage

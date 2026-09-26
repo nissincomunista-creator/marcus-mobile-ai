@@ -15,8 +15,17 @@ export interface DataQualityReport {
   badgeClass: string;
 }
 
+/** Only same-building or same-street samples support a high liquidity score.
+ * Legacy records without explicit provenance are treated conservatively. */
+export function getVerifiedLocalComparableCount(auc: AuctionProperty): number {
+  if (auc.valuationLevel === 'Prédio') return Math.max(0, Number(auc.itbiBuildingCount) || 0);
+  if (auc.valuationLevel === 'Rua') return Math.max(0, Number(auc.valuationSampleCount) || 0);
+  return 0;
+}
+
 export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   const reasons: string[] = [];
+  const localComparableCount = getVerifiedLocalComparableCount(auc);
 
   // Critical failure checks
   if (auc.precisa_revisao) {
@@ -39,7 +48,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
     reasons.push('Amostragem de mercado insuficiente (sem dados no raio pericial)');
   }
 
-  if ((auc.itbiStreetCount || 0) === 0 && (auc.itbiBuildingCount || 0) === 0) {
+  if (localComparableCount === 0) {
     reasons.push('Sem transações confirmadas no prédio ou na rua');
   }
 
@@ -48,7 +57,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   let status: DataQualityStatus;
   if (hasCriticalInconsistency) {
     status = 'Auditoria Incompleta';
-  } else if (auc.valuationConfidence === 'verified' && Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) >= 2) {
+  } else if (auc.valuationConfidence === 'verified' && localComparableCount >= 2) {
     status = 'Auditado';
   } else {
     status = 'Estimado';
@@ -58,9 +67,9 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   let liquidityCeiling = 10;
   if (status === 'Auditoria Incompleta') {
     liquidityCeiling = auc.precisa_revisao ? 1 : 3;
-  } else if (Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) === 0) {
+  } else if (localComparableCount === 0) {
     liquidityCeiling = 3;
-  } else if (Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) < 2) {
+  } else if (localComparableCount < 2) {
     liquidityCeiling = 4;
   } else if (auc.valuationConfidence === 'projected') {
     liquidityCeiling = 4;
@@ -82,7 +91,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   const canBeFeatured = 
     status === 'Auditado' &&
     !auc.precisa_revisao &&
-    Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) >= 2 &&
+    localComparableCount >= 2 &&
     auc.valuationConfidence === 'verified' &&
     (auc.calculatedRoi || 0) >= 35 &&
     (auc.liquidityScore || 0) >= 7 &&
