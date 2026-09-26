@@ -6750,7 +6750,7 @@ app.delete("/api/user/arrematacoes/:id", authMiddleware, (req, res) => {
 app.get("/api/auctions", authMiddleware, (req, res) => {
   const userAuctions = deduplicateAuctions(store.auctions.filter((a) => catalogEligible(a) && (!a.userId || a.userId === req.userId || a.origin === "caixa_radar" || a.origin === "caixa" || a.origin === "judicial" || a.origin === "extrajudicial" || a.origin === "portal") && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible);
   const enriched = userAuctions.map((original) => {
-    const a = original.offers && original.offers.length > 1 ? recalculateAuction(original, store.itbiTransactions) : original;
+    const a = original;
     a.liquidityScore = Math.min(Number(a.liquidityScore) || 1, assessDataQuality(a).liquidityCeiling);
     if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === "Terreno" || a.sizeSqm && a.sizeSqm > 1e3) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
