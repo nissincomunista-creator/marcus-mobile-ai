@@ -20,6 +20,14 @@ export interface DataQualityReport {
 export function getVerifiedLocalComparableCount(auc: AuctionProperty): number {
   if (auc.valuationLevel === 'Prédio') return Math.max(0, Number(auc.itbiBuildingCount) || 0);
   if (auc.valuationLevel === 'Rua') return Math.max(0, Number(auc.valuationSampleCount) || 0);
+  // Older stored lots predate valuationLevel. Accept only an explicit historic
+  // audit label with its own sample count; raw street totals can include radius
+  // or neighborhood transactions and are never a safe substitute.
+  const legacyLocalLabel = String(auc.valuationBasis || '').match(/ITBI\s+verificado\s*-\s*(Rua|Prédio)(?=\s|$)(?:\s*\((\d+)\s+amostras?\))?/i);
+  if (legacyLocalLabel) {
+    // The historical label's own count takes precedence over unscoped legacy counts.
+    return Number(legacyLocalLabel[2]) || Number(auc.valuationSampleCount) || 0;
+  }
   return 0;
 }
 
@@ -71,6 +79,8 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
     liquidityCeiling = 3;
   } else if (localComparableCount < 2) {
     liquidityCeiling = 4;
+  } else if (localComparableCount < 5) {
+    liquidityCeiling = 6;
   } else if (auc.valuationConfidence === 'projected') {
     liquidityCeiling = 4;
   }
@@ -79,7 +89,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   // Exige conformidade de 100%:
   // 1. Status 'Auditado'
   // 2. Sem pendência de revisão
-  // 3. Mínimo de 2 amostras confirmadas na rua/edifício
+  // 3. Mínimo de 5 amostras confirmadas na rua/edifício
   // 4. Confiança verified
   // 5. Desconto real de mercado >= 30% e ROI >= 35%
   // 6. Liquidez >= 7
@@ -91,7 +101,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   const canBeFeatured = 
     status === 'Auditado' &&
     !auc.precisa_revisao &&
-    localComparableCount >= 2 &&
+    localComparableCount >= 5 &&
     auc.valuationConfidence === 'verified' &&
     (auc.calculatedRoi || 0) >= 35 &&
     (auc.liquidityScore || 0) >= 7 &&

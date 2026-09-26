@@ -3803,6 +3803,10 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
 function getVerifiedLocalComparableCount(auc) {
   if (auc.valuationLevel === "Pr\xE9dio") return Math.max(0, Number(auc.itbiBuildingCount) || 0);
   if (auc.valuationLevel === "Rua") return Math.max(0, Number(auc.valuationSampleCount) || 0);
+  const legacyLocalLabel = String(auc.valuationBasis || "").match(/ITBI\s+verificado\s*-\s*(Rua|Prédio)(?=\s|$)(?:\s*\((\d+)\s+amostras?\))?/i);
+  if (legacyLocalLabel) {
+    return Number(legacyLocalLabel[2]) || Number(auc.valuationSampleCount) || 0;
+  }
   return 0;
 }
 function assessDataQuality(auc) {
@@ -3842,11 +3846,13 @@ function assessDataQuality(auc) {
     liquidityCeiling = 3;
   } else if (localComparableCount < 2) {
     liquidityCeiling = 4;
+  } else if (localComparableCount < 5) {
+    liquidityCeiling = 6;
   } else if (auc.valuationConfidence === "projected") {
     liquidityCeiling = 4;
   }
   const discountRate = auc.estimatedValue && auc.auctionPrice ? (auc.estimatedValue - auc.auctionPrice) / auc.estimatedValue : 0;
-  const canBeFeatured = status === "Auditado" && !auc.precisa_revisao && localComparableCount >= 2 && auc.valuationConfidence === "verified" && (auc.calculatedRoi || 0) >= 35 && (auc.liquidityScore || 0) >= 7 && discountRate >= 0.3 && auc.riskLevel !== "Alto" && !auc.isCommunityRisk;
+  const canBeFeatured = status === "Auditado" && !auc.precisa_revisao && localComparableCount >= 5 && auc.valuationConfidence === "verified" && (auc.calculatedRoi || 0) >= 35 && (auc.liquidityScore || 0) >= 7 && discountRate >= 0.3 && auc.riskLevel !== "Alto" && !auc.isCommunityRisk;
   let badgeLabel = "Auditado";
   let badgeClass = "bg-emerald-950/70 text-emerald-300 border-emerald-600/50";
   if (status === "Auditoria Incompleta") {
