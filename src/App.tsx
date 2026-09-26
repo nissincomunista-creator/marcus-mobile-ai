@@ -457,12 +457,7 @@ export default function App() {
     }
   };
 
-  useAuctionStartupSync(async () => {
-    const response = await authFetch('/api/auctions');
-    if (!response.ok) throw new Error('Falha ao atualizar imóveis sincronizados');
-    setAuctions(await response.json());
-    setLastSyncTime(new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}));
-  });
+  useAuctionStartupSync();
 
   const handleGarimparJudiciais = async (city?: string) => {
     setIsMining(true);

@@ -41,6 +41,12 @@ export interface Session {
 }
 
 export interface AuctionProperty {
+  ingestionStatus?: import('../auctionPipeline/lifecycle').IngestionStatus;
+  canonicalPropertyId?: string;
+  links_adicionais?: string[];
+  sourceRecords?: AuctionProperty[];
+  offers?: Array<{url:string;price:number;date?:string;checkedAt?:string}>;
+  availability?: import('../auctionAvailability').Availability;
   processNumber?: string;
   leiloeiro?: string;
   sourceLinks?: string[];
@@ -64,6 +70,7 @@ export interface AuctionProperty {
   auctionDate: string;
   firstAuctionDate?: string;
   secondAuctionDate?: string;
+  thirdAuctionDate?: string;
   firstAuctionPrice?: number;
   secondAuctionPrice?: number;
   auctionLink?: string;
@@ -155,8 +162,6 @@ export interface AuctionProperty {
   maxInstallments?: number;
   minDownpaymentPercent?: number;
   saleMode?: string; // e.g. 'Venda Direta Online', 'Licitação Aberta', 'Leilão Online', 'Venda Online'
-  firstAuctionDate?: string;
-  secondAuctionDate?: string;
 
   // AI detailed legal checks
   legalAnalysisDebtor?: string;

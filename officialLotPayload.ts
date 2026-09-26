@@ -9,18 +9,17 @@ export function officialLotFinancials(html: string, url: string) {
   }
   if (!lot || typeof lot !== 'object') return undefined;
 
-  // Resilient ID check: match /lote/123, /id-123, /123/ or URL containing lot.id / aid / bemId
+  // A public payload must belong to this lot, not an event or recommendation.
   try {
-    const urlObj = new URL(url);
-    const urlPath = urlObj.pathname;
-    const expectedId = urlPath.match(/(?:lote|id)[/-](\d+)(?:\/|$)/i)?.[1] || urlPath.match(/\/(\d+)(?:[/-]|$)/)?.[1];
-    const lotId = lot.id || lot.bemId || lot.aid;
-    if (lotId && expectedId && String(lotId) !== expectedId && !url.includes(String(lotId))) {
-      return undefined;
-    }
-  } catch {
-    // If URL parsing fails, proceed if lot object has valid data
-  }
+    const path = new URL(url).pathname;
+    const offer = path.match(/\/(\d+)\/id-(\d+)(?:\/|$)/i);
+    const lotId = path.match(/\/lote\/(\d+)(?:\/|$)/i)?.[1];
+    // Oferta URLs carry two distinct IDs: the property ID and the auction offer ID.
+    // Comparing aid against id rejects legitimate Portella details.
+    if (offer) {
+      if (String(lot.aid) !== offer[2] || String(lot.bemId ?? lot.id) !== offer[1]) return undefined;
+    } else if (!lotId || String(lot.id) !== lotId) return undefined;
+  } catch { return undefined; }
 
   const date = (val: any) =>
     typeof val?.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val.date) ? val.date.slice(0, 10) : undefined;

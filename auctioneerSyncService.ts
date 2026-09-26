@@ -1,3 +1,8 @@
+import { aggregateAuctions } from './auctionPipeline/aggregation.ts';
+import { validateDraft } from './auctionPipeline/validation.ts';
+import { preserveSource } from './auctionPipeline/quarantine.ts';
+import { propertyIdentity } from './auctionIdentity.ts';
+import { assessAvailability } from './auctionAvailability.ts';
 import { auditOfficialArea, type AreaAudit } from './src/utils/officialAreaAudit.ts';
 import { createHash } from 'node:crypto';
 import { officialLotFinancials } from './officialLotPayload.ts';
@@ -309,6 +314,9 @@ export interface ScrapedAuctionDraft {
   priceVerified?: boolean;
   sourceVerified?: boolean;
   sourceClosed?: boolean;
+  sourceEvidencePath?: string;
+  thirdAuctionDate?: string;
+  sourceAvailability?: import('./auctionAvailability').Availability;
   originVerified?: boolean;
   // True only when the portal itself applied the requested IBGE municipality
   // filter. It permits a detail page that spells the city without the UF.
@@ -456,11 +464,11 @@ function hasCityEvidence(text: string, city: string): boolean {
 
 export function extractAuctionDates(text: string): { first?: string; second?: string } {
   // Dates in registration documents, publication notices or unrelated lots are not auction dates.
-  const matches = [...text.matchAll(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/g)];
+  const matches = [...text.matchAll(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2}|\d{2})\b/g)];
   const dates = matches.filter(match => {
     const context = text.slice(Math.max(0, match.index! - 100), match.index!);
-    return /(?:leil[aã]o|pra[cç]a|encerramento|data\s*:|p\.\s*[uú]nica)[^\d]{0,80}$/i.test(context);
-  }).map(match => `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`)
+    return /(?:leil[aã]o|pra[cç]a|encerramento|encerra\s+em|data\s*:|p\.\s*[uú]nica)[^\d]{0,80}$/i.test(context);
+  }).map(match => `${match[3].length===2?'20'+match[3]:match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`)
     .filter(date => { const parsed = new Date(date); return !isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date; });
   const unique = [...new Set(dates)].sort();
   return { first: unique[0], second: unique[1] };
@@ -490,78 +498,45 @@ export interface AuctionPriceAnalysis {
   priceVerified: boolean;
 }
 
+export function extractDisplayedCurrentBid(text:string):number {
+  for(const label of [/pr[oó]ximo\s+lance(?:\s+m[ií]nimo)?/gi,/(?:maior\s+)?lance\s+atual/gi]) {
+    const values=[...text.matchAll(new RegExp('(?:'+label.source+')\\s*:?\\s*R\\$\\s*([\\d.]+(?:,\\d{2})?)','gi'))].map(m=>parseBrazilianMoney(m[1])).filter(n=>n>0);
+    const unique=[...new Set(values)];if(unique.length===1)return unique[0];if(unique.length>1)return 0;
+  }
+  return 0;
+}
+
 export function extractAuctionRoundsAndPrices(text: string, todayParam?: string): AuctionPriceAnalysis {
   if (!text) return { activePrice: 0, priceVerified: false };
   const today = todayParam || new Date().toISOString().slice(0, 10);
+  const explicitBids = [...text.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
+  if (!extractDisplayedCurrentBid(text) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(text)) return {activePrice:0,priceVerified:false};
 
-  // 1. Look for 1º leilão / praça price and date
-  let firstAuctionPrice: number | undefined;
-  let firstAuctionDate: string | undefined;
-
-  const m1Date = text.match(/(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,100}?(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
-  if (m1Date) firstAuctionDate = normalizeDateStr(m1Date[1]);
-
-  const m1Price = text.match(/(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,120}?R\$\s*([\d.]+(?:,\d{2})?)/i)
-    || text.match(/R\$\s*([\d.]+(?:,\d{2})?)[\s\S]{0,80}?(?:1[ºªo°]|primeir[oa])\s*(?:leil[aã]o|pra[cç]a)/i);
-  if (m1Price) {
-    const p1 = parseBrazilianMoney(m1Price[1]);
-    if (p1 > 1000) firstAuctionPrice = p1;
-  }
-
-  // 2. Look for 2º leilão / praça price and date
-  let secondAuctionPrice: number | undefined;
-  let secondAuctionDate: string | undefined;
-
-  const m2Date = text.match(/(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,100}?(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
-  if (m2Date) secondAuctionDate = normalizeDateStr(m2Date[1]);
-
-  const m2Price = text.match(/(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)[\s\S]{0,120}?R\$\s*([\d.]+(?:,\d{2})?)/i)
-    || text.match(/ser[aá]\s+realizado\s+o\s+2[ºªo°]\s+leil[aã]o[\s\S]{0,120}?pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/i)
-    || text.match(/R\$\s*([\d.]+(?:,\d{2})?)[\s\S]{0,80}?(?:2[ºªo°]|segund[oa])\s*(?:leil[aã]o|pra[cç]a)/i);
-  if (m2Price) {
-    const p2 = parseBrazilianMoney(m2Price[1]);
-    if (p2 > 1000) secondAuctionPrice = p2;
-  }
-
-  // Look for general auction dates if not yet found
-  const generalDates = extractAuctionDates(text);
-  if (!firstAuctionDate && generalDates.first) firstAuctionDate = generalDates.first;
-  if (!secondAuctionDate && generalDates.second) secondAuctionDate = generalDates.second;
-
-  // 3. Look for explicit generic lance inicial / lance mínimo / valor mínimo
-  const mGeneric = text.match(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*m[ií]nimo(?:\s*para\s*proposta)?|valor\s*inicial|maior\s*lance\s*atual|lance\s*atual)\s*:?\s*(?:<[^>]+>)*\s*R\$\s*([\d.]+(?:,\d{2})?)/i)
-    || text.match(/R\$\s*([\d.]+(?:,\d{2})?)\s*(?:<[^>]+>)*\s*(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*m[ií]nimo)/i)
-    || text.match(/(?:Em\s+leil[aã]o\s+pelo\s+valor\s+de|venda\s+direta)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/i);
-  let genericPrice = 0;
-  if (mGeneric) {
-    const pGen = parseBrazilianMoney(mGeneric[1]);
-    if (pGen > 1000) genericPrice = pGen;
-  }
-
-  // 4. Determine Active Price
-  let activePrice = 0;
-  let activeDate = '';
-
-  if (firstAuctionPrice && firstAuctionPrice > 0) {
-    if (firstAuctionDate && firstAuctionDate >= today) {
-      // 1st auction is in the future or today: it is the ACTIVE auction!
-      activePrice = firstAuctionPrice;
-      activeDate = firstAuctionDate;
-    } else if (firstAuctionDate && firstAuctionDate < today && secondAuctionPrice && secondAuctionPrice > 0) {
-      // 1st auction already happened: now 2nd auction is active!
-      activePrice = secondAuctionPrice;
-      activeDate = secondAuctionDate || firstAuctionDate;
-    } else {
-      activePrice = firstAuctionPrice;
-      activeDate = firstAuctionDate || secondAuctionDate || '';
-    }
-  } else if (secondAuctionPrice && secondAuctionPrice > 0) {
-    activePrice = secondAuctionPrice;
-    activeDate = secondAuctionDate || '';
-  } else if (genericPrice > 0) {
-    activePrice = genericPrice;
-    activeDate = firstAuctionDate || '';
-  }
+  // Isolate each round: nearby amounts can belong to another round, fees or appraisal.
+  const markers = [...text.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a)/gi)];
+  const unique = (values: number[]) => { const v=[...new Set(values.filter(n=>n>0))];return v.length===1?v[0]:0; };
+  const bids = (block:string) => [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
+  const round = (n:number) => {
+    const entries=markers.filter(m=>Number(m[1] || (/primeir/i.test(m[2])?1:2))===n).map(m=>{
+      const index=markers.indexOf(m);const block=text.slice(m.index!+m[0].length,markers[index+1]?.index ?? text.length).slice(0,350);
+      const date=block.match(/^\s*:?\s*(?:dia\s*)?(\d{1,2}\/\d{1,2}\/\d{2,4})/i)?.[1];
+      const labelled=bids(block);const bare=block.match(/^\s*:?\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s+(?:às\s*)?\d{1,2}:\d{2})?\s*[-–:]?\s*)?R\$\s*([\d.]+(?:,\d{2})?)/i);
+      return {price:unique(labelled.length?labelled:bare?[parseBrazilianMoney(bare[1])]:[]),date:date?normalizeDateStr(date):undefined};
+    });
+    const dates=[...new Set(entries.map(e=>e.date).filter(Boolean))];
+    return {price:unique(entries.map(e=>e.price))||undefined,date:dates.length===1?dates[0]:undefined};
+  };
+  const one=round(1),two=round(2);const generalDates=extractAuctionDates(text);
+  const firstAuctionPrice=one.price,secondAuctionPrice=two.price;
+  const firstAuctionDate=one.date||generalDates.first,secondAuctionDate=two.date||generalDates.second;
+  // The current/next bid explicitly displayed by the source prevails over the starting bid.
+  const current=extractDisplayedCurrentBid(text);
+  const genericPrice=markers.length?0:unique([...bids(text),...[...text.matchAll(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]))]);
+  let activePrice=0,activeDate='';
+  if(firstAuctionDate && firstAuctionDate>=today){activePrice=firstAuctionPrice||genericPrice;activeDate=firstAuctionDate;}
+  else if(secondAuctionDate && secondAuctionDate>=today){activePrice=secondAuctionPrice||genericPrice;activeDate=secondAuctionDate;}
+  else if(!firstAuctionDate&&!secondAuctionDate){activePrice=genericPrice;}
+  if(current>0)activePrice=current;
 
   // 5. Appraisal
   const appraisal = extractAppraisal(text);
@@ -836,8 +811,10 @@ export async function enrichLotDetails(browser: any, draft: ScrapedAuctionDraft)
       }
     }
 
-    const officialFinancials = officialLotFinancials(await detailPage.content(), detailPage.url());
-    return parseOfficialLotDetail(draft, { ...detailData, officialFinancials }, detailPage.url(), matriculaText, matriculaUrl);
+    const officialHtml = await detailPage.content();
+    const sourceEvidencePath=preserveSource(detailPage.url(),officialHtml);
+    const officialFinancials = officialLotFinancials(officialHtml, detailPage.url());
+    return parseOfficialLotDetail(draft, { ...detailData, officialFinancials, sourceEvidencePath, availability:assessAvailability(undefined,detailPage.url(),200,officialHtml) }, detailPage.url(), matriculaText, matriculaUrl);
   } catch (err: any) {
     recordSourceAudit({source:draft.portalId,url:draft.auctionLink,complete:false,error:`Falha no detalhe: ${err.message}`});
     console.warn(`[Auctioneer Sync] Não foi possível abrir o lote ${draft.auctionLink}: ${err.message}`);
@@ -884,18 +861,14 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const roundAnalysis = extractAuctionRoundsAndPrices(combinedText, today);
     const officialFin = detailData.officialFinancials;
 
-    const firstAuctionPrice = officialFin?.firstAuctionPrice || roundAnalysis.firstAuctionPrice || draft.firstAuctionPrice;
-    const secondAuctionPrice = officialFin?.secondAuctionPrice || roundAnalysis.secondAuctionPrice || draft.secondAuctionPrice;
-    const firstAuctionDate = officialFin?.firstAuctionDate || roundAnalysis.firstAuctionDate || dates.first || draft.firstAuctionDate;
-    const secondAuctionDate = officialFin?.secondAuctionDate || roundAnalysis.secondAuctionDate || dates.second || draft.secondAuctionDate;
+    const firstAuctionPrice = officialFin?.firstAuctionPrice || roundAnalysis.firstAuctionPrice;
+    const secondAuctionPrice = officialFin?.secondAuctionPrice || roundAnalysis.secondAuctionPrice;
+    const firstAuctionDate = officialFin?.firstAuctionDate || roundAnalysis.firstAuctionDate || dates.first;
+    const secondAuctionDate = officialFin?.secondAuctionDate || roundAnalysis.secondAuctionDate || dates.second;
 
     // Determine active bid: if 1st auction is open/future, it is the active price on site
-    let finalBid = officialFin?.auctionPrice || roundAnalysis.activePrice || draft.auctionPrice || 0;
-    if (firstAuctionDate && firstAuctionDate >= today && firstAuctionPrice && firstAuctionPrice > 0) {
-      finalBid = firstAuctionPrice;
-    } else if (firstAuctionDate && firstAuctionDate < today && secondAuctionPrice && secondAuctionPrice > 0) {
-      finalBid = secondAuctionPrice;
-    }
+    const finalBid = extractDisplayedCurrentBid(combinedText) || (officialFin?.auctionPrice ?? roundAnalysis.activePrice ?? 0);
+
 
     const extractedAppraisal = roundAnalysis.appraisal || extractAppraisal(combinedText) || draft.estimatedValue;
     const finalAppraisal = officialFin?.estimatedValue || extractedAppraisal;
@@ -909,7 +882,9 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
 
     return {
       ...draft,
-      sourceClosed: /leiloes-realizados/.test(detailUrl) || /(?:leil[aã]o|lote)\s+(?:encerrado|cancelado|suspenso|arrematado)/i.test(lotText.slice(0, 1500)),
+      sourceEvidencePath: detailData.sourceEvidencePath,
+      sourceAvailability: detailData.availability,
+      sourceClosed: detailData.availability?.state === 'closed' || detailData.availability?.state === 'removed' || /leiloes-realizados/.test(detailUrl) || /(?:leil[aã]o|lote)\s+(?:encerrado|cancelado|suspenso|arrematado)/i.test(lotText.slice(0, 1500)),
       originVerified: /(?:^|\n)\s*(?:leil[aã]o\s+)?(?:extrajudicial|judicial)\s*(?:\n|$)/i.test(lotText) || /\baliena[cç][aã]o\s+(?:judicial|fiduci[aá]ria)\b/i.test(lotText) || /\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}/i.test(lotText) || Boolean(classification.bank),
       sourceVerified: true,
       // Never erase the requested location with empty fields. The source may
@@ -928,15 +903,15 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
       areaAudit,
       sizeApproximate: areaAudit.status === 'approximate',
       sizeVerified: areaAudit.status === 'confirmed',
-      auctionPrice: finalBid,
-      priceVerified: finalBid > 0,
       estimatedValue: finalAppraisal,
       firstAuctionPrice,
       secondAuctionPrice,
       firstAuctionDate,
       secondAuctionDate,
-      auctionDate: officialFin?.auctionDate || roundAnalysis.activeDate || [firstAuctionDate, secondAuctionDate].filter((date): date is string => Boolean(date) && date! >= today).sort()[0] || firstAuctionDate || dates.first || draft.auctionDate || '',
+      auctionDate: officialFin?.auctionDate || roundAnalysis.activeDate || [firstAuctionDate, secondAuctionDate].filter((date): date is string => Boolean(date) && date! >= today).sort()[0] || firstAuctionDate || dates.first || '',
       ...detailData.officialFinancials,
+      auctionPrice: finalBid,
+      priceVerified: finalBid > 0,
       saleMode: extractSaleMode(combinedText || draft.description || ''),
       ...financialTerms,
       description: enrichedDescription || draft.description
@@ -2224,70 +2199,17 @@ export function extractUnitComplement(address?: string): string {
 }
 
 export function getPropertyDedupeKey(address?: string, city?: string, state?: string, processNumber?: string, auctionId?: string, propertyType?: PropertyType): string | null {
-  // Caixa lots are unique official contracts and must NEVER collide with other lots or each other
-  if (auctionId && auctionId.startsWith('auc-caixa-')) {
-    return `caixa:${auctionId}`;
-  }
-
-  if (!address || !city) return null;
-
-  const normCity = normalizeStr(city);
-  const normState = normalizeStr(state || '');
-  
-  const cleanAddr = normalizeStr(address)
-    .replace(/\b(rua|r\.|avenida|av\.|alameda|al\.|estrada|estr\.|praca|pr\.|travessa|trav\.|rodovia|rod\.)\b/g, '')
-    .trim();
-  
-  const numMatch = [address.match(/\b(?:n[º°.]*|numero|num)\s*(\d+(?:\.\d{3})*)/i), address.match(/,\s*(\d+(?:\.\d{3})*)/)]
-    .filter((match): match is RegExpMatchArray => Boolean(match)).sort((a,b)=>(a.index||0)-(b.index||0))[0];
-  if (!numMatch) return null;
-  const num = numMatch[1].replace(/\./g,'');
-  
-  const beforeNumber = cleanAddr.split(/,|\bn[º°.]*\s*\d|\bnumero\s*\d|\bnum\s*\d/i)[0];
-  const streetCore = beforeNumber.replace(/[^a-z0-9]+/g, ' ').trim();
-  if (!streetCore) return null;
-  const unit = extractUnitComplement(address);
-  if (unit) {
-    return `${normCity}-${normState}:${streetCore}:${num}:${unit}`;
-  }
-
-  if (propertyType === 'Apartamento' || propertyType === 'Comercial') return null;
-  return `${normCity}-${normState}:${streetCore}:${num}`;
+  return propertyIdentity(address,city,state,propertyType);
 }
 
 export function deduplicateAuctions(auctions: AuctionProperty[]): AuctionProperty[] {
-  const seenLinks = new Set<string>();
-  const seenKeys = new Map<string, AuctionProperty>();
-  const deduplicated: AuctionProperty[] = [];
-
-  for (const auc of auctions) {
-    const link = canonicalAuctionLink(auc.auctionLink || '');
-    if (link && seenLinks.has(link)) {
-      continue;
-    }
-    if (link) seenLinks.add(link);
-
-    const dedupeKey = getPropertyDedupeKey(auc.address, auc.city, auc.state, auc.processNumber, auc.id, auc.propertyType);
-    if (dedupeKey) {
-      if (seenKeys.has(dedupeKey)) {
-        const existing = seenKeys.get(dedupeKey)!;
-        if (!existing.imageUrl && auc.imageUrl) existing.imageUrl = auc.imageUrl;
-        if (!existing.secondAuctionDate && auc.secondAuctionDate) existing.secondAuctionDate = auc.secondAuctionDate;
-        continue;
-      }
-      seenKeys.set(dedupeKey, auc);
-    }
-
-    deduplicated.push(auc);
-  }
-
-  return deduplicated;
+  return aggregateAuctions(auctions,canonicalAuctionLink);
 }
 
 export function reconcileAuctionDrafts(
   allDrafts: ScrapedAuctionDraft[], targetType: 'extrajudicial' | 'judicial', state: string, city: string,
   existingAuctions: AuctionProperty[], recalculateFn: (auc: AuctionProperty) => AuctionProperty,
-  writeAudit = true
+  writeAudit = true, quarantineEnabled = writeAudit
 ) {
   const linkIndex = new Map(existingAuctions.flatMap(a => [a.auctionLink,...(a.sourceLinks||[])].filter(Boolean).map(link => [canonicalAuctionLink(link!),a] as const)));
   const existingLinks = new Set(linkIndex.keys());
@@ -2302,8 +2224,15 @@ export function reconcileAuctionDrafts(
   const today = new Date().toISOString().slice(0, 10);
   const pendingReview: Array<{draft: ScrapedAuctionDraft; reason: string}> = [];
 
-  for (const draft of allDrafts) {
+  for (let draft of allDrafts) {
     draft.auctionLink = canonicalAuctionLink(draft.auctionLink);
+    const validation=validateDraft(draft,{persist:quarantineEnabled});
+    draft=validation.draft;
+    if(!validation.accepted&&!validation.retired){
+      const previous=linkIndex.get(draft.auctionLink);
+      if(previous&&canonicalAuctionLink(previous.auctionLink||'')===draft.auctionLink)Object.assign(previous,{ingestionStatus:'quarentena_extracao',priceVerified:false,precisa_revisao:true,liquidityScore:1});
+      pendingReview.push({draft,reason:validation.reasons.join(',')});continue;
+    }
     const declared = declaredAuctionLocation(draft);
     if (declared && ((state && declared.state !== state) || (city && normalizeStr(declared.city) !== normalizeStr(city)))) {
       pendingReview.push({draft,reason:'outside_requested_location'});
@@ -2313,13 +2242,16 @@ export function reconcileAuctionDrafts(
 
     if (!isPropertyLotEvidence(`${draft.title}\n${draft.description || ''}`)) { pendingReview.push({draft, reason:'not_a_property_lot'}); continue; }
     if (draft.origin !== targetType) { pendingReview.push({draft, reason:'different_origin'}); continue; }
-    if (draft.sourceClosed) { pendingReview.push({draft, reason:'closed_at_source'}); continue; }
+    if (draft.sourceClosed) {
+      const saved=linkIndex.get(canonicalAuctionLink(draft.auctionLink));
+      if(saved && canonicalAuctionLink(saved.auctionLink||'')===canonicalAuctionLink(draft.auctionLink)) { saved.availability=draft.sourceAvailability||{state:'closed',status:'finalizado',url:draft.auctionLink,checkedAt:new Date().toISOString(),reason:'Encerramento confirmado pela coleta oficial'};updated++; }
+      pendingReview.push({draft, reason:'closed_at_source'}); continue;
+    }
     if (!draft.originVerified) { pendingReview.push({draft, reason:'unconfirmed_origin'}); continue; }
     if (!draft.sourceVerified) { pendingReview.push({draft, reason:'detail_unavailable'}); continue; }
     if (!draft.city || !draft.state || (state && draft.state !== state) || (city && normalizeStr(draft.city) !== normalizeStr(city))) { pendingReview.push({draft, reason:'unconfirmed_location'}); continue; }
     let lastKnownDate = draft.secondAuctionDate || draft.firstAuctionDate || draft.auctionDate;
     if (!isConfiguredAuctionLink(draft.auctionLink)) { pendingReview.push({draft,reason:'unverified_link'}); continue; }
-    if (lastKnownDate && lastKnownDate < today) { pendingReview.push({draft,reason:'past_date'}); continue; }
     // A confirmed official lot is never lost because a complementary field is
     // absent. It enters as pending, but cannot receive calculated ROI,
     // liquidity or recommendation until price, area and date are verified.
@@ -2337,10 +2269,11 @@ export function reconcileAuctionDrafts(
 
     if (existing) {
       updated++;
-      Object.assign(existing, recalculateFn({ ...existing, auctionLink:draft.auctionLink, auctioneerName:draft.auctioneerName, sourceLinks:[...new Set([...(existing.sourceLinks||[]),existing.auctionLink,draft.auctionLink].filter(Boolean))], lastSyncedAt:new Date().toISOString(), state: draft.state, city: draft.city, neighborhood: draft.neighborhood || existing.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm, areaAudit: draft.areaAudit, sizeApproximate: draft.sizeApproximate, auctionPrice: draft.priceVerified ? draft.auctionPrice : 0,
+      const previousOffer={...existing};
+      Object.assign(existing, recalculateFn({ ...existing, ingestionStatus:'ativo', auctionLink:draft.auctionLink, auctioneerName:draft.auctioneerName, sourceLinks:[...new Set([...(existing.sourceLinks||[]),existing.auctionLink,draft.auctionLink].filter(Boolean))], availability:draft.sourceAvailability?.state==='active'?draft.sourceAvailability:existing.availability, lastSyncedAt:new Date().toISOString(), state: draft.state, city: draft.city, neighborhood: draft.neighborhood || existing.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm, areaAudit: draft.areaAudit, sizeApproximate: draft.sizeApproximate, auctionPrice: draft.priceVerified ? draft.auctionPrice : 0,
         evaluationPrice: draft.estimatedValue ?? existing.evaluationPrice,
-        auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate,
-        firstAuctionPrice: draft.firstAuctionPrice ?? existing.firstAuctionPrice, secondAuctionPrice: draft.secondAuctionPrice ?? existing.secondAuctionPrice,
+        auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate, thirdAuctionDate: draft.thirdAuctionDate,
+        firstAuctionPrice: draft.firstAuctionPrice, secondAuctionPrice: draft.secondAuctionPrice,
         saleMode: draft.saleMode,
         addressVerified: draft.addressVerified, sizeVerified: draft.sizeVerified, priceVerified: draft.priceVerified,
         description: draft.description, matriculaText: draft.matriculaText || existing.matriculaText,
@@ -2352,6 +2285,7 @@ export function reconcileAuctionDrafts(
         minDownpaymentPercent: draft.minDownpaymentPercent ?? existing.minDownpaymentPercent,
         pendingIptuCost: draft.pendingIptuCost ?? existing.pendingIptuCost,
         pendingCondoCost: draft.pendingCondoCost ?? existing.pendingCondoCost }));
+      if(canonicalAuctionLink(previousOffer.auctionLink||'')!==draft.auctionLink)Object.assign(existing,recalculateFn({...aggregateAuctions([previousOffer,{...existing,sourceRecords:undefined}],canonicalAuctionLink)[0],id:existing.id}));
       if (!calculationReady || existing.precisa_revisao) Object.assign(existing, {
         precisa_revisao: true,
         valuationConfidence: 'unavailable',
@@ -2371,6 +2305,7 @@ export function reconcileAuctionDrafts(
 
     const rawAuc: AuctionProperty = {
       id: baseId,
+      ingestionStatus: 'ativo',
       title: draft.title,
       address: completeAddress,
       neighborhood: draft.neighborhood,
@@ -2386,7 +2321,7 @@ export function reconcileAuctionDrafts(
       evaluationPrice: draft.estimatedValue,
       auctionDate: draft.auctionDate,
       firstAuctionDate: draft.firstAuctionDate,
-      secondAuctionDate: draft.secondAuctionDate,
+      secondAuctionDate: draft.secondAuctionDate, thirdAuctionDate: draft.thirdAuctionDate,
       firstAuctionPrice: draft.firstAuctionPrice,
       secondAuctionPrice: draft.secondAuctionPrice,
       auctionLink: draft.auctionLink,

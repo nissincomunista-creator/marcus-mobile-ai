@@ -1,5 +1,10 @@
+import { preserveSource, quarantine } from './auctionPipeline/quarantine.ts';
+import { catalogEligible, validateDraft } from './auctionPipeline/validation.ts';
+import { configureNeighborhoods, normalize as normalizeAuctionPlace } from './auctionPipeline/location.ts';
+import { declaredAuctionLocation } from './src/utils/auctionLocation.ts';
+import { assessAvailability, isRetired } from './auctionAvailability.ts';
 import { auditOfficialArea } from './src/utils/officialAreaAudit.ts';
-import { runListedPortalSync } from './listedPortalSync.ts';
+import { runListedPortalSync, parseSourcePage } from './listedPortalSync.ts';
 import { allowedSyncLocation, SYNC_TARGETS } from './src/utils/auctionSyncScope.ts';
 import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning } from './propertyLocationService.ts';
 import { auctionCosts, calculateFlip } from './src/utils/flipCalculation.ts';
@@ -25,7 +30,7 @@ import { scrapeLivePortals } from './portalScraper.ts';
 import { geocodeAddress, getCachedCoords, cleanQuery } from './geocodeService.ts';
 import { computeBidirectionalBenchmarks, isGenericStreet } from './src/utils/bidirectionalBenchmark.ts';
 import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
-import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts, extractAuctionRoundsAndPrices } from './auctioneerSyncService.ts';
+import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts, parseOfficialLotDetail, canonicalAuctionLink, extractAuctionRoundsAndPrices } from './auctioneerSyncService.ts';
 
 dotenv.config();
 
@@ -383,7 +388,7 @@ function getCaixaCatalogField(row: Record<string, string>, ...keys: string[]): s
 }
 
 function parseCaixaSizeSqm(descricao: string, propertyType: PropertyType, title = ''): number {
-  return auditOfficialArea({text:descricao,title,propertyType,url:''}).selected?.value || 0;
+  return auditOfficialArea({text:descricao,title,propertyType,url:'https://venda-imoveis.caixa.gov.br/listaweb/'}).selected?.value || 0;
 }
 
 function isValidStreetCoordinates(value: unknown): value is StreetCoordinates {
@@ -772,20 +777,15 @@ function loadStore(): DataStore {
         // Security Gatekeeper: Strictly enforce target cities whitelist (Rio de Janeiro, Niterói, Juiz de Fora) and purge any mock seeds or non-property lots
         const initialCount = storeData.auctions.length;
         const nonPropTerms = ['ferramenta', 'torno mec', 'sucata', 'trator', 'veiculo', 'veículo', 'motocicleta', 'caminhao', 'caminhão', 'automovel', 'automóvel', 'peças automotivas', 'armario em aco', 'armário em aço', 'inversor solar'];
-        storeData.auctions = storeData.auctions.filter(a => {
-          if (!isAllowedTargetCity(a.city, a.state)) return false;
-          if (a.id && (a.id.startsWith('auc-port-') || a.id.startsWith('auc-jud-') || a.id.startsWith('auc-ext-'))) return false;
+        storeData.auctions.forEach(a => {
           const t = (a.title || '').toLowerCase();
-          const d = (a.description || '').toLowerCase();
-          for (const term of nonPropTerms) {
-            if (t.includes(term) || d.includes(term)) {
-              const hasRealEstate = ['apartamento', 'casa', 'terreno', 'gleba', 'loja', 'sala comercial', 'galpão', 'predio', 'prédio', 'imóvel', 'imovel'].some(p => t.includes(p));
-              if (!hasRealEstate || ['veiculo', 'veículo', 'motocicleta', 'caminhao', 'caminhão', 'sucata', 'ferramenta'].some(x => t.includes(x))) {
-                return false;
-              }
-            }
-          }
-          return true;
+          const realEstate = /apartamento|casa|terreno|gleba|loja|sala|cobertura|galp[aã]o|pr[eé]dio|im[oó]ve(?:l|is)|posto|comercial/.test(t);
+          const actual=declaredAuctionLocation(a);
+          const reason = !isAllowedTargetCity(a.city,a.state) ? 'fora_das_cidades_configuradas'
+            : actual && (normalizeAuctionPlace(actual.city)!==normalizeAuctionPlace(a.city)||actual.state!==a.state) ? 'localidade_divergente_do_detalhe'
+            : /^(auc-port-|auc-jud-|auc-ext-)/.test(a.id||'') ? 'registro_legado_sem_evidencia'
+            : !realEstate && nonPropTerms.some(term=>t.includes(term)) ? 'lote_nao_imobiliario' : '';
+          if(reason){a.ingestionStatus='quarentena_extracao';quarantine(a as any,[reason]);}
         });
         storeData.auctions.forEach(a => {
           const canon = getCanonicalTargetCity(a.city, a.state);
@@ -836,7 +836,7 @@ function loadStore(): DataStore {
               }
             }
           }
-          if (!(a.auctionPrice > 0)) {
+          if (!(a.auctionPrice > 0) && a.priceVerified !== false) {
             const rounds = extractAuctionRoundsAndPrices((a.description || '') + ' ' + (a.title || ''), today);
             if (rounds.activePrice > 0) {
               a.auctionPrice = rounds.activePrice;
@@ -1338,35 +1338,8 @@ function recalculateAuctionWithIndex(
     }
   }
 
-  // Garantir lance ativo correto caso esteja zerado ou haja rodadas identificadas
-  if (!(auc.auctionPrice > 0)) {
-    const today = new Date().toISOString().slice(0, 10);
-    if (auc.firstAuctionPrice && auc.firstAuctionPrice > 0) {
-      if (auc.firstAuctionDate && auc.firstAuctionDate >= today) {
-        auc.auctionPrice = auc.firstAuctionPrice;
-        auc.priceVerified = true;
-      } else if (auc.secondAuctionPrice && auc.secondAuctionPrice > 0) {
-        auc.auctionPrice = auc.secondAuctionPrice;
-        auc.priceVerified = true;
-      } else {
-        auc.auctionPrice = auc.firstAuctionPrice;
-        auc.priceVerified = true;
-      }
-    } else if (auc.secondAuctionPrice && auc.secondAuctionPrice > 0) {
-      auc.auctionPrice = auc.secondAuctionPrice;
-      auc.priceVerified = true;
-    } else if (auc.description) {
-      const rounds = extractAuctionRoundsAndPrices(auc.description + ' ' + (auc.title || ''), today);
-      if (rounds.activePrice > 0) {
-        auc.auctionPrice = rounds.activePrice;
-        auc.priceVerified = true;
-        if (rounds.firstAuctionPrice) auc.firstAuctionPrice = rounds.firstAuctionPrice;
-        if (rounds.secondAuctionPrice) auc.secondAuctionPrice = rounds.secondAuctionPrice;
-        if (rounds.firstAuctionDate) auc.firstAuctionDate = rounds.firstAuctionDate;
-        if (rounds.secondAuctionDate) auc.secondAuctionDate = rounds.secondAuctionDate;
-      }
-    }
-  }
+  // An unverified bid stays unset. Recalculation must not revive stale round prices.
+  if (auc.priceVerified === false) auc.auctionPrice = 0;
 
   let itbiStreetAvgSqm = 0;
   let itbiStreetCount = 0;
@@ -2046,6 +2019,7 @@ function recalculateAuctions(auctions: AuctionProperty[], txs: ItbiTransaction[]
 }
 
 let store = loadStore();
+configureNeighborhoods(store.itbiTransactions);
 
 // Request augmented type
 
@@ -2072,14 +2046,55 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
 
 // One server-owned run at a time, shared by boot, app opening and manual requests.
 let listedSyncRunning: Promise<unknown> | null = null;
+let availabilityRunning: Promise<void> | null = null;
+let catalogRevision = Date.now();
+function startAvailabilityCheck() {
+ if(availabilityRunning)return;
+ availabilityRunning=(async()=>{
+  const allowed=new Set(AUCTIONEER_PORTALS.filter(p=>!['emgea','vitrinebradesco','pestana'].includes(p.id)).map(p=>p.domain.replace(/^www\./,'')));
+  const rows=store.auctions.flatMap(parent=>{
+   const sources=new Map((parent.sourceRecords||[]).map(a=>[canonicalAuctionLink(a.auctionLink||''),a]));
+   const {sourceRecords,offers,...primary}=parent;sources.set(canonicalAuctionLink(parent.auctionLink||''),primary as AuctionProperty);
+   if(sources.size>1)parent.sourceRecords=[...sources.values()];
+   return [...sources.values()].filter(a=>{try{return allowed.has(new URL(a.auctionLink||'').hostname.replace(/^www\./,''))}catch{return false}}).map(a=>({parentId:parent.id,...a}));
+  });
+  let cursor=0;
+  await Promise.all(Array.from({length:4},async()=>{while(cursor<rows.length){
+   const snapshot=rows[cursor++],url=snapshot.auctionLink!;let status=0,html='',finalUrl=url;
+   try {const response=await fetch(url,{signal:AbortSignal.timeout(15000)});status=response.status;finalUrl=response.url;html=await response.text();}catch{}
+   const parent=store.auctions.find(a=>a.id===snapshot.parentId);if(!parent)continue;
+   const current=parent.sourceRecords?.find(a=>canonicalAuctionLink(a.auctionLink||'')===canonicalAuctionLink(url))||parent;if(current.auctionLink!==url)continue;
+   current.availability=assessAvailability(current.availability,url,status,html,undefined,{finalUrl});
+   if(isRetired(current)){
+    current.ingestionStatus=current.availability.status;
+
+   }
+   else if(status===200&&canonicalAuctionLink(finalUrl)===canonicalAuctionLink(url)&&!/(?:captcha|Access Denied|Just a moment)/i.test(html)) {
+    const page=parseSourcePage(html,url);const sourceEvidencePath=preserveSource(url,html);
+    if(page.text.length>100){
+     const detail=parseOfficialLotDetail({...current,portalId:'availability',auctioneerName:current.auctioneerName||'',neighborhood:current.neighborhood||'',city:current.city||'',state:current.state||'',auctionDate:'',firstAuctionDate:undefined,secondAuctionDate:undefined,auctionLink:url,origin:current.origin as any} as any,{...page,sourceEvidencePath},url);
+     const review=validateDraft(detail);
+     if(review.retired){current.availability=review.draft.sourceAvailability;current.ingestionStatus=current.availability?.status;}
+     else if(review.accepted){Object.assign(current,recalculateAuction({...current,auctionPrice:review.draft.auctionPrice,priceVerified:true,neighborhood:review.draft.neighborhood,firstAuctionPrice:detail.firstAuctionPrice,secondAuctionPrice:detail.secondAuctionPrice,firstAuctionDate:detail.firstAuctionDate,secondAuctionDate:detail.secondAuctionDate,thirdAuctionDate:review.draft.thirdAuctionDate,auctionDate:detail.auctionDate,ingestionStatus:'ativo',sizeSqm:detail.sizeSqm||0,sizeVerified:detail.sizeVerified===true,sizeApproximate:detail.sizeApproximate,areaAudit:detail.areaAudit},store.itbiTransactions));}
+     else {current.ingestionStatus='quarentena_extracao';current.precisa_revisao=true;current.liquidityScore=1;}
+    }
+   }
+   fs.mkdirSync('sync-audits',{recursive:true});fs.appendFileSync('sync-audits/availability.jsonl',JSON.stringify({id:current.id,...current.availability,ingestionStatus:current.ingestionStatus})+'\n');catalogRevision++;
+  }}));
+  for(const parent of store.auctions){if(parent.sourceRecords?.length){const merged=deduplicateAuctions(parent.sourceRecords)[0];Object.assign(parent,recalculateAuction({...merged,id:parent.id,saved:parent.saved},store.itbiTransactions));}}
+  saveStore(store);
+ })().catch(e=>console.error('[Availability]',e)).finally(()=>{availabilityRunning=null;});
+}
+
 function readListedSyncStatus() {
   try {
     const report = JSON.parse(fs.readFileSync('sync-audits/latest-listed-sync.json', 'utf8'));
     if (!listedSyncRunning && report.status === 'running') report.status = 'interrupted';
-    return report;
-  } catch { return null; }
+    return {...report,catalogRevision,availabilityRunning:Boolean(availabilityRunning)};
+  } catch { return {catalogRevision,availabilityRunning:Boolean(availabilityRunning)}; }
 }
 function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0], auditPath: string) {
+  configureNeighborhoods(store.itbiTransactions);
   const previousAuctions=store.auctions;
   store.auctions=structuredClone(previousAuctions);
   try {
@@ -2088,7 +2103,7 @@ function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0],
      for (const target of SYNC_TARGETS) {
       const rows = drafts.filter(row => row.origin === origin && row.state === target.state && row.city.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase() === target.city.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase());
       if (!rows.length) continue;
-      const result = reconcileAuctionDrafts(rows, origin, target.state, target.city, store.auctions, auc => recalculateAuction(auc, store.itbiTransactions), false);
+      const result = reconcileAuctionDrafts(rows, origin, target.state, target.city, store.auctions, auc => recalculateAuction(auc, store.itbiTransactions), false, true);
       result.newAuctions.forEach(auction => { auction.userId = 'system'; auction.lastSyncedAt = new Date().toISOString(); });
       store.auctions.unshift(...result.newAuctions);
       if (result.pendingReview.length) fs.appendFileSync(auditPath, result.pendingReview.map(row => JSON.stringify(row)).join('\n')+'\n');
@@ -2099,6 +2114,7 @@ function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0],
     const temporary = STORE_PATH + '.sync-tmp';
     fs.writeFileSync(temporary, JSON.stringify(store), 'utf8');
     fs.renameSync(temporary, STORE_PATH);
+    catalogRevision++;
     return { imported, updated, pending };
 
   } catch(error) { store.auctions=previousAuctions; throw error; }
@@ -2113,6 +2129,7 @@ function startListedSync(reason: string, ids?: string[]) {
 }
 app.get('/api/sync/status', authMiddleware, (_req, res) => res.json(readListedSyncStatus()));
 app.post('/api/sync/start', authMiddleware, (req, res) => {
+  startAvailabilityCheck();
   const started = startListedSync(req.body.reason === 'app-open' ? 'app-open' : 'manual');
   res.status(202).json({started, running:true, report:readListedSyncStatus()});
 });
@@ -2465,8 +2482,9 @@ app.delete('/api/user/arrematacoes/:id', authMiddleware, (req, res) => {
 
 // GET /api/auctions
 app.get('/api/auctions', authMiddleware, (req, res) => {
-  const userAuctions = store.auctions.filter(a => (!a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state));
-  const enriched = userAuctions.map(a => {
+  const userAuctions = deduplicateAuctions(store.auctions.filter(a => catalogEligible(a) && (!a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible);
+  const enriched = userAuctions.map(original => {
+    const a=original.offers && original.offers.length>1?recalculateAuction(original,store.itbiTransactions):original;
     // Sanitize distorted rural terrains or runaway ROIs
     if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === 'Terreno' || (a.sizeSqm && a.sizeSqm > 1000)) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
@@ -2499,7 +2517,7 @@ app.get('/api/map/locations', authMiddleware, (req, res) => {
   ensureOfficialLocationCoverage(store.auctions);
   res.setHeader('X-Map-Refreshing', isMapLocationRefreshRunning() ? '1' : '0');
   res.setHeader('Cache-Control', 'no-store');
-  const locations = store.auctions.filter(a => (!a.userId || a.userId === req.userId || ['caixa_radar','caixa','judicial','extrajudicial','portal'].includes(a.origin || '')) && isAllowedTargetCity(a.city, a.state)).flatMap(a => {
+  const locations = deduplicateAuctions(store.auctions.filter(a => catalogEligible(a) && (!a.userId || a.userId === req.userId || ['caixa_radar','caixa','judicial','extrajudicial','portal'].includes(a.origin || '')) && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible).flatMap(a => {
     const point = getOfficialPropertyLocation(a);
     return [point];
   });
@@ -2525,9 +2543,9 @@ app.get('/api/auctions/bbox', (req, res) => {
     if (session) requestUserId = session.userId;
   }
 
-  const userAuctions = store.auctions.filter(a => 
-    (!a.userId || a.userId === requestUserId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state)
-  );
+  const userAuctions = deduplicateAuctions(store.auctions.filter(a => 
+    catalogEligible(a) && (!a.userId || a.userId === requestUserId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state)
+  )).filter(catalogEligible);
 
   const inside: AuctionProperty[] = [];
   for (const a of userAuctions) {
@@ -5136,7 +5154,7 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
           }
           const cleanBairro = rawBairro ? rawBairro.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Não informado';
 
-          const auctionPrice = Math.round(Number(precoStr) || 0);
+          const auctionPrice = Number(precoStr) || 0;
           if (auctionPrice === 0) continue;
 
           // Se já existir no store, ignora para não duplicar
@@ -5176,11 +5194,11 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
             propertyType,
             sizeSqm,
             auctionPrice,
-            estimatedRepair: Math.round(5000 + Math.random() * 20000),
+            estimatedRepair: 0,
             pendingDebts: 0,
             otherCosts: 0,
             estimatedValue: 0,
-            auctionDate: todayStr,
+            auctionDate: '',
             auctionLink: linkCaixa,
             description: [
               'Imóvel Retomado Caixa Econômica Federal.',
@@ -5200,6 +5218,10 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
             saleMode
           };
 
+          const sourceEvidencePath = preserveSource(linkCaixa, '<pre>' + JSON.stringify(row) + '</pre>');
+          const validated = validateDraft({...newAuc, city: cleanCidade, state: ufCaixa, auctionLink: linkCaixa, sourceVerified: true, originVerified: true, priceVerified: true, sourceEvidencePath});
+          if (!validated.accepted) continue;
+          Object.assign(newAuc, {neighborhood: validated.draft.neighborhood, priceVerified: true, sizeVerified: sizeSqm > 0, ingestionStatus: 'ativo'});
           const recalculated = recalculateAuctionWithIndex(
             newAuc,
             avgSqmMap,
@@ -5373,7 +5395,7 @@ export async function runSecurityAuditAndFullSync(targetStore: DataStore, forceR
     }
 
     // 2c. Sanitize unconfirmed / zero bids if description contains valid prices
-    if (!(a.auctionPrice > 0)) {
+    if (!(a.auctionPrice > 0) && a.priceVerified !== false) {
       const today = new Date().toISOString().slice(0, 10);
       const rounds = extractAuctionRoundsAndPrices((a.description || '') + ' ' + (a.title || ''), today);
       if (rounds.activePrice > 0) {
@@ -5892,7 +5914,7 @@ Não inclua nenhuma outra marcação além do JSON puro dentro do bloco de códi
             pendingDebts: 0,
             otherCosts: 0,
             estimatedValue: 0, // Force recalculate by ITBI
-            auctionDate: todayStr,
+            auctionDate: '',
             auctionLink: searchLink,
             description: item.description || `Oportunidade de flip imobiliário via portal de vendas.`,
             status: 'Pendente',
@@ -6006,7 +6028,7 @@ Não inclua nenhuma outra marcação além do JSON puro dentro do bloco de códi
         pendingDebts: 0,
         otherCosts: 0,
         estimatedValue: estVal,
-        auctionDate: todayStr,
+        auctionDate: '',
         auctionLink: link,
         description: `Imóvel anunciado no portal ${portalName === 'zapimoveis' ? 'ZapImóveis' : 'QuintoAndar'} com valor de venda abaixo da média da região devido à necessidade de reforma completa de banheiros, cozinha e troca de fiação. Perfeito para House Flip na ${formattedStreet}. Clique no link acima para abrir a busca ativa e ver anúncios reais nesta rua no portal!`,
         status: 'Pendente',
@@ -6095,7 +6117,7 @@ app.post('/api/auctions/analyze-url', authMiddleware, async (req, res) => {
       pendingDebts: 5000,
       otherCosts: 0,
       estimatedValue: 0,
-      auctionDate: todayStr,
+      auctionDate: '',
       auctionLink: url,
       description: `Importação simulada do link: ${url}. Para análise real de portais em tempo real via IA, configure sua GEMINI_API_KEY no arquivo .env.`,
       status: 'Analisado',
@@ -6306,7 +6328,8 @@ async function start() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
     
-    if (process.env.SKIP_STARTUP_SYNC !== 'true') setTimeout(() => startListedSync('server-start'), 3000);
+    // Automatic synchronization is requested once by the app when it opens.
+    // No boot-time or recurring collection may interrupt an active session.
   });
 }
 

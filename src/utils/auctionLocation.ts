@@ -2,7 +2,8 @@ import { sourceAuctionLocation } from './auctionGeography.ts';
 const UF = 'AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO';
 const normalize = (v?:string) => (v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 export function declaredAuctionLocation(property: {title?:string;address?:string}): {city:string;state:string}|null {
-  return sourceAuctionLocation(property.title || '') || sourceAuctionLocation(property.address || '');
+  const sourceText=(value?:string)=>(value||'').replace(/\bcampo dos goytacazes\b/gi,'Campos dos Goytacazes');
+  return sourceAuctionLocation(sourceText(property.title)) || sourceAuctionLocation(sourceText(property.address));
 }
 export function correctDeclaredAuctionLocation<T extends {title?:string;address?:string;city?:string;state?:string;neighborhood?:string}>(property:T):T {
   const actual = declaredAuctionLocation(property);
