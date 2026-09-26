@@ -504,67 +504,67 @@ export default function Dashboard({
       });
     }
 
-    // Temporal toggle (Urgência vs Novidades vs Neutro)
-    if (temporalSortMode === 'urgent') {
-      // Sort by closing date (firstAuctionDate or auctionDate) ascending
-      result.sort((a, b) => {
-        const dateA = a.firstAuctionDate || a.auctionDate || '9999-12-31';
-        const dateB = b.firstAuctionDate || b.auctionDate || '9999-12-31';
-        return dateA.localeCompare(dateB);
-      });
-      return result;
-    } else if (temporalSortMode === 'newest') {
-      // Sort by inclusion / ID descending
-      result.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
-      return result;
-    }
-
-    // Ranqueamento das Estratégias Ativas (Sem ocultar imóveis - ordena do maior para o menor) ou Ordenação Padrão
+    // Ranqueamento conjunto das estratégias ativas. Normalize once across the
+    // filtered result set so the comparator is stable and every selected metric
+    // contributes consistently (pairwise price scales are non-transitive).
     const activeStrategiesCount = (strategyFilters.liquidity ? 1 : 0) +
                                   (strategyFilters.roi ? 1 : 0) +
                                   (strategyFilters.profit ? 1 : 0) +
                                   (strategyFilters.price ? 1 : 0);
+    const strategyRank = new Map<AuctionProperty, number>();
+    const qualityByAuction = new Map(result.map(property => [property, assessDataQuality(property)] as const));
+    const validPrices = result.map(property => Number(property.auctionPrice) || 0).filter(price => price > 0);
+    const minPrice = validPrices.length ? Math.min(...validPrices) : 0;
+    const maxPrice = validPrices.length ? Math.max(...validPrices) : 0;
+    const toPercentile = (value: number, min: number, max: number) => max === min ? 50 : ((value - min) / (max - min)) * 100;
+
+    if (activeStrategiesCount > 0) {
+      for (const property of result) {
+        let score = 0;
+        if (strategyFilters.roi) {
+          const roi = Number.isFinite(property.calculatedRoi) ? Math.max(-100, Math.min(100, property.calculatedRoi!)) : -100;
+          score += (roi + 100) / 2;
+        }
+        if (strategyFilters.liquidity) {
+          const ceiling = qualityByAuction.get(property)?.liquidityCeiling ?? 3;
+          score += Math.max(0, Math.min(10, Math.min(property.liquidityScore || 1, ceiling))) * 10;
+        }
+        if (strategyFilters.profit) {
+          const profitScore = Number.isFinite(property.calculatedProfit) ? Math.max(-100, Math.min(100, property.calculatedProfit! / 2500)) : -100;
+          score += (profitScore + 100) / 2;
+        }
+        if (strategyFilters.price) {
+          const price = Number(property.auctionPrice) || 0;
+          score += price > 0 ? (maxPrice === minPrice ? 50 : 100 - toPercentile(price, minPrice, maxPrice)) : 0;
+        }
+        strategyRank.set(property, score / activeStrategiesCount);
+      }
+    }
 
     result.sort((a, b) => {
       // Rebaixamento de lotes com pendência crítica (Auditoria Incompleta) para o final da fila de prioridade
-      const qualityA = assessDataQuality(a);
-      const qualityB = assessDataQuality(b);
+      const qualityA = qualityByAuction.get(a)!;
+      const qualityB = qualityByAuction.get(b)!;
       if (qualityA.isIncompleto !== qualityB.isIncompleto) {
         return qualityA.isIncompleto ? 1 : -1;
       }
 
       if (activeStrategiesCount > 0) {
-        const boundedLiquidity = (property: AuctionProperty) => Math.min(
-          property.liquidityScore || 1,
-          assessDataQuality(property).liquidityCeiling
-        );
-        let scoreA = 0;
-        let scoreB = 0;
-        let criteria = 0;
-        if (strategyFilters.roi) {
-          scoreA += Math.max(-100, Math.min(100, a.calculatedRoi || 0));
-          scoreB += Math.max(-100, Math.min(100, b.calculatedRoi || 0));
-          criteria++;
-        }
-        if (strategyFilters.liquidity) {
-          scoreA += boundedLiquidity(a) * 10;
-          scoreB += boundedLiquidity(b) * 10;
-          criteria++;
-        }
-        if (strategyFilters.profit) {
-          scoreA += Math.max(-100, Math.min(100, (a.calculatedProfit || 0) / 2500));
-          scoreB += Math.max(-100, Math.min(100, (b.calculatedProfit || 0) / 2500));
-          criteria++;
-        }
-        if (strategyFilters.price) {
-          const maxPrice = Math.max(350000, a.auctionPrice, b.auctionPrice, 1);
-          scoreA += Math.max(0, 100 * (1 - a.auctionPrice / maxPrice));
-          scoreB += Math.max(0, 100 * (1 - b.auctionPrice / maxPrice));
-          criteria++;
-        }
-        const weightedA = scoreA / Math.max(1, criteria);
-        const weightedB = scoreB / Math.max(1, criteria);
+        const weightedA = strategyRank.get(a) ?? 0;
+        const weightedB = strategyRank.get(b) ?? 0;
         if (weightedA !== weightedB) return weightedB - weightedA;
+      }
+
+      // Urgência/novidade remain useful tie-breakers without suppressing active
+      // investment strategies from the ranking.
+      if (temporalSortMode === 'urgent') {
+        const dateA = a.firstAuctionDate || a.auctionDate || '9999-12-31';
+        const dateB = b.firstAuctionDate || b.auctionDate || '9999-12-31';
+        const dateOrder = dateA.localeCompare(dateB);
+        if (dateOrder) return dateOrder;
+      } else if (temporalSortMode === 'newest') {
+        const newestOrder = (b.id || '').localeCompare(a.id || '');
+        if (newestOrder) return newestOrder;
       }
 
       const activeSortKey = sortBy || 'roi';
