@@ -3805,6 +3805,69 @@ function getVerifiedLocalComparableCount(auc) {
   if (auc.valuationLevel === "Rua") return Math.max(0, Number(auc.valuationSampleCount) || 0);
   return 0;
 }
+function assessDataQuality(auc) {
+  const reasons = [];
+  const localComparableCount = getVerifiedLocalComparableCount(auc);
+  if (auc.precisa_revisao) {
+    reasons.push("Lote marcado para revis\xE3o pericial");
+  }
+  if (!auc.auctionPrice || auc.auctionPrice <= 0 || auc.priceVerified === false) {
+    reasons.push("Pre\xE7o de arremata\xE7\xE3o n\xE3o validado");
+  }
+  if (!auc.sizeSqm || auc.sizeSqm <= 0 || auc.sizeVerified === false) {
+    reasons.push("Metragem privativa pendente ou n\xE3o comprovada");
+  }
+  if (!auc.address || auc.address.trim().length < 5 || isGenericStreet(auc.address) || auc.addressVerified === false) {
+    reasons.push("Endere\xE7o gen\xE9rico, inconsistente ou pendente de geolocaliza\xE7\xE3o");
+  }
+  if (auc.valuationConfidence === "unavailable" || !auc.estimatedValue || auc.estimatedValue <= 0) {
+    reasons.push("Amostragem de mercado insuficiente (sem dados no raio pericial)");
+  }
+  if (localComparableCount === 0) {
+    reasons.push("Sem transa\xE7\xF5es confirmadas no pr\xE9dio ou na rua");
+  }
+  const hasCriticalInconsistency = reasons.length > 0;
+  let status;
+  if (hasCriticalInconsistency) {
+    status = "Auditoria Incompleta";
+  } else if (auc.valuationConfidence === "verified" && localComparableCount >= 2) {
+    status = "Auditado";
+  } else {
+    status = "Estimado";
+  }
+  let liquidityCeiling = 10;
+  if (status === "Auditoria Incompleta") {
+    liquidityCeiling = auc.precisa_revisao ? 1 : 3;
+  } else if (localComparableCount === 0) {
+    liquidityCeiling = 3;
+  } else if (localComparableCount < 2) {
+    liquidityCeiling = 4;
+  } else if (auc.valuationConfidence === "projected") {
+    liquidityCeiling = 4;
+  }
+  const discountRate = auc.estimatedValue && auc.auctionPrice ? (auc.estimatedValue - auc.auctionPrice) / auc.estimatedValue : 0;
+  const canBeFeatured = status === "Auditado" && !auc.precisa_revisao && localComparableCount >= 2 && auc.valuationConfidence === "verified" && (auc.calculatedRoi || 0) >= 35 && (auc.liquidityScore || 0) >= 7 && discountRate >= 0.3 && auc.riskLevel !== "Alto" && !auc.isCommunityRisk;
+  let badgeLabel = "Auditado";
+  let badgeClass = "bg-emerald-950/70 text-emerald-300 border-emerald-600/50";
+  if (status === "Auditoria Incompleta") {
+    badgeLabel = "Auditoria Incompleta";
+    badgeClass = "bg-rose-950/80 text-rose-300 border-rose-700/60";
+  } else if (status === "Estimado") {
+    badgeLabel = "Proje\xE7\xE3o Estimada";
+    badgeClass = "bg-amber-950/70 text-amber-300 border-amber-600/50";
+  }
+  return {
+    status,
+    isAuditado: status === "Auditado",
+    isEstimado: status === "Estimado",
+    isIncompleto: status === "Auditoria Incompleta",
+    canBeFeatured,
+    liquidityCeiling,
+    reasons,
+    badgeLabel,
+    badgeClass
+  };
+}
 
 // server.ts
 var import_pdf_parse2 = require("pdf-parse");
@@ -6263,10 +6326,6 @@ function recalculateAuction(auc, txs) {
   const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = getOrBuildItbiIndexes(txs);
   return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap);
 }
-function recalculateAuctions(auctions, txs) {
-  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = getOrBuildItbiIndexes(txs);
-  return auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
-}
 var store = loadStore();
 configureNeighborhoods(store.itbiTransactions);
 function generateRandomAccessCode() {
@@ -6690,7 +6749,9 @@ app.delete("/api/user/arrematacoes/:id", authMiddleware, (req, res) => {
 });
 app.get("/api/auctions", authMiddleware, (req, res) => {
   const userAuctions = deduplicateAuctions(store.auctions.filter((a) => catalogEligible(a) && (!a.userId || a.userId === req.userId || a.origin === "caixa_radar" || a.origin === "caixa" || a.origin === "judicial" || a.origin === "extrajudicial" || a.origin === "portal") && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible);
-  const enriched = recalculateAuctions(userAuctions, store.itbiTransactions).map((a) => {
+  const enriched = userAuctions.map((original) => {
+    const a = original.offers && original.offers.length > 1 ? recalculateAuction(original, store.itbiTransactions) : original;
+    a.liquidityScore = Math.min(Number(a.liquidityScore) || 1, assessDataQuality(a).liquidityCeiling);
     if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === "Terreno" || a.sizeSqm && a.sizeSqm > 1e3) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
         a.estimatedValue = Math.round(a.evaluationPrice * 1.25);

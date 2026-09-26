@@ -2512,9 +2512,15 @@ app.delete('/api/user/arrematacoes/:id', authMiddleware, (req, res) => {
 // GET /api/auctions
 app.get('/api/auctions', authMiddleware, (req, res) => {
   const userAuctions = deduplicateAuctions(store.auctions.filter(a => catalogEligible(a) && (!a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible);
-  // Rebuild scores and ITBI evidence for every returned card. Persisted scores are
-  // snapshots from older rules and must never outlive the current evidence gates.
-  const enriched = recalculateAuctions(userAuctions, store.itbiTransactions).map(a => {
+  // Refresh consolidated multi-offer records, then apply a cheap evidence gate to
+  // every stored score. Recomputing every ITBI benchmark on each GET can stall a
+  // large catalog; stale scores without explicit street/building provenance are
+  // safely capped here and full recalculation remains in the sync/update pipeline.
+  const enriched = userAuctions.map(original => {
+    const a = original.offers && original.offers.length > 1
+      ? recalculateAuction(original, store.itbiTransactions)
+      : original;
+    a.liquidityScore = Math.min(Number(a.liquidityScore) || 1, assessDataQuality(a).liquidityCeiling);
     // Sanitize distorted rural terrains or runaway ROIs
     if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === 'Terreno' || (a.sizeSqm && a.sizeSqm > 1000)) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
