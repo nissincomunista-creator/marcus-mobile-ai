@@ -154,10 +154,12 @@ export function computeBidirectionalBenchmarks(
   let effectiveRadiusKm = radiusKm || 0.5;
   let radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
   let fallbackLevel: '0.5km' | '1.0km' | '2.0km' | 'bairro' = '0.5km';
-  const hasVerifiedRadius = geolocatedSurrounding.length > 0;
+  // Um único registro geolocalizado não confirma amostragem de entorno.
+  const hasVerifiedRadius = geolocatedSurrounding.length >= 2;
 
-  if (hasVerifiedRadius) {
-    // 1. Tenta o raio inicial solicitado (normalmente 0.5km)
+  if (geolocatedSurrounding.length > 0) {
+    // Contagem e média do raio registram apenas a circunferência inicial escolhida;
+    // o raio ampliado serve para valuation, sem se passar pelos 500m.
     const tierInitial = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= (radiusKm || 0.5));
     if (tierInitial.length >= 2) {
       raioTxs = tierInitial;
@@ -189,6 +191,7 @@ export function computeBidirectionalBenchmarks(
         }
       }
     }
+    raioTxs = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= (radiusKm || 0.5));
   } else {
     raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
     radiusLabel = 'Mediana do bairro (sem geolocalização exata)';
@@ -198,7 +201,7 @@ export function computeBidirectionalBenchmarks(
   // 2. Nível Raio (Ruas do Entorno). O expurgo usa Chauvenet operacional
   // em 2 desvios-padrão, sem uma faixa percentual que descarte comparáveis válidos.
   const raioVals = raioTxs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v >= 800 && v <= 80000);
-  const raioPrelim = raioVals.length > 0 ? (raioVals.reduce((a, b) => a + b, 0) / raioVals.length) : bSaneada;
+  const raioPrelim = raioVals.length > 0 ? (raioVals.reduce((a, b) => a + b, 0) / raioVals.length) : (hasVerifiedRadius ? bSaneada : 0);
   const raioVariance = raioVals.length > 0
     ? raioVals.reduce((acc, value) => acc + Math.pow(value - raioPrelim, 2), 0) / raioVals.length
     : 0;
@@ -209,7 +212,7 @@ export function computeBidirectionalBenchmarks(
   const raioValid = raioVals.filter(v => raioStd === 0 || Math.abs(v - raioPrelim) <= 2 * raioStd);
   const raioSaneada = raioValid.length > 0
     ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length)
-    : Math.round(refCorteRaio);
+    : (hasVerifiedRadius ? Math.round(refCorteRaio) : 0);
   const raioExpurgados = raioVals.length - raioValid.length;
 
   // 3. Nível Rua: Saneamento interno do cluster da rua (NBR 14.653)
@@ -369,7 +372,7 @@ export function computeBidirectionalBenchmarks(
     }
     nivelUtilizado = 'Rua';
     hasMicroData = true;
-  } else if (hasVerifiedRadius && raioValid.length >= 3 && raioSaneada > 0) {
+  } else if (hasVerifiedRadius && raioValid.length >= 2 && raioSaneada > 0) {
     mediaCorteReal = raioSaneada;
     nivelUtilizado = 'Raio Entorno';
     hasMicroData = true;
@@ -401,7 +404,7 @@ export function computeBidirectionalBenchmarks(
     raio: {
       saneada: raioSaneada,
       total: raioVals.length,
-      validas: raioValid.length,
+      validas: hasVerifiedRadius ? raioValid.length : 0,
       expurgadas: raioExpurgados,
       prelim: Math.round(raioPrelim),
       refCorte: Math.round(refCorteRaio),

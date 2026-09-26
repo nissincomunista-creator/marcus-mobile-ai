@@ -44,7 +44,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   let status: DataQualityStatus;
   if (hasCriticalInconsistency) {
     status = 'Auditoria Incompleta';
-  } else if (auc.valuationConfidence === 'verified' && (auc.itbiStreetCount || 0) >= 1) {
+  } else if (auc.valuationConfidence === 'verified' && ((auc.itbiStreetCount || 0) >= 2 || (auc.itbiSurroundingCount || 0) >= 2 || (auc.valuationSampleCount || 0) >= 2)) {
     status = 'Auditado';
   } else {
     status = 'Estimado';
@@ -56,16 +56,16 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
     liquidityCeiling = auc.precisa_revisao ? 1 : 3;
   } else if (auc.valuationConfidence === 'projected') {
     liquidityCeiling = 4;
-  } else if ((auc.itbiStreetCount || 0) === 0) {
+  } else if ((auc.itbiStreetCount || 0) === 0 && (auc.itbiSurroundingCount || 0) < 2 && (auc.valuationSampleCount || 0) < 2) {
     liquidityCeiling = 4;
-  } else if ((auc.itbiStreetCount || 0) < 2) {
+  } else if ((auc.itbiStreetCount || 0) < 2 && (auc.itbiSurroundingCount || 0) < 2 && (auc.valuationSampleCount || 0) < 2) {
     liquidityCeiling = 6;
   }
 
   // Trava documental: se não tiver matrícula auditada, teto estrito 7
-  const hasAuditedMatricula = Boolean(auc.matriculaText && auc.matriculaText.trim().length >= 50);
-  if (!hasAuditedMatricula && liquidityCeiling > 7) {
-    liquidityCeiling = 7;
+  const hasAuditedMatricula = Boolean(auc.matriculaText && auc.matriculaText.trim().length >= 50 && /matr[ií]cula|registro de im[oó]veis|certid[aã]o|rgi/i.test(auc.matriculaText));
+  if (!hasAuditedMatricula && liquidityCeiling > 5) {
+    liquidityCeiling = 5;
   }
 
   // Trava Selo Destaque (Anti-Falso Positivo)
@@ -84,7 +84,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   const canBeFeatured = 
     status === 'Auditado' &&
     !auc.precisa_revisao &&
-    (auc.itbiStreetCount || 0) >= 2 &&
+    ((auc.itbiStreetCount || 0) >= 2 || (auc.itbiSurroundingCount || 0) >= 2 || (auc.valuationSampleCount || 0) >= 2) &&
     auc.valuationConfidence === 'verified' &&
     (auc.calculatedRoi || 0) >= 35 &&
     (auc.liquidityScore || 0) >= 7 &&

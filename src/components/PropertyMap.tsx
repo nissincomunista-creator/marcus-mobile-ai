@@ -1064,7 +1064,7 @@ useEffect(() => {
                         {/* Col 3: Liquidez (Do Lado Esquerdo do Flip Rápido) */}
                         <div className="relative group/liq bg-slate-950/40 p-1.5 rounded-lg border border-slate-800 flex flex-col justify-center cursor-help">
                           {(() => {
-                            const effScore = auc.liquidityScore || 5;
+                            const effScore = Math.min(auc.liquidityScore || 1, assessDataQuality(auc).liquidityCeiling);
                             const streetCount = auc.itbiStreetCount || 0;
                             const roi = auc.calculatedRoi || 0;
                             const profit = auc.calculatedProfit || 0;

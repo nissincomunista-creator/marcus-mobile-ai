@@ -933,7 +933,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         if (data.bedrooms) setBedrooms(data.bedrooms);
         if (data.parkingSpaces !== undefined) setParkingSpaces(data.parkingSpaces);
 
-        if (data.matriculaText) {
+        if (data.matriculaText && (!isCaixa || data.hasMatriculaPdf === true) && /(?:matr[ií]cula\s*(?:n[ºo°.]*)?\s*[:\-]?\s*\d|registro\s+de\s+im[oó]veis|certid[aã]o\s+(?:da|de)\s+matr[ií]cula|\brgi\b)/i.test(data.matriculaText) && /(?:matr[ií]cula\s*(?:n[ºo°.]*)?\s*[:\-]?\s*\d|registro\s+de\s+im[oó]veis|certid[aã]o\s+(?:da|de)\s+matr[ií]cula|\brgi\b)/i.test(data.matriculaText)) {
           setMatriculaText(data.matriculaText);
           const fname = `Matricula_${data.matriculaNumber || (isCaixa ? 'Caixa' : 'Oficial')}.pdf`;
           setUploadedFileName(fname);
@@ -1953,7 +1953,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Sincronização Pericial Exata: Se o motor bidirecional calculou o corte real, utiliza soberanamente
   const hasRealMicroData = useMemo(() => {
     if (bidiBenchmark) {
-      return bidiBenchmark.hasMicroData;
+      return bidiBenchmark.hasMicroData && bidiBenchmark.nivelUtilizado !== 'Bairro';
     }
     return exactBuildingTxs.length > 0 || (exactStreetStats !== null && exactStreetStats.count > 0);
   }, [bidiBenchmark, exactBuildingTxs.length, exactStreetStats]);
@@ -2035,13 +2035,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Persistência só ocorre por uma ação deliberada do analista.
   const applyAnalysisToCard = async () => {
     if (!prefillData?.id || !onUpdateProperty || isLoadingTransactions) return;
-    if (!hasRealMicroData || !bidiBenchmark || suggestedQuickSaleTotal <= 0) {
+    if (!hasRealMicroData || !bidiBenchmark || suggestedQuickSaleTotal <= 0 || (bidiBenchmark.predio.validas < 2 && bidiBenchmark.rua.validas < 2 && !(bidiBenchmark.nivelUtilizado === 'Raio Entorno' && bidiBenchmark.raio.validas >= 2))) {
       alert('Não há amostras ITBI locais suficientes para aplicar esta análise ao card.');
       return;
     }
 
     const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
     const verifiedStreetCount = bidiBenchmark.rua.validas || bidiBenchmark.predio.validas || 0;
+    const verifiedLocalCount = Math.max(verifiedStreetCount, bidiBenchmark.nivelUtilizado === 'Raio Entorno' ? bidiBenchmark.raio.validas : 0);
     const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
     await onUpdateProperty({
       id: prefillData.id,
@@ -2050,9 +2051,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       vendaBaixaPrice: suggestedQuickSaleTotal,
       vendaMediaPrice: suggestedQuickSaleTotal,
       estimatedValue: gabaritoTotal,
-      valuationConfidence: verifiedStreetCount > 0 ? 'verified' : 'projected',
+      valuationConfidence: verifiedLocalCount >= 2 ? 'verified' : 'projected',
       valuationBasis: `ITBI verificado - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
-      valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.raio.validas,
+      valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.nivelUtilizado === 'Raio Entorno' ? bidiBenchmark.raio.validas : 0,
       valuationRadiusKm: radiusKm,
       itbiStreetCount: verifiedStreetCount || undefined,
       itbiStreetAvgSqm: verifiedStreetAvgSqm || undefined,

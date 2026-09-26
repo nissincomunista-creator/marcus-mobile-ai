@@ -534,46 +534,43 @@ export default function Dashboard({
       }
 
       if (activeStrategiesCount > 0) {
-        if (activeStrategiesCount === 1) {
-          if (strategyFilters.liquidity) return (b.liquidityScore || 0) - (a.liquidityScore || 0);
-          if (strategyFilters.roi) return (b.calculatedRoi || 0) - (a.calculatedRoi || 0);
-          if (strategyFilters.profit) return (b.calculatedProfit || 0) - (a.calculatedProfit || 0);
-          if (strategyFilters.price) return a.auctionPrice - b.auctionPrice;
-        }
-
-        // Se ROI e Liquidez estiverem ativos juntos: combinação direta consagrada
-        if (strategyFilters.roi && strategyFilters.liquidity && activeStrategiesCount === 2) {
-          const scoreA = (a.calculatedRoi || 0) * Math.pow(Math.max(1, a.liquidityScore || 1), 1.5);
-          const scoreB = (b.calculatedRoi || 0) * Math.pow(Math.max(1, b.liquidityScore || 1), 1.5);
-          return scoreB - scoreA;
-        }
-
-        // 2 ou mais selecionadas: score normalizado multi-critério equilibrado (0-100 pts por critério)
+        const boundedLiquidity = (property: AuctionProperty) => Math.min(
+          property.liquidityScore || 1,
+          assessDataQuality(property).liquidityCeiling
+        );
         let scoreA = 0;
         let scoreB = 0;
+        let criteria = 0;
         if (strategyFilters.roi) {
-          scoreA += Math.min(100, Math.max(0, a.calculatedRoi || 0));
-          scoreB += Math.min(100, Math.max(0, b.calculatedRoi || 0));
+          scoreA += Math.max(-100, Math.min(100, a.calculatedRoi || 0));
+          scoreB += Math.max(-100, Math.min(100, b.calculatedRoi || 0));
+          criteria++;
         }
         if (strategyFilters.liquidity) {
-          scoreA += Math.min(100, Math.max(0, (a.liquidityScore || 0) * 10));
-          scoreB += Math.min(100, Math.max(0, (b.liquidityScore || 0) * 10));
+          scoreA += boundedLiquidity(a) * 10;
+          scoreB += boundedLiquidity(b) * 10;
+          criteria++;
         }
         if (strategyFilters.profit) {
-          scoreA += Math.min(100, Math.max(0, (a.calculatedProfit || 0) / 2500));
-          scoreB += Math.min(100, Math.max(0, (b.calculatedProfit || 0) / 2500));
+          scoreA += Math.max(-100, Math.min(100, (a.calculatedProfit || 0) / 2500));
+          scoreB += Math.max(-100, Math.min(100, (b.calculatedProfit || 0) / 2500));
+          criteria++;
         }
         if (strategyFilters.price) {
-          scoreA += Math.min(100, Math.max(0, (350000 - a.auctionPrice) / 3500));
-          scoreB += Math.min(100, Math.max(0, (350000 - b.auctionPrice) / 3500));
+          const maxPrice = Math.max(350000, a.auctionPrice, b.auctionPrice, 1);
+          scoreA += Math.max(0, 100 * (1 - a.auctionPrice / maxPrice));
+          scoreB += Math.max(0, 100 * (1 - b.auctionPrice / maxPrice));
+          criteria++;
         }
-        return scoreB - scoreA;
+        const weightedA = scoreA / Math.max(1, criteria);
+        const weightedB = scoreB / Math.max(1, criteria);
+        if (weightedA !== weightedB) return weightedB - weightedA;
       }
 
       const activeSortKey = sortBy || 'roi';
       if (activeSortKey === 'profit') return (b.calculatedProfit || 0) - (a.calculatedProfit || 0);
       if (activeSortKey === 'roi') return (b.calculatedRoi || 0) - (a.calculatedRoi || 0);
-      if (activeSortKey === 'liquidity') return (b.liquidityScore || 0) - (a.liquidityScore || 0);
+      if (activeSortKey === 'liquidity') return Math.min(b.liquidityScore || 1, assessDataQuality(b).liquidityCeiling) - Math.min(a.liquidityScore || 1, assessDataQuality(a).liquidityCeiling);
       if (activeSortKey === 'price_asc') return a.auctionPrice - b.auctionPrice;
       if (activeSortKey === 'price_desc') return b.auctionPrice - a.auctionPrice;
       if (activeSortKey === 'closing_date') {
@@ -1740,13 +1737,13 @@ export default function Dashboard({
                               <Info className="w-2.5 h-2.5 text-slate-500" />
                             </div>
                             <span className="text-xs sm:text-sm font-black font-mono text-slate-200 mt-0.5">
-                              {auc.liquidityScore || 5}/10
+                              {Math.min(auc.liquidityScore || 1, assessDataQuality(auc).liquidityCeiling)}/10
                             </span>
 
                             {/* Tooltip de Liquidez */}
                             <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
                               <div className="text-[11px] font-bold text-slate-200 flex items-center gap-1 mb-1">
-                                <span>📊 Critérios de Liquidez ({auc.liquidityScore || 5}/10)</span>
+                                <span>📊 Critérios de Liquidez ({Math.min(auc.liquidityScore || 1, assessDataQuality(auc).liquidityCeiling)}/10)</span>
                               </div>
                               <p className="text-[10px] text-slate-300 leading-relaxed">
                                 Nota calculada pela velocidade de escrituração da via, atratividade da margem e facilidade de desocupação do lote.

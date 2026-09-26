@@ -288,7 +288,7 @@ export default function CapitalInvestmentMatcher({
       if (sortBy === 'profit') return (b.valuation.netProfit || 0) - (a.valuation.netProfit || 0);
       if (sortBy === 'yield') return (b.valuation.yieldPct || 0) - (a.valuation.yieldPct || 0);
       if (sortBy === 'outlay') return (a.actualOutlay || 0) - (b.actualOutlay || 0);
-      if (sortBy === 'liquidity') return ((b.auction?.liquidityScore || 5) - (a.auction?.liquidityScore || 5));
+      if (sortBy === 'liquidity') return ((b.auction?.liquidityScore || 1) - (a.auction?.liquidityScore || 1));
       return 0;
     });
   }, [safeAuctions, availableCapital, purchaseMode, minLiquidity, selectedState, selectedCity, selectedNeighborhood, selectedPropertyType, sortBy]);

@@ -4089,8 +4089,8 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   let effectiveRadiusKm = radiusKm || 0.5;
   let radiusLabel = `Raio imediato ~${effectiveRadiusKm.toFixed(1)}km`;
   let fallbackLevel = "0.5km";
-  const hasVerifiedRadius = geolocatedSurrounding.length > 0;
-  if (hasVerifiedRadius) {
+  const hasVerifiedRadius = geolocatedSurrounding.length >= 2;
+  if (geolocatedSurrounding.length > 0) {
     const tierInitial = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= (radiusKm || 0.5));
     if (tierInitial.length >= 2) {
       raioTxs = tierInitial;
@@ -4119,20 +4119,21 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
         }
       }
     }
+    raioTxs = geolocatedSurrounding.filter((t) => Number(t.distanceKm) <= (radiusKm || 0.5));
   } else {
     raioTxs = surroundingPool.length > 0 ? surroundingPool : poolTxs;
     radiusLabel = "Mediana do bairro (sem geolocaliza\xE7\xE3o exata)";
     fallbackLevel = "bairro";
   }
   const raioVals = raioTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
-  const raioPrelim = raioVals.length > 0 ? raioVals.reduce((a, b) => a + b, 0) / raioVals.length : bSaneada;
+  const raioPrelim = raioVals.length > 0 ? raioVals.reduce((a, b) => a + b, 0) / raioVals.length : hasVerifiedRadius ? bSaneada : 0;
   const raioVariance = raioVals.length > 0 ? raioVals.reduce((acc, value) => acc + Math.pow(value - raioPrelim, 2), 0) / raioVals.length : 0;
   const raioStd = Math.sqrt(raioVariance);
   const refCorteRaio = Math.round(raioPrelim || bSaneada);
   const raioCorteMin = raioStd > 0 ? Math.round(raioPrelim - 2 * raioStd) : Math.round(raioPrelim);
   const raioCorteMax = raioStd > 0 ? Math.round(raioPrelim + 2 * raioStd) : Math.round(raioPrelim);
   const raioValid = raioVals.filter((v) => raioStd === 0 || Math.abs(v - raioPrelim) <= 2 * raioStd);
-  const raioSaneada = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : Math.round(refCorteRaio);
+  const raioSaneada = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : hasVerifiedRadius ? Math.round(refCorteRaio) : 0;
   const raioExpurgados = raioVals.length - raioValid.length;
   const ruaVals = ruaTxs.map((t) => t.unitValueSqm).filter((v) => typeof v === "number" && v >= 800 && v <= 8e4);
   const ruaPrelim = ruaVals.length > 0 ? Math.round(ruaVals.reduce((a, b) => a + b, 0) / ruaVals.length) : 0;
@@ -4260,7 +4261,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     }
     nivelUtilizado = "Rua";
     hasMicroData = true;
-  } else if (hasVerifiedRadius && raioValid.length >= 3 && raioSaneada > 0) {
+  } else if (hasVerifiedRadius && raioValid.length >= 2 && raioSaneada > 0) {
     mediaCorteReal = raioSaneada;
     nivelUtilizado = "Raio Entorno";
     hasMicroData = true;
@@ -4287,7 +4288,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     raio: {
       saneada: raioSaneada,
       total: raioVals.length,
-      validas: raioValid.length,
+      validas: hasVerifiedRadius ? raioValid.length : 0,
       expurgadas: raioExpurgados,
       prelim: Math.round(raioPrelim),
       refCorte: Math.round(refCorteRaio),
@@ -6186,19 +6187,22 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     else if (auc.calculatedProfit < 0) score -= 1.5;
   }
   if (streetTxs <= 1) score -= 0.5;
+  const verifiedComparableCount = Math.max(streetTxs, auc.itbiSurroundingCount || 0, auc.valuationSampleCount || 0);
   if (auc.valuationConfidence === "projected") {
     score = Math.min(score - 1.5, 4);
   } else if (auc.valuationConfidence !== "verified") {
     score = Math.min(score - 2, 2);
   }
-  if (streetTxs === 0) {
+  if (verifiedComparableCount === 0) {
     score = Math.min(score, 4);
-  } else if (streetTxs < 2) {
+  } else if (verifiedComparableCount < 2) {
     score = Math.min(score, 6);
   }
-  const hasAuditedMatricula = Boolean(auc.matriculaText && auc.matriculaText.trim().length >= 50);
+  const hasAuditedMatricula = Boolean(
+    auc.matriculaText && auc.matriculaText.trim().length >= 50 && /matr[ií]cula|registro de im[oó]veis|certid[aã]o|rgi/i.test(auc.matriculaText)
+  );
   if (!hasAuditedMatricula) {
-    score = Math.min(score - 1.5, 7);
+    score = Math.min(score, 5);
   }
   if (commRisk.isRisk) {
     score = Math.min(score, 2);
@@ -6817,25 +6821,24 @@ app.put("/api/auctions/:id", authMiddleware, (req, res) => {
   if (merged.city !== void 0) merged.city = merged.city === null || merged.city === "" ? void 0 : String(merged.city).trim();
   const recalculated = recalculateAuction(merged, store.itbiTransactions);
   if (["verified", "projected"].includes(updatedFields.valuationConfidence) && !isGenericStreet(merged.address) && Number(updatedFields.vendaBaixaPrice) > 0 && Number(updatedFields.estimatedValue) > 0) {
+    const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || 0;
+    const calculatorRadiusCount = Number(updatedFields.itbiSurroundingCount) || 0;
+    const calculatorBuildingCount = Number(updatedFields.valuationSampleCount) || 0;
+    const hasVerifiedLocalComparables = calculatorBuildingCount >= 2 || calculatorStreetCount >= 2 || calculatorRadiusCount >= 2;
     recalculated.vendaBaixaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.vendaMediaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.estimatedValue = Number(updatedFields.estimatedValue);
-    const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || Number(updatedFields.valuationSampleCount) || 0;
     const calculatorStreetAvgSqm = Number(updatedFields.itbiStreetAvgSqm) || 0;
     if (calculatorStreetCount > 0) recalculated.itbiStreetCount = calculatorStreetCount;
     if (calculatorStreetAvgSqm > 0) recalculated.itbiStreetAvgSqm = calculatorStreetAvgSqm;
-    recalculated.valuationConfidence = updatedFields.valuationConfidence === "verified" && calculatorStreetCount > 0 ? "verified" : "projected";
-    if (recalculated.valuationConfidence === "verified") {
-      recalculated.liquidityScore = Math.max(recalculated.liquidityScore || 1, calculatorStreetCount >= 3 ? 6 : 5);
-    } else {
-      recalculated.liquidityScore = Math.min(4, recalculated.liquidityScore || 1);
-    }
+    recalculated.valuationConfidence = updatedFields.valuationConfidence === "verified" && hasVerifiedLocalComparables ? "verified" : "projected";
+    recalculated.liquidityScore = hasVerifiedLocalComparables ? Math.min(recalculated.liquidityScore || 1, calculatorBuildingCount >= 2 || calculatorStreetCount >= 2 ? 6 : 5) : Math.min(3, recalculated.liquidityScore || 1);
     recalculated.hasMicroBenchmark = true;
     recalculated.valuationBasis = String(updatedFields.valuationBasis || "ITBI verificado pela calculadora");
     recalculated.valuationSampleCount = Number(updatedFields.valuationSampleCount) || void 0;
     recalculated.valuationRadiusKm = Number(updatedFields.valuationRadiusKm) || 0.5;
     recalculated.itbiSurroundingAvgSqm = Number(updatedFields.itbiSurroundingAvgSqm) || void 0;
-    recalculated.itbiSurroundingCount = Number(updatedFields.itbiSurroundingCount) || void 0;
+    recalculated.itbiSurroundingCount = calculatorRadiusCount || void 0;
     recalculated.streetRadiusDeviationPct = Number(updatedFields.streetRadiusDeviationPct) || void 0;
     recalculated.streetRadiusCalibrated = Boolean(updatedFields.streetRadiusCalibrated);
     const exitPrice = recalculated.vendaBaixaPrice;
@@ -8588,7 +8591,8 @@ app.post("/api/caixa/fetch-documentos", async (req, res) => {
             const letters = (rawText.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
             const ratio = rawText.length > 0 ? letters / rawText.length : 0;
             const hasLegalKeywords = /\b(matricula|matrícula|imovel|imóvel|apartamento|casa|terreno|edital|registro|cartorio|cartório|caixa|leilao|leilão|comarca|oficio|ofício|devedor|alienacao|alienação|averbacao|averbação|penhora|hipoteca|livro|certidao|certidão|quitacao|quitação|rgi|lote)\b/i.test(rawText);
-            if (rawText.length > 50 && ratio >= 0.4 && hasLegalKeywords) {
+            const hasRegistryKeywords = /(?:matr[ií]cula\s*(?:n[ºo°.]*)?\s*[:\-]?\s*\d|registro\s+de\s+im[oó]veis|certid[aã]o\s+(?:da|de)\s+matr[ií]cula|\brgi\b)/i.test(rawText);
+            if (rawText.length > 50 && ratio >= 0.4 && hasLegalKeywords && hasRegistryKeywords) {
               matriculaText = rawText;
             } else {
               console.warn("[Caixa Docs] Texto da matr\xEDcula rejeitado por conter glifos/codifica\xE7\xE3o corrompida.");
@@ -8706,8 +8710,8 @@ ${editalText}` : editalText;
       success: true,
       matriculaNumber: pageData.matriculaNumber ? `Matr\xEDcula n\xBA ${pageData.matriculaNumber}` : "",
       registryOffice: regOffice,
-      matriculaText: matriculaText || (pageData.descricao ? `Observa\xE7\xF5es Registrais / Gravames da Descri\xE7\xE3o Oficial Caixa:
-${pageData.descricao}` : ""),
+      // Never present the catalogue description as a property registry certificate.
+      matriculaText,
       hasMatriculaPdf,
       editalNumber: pageData.editalNumber ? `${pageData.editalNumber}${pageData.itemNumber ? ` (Item ${pageData.itemNumber})` : ""}` : "",
       leiloeiro: pageData.leiloeiro,

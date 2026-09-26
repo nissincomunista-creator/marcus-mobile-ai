@@ -1951,6 +1951,7 @@ function recalculateAuctionWithIndex(
   if (streetTxs <= 1) score -= 0.5;
 
   // Fonte insuficiente não pode promover um imóvel ao topo do garimpo.
+  const verifiedComparableCount = Math.max(streetTxs, auc.itbiSurroundingCount || 0, auc.valuationSampleCount || 0);
   if (auc.valuationConfidence === 'projected') {
     score = Math.min(score - 1.5, 4);
   } else if (auc.valuationConfidence !== 'verified') {
@@ -1960,17 +1961,20 @@ function recalculateAuctionWithIndex(
   // Trava de confiança local: giro do bairro ou comparáveis apenas no raio
   // não comprovam liquidez na via do imóvel. A faixa alta exige pelo menos
   // três escrituras válidas na rua/prédio; uma amostra isolada não basta.
-  if (streetTxs === 0) {
+  if (verifiedComparableCount === 0) {
     score = Math.min(score, 4);
-  } else if (streetTxs < 2) {
+  } else if (verifiedComparableCount < 2) {
     score = Math.min(score, 6);
   }
 
   // Trava Documental Anti-Falso Positivo:
   // Imóvel sem certidão de matrícula auditada não pode receber nota 8, 9 ou 10
-  const hasAuditedMatricula = Boolean(auc.matriculaText && auc.matriculaText.trim().length >= 50);
+  const hasAuditedMatricula = Boolean(
+    auc.matriculaText && auc.matriculaText.trim().length >= 50 &&
+    /matr[ií]cula|registro de im[oó]veis|certid[aã]o|rgi/i.test(auc.matriculaText)
+  );
   if (!hasAuditedMatricula) {
-    score = Math.min(score - 1.5, 7);
+    score = Math.min(score, 5);
   }
 
   // 11. Se for comunidade / área de risco: teto estrito 2/10
@@ -2686,27 +2690,27 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
   // store recalculator. Preserve that audited result so card and simulator are
   // exactly equal, then recompute profit from the same exit value.
   if (['verified', 'projected'].includes(updatedFields.valuationConfidence) && !isGenericStreet(merged.address) && Number(updatedFields.vendaBaixaPrice) > 0 && Number(updatedFields.estimatedValue) > 0) {
+    const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || 0;
+    const calculatorRadiusCount = Number(updatedFields.itbiSurroundingCount) || 0;
+    const calculatorBuildingCount = Number(updatedFields.valuationSampleCount) || 0;
+    const hasVerifiedLocalComparables = calculatorBuildingCount >= 2 || calculatorStreetCount >= 2 || calculatorRadiusCount >= 2;
     recalculated.vendaBaixaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.vendaMediaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.estimatedValue = Number(updatedFields.estimatedValue);
-    const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || Number(updatedFields.valuationSampleCount) || 0;
     const calculatorStreetAvgSqm = Number(updatedFields.itbiStreetAvgSqm) || 0;
     if (calculatorStreetCount > 0) recalculated.itbiStreetCount = calculatorStreetCount;
     if (calculatorStreetAvgSqm > 0) recalculated.itbiStreetAvgSqm = calculatorStreetAvgSqm;
-    recalculated.valuationConfidence = updatedFields.valuationConfidence === 'verified' && calculatorStreetCount > 0 ? 'verified' : 'projected';
-    if (recalculated.valuationConfidence === 'verified') {
-      // A calculadora validou as escrituras por geolocalização; não rebaixe
-      // esse imóvel só porque a chave em lote não encontrou a grafia da via.
-      recalculated.liquidityScore = Math.max(recalculated.liquidityScore || 1, calculatorStreetCount >= 3 ? 6 : 5);
-    } else {
-      recalculated.liquidityScore = Math.min(4, recalculated.liquidityScore || 1);
-    }
+    recalculated.valuationConfidence = updatedFields.valuationConfidence === 'verified' && hasVerifiedLocalComparables ? 'verified' : 'projected';
+    // A nota não sobe por amostras de bairro, um único comparável ou campos enviados pelo browser.
+    recalculated.liquidityScore = hasVerifiedLocalComparables
+      ? Math.min(recalculated.liquidityScore || 1, calculatorBuildingCount >= 2 || calculatorStreetCount >= 2 ? 6 : 5)
+      : Math.min(3, recalculated.liquidityScore || 1);
     recalculated.hasMicroBenchmark = true;
     recalculated.valuationBasis = String(updatedFields.valuationBasis || 'ITBI verificado pela calculadora');
     recalculated.valuationSampleCount = Number(updatedFields.valuationSampleCount) || undefined;
     recalculated.valuationRadiusKm = Number(updatedFields.valuationRadiusKm) || 0.5;
     recalculated.itbiSurroundingAvgSqm = Number(updatedFields.itbiSurroundingAvgSqm) || undefined;
-    recalculated.itbiSurroundingCount = Number(updatedFields.itbiSurroundingCount) || undefined;
+    recalculated.itbiSurroundingCount = calculatorRadiusCount || undefined;
     recalculated.streetRadiusDeviationPct = Number(updatedFields.streetRadiusDeviationPct) || undefined;
     recalculated.streetRadiusCalibrated = Boolean(updatedFields.streetRadiusCalibrated);
 
@@ -4784,7 +4788,8 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
             const letters = (rawText.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
             const ratio = rawText.length > 0 ? (letters / rawText.length) : 0;
             const hasLegalKeywords = /\b(matricula|matrícula|imovel|imóvel|apartamento|casa|terreno|edital|registro|cartorio|cartório|caixa|leilao|leilão|comarca|oficio|ofício|devedor|alienacao|alienação|averbacao|averbação|penhora|hipoteca|livro|certidao|certidão|quitacao|quitação|rgi|lote)\b/i.test(rawText);
-            if (rawText.length > 50 && ratio >= 0.40 && hasLegalKeywords) {
+            const hasRegistryKeywords = /(?:matr[ií]cula\s*(?:n[ºo°.]*)?\s*[:\-]?\s*\d|registro\s+de\s+im[oó]veis|certid[aã]o\s+(?:da|de)\s+matr[ií]cula|\brgi\b)/i.test(rawText);
+            if (rawText.length > 50 && ratio >= 0.40 && hasLegalKeywords && hasRegistryKeywords) {
               matriculaText = rawText;
             } else {
               console.warn('[Caixa Docs] Texto da matrícula rejeitado por conter glifos/codificação corrompida.');
@@ -4915,7 +4920,8 @@ app.post('/api/caixa/fetch-documentos', async (req, res) => {
       success: true,
       matriculaNumber: pageData.matriculaNumber ? `Matrícula nº ${pageData.matriculaNumber}` : '',
       registryOffice: regOffice,
-      matriculaText: matriculaText || (pageData.descricao ? `Observações Registrais / Gravames da Descrição Oficial Caixa:\n${pageData.descricao}` : ''),
+      // Never present the catalogue description as a property registry certificate.
+      matriculaText,
       hasMatriculaPdf,
       editalNumber: pageData.editalNumber ? `${pageData.editalNumber}${pageData.itemNumber ? ` (Item ${pageData.itemNumber})` : ''}` : '',
       leiloeiro: pageData.leiloeiro,
