@@ -46,7 +46,10 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import ExecutiveReportModal, { ExecutiveReportData } from './ExecutiveReportModal.tsx';
 import { ItbiTransaction, SavedMarketAnalysis, PropertyType, MatriculaAnalysisReport, MatriculaGravame, MatriculaAuditData, EditalAuditData } from '../types.ts';
-import { computeBidirectionalBenchmarks, BidirectionalBenchmarkResult } from '../utils/bidirectionalBenchmark.ts';
+import { computeBidirectionalBenchmarks, DEFAULT_BENCHMARK_SIZE_MODE, BidirectionalBenchmarkResult, getTxIntegralValue, filterByIQR, computeMedian } from '../utils/bidirectionalBenchmark.ts';
+import { computeFourTierValuation } from '../utils/fourTierValuation.ts';
+import { JuizDeForaAreaModel } from '../utils/juizDeForaAreaModel.ts';
+import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from '../utils/quickFlipPricing.ts';
 
 interface ItbiStats {
   state: string;
@@ -90,6 +93,7 @@ export interface PrefilledCalculatorData {
   sizeSqm?: number;
   bedrooms?: number;
   parkingSpaces?: number;
+  auctionPrice?: number;
   purchasePrice?: number;
   acquisitionRule?: 'leilao' | 'caixa';
   estimatedRepair?: number;
@@ -356,6 +360,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [parkingSpaces, setParkingSpaces] = useState(1);
   const [customValue, setCustomValue] = useState<number | ''>('');
 
+  const isJuizDeFora = useMemo(() => {
+    const c = (selectedCity || prefillData?.city || '').toLowerCase();
+    const st = (selectedState || prefillData?.state || '').toUpperCase();
+    return c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('juiz de fora') && st === 'MG';
+  }, [selectedCity, prefillData?.city, selectedState, prefillData?.state]);
+
   // Matrícula & Due Diligence States
   // Matrícula & Due Diligence States
   const [matriculaNumber, setMatriculaNumber] = useState<string>('');
@@ -363,6 +373,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [matriculaText, setMatriculaText] = useState<string>('');
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
   const [isAuditingMatricula, setIsAuditingMatricula] = useState<boolean>(false);
+  const [initialSourceDocsCheckComplete, setInitialSourceDocsCheckComplete] = useState(false);
   const [matriculaAuditResult, setMatriculaAuditResult] = useState<MatriculaAuditData | null>(null);
 
   // Edital do Leilão States
@@ -418,7 +429,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Sample and Area Size Filter Mode (Similar ±33% vs All)
   const [manualBuildingYear, setManualBuildingYear] = useState<number | null>(null);
-  const [txSizeFilter, setTxSizeFilter] = useState<'similar' | 'all'>('similar');
+  const [txSizeFilter, setTxSizeFilter] = useState<'similar' | 'all'>(DEFAULT_BENCHMARK_SIZE_MODE);
 
   // Acquisition Mode & Costs State (Leilão Judicial vs Leilão Extrajudicial vs Venda Direta Caixa)
   const [acquisitionMode, setAcquisitionMode] = useState<'judicial' | 'extrajudicial' | 'caixa'>('judicial');
@@ -461,6 +472,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   const prefillInitializedRef = useRef<boolean>(false);
   const hasAutoExecutedAnalysisRef = useRef<boolean>(false);
+  const autoSyncedFlipPropertyRef = useRef<string | null>(null);
 
   // Sync prefillData when provided from external property cards (Run ONCE on initialization)
   useEffect(() => {
@@ -495,11 +507,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       setArrematePrice(prefillData.purchasePrice);
       setArremateInputStr(prefillData.purchasePrice.toLocaleString('pt-BR'));
     }
-    // Acquisition mode: Caixa properties default to 'caixa' (Venda Direta / Leilão Caixa)
+    // Acquisition mode: Caixa properties default to 'caixa' (Venda Direta) or 'extrajudicial' if Licitação Aberta / SFI / Leilão
     const isCaixa = prefillData.acquisitionRule === 'caixa' || 
                     prefillData.auctionLink?.includes('caixa.gov.br') || 
                     (prefillData.id && prefillData.id.includes('caixa'));
-    if (isCaixa) {
+    const modalityText = `${prefillData.saleMode || ''} ${prefillData.title || ''} ${prefillData.description || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const isCaixaWithAuctioneer = isCaixa && /licitacao\s*aberta|sfi|leilao/.test(modalityText);
+
+    if (isCaixaWithAuctioneer) {
+      setAcquisitionMode('extrajudicial');
+    } else if (isCaixa) {
       setAcquisitionMode('caixa');
     } else if (prefillData.acquisitionRule) {
       setAcquisitionMode(prefillData.acquisitionRule === 'caixa' ? 'caixa' : 'judicial');
@@ -578,20 +595,24 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
     // Matrícula: NUNCA analisar texto de anúncio como se fosse matrícula!
     // Apenas analisa se houver texto autêntico extraído do PDF da matrícula
-    if (prefillData.matriculaText && prefillData.matriculaText.trim().length > 50) {
-      setMatriculaText(prefillData.matriculaText);
-      executeRealMatriculaAnalysis(prefillData.matriculaText, `Matricula_${prefillData.id || 'Imovel'}.pdf`);
+    const hasPrefilledRegistryText = !!prefillData.matriculaText && prefillData.matriculaText.trim().length > 50;
+    if (hasPrefilledRegistryText) {
+      setMatriculaText(prefillData.matriculaText!);
+      executeRealMatriculaAnalysis(prefillData.matriculaText!, `Matricula_${prefillData.id || 'Imovel'}.pdf`);
     } else {
       setMatriculaText('');
       setDueDiligenceNotice('Matrícula oficial em PDF ainda não anexada. Clique no botão abaixo para buscar nos documentos do leiloeiro ou faça o upload da certidão.');
     }
 
-    // Auto-fetch authentic Matrícula & Edital PDF for any property with auctionLink
+    // Wait for the automatic registry-document lookup before syncing the
+    // calculator's final 60-day flip value back to the property card.
     let timerId: any = null;
-    if (prefillData.auctionLink && (!prefillData.matriculaText || prefillData.matriculaText.trim().length < 50)) {
+    if (prefillData.auctionLink && !hasPrefilledRegistryText) {
       timerId = setTimeout(() => {
-        handleFetchCaixaDocs();
+        void handleFetchCaixaDocs().finally(() => setInitialSourceDocsCheckComplete(true));
       }, 800);
+    } else {
+      setInitialSourceDocsCheckComplete(true);
     }
     return () => {
       if (timerId) clearTimeout(timerId);
@@ -998,6 +1019,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [streetsList, setStreetsList] = useState<any[]>([]);
   const [isLoadingStreets, setIsLoadingStreets] = useState(false);
   const [rawTransactions, setRawTransactions] = useState<ItbiTransaction[]>([]);
+  const [radiusTransactions, setRadiusTransactions] = useState<ItbiTransaction[]>([]);
+  const [radiusAnchorPrecision, setRadiusAnchorPrecision] = useState<'official_address' | 'geocoded_number' | 'missing'>('missing');
+  const [jfAreaModel, setJfAreaModel] = useState<JuizDeForaAreaModel | null>(null);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   
   // Search and filter inside raw transactions
@@ -1042,6 +1066,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   useEffect(() => {
     if (!selectedNeighborhood) {
       setRawTransactions([]);
+      setRadiusTransactions([]);
+      setRadiusAnchorPrecision('missing');
+      setJfAreaModel(null);
       return;
     }
 
@@ -1051,21 +1078,39 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       setIsLoadingTransactions(true);
       try {
         let url = `/api/itbi/transactions?state=${selectedState}&city=${selectedCity}&neighborhood=${encodeURIComponent(selectedNeighborhood)}`;
+        if (prefillData?.id) {
+          url += `&propertyId=${encodeURIComponent(prefillData.id)}`;
+        }
         if (propertyType) {
           url += `&propertyType=${encodeURIComponent(propertyType)}`;
         }
         if (selectedStreet) {
-          // Hydrate the maximum supported radius once; changing the selector is
-          // then an immediate client-side filter instead of another network crawl.
-          url += `&targetStreet=${encodeURIComponent(selectedStreet)}&radiusKm=2.0`;
+          const targetNumber = String(streetNumber || '').match(/\d+/)?.[0] || '';
+          url += `&targetStreet=${encodeURIComponent(selectedStreet)}&targetNumber=${encodeURIComponent(targetNumber)}&radiusKm=${radiusKm}&includeRadius=true`;
         }
         
         const res = await fetch(url, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           if (!controller.signal.aborted) {
-            setRawTransactions(Array.isArray(data) ? data : []);
+            if (Array.isArray(data)) {
+              setRawTransactions(data);
+              setRadiusTransactions([]);
+              setRadiusAnchorPrecision('missing');
+            } else {
+              setRawTransactions(Array.isArray(data.transactions) ? data.transactions : []);
+              setRadiusTransactions(Array.isArray(data.radiusTransactions) ? data.radiusTransactions : []);
+              setRadiusAnchorPrecision(data.radiusAnchorPrecision || 'missing');
+            }
           }
+        }
+        if (isJuizDeFora) {
+          const modelRes = await fetch(`/api/itbi/jf-area-model?propertyType=${encodeURIComponent(propertyType || 'Apartamento')}`, { signal: controller.signal });
+          if (modelRes.ok && !controller.signal.aborted) {
+            setJfAreaModel(await modelRes.json());
+          }
+        } else if (!controller.signal.aborted) {
+          setJfAreaModel(null);
         }
       } catch (e) {
         if (!controller.signal.aborted) {
@@ -1081,7 +1126,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     loadTransactions();
     setAiReport(''); // Reset AI report on filter change
     return () => controller.abort();
-  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet]);
+  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet, radiusKm, isJuizDeFora, prefillData?.id]);
 
   const exactStreetTxs = useMemo(() => {
     if (!selectedStreet || rawTransactions.length === 0) return [];
@@ -1100,82 +1145,100 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     });
   }, [rawTransactions, selectedStreet]);
 
-  // Segment raw transactions: Ruas ao Entorno com fallback progressivo (0.5km -> 1.0km -> 2.0km -> Bairro)
+  // Item 3: Ruas do Entorno com Expansão Dinâmica de Raio (500m -> 1000m -> 2000m se < 5 tx)
+  // Exclui estritamente o logradouro do imóvel
   const nearbyStreetData = useMemo(() => {
     if (rawTransactions.length === 0) {
-      return { txs: [], effectiveRadiusKm: 0.5, radiusLabel: 'Sem amostras no entorno', fallbackLevel: '0.5km' as const };
+      return { 
+        txs: [], 
+        effectiveRadiusKm: 0.5, 
+        radiusLabel: 'Sem amostras no entorno', 
+        item3Label: '3. Ruas do Entorno (0.5 km) - 0 tx',
+        card3Title: '3. Ruas do Entorno (0.5 km)',
+        fallbackLevel: '0.5km' as const 
+      };
     }
     if (!selectedStreet) {
-      return { txs: rawTransactions, effectiveRadiusKm: radiusKm, radiusLabel: `Ruas do Entorno (~${radiusKm}km)`, fallbackLevel: '0.5km' as const };
+      return { 
+        txs: rawTransactions, 
+        effectiveRadiusKm: radiusKm, 
+        radiusLabel: `Ruas do Entorno (~${radiusKm}km)`, 
+        item3Label: `3. Ruas do Entorno (~${radiusKm}km) - ${rawTransactions.length} tx`,
+        card3Title: `3. Ruas do Entorno (~${radiusKm}km)`,
+        fallbackLevel: '0.5km' as const 
+      };
     }
-    const streetClean = cleanStreetName(selectedStreet);
-    const streetCore = getCoreStreetName(selectedStreet);
-    const streetPhon = phoneticStreet(selectedStreet);
 
-    const candidates = rawTransactions.filter(tx => {
+    const isTargetStreet = (txStreet?: string) => {
+      if (!txStreet || !selectedStreet) return false;
+      const sClean = cleanStreetName(selectedStreet);
+      const sCore = getCoreStreetName(selectedStreet);
+      const tClean = cleanStreetName(txStreet);
+      const tCore = getCoreStreetName(txStreet);
+      return tClean === sClean || 
+             (sCore && tCore === sCore) || 
+             stringSimilarity(tClean, sClean) >= 0.75;
+    };
+
+    // Item 3 exclui estritamente o logradouro do imóvel
+    const candidates = radiusTransactions.filter(tx => {
       if (!tx.street) return false;
-      const tClean = cleanStreetName(tx.street);
-      const tCore = getCoreStreetName(tx.street);
-      const tPhon = phoneticStreet(tx.street);
-      // Pula a mesma rua (pois já é contabilizada no Quadro 2: Mesma Rua)
-      if (tClean === streetClean || 
-          (streetCore && tCore === streetCore) || 
-          (streetPhon && tPhon === streetPhon) || 
-          stringSimilarity(tClean, streetClean) >= 0.75) return false;
-      return true;
+      if (isTargetStreet(tx.street)) return false;
+      return hasValidDistance(tx);
     });
 
-    const geolocated = candidates.filter(tx => hasValidDistance(tx));
-
-    if (geolocated.length > 0) {
-      // 1. Tenta raio estrito inicial (0.5km)
-      const tier500 = geolocated.filter(t => Number(t.distanceKm) <= (radiusKm || 0.5));
-      if (tier500.length >= 2) {
-        return {
-          txs: tier500,
-          effectiveRadiusKm: radiusKm || 0.5,
-          radiusLabel: `Raio imediato ~${(radiusKm || 0.5).toFixed(1)}km`,
-          fallbackLevel: '0.5km' as const
-        };
-      }
-      // 2. Expansão para 1.0km
-      const tier1000 = geolocated.filter(t => Number(t.distanceKm) <= 1.0);
-      if (tier1000.length >= 2) {
-        return {
-          txs: tier1000,
-          effectiveRadiusKm: 1.0,
-          radiusLabel: 'Raio expandido para 1.0km por baixa amostragem local',
-          fallbackLevel: '1.0km' as const
-        };
-      }
-      // 3. Expansão para 2.0km
-      const tier2000 = geolocated.filter(t => Number(t.distanceKm) <= 2.0);
-      if (tier2000.length >= 2) {
-        return {
-          txs: tier2000,
-          effectiveRadiusKm: 2.0,
-          radiusLabel: 'Raio expandido para 2.0km por baixa amostragem local',
-          fallbackLevel: '2.0km' as const
-        };
-      }
+    // Tentativa 1: Executar busca radial em raio = 500m (0.5 km)
+    const txs500 = candidates.filter(t => Number(t.distanceKm) <= 0.5);
+    if (txs500.length >= 5) {
+      return {
+        txs: txs500,
+        effectiveRadiusKm: 0.5,
+        radiusLabel: `Raio geodésico: 0.5 km (${txs500.length} tx)`,
+        item3Label: `3. Ruas do Entorno (0.5 km) - ${txs500.length} tx`,
+        card3Title: `3. Ruas do Entorno (0.5 km)`,
+        fallbackLevel: '0.5km' as const
+      };
     }
 
-    // 4. Fallback pericial seguro para as outras ruas do bairro
+    // Tentativa 2 (Gatilho se contagem < 5): Expandir automaticamente para raio = 1000m (1.0 km)
+    const txs1000 = candidates.filter(t => Number(t.distanceKm) <= 1.0);
+    if (txs1000.length >= 5) {
+      return {
+        txs: txs1000,
+        effectiveRadiusKm: 1.0,
+        radiusLabel: `Raio expandido para 1.0 km (${txs1000.length} tx)`,
+        item3Label: `3. Ruas do Entorno (Raio expandido para 1.0 km) - ${txs1000.length} tx`,
+        card3Title: `3. Ruas do Entorno (Raio expandido para 1.0 km)`,
+        fallbackLevel: '1.0km' as const
+      };
+    }
+
+    // Tentativa 3 (Gatilho se contagem < 5): Expandir para raio = 2000m (2.0 km)
+    const txs2000 = candidates.filter(t => Number(t.distanceKm) <= 2.0);
     return {
-      txs: candidates.length > 0 ? candidates : rawTransactions,
+      txs: txs2000,
       effectiveRadiusKm: 2.0,
-      radiusLabel: 'Mediana do bairro (sem amostras em raio até 2.0km)',
-      fallbackLevel: 'bairro' as const
+      radiusLabel: txs2000.length > 0 
+        ? `Raio expandido para 2.0 km (${txs2000.length} tx)` 
+        : 'Sem amostras no entorno até 2.0 km',
+      item3Label: txs2000.length > 0
+        ? `3. Ruas do Entorno (Raio expandido para 2.0 km) - ${txs2000.length} tx`
+        : `3. Ruas do Entorno (0 tx no raio de 2.0 km)`,
+      card3Title: txs2000.length > 0
+        ? `3. Ruas do Entorno (Raio expandido para 2.0 km)`
+        : `3. Ruas do Entorno (~2.0 km)`,
+      fallbackLevel: '2.0km' as const
     };
-  }, [rawTransactions, selectedStreet, radiusKm]);
+  }, [rawTransactions, radiusTransactions, selectedStreet]);
 
   const nearbyStreetTxs = nearbyStreetData.txs;
 
 // Helper to extract clean numerical numbers for street number comparison
   const cleanNumber = (numStr: string | undefined | null) => {
     if (!numStr) return '';
-    const match = String(numStr).match(/\d+/);
-    return match ? match[0] : String(numStr).trim();
+    const decoded = String(numStr).replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    const match = decoded.match(/\d+/);
+    return match ? String(parseInt(match[0], 10)) : String(decoded).trim();
   };
 
   // NBR 14.653 - Saneamento Estatístico de Amostras (Chauvenet / Desvio Padrão) & Metragem Ponderada
@@ -1186,6 +1249,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     sourceLabel: string
   ) => {
     if (!txs || txs.length === 0) return null;
+
+    if (isJuizDeFora) {
+      // JF ITBI contains sale totals but no area. It cannot be converted to
+      // R$/m² here; only the calibrated size-cluster benchmark may price it.
+      return null;
+    }
 
     // 1. Todas as áreas (Bruto Geral)
     const allValues = txs.map(t => t.unitValueSqm).filter(v => typeof v === 'number' && v > 0);
@@ -1275,16 +1344,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Médias de m² para cada botão de raio (500m, 1.0km, 2.0km) sincronizadas com txSizeFilter (Área Similar vs Todas)
   const radiusAverages = useMemo(() => {
-    const streetClean = cleanStreetName(selectedStreet);
-    const streetCore = getCoreStreetName(selectedStreet);
-    const streetPhon = phoneticStreet(selectedStreet);
-
     const calcAvg = (maxDist: number) => {
-      const txs = (rawTransactions || []).filter(tx => {
-        const tClean = cleanStreetName(tx.street);
-        const tCore = getCoreStreetName(tx.street);
-        const tPhon = phoneticStreet(tx.street);
-        if (tClean === streetClean || (streetCore && tCore === streetCore) || (streetPhon && tPhon === streetPhon) || stringSimilarity(tClean, streetClean) >= 0.75) return false;
+      const txs = (radiusTransactions || []).filter(tx => {
         if (hasValidDistance(tx)) {
           return Number(tx.distanceKm) <= maxDist;
         }
@@ -1300,7 +1361,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       r1000: calcAvg(1.0),
       r2000: calcAvg(2.0)
     };
-  }, [rawTransactions, selectedStreet, sizeSqm, txSizeFilter]);
+  }, [radiusTransactions, selectedStreet, sizeSqm, txSizeFilter]);
 
   // Motor Pericial de Corte Bidirecional em 4 Níveis (NBR 14.653):
   // 1. Média preliminar da rua antes de cortar.
@@ -1309,16 +1370,26 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // 4. Processamento bidirecional (de frente pra trás e de trás pra frente).
   // 5. Convergência da Média de Corte Real para Flip Rápido e Gabarito.
   const bidiBenchmark = useMemo(() => {
+    // A street-axis point can help display nearby roads, but it is not the
+    // exact property address. Keep it out of the four-tier price calculation.
+    const valuationTransactions = rawTransactions.map(tx =>
+      tx.distanceAnchorPrecision === 'street_axis'
+        ? { ...tx, distanceKm: undefined, distanceMeters: undefined }
+        : tx
+    );
     return computeBidirectionalBenchmarks(
-      rawTransactions,
+      valuationTransactions,
       selectedStreet,
       streetNumber,
       sizeSqm,
       txSizeFilter,
       radiusKm,
-      propertyType
+      propertyType,
+      selectedNeighborhood,
+      jfAreaModel || undefined,
+      radiusTransactions
     );
-  }, [rawTransactions, selectedStreet, streetNumber, sizeSqm, txSizeFilter, radiusKm, propertyType]);
+  }, [rawTransactions, radiusTransactions, selectedStreet, streetNumber, sizeSqm, txSizeFilter, radiusKm, propertyType, selectedNeighborhood, jfAreaModel]);
 
   // 1. Dedicated neighborhood stats calculated from all ITBI transactions of this neighborhood
   const neighborhoodStats = useMemo(() => {
@@ -1346,6 +1417,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       const stats = calculateRobustStats(rawTransactions, sizeSqm, txSizeFilter, `Média Geral do Bairro (${selectedNeighborhood})`);
       if (stats) return stats;
     }
+    if (isJuizDeFora) return null;
     const neighStats = itbiStats.find(stat => 
       stat.neighborhood && selectedNeighborhood &&
       cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood) &&
@@ -1377,7 +1449,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       };
     }
     return null;
-  }, [bidiBenchmark, rawTransactions, sizeSqm, txSizeFilter, selectedNeighborhood, itbiStats, propertyType]);
+  }, [bidiBenchmark, rawTransactions, sizeSqm, txSizeFilter, selectedNeighborhood, itbiStats, propertyType, isJuizDeFora]);
 
   // 2. Aggregate stats from verified surrounding transactions inside the selected radius
   const nearbyStats = useMemo(() => {
@@ -1389,7 +1461,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         nearbyStreetTxs,
         sizeSqm,
         txSizeFilter,
-        `Média do Entorno (Raio Geodésico de ${radiusKm.toFixed(1)}km)`
+        nearbyStreetData.radiusLabel
       );
       if (strictRadiusStats) return strictRadiusStats;
     }
@@ -1415,9 +1487,31 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       };
     }
 
+    if (isJuizDeFora) return null;
+
     const txsToUse = selectedStreet ? nearbyStreetTxs : rawTransactions;
 
     if (txsToUse.length === 0) {
+      if (selectedStreet) {
+        return {
+          avgSqm: 0,
+          medianSqm: 0,
+          source: nearbyStreetData.radiusLabel,
+          count: 0,
+          minSqm: 0,
+          maxSqm: 0,
+          rawAvgSqm: 0,
+          rawCount: 0,
+          outliersCount: 0,
+          similarAvgSqm: 0,
+          similarCount: 0,
+          allAreasAvgSqm: 0,
+          allAreasCount: 0,
+          isSimilarActive: txSizeFilter === 'similar',
+          minSimilarSize: Math.round(sizeSqm * 0.67),
+          maxSimilarSize: Math.round(sizeSqm * 1.33)
+        };
+      }
       const neighStats = itbiStats.find(stat => 
         stat.neighborhood && selectedNeighborhood &&
         cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood) &&
@@ -1483,7 +1577,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       minSimilarSize: Math.round(sizeSqm * 0.75),
       maxSimilarSize: Math.round(sizeSqm * 1.25)
     };
-  }, [bidiBenchmark, nearbyStreetTxs, rawTransactions, selectedStreet, selectedNeighborhood, propertyType, itbiStats, sizeSqm, txSizeFilter, neighborhoodStats, radiusKm]);
+  }, [bidiBenchmark, nearbyStreetData.radiusLabel, nearbyStreetTxs, rawTransactions, selectedStreet, selectedNeighborhood, propertyType, itbiStats, sizeSqm, txSizeFilter, neighborhoodStats, radiusKm, isJuizDeFora]);
 
   // 3. Aggregate stats from matching transactions (Exact Street Stats) with Raio ±25% Outlier Defense
   const exactStreetStats = useMemo(() => {
@@ -1542,8 +1636,19 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     return exactStreetTxs.filter(tx => {
       if (!tx.number) return false;
       const txNum = cleanNumber(tx.number);
-      return txNum === targetNum;
+      const neighborhoodMatches = !isJuizDeFora || !selectedNeighborhood || !tx.neighborhood ||
+        cleanNeighborhood(tx.neighborhood) === cleanNeighborhood(selectedNeighborhood);
+      return txNum === targetNum && neighborhoodMatches;
     });
+  }, [exactStreetTxs, isJuizDeFora, selectedNeighborhood, streetNumber]);
+
+  // Keep same-number source rows visible for audit, including rows excluded
+  // from pricing because the official ITBI neighborhood conflicts.
+  const sameNumberBuildingTxs = useMemo(() => {
+    if (!selectedStreet || !streetNumber || exactStreetTxs.length === 0) return [];
+    const targetNum = cleanNumber(streetNumber);
+    if (!targetNum) return [];
+    return exactStreetTxs.filter(tx => tx.number && cleanNumber(tx.number) === targetNum);
   }, [exactStreetTxs, streetNumber]);
 
   const exactBuildingStats = useMemo(() => {
@@ -1591,7 +1696,23 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     if (neighborhoodStats) {
       return neighborhoodStats;
     }
-    return nearbyStats;
+    if (nearbyStats) {
+      return nearbyStats;
+    }
+    return {
+      avgSqm: 0,
+      rawAvgSqm: 0,
+      similarAvgSqm: 0,
+      allAreasAvgSqm: 0,
+      rawUncappedAvgSqm: 0,
+      count: 0,
+      minSqm: 0,
+      maxSqm: 0,
+      minSimilarSize: 0,
+      maxSimilarSize: 0,
+      outliersCount: 0,
+      source: 'Sem dados suficientes'
+    };
   }, [exactBuildingStats, exactStreetStats, neighborhoodStats, nearbyStats]);
 
   // Valor Unitário Saneado (NBR 14.653):
@@ -1660,7 +1781,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Default bid/arremate is 50% of the calculated ITBI value
   const defaultArremate = useMemo(() => {
-    const base = calculatedStats.avgSqm * sizeSqm;
+    const base = (calculatedStats?.avgSqm || 0) * sizeSqm;
     return Math.round(base * 0.50);
   }, [calculatedStats, sizeSqm]);
 
@@ -1670,7 +1791,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const activeStats = calculatedStats;
 
   // Dynamic calculated value scaling directly with area sizeSqm
-  const averageValue = activeStats.avgSqm * sizeSqm;
+  const averageValue = (activeStats?.avgSqm || 0) * sizeSqm;
 
   // Progressive Notary Fees (Cartório de Notas) and RGI (Registro de Imóveis) for RJ
   const calculateCartorioFees = (value: number) => {
@@ -1768,8 +1889,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const arbitrageRoi = totalInvestedCapital > 0 ? Math.round((netArbitrageProfit / totalInvestedCapital) * 100) : 0;
 
   // Derived calculations for Auction Acquisition & Costs Breakdown
-  const auctionBid = arrematePrice > 0 ? arrematePrice : 0;
-  const isAuction = acquisitionMode === 'judicial' || acquisitionMode === 'extrajudicial';
+  const auctionBid = arrematePrice > 0 ? arrematePrice : (Number(prefillData?.auctionPrice) || Number(prefillData?.purchasePrice) || 0);
+  const modalityTextCalc = `${prefillData?.saleMode || ''} ${prefillData?.title || ''} ${prefillData?.description || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const isCaixaWithAuctioneerCalc = (prefillData?.origin === 'caixa' || prefillData?.id?.includes('caixa')) && /licitacao\s*aberta|sfi|leilao/.test(modalityTextCalc);
+  const isAuction = acquisitionMode === 'judicial' || acquisitionMode === 'extrajudicial' || isCaixaWithAuctioneerCalc;
   const defaultAuctioneerFee = isAuction && auctionBid > 0 ? Math.round(auctionBid * 0.05) : 0; // 5% leilao, 0 venda direta caixa
   const defaultItbiFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3%
   const defaultRegistryFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3% Cartório / RGI
@@ -1802,67 +1925,42 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Monthly Holding Cost (IPTU, Condomínio, Outros + Juros Efetivos do Financiamento)
   const totalMonthlyHolding = monthlyCondoInput + monthlyIptuInput + monthlyExtraInput + monthlyInterestCost;
 
-  // 1. Média Ponderada dos 4 Níveis Oficiais do ITBI (Prédio, Rua, Raio 500m, Bairro)
+  // 1. Média Ponderada dos 4 Níveis Oficiais do ITBI (Prédio, Rua, Raio selecionado, Bairro)
   const itbiWeightedStats = useMemo(() => {
-    let totalWeight = 0;
-    let weightedSum = 0;
-    const components: { label: string; sqm: number; weight: number }[] = [];
-
-    const buildingSqm = exactBuildingStats?.avgSqm;
-    const streetSqm = exactStreetStats?.avgSqm;
-    const surroundingSqm = nearbyStats.avgSqm;
-    const neighborhoodSqm = neighborhoodStats ? neighborhoodStats.avgSqm : nearbyStats.avgSqm;
-
-    // Nível 1: Mesmo Prédio / Edifício (Peso 40 se houver)
-    if (buildingSqm && buildingSqm > 0 && exactBuildingStats && exactBuildingStats.count > 0) {
-      const w = 40;
-      weightedSum += buildingSqm * w;
-      totalWeight += w;
-      components.push({ label: 'Prédio', sqm: buildingSqm, weight: w });
-    }
-
-    // Nível 2: Mesma Rua (Peso 35 se prédio houver, ou 50 se não houver)
-    if (streetSqm && streetSqm > 0 && exactStreetStats && exactStreetStats.count > 0) {
-      const w = buildingSqm ? 35 : 50;
-      weightedSum += streetSqm * w;
-      totalWeight += w;
-      components.push({ label: 'Rua', sqm: streetSqm, weight: w });
-    }
-
-    // Nível 3: Ruas ao Entorno no Raio de 500m (Peso 15 se prédio+rua, ou 35 se só rua, ou 65 se nenhum)
-    if (surroundingSqm && surroundingSqm > 0 && nearbyStats.count > 0) {
-      const w = (buildingSqm && streetSqm) ? 15 : (!buildingSqm && streetSqm) ? 35 : (!buildingSqm && !streetSqm) ? 65 : 25;
-      weightedSum += surroundingSqm * w;
-      totalWeight += w;
-      components.push({ label: 'Raio 500m', sqm: surroundingSqm, weight: w });
-    }
-
-    // Nível 4: Média Geral do Bairro (Peso restante até 100%)
-    if (neighborhoodSqm && neighborhoodSqm > 0) {
-      const w = totalWeight > 0 ? (100 - totalWeight) : 100;
-      weightedSum += neighborhoodSqm * w;
-      totalWeight += w;
-      components.push({ label: 'Bairro', sqm: neighborhoodSqm, weight: w });
-    }
-
-    // Motor Pericial Bidirecional: A Média de Corte Real é a âncora soberana para o gabarito
-    let itbiCompositeSqm = bidiBenchmark ? bidiBenchmark.mediaCorteReal : (totalWeight > 0 ? Math.round(weightedSum / totalWeight) : (calculatedStats.avgSqm || 6500));
-
-    // Prudência estatística: quando prédio e rua não possuem nenhuma amostra,
-    // aplicar desconto prudencial de 12% sobre a média periférica para evitar distorção de ROI
-    if (!buildingSqm && !streetSqm && !bidiBenchmark) {
-      itbiCompositeSqm = Math.round(itbiCompositeSqm * 0.88);
-    }
+    const weighted = computeFourTierValuation({
+      building: bidiBenchmark
+        ? { value: bidiBenchmark.predio.validas ? bidiBenchmark.predio.saneada : (exactBuildingStats?.avgSqm || 0), count: bidiBenchmark.predio.validas || exactBuildingStats?.count || 0 }
+        : { value: exactBuildingStats?.avgSqm || 0, count: exactBuildingStats?.count || 0 },
+      street: bidiBenchmark
+        ? { value: bidiBenchmark.rua.validas ? bidiBenchmark.rua.saneada : (exactStreetStats?.avgSqm || 0), count: bidiBenchmark.rua.validas || exactStreetStats?.count || 0 }
+        : { value: exactStreetStats?.avgSqm || 0, count: exactStreetStats?.count || 0 },
+      surrounding: bidiBenchmark
+        ? { value: bidiBenchmark.radiusVerified && bidiBenchmark.fallbackLevel !== 'bairro' ? bidiBenchmark.raio.saneada : 0, count: bidiBenchmark.radiusVerified && bidiBenchmark.fallbackLevel !== 'bairro' ? bidiBenchmark.raio.validas : 0 }
+        : { value: nearbyStats?.avgSqm || 0, count: nearbyStats?.count || 0 },
+      neighborhood: bidiBenchmark
+        ? { value: bidiBenchmark.bairro.saneada, count: bidiBenchmark.bairro.validas }
+        : { value: neighborhoodStats?.avgSqm || 0, count: neighborhoodStats?.count || 0 },
+      radiusKm
+    });
+    let itbiCompositeSqm = weighted.value;
 
     // Terrenos e grandes glebas: aplicar redutor de terra nua para não precificar gleba com m² de apartamento
     if (propertyType === 'Terreno' || prefillData?.propertyType === 'Terreno') {
       if (sizeSqm > 300) {
-        itbiCompositeSqm = Math.min(itbiCompositeSqm, Math.round((neighborhoodSqm || 5000) * 0.35));
+        itbiCompositeSqm = Math.min(itbiCompositeSqm, Math.round((neighborhoodStats?.avgSqm || 5000) * 0.35));
       }
     }
 
-    return { itbiCompositeSqm, components, totalWeight };
-  }, [bidiBenchmark, exactBuildingStats, exactStreetStats, nearbyStats, neighborhoodStats, calculatedStats.avgSqm, propertyType, prefillData?.propertyType, sizeSqm]);
+    return {
+      itbiCompositeSqm,
+      components: weighted.components,
+      totalWeight: weighted.totalWeight,
+      localSampleCount: weighted.localSampleCount,
+      priceable: weighted.priceable,
+      calibrated: weighted.calibrated,
+      calibrationKind: weighted.calibrationKind
+    };
+  }, [bidiBenchmark, exactBuildingStats, exactStreetStats, nearbyStats, neighborhoodStats, propertyType, prefillData?.propertyType, sizeSqm, radiusKm]);
 
   // Detecção 100% AUTOMÁTICA do Ano de Construção / Habite-se / Registro na Matrícula & Edital
   const buildingAgeData = useMemo(() => {
@@ -1918,12 +2016,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       const age = Math.max(0, currentYear - yearFound);
       // Se tiver até 12 anos (ex: construído em 2015 -> 11 anos): 0% de depreciação
       if (age > 12) {
-        let depPct = 1.0;
-        if (age <= 20) depPct = 1.0 + ((age - 12) / 8) * 0.5;
-        else if (age <= 35) depPct = 1.6 + ((age - 21) / 14) * 1.2;
-        else if (age <= 50) depPct = 2.9 + ((age - 36) / 14) * 1.1;
-        else depPct = Math.min(5.0, 4.5 + Math.min(0.5, ((age - 50) / 20) * 0.5));
-        depPct = Number(depPct.toFixed(1));
+        const depPct = buildingAgeDepreciationPercent(age);
         return {
           detectedYear: yearFound,
           age,
@@ -1952,15 +2045,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Sincronização Pericial Exata: Se o motor bidirecional calculou o corte real, utiliza soberanamente
   const hasRealMicroData = useMemo(() => {
-    if (bidiBenchmark) {
-      return bidiBenchmark.hasMicroData && bidiBenchmark.nivelUtilizado !== 'Bairro';
-    }
-    return exactBuildingTxs.length > 0 || (exactStreetStats !== null && exactStreetStats.count > 0);
-  }, [bidiBenchmark, exactBuildingTxs.length, exactStreetStats]);
+    return itbiWeightedStats.priceable;
+  }, [itbiWeightedStats.priceable]);
+  const hasBenchmarkCalibration = Boolean(bidiBenchmark?.calibrationKind);
 
   const hasVerifiedStreetOrBuildingData = useMemo(() => {
     if (bidiBenchmark) {
-      return bidiBenchmark.predio.validas > 0 || bidiBenchmark.rua.validas > 0;
+      return bidiBenchmark.predio.validas + bidiBenchmark.rua.validas > 0;
     }
     return exactBuildingTxs.length > 0 || (exactStreetStats !== null && exactStreetStats.count > 0);
   }, [bidiBenchmark, exactBuildingTxs.length, exactStreetStats]);
@@ -1979,47 +2070,60 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // 3. Preço Sugerido Flip (Giro rápido em até 60 dias):
   // 100% Ancorado no Gabarito Real de Cartório (Corte Bidirecional) com Deságio Tático de 10% para Liquidez Imediata
   // O cálculo dinâmico sobre a metragem ativa (sizeSqm) é soberano para refletir a área real analisada.
-  const baseQuickSaleSqm = bidiBenchmark ? bidiBenchmark.flipRapidoSqm : Math.round(itbiWeightedStats.itbiCompositeSqm * 0.90);
+  const isApartmentWithoutBuilding = (propertyType === 'Apartamento' || prefillData?.propertyType === 'Apartamento') && (!bidiBenchmark?.predio?.validas || bidiBenchmark.predio.validas === 0);
+  const buildingSafetyFactor = isApartmentWithoutBuilding ? 0.95 : 1.0;
+  const baseQuickSaleSqm = itbiWeightedStats.priceable ? Math.round(itbiWeightedStats.itbiCompositeSqm * 0.90 * buildingSafetyFactor) : 0;
   const suggestedQuickSaleTotal = useMemo(() => {
     const baseSqm = (bidiBenchmark && bidiBenchmark.flipRapidoSqm > 0)
       ? bidiBenchmark.flipRapidoSqm
       : baseQuickSaleSqm;
-    const territorialFactor = prefillData?.isCommunityRisk ? 0.85 : 1;
+    if (!itbiWeightedStats.priceable) return 0;
 
-    if (baseSqm > 0 && sizeSqm > 0) {
-      return Math.round(Math.round(baseSqm * buildingAgeData.factor * territorialFactor) * sizeSqm);
-    }
-
-    if (!hasRealMicroData && !bidiBenchmark?.mediaCorteReal) {
-      if (neighborhoodStats && neighborhoodStats.avgSqm > 0 && sizeSqm > 0) {
-        return Math.round(Math.round(neighborhoodStats.avgSqm * 0.90 * buildingAgeData.factor * territorialFactor) * sizeSqm);
-      }
-      // Fallback para o valor gravado no card SOMENTE se a metragem atual coincidir com a do card
-      if (prefillData?.vendaBaixaPrice && prefillData.vendaBaixaPrice > 0 && (!prefillData.sizeSqm || prefillData.sizeSqm === sizeSqm)) {
-        return prefillData.vendaBaixaPrice;
-      }
-      if (prefillData?.vendaMediaPrice && prefillData.vendaMediaPrice > 0 && (!prefillData.sizeSqm || prefillData.sizeSqm === sizeSqm)) {
-        return prefillData.vendaMediaPrice;
-      }
-      return 0;
+    // Juiz de Fora's homologated benchmark is already an absolute total value
+    // for the target area. Do not multiply that price by the square meters again.
+    if (bidiBenchmark?.isAbsolutePricing && bidiBenchmark.flipTotal > 0) {
+      return calculateQuickFlipAbsoluteTotal({
+        baseTotal: bidiBenchmark.flipTotal,
+        depreciationPercent: buildingAgeData.depreciationPct,
+        communityRisk: !!prefillData?.isCommunityRisk
+      });
     }
 
     if (baseSqm > 0 && sizeSqm > 0) {
-      return Math.round(Math.round(baseSqm * buildingAgeData.factor * territorialFactor) * sizeSqm);
+      return calculateQuickFlipTotal({
+        basePerSqm: baseSqm,
+        sizeSqm,
+        depreciationPercent: buildingAgeData.depreciationPct,
+        communityRisk: !!prefillData?.isCommunityRisk
+      });
+    }
+
+    if (isJuizDeFora && bidiBenchmark && bidiBenchmark.mediaCorteReal > 0) {
+      const targetArea = sizeSqm > 0 ? sizeSqm : 60;
+      const flipSqm = Math.round(bidiBenchmark.mediaCorteReal * 0.90);
+      return calculateQuickFlipTotal({
+        basePerSqm: flipSqm,
+        sizeSqm: targetArea,
+        depreciationPercent: buildingAgeData.depreciationPct,
+        communityRisk: !!prefillData?.isCommunityRisk
+      });
     }
 
     return 0;
-  }, [bidiBenchmark, baseQuickSaleSqm, buildingAgeData.factor, prefillData?.isCommunityRisk, prefillData?.vendaBaixaPrice, prefillData?.vendaMediaPrice, prefillData?.sizeSqm, sizeSqm, hasRealMicroData, neighborhoodStats]);
+  }, [bidiBenchmark, baseQuickSaleSqm, buildingAgeData.factor, prefillData?.isCommunityRisk, sizeSqm, hasRealMicroData, isJuizDeFora, itbiWeightedStats.priceable, itbiWeightedStats.itbiCompositeSqm]);
 
   const suggestedQuickSaleSqm = useMemo(() => {
     if (suggestedQuickSaleTotal > 0 && sizeSqm > 0) {
       return Math.round(suggestedQuickSaleTotal / sizeSqm);
     }
+    if (isJuizDeFora && bidiBenchmark && bidiBenchmark.flipRapidoSqm > 0) {
+      return Math.round(bidiBenchmark.flipRapidoSqm * buildingAgeData.factor);
+    }
     if (!hasRealMicroData || suggestedQuickSaleTotal === 0) {
       return 0;
     }
     return Math.round(baseQuickSaleSqm * buildingAgeData.factor);
-  }, [hasRealMicroData, suggestedQuickSaleTotal, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor]);
+  }, [hasRealMicroData, suggestedQuickSaleTotal, sizeSqm, baseQuickSaleSqm, buildingAgeData.factor, isJuizDeFora, bidiBenchmark]);
 
   // This is the exact 60-day flip shown by the calculator and therefore the
   // only profit/ROI pair allowed to be persisted to the auction card.
@@ -2035,29 +2139,54 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Persistência só ocorre por uma ação deliberada do analista.
   const applyAnalysisToCard = async () => {
     if (!prefillData?.id || !onUpdateProperty || isLoadingTransactions) return;
-    if (!hasRealMicroData || !bidiBenchmark || suggestedQuickSaleTotal <= 0 || (bidiBenchmark.predio.validas < 2 && bidiBenchmark.rua.validas < 2 && !(bidiBenchmark.nivelUtilizado === 'Raio Entorno' && bidiBenchmark.raio.validas >= 2))) {
-      alert('Não há amostras ITBI locais suficientes para aplicar esta análise ao card.');
+    const hasApprovedContextCalibration = bidiBenchmark?.calibrationKind === 'radius_neighborhood' &&
+      bidiBenchmark.raio.validas >= 5 && bidiBenchmark.bairro.validas >= 7;
+    const canPersistValuation = itbiWeightedStats.localSampleCount >= 2 || hasApprovedContextCalibration;
+    if (!hasRealMicroData || !bidiBenchmark || suggestedQuickSaleTotal <= 0 || !canPersistValuation) {
+      alert('Sem amostra local suficiente. Para uma calibragem somente pelo contexto, são necessárias pelo menos 5 amostras no raio selecionado e 7 no bairro.');
       return;
     }
 
-    const gabaritoTotal = Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
-    const verifiedStreetCount = bidiBenchmark.rua.validas || bidiBenchmark.predio.validas || 0;
-    const verifiedBuildingCount = bidiBenchmark.predio.validas || 0;
-    const verifiedLocalCount = Math.max(verifiedStreetCount, verifiedBuildingCount);
-    const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || bidiBenchmark.predio.saneada || 0;
+    const gabaritoSqm = itbiWeightedStats.itbiCompositeSqm * (bidiBenchmark?.buildingSafetyValveApplied ? 0.95 : 1.0);
+    const gabaritoBase = gabaritoSqm * sizeSqm;
+    const gabaritoTotal = bidiBenchmark.isAbsolutePricing
+      ? Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1))
+      : Math.round(gabaritoBase * buildingAgeData.factor * (prefillData.isCommunityRisk ? 0.85 : 1));
+    const verifiedStreetCount = bidiBenchmark.rua.validas || exactStreetStats?.count || 0;
+    const verifiedBuildingCount = bidiBenchmark.predio.validas || exactBuildingStats?.count || 0;
+    const verifiedLocalCount = verifiedStreetCount + verifiedBuildingCount;
+    const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || exactStreetStats?.avgSqm || bidiBenchmark.predio.saneada || 0;
+    const valuationLevel = bidiBenchmark.nivelUtilizado;
+    const valuationCalibration = bidiBenchmark.calibrationKind;
+    const isStronglyVerified = verifiedLocalCount >= 7 && !valuationCalibration;
     await onUpdateProperty({
       id: prefillData.id,
       sizeSqm: sizeSqm,
       sizeVerified: true,
+      buildingYear: buildingAgeData.detectedYear ?? undefined,
       vendaBaixaPrice: suggestedQuickSaleTotal,
       vendaMediaPrice: suggestedQuickSaleTotal,
       estimatedValue: gabaritoTotal,
-      valuationConfidence: verifiedLocalCount >= 2 ? 'verified' : 'projected',
-      valuationBasis: `ITBI verificado - ${bidiBenchmark.nivelUtilizado} - raio ${radiusKm.toFixed(1)} km`,
-      valuationSampleCount: bidiBenchmark.nivelUtilizado === 'Prédio' ? bidiBenchmark.predio.validas : bidiBenchmark.nivelUtilizado === 'Rua' ? bidiBenchmark.rua.validas : bidiBenchmark.nivelUtilizado === 'Raio Entorno' ? bidiBenchmark.raio.validas : 0,
+      buildingSafetyValveApplied: bidiBenchmark?.buildingSafetyValveApplied,
+      valuationConfidence: isStronglyVerified ? 'verified' : 'projected',
+      valuationCalibration,
+      valuationLevel,
+      valuationBasis: valuationCalibration === 'radius_neighborhood'
+        ? `Calibrado por raio (${bidiBenchmark.raio.validas} amostras) e bairro (${bidiBenchmark.bairro.validas}); sem comparáveis na rua/prédio`
+        : valuationCalibration === 'few_local_samples'
+          ? `Calibrado por baixa amostragem local (${verifiedLocalCount} transações; menos de 7)`
+          : isJuizDeFora
+        ? `ITBI Homogeneizado NBR 14.653 - ${bidiBenchmark.nivelUtilizado} (Ref. 60m²: R$ ${bidiBenchmark.m2BaseRua?.toLocaleString('pt-BR') || '-'}/m², Escala: ${bidiBenchmark.fatorEscala?.toFixed(3) || '1.000'}, ${verifiedLocalCount} txs)`
+        : `ITBI ponderado 4 níveis (prédio 40%, rua 35%, raio selecionado ${radiusKm}km 15%, bairro 10%) - ${bidiBenchmark.nivelUtilizado} (${verifiedLocalCount} transações locais)`,
+      valuationSampleCount: verifiedLocalCount,
       valuationRadiusKm: radiusKm,
-      itbiStreetCount: verifiedStreetCount || undefined,
-      itbiBuildingCount: verifiedBuildingCount || undefined,
+      itbiStreetCount: verifiedStreetCount,
+      itbiBuildingCount: verifiedBuildingCount,
+      itbiNeighborhoodCount: bidiBenchmark.bairro.validas,
+      itbiIsDerivedSqm: isJuizDeFora,
+      itbiIsAbsolutePricing: false,
+      itbiCompraEVendaCount: bidiBenchmark.compraEVendaCount,
+      itbiPeriodRange: bidiBenchmark.dateRange,
       itbiStreetAvgSqm: verifiedStreetAvgSqm || undefined,
       itbiSurroundingAvgSqm: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.saneada || undefined) : undefined,
       itbiSurroundingCount: bidiBenchmark.radiusVerified ? (bidiBenchmark.raio.validas || undefined) : undefined,
@@ -2067,6 +2196,61 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       calculatedRoi: flip60Roi
     });
   };
+
+  // On first open, persist the exact 60-day price shown in step 4 after
+  // ITBI and the automatic registry lookup finish. Subsequent what-if changes
+  // remain opt-in through "Atualizar Card".
+  useEffect(() => {
+    const propertyId = prefillData?.id;
+    const hasApprovedContextCalibration = bidiBenchmark?.calibrationKind === 'radius_neighborhood' &&
+      bidiBenchmark.raio.validas >= 5 && bidiBenchmark.bairro.validas >= 7;
+    const canPersistValuation = itbiWeightedStats.localSampleCount >= 2 || hasApprovedContextCalibration;
+    if (!propertyId || !onUpdateProperty || !initialSourceDocsCheckComplete || isLoadingTransactions ||
+        isFetchingCaixaDocs || isAuditingMatricula || !hasRealMicroData || !bidiBenchmark ||
+        suggestedQuickSaleTotal <= 0 || !canPersistValuation ||
+        autoSyncedFlipPropertyRef.current === propertyId) return;
+
+    autoSyncedFlipPropertyRef.current = propertyId;
+    const verifiedStreetCount = bidiBenchmark.rua.validas || exactStreetStats?.count || 0;
+    const verifiedBuildingCount = bidiBenchmark.predio.validas || exactBuildingStats?.count || 0;
+    const verifiedLocalCount = verifiedStreetCount + verifiedBuildingCount;
+    const valuationCalibration = bidiBenchmark.calibrationKind;
+    const gabaritoSqm = itbiWeightedStats.itbiCompositeSqm * (bidiBenchmark.buildingSafetyValveApplied ? 0.95 : 1);
+    const gabaritoBase = gabaritoSqm * sizeSqm;
+    const estimatedValue = bidiBenchmark.isAbsolutePricing
+      ? Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData?.isCommunityRisk ? 0.85 : 1))
+      : Math.round(gabaritoBase * buildingAgeData.factor * (prefillData?.isCommunityRisk ? 0.85 : 1));
+    void Promise.resolve(onUpdateProperty({
+      id: propertyId,
+      // Preserve the calculator's own local ITBI evidence through the server
+      // recalculation, which otherwise uses a broader default benchmark.
+      vendaBaixaPrice: suggestedQuickSaleTotal,
+      vendaMediaPrice: suggestedQuickSaleTotal,
+      estimatedValue,
+      valuationConfidence: verifiedLocalCount >= 7 && !valuationCalibration ? 'verified' : 'projected',
+      valuationCalibration,
+      valuationLevel: bidiBenchmark.nivelUtilizado,
+      valuationSampleCount: verifiedLocalCount,
+      itbiBuildingCount: verifiedBuildingCount,
+      itbiStreetCount: verifiedStreetCount,
+      itbiNeighborhoodCount: bidiBenchmark.bairro.validas,
+      itbiStreetAvgSqm: bidiBenchmark.rua.saneada || exactStreetStats?.avgSqm || bidiBenchmark.predio.saneada || undefined,
+      valuationBasis: valuationCalibration === 'radius_neighborhood'
+        ? `Calibrado por raio (${bidiBenchmark.raio.validas} amostras) e bairro (${bidiBenchmark.bairro.validas}); sem comparáveis na rua/prédio`
+        : valuationCalibration === 'few_local_samples'
+          ? `Calibrado por baixa amostragem local (${verifiedLocalCount} transações; menos de 7)`
+          : `ITBI calculado no simulador (${verifiedLocalCount} amostras locais)`,
+      calculatedProfit: flip60NetProfit,
+      calculatedRoi: flip60Roi,
+      buildingYear: buildingAgeData.detectedYear ?? undefined,
+      ageDepreciationPct: buildingAgeData.depreciationPct
+    })).catch(error => console.error('Falha ao sincronizar flip do simulador com o card:', error));
+  }, [prefillData?.id, onUpdateProperty, initialSourceDocsCheckComplete, isLoadingTransactions,
+    isFetchingCaixaDocs, isAuditingMatricula, hasRealMicroData, bidiBenchmark,
+    suggestedQuickSaleTotal, itbiWeightedStats.localSampleCount, flip60NetProfit, flip60Roi,
+    buildingAgeData.detectedYear, buildingAgeData.depreciationPct, bidiBenchmark,
+    exactStreetStats?.count, exactStreetStats?.avgSqm, exactBuildingStats?.count,
+    itbiWeightedStats.itbiCompositeSqm, sizeSqm, buildingAgeData.factor, prefillData?.isCommunityRisk]);
 
   const activeFlipExitPrice = (customExitPrice !== null && customExitPrice > 0) ? customExitPrice : suggestedQuickSaleTotal;
 
@@ -2108,8 +2292,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   }, [arrematePrice, totalArremateAcquisitionCost, totalAcquisitionCost]);
 
   useEffect(() => {
-    setCustomSalePrice(activeFlipExitPrice || averageValue);
-  }, [activeFlipExitPrice, averageValue]);
+    setCustomSalePrice(activeFlipExitPrice || 0);
+  }, [activeFlipExitPrice]);
 
   // Market Tiers for 1-to-1 Comparison with Auction Acquisition
   const marketTiers = useMemo(() => {
@@ -2126,13 +2310,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
     const streetSqm = (exactStreetStats && exactStreetStats.count > 0 && exactStreetStats.avgSqm > 0) ? exactStreetStats.avgSqm : null;
     const buildingSqm = (exactBuildingStats && exactBuildingStats.count > 0 && exactBuildingStats.avgSqm > 0) ? exactBuildingStats.avgSqm : null;
-    const surroundingSqm = nearbyStats.avgSqm;
-    const neighborhoodSqm = neighborhoodStats ? neighborhoodStats.avgSqm : nearbyStats.avgSqm;
+    const surroundingSqm = (nearbyStats && nearbyStats.count > 0 && nearbyStats.avgSqm > 0)
+      ? nearbyStats.avgSqm
+      : (bidiBenchmark && bidiBenchmark.raio.validas > 0 ? bidiBenchmark.raio.saneada : 0);
+    const neighborhoodSqm = bidiBenchmark ? bidiBenchmark.bairro.saneada : (neighborhoodStats?.avgSqm || 0);
 
     const buildingCount = (exactBuildingStats && exactBuildingStats.count > 0) ? exactBuildingStats.count : 0;
     const streetCount = (exactStreetStats && exactStreetStats.count > 0) ? exactStreetStats.count : 0;
-    const surroundingCount = nearbyStats.count || 0;
-    const neighborhoodCount = (neighborhoodStats?.count || rawTransactions.length) || 0;
+    const surroundingCount = (nearbyStats && nearbyStats.count > 0)
+      ? nearbyStats.count
+      : (bidiBenchmark && bidiBenchmark.raio.validas > 0 ? bidiBenchmark.raio.validas : 0);
+    const neighborhoodCount = bidiBenchmark ? bidiBenchmark.bairro.validas : (neighborhoodStats?.count || 0);
     const portalStreetCount = portalStreetStats ? portalStreetStats.count : 0;
 
     const tiers = [
@@ -2162,14 +2350,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       },
       {
         id: 'surrounding',
-        label: `3. Ruas do Entorno (${bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.radiusLabel || `Raio ~${radiusKm}km`})`,
+        label: nearbyStreetData.item3Label || bidiBenchmark?.raio?.radiusLabel || `3. Ruas do Entorno (${nearbyStreetData.effectiveRadiusKm.toFixed(1)} km) - ${surroundingCount} tx`,
         icon: Compass,
         color: 'violet',
-        sqm: surroundingSqm || nearbyStats.avgSqm,
-        count: surroundingCount || nearbyStats.count,
-        isFewSamples: (surroundingCount || nearbyStats.count) < 3,
-        isCascadeProtected: (surroundingCount || nearbyStats.count) < 2,
-        samples: (surroundingCount || nearbyStats.count) > 0 ? `${surroundingCount || nearbyStats.count} tx` : 'Sem transações no raio',
+        sqm: surroundingSqm,
+        count: surroundingCount,
+        isFewSamples: surroundingCount < 3,
+        isCascadeProtected: surroundingCount < 2,
+        samples: surroundingCount > 0 ? `${surroundingCount} tx` : nearbyStreetData.radiusLabel,
         active: true
       },
       {
@@ -2290,12 +2478,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             maxSqm: exactStreetStats.maxSqm,
             count: exactStreetStats.count
           } : null,
-          nearbyStats: {
+          nearbyStats: nearbyStats ? {
             avgSqm: nearbyStats.avgSqm,
             minSqm: nearbyStats.minSqm,
             maxSqm: nearbyStats.maxSqm,
             count: nearbyStats.count
-          },
+          } : null,
           radiusKm,
           transactionsPreview: exactStreetTxs.slice(0, 5),
           nearbyTransactionsPreview: nearbyStreetTxs.slice(0, 5)
@@ -2493,9 +2681,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         profitStreetAverage: (exactStreetStats ? exactStreetStats.avgSqm : calculatedStats.avgSqm) * sizeSqm - totalArremateAcquisitionCost,
         
         // 3. Entorno do Bairro (Média Saneada NBR 14.653)
-        roiNeighborhood: Math.round(((nearbyStats.avgSqm * sizeSqm - totalArremateAcquisitionCost) / (totalArremateAcquisitionCost || 1)) * 100),
-        valueNeighborhood: nearbyStats.avgSqm * sizeSqm,
-        profitNeighborhood: nearbyStats.avgSqm * sizeSqm - totalArremateAcquisitionCost,
+        roiNeighborhood: Math.round((((nearbyStats?.avgSqm || calculatedStats.avgSqm) * sizeSqm - totalArremateAcquisitionCost) / (totalArremateAcquisitionCost || 1)) * 100),
+        valueNeighborhood: (nearbyStats?.avgSqm || calculatedStats.avgSqm) * sizeSqm,
+        profitNeighborhood: (nearbyStats?.avgSqm || calculatedStats.avgSqm) * sizeSqm - totalArremateAcquisitionCost,
         
         // 4. Anúncios de Portais (Teto de Mercado)
         roiPortalsAsking: Math.round(((averageAskingValue - totalArremateAcquisitionCost) / (totalArremateAcquisitionCost || 1)) * 100),
@@ -2626,10 +2814,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               onClick={applyAnalysisToCard}
               disabled={isLoadingTransactions || !hasRealMicroData}
               className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-black text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all shadow-md cursor-pointer border border-emerald-300/30 shrink-0"
-              title="Confirma os valores desta análise no card e no ranking"
+              title="Atualiza o card com o preço sugerido para flip exibido no simulador"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Aplicar ao Card</span>
+              <span>Atualizar Card</span>
             </button>
           )}
           <button
@@ -2849,12 +3037,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Área Privativa (m²):</label>
+                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px] flex items-center justify-between">
+                  <span>Área Privativa (m²):</span>
+                  {isJuizDeFora && <span className="text-indigo-400 font-normal lowercase">NBR 14.653</span>}
+                </label>
                 <input
                   type="number"
                   value={sizeSqm || ''}
+                  placeholder="Ex: 60"
                   onChange={(e) => setSizeSqm(e.target.value === '' ? 0 : Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200 font-mono"
                 />
               </div>
             </div>
@@ -3112,28 +3304,44 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </>
                 )}
 
-                {/* Leiloeiro (Hidden / Zeroed in Venda Direta Caixa) */}
-                {isAuction ? (
-                  <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
-                    <span className="text-slate-300 font-bold">Comissão Leiloeiro (5%):</span>
-                    <div className="flex items-center bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
-                      <span className="text-slate-500 mr-1 text-[9.5px]">R$</span>
+                {/* Leiloeiro (5% Oficial) */}
+                <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
                       <input
-                        type="number"
-                        value={auctioneerFeeInput !== null ? auctioneerFeeInput : defaultAuctioneerFee}
-                        onChange={(e) => setAuctioneerFeeInput(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
+                        type="checkbox"
+                        checked={auctioneerFee > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const fee = Math.round(auctionBid * 0.05);
+                            setAuctioneerFeeInput(fee > 0 ? fee : 5000);
+                          } else {
+                            setAuctioneerFeeInput(0);
+                          }
+                        }}
+                        className="rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-0 cursor-pointer"
                       />
-                    </div>
+                      <span className="text-slate-300 font-bold">Comissão Leiloeiro (5%):</span>
+                    </label>
+                    {(!isAuction && auctioneerFee === 0) && (
+                      <span className="text-[9.5px] text-emerald-400 font-medium bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                        Isento Caixa
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
-                    <span className="text-slate-300 font-bold">Comissão Leiloeiro:</span>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40">
-                      Isento (Venda Direta Caixa) - R$ 0
-                    </span>
+                  <div className="flex items-center bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
+                    <span className="text-slate-500 mr-1 text-[9.5px]">R$</span>
+                    <input
+                      type="number"
+                      value={auctioneerFeeInput !== null ? auctioneerFeeInput : defaultAuctioneerFee}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setAuctioneerFeeInput(val);
+                      }}
+                      className="w-24 bg-transparent border-0 outline-none text-right text-white font-black text-xs font-mono"
+                    />
                   </div>
-                )}
+                </div>
 
                 {/* ITBI */}
                 <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
@@ -3319,9 +3527,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       Todas Metragens
                     </button>
                   </div>
+                  {!isJuizDeFora && (
                   <span className="text-[9.5px] bg-slate-800/80 text-amber-300 border border-slate-700/60 px-2 py-0.5 rounded font-mono font-bold hidden sm:inline" title="Custo total efetivo de arrematação por m² (lance + todas as custas ÷ área privativa)">
                     Custo do Arrematante: R$ {arremateEffectiveSqm.toLocaleString('pt-BR')}/m²
                   </span>
+                  )}
                 </div>
               </div>
 
@@ -3375,8 +3585,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           {tier.sqm && tier.sqm > 0 ? (
                             <div className="text-right font-mono shrink-0">
                               <span className="text-xs sm:text-sm font-black block text-white">
-                                {formatBRL(tier.saleValue)}
+                                {sizeSqm > 0 ? formatBRL(tier.sqm * sizeSqm) : `R$ ${tier.sqm.toLocaleString('pt-BR')}/m²`}
                               </span>
+                              {sizeSqm > 0 && (
+                                <span className="text-[10px] text-slate-400 block font-normal font-mono">
+                                  R$ {tier.sqm.toLocaleString('pt-BR')}/m²
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-[10px] text-slate-600 font-mono">-</span>
@@ -3386,22 +3601,15 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         {/* Linha Inferior: Base do m² e Indicadores de Lucro / ROI */}
                         {tier.sqm && tier.sqm > 0 && (
                           <div className="flex justify-between items-center pt-1 border-t border-slate-850/80 text-xs font-mono">
-                            <span className="text-[9.5px] font-mono text-slate-400">
-                              R$ {tier.sqm.toLocaleString('pt-BR')}/m² ({tier.samples})
+                            <span className="text-[9.5px] font-mono text-slate-400">{tier.samples}</span>
+                            <span className="text-[9px] text-slate-400 text-right">
+                              {(() => {
+                                const component = itbiWeightedStats.components.find(item => item.id === tier.id);
+                                if (!hasRealMicroData) return 'Referência contextual; média ponderada incompleta';
+                                if (!component) return 'Sem peso: nível sem amostras válidas';
+                                return `Peso no gabarito: ${Math.round((component.weight / itbiWeightedStats.totalWeight) * 100)}%`;
+                              })()}
                             </span>
-
-                            <div className="flex items-center space-x-2">
-                              <span className={`text-xs font-black ${tier.grossProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {tier.grossProfit >= 0 ? '+' : ''}{formatBRL(tier.grossProfit)}
-                              </span>
-                              <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded-lg border ${
-                                tier.roi >= 0 
-                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60' 
-                                  : 'bg-rose-950/60 text-rose-300 border-rose-800/60'
-                              }`}>
-                                {tier.roi}% ROI
-                              </span>
-                            </div>
                           </div>
                         )}
                       </div>
@@ -4258,44 +4466,55 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {propertyType} de {sizeSqm}m² • {selectedStreet || 'Rua não selecionada'}{streetNumber ? `, Nº ${streetNumber}` : ''} • {selectedNeighborhood || 'Bairro'}, {selectedCity} - {selectedState}
+                      `${propertyType}${sizeSqm > 0 ? ` de ${sizeSqm}m²` : ''} • ${selectedStreet || 'Rua não selecionada'}${streetNumber ? `, Nº ${streetNumber}` : ''} • ${selectedNeighborhood || 'Bairro'}, ${selectedCity || (isJuizDeFora ? 'Juiz de Fora' : '')} - ${selectedState || (isJuizDeFora ? 'MG' : '')}`
                     </p>
                   </div>
                 </div>
 
-                {/* Interactive Size Filter Toggle (Similar vs All Areas) */}
-                <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                  <button
-                    onClick={() => setTxSizeFilter('similar')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
-                      txSizeFilter === 'similar'
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                    title="Calcula com base em imóveis de metragens similares (±33%)"
-                  >
-                    <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
-                  </button>
-                  <button
-                    onClick={() => setTxSizeFilter('all')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
-                      txSizeFilter === 'all'
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                    title="Calcula com base em todas as metragens do mercado"
-                  >
-                    <span>🌐 Todas as Metragens</span>
-                  </button>
-                </div>
+                {/* Interactive Size Filter Toggle / JF Badge */}
+                {isJuizDeFora ? (
+                  <div className="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] font-mono text-emerald-400 font-bold">
+                    <span>🏛️ Base ITBI Juiz de Fora: Compra e Venda ({bidiBenchmark?.compraEVendaCount ?? exactStreetTxs.filter(t => t.isCompraEVenda === true).length} tx)</span>
+                    <span className="text-[9px] text-amber-300">
+                      {jfAreaModel?.sampleCount
+                        ? `Estimativa por faixa de valor × área; calibração em ${jfAreaModel.sampleCount} avaliações oficiais (${(bidiBenchmark?.areaModelConfidence || jfAreaModel.confidence) === 'high' ? 'alta' : (bidiBenchmark?.areaModelConfidence || jfAreaModel.confidence) === 'medium' ? 'média' : 'baixa'} confiança para esta metragem)`
+                        : 'Sem amostras oficiais suficientes para estimar metragem e preço'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button
+                      onClick={() => setTxSizeFilter('similar')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                        txSizeFilter === 'similar'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Calcula com base em imóveis de metragens similares (±33%)"
+                    >
+                      <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
+                    </button>
+                    <button
+                      onClick={() => setTxSizeFilter('all')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                        txSizeFilter === 'all'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Calcula com base em todas as metragens do mercado"
+                    >
+                      <span>🌐 Todas as Metragens</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Graphical Comparison of Price Tiers (R$/m²) */}
+              {/* Graphical Comparison of Price Tiers */}
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
                     <Activity className="w-3.5 h-3.5 text-indigo-400" />
-                    Comparativo Visual de Valor do m² por Nível de Proximidade (Base Homogênea Saneada)
+                    {isJuizDeFora ? 'Comparativo Visual do Valor de m² Homogeneizado NBR 14.653 (Ref. 60m²)' : 'Comparativo Visual de Valor do m² por Nível de Proximidade (Base Homogênea Saneada)'}
                   </span>
                   <span className="text-[9px] text-slate-500 font-mono">Dados Oficiais da Prefeitura</span>
                 </div>
@@ -4304,8 +4523,6 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 <div className="space-y-2.5 font-mono text-xs">
                   {/* Tier 1: Exact Building */}
                   {(() => {
-                    const isBuildingFew = false; // Alerta removido conforme regra do usuário (amostragem individual de condomínio)
-                    const isBuildingCascade = (exactBuildingStats as any)?.isCascadeProtected;
                     return (
                       <div className="p-2.5 rounded-xl border space-y-1.5 transition-all bg-slate-950 border-slate-850">
                         <div className="flex justify-between items-center text-[11px] flex-wrap gap-1">
@@ -4315,14 +4532,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           </span>
                           <span className="font-bold text-emerald-400">
                             {exactBuildingStats 
-                              ? `R$ ${exactBuildingStats.avgSqm.toLocaleString('pt-BR')}/m² (${exactBuildingStats.count} tx válidas${exactBuildingStats.outliersCount > 0 ? ` • ${exactBuildingStats.outliersCount} expurgada` : ''})` 
-                              : streetNumber ? 'Sem transação específica neste número' : 'Informe o número do endereço'}
+                              ? `R$ ${exactBuildingStats.avgSqm.toLocaleString('pt-BR')}/m² ${sizeSqm > 0 ? `(${formatBRL(exactBuildingStats.avgSqm * sizeSqm)})` : ''} • ${exactBuildingStats.count} tx${isJuizDeFora ? ' Compra e Venda' : ' válidas'}${exactBuildingStats.outliersCount > 0 ? ` • ${exactBuildingStats.outliersCount} expurgada` : ''}`
+                              : streetNumber ? (isJuizDeFora ? 'Sem transação de Compra e Venda neste número' : 'Sem transação específica neste número') : 'Informe o número do endereço'}
                           </span>
                         </div>
                         <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
                           <div 
                             className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-emerald-600 to-emerald-400"
-                            style={{ width: `${exactBuildingStats ? Math.min(100, Math.max(15, (exactBuildingStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100)) : 0}%` }}
+                            style={{ width: `${exactBuildingStats ? Math.min(100, Math.max(15, (exactBuildingStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 10000))) * 100)) : 0}%` }}
                           />
                         </div>
                       </div>
@@ -4352,7 +4569,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           </span>
                           <span className={`font-bold ${isStreetFew ? 'text-rose-300' : 'text-indigo-400'}`}>
                             {exactStreetStats 
-                              ? `R$ ${exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m² (${exactStreetStats.count} tx válidas${exactStreetStats.outliersCount > 0 ? ` • ${exactStreetStats.outliersCount} expurgada` : ''})` 
+                              ? `R$ ${exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m² ${sizeSqm > 0 ? `(${formatBRL(exactStreetStats.avgSqm * sizeSqm)})` : ''} • ${exactStreetStats.count} tx${isJuizDeFora ? ' Compra e Venda' : ' válidas'}${exactStreetStats.outliersCount > 0 ? ` • ${exactStreetStats.outliersCount} expurgada` : ''}`
                               : 'Sem transações registradas nesta rua'}
                           </span>
                         </div>
@@ -4363,7 +4580,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                 ? 'bg-gradient-to-r from-rose-600 to-rose-400' 
                                 : 'bg-gradient-to-r from-indigo-600 to-indigo-400'
                             }`}
-                            style={{ width: `${exactStreetStats ? Math.min(100, Math.max(15, (exactStreetStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100)) : 0}%` }}
+                            style={{ width: `${exactStreetStats ? Math.min(100, Math.max(15, (exactStreetStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 10000))) * 100)) : 0}%` }}
                           />
                         </div>
                       </div>
@@ -4379,7 +4596,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-300 font-bold flex items-center gap-1.5 flex-wrap">
                         <Compass className="w-3.5 h-3.5 text-violet-400" />
-                        3. Ruas do Entorno ({bidiBenchmark?.raio?.effectiveRadiusKm ? `~${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)}km` : `~${radiusKm}km`})
+                        {nearbyStreetData.card3Title || (bidiBenchmark?.raio?.effectiveRadiusKm ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km)` : `3. Ruas do Entorno (~${radiusKm}km)`)}
                         {isLoadingTransactions ? (
                           <span className="text-[9px] bg-violet-950/80 text-violet-300 px-1.5 py-0.2 rounded border border-violet-800/60 font-mono font-bold flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" /> Atualizando raio
@@ -4392,15 +4609,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                               ? 'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
                               : 'bg-violet-950/80 text-violet-300 border-violet-800/60'
                           }`}>
-                            {bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.radiusLabel}
+                            {rawTransactions.some(tx => tx.distanceAnchorPrecision === 'street_axis')
+                              ? nearbyStreetData.radiusLabel
+                              : bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.radiusLabel}
                           </span>
                         )}
                       </span>
                       <span className="font-bold text-violet-400">
                         {isLoadingTransactions ? (
-                          <span className="text-violet-300/90 font-mono text-[10.5px]">Consultando distâncias verificadas...</span>
+                          <span className="text-violet-300/90 font-mono text-[10.5px]">Consultando ruas do raio selecionado...</span>
                         ) : (
-                          `R$ ${(nearbyStats.avgSqm || bidiBenchmark?.raio?.saneada || 0).toLocaleString('pt-BR')}/m² (${nearbyStats.count || bidiBenchmark?.raio?.validas || 0} tx válidas${(nearbyStats.outliersCount || 0) > 0 ? ` • ${nearbyStats.outliersCount} expurgada(s)` : ''})`
+                          `R$ ${(nearbyStats?.avgSqm || bidiBenchmark?.raio?.saneada || 0).toLocaleString('pt-BR')}/m² ${sizeSqm > 0 ? `(${formatBRL((nearbyStats?.avgSqm || bidiBenchmark?.raio?.saneada || 0) * sizeSqm)})` : ''} • ${nearbyStats?.count || bidiBenchmark?.raio?.validas || 0} tx${isJuizDeFora ? ' Compra e Venda' : ' válidas'}${(nearbyStats?.outliersCount || 0) > 0 ? ` • ${nearbyStats.outliersCount} expurgada(s)` : ''}`
                         )}
                       </span>
                     </div>
@@ -4411,7 +4630,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                             ? 'bg-slate-800'
                             : 'bg-gradient-to-r from-violet-600 to-violet-400'
                         }`}
-                        style={{ width: `${selectedStreet && nearbyStreetTxs.length === 0 && !isLoadingTransactions ? 0 : Math.min(100, Math.max(15, (nearbyStats.avgSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
+                        style={{ width: `${selectedStreet && nearbyStreetTxs.length === 0 && !isLoadingTransactions ? 0 : Math.min(100, Math.max(15, (((nearbyStats?.avgSqm || bidiBenchmark?.raio?.saneada || 0)) / (Math.max(averageAskingValue / (sizeSqm || 1), 10000))) * 100))}%` }}
                       />
                     </div>
                   </div>
@@ -4425,22 +4644,22 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </span>
                       <span className="font-bold text-amber-400">
                         {neighborhoodStats ? (
-                          `R$ ${neighborhoodStats.avgSqm.toLocaleString('pt-BR')}/m² (${neighborhoodStats.count} tx válidas${neighborhoodStats.outliersCount > 0 ? ` • ${neighborhoodStats.outliersCount} expurgada(s)` : ''})`
+                          `R$ ${neighborhoodStats.avgSqm.toLocaleString('pt-BR')}/m² ${sizeSqm > 0 ? `(${formatBRL(neighborhoodStats.avgSqm * sizeSqm)})` : ''} • ${neighborhoodStats.count} tx${isJuizDeFora ? ' Compra e Venda' : ' válidas'}${neighborhoodStats.outliersCount > 0 ? ` • ${neighborhoodStats.outliersCount} expurgada(s)` : ''}`
                         ) : (
-                          `R$ ${nearbyStats.avgSqm.toLocaleString('pt-BR')}/m² (Base ITBI Oficial)`
+                          `R$ ${(nearbyStats?.avgSqm || bidiBenchmark?.bairro?.saneada || 0).toLocaleString('pt-BR')}/m² (Base ITBI Oficial)`
                         )}
                       </span>
                     </div>
                     <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
                       <div 
                         className="bg-gradient-to-r from-amber-600 to-amber-400 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, Math.max(15, ((neighborhoodStats?.avgSqm || nearbyStats.avgSqm) / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
+                        style={{ width: `${Math.min(100, Math.max(15, (((neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0)) / (Math.max(averageAskingValue / (sizeSqm || 1), 10000))) * 100))}%` }}
                       />
                     </div>
                   </div>
 
                   {/* Tier 5: Real Estate Portals Asking Price - Street */}
-                  {(() => {
+                  {!isJuizDeFora && (() => {
                     const portalTier = marketTiers.find(t => t.id === 'portals_street');
                     const tierSqm = (portalTier && portalTier.sqm && portalTier.sqm > 0) ? portalTier.sqm : Math.round(averageAskingValue / (sizeSqm || 1));
                     const tierLabel = portalTier?.samples || 'Preço Pedido';
@@ -4469,15 +4688,15 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
               {/* Synthesis Summary Metric Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 pt-2">
-                {/* CARD 1: Valor Unitário Saneado com cálculo explícito e métricas informativas */}
+                {/* CARD 1: Valor Unitário / Valor Médio */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] text-slate-400 font-mono uppercase flex items-center gap-1.5 font-bold">
                       {isLoadingTransactions && <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />}
-                      <span>1. Valor Unitário Saneado</span>
+                      <span>{isJuizDeFora ? '1. Valor Médio Transacionado' : '1. Valor Unitário Saneado'}</span>
                     </span>
                     <span className="text-[8.5px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.2 rounded font-mono font-bold">
-                      {txSizeFilter === 'similar' ? 'Área Similar' : 'Todas Áreas'}
+                      {isJuizDeFora ? 'Compra e Venda' : (txSizeFilter === 'similar' ? 'Área Similar' : 'Todas Áreas')}
                     </span>
                   </div>
                   
@@ -4488,7 +4707,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           R$ {sanitizedUnitValueSqm.toLocaleString('pt-BR')}/m²
                         </span>
                         <span className="text-[11px] font-bold text-slate-300 font-mono">
-                          • ({sizeSqm}m² = {formatBRL(sizeSqm * sanitizedUnitValueSqm)})
+                          • ({sizeSqm > 0 ? `${sizeSqm}m² = ${formatBRL(sizeSqm * sanitizedUnitValueSqm)}` : 'Informe a área'})
                         </span>
                       </>
                     ) : (
@@ -4497,7 +4716,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           Sem amostragem na via
                         </span>
                         <span className="text-[10px] text-slate-400 font-sans">
-                          (Sem escrituras na rua ou prédio)
+                          {isJuizDeFora ? '(Sem escrituras de Compra e Venda na rua ou prédio)' : '(Sem escrituras na rua ou prédio)'}
                         </span>
                       </>
                     )}
@@ -4510,8 +4729,18 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           {calculatedStats.source} {calculatedStats.outliersCount > 0 ? `(${calculatedStats.outliersCount} distorção expurgada)` : ''}
                         </span>
                         <div className="text-[9px] text-slate-400 font-mono flex flex-wrap gap-x-2">
-                          <span>Média Geral: <strong className="text-slate-300">R$ {calculatedStats.rawAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
-                          <span>• Similar: <strong className="text-indigo-300">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                          {isJuizDeFora ? (
+                            <>
+                              <span>Base 60m²: <strong className="text-slate-300">R$ {(bidiBenchmark?.m2BaseRua || calculatedStats.rawAvgSqm).toLocaleString('pt-BR')}/m²</strong></span>
+                              <span>• Fator Escala NBR: <strong className="text-indigo-300">{(bidiBenchmark?.fatorEscala || 1.0).toFixed(3)}</strong></span>
+                              <span>• Compra e Venda: <strong className="text-emerald-400">{bidiBenchmark?.compraEVendaCount ?? calculatedStats.count} tx</strong></span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Média Geral: <strong className="text-slate-300">R$ {calculatedStats.rawAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                              <span>• Similar: <strong className="text-indigo-300">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                            </>
+                          )}
                         </div>
                       </>
                     ) : (
@@ -4526,7 +4755,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <span className="text-[9px] text-slate-400 font-mono uppercase flex items-center gap-1.5 font-bold">
                     {isLoadingTransactions && <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />}
-                    <span>2. Média da Mesma Rua</span>
+                    <span>{isJuizDeFora ? '2. Preço Médio da Mesma Rua' : '2. Média da Mesma Rua'}</span>
                   </span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {exactStreetStats ? (
@@ -4535,7 +4764,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           R$ {exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m²
                         </span>
                         <span className="text-[11px] font-bold text-slate-300 font-mono">
-                          • (Total: {formatBRL(sizeSqm * exactStreetStats.avgSqm)})
+                          • ({sizeSqm > 0 ? `Total: ${formatBRL(sizeSqm * exactStreetStats.avgSqm)}` : `${exactStreetStats.count} tx`})
                         </span>
                       </>
                     ) : (
@@ -4552,9 +4781,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
                   <div className="pt-1 border-t border-slate-900 space-y-0.5">
                     <div className="text-[9.5px] text-slate-300 font-sans">
-                      {exactStreetStats ? `Baseado em ${exactStreetStats.count} transações na via` : `Sem escrituras registradas nesta via no ITBI.`}
+                      {exactStreetStats ? `Baseado em ${exactStreetStats.count} transações ${isJuizDeFora ? 'de Compra e Venda' : ''} na via` : `Sem escrituras registradas nesta via no ITBI.`}
                     </div>
-                    {exactStreetStats && (
+                    {exactStreetStats && !isJuizDeFora && (
                       <div className="text-[9px] text-slate-400 font-mono flex flex-wrap gap-x-2">
                         <span>Similar: <strong className="text-indigo-300">R$ {exactStreetStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
                         <span>• Geral: <strong className="text-slate-300">R$ {exactStreetStats.allAreasAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
@@ -4563,37 +4792,52 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </div>
                 </div>
 
+                {/* CARD 3: Ruas do Entorno */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <span className="text-[9px] text-violet-300 font-mono uppercase block font-bold">
-                    3. Ruas do Entorno ({bidiBenchmark?.raio?.effectiveRadiusKm ? `~${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)}km` : `~${radiusKm}km`})
+                    {nearbyStreetData.card3Title || (bidiBenchmark?.raio?.effectiveRadiusKm ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km)` : `3. Ruas do Entorno (~${radiusKm}km)`)}
                   </span>
-                  <span className="text-base font-black text-violet-400 font-mono block">
-                    {(bidiBenchmark?.raio?.saneada || nearbyStats.avgSqm) > 0 ? `${formatBRL(bidiBenchmark?.raio?.saneada || nearbyStats.avgSqm)}/m²` : 'Sem amostras no raio'}
-                  </span>
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    {(bidiBenchmark?.raio?.saneada || nearbyStats?.avgSqm || 0) > 0 ? (
+                      <>
+                        <span className="text-base font-black text-violet-400 font-mono">
+                          R$ {(bidiBenchmark?.raio?.saneada || nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
+                        </span>
+                        {sizeSqm > 0 && (
+                          <span className="text-[11px] font-bold text-slate-300 font-mono">
+                            • ({formatBRL(sizeSqm * (bidiBenchmark?.raio?.saneada || nearbyStats?.avgSqm || 0))})
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-sm font-black text-slate-400 font-mono">Sem amostras no raio</span>
+                    )}
+                  </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] text-slate-400">
-                      {bidiBenchmark?.raio?.validas ?? nearbyStats.count ?? 0} transações apuradas
+                      {bidiBenchmark?.raio?.validas ?? nearbyStats?.count ?? 0} transações {isJuizDeFora ? 'de Compra e Venda' : 'apuradas'}
                     </span>
                     <span className="text-[9px] text-violet-300/80 font-mono">
-                      {bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.radiusLabel}
+                      {nearbyStreetData.item3Label || bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.radiusLabel}
                     </span>
                   </div>
                 </div>
+
                 {/* CARD 4: Média Geral do Bairro */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">4. Média Geral do Bairro</span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     <span className="text-base font-black text-amber-400 font-mono">
-                      R$ {(neighborhoodStats?.avgSqm || nearbyStats.avgSqm).toLocaleString('pt-BR')}/m²
+                      R$ {(neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
                     </span>
-                    <span className="text-[11px] font-bold text-slate-300 font-mono">
-                      • (Total: {formatBRL(sizeSqm * (neighborhoodStats?.avgSqm || nearbyStats.avgSqm))})
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {sizeSqm > 0 ? `• (${formatBRL(sizeSqm * (neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0))})` : '• ref. contextual'}
                     </span>
                   </div>
 
                   <div className="pt-1 border-t border-slate-900 space-y-0.5">
                     <div className="text-[9.5px] text-slate-300 font-sans">
-                      {neighborhoodStats ? `${neighborhoodStats.count} transações no ITBI oficial de ${selectedNeighborhood}` : `Média cadastral oficial do ITBI`}
+                      {neighborhoodStats ? `${neighborhoodStats.count} transações ${isJuizDeFora ? 'de Compra e Venda' : ''} no ITBI oficial de ${selectedNeighborhood}` : `Média cadastral oficial do ITBI`}
                     </div>
                     <div className="text-[9px] text-slate-400 font-mono">
                       <span>Bairro: <strong className="text-amber-300">{selectedNeighborhood || 'Bairro'}</strong></span>
@@ -4601,30 +4845,34 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </div>
                 </div>
 
-                {/* CARD 4: Preço Sugerido para Revenda Rápida (Flip) */}
+                {/* CARD 5: Preço Sugerido para Revenda Rápida (Flip) */}
                 <div className={`p-3.5 rounded-xl border space-y-1.5 ${
-                  (!hasRealMicroData || suggestedQuickSaleTotal === 0 || !hasVerifiedStreetOrBuildingData)
+                  (!hasRealMicroData || suggestedQuickSaleTotal === 0)
                     ? 'bg-rose-950/20 border-rose-500/50'
+                    : hasBenchmarkCalibration
+                      ? 'bg-amber-950/20 border-amber-500/50'
                     : 'bg-slate-950 border-slate-850'
                 }`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">4. Preço Sugerido p/ Revenda (Flip Rápido)</span>
+                    <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">5. Preço Sugerido p/ Revenda (Flip Rápido)</span>
                     <span className={`text-[8px] px-2 py-0.5 rounded border font-mono font-bold ${
-                      (!hasRealMicroData || suggestedQuickSaleTotal === 0 || !hasVerifiedStreetOrBuildingData)
+                      (!hasRealMicroData || suggestedQuickSaleTotal === 0)
                         ? 'bg-rose-950/80 text-rose-300 border-rose-800/50'
+                        : hasBenchmarkCalibration
+                          ? 'bg-amber-950/80 text-amber-300 border-amber-800/50'
                         : 'bg-emerald-950/80 text-emerald-300 border-emerald-800/40'
                     }`}>
-                      {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? 'Amostragem Insuficiente' : !hasVerifiedStreetOrBuildingData ? 'Projeção pelo entorno' : 'Giro em até 60 dias'}
+                      {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? 'Média ponderada incompleta' : bidiBenchmark?.calibrationKind === 'radius_neighborhood' ? 'Calibrado por raio e bairro' : bidiBenchmark?.calibrationKind === 'few_local_samples' ? 'Calibrado: poucas amostras' : 'Giro em até 60 dias'}
                     </span>
                   </div>
 
                   {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? (
                     <div className="py-2 space-y-1">
-                      <span className="text-sm font-black text-amber-300 font-mono block">
-                        Cálculo de Flip Suspenso
+                        <span className="text-sm font-black text-amber-300 font-mono block">
+                        Poucos dados de ITBI para precificação
                       </span>
                       <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
-                        A Norma NBR 14.653 exige amostragem comprovada no prédio, na rua ou no raio de 500m. Sem dados da via ou entorno, é vedado arbitrar preço de saída especulativo.
+                        {`A média usa prédio (40%), rua (35%), raio selecionado (15%) e bairro (10%). Sem amostras locais, o programa só libera estimativa calibrada quando há pelo menos 5 vendas válidas no raio e 7 no bairro; abaixo disso, não calcula gabarito nem Flip.`}
                       </p>
                     </div>
                   ) : (
@@ -4638,9 +4886,21 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         </span>
                       </div>
 
+                      {bidiBenchmark?.buildingSafetyValveApplied && (
+                        <div className="text-[9.5px] bg-amber-950/40 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-800/40 font-mono flex items-center justify-between">
+                          <span>🛡️ Válvula de Segurança (-5%)</span>
+                          <span className="text-[9px] text-amber-400/80">Sem amostragem no próprio condomínio</span>
+                        </div>
+                      )}
+
                       {!hasVerifiedStreetOrBuildingData && (
-                        <p className="text-[9.5px] font-bold text-rose-300 border-t border-rose-800/40 pt-1.5">
-                          Fonte local insuficiente: valor projetado pelo entorno, sem confirmação no prédio ou na rua.
+                        <p className="text-[9.5px] font-bold text-amber-300 border-t border-amber-800/40 pt-1.5">
+                          Valor calibrado pelo entorno e bairro. Não há confirmação de preço no prédio ou na rua; a liquidez fica limitada a 3/10.
+                        </p>
+                      )}
+                      {bidiBenchmark?.calibrationKind === 'few_local_samples' && (
+                        <p className="text-[9.5px] font-bold text-amber-300 border-t border-amber-800/40 pt-1.5">
+                          Calibragem por baixa amostragem local ({bidiBenchmark.predio.validas + bidiBenchmark.rua.validas} vendas no prédio/rua). A liquidez fica limitada conforme a quantidade de comparáveis.
                         </p>
                       )}
 
@@ -4673,15 +4933,19 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       
                       <div className="pt-1.5 border-t border-slate-900 space-y-1">
                         <div className="text-[9px] text-slate-400 font-sans flex items-center justify-between">
-                          <span>Piso Transacionado (ITBI 4 Níveis):</span>
-                          <strong className="text-emerald-400 font-mono">R$ {itbiWeightedStats.itbiCompositeSqm.toLocaleString('pt-BR')}/m²</strong>
+                          <span>{isJuizDeFora ? 'Piso Transacionado Homogeneizado:' : 'Piso Transacionado (ITBI 4 Níveis):'}</span>
+                          <strong className="text-emerald-400 font-mono">
+                            R$ {(bidiBenchmark?.mediaCorteReal || itbiWeightedStats.itbiCompositeSqm).toLocaleString('pt-BR')}/m² {sizeSqm > 0 ? `(${formatBRL((bidiBenchmark?.mediaCorteReal || itbiWeightedStats.itbiCompositeSqm) * sizeSqm)})` : ''}
+                          </strong>
                         </div>
-                        <div className="text-[9px] text-slate-400 font-sans flex items-center justify-between">
-                          <span>Teto Balizador Portais:</span>
-                          <strong className="text-cyan-300 font-mono">R$ {portalBenchmarkSqm.toLocaleString('pt-BR')}/m²</strong>
-                        </div>
+                        {!isJuizDeFora && (
+                          <div className="text-[9px] text-slate-400 font-sans flex items-center justify-between">
+                            <span>Teto Balizador Portais:</span>
+                            <strong className="text-cyan-300 font-mono">R$ {portalBenchmarkSqm.toLocaleString('pt-BR')}/m²</strong>
+                          </div>
+                        )}
                         <span className="text-[8px] text-slate-500 block font-mono">
-                          100% ITBI Oficial dos 4 Níveis com deságio de 10% para liquidez imediata em até 60 dias
+                          {isJuizDeFora ? 'Preço médio de Compra e Venda com deságio de 10% para liquidez em até 60 dias' : '100% ITBI Oficial dos 4 Níveis com deságio de 10% para liquidez imediata em até 60 dias'}
                         </span>
                       </div>
                     </>
@@ -4691,7 +4955,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             </div>
 
             {/* TABELA 1 (DESTAQUE): Transações no Mesmo Prédio / Número */}
-            {exactBuildingTxs.length > 0 && (
+            {sameNumberBuildingTxs.length > 0 && (
               <div className="bg-emerald-950/20 border border-emerald-900/50 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-900/40">
                   <div className="flex items-center space-x-2">
@@ -4700,11 +4964,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       <h3 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
                         <span>Transações Oficiais no Mesmo Prédio / Endereço (Nº {cleanNumber(streetNumber)})</span>
                         <span className="text-[10px] bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded font-mono font-bold">
-                          {exactBuildingTxs.filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.round(sizeSqm * 0.67) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))).length} imóveis no recorte
+                          {exactBuildingTxs.filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.round(sizeSqm * 0.67) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))).length} {isJuizDeFora ? 'comparáveis de Compra e Venda' : 'imóveis no recorte'} · {sameNumberBuildingTxs.length} registros no nº
                         </span>
                       </h3>
                       <p className="text-[10px] text-emerald-400/80 mt-0.5">
-                        Escrituras e impostos de ITBI recolhidos exatamente neste edifício. Clique em uma linha para aplicar os dados na calculadora.
+                        {isJuizDeFora
+                          ? 'Escrituras oficiais de ITBI (Compra e Venda) registradas neste endereço em Juiz de Fora. Clique em uma linha para aplicar o valor na calculadora.'
+                          : 'Escrituras e impostos de ITBI recolhidos exatamente neste edifício. Clique em uma linha para aplicar os dados na calculadora.'}
                       </p>
                     </div>
                   </div>
@@ -4717,38 +4983,86 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         <th className="pb-2">Data</th>
                         <th className="pb-2">Número</th>
                         <th className="pb-2">Complemento / Apto</th>
-                        <th className="pb-2 text-center">Área Privativa</th>
-                        <th className="pb-2 text-right">Preço Declarado</th>
-                        <th className="pb-2 text-right">Valor m²</th>
-                        <th className="pb-2">Descrição</th>
+                        {isJuizDeFora ? (
+                          <>
+                            <th className="pb-2 text-center">Natureza</th>
+                            <th className="pb-2 text-center">Fração</th>
+                            <th className="pb-2 text-right">Preço Declarado</th>
+                            <th className="pb-2 text-center">Área informada</th>
+                            <th className="pb-2 text-right">Preço por m²</th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="pb-2 text-center">Área Privativa</th>
+                            <th className="pb-2 text-right">Preço Declarado</th>
+                            <th className="pb-2 text-right">Valor m²</th>
+                            <th className="pb-2">Descrição</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-emerald-900/30 text-slate-300">
-                      {exactBuildingTxs
-                        .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))
-                        .map((tx) => (
+                      {sameNumberBuildingTxs
+                        .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
+                        .map((tx) => {
+                        const neighborhoodConflict = isJuizDeFora && !!selectedNeighborhood && !!tx.neighborhood &&
+                          cleanNeighborhood(tx.neighborhood) !== cleanNeighborhood(selectedNeighborhood);
+                        return (
                         <tr 
                           key={tx.id}
                           onClick={() => {
-                            setSizeSqm(tx.sizeSqm);
-                            setCustomValue(tx.transactionValue);
+                            if (neighborhoodConflict) return;
+                            if (isJuizDeFora) {
+                              setCustomValue(getTxIntegralValue(tx));
+                            } else {
+                              setSizeSqm(tx.sizeSqm);
+                              setCustomValue(tx.transactionValue);
+                            }
                           }}
-                          className="hover:bg-emerald-950/40 transition-colors cursor-pointer group"
-                          title="Clique para importar esta transação na calculadora"
+                          className={`${neighborhoodConflict ? 'bg-amber-950/20 cursor-not-allowed' : 'hover:bg-emerald-950/40 cursor-pointer'} transition-colors group`}
+                          title={neighborhoodConflict
+                            ? `Bairro informado pela prefeitura (${tx.neighborhood}) diverge do imóvel selecionado (${selectedNeighborhood}); não entra na precificação local.`
+                            : 'Clique para importar esta transação na calculadora'}
                         >
                           <td className="py-2.5 font-mono text-emerald-300/80">{tx.date}</td>
                           <td className="py-2.5 font-bold text-white font-mono">{tx.number || '-'}</td>
                           <td className="py-2.5 font-semibold text-emerald-200 group-hover:text-emerald-100 transition-colors">
                             {tx.complement || 'Unidade Principal'}
+                            {isJuizDeFora && tx.complement && <span className="block text-[9px] text-slate-500" title="Texto mantido conforme o registro original da prefeitura; não foi expandido automaticamente.">Complemento conforme fonte oficial</span>}
+                            {neighborhoodConflict && <span className="block mt-1 text-[9px] font-bold text-amber-300">Bairro divergente · fora da precificação</span>}
                           </td>
-                          <td className="py-2.5 text-center font-mono font-bold text-white">{tx.sizeSqm}m²</td>
-                          <td className="py-2.5 text-right font-mono font-black text-emerald-400">{formatBRL(tx.transactionValue)}</td>
-                          <td className="py-2.5 text-right font-mono font-black text-emerald-300">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
-                          <td className="py-2.5 text-[10px] text-slate-400 truncate max-w-[200px]" title={tx.description || ''}>
-                            {tx.description || '-'}
-                          </td>
+                          {isJuizDeFora ? (
+                            <>
+                              <td className="py-2.5 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
+                                  tx.isCompraEVenda === true
+                                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/50'
+                                    : 'bg-amber-950/80 text-amber-300 border border-amber-800/50'
+                                }`}>
+                                  {tx.naturezaOperacao || 'Natureza não identificada'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 text-center font-mono font-bold text-white">
+                                {tx.percentualTransmitido ? `${tx.percentualTransmitido}%` : '100%'}
+                              </td>
+                              <td className="py-2.5 text-right font-mono font-bold text-slate-300">
+                                {formatBRL(tx.transactionValue)}
+                              </td>
+                              <td className="py-2.5 text-center font-mono text-slate-500">Não consta</td>
+                              <td className="py-2.5 text-right font-mono text-slate-500">Não calculado</td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="py-2.5 text-center font-mono font-bold text-white">{tx.sizeSqm}m²</td>
+                              <td className="py-2.5 text-right font-mono font-black text-emerald-400">{formatBRL(tx.transactionValue)}</td>
+                              <td className="py-2.5 text-right font-mono font-black text-emerald-300">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
+                              <td className="py-2.5 text-[10px] text-slate-400 truncate max-w-[200px]" title={tx.description || ''}>
+                                {tx.description || '-'}
+                              </td>
+                            </>
+                          )}
                         </tr>
-                      ))}
+                      );})}
                     </tbody>
                   </table>
                 </div>
@@ -4764,52 +5078,80 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <div className="flex items-center space-x-2">
                     <Building className="w-5 h-5 text-indigo-400" />
                     <div>
-                      <h3 className="font-bold text-slate-200 text-sm">Amostras na Mesma Rua</h3>
-                      <p className="text-[10px] text-slate-450 mt-0.5">Valores reais de ITBI especificamente nesta rua ({selectedStreet || 'todas'}).</p>
+                      <h3 className="font-bold text-slate-200 text-sm">
+                        {isJuizDeFora ? 'Amostras na Mesma Rua (Juiz de Fora)' : 'Amostras na Mesma Rua'}
+                      </h3>
+                      <p className="text-[10px] text-slate-450 mt-0.5">
+                        {isJuizDeFora
+                          ? `Transações oficiais de ITBI nesta via (${selectedStreet || 'todas'}).`
+                          : `Valores reais de ITBI especificamente nesta rua (${selectedStreet || 'todas'}).`}
+                      </p>
                     </div>
                   </div>
                   
                   {/* Size Filter Toggle inside tab */}
-                  <button
-                    onClick={() => setTxSizeFilter(prev => prev === 'all' ? 'similar' : 'all')}
-                    className={`px-2.5 py-1 rounded-lg text-[9px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
-                      txSizeFilter === 'similar' 
-                        ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300 font-semibold shadow-xs' 
-                        : 'bg-slate-950 border-slate-850 text-slate-400 hover:bg-slate-800'
-                    }`}
-                  >
-                    <span>{txSizeFilter === 'similar' ? '🎯 Área Similar (±33%)' : '🌐 Todas as Áreas'}</span>
-                  </button>
+                  {!isJuizDeFora ? (
+                    <button
+                      onClick={() => setTxSizeFilter(prev => prev === 'all' ? 'similar' : 'all')}
+                      className={`px-2.5 py-1 rounded-lg text-[9px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                        txSizeFilter === 'similar'
+                          ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300 font-semibold shadow-xs'
+                          : 'bg-slate-950 border-slate-850 text-slate-400 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span>{txSizeFilter === 'similar' ? '🎯 Área Similar (±33%)' : '🌐 Todas as Áreas'}</span>
+                    </button>
+                  ) : (
+                    <span className="text-[9px] bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-800/40">
+                      {exactStreetTxs.filter(t => t.isCompraEVenda === true).length} Compra e Venda
+                    </span>
+                  )}
                 </div>
 
                 <div className="overflow-x-auto max-h-[350px] overflow-y-auto">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-slate-800 text-slate-450 font-medium uppercase tracking-wider text-[9px]">
+                      <tr className="border-b border-slate-800 text-slate-455 font-medium uppercase tracking-wider text-[9px]">
                         <th className="pb-2 font-semibold">Data</th>
-                        <th className="pb-2 font-semibold">Nº / Apto</th>
-                        <th className="pb-2 text-center font-semibold">Área</th>
-                        <th className="pb-2 text-right font-semibold">Preço Escritura</th>
-                        <th className="pb-2 text-right font-semibold">Valor m²</th>
+                        <th className="pb-2 font-semibold">{isJuizDeFora ? 'Nº / Compl' : 'Nº / Apto'}</th>
+                        {isJuizDeFora ? (
+                          <>
+                            <th className="pb-2 text-center font-semibold">Natureza</th>
+                            <th className="pb-2 text-center font-semibold">Fração</th>
+                            <th className="pb-2 text-right font-semibold">Preço Declarado</th>
+                            <th className="pb-2 text-center font-semibold">Área informada</th>
+                            <th className="pb-2 text-right font-semibold">Preço por m²</th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="pb-2 text-center font-semibold">Área</th>
+                            <th className="pb-2 text-right font-semibold">Preço Escritura</th>
+                            <th className="pb-2 text-right font-semibold">Valor m²</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300">
                       {exactStreetTxs.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-550 italic">
+                          <td colSpan={isJuizDeFora ? 7 : 5} className="py-8 text-center text-slate-550 italic">
                             Nenhuma transação individual encontrada nesta rua.
                           </td>
                         </tr>
                       ) : (
                         exactStreetTxs
-                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))
-                          .slice(0, 35)
+                          .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
+                          .slice(0, 50)
                           .map((tx) => (
                             <tr 
                               key={tx.id} 
                               onClick={() => {
-                                setSizeSqm(tx.sizeSqm);
-                                setCustomValue(tx.transactionValue);
+                                if (isJuizDeFora) {
+                                  setCustomValue(getTxIntegralValue(tx));
+                                } else {
+                                  setSizeSqm(tx.sizeSqm);
+                                  setCustomValue(tx.transactionValue);
+                                }
                               }}
                               className="hover:bg-slate-950/60 transition-colors cursor-pointer group"
                               title="Clique para importar esta transação na calculadora"
@@ -4818,9 +5160,33 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                               <td className="py-2.5 font-semibold text-slate-200 group-hover:text-indigo-400 transition-colors">
                                 {tx.number ? `Nº ${tx.number}` : ''}{tx.complement ? ` - ${tx.complement}` : (tx.number ? '' : tx.street || 'Não informado')}
                               </td>
-                              <td className="py-2.5 text-center font-mono font-semibold">{tx.sizeSqm}m²</td>
-                              <td className="py-2.5 text-right font-mono font-bold text-slate-100">{formatBRL(tx.transactionValue)}</td>
-                              <td className="py-2.5 text-right font-mono font-bold text-indigo-400">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
+                              {isJuizDeFora ? (
+                                <>
+                                  <td className="py-2.5 text-center">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
+                                      tx.isCompraEVenda === true
+                                        ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/50'
+                                        : 'bg-amber-950/80 text-amber-300 border border-amber-800/50'
+                                    }`}>
+                                      {tx.naturezaOperacao || 'Natureza não identificada'}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 text-center font-mono font-bold text-slate-200">
+                                    {tx.percentualTransmitido ? `${tx.percentualTransmitido}%` : '100%'}
+                                  </td>
+                                  <td className="py-2.5 text-right font-mono font-medium text-slate-300">
+                                    {formatBRL(tx.transactionValue)}
+                                  </td>
+                                  <td className="py-2.5 text-center font-mono text-slate-500">Não consta</td>
+                                  <td className="py-2.5 text-right font-mono text-slate-500">Não calculado</td>
+                                </>
+                              ) : (
+                                <>
+                                  <td className="py-2.5 text-center font-mono font-semibold">{tx.sizeSqm}m²</td>
+                                  <td className="py-2.5 text-right font-mono font-bold text-slate-100">{formatBRL(tx.transactionValue)}</td>
+                                  <td className="py-2.5 text-right font-mono font-bold text-indigo-400">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
+                                </>
+                              )}
                             </tr>
                           ))
                       )}
@@ -4836,13 +5202,15 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <Compass className="w-5 h-5 text-violet-400" />
                     <div>
                       <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
-                        <span>Amostras nas Ruas Próximas ao Entorno (Raio Exato de {radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`})</span>
+                        <span>Amostras nas Ruas Próximas ao Entorno ({radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`})</span>
                         <span className="text-[10px] bg-violet-950 text-violet-300 px-2 py-0.5 rounded font-mono font-bold border border-violet-800/40">
-                          {nearbyStreetTxs.length} tx válidas
+                          {nearbyStreetTxs.length} {isJuizDeFora ? 'tx de Compra e Venda' : 'tx válidas'}
                         </span>
                       </h3>
                       <p className="text-[10px] text-slate-450 mt-0.5">
-                        Transações reais do ITBI estritamente contidas na circunferência de {radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`} a partir do imóvel de referência.
+                        {rawTransactions.some(tx => tx.distanceAnchorPrecision === 'street_axis')
+                          ? 'O CNEFE ainda não confirmou o bloco deste imóvel. As distâncias entre eixos de rua são apenas referência e não entram no preço do Flip.'
+                          : `Transações reais do ITBI no raio selecionado de ${radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`} a partir do endereço oficial.`}
                       </p>
                     </div>
                   </div>
@@ -4856,7 +5224,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     >
                       <span>500m (Padrão)</span>
                       <span className="text-[8.5px] font-normal opacity-90">
-                        {radiusAverages.r500 ? `R$ ${radiusAverages.r500.toLocaleString('pt-BR')}/m²` : 'Sem dados'}
+                        {radiusAverages.r500 ? (isJuizDeFora ? formatBRL(radiusAverages.r500) : `R$ ${radiusAverages.r500.toLocaleString('pt-BR')}/m²`) : 'Sem dados'}
                       </span>
                     </button>
                     <button
@@ -4867,7 +5235,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     >
                       <span>1.0 km</span>
                       <span className="text-[8.5px] font-normal opacity-90">
-                        {radiusAverages.r1000 ? `R$ ${radiusAverages.r1000.toLocaleString('pt-BR')}/m²` : 'Sem dados'}
+                        {radiusAverages.r1000 ? (isJuizDeFora ? formatBRL(radiusAverages.r1000) : `R$ ${radiusAverages.r1000.toLocaleString('pt-BR')}/m²`) : 'Sem dados'}
                       </span>
                     </button>
                     <button
@@ -4878,7 +5246,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     >
                       <span>2.0 km</span>
                       <span className="text-[8.5px] font-normal opacity-90">
-                        {radiusAverages.r2000 ? `R$ ${radiusAverages.r2000.toLocaleString('pt-BR')}/m²` : 'Sem dados'}
+                        {radiusAverages.r2000 ? (isJuizDeFora ? formatBRL(radiusAverages.r2000) : `R$ ${radiusAverages.r2000.toLocaleString('pt-BR')}/m²`) : 'Sem dados'}
                       </span>
                     </button>
                   </div>
@@ -4891,30 +5259,46 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         <th className="pb-2 font-semibold">Data</th>
                         <th className="pb-2 font-semibold">Logradouro</th>
                         <th className="pb-2 text-center font-semibold">Distância Real</th>
-                        <th className="pb-2 text-center font-semibold">Área</th>
-                        <th className="pb-2 text-right font-semibold">Preço Escritura</th>
-                        <th className="pb-2 text-right font-semibold">Valor m²</th>
+                        {isJuizDeFora ? (
+                          <>
+                            <th className="pb-2 text-center font-semibold">Natureza</th>
+                            <th className="pb-2 text-center font-semibold">Fração</th>
+                            <th className="pb-2 text-right font-semibold">Preço Declarado</th>
+                            <th className="pb-2 text-center font-semibold">Área informada</th>
+                            <th className="pb-2 text-right font-semibold">Preço por m²</th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="pb-2 text-center font-semibold">Área</th>
+                            <th className="pb-2 text-right font-semibold">Preço Escritura</th>
+                            <th className="pb-2 text-right font-semibold">Valor m²</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300">
                       {nearbyStreetTxs.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-slate-500 italic">
+                          <td colSpan={isJuizDeFora ? 8 : 6} className="py-8 text-center text-slate-500 italic">
                             {isLoadingTransactions ? 'Carregando transações do ITBI...' : `Nenhuma transação individual encontrada no raio estrito de ${radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`}.`}
                           </td>
                         </tr>
                       ) : (
                         nearbyStreetTxs
-                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))
-                          .slice(0, 35)
+                          .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
+                          .slice(0, 50)
                           .map((tx) => {
                             const distMeters = tx.distanceMeters || (typeof tx.distanceKm === 'number' ? Math.round(tx.distanceKm * 1000) : null);
                             return (
                               <tr 
                                 key={tx.id} 
                                 onClick={() => {
-                                  setSizeSqm(tx.sizeSqm);
-                                  setCustomValue(tx.transactionValue);
+                                  if (isJuizDeFora) {
+                                    setCustomValue(getTxIntegralValue(tx));
+                                  } else {
+                                    setSizeSqm(tx.sizeSqm);
+                                    setCustomValue(tx.transactionValue);
+                                  }
                                 }}
                                 className="hover:bg-slate-950/60 transition-colors cursor-pointer group"
                                 title="Clique para importar esta transação na calculadora"
@@ -4928,9 +5312,33 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                     {distMeters !== null ? `${distMeters}m` : 'no raio'}
                                   </span>
                                 </td>
-                                <td className="py-2.5 text-center font-mono font-semibold">{tx.sizeSqm}m²</td>
-                                <td className="py-2.5 text-right font-mono font-semibold text-slate-200">{formatBRL(tx.transactionValue)}</td>
-                                <td className="py-2.5 text-right font-mono font-bold text-slate-400">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
+                                {isJuizDeFora ? (
+                                  <>
+                                    <td className="py-2.5 text-center">
+                                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
+                                        tx.isCompraEVenda === true
+                                          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/50'
+                                          : 'bg-amber-950/80 text-amber-300 border border-amber-800/50'
+                                      }`}>
+                                        {tx.naturezaOperacao || 'Natureza não identificada'}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 text-center font-mono font-bold text-slate-200">
+                                      {tx.percentualTransmitido ? `${tx.percentualTransmitido}%` : '100%'}
+                                    </td>
+                                    <td className="py-2.5 text-right font-mono font-medium text-slate-300">
+                                      {formatBRL(tx.transactionValue)}
+                                    </td>
+                                    <td className="py-2.5 text-center font-mono text-slate-500">Não consta</td>
+                                    <td className="py-2.5 text-right font-mono text-slate-500">Não calculado</td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="py-2.5 text-center font-mono font-semibold">{tx.sizeSqm}m²</td>
+                                    <td className="py-2.5 text-right font-mono font-semibold text-slate-200">{formatBRL(tx.transactionValue)}</td>
+                                    <td className="py-2.5 text-right font-mono font-bold text-slate-400">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
+                                  </>
+                                )}
                               </tr>
                             );
                           })

@@ -191,19 +191,29 @@ export default function ItbiManager({
       if (stat.maxValueSqm > statsMap[key].max) statsMap[key].max = stat.maxValueSqm;
     });
 
-    const result = Object.values(statsMap).map(s => ({
-      state: s.state,
-      city: s.city,
-      neighborhood: s.neighborhood,
-      averageValueSqm: s.count > 0 ? Math.round(s.sumSqmTimesCount / s.count) : 0,
-      minValueSqm: s.min,
-      maxValueSqm: s.max,
-      transactionCount: s.count,
-      averageTotalValue: s.count > 0 ? Math.round(s.sumAvgTotalValTimesCount / s.count) : 0
-    }));
+    const result = Object.values(statsMap).map(s => {
+      const isJF = s.city.toLowerCase().includes('juiz de fora') || s.state.toUpperCase() === 'MG';
+      return {
+        state: s.state,
+        city: s.city,
+        neighborhood: s.neighborhood,
+        isAbsolutePricing: isJF,
+        isDerivedSqm: isJF,
+        averageValueSqm: isJF ? (s.sumSqmTimesCount > 0 ? Math.round(s.sumSqmTimesCount / s.count) : Math.round(s.sumAvgTotalValTimesCount / (s.count || 1) / 60)) : (s.count > 0 ? Math.round(s.sumSqmTimesCount / s.count) : 0),
+        minValueSqm: s.min,
+        maxValueSqm: s.max,
+        transactionCount: s.count,
+        compraEVendaCount: isJF ? s.count : undefined,
+        averageTotalValue: s.count > 0 ? Math.round(s.sumAvgTotalValTimesCount / s.count) : 0
+      };
+    });
 
     if (sortBy === 'value') {
-      result.sort((a, b) => b.averageValueSqm - a.averageValueSqm);
+      result.sort((a, b) => {
+        const valA = (a as any).isAbsolutePricing ? a.averageTotalValue : a.averageValueSqm;
+        const valB = (b as any).isAbsolutePricing ? b.averageTotalValue : b.averageValueSqm;
+        return valB - valA;
+      });
     } else {
       result.sort((a, b) => b.transactionCount - a.transactionCount);
     }
@@ -397,7 +407,9 @@ export default function ItbiManager({
     
     // Take top 8 neighborhoods to fit nicely
     const topNeighborhoods = neighborhoodStats.slice(0, 8);
-    const maxVal = Math.max(...topNeighborhoods.map(s => s.averageValueSqm));
+    const isJF = (uiCityFilter || '').toLowerCase().includes('juiz de fora') || topNeighborhoods.some(s => (s as any).isAbsolutePricing);
+    const getVal = (s: any) => isJF ? (s.averageTotalValue || 0) : (s.averageValueSqm || 0);
+    const maxVal = Math.max(...topNeighborhoods.map(getVal));
     
     const chartHeight = 220;
     const paddingLeft = 120;
@@ -414,9 +426,11 @@ export default function ItbiManager({
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <TrendingUp className="w-5 h-5 text-indigo-500" />
-            <h3 className="font-semibold text-gray-800 text-sm">Gabarito de Valores Médios por Região (R$/m² de ITBI)</h3>
+            <h3 className="font-semibold text-gray-800 text-sm">
+              {isJF ? 'Gabarito de Preços Médios por Região (Base Compra e Venda)' : 'Gabarito de Valores Médios por Região (R$/m² de ITBI)'}
+            </h3>
           </div>
-          <span className="text-xs text-gray-400">Dados Históricos Reais</span>
+          <span className="text-xs text-gray-400">{isJF ? 'ITBI Oficial Juiz de Fora' : 'Dados Históricos Reais'}</span>
         </div>
 
         <div className="w-full overflow-x-auto">
@@ -442,7 +456,7 @@ export default function ItbiManager({
                     textAnchor="middle" 
                     className="text-[10px] fill-gray-400 font-mono"
                   >
-                    R$ {gridVal.toLocaleString('pt', { maximumFractionDigits: 0 })}
+                    {isJF ? formatBRL(gridVal) : `R$ ${gridVal.toLocaleString('pt', { maximumFractionDigits: 0 })}`}
                   </text>
                 </g>
               );
@@ -450,7 +464,8 @@ export default function ItbiManager({
 
             {topNeighborhoods.map((n, idx) => {
               const y = paddingTop + idx * barSpacing;
-              const barWidth = maxVal > 0 ? (n.averageValueSqm / maxVal) * drawWidth : 0;
+              const nVal = getVal(n);
+              const barWidth = maxVal > 0 ? (nVal / maxVal) * drawWidth : 0;
               
               return (
                 <g key={n.neighborhood} className="group">
@@ -464,7 +479,7 @@ export default function ItbiManager({
                     {n.neighborhood}
                   </text>
 
-                  {/* Colored bar representing the m2 value */}
+                  {/* Colored bar representing the value */}
                   <rect 
                     x={paddingLeft} 
                     y={y} 
@@ -480,7 +495,7 @@ export default function ItbiManager({
                     y={y + 12} 
                     className="text-xs font-bold fill-indigo-900 font-mono"
                   >
-                    {n.averageValueSqm.toLocaleString('pt')}
+                    {isJF ? formatBRL(nVal) : n.averageValueSqm.toLocaleString('pt')}
                   </text>
                 </g>
               );
@@ -724,12 +739,16 @@ export default function ItbiManager({
                           {s.city || 'Rio de Janeiro'} - {s.state || 'RJ'}
                         </span>
                       </td>
-                      <td className="py-3 text-right font-mono font-bold text-indigo-700">R$ {s.averageValueSqm.toLocaleString('pt')}/m²</td>
-                      <td className="py-3 text-right font-mono text-gray-600">{formatBRL(s.averageTotalValue)}</td>
-                      <td className="py-3 text-right font-mono text-xs text-gray-500">R$ {s.minValueSqm.toLocaleString('pt')} - R$ {s.maxValueSqm.toLocaleString('pt')}</td>
+                      <td className="py-3 text-right font-mono font-bold text-indigo-700">
+                        R$ {s.averageValueSqm.toLocaleString('pt')}/m²
+                      </td>
+                      <td className="py-3 text-right font-mono text-gray-600 font-bold">{formatBRL(s.averageTotalValue)}</td>
+                      <td className="py-3 text-right font-mono text-xs text-gray-500">
+                        {(s as any).isDerivedSqm ? 'Ref. modal 60m²' : `R$ ${s.minValueSqm.toLocaleString('pt')} - R$ ${s.maxValueSqm.toLocaleString('pt')}`}
+                      </td>
                       <td className="py-3 text-center">
                         <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                          {s.transactionCount} txs
+                          {(s as any).isAbsolutePricing ? `${s.transactionCount} Compra e Venda` : `${s.transactionCount} txs`}
                         </span>
                       </td>
                     </tr>
@@ -1178,23 +1197,30 @@ Pinheiros;Apartamento;60;750000;2026-04-12"
 
                       <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100/60 text-xs">
                         <div>
-                          <span className="block text-[10px] text-gray-400 uppercase font-medium">Média m²</span>
+                          <span className="block text-[10px] text-gray-400 uppercase font-medium">{(st as any).isDerivedSqm ? 'm² Homogeneizado' : 'Média m²'}</span>
                           <span className="font-mono font-bold text-indigo-600">
                             R$ {st.averageValueSqm.toLocaleString('pt-BR')}/m²
                           </span>
                         </div>
                         <div>
                           <span className="block text-[10px] text-gray-400 uppercase font-medium">Preço Médio</span>
-                          <span className="font-mono text-slate-700">
+                          <span className="font-mono text-slate-700 font-bold">
                             {formatBRL(st.averageTotalValue)}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-[10px] text-slate-500 font-mono flex justify-between bg-slate-50 p-1.5 rounded-md">
-                        <span>Min: R$ {st.minValueSqm.toLocaleString('pt-BR')}/m²</span>
-                        <span>Max: R$ {st.maxValueSqm.toLocaleString('pt-BR')}/m²</span>
-                      </div>
+                      {(st as any).isAbsolutePricing ? (
+                        <div className="text-[10px] text-slate-500 font-mono flex justify-between bg-slate-50 p-1.5 rounded-md">
+                          <span>Período: {(st as any).periodRange || '2024 - 2025'}</span>
+                          <span>{(st as any).compraEVendaCount || st.transactionCount} tx Compra e Venda</span>
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-slate-500 font-mono flex justify-between bg-slate-50 p-1.5 rounded-md">
+                          <span>Min: R$ {st.minValueSqm.toLocaleString('pt-BR')}/m²</span>
+                          <span>Max: R$ {st.maxValueSqm.toLocaleString('pt-BR')}/m²</span>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}

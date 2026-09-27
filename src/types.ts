@@ -47,6 +47,7 @@ export interface AuctionProperty {
   sourceRecords?: AuctionProperty[];
   offers?: Array<{url:string;price:number;date?:string;checkedAt?:string}>;
   availability?: import('../auctionAvailability').Availability;
+  sourceClosed?: boolean;
   processNumber?: string;
   leiloeiro?: string;
   sourceLinks?: string[];
@@ -92,30 +93,56 @@ export interface AuctionProperty {
   portalDataVerifiedAt?: string; // Timestamp of the last confirmed portal scrape
   portalSampleCount?: number; // Number of individual, auditable listing URLs
   portalDataSource?: string; // Human-readable source/scope label
+
+  // Módulo 2: Benchmark de Mercado dos Portais Imobiliários
+  m2MercadoPortal?: number; // R$/m² médio de mercado no portal (ZAP / QuintoAndar)
+  valorSugeridoPortal?: number; // valor_sugerido_portal = sizeSqm * m2_mercado_portal
+  fontePortal?: 'ZAP Imóveis' | 'QuintoAndar' | string; // Fonte do portal
+  dataColetaPortal?: string; // Timestamp da consulta
+  isBairroPortalFallback?: boolean; // True: (Referência: Bairro), False: Mesma Rua
+  portalAreaBracket?: string; // ex: '50-100m²'
+
+  // Módulo 1: Aliases de Matrícula e RGI
+  matricula_numero?: string;
+  cartorio_rgi?: string;
+  inteiro_teor?: string;
   
   // Derived / Calculated values
   itbiUnitValueAvg?: number; // Average $/m2 in the neighborhood from ITBI
   itbiStreetAvgSqm?: number; // Average $/m2 on the same street
   itbiStreetCount?: number; // Number of transactions on the same street
   itbiBuildingCount?: number; // Number of verified transactions in the same building/number
+  itbiAbsoluteAvgPrice?: number; // Preço Médio Absoluto Praticado (Juiz de Fora / bases sem m²)
+  itbiIsAbsolutePricing?: boolean; // True when valuation is based on absolute transacted prices
+  itbiIsDerivedSqm?: boolean; // True when sqm rate is derived using NBR 14.653 scale factor from 60m2 modal anchor
+  itbiCompraEVendaCount?: number; // Amostras de Compra e Venda consideradas
+  itbiPeriodRange?: { minDate?: string; maxDate?: string; }; // Período das transações
   itbiSurroundingAvgSqm?: number; // Average $/m2 on surrounding streets (within 1km radius)
   itbiSurroundingCount?: number; // Number of transactions on surrounding streets
   streetRadiusDeviationPct?: number; // Street versus surrounding-radius divergence
   streetRadiusCalibrated?: boolean; // Street value was statistically blended with radius
   valuationBasis?: string; // Audit label for the source used in the valuation
   valuationConfidence?: 'verified' | 'projected' | 'unavailable';
+  valuationCalibration?: 'few_local_samples' | 'radius_neighborhood';
+  valuationLevel?: 'Prédio' | 'Rua' | 'Raio Entorno' | 'Bairro' | 'Sem Dados Suficientes';
   valuationSampleCount?: number;
   valuationRadiusKm?: number;
+  itbiNeighborhoodCount?: number;
   calculatedRoi?: number; // ROI percentage
   calculatedProfit?: number; // Capital gains
   liquidityScore?: number; // 1-10 score
+  neighborhoodDeltaTDays?: number;
+  isAreaHomogeneizada?: boolean;
+  fatorEscala?: number;
   riskLevel?: 'Baixo' | 'Médio' | 'Alto';
   isCommunityRisk?: boolean; // True only if inside or less than 200m from an identified community area
   communityName?: string; // e.g. Morro do São João
   factionName?: string; // e.g. CV, TCP, ADA
   buildingAge?: number; // Estimated age of building in years
+  buildingYear?: number; // Construction/completion year confirmed by source or analyst
   ageDepreciationPct?: number; // Ross-Heidecke subtle depreciation (1-5%)
   hasMicroBenchmark?: boolean; // True if building, street or radius ITBI deeds exist (NBR 14.653)
+  buildingSafetyValveApplied?: boolean; // Válvula de segurança (-5%) aplicada para apartamento sem amostragem no próprio condomínio
   officialNeighborhood?: string; // Real municipal neighborhood from official registry / geocoding
   originalListedNeighborhood?: string; // Original neighborhood listed by Caixa
   divergentNeighborhoodNotice?: string; // Notice explaining divergence (e.g. Santa Rosa -> Cubango)
@@ -227,12 +254,16 @@ export interface ItbiStats {
   maxValueSqm: number;
   transactionCount: number;
   averageTotalValue: number;
+  compraEVendaCount?: number;
+  isAbsolutePricing?: boolean;
+  periodRange?: { minDate?: string; maxDate?: string; };
 }
 
 export interface ItbiTransaction {
   id: string;
   neighborhood: string;
   propertyType: PropertyType;
+  propertyTypeVerified?: boolean;
   sizeSqm: number;
   transactionValue: number;
   date: string;
@@ -245,6 +276,21 @@ export interface ItbiTransaction {
   description?: string;// Full property description from ITBI
   distanceKm?: number; // Verified geodesic distance from the calculator target street
   distanceMeters?: number;
+  distanceAnchorPrecision?: 'official_address' | 'geocoded_number' | 'street_axis';
+  transactionLocationPrecision?: 'exact_number' | 'street_centroid';
+  transactionLocationLat?: number;
+  transactionLocationLng?: number;
+  transactionLocationSpreadMeters?: number;
+  naturezaOperacao?: string;
+  percentualTransmitido?: number;
+  normalizedTotalValue?: number;
+  isCompraEVenda?: boolean;
+  estimatedSizeSqm?: number;
+  isDerivedSqm?: boolean;
+  estimatedAreaSqm?: number; // For analysis only; never presented as registered area
+  areaInferenceMethod?: string;
+  areaModelSampleCount?: number;
+  areaModelConfidence?: 'high' | 'medium' | 'low';
 }
 
 export interface NeighborhoodStats {

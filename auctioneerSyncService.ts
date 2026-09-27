@@ -14,7 +14,7 @@ import puppeteer from 'puppeteer';
 import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import { GoogleGenAI } from '@google/genai';
 import { PDFParse } from 'pdf-parse';
-import { readRegistryPdf } from './documentTextService.ts';
+import { readRegistryPdf, extractStructuredMatriculaFields } from './documentTextService.ts';
 
 let documentOcrPausedUntil = 0;
 import { AuctionProperty, PropertyType } from './src/types.ts';
@@ -301,6 +301,11 @@ export interface ScrapedAuctionDraft {
   sellerBank?: string;
   matriculaText?: string;
   matriculaUrl?: string;
+  matriculaNumber?: string;
+  registryOffice?: string;
+  matricula_numero?: string;
+  cartorio_rgi?: string;
+  inteiro_teor?: string;
   allowsFinancing?: boolean;
   allowsInstallments?: boolean;
   paymentTerms?: string;
@@ -900,6 +905,11 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
       addressVerified: Boolean(verifiedAddress),
       matriculaText,
       matriculaUrl,
+      matriculaNumber: extractStructuredMatriculaFields(matriculaText).matriculaNumero || draft.matriculaNumber,
+      registryOffice: extractStructuredMatriculaFields(matriculaText).cartorioRgi || draft.registryOffice,
+      matricula_numero: extractStructuredMatriculaFields(matriculaText).matriculaNumero || draft.matriculaNumber,
+      cartorio_rgi: extractStructuredMatriculaFields(matriculaText).cartorioRgi || draft.registryOffice,
+      inteiro_teor: matriculaText || draft.inteiro_teor,
       sizeSqm: detailedSize,
       areaAudit,
       sizeApproximate: areaAudit.status === 'approximate',
@@ -2199,8 +2209,8 @@ export function extractUnitComplement(address?: string): string {
   return parts.join('-');
 }
 
-export function getPropertyDedupeKey(address?: string, city?: string, state?: string, processNumber?: string, auctionId?: string, propertyType?: PropertyType): string | null {
-  return propertyIdentity(address,city,state,propertyType);
+export function getPropertyDedupeKey(address?: string, city?: string, state?: string, processNumber?: string, auctionId?: string, propertyType?: PropertyType, title?: string, description?: string): string | null {
+  return propertyIdentity(address,city,state,propertyType,`${title||''}\n${description||''}`);
 }
 
 export function deduplicateAuctions(auctions: AuctionProperty[]): AuctionProperty[] {
@@ -2216,7 +2226,7 @@ export function reconcileAuctionDrafts(
   const existingLinks = new Set(linkIndex.keys());
   const existingKeys = new Map<string, AuctionProperty>();
   for (const a of existingAuctions) {
-    const k = getPropertyDedupeKey(a.address, a.city, a.state, a.processNumber, a.id, a.propertyType);
+    const k = getPropertyDedupeKey(a.address, a.city, a.state, a.processNumber, a.id, a.propertyType, a.title, a.description);
     if (k) existingKeys.set(k, a);
   }
 
@@ -2229,10 +2239,26 @@ export function reconcileAuctionDrafts(
     draft.auctionLink = canonicalAuctionLink(draft.auctionLink);
     const validation=validateDraft(draft,{persist:quarantineEnabled});
     draft=validation.draft;
-    if(!validation.accepted&&!validation.retired){
+    if(validation.retired){
       const previous=linkIndex.get(draft.auctionLink);
-      if(previous&&canonicalAuctionLink(previous.auctionLink||'')===draft.auctionLink)Object.assign(previous,{ingestionStatus:'quarentena_extracao',priceVerified:false,precisa_revisao:true,liquidityScore:1});
-      pendingReview.push({draft,reason:validation.reasons.join(',')});continue;
+      if(previous&&canonicalAuctionLink(previous.auctionLink||'')===draft.auctionLink){
+        Object.assign(previous,{sourceClosed:true,availability:draft.sourceAvailability,ingestionStatus:draft.sourceAvailability?.status||'finalizado'});
+      }
+      pendingReview.push({draft,reason:draft.sourceAvailability?.reason||'closed_or_expired_at_source'});continue;
+    }
+    if(!validation.accepted&&!validation.retired){
+      // Missing extracted fields are review states, not reasons to discard an
+      // otherwise confirmed active official lot. Contradictory location,
+      // unavailable detail, or unconfirmed sale modality remain hard blockers.
+      const reviewableOnly=new Set(['preco_minimo_nao_confirmado','bairro_nao_confirmado','endereco_incompleto']);
+      const blockers=validation.reasons.filter(reason=>!reviewableOnly.has(reason));
+      if(blockers.length){
+        const previous=linkIndex.get(draft.auctionLink);
+        if(previous&&canonicalAuctionLink(previous.auctionLink||'')===draft.auctionLink){
+          Object.assign(previous,{ingestionStatus:'quarentena_extracao',precisa_revisao:true,liquidityScore:1,valuationConfidence:'unavailable',estimatedValue:undefined,vendaBaixaPrice:undefined,vendaMediaPrice:undefined,calculatedRoi:undefined,calculatedProfit:undefined});
+        }
+        pendingReview.push({draft,reason:blockers.join(',')});continue;
+      }
     }
     const declared = declaredAuctionLocation(draft);
     if (declared && ((state && declared.state !== state) || (city && normalizeStr(declared.city) !== normalizeStr(city)))) {
@@ -2256,14 +2282,14 @@ export function reconcileAuctionDrafts(
     // A confirmed official lot is never lost because a complementary field is
     // absent. It enters as pending, but cannot receive calculated ROI,
     // liquidity or recommendation until price, area and date are verified.
-    const calculationReady = Boolean(draft.sizeVerified && draft.priceVerified && draft.sizeSqm > 0 && draft.auctionPrice > 0 && lastKnownDate);
-    if (!calculationReady) pendingReview.push({draft,reason: !draft.priceVerified || draft.auctionPrice <= 0 ? 'unconfirmed_price' : !draft.sizeVerified || draft.sizeSqm <= 0 ? 'unconfirmed_area' : 'missing_date'});
+    const calculationReady = Boolean(draft.sizeVerified && draft.sizeSqm > 0 && draft.priceVerified && draft.auctionPrice > 0 && lastKnownDate && draft.neighborhood && draft.address && hasAuditableAddress(draft.address));
+    if (!calculationReady) pendingReview.push({draft,reason: validation.reasons.length ? validation.reasons.join(',') : !draft.priceVerified || draft.auctionPrice <= 0 ? 'unconfirmed_price' : !draft.sizeVerified || draft.sizeSqm <= 0 ? 'unconfirmed_area' : !draft.neighborhood ? 'unconfirmed_neighborhood' : 'incomplete_address_or_date'});
 
     const addressCity = extractDeclaredCity(draft.address, draft.state);
     if (addressCity && normalizeStr(addressCity) !== normalizeStr(draft.city)) { pendingReview.push({draft,reason:'outside_requested_city'}); continue; }
     const completeAddress = draft.address || '';
 
-    const draftKey = getPropertyDedupeKey(completeAddress, draft.city, draft.state, undefined, undefined, draft.propertyType);
+    const draftKey = getPropertyDedupeKey(completeAddress, draft.city, draft.state, undefined, undefined, draft.propertyType, draft.title, draft.description);
     const existing = (existingLinks.has(draft.auctionLink)
       ? linkIndex.get(draft.auctionLink)
       : (draftKey ? existingKeys.get(draftKey) : null));
@@ -2287,13 +2313,27 @@ export function reconcileAuctionDrafts(
         pendingIptuCost: draft.pendingIptuCost ?? existing.pendingIptuCost,
         pendingCondoCost: draft.pendingCondoCost ?? existing.pendingCondoCost }));
       if(canonicalAuctionLink(previousOffer.auctionLink||'')!==draft.auctionLink)Object.assign(existing,recalculateFn({...aggregateAuctions([previousOffer,{...existing,sourceRecords:undefined}],canonicalAuctionLink)[0],id:existing.id}));
-      if (!calculationReady || existing.precisa_revisao) Object.assign(existing, {
+      if (!calculationReady) Object.assign(existing, {
+        ingestionStatus: 'quarentena_extracao',
         precisa_revisao: true,
         valuationConfidence: 'unavailable',
         liquidityScore: 1,
         riskLevel: 'Alto',
+        estimatedValue: undefined,
+        vendaBaixaPrice: undefined,
+        vendaMediaPrice: undefined,
         calculatedRoi: undefined,
-        calculatedProfit: undefined
+        calculatedProfit: undefined,
+        valuationSampleCount: undefined,
+        itbiStreetAvgSqm: undefined,
+        itbiStreetCount: undefined,
+        itbiBuildingCount: undefined,
+        itbiUnitValueAvg: undefined,
+        itbiAbsoluteAvgPrice: undefined,
+        itbiIsAbsolutePricing: undefined,
+        itbiSurroundingAvgSqm: undefined,
+        itbiSurroundingCount: undefined,
+        itbiNeighborhoodCount: undefined
       });
       linkIndex.set(draft.auctionLink,existing);existingLinks.add(draft.auctionLink);
       if(draftKey)existingKeys.set(draftKey,existing);
@@ -2306,7 +2346,7 @@ export function reconcileAuctionDrafts(
 
     const rawAuc: AuctionProperty = {
       id: baseId,
-      ingestionStatus: 'ativo',
+      ingestionStatus: calculationReady ? 'ativo' : 'quarentena_extracao',
       title: draft.title,
       address: completeAddress,
       neighborhood: draft.neighborhood,
@@ -2318,7 +2358,7 @@ export function reconcileAuctionDrafts(
       estimatedRepair: Math.round(draft.auctionPrice * 0.05),
       pendingDebts: 0,
       otherCosts: 0,
-      estimatedValue: draft.estimatedValue,
+      estimatedValue: calculationReady ? draft.estimatedValue : undefined,
       evaluationPrice: draft.estimatedValue,
       auctionDate: draft.auctionDate,
       firstAuctionDate: draft.firstAuctionDate,

@@ -1,9 +1,19 @@
+export function isCaixaAuctionWithFee(p: any): boolean {
+  if (!p) return false;
+  const isCaixa = p.origin === 'caixa' || p.acquisitionRule === 'caixa' || p.id?.includes('caixa');
+  if (!isCaixa) return false;
+  const text = `${p.saleMode || ''} ${p.title || ''} ${p.description || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  return /licitacao\s*aberta|sfi|leilao/.test(text);
+}
+
 export function auctionCosts(p: any) {
   const bid = p.purchasePrice ?? p.auctionPrice ?? 0;
   const caixa = p.origin === 'caixa' || p.acquisitionRule === 'caixa' || p.id?.includes('caixa');
+  const caixaWithFee = isCaixaAuctionWithFee(p);
+  const isDirectSale = caixa && !caixaWithFee;
   return {
     bid,
-    auctioneer: p.auctioneerFee ?? (caixa ? 0 : Math.round(bid * 0.05)),
+    auctioneer: p.auctioneerFee !== undefined ? p.auctioneerFee : (isDirectSale ? 0 : Math.round(bid * 0.05)),
     itbi: p.itbiCost ?? Math.round(bid * ((p.itbiPercent ?? 3) / 100)),
     registry: p.notaryCost !== undefined ? p.notaryCost + (p.caixaContractCost || 0) + (p.certificatesCost || 0) : Math.round(bid * 0.03),
     repair: p.estimatedRepair ?? Math.round(bid * 0.05),

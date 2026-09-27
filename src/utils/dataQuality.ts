@@ -1,7 +1,7 @@
 import { AuctionProperty } from '../types.ts';
 import { isGenericStreet } from './bidirectionalBenchmark.ts';
 
-export type DataQualityStatus = 'Auditado' | 'Estimado' | 'Auditoria Incompleta';
+export type DataQualityStatus = 'Auditado' | 'Estimado' | 'Precificação Incompleta';
 
 export interface DataQualityReport {
   status: DataQualityStatus;
@@ -10,13 +10,219 @@ export interface DataQualityReport {
   isIncompleto: boolean;
   canBeFeatured: boolean;
   liquidityCeiling: number;
+  hasNoLocalHistory: boolean;
   reasons: string[];
   badgeLabel: string;
   badgeClass: string;
 }
 
+/** Only same-building or same-street samples support a high liquidity score.
+ * Legacy records without explicit provenance are treated conservatively. */
+export function getVerifiedLocalComparableCount(auc: AuctionProperty): number {
+  const explicitBuildingCount = Math.max(0, Number(auc.itbiBuildingCount) || 0);
+  const explicitStreetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
+  if (auc.valuationLevel === 'Prédio' || auc.valuationLevel === 'Rua') {
+    return explicitBuildingCount + explicitStreetCount || Math.max(0, Number(auc.valuationSampleCount) || 0);
+  }
+  // Older stored lots predate valuationLevel. Accept only an explicit historic
+  // audit label with its own sample count; raw street totals can include radius
+  // or neighborhood transactions and are never a safe substitute.
+  const legacyLocalLabel = String(auc.valuationBasis || '').match(/ITBI\s+verificado\s*-\s*(Rua|Prédio)(?=\s|$)(?:\s*\((\d+)\s+amostras?\))?/i);
+  if (legacyLocalLabel) {
+    // The historical label's own count takes precedence over unscoped legacy counts.
+    return Number(legacyLocalLabel[2]) || Number(auc.valuationSampleCount) || 0;
+  }
+  return 0;
+}
+
+/**
+ * Liquidez factual estritamente baseada em densidade de amostras (ITBI).
+ * Não utiliza critérios arbitrários de financiamento, desocupação, faixa de preço ou margem de saída.
+ *
+ * Regras:
+ * - Apartamentos: dependem fortemente de vendas no condomínio/prédio para notas altas (7-10).
+ *   Sem vendas no prédio, a liquidez fica travada em no máximo 5-6 (se houver alto volume na rua/entorno).
+ * - Casas / Terrenos / Comerciais: NÃO exigem vendas em prédio. Avaliam diretamente rua + entorno + bairro,
+ *   podendo atingir 8, 9 ou 10 se a rua e entorno tiverem alto volume.
+ * - Menos de cinco amostras confirmadas no prédio e na rua: trava em no máximo 5/10.
+ * - Área de risco / comunidade: trava em no máximo 2/10.
+ * - Lote com pendência pericial / precisa_revisao: nota 1/10.
+ */
+/**
+ * Nova Metodologia do Score de Liquidez Factual (0 a 10)
+ *
+ * Fórmula:
+ * Score = (0.40 * Nota_Bairro) + (0.30 * Nota_Volume) + (0.30 * Nota_Desagio)
+ *
+ * 1. Eixo Bairro (Giro Médio - Peso 40%):
+ *    Δt_médio = (Data Mais Recente - Data Mais Antiga) / Total Transações do bairro (em dias).
+ *    Δt <= 30 dias => 9.5 a 10.0 (giro ultra-rápido, ex: Copacabana, Botafogo, Tijuca).
+ *    31 <= Δt <= 90 dias => 7.5 a 8.5.
+ *    Δt > 90 dias => 5.0 a 6.0.
+ *
+ * 2. Eixo Volume Local (Peso 30%):
+ *    Baseado na amostragem N apurada no nível mais específico (prédio -> rua -> raio):
+ *    N >= 12 => 10.0
+ *    6 <= N <= 11 => 8.0
+ *    N < 6 => 5.0
+ *    Trava Protetiva Condominial: se Apartamento e houver zero vendas históricas no prédio, trava em no máx 6.0.
+ *
+ * 3. Eixo Deságio / Agressividade de Saída (Peso 30%):
+ *    Deságio = (Valor Mercado - Preço Arremate) / Valor Mercado
+ *    Deságio >= 50% => 10.0
+ *    35% <= Deságio < 50% => 8.0
+ *    Deságio < 35% => 6.0
+ *
+ * 4. Trava Protetiva Global:
+ *    Se Nota_Bairro >= 9.0 e Deságio >= 45% => piso obrigatório de 8.0.
+ *
+ * 5. Inconsistência Crítica / Risco:
+ *    precisa_revisao => 1.0.
+ *    Área de risco / comunidade => trava em no máx 2.0.
+ */
+export function calculateSampleDensityLiquidity(
+  auc: {
+    propertyType?: string;
+    itbiBuildingCount?: number;
+    itbiStreetCount?: number;
+    itbiSurroundingCount?: number;
+    itbiNeighborhoodCount?: number;
+    valuationSampleCount?: number;
+    valuationRadiusKm?: number;
+    isBairroPortalFallback?: boolean;
+    precisa_revisao?: boolean;
+    isCommunityRisk?: boolean;
+    riskLevel?: string;
+    auctionPrice?: number;
+    estimatedValue?: number;
+    vendaBaixaPrice?: number;
+    itbiStreetAvgSqm?: number;
+    sizeSqm?: number;
+    neighborhoodDeltaTDays?: number;
+  },
+  neighborhoodSalesLast24Months?: number,
+  neighborhoodDeltaTDaysParam?: number
+): number {
+  if (auc.precisa_revisao) return 1;
+
+  const isApartment = (auc.propertyType || '').toLowerCase().includes('apart');
+  const bldgCount = Math.max(0, Number(auc.itbiBuildingCount) || 0);
+  const streetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
+  const surroundingCount = Math.max(0, Number(auc.itbiSurroundingCount) || 0);
+  const neighCount = Math.max(0, Number(auc.itbiNeighborhoodCount) || Number(neighborhoodSalesLast24Months) || 0);
+
+  // 1. Eixo Bairro (Giro Médio - Peso 40%)
+  const deltaT = auc.neighborhoodDeltaTDays ?? neighborhoodDeltaTDaysParam;
+  let notaBairro = 5.0;
+  if (deltaT !== undefined && deltaT > 0) {
+    if (deltaT <= 15) {
+      notaBairro = 10.0;
+    } else if (deltaT <= 30) {
+      notaBairro = 9.5;
+    } else if (deltaT <= 60) {
+      notaBairro = 8.5;
+    } else if (deltaT <= 90) {
+      notaBairro = 7.5;
+    } else if (deltaT <= 180) {
+      notaBairro = 6.0;
+    } else {
+      notaBairro = 5.0;
+    }
+  } else {
+    // Estimativa defensiva por densidade de transações quando deltaT não estiver disponível
+    if (neighCount >= 50) {
+      notaBairro = 10.0;
+    } else if (neighCount >= 20) {
+      notaBairro = 8.0;
+    } else if (neighCount >= 5) {
+      notaBairro = 6.0;
+    } else {
+      notaBairro = 5.0;
+    }
+  }
+
+  // 2. Eixo Volume Local (Peso 30%)
+  // Amostragem N apurada no nível mais específico (prédio -> rua -> raio)
+  let localN = 0;
+  if (bldgCount > 0) {
+    localN = bldgCount;
+  } else if (streetCount > 0) {
+    localN = streetCount;
+  } else if (surroundingCount > 0) {
+    localN = surroundingCount;
+  } else {
+    localN = Number(auc.valuationSampleCount) || 0;
+  }
+
+  let notaVolume = 5.0;
+  if (localN >= 12) {
+    notaVolume = 10.0;
+  } else if (localN >= 6) {
+    notaVolume = 8.0;
+  } else {
+    notaVolume = 5.0;
+  }
+
+  // Trava Condominial: Apartamento sem vendas no prédio tem teto de 6.0 no Eixo Volume
+  if (isApartment && bldgCount === 0) {
+    notaVolume = Math.min(notaVolume, 6.0);
+  }
+
+  // 3. Eixo Deságio / Agressividade de Saída (Peso 30%)
+  const marketRef = Number(auc.estimatedValue) || 
+    (auc.vendaBaixaPrice ? Number(auc.vendaBaixaPrice) / 0.9 : 0) || 
+    ((Number(auc.itbiStreetAvgSqm) || 0) * (Number(auc.sizeSqm) || 0)) || 0;
+  const bidRef = Number(auc.auctionPrice) || 0;
+  const desagio = (marketRef > 0 && bidRef > 0 && marketRef > bidRef)
+    ? (marketRef - bidRef) / marketRef
+    : 0;
+
+  let notaDesagio = 6.0;
+  if (desagio >= 0.50) {
+    notaDesagio = 10.0;
+  } else if (desagio >= 0.35) {
+    notaDesagio = 8.0;
+  } else {
+    notaDesagio = 6.0;
+  }
+
+  const hasLocalHistory = (streetCount >= 1 || bldgCount >= 1);
+  const localComparableCount = bldgCount + streetCount;
+
+  // Composição Ponderada
+  let rawScore = (0.40 * notaBairro) + (0.30 * notaVolume) + (0.30 * notaDesagio);
+
+  // 4. Trava Protetiva Global:
+  // Se o imóvel está em Bairro com nota >= 9.0 e deságio >= 45%, a liquidez final JAMAIS pode ser menor que 8.0,
+  // DESDE QUE haja comprovação de pelo menos 1 transação válida no condomínio ou na própria via.
+  if (hasLocalHistory && notaBairro >= 9.0 && desagio >= 0.45) {
+    rawScore = Math.max(rawScore, 8.0);
+  }
+
+  // 5. Trava Rígida de Incerteza Local (streetCount == 0 E bldgCount == 0):
+  // - Anulação Total de Pisos: O piso de nota 8.0 fica TERMINANTEMENTE DESATIVADO (garantido pela checagem hasLocalHistory acima).
+  // - Teto Máximo Obrigatório: O Score_Liquidez fica travado no limite máximo de 5.0 / 10
+  //   (para qualquer tipologia: Casa, Apartamento ou Comercial).
+  // - Para que um imóvel receba Liquidez 8, 9 ou 10, é obrigatória a comprovação de pelo menos 1 transação
+  //   válida registrada na própria via (transacoes_rua >= 1) ou no condomínio (transacoes_predio >= 1).
+  if (!hasLocalHistory) {
+    rawScore = Math.min(rawScore, 5.0);
+  }
+  if (localComparableCount < 5) {
+    rawScore = Math.min(rawScore, 5.0);
+  }
+
+  // Trava para área de risco / comunidade
+  if (auc.isCommunityRisk || auc.riskLevel === 'Alto') {
+    rawScore = Math.min(rawScore, 2);
+  }
+
+  return Math.round(Math.max(1, Math.min(10, rawScore)));
+}
+
 export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   const reasons: string[] = [];
+  const localComparableCount = getVerifiedLocalComparableCount(auc);
 
   // Critical failure checks
   if (auc.precisa_revisao) {
@@ -39,42 +245,51 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
     reasons.push('Amostragem de mercado insuficiente (sem dados no raio pericial)');
   }
 
-  if ((auc.itbiStreetCount || 0) === 0 && (auc.itbiBuildingCount || 0) === 0) {
-    reasons.push('Sem transações confirmadas no prédio ou na rua');
+  const hasExplicitCalibration = !!auc.valuationCalibration;
+  if (localComparableCount < 2 && !hasExplicitCalibration) {
+    reasons.push(localComparableCount === 0
+      ? 'Poucos dados ITBI locais: sem transações confirmadas no prédio ou na rua'
+      : 'Poucos dados ITBI locais: é necessária uma segunda transação no prédio ou na rua');
   }
 
   const hasCriticalInconsistency = reasons.length > 0;
 
   let status: DataQualityStatus;
   if (hasCriticalInconsistency) {
-    status = 'Auditoria Incompleta';
-  } else if (auc.valuationConfidence === 'verified' && Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) >= 2) {
+    status = 'Precificação Incompleta';
+  } else if (hasExplicitCalibration) {
+    status = 'Estimado';
+  } else if (auc.valuationConfidence === 'verified' && localComparableCount >= 2) {
     status = 'Auditado';
   } else {
     status = 'Estimado';
   }
 
-  // Trava de liquidez proporcional à incerteza
-  let liquidityCeiling = 10;
-  if (status === 'Auditoria Incompleta') {
-    liquidityCeiling = auc.precisa_revisao ? 1 : 3;
-  } else if (Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) === 0) {
-    liquidityCeiling = 3;
-  } else if (Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) < 2) {
-    liquidityCeiling = 4;
-  } else if (auc.valuationConfidence === 'projected') {
-    liquidityCeiling = 4;
+  const explicitBuildingCount = Math.max(0, Number(auc.itbiBuildingCount) || 0);
+  const explicitStreetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
+  const hasLocalHistory = (explicitBuildingCount >= 1 || explicitStreetCount >= 1);
+  const hasNoLocalHistory = !hasLocalHistory;
+
+  if (hasNoLocalHistory) {
+    reasons.push('Risco de Amostragem: Sem histórico na via');
+  }
+
+  // Trava de liquidez proporcional estritamente à densidade amostral
+  let liquidityCeiling = calculateSampleDensityLiquidity(auc);
+  if (hasNoLocalHistory) {
+    liquidityCeiling = Math.min(liquidityCeiling, 5.0);
   }
 
   // Trava Selo Destaque (Anti-Falso Positivo)
   // Exige conformidade de 100%:
   // 1. Status 'Auditado'
   // 2. Sem pendência de revisão
-  // 3. Mínimo de 2 amostras confirmadas na rua/edifício
+  // 3. Mínimo de 5 amostras confirmadas na rua/edifício
   // 4. Confiança verified
   // 5. Desconto real de mercado >= 30% e ROI >= 35%
   // 6. Liquidez >= 7
   // 7. Não ser área de risco
+  // 8. Comprovação obrigatória de histórico local
   const discountRate = auc.estimatedValue && auc.auctionPrice 
     ? (auc.estimatedValue - auc.auctionPrice) / auc.estimatedValue 
     : 0;
@@ -82,7 +297,8 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   const canBeFeatured = 
     status === 'Auditado' &&
     !auc.precisa_revisao &&
-    Math.max(auc.itbiStreetCount || 0, auc.itbiBuildingCount || 0) >= 2 &&
+    hasLocalHistory &&
+    localComparableCount >= 5 &&
     auc.valuationConfidence === 'verified' &&
     (auc.calculatedRoi || 0) >= 35 &&
     (auc.liquidityScore || 0) >= 7 &&
@@ -93,11 +309,17 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   let badgeLabel = 'Auditado';
   let badgeClass = 'bg-emerald-950/70 text-emerald-300 border-emerald-600/50';
 
-  if (status === 'Auditoria Incompleta') {
-    badgeLabel = 'Auditoria Incompleta';
-    badgeClass = 'bg-rose-950/80 text-rose-300 border-rose-700/60';
+  if (status === 'Precificação Incompleta') {
+    badgeLabel = localComparableCount < 2
+      ? 'Poucos dados ITBI para precificação'
+      : (auc.precisa_revisao ? 'Revisão documental pendente' : 'Dados do imóvel pendentes');
+    badgeClass = 'bg-amber-950/70 text-amber-300 border-amber-600/50';
   } else if (status === 'Estimado') {
-    badgeLabel = 'Projeção Estimada';
+    badgeLabel = auc.valuationCalibration === 'radius_neighborhood'
+      ? 'Calibrado por raio e bairro'
+      : auc.valuationCalibration === 'few_local_samples'
+        ? 'Calibrado: poucas amostras locais'
+        : 'Projeção Estimada';
     badgeClass = 'bg-amber-950/70 text-amber-300 border-amber-600/50';
   }
 
@@ -105,9 +327,10 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
     status,
     isAuditado: status === 'Auditado',
     isEstimado: status === 'Estimado',
-    isIncompleto: status === 'Auditoria Incompleta',
+    isIncompleto: status === 'Precificação Incompleta',
     canBeFeatured,
     liquidityCeiling,
+    hasNoLocalHistory,
     reasons,
     badgeLabel,
     badgeClass

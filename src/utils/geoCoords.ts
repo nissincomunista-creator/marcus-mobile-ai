@@ -1,7 +1,4 @@
 import { AuctionProperty } from '../types.ts';
-import streetCoordsRaw from './streetCoordsData.json';
-
-const streetCoords = streetCoordsRaw as Record<string, { lat: number; lng: number }>;
 
 export function normalizeGeoString(str: string | null | undefined): string {
   if (!str) return '';
@@ -473,133 +470,29 @@ export const SAO_PAULO_BAIRROS: Record<string, [number, number]> = {
 
 export function getPropertyCoordinates(prop: AuctionProperty): [number, number] | null {
   if (!prop) return null;
-
-  // 1. Direct verified coordinates on the property object
-  if (Number.isFinite((prop as any).latitude) && Number.isFinite((prop as any).longitude) && (prop as any).latitude !== 0 && (prop as any).longitude !== 0) {
-    const lat = Number((prop as any).latitude);
-    const lng = Number((prop as any).longitude);
-    if (lat >= -34 && lat <= 6 && lng >= -74 && lng <= -32) {
-      return [lat, lng];
-    }
-  }
-
-  // 2. Map location object from geocoding pipeline / IBGE
   const location = (prop as AuctionProperty & { mapLocation?: any }).mapLocation;
-  if (location && Number.isFinite(location.lat) && Number.isFinite(location.lng) && location.lat !== 0 && location.lng !== 0) {
-    const lat = Number(location.lat);
-    const lng = Number(location.lng);
-    if (lat >= -34 && lat <= 6 && lng >= -74 && lng <= -32) {
-      return [lat, lng];
-    }
-  }
+  if (!location || location.status !== 'located' || location.precision !== 'address') return null;
+  if (!prop.id || location.id !== prop.id) return null;
+  const same = (left: string | undefined, right: string | undefined) => normalizeGeoString(left).replace(/\s+/g, ' ') === normalizeGeoString(right).replace(/\s+/g, ' ');
+  if (!same(location.address, prop.address) || !same(location.city, prop.city) ||
+      !same(location.state, prop.state) || !same(location.neighborhood, prop.neighborhood)) return null;
 
-  // 3. Street Coords Cache / Local Street DB
-  const rawAddr = prop.address || '';
-  const streetName = rawAddr.split(',')[0].split('-')[0].replace(/\s+\d+.*$/, '').trim();
-  const cleanStreet = normalizeGeoString(streetName);
-  const cleanCity = normalizeGeoString(prop.city);
-  const cleanNeigh = normalizeGeoString(prop.neighborhood);
+  const numberMatch = (prop.address || '').match(/(?:\bN[ºo°.]?\s*|,\s*)(\d+[A-Za-z]?)(?=[,\s/-]|$)/i)
+    || (prop.address || '').match(/\s(\d{1,5}[A-Za-z]?)(?=\s*(?:$|,|apto\b|apt\b|bloco\b|bl\b))/i);
+  const expectedNumber = numberMatch?.[1]?.replace(/^0+(?=\d)/, '').toLowerCase();
+  const matchedNumber = String(location.matchedNumber || '').replace(/^0+(?=\d)/, '').toLowerCase();
+  if (!expectedNumber || expectedNumber !== matchedNumber || !location.matchedStreet) return null;
 
-  const streetKey = `${cleanStreet}|${cleanNeigh}|${cleanCity}`;
-  if (streetCoords[streetKey]) {
-    const sc = streetCoords[streetKey];
-    return [sc.lat, sc.lng];
-  }
+  const hasCnefeEvidence = location.source === 'IBGE_CNEFE_2022' &&
+    [1, 2].includes(Number(location.geocodeLevel)) && !!location.cnefeId &&
+    Number.isFinite(location.spreadMeters) && location.spreadMeters >= 0 && location.spreadMeters <= 20;
+  const hasExactGeocoderEvidence = location.source === 'GEOCODE_NUMBER' &&
+    ['nominatim', 'photon'].includes(String(location.geocoderProvider)) &&
+    location.geocoderPrecision === 'rooftop' && same(location.matchedCity, prop.city);
+  if (!hasCnefeEvidence && !hasExactGeocoderEvidence) return null;
 
-  const streetCityKey = `${cleanStreet}|${cleanCity}`;
-  if (streetCoords[streetCityKey]) {
-    const sc = streetCoords[streetCityKey];
-    return [sc.lat, sc.lng];
-  }
-
-  // 4. Neighborhood Centroid with deterministic jitter (so multiple lots don't perfectly stack)
-  let baseCoords: [number, number] | null = null;
-  if (cleanCity === 'rio de janeiro' || !cleanCity) {
-    baseCoords = RIO_DE_JANEIRO_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && cleanCity === 'niteroi') {
-    baseCoords = NITEROI_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && (cleanCity === 'juiz de fora')) {
-    baseCoords = JUIZ_DE_FORA_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && (cleanCity === 'sao paulo' || cleanCity === 'são paulo')) {
-    baseCoords = SAO_PAULO_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && (cleanCity === 'sao goncalo' || cleanCity === 'são gonçalo')) {
-    baseCoords = SAO_GONCALO_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && (cleanCity === 'nova iguacu' || cleanCity === 'nova iguaçu')) {
-    baseCoords = NOVA_IGUACU_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && cleanCity === 'duque de caxias') {
-    baseCoords = DUQUE_DE_CAXIAS_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && cleanCity === 'belford roxo') {
-    baseCoords = BELFORD_ROXO_BAIRROS[cleanNeigh] || null;
-  }
-  if (!baseCoords && (cleanCity === 'itaborai' || cleanCity === 'itaboraí')) {
-    baseCoords = ITABORAI_BAIRROS[cleanNeigh] || null;
-  }
-
-  // Fallback check against Rio, Juiz de Fora, or SP neighborhoods regardless of city field typo
-  if (!baseCoords && RIO_DE_JANEIRO_BAIRROS[cleanNeigh]) {
-    baseCoords = RIO_DE_JANEIRO_BAIRROS[cleanNeigh];
-  }
-  if (!baseCoords && JUIZ_DE_FORA_BAIRROS[cleanNeigh]) {
-    baseCoords = JUIZ_DE_FORA_BAIRROS[cleanNeigh];
-  }
-  if (!baseCoords && SAO_PAULO_BAIRROS[cleanNeigh]) {
-    baseCoords = SAO_PAULO_BAIRROS[cleanNeigh];
-  }
-
-  if (baseCoords) {
-    let hash = 0;
-    const str = prop.id || prop.title || '';
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-    const offsetLat = ((hash % 100) / 100 - 0.5) * 0.003;
-    const offsetLng = (((hash >> 8) % 100) / 100 - 0.5) * 0.003;
-    return [baseCoords[0] + offsetLat, baseCoords[1] + offsetLng];
-  }
-
-  // 5. City Centroid fallback with deterministic spread
-  if (CITY_COORDS[cleanCity]) {
-    const c = CITY_COORDS[cleanCity];
-    let hash = 0;
-    const str = prop.id || prop.title || '';
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-    const offsetLat = ((hash % 100) / 100 - 0.5) * 0.012;
-    const offsetLng = (((hash >> 8) % 100) / 100 - 0.5) * 0.012;
-    return [c[0] + offsetLat, c[1] + offsetLng];
-  }
-
-  // 6. Default State fallback (RJ / SP / MG)
-  const stateUpper = (prop.state || 'RJ').toUpperCase();
-  if (stateUpper === 'RJ') {
-    let hash = 0;
-    const str = prop.id || '';
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-    const offsetLat = ((hash % 100) / 100 - 0.5) * 0.02;
-    const offsetLng = (((hash >> 8) % 100) / 100 - 0.5) * 0.02;
-    return [-22.9068 + offsetLat, -43.1729 + offsetLng];
-  }
-
-  if (stateUpper === 'SP') {
-    return [-23.5505, -46.6333];
-  }
-
-  if (stateUpper === 'MG') {
-    return [-19.9167, -43.9345];
-  }
-
-  return null;
+  const lat = Number(location.lat);
+  const lng = Number(location.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat === 0 || lng === 0 || lat < -34 || lat > 6 || lng < -74 || lng > -32) return null;
+  return [lat, lng];
 }

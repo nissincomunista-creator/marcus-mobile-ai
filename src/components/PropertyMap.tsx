@@ -582,7 +582,7 @@ useEffect(() => {
               )}
             </h2>
             <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block">
-              {!locationsLoaded ? 'Carregando localizações…' : locationError ? 'Não foi possível carregar as localizações. Reabra o mapa para tentar novamente.' : `IBGE · Censo 2022 · ${auctions.length - pendingReviewProps.length} de ${auctions.length} endereços localizados. Pontos de acesso, sujeitos à precisão da coleta.`}
+              {!locationsLoaded ? 'Carregando endereços dos imóveis de leilão…' : locationError ? 'Não foi possível carregar os endereços confirmados. Reabra o mapa para tentar novamente.' : `${auctions.length - pendingReviewProps.length} de ${auctions.length} imóveis com endereço e número confirmados no mapa. Os demais ficam pendentes até haver uma localização exata.`}
             </p>
           </div>
         </div>
@@ -783,7 +783,7 @@ useEffect(() => {
                       }`}
                     >
                       <div className="flex justify-between items-start text-xs">
-                        <span className="font-bold text-white font-mono">{unitLabel} • {item.sizeSqm}m²</span>
+                        <span className="font-bold text-white font-mono">{unitLabel}{item.sizeSqm > 0 ? ` • ${item.sizeSqm}m²` : ''}</span>
                         <span className="text-[10px] font-black text-emerald-400 font-mono">ROI: {(item.calculatedRoi || 0).toFixed(0)}%</span>
                       </div>
                       <div className="flex justify-between items-center mt-1.5 text-[11px] font-mono">
@@ -811,7 +811,7 @@ useEffect(() => {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1 flex-wrap">
                     <span className="text-[8.5px] font-black uppercase font-mono px-1.5 py-0.2 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
-                      {selectedProp.propertyType} • {selectedProp.sizeSqm}m²
+                      {selectedProp.propertyType}{selectedProp.sizeSqm > 0 ? ` • ${selectedProp.sizeSqm}m²` : ''}
                     </span>
                     {(() => {
                       const risk = checkPropertyCommunityRisk(selectedProp);
@@ -1033,8 +1033,12 @@ useEffect(() => {
                               Média pericial de escrituras públicas de cartório registradas nesta rua e bairro (NBR 14.653 com Chauvenet).
                             </p>
                             <div className="mt-1.5 pt-1 border-t border-slate-800 text-[9px] font-mono text-slate-400 flex justify-between">
-                              <span>Unitário:</span>
-                              <strong className="text-amber-300">R$ {(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²</strong>
+                              <span>{auc.itbiIsDerivedSqm ? 'Unitário Homogeneizado:' : auc.itbiIsAbsolutePricing ? 'Preço Médio ITBI:' : 'Unitário:'}</span>
+                              <strong className="text-amber-300">
+                                {auc.itbiIsAbsolutePricing 
+                                  ? formatBRL(auc.itbiAbsoluteAvgPrice || auc.estimatedValue || 0) 
+                                  : `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²`}
+                              </strong>
                             </div>
                           </div>
                         </div>
@@ -1137,11 +1141,16 @@ useEffect(() => {
 
                       <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/80 text-[10px] font-mono text-slate-400">
                         <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                          🏛️ ITBI: {auc.itbiStreetAvgSqm ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²` : (auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiUnitValueAvg)}/m²` : 'Sem dados')}
+                          🏛️ ITBI: {auc.itbiIsDerivedSqm ? (auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg)}/m² (${formatBRL(auc.estimatedValue || 0)})` : 'Sem dados') : auc.itbiIsAbsolutePricing ? (auc.estimatedValue ? `${formatBRL(auc.estimatedValue)} (Preço Médio)` : 'Sem dados') : (auc.itbiStreetAvgSqm ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²` : (auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiUnitValueAvg)}/m²` : 'Sem dados'))}
                         </span>
-                        {auc.streetPortalAvgSqm && (
-                          <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-indigo-300">
-                            🌐 Portais: {formatBRL(auc.streetPortalAvgSqm)}/m²
+                        {(auc.m2MercadoPortal || auc.streetPortalAvgSqm) && (
+                          <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-indigo-300 flex items-center gap-1">
+                            <span>🌐 {auc.fontePortal || 'Portais'}:</span>
+                            <span className="font-bold text-slate-100">{formatBRL(auc.m2MercadoPortal || auc.streetPortalAvgSqm || 0)}/m²</span>
+                            {auc.valorSugeridoPortal && (
+                              <span className="text-cyan-300">({formatBRL(auc.valorSugeridoPortal)})</span>
+                            )}
+                            <span className="text-[9px] text-slate-400">[{auc.isBairroPortalFallback ? 'Bairro' : 'Rua'}]</span>
                           </span>
                         )}
                         <span className={`px-1.5 py-0.5 rounded border ${

@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { ItbiTransaction } from '../types';
-import { Search, Building, MapPin, TrendingUp, Calendar, ArrowUpRight } from 'lucide-react';
+import { Search, Building } from 'lucide-react';
 
 interface MobileItbiProps {
   itbiTransactions: ItbiTransaction[];
   onSelectForCalculator?: (tx: ItbiTransaction) => void;
 }
 
-export const MobileItbi: React.FC<MobileItbiProps> = ({ itbiTransactions, onSelectForCalculator }) => {
+export const MobileItbi: React.FC<MobileItbiProps> = ({ itbiTransactions }) => {
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
 
@@ -16,16 +16,24 @@ export const MobileItbi: React.FC<MobileItbiProps> = ({ itbiTransactions, onSele
   };
 
   const neighborhoodsSummary = useMemo(() => {
-    const map = new Map<string, { city: string; state: string; count: number; totalSqm: number }>();
+    const map = new Map<string, { city: string; state: string; count: number; totalSqm: number; totalValue: number; isAbsolute: boolean }>();
 
     for (const tx of itbiTransactions) {
       if (cityFilter && tx.city.toLowerCase() !== cityFilter.toLowerCase()) continue;
       const nb = tx.neighborhood;
       if (!nb) continue;
+      const isJF = tx.city.toLowerCase().includes('juiz de fora') || (tx.state || '').toUpperCase() === 'MG';
+      if (isJF && tx.isCompraEVenda === false) continue; // estrictly Compra e Venda for JF
+
       const key = `${tx.city} - ${nb}`;
-      const existing = map.get(key) || { city: tx.city, state: tx.state, count: 0, totalSqm: 0 };
+      const existing = map.get(key) || { city: tx.city, state: tx.state, count: 0, totalSqm: 0, totalValue: 0, isAbsolute: isJF };
       existing.count += 1;
-      existing.totalSqm += (tx.unitValueSqm || 0);
+      if (isJF) {
+        const val = tx.normalizedTotalValue || (tx.percentualTransmitido ? Math.round(tx.transactionValue / (tx.percentualTransmitido / 100)) : tx.transactionValue);
+        existing.totalValue += val;
+      } else {
+        existing.totalSqm += (tx.unitValueSqm || 0);
+      }
       map.set(key, existing);
     }
 
@@ -34,7 +42,9 @@ export const MobileItbi: React.FC<MobileItbiProps> = ({ itbiTransactions, onSele
       city: d.city,
       state: d.state,
       count: d.count,
-      avgSqm: Math.round(d.totalSqm / d.count)
+      isAbsolute: d.isAbsolute,
+      avgSqm: d.isAbsolute ? (d.totalSqm > 0 ? Math.round(d.totalSqm / d.count) : Math.round(d.totalValue / (d.count || 1) / 60)) : Math.round(d.totalSqm / d.count),
+      avgValue: d.isAbsolute ? Math.round(d.totalValue / (d.count || 1)) : 0
     }));
 
     if (search.trim()) {
@@ -101,14 +111,16 @@ export const MobileItbi: React.FC<MobileItbiProps> = ({ itbiTransactions, onSele
             <div>
               <h4 className="text-xs font-bold text-slate-100">{nb.name}</h4>
               <p className="text-[10px] text-slate-400 font-mono">
-                {nb.city} ({nb.state}) • {nb.count} transações registradas
+                {nb.city} ({nb.state}) • {nb.count} {nb.isAbsolute ? 'amostras de Compra e Venda' : 'transações registradas'}
               </p>
             </div>
             <div className="text-right">
               <span className="text-xs font-black text-amber-400 font-mono block">
                 R$ {nb.avgSqm.toLocaleString('pt-BR')}/m²
               </span>
-              <span className="text-[9px] text-slate-400">Média Oficial ITBI</span>
+              <span className="text-[9px] text-slate-400 font-mono">
+                {nb.isAbsolute ? `Méd. ${formatBRL(nb.avgValue)} (Ref. 60m²)` : 'Média Oficial ITBI'}
+              </span>
             </div>
           </div>
         ))}
