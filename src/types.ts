@@ -291,6 +291,19 @@ export interface ItbiTransaction {
   areaInferenceMethod?: string;
   areaModelSampleCount?: number;
   areaModelConfidence?: 'high' | 'medium' | 'low';
+  addressSourceVerified?: boolean;
+  addressSourceFile?: string;
+  addressSourceRow?: number;
+  sourceParserNeighborhood?: string;
+  sourceParserComplement?: string;
+  sourceVerified?: boolean;
+  sourceFile?: string;
+  sourceRow?: number;
+  sizeSourceVerified?: boolean;
+  sizeSourceFile?: string;
+  sizeSourceRow?: number;
+  sourceParserSizeSqm?: number;
+  sourceParserUnitValueSqm?: number;
 }
 
 export interface NeighborhoodStats {

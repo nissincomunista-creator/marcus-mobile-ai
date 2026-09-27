@@ -18,6 +18,45 @@ export interface JuizDeForaAreaModel {
   source: 'verified-area-anchors' | 'fallback';
 }
 
+type JfAreaSource = {
+  sizeSqm?: number;
+  sizeSourceVerified?: boolean;
+  sizeSourceFile?: string;
+  sizeSourceRow?: number;
+  sourceVerified?: boolean;
+  sourceFile?: string;
+  sourceRow?: number;
+};
+
+/** Returns only an area recorded in a verified Juiz de Fora source row. */
+export function getVerifiedJuizDeForaArea(transaction: JfAreaSource): number | undefined {
+  const area = Number(transaction.sizeSqm);
+  if (!Number.isFinite(area) || area < 15 || area > 1000) return undefined;
+
+  const verifiedByReconciliation = transaction.sizeSourceVerified === true &&
+    Number.isInteger(transaction.sizeSourceRow) && !!transaction.sizeSourceFile;
+  const sourceFile = cleanType(transaction.sourceFile || '');
+  const verifiedOfficialExport = transaction.sourceVerified === true &&
+    Number.isInteger(transaction.sourceRow) && sourceFile.includes('juiz de fora') && sourceFile.endsWith('.csv');
+  return verifiedByReconciliation || verifiedOfficialExport ? area : undefined;
+}
+
+export function resolveComparableJfArea(
+  transaction: JfAreaSource & { transactionValue?: number; normalizedTotalValue?: number; percentualTransmitido?: number },
+  model?: JuizDeForaAreaModel
+): { areaSqm: number; source: 'official' | 'estimated' } | undefined {
+  const officialArea = getVerifiedJuizDeForaArea(transaction);
+  if (officialArea) return { areaSqm: officialArea, source: 'official' };
+
+  // A weak or small sample cannot silently create a comparable property area.
+  if (!model || model.confidence === 'low' || model.sampleCount < 8) return undefined;
+  const value = Number(transaction.normalizedTotalValue) > 0
+    ? Number(transaction.normalizedTotalValue)
+    : Number(transaction.transactionValue);
+  const inferred = inferJfComparableArea(value, model);
+  return inferred ? { areaSqm: inferred, source: 'estimated' } : undefined;
+}
+
 function median(values: number[]): number {
   const sorted = [...values].filter(Number.isFinite).sort((a, b) => a - b);
   if (!sorted.length) return 0;

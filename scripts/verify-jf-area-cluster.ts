@@ -32,6 +32,29 @@ assert.equal(transactions.some(tx => tx.sizeSqm !== 0 || tx.unitValueSqm !== 0),
 assert.equal(largeUnit.predio.validas + largeUnit.rua.validas, 2, 'A cota de 50% não pode ser confundida com metragem');
 assert.equal(largeUnit.predio.total, 1, 'Escritura no mesmo número, mas em bairro divergente, não entra no prédio comparável');
 
+const verifiedAreaSales: any[] = [
+  { id: 'building-55', state: 'MG', city: 'Juiz de Fora', neighborhood: 'São Mateus', street: 'Rua Guacui', number: '35', complement: 'APTO 402', propertyType: 'Apartamento', sizeSqm: 55, unitValueSqm: 5091, transactionValue: 280000, sourceVerified: true, sourceFile: 'transações imobiliárias de juiz de fora 2024-2025.csv', sourceRow: 15285, isCompraEVenda: true, date: '2024-04-18' },
+  { id: 'building-75', state: 'MG', city: 'Juiz de Fora', neighborhood: 'São Mateus', street: 'Rua Guacui', number: '35', complement: 'APT 206', propertyType: 'Apartamento', sizeSqm: 75, unitValueSqm: 4800, transactionValue: 360000, sourceVerified: true, sourceFile: 'transações imobiliárias de juiz de fora 2024-2025.csv', sourceRow: 15291, isCompraEVenda: true, date: '2024-07-05' },
+  { id: 'building-55-duplicate', state: 'MG', city: 'Juiz de Fora', neighborhood: 'São Mateus', street: 'Rua Guacui', number: '35', complement: 'APTO 402', propertyType: 'Apartamento', sizeSqm: 55, unitValueSqm: 5091, transactionValue: 280000, sourceVerified: true, sourceFile: 'transações imobiliárias de juiz de fora 2024-2025.csv', sourceRow: 15285, isCompraEVenda: true, date: '2024-04-18' },
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: `street-verified-${i}`, state: 'MG', city: 'Juiz de Fora', neighborhood: 'São Mateus', street: 'Rua Guacui', number: String(45 + i),
+    propertyType: 'Apartamento', sizeSqm: 140 + i * 3, unitValueSqm: 3900 + i * 75,
+    transactionValue: Math.round((3900 + i * 75) * (140 + i * 3)), sourceVerified: true,
+    sourceFile: 'transações imobiliárias de juiz de fora 2024-2025.csv', sourceRow: 16000 + i,
+    isCompraEVenda: true, date: `2025-0${i + 1}-01`
+  }))
+];
+const verifiedAreaBenchmark = computeBidirectionalBenchmarks(
+  verifiedAreaSales, 'Rua Guacui', '35', 147, 'similar', 0.5, 'Apartamento', 'São Mateus', model
+);
+assert(verifiedAreaBenchmark);
+assert.equal(verifiedAreaBenchmark.compraEVendaCount, 7, 'Uma linha duplicada da planilha conta uma única vez');
+assert.equal(verifiedAreaBenchmark.predio.total, 2, 'As duas vendas oficiais no número ficam visíveis como fonte');
+assert.equal(verifiedAreaBenchmark.predio.validas, 0, 'Unidades de 55 e 75 m² não são comparáveis diretamente a uma unidade de 147 m²');
+assert(verifiedAreaBenchmark.mediaCorteReal >= 800 && verifiedAreaBenchmark.mediaCorteReal <= 30000,
+  'A média final de m² precisa permanecer em faixa plausível');
+assert(verifiedAreaBenchmark.gabaritoTotal < 5_000_000, 'O valor não pode explodir por confusão entre preço total e preço por m²');
+
 const noLocal = computeBidirectionalBenchmarks(
   transactions.filter(tx => tx.street === 'Other Street'),
   'Other Street', undefined, 140, 'similar', 0.5, 'Apartamento', 'Centro', model
@@ -66,5 +89,11 @@ console.log(JSON.stringify({
   model: { samples: model.sampleCount, confidence: model.confidence, rSquared: Number(model.rSquared.toFixed(3)) },
   140: { estimate: largeUnit.gabaritoTotal, localSales: largeUnit.predio.validas + largeUnit.rua.validas },
   50: { estimate: smallUnit.gabaritoTotal, localSales: smallUnit.predio.validas + smallUnit.rua.validas },
-  purchaseSalesOnly: largeUnit.compraEVendaCount
+  purchaseSalesOnly: largeUnit.compraEVendaCount,
+  verifiedArea: {
+    buildingRows: verifiedAreaBenchmark.predio.total,
+    comparableBuildingRows: verifiedAreaBenchmark.predio.validas,
+    gabarito: verifiedAreaBenchmark.gabaritoTotal,
+    sqm: verifiedAreaBenchmark.mediaCorteReal
+  }
 }, null, 2));

@@ -35,6 +35,7 @@ import { geocodeAddress, getCachedCoords, cleanQuery, cleanBrazilianAddress } fr
 import { computeBidirectionalBenchmarks, DEFAULT_BENCHMARK_SIZE_MODE, isGenericStreet, getTxIntegralValue, cleanStreetNumber } from './src/utils/bidirectionalBenchmark.ts';
 import { computeFourTierValuation } from './src/utils/fourTierValuation.ts';
 import { fitJuizDeForaAreaModel, JuizDeForaAreaModel } from './src/utils/juizDeForaAreaModel.ts';
+import { deduplicateVerifiedItbiSourceRows } from './src/utils/itbiSourceDeduplication.ts';
 import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from './src/utils/quickFlipPricing.ts';
 import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
 import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts, parseOfficialLotDetail, canonicalAuctionLink, extractAuctionRoundsAndPrices } from './auctioneerSyncService.ts';
@@ -989,6 +990,16 @@ function loadStore(): DataStore {
       const sourcePath = path.join(process.cwd(), 'itbi_source_corrections.json');
       const sourceCorrections = fs.existsSync(sourcePath) ? JSON.parse(fs.readFileSync(sourcePath, 'utf8')) : {};
       storeData.itbiTransactions = storeData.itbiTransactions.filter(t => !/-sim-/.test(t.id)).map(t => ({ ...t, ...(sourceCorrections[t.id] || {}) }));
+      const itbiDeduplication = deduplicateVerifiedItbiSourceRows(storeData.itbiTransactions);
+      if (itbiDeduplication.duplicatesRemoved > 0) {
+        storeData.itbiTransactions = itbiDeduplication.transactions;
+        saveStore(storeData);
+        try { fs.writeFileSync(GZ_STORE_PATH, zlib.gzipSync(Buffer.from(JSON.stringify(storeData), 'utf8'))); }
+        catch (error) { console.warn('[ITBI] Não foi possível atualizar o snapshot compactado após remover duplicatas verificadas:', error); }
+        console.log(`[ITBI] Removidas ${itbiDeduplication.duplicatesRemoved} duplicatas da mesma linha oficial; ${itbiDeduplication.conflictingSourceRows} conflitos de origem preservados para auditoria.`);
+      } else if (itbiDeduplication.conflictingSourceRows > 0) {
+        console.warn(`[ITBI] ${itbiDeduplication.conflictingSourceRows} linhas de origem com fatos conflitantes foram mantidas para auditoria.`);
+      }
       const STORE_CALIBRATION_VERSION = 'v30_jf_four_tier_per_sqm';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
@@ -3864,15 +3875,17 @@ app.get('/api/itbi/transactions', async (req, res) => {
   // The JF PDFs often carry a different neighborhood for units at the same
   // street/building. Keep the chosen neighborhood, then union exact street
   // matches from the same municipality so those sales are not silently lost.
-  if (targetStreet && filterState === 'MG' && normalizeString(filterCity).includes('juiz')) {
+  const isJfAddressQuery = filterState === 'MG' && normalizeString(filterCity).includes('juiz');
+  if (targetStreet && isJfAddressQuery) {
     const targetStreetText = String(targetStreet);
     const sameStreetCityRows = store.itbiTransactions.filter(tx =>
       (tx.state || '').toUpperCase() === 'MG' &&
       normalizeString(tx.city || '') === normalizeString(filterCity) &&
       tx.isCompraEVenda === true && tx.street && streetAxesMatch(tx.street, targetStreetText)
     );
-    const byId = new Map([...txs, ...sameStreetCityRows].map(tx => [tx.id, tx]));
-    txs = Array.from(byId.values());
+    const baseRows = filterNeighborhood ? [...txs, ...sameStreetCityRows] : sameStreetCityRows;
+    const byId = new Map(baseRows.map(tx => [tx.id, tx]));
+    txs = deduplicateVerifiedItbiSourceRows(Array.from(byId.values())).transactions;
   }
   if (street) {
     const queryClean = cleanStreetName(street as string);
@@ -3890,7 +3903,7 @@ app.get('/api/itbi/transactions', async (req, res) => {
   
   let radiusTransactions: ItbiTransaction[] = [];
   let radiusAnchorPrecision: 'official_address' | 'geocoded_number' | 'missing' = 'missing';
-  if (targetStreet && filterNeighborhood && req.query.includeRadius === 'true') {
+  if (targetStreet && req.query.includeRadius === 'true' && (!isJfAddressQuery || filterNeighborhood || targetNumber)) {
     const rawTarget = String(targetStreet);
     const parsedAddr = cleanBrazilianAddress(rawTarget);
     const tgt = parsedAddr.street || rawTarget.split(',')[0].trim() || rawTarget;
@@ -3982,7 +3995,9 @@ app.get('/api/itbi/transactions', async (req, res) => {
   }
 
   // Sort by date descending
-  txs = [...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  txs = deduplicateVerifiedItbiSourceRows([...txs]).transactions
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  radiusTransactions = deduplicateVerifiedItbiSourceRows(radiusTransactions).transactions;
   
   if (req.query.includeRadius === 'true') {
     return res.json({ transactions: txs, radiusTransactions, radiusAnchorPrecision });

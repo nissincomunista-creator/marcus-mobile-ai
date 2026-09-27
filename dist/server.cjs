@@ -298,15 +298,40 @@ var JUIZ_DE_FORA_BAIRROS = {
   "fabrica": [-21.749, -43.352]
 };
 
+// src/utils/locationSanitizers.ts
+function normalizeLocationLabel(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+function isUsableNeighborhoodLabel(value) {
+  const normalized = normalizeLocationLabel(value);
+  const compact = normalized.replace(/\s/g, "");
+  if (compact.length < 2 || /^\d+$/.test(compact)) return false;
+  return !(/* @__PURE__ */ new Set([
+    "ns",
+    "sn",
+    "na",
+    "nao",
+    "naoinformado",
+    "sembairro",
+    "bairro",
+    "desconhecido",
+    "ignorado",
+    "undefined",
+    "null",
+    "none",
+    "-"
+  ])).has(compact);
+}
+
 // auctionPipeline/location.ts
 var normalize = (s) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 var catalogs = { "rio de janeiro": Object.keys(RIO_DE_JANEIRO_BAIRROS), "niteroi": Object.keys(NITEROI_BAIRROS), "juiz de fora": Object.keys(JUIZ_DE_FORA_BAIRROS) };
 var extra = {};
 function configureNeighborhoods(rows) {
   extra = {};
-  for (const r of rows) if (r.city && r.neighborhood) {
+  for (const r of rows) if (r.city && isUsableNeighborhoodLabel(r.neighborhood)) {
     const k = normalize(r.city), value = normalize(r.neighborhood);
-    if (!value || value === k || /^\d+$/.test(value) || /^(?:lote|quadra|bairro|zona rural|nao informado|sem bairro|desconhecido)$/.test(value)) continue;
+    if (!value || value === k) continue;
     extra[k] ||= [];
     if (!extra[k].includes(r.neighborhood)) extra[k].push(r.neighborhood);
   }
@@ -331,14 +356,14 @@ function neighborhoodEvidence(input) {
   if (catalogAddressHits.length === 1) return { value: catalogAddressHits[0], method: "endereco-enum" };
   if (catalogAddressHits.length > 1) return void 0;
   const canonicalNames = /* @__PURE__ */ new Map();
-  for (const name of [...catalogNames, ...extra[cityKey] || []]) if (!canonicalNames.has(normalize(name))) canonicalNames.set(normalize(name), name);
+  for (const name of [...catalogNames, ...extra[cityKey] || []]) if (isUsableNeighborhoodLabel(name) && !canonicalNames.has(normalize(name))) canonicalNames.set(normalize(name), name);
   const names = [...canonicalNames.values()];
   const addressHits = specificHits(names, addressText);
   if (addressHits.length === 1) return { value: addressHits[0], method: "endereco-enum" };
   if (addressHits.length > 1) return void 0;
   const text = [input.title, input.address, input.description].filter(Boolean).join(" ");
   const declared = input.description?.match(/bairro\s*[:\-]\s*([^\n,;]+)/i)?.[1] || "";
-  const candidates = [declared, input.neighborhood || ""].map((value) => value.replace(/^bairro\s*[:\-]?\s*/i, ""));
+  const candidates = [declared, input.neighborhood || ""].map((value) => value.replace(/^bairro\s*[:\-]?\s*/i, "")).filter(isUsableNeighborhoodLabel);
   for (const value of candidates) {
     const exact = names.find((n) => normalize(n) === normalize(value));
     if (exact) return { value: exact, method: "enum-exato" };
@@ -1528,6 +1553,50 @@ async function readRegistryPdf(data) {
   return result.inteiroTeor;
 }
 
+// src/utils/addressComponents.ts
+var STREET_START = /\b(?:rua|r\.?|avenida|av\.?|estrada|est\.?|travessa|trv\.?|alameda|al\.?|rodovia|rod\.?|pra[cç]a|largo)\s+/i;
+var UNIT_WORD = "(fundos|fds|casa|apto|apartamento|bloco|bl|sobrado|unidade|sala)";
+var NUMBER = "(\\d{1,6}(?:\\.\\d{3})?(?:[A-Za-z])?)";
+function parseAddressComponents(rawAddress) {
+  if (!rawAddress) return { street: "", number: "", complement: "" };
+  let text = String(rawAddress).trim().replace(/^\s*(?:endere[cç]o(?:\s+do\s+im[oó]vel)?|logradouro|localiza[cç][aã]o)\s*[:\-]?\s*/i, "").replace(/\s*\([^)]*\)/g, " ").replace(/\s+/g, " ").replace(/cep:?\s*\d{5}-?\d{3}/gi, "").replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, "").trim();
+  const streetStart = text.search(STREET_START);
+  if (streetStart >= 0) text = text.slice(streetStart);
+  text = text.replace(/\s*(?:,|[-–])\s*(?:bairro|cidade|munic[ií]pio|cep)\s*[:\-]?.*$/i, "").trim();
+  const legalCutoffs = [
+    /,\s*(?:constitu[ií]d[oa]|formad[oa]|inscrit[oa]|matriculado|objeto|lote\s+n?[ºo°]?\s*\d+|quadra\s+[a-z0-9]+|pa\s*n?[ºo°]?\s*\d+|pal\s*n?[ºo°]?\s*\d+|do\s+bairro\b|designad[oa]|sublote).*$/i,
+    /\b(?:constitu[ií]d[oa]|formad[oa])\s+pelo\s+lote.*$/i,
+    /\b(?:matr[íi]cula|inscri[cç][aã]o\s+imobili[aá]ria)\s*:?.*$/i
+  ];
+  for (const cutoff of legalCutoffs) text = text.replace(cutoff, "").trim();
+  const multiStreetMatch = text.match(/(?:rua\s*\d{1,2}|casa\s*\d+|bloco\s*\w+),\s*((?:avenida|av\.|rua|r\.|estrada|est\.|travessa|trv\.|alameda|pra[cç]a)\s+[^,]+),\s*(.*)/i);
+  if (multiStreetMatch) text = `${multiStreetMatch[1]}, ${multiStreetMatch[2]}`;
+  const numberPattern = new RegExp(`\\b(?:n[\xBAo\xB0.]?|num(?:ero)?\\.?|nro\\.?)\\s*${NUMBER}(?:\\s*[-\u2013/]\\s*${UNIT_WORD})?`, "i");
+  const commaNumberPattern = new RegExp(`,\\s*${NUMBER}(?:\\s*[-\u2013/]\\s*${UNIT_WORD})?`, "i");
+  let numberMatch = text.match(numberPattern) || text.match(commaNumberPattern);
+  if (!numberMatch) {
+    const looseNumberPattern = new RegExp(`\\s+${NUMBER}(?:\\s*[-\u2013/]\\s*${UNIT_WORD})?(?=\\s*(?:,|;|$))`, "i");
+    const looseMatch = text.match(looseNumberPattern);
+    const streetName = looseMatch ? text.slice(0, looseMatch.index).replace(/^(?:rua|r\.?|avenida|av\.?|estrada|est\.?|travessa|trv\.?|alameda|al\.?|rodovia|rod\.?|pra[cç]a|largo)\s*/i, "").trim() : "";
+    if (looseMatch && /[A-Za-zÀ-ÿ]{3}/.test(streetName)) numberMatch = looseMatch;
+  }
+  let number = "";
+  let complement = "";
+  let street = text;
+  if (numberMatch) {
+    number = String(numberMatch[1] || "").replace(/\./g, "");
+    complement = String(numberMatch[2] || "").trim();
+    street = text.slice(0, numberMatch.index);
+    const remaining = text.slice((numberMatch.index || 0) + numberMatch[0].length).replace(/^[,;:\s\-–]+/, "");
+    if (!complement) {
+      const trailingUnit = remaining.match(new RegExp(`^${UNIT_WORD}\\.?\\s*[A-Za-z0-9/-]*`, "i"));
+      if (trailingUnit) complement = trailingUnit[0].trim();
+    }
+  }
+  street = street.replace(/[,;]\s*$/, "").replace(/\s+/g, " ").trim().replace(/^r\.\s*/i, "Rua ").replace(/^av\.\s*/i, "Avenida ").replace(/^est\.\s*/i, "Estrada ").replace(/^tr\.\s*/i, "Travessa ").replace(/^pca\.\s*/i, "Pra\xE7a ");
+  return { street, number, complement };
+}
+
 // auctioneerSyncService.ts
 var documentOcrPausedUntil = 0;
 var AUCTIONEER_PORTALS = [
@@ -1832,6 +1901,11 @@ function formatCleanAddress(addr) {
   let cleaned = unsquishText(addr).replace(/\s+/g, " ").replace(/\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(Rio\s+de\s+Janeiro|Niterói|São\s+Gonçalo|Duque\s+de\s+Caxias|Nova\s+Iguaçu|Juiz\s+de\s+Fora|Belo\s+Horizonte|São\s+Paulo)\b/gi, "$1, $2").trim();
   return cleaned;
 }
+function formatPreciseAuctionAddress(addr) {
+  const parsed = parseAddressComponents(addr);
+  if (!parsed.street || !parsed.number) return formatCleanAddress(addr);
+  return formatCleanAddress([parsed.street, `n\xBA ${parsed.number}`, parsed.complement].filter(Boolean).join(", "));
+}
 function extractAddress(text, fallback) {
   const cleanInput = unsquishText(text || "");
   const lines = cleanInput.split(/\r?\n|\s{2,}/).map((line) => line.trim()).filter(Boolean);
@@ -1840,7 +1914,7 @@ function extractAddress(text, fallback) {
   );
   if (labeledLine) {
     const labeledAddress = labeledLine.replace(/^.*?\bendere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?\s*:?\s*/i, "").split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+/g, " ").trim();
-    if (labeledAddress.length >= 8) return formatCleanAddress(labeledAddress.slice(0, 180));
+    if (labeledAddress.length >= 8) return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
   }
   const addressCandidates = lines.map((line, index) => {
     if (!/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
@@ -1855,11 +1929,11 @@ function extractAddress(text, fallback) {
   if (addressLine) {
     const extracted = addressLine.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,180}/i)?.[0] || addressLine;
     const cleanExtracted = extracted.split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+(?:bairro|cidade|estado)\s*[:\-].*$/i, "").trim();
-    return formatCleanAddress(cleanExtracted);
+    return formatPreciseAuctionAddress(cleanExtracted);
   }
   const normalized = cleanInput.replace(/\s+/g, " ").trim();
   const addressMatch = normalized.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
-  return addressMatch ? formatCleanAddress(addressMatch[0].replace(/\s{2,}/g, " ").trim()) : formatCleanAddress(fallback);
+  return addressMatch ? formatPreciseAuctionAddress(addressMatch[0].replace(/\s{2,}/g, " ").trim()) : formatPreciseAuctionAddress(fallback);
 }
 function extractDeclaredCity(text, state) {
   return sourceAuctionLocation(text, state)?.city || "";
@@ -2056,7 +2130,8 @@ function isConfiguredAuctionLink(link) {
   }
 }
 function hasAuditableAddress(address) {
-  return /\b(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(address || "") && /\d/.test(address || "");
+  const parsed = parseAddressComponents(address);
+  return !!parsed.street && !!parsed.number && /^(?:rua|avenida|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(parsed.street);
 }
 async function extractOfficialDocumentText(page, documentUrl) {
   try {
@@ -4712,6 +4787,22 @@ function computeFourTierValuation(input) {
 }
 
 // src/utils/juizDeForaAreaModel.ts
+function getVerifiedJuizDeForaArea(transaction) {
+  const area = Number(transaction.sizeSqm);
+  if (!Number.isFinite(area) || area < 15 || area > 1e3) return void 0;
+  const verifiedByReconciliation = transaction.sizeSourceVerified === true && Number.isInteger(transaction.sizeSourceRow) && !!transaction.sizeSourceFile;
+  const sourceFile = cleanType(transaction.sourceFile || "");
+  const verifiedOfficialExport = transaction.sourceVerified === true && Number.isInteger(transaction.sourceRow) && sourceFile.includes("juiz de fora") && sourceFile.endsWith(".csv");
+  return verifiedByReconciliation || verifiedOfficialExport ? area : void 0;
+}
+function resolveComparableJfArea(transaction, model) {
+  const officialArea = getVerifiedJuizDeForaArea(transaction);
+  if (officialArea) return { areaSqm: officialArea, source: "official" };
+  if (!model || model.confidence === "low" || model.sampleCount < 8) return void 0;
+  const value = Number(transaction.normalizedTotalValue) > 0 ? Number(transaction.normalizedTotalValue) : Number(transaction.transactionValue);
+  const inferred = inferJfComparableArea(value, model);
+  return inferred ? { areaSqm: inferred, source: "estimated" } : void 0;
+}
 function median(values) {
   const sorted = [...values].filter(Number.isFinite).sort((a, b) => a - b);
   if (!sorted.length) return 0;
@@ -4792,6 +4883,62 @@ function inferJfComparableArea(transactionValue, model) {
   return Math.round(equivalent * 10) / 10;
 }
 
+// src/utils/itbiSourceDeduplication.ts
+function normalize5(value) {
+  return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function stableFacts(tx) {
+  return [
+    tx.date,
+    Number(tx.transactionValue || 0).toFixed(2),
+    Number(tx.normalizedTotalValue || 0).toFixed(2),
+    normalize5(tx.street),
+    normalize5(tx.number),
+    normalize5(tx.naturezaOperacao),
+    Number(tx.percentualTransmitido || 0).toFixed(4)
+  ].join("|");
+}
+function nonEmpty(preferred, fallback) {
+  return preferred === void 0 || preferred === null || preferred === "" ? fallback : preferred;
+}
+function deduplicateVerifiedItbiSourceRows(rows) {
+  const output = [];
+  const bySourceAndFacts = /* @__PURE__ */ new Map();
+  const sourceFacts = /* @__PURE__ */ new Map();
+  let duplicatesRemoved = 0;
+  let conflictingSourceRows = 0;
+  for (const tx of rows) {
+    const file2 = String(tx.sourceFile || "").trim();
+    const row = Number(tx.sourceRow);
+    if (tx.sourceVerified !== true || !file2 || !Number.isInteger(row) || row < 2) {
+      output.push(tx);
+      continue;
+    }
+    const sourceKey = `${normalize5(file2)}|${row}`;
+    const facts = stableFacts(tx);
+    const priorFacts = sourceFacts.get(sourceKey) || /* @__PURE__ */ new Set();
+    if (priorFacts.has(facts)) {
+      const priorIndex = bySourceAndFacts.get(`${sourceKey}|${facts}`);
+      if (priorIndex !== void 0) {
+        const prior = output[priorIndex];
+        output[priorIndex] = {
+          ...prior,
+          ...Object.fromEntries(Object.keys(tx).filter((key) => key !== "id").map((key) => [key, nonEmpty(tx[key], prior[key])]))
+        };
+        duplicatesRemoved++;
+        continue;
+      }
+    } else if (priorFacts.size > 0) {
+      conflictingSourceRows++;
+    }
+    priorFacts.add(facts);
+    sourceFacts.set(sourceKey, priorFacts);
+    bySourceAndFacts.set(`${sourceKey}|${facts}`, output.length);
+    output.push(tx);
+  }
+  return { transactions: output, duplicatesRemoved, conflictingSourceRows };
+}
+
 // src/utils/bidirectionalBenchmark.ts
 var DEFAULT_BENCHMARK_SIZE_MODE = "similar";
 function isGenericStreet(str) {
@@ -4864,7 +5011,8 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const isJuizDeFora = allNeighborhoodTxs.some(
     (t) => String(t.city || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("juiz de fora")
   );
-  const sourceTxs = isJuizDeFora ? allNeighborhoodTxs.filter((t) => t.isCompraEVenda === true) : allNeighborhoodTxs;
+  const inputTransactions = isJuizDeFora ? deduplicateVerifiedItbiSourceRows(allNeighborhoodTxs).transactions : allNeighborhoodTxs;
+  const sourceTxs = isJuizDeFora ? inputTransactions.filter((t) => t.isCompraEVenda === true) : inputTransactions;
   if (sourceTxs.length === 0) return null;
   const jfDates = isJuizDeFora ? sourceTxs.map((t) => t.date).filter(Boolean).sort() : [];
   const dateRange = jfDates.length > 0 ? { minDate: jfDates[0], maxDate: jfDates[jfDates.length - 1] } : void 0;
@@ -4895,11 +5043,24 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     const effectiveAreaModelConfidence = !areaModel || area_alvo < areaModel.minAreaSqm * 0.75 || area_alvo > areaModel.maxAreaSqm * 1.25 ? "low" : areaModel.confidence;
     const buildTier = (candidates, minCount) => {
       const amountRows = candidates.map((tx) => ({ tx, value: validAmount(tx) })).filter((row) => row.value > 0);
-      const sane = filterByIQR(amountRows.map((row) => row.value));
-      const saneSet = new Set(sane.filtered);
-      const saneRows = amountRows.filter((row) => saneSet.has(row.value));
+      const plausibleRows = amountRows.flatMap((row) => {
+        const comparable = resolveComparableJfArea(row.tx, areaModel);
+        if (!comparable) return [];
+        const perSqm2 = row.value / comparable.areaSqm;
+        if (!Number.isFinite(perSqm2) || perSqm2 < 800 || perSqm2 > 3e4) return [];
+        return [{ ...row, equivalentArea: comparable.areaSqm, areaSource: comparable.source, perSqm: perSqm2 }];
+      });
+      const saneRates = filterByIQR(plausibleRows.map((row) => row.perSqm));
+      const saneRateCounts = /* @__PURE__ */ new Map();
+      for (const value of saneRates.filtered) saneRateCounts.set(value, (saneRateCounts.get(value) || 0) + 1);
+      const saneRows = plausibleRows.filter((row) => {
+        const remaining = saneRateCounts.get(row.perSqm) || 0;
+        if (remaining <= 0) return false;
+        saneRateCounts.set(row.perSqm, remaining - 1);
+        return true;
+      });
       const areaBands = effectiveAreaModelConfidence === "low" ? [[0.75, 1.25], [0.65, 1.45], [0.55, 1.6]] : [[0.8, 1.2], [0.7, 1.3], [0.55, 1.5]];
-      const clusterRows = areaModel && withinModelDomain && area_alvo > 0 ? saneRows.map((row) => ({ ...row, equivalentArea: inferJfComparableArea(row.value, areaModel) })) : [];
+      const clusterRows = area_alvo > 0 ? saneRows.filter((row) => row.areaSource === "official" || !!areaModel && withinModelDomain) : [];
       let matches = [];
       for (const [minFactor, maxFactor] of areaBands) {
         const bandRows = clusterRows.filter((row) => row.equivalentArea !== void 0 && row.equivalentArea >= area_alvo * minFactor && row.equivalentArea <= area_alvo * maxFactor);
@@ -4909,9 +5070,8 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
         }
       }
       if (matches.length < minCount) matches = [];
-      const values = matches.map((row) => row.value);
-      const total = values.length ? Math.round(computeMedian(values)) : 0;
-      const perSqm = total > 0 && area_alvo > 0 ? Math.round(total / area_alvo) : 0;
+      const perSqm = matches.length ? Math.round(computeMedian(matches.map((row) => row.perSqm))) : 0;
+      const total = perSqm > 0 && area_alvo > 0 ? Math.round(perSqm * area_alvo) : 0;
       const outlierCount = amountRows.length - saneRows.length;
       return {
         total,
@@ -4920,6 +5080,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
         validRows: matches.length,
         excludedRows: Math.max(0, candidates.length - matches.length),
         outlierCount,
+        transactionIds: matches.map((row) => row.tx.id),
         distances: matches.map((row) => Number(row.tx.distanceKm)).filter(Number.isFinite)
       };
     };
@@ -4966,15 +5127,15 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     const hasVerifiedRadius2 = surrounding.validRows >= 2;
     const fallbackLevel2 = hasVerifiedRadius2 ? "0.5km" : "bairro";
     const radiusLabel2 = hasVerifiedRadius2 ? `Raio ITBI verificado at\xE9 ${radiusKm || 0.5}km` : "Sem amostras ITBI geolocalizadas no raio";
-    const tier = (value, total, validas, expurgadas, prelim) => ({ saneada: value, total, validas, expurgadas, prelim });
+    const tier = (value, total, validas, expurgadas, prelim, transactionIds = []) => ({ saneada: value, total, validas, expurgadas, prelim, transactionIds });
     const minSimilarSize = Math.max(15, Math.round(area_alvo * 0.67));
     const maxSimilarSize = Math.round(area_alvo * 1.33);
     const sourceDates = sourceTxs.map((tx) => tx.date).filter(Boolean).sort();
     return {
-      bairro: tier(neighborhood.perSqm, neighborhood.totalRows, neighborhood.validRows, neighborhood.excludedRows, neighborhood.perSqm),
-      raio: { ...tier(surrounding.perSqm, surrounding.totalRows, surrounding.validRows, surrounding.excludedRows, surrounding.perSqm), effectiveRadiusKm: hasVerifiedRadius2 ? radiusKm || 0.5 : void 0, radiusLabel: radiusLabel2, fallbackLevel: fallbackLevel2 },
-      rua: tier(street.perSqm, street.totalRows, street.validRows, street.excludedRows, street.perSqm),
-      predio: tier(building.perSqm, building.totalRows, building.validRows, building.excludedRows, building.perSqm),
+      bairro: tier(neighborhood.perSqm, neighborhood.totalRows, neighborhood.validRows, neighborhood.excludedRows, neighborhood.perSqm, neighborhood.transactionIds),
+      raio: { ...tier(surrounding.perSqm, surrounding.totalRows, surrounding.validRows, surrounding.excludedRows, surrounding.perSqm, surrounding.transactionIds), effectiveRadiusKm: hasVerifiedRadius2 ? radiusKm || 0.5 : void 0, radiusLabel: radiusLabel2, fallbackLevel: fallbackLevel2 },
+      rua: tier(street.perSqm, street.totalRows, street.validRows, street.excludedRows, street.perSqm, street.transactionIds),
+      predio: tier(building.perSqm, building.totalRows, building.validRows, building.excludedRows, building.perSqm, building.transactionIds),
       mediaCorteReal: mediaCorteReal2,
       nivelUtilizado: nivelUtilizado2,
       flipRapidoSqm: flipRapidoSqm2,
@@ -6403,6 +6564,19 @@ function loadStore() {
       const sourcePath = import_path4.default.join(process.cwd(), "itbi_source_corrections.json");
       const sourceCorrections = import_fs5.default.existsSync(sourcePath) ? JSON.parse(import_fs5.default.readFileSync(sourcePath, "utf8")) : {};
       storeData.itbiTransactions = storeData.itbiTransactions.filter((t) => !/-sim-/.test(t.id)).map((t) => ({ ...t, ...sourceCorrections[t.id] || {} }));
+      const itbiDeduplication = deduplicateVerifiedItbiSourceRows(storeData.itbiTransactions);
+      if (itbiDeduplication.duplicatesRemoved > 0) {
+        storeData.itbiTransactions = itbiDeduplication.transactions;
+        saveStore(storeData);
+        try {
+          import_fs5.default.writeFileSync(GZ_STORE_PATH, import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData), "utf8")));
+        } catch (error) {
+          console.warn("[ITBI] N\xE3o foi poss\xEDvel atualizar o snapshot compactado ap\xF3s remover duplicatas verificadas:", error);
+        }
+        console.log(`[ITBI] Removidas ${itbiDeduplication.duplicatesRemoved} duplicatas da mesma linha oficial; ${itbiDeduplication.conflictingSourceRows} conflitos de origem preservados para auditoria.`);
+      } else if (itbiDeduplication.conflictingSourceRows > 0) {
+        console.warn(`[ITBI] ${itbiDeduplication.conflictingSourceRows} linhas de origem com fatos conflitantes foram mantidas para auditoria.`);
+      }
       const STORE_CALIBRATION_VERSION = "v30_jf_four_tier_per_sqm";
       const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === "true";
@@ -8772,13 +8946,15 @@ app.get("/api/itbi/transactions", async (req, res) => {
       const neighNorm = cleanNeighborhood(neighborhood);
       txs = txs.filter((t) => cleanNeighborhood(t.neighborhood) === neighNorm);
     }
-    if (targetStreet && filterState === "MG" && normalizeString2(filterCity).includes("juiz")) {
+    const isJfAddressQuery = filterState === "MG" && normalizeString2(filterCity).includes("juiz");
+    if (targetStreet && isJfAddressQuery) {
       const targetStreetText = String(targetStreet);
       const sameStreetCityRows = store.itbiTransactions.filter(
         (tx) => (tx.state || "").toUpperCase() === "MG" && normalizeString2(tx.city || "") === normalizeString2(filterCity) && tx.isCompraEVenda === true && tx.street && streetAxesMatch(tx.street, targetStreetText)
       );
-      const byId = new Map([...txs, ...sameStreetCityRows].map((tx) => [tx.id, tx]));
-      txs = Array.from(byId.values());
+      const baseRows = filterNeighborhood ? [...txs, ...sameStreetCityRows] : sameStreetCityRows;
+      const byId = new Map(baseRows.map((tx) => [tx.id, tx]));
+      txs = deduplicateVerifiedItbiSourceRows(Array.from(byId.values())).transactions;
     }
     if (street) {
       const queryClean = cleanStreetName(street);
@@ -8795,7 +8971,7 @@ app.get("/api/itbi/transactions", async (req, res) => {
     }
     let radiusTransactions = [];
     let radiusAnchorPrecision = "missing";
-    if (targetStreet && filterNeighborhood && req.query.includeRadius === "true") {
+    if (targetStreet && req.query.includeRadius === "true" && (!isJfAddressQuery || filterNeighborhood || targetNumber)) {
       const rawTarget = String(targetStreet);
       const parsedAddr = cleanBrazilianAddress(rawTarget);
       const tgt = parsedAddr.street || rawTarget.split(",")[0].trim() || rawTarget;
@@ -8873,7 +9049,8 @@ app.get("/api/itbi/transactions", async (req, res) => {
         radiusTransactions = candidates;
       }
     }
-    txs = [...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    txs = deduplicateVerifiedItbiSourceRows([...txs]).transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    radiusTransactions = deduplicateVerifiedItbiSourceRows(radiusTransactions).transactions;
     if (req.query.includeRadius === "true") {
       return res.json({ transactions: txs, radiusTransactions, radiusAnchorPrecision });
     }

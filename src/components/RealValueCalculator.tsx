@@ -48,8 +48,10 @@ import ExecutiveReportModal, { ExecutiveReportData } from './ExecutiveReportModa
 import { ItbiTransaction, SavedMarketAnalysis, PropertyType, MatriculaAnalysisReport, MatriculaGravame, MatriculaAuditData, EditalAuditData } from '../types.ts';
 import { computeBidirectionalBenchmarks, DEFAULT_BENCHMARK_SIZE_MODE, BidirectionalBenchmarkResult, getTxIntegralValue, filterByIQR, computeMedian } from '../utils/bidirectionalBenchmark.ts';
 import { computeFourTierValuation } from '../utils/fourTierValuation.ts';
-import { JuizDeForaAreaModel } from '../utils/juizDeForaAreaModel.ts';
+import { getVerifiedJuizDeForaArea, JuizDeForaAreaModel } from '../utils/juizDeForaAreaModel.ts';
+import { parseAddressComponents as parseVerifiedAddressComponents } from '../utils/addressComponents.ts';
 import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from '../utils/quickFlipPricing.ts';
+import { isUsableNeighborhoodLabel, sanitizeNeighborhoodLabel } from '../utils/locationSanitizers.ts';
 
 interface ItbiStats {
   state: string;
@@ -209,7 +211,7 @@ function findBestStreetMatch(target: string | null | undefined, candidateList: a
   return name ? candidateList.find(c => (typeof c === 'string' ? c : c.street) === name) || null : null;
 }
 
-function parseAddressComponents(rawAddress: string | null | undefined): {
+function parseLegacyAddressComponents(rawAddress: string | null | undefined): {
   street: string;
   number: string;
   complement: string;
@@ -217,12 +219,20 @@ function parseAddressComponents(rawAddress: string | null | undefined): {
   if (!rawAddress) return { street: '', number: '', complement: '' };
   let text = String(rawAddress).trim();
 
+  text = text.replace(/^\s*(?:endere[cç]o(?:\s+do\s+im[oó]vel)?|logradouro|localiza[cç][aã]o)\s*[:\-]?\s*/i, '');
+
   // 1. Remove parenthetical notes like (Antiga Rua ...), (Lote ...), (Pavuna - RJ), etc.
   text = text.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
 
   // 2. Remove CEP and state abbreviations at the end
   text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, '');
   text = text.replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, '').trim();
+
+  // Auction titles/descriptions often prepend the property type or legal text.
+  // Start parsing at the first actual street type so those words cannot become
+  // part of the street sent to the ITBI lookup.
+  const streetStart = text.search(/\b(?:rua|r\.?|avenida|av\.?|estrada|est\.?|travessa|trv\.?|alameda|al\.?|rodovia|rod\.?|pra[cç]a|largo)\s+/i);
+  if (streetStart >= 0) text = text.slice(streetStart);
 
   // 3. Cut off legal registry text, PA/PAL, lote/quadra suffixes that pollute address
   const legalCutoffs = [
@@ -289,6 +299,18 @@ function parseAddressComponents(rawAddress: string | null | undefined): {
   return { street, number, complement };
 }
 
+function parseAddressComponents(rawAddress: string | null | undefined): { street: string; number: string; complement: string } {
+  const verified = parseVerifiedAddressComponents(rawAddress);
+  const legacy = parseLegacyAddressComponents(rawAddress);
+  const numberedStreetNameWithoutPropertyNumber = !verified.number &&
+    /^(?:rua|avenida|estrada|travessa|alameda|rodovia|pra[cç]a|largo)\s+\d{1,4}$/i.test(verified.street.trim());
+  return {
+    street: verified.street || legacy.street,
+    number: verified.number || (numberedStreetNameWithoutPropertyNumber ? '' : legacy.number),
+    complement: verified.complement || legacy.complement
+  };
+}
+
 function cleanStreetName(street: string | null | undefined): string {
   if (!street) return '';
   let norm = normalizeString(street);
@@ -344,12 +366,18 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Navigation mode for results display
   const [activeTab, setActiveTab] = useState<'local' | 'online' | 'matricula'>('local');
 
-  const initialAddr = useMemo(() => parseAddressComponents(prefillData?.address), [prefillData?.address]);
+  const initialAddr = useMemo(() => {
+    const candidates = [prefillData?.address, prefillData?.description, prefillData?.title]
+      .filter((value): value is string => !!value)
+      .map(value => parseAddressComponents(value))
+      .filter(parsed => /^(?:rua|r\.?|avenida|av\.?|estrada|est\.?|travessa|trv\.?|alameda|rodovia|pra[cç]a|largo)(?:\s|$)/i.test(parsed.street));
+    return candidates.find(candidate => !!candidate.number) || candidates[0] || parseAddressComponents(prefillData?.address);
+  }, [prefillData?.address, prefillData?.description, prefillData?.title]);
 
   // Unified Form Inputs (Shared between local and online modes)
   const [selectedState, setSelectedState] = useState(prefillData?.state || 'RJ');
   const [selectedCity, setSelectedCity] = useState(prefillData?.city || 'Rio de Janeiro');
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState(prefillData?.neighborhood || '');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState(sanitizeNeighborhoodLabel(prefillData?.neighborhood));
   const [selectedStreet, setSelectedStreet] = useState(initialAddr.street || '');
   const [streetNumber, setStreetNumber] = useState(
     initialAddr.number ? (initialAddr.complement ? `${initialAddr.number}, ${initialAddr.complement}` : initialAddr.number) : (initialAddr.complement || '')
@@ -466,7 +494,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         (stat.state || 'SP').toUpperCase() === selectedState.toUpperCase() &&
         (stat.city || 'São Paulo').toLowerCase() === selectedCity.toLowerCase()
       )
-      .map(stat => stat.neighborhood);
+      .map(stat => stat.neighborhood)
+      .filter(isUsableNeighborhoodLabel);
     return Array.from(new Set(list)).sort();
   }, [itbiStats, selectedState, selectedCity]);
 
@@ -482,17 +511,19 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     if (prefillData.state) setSelectedState(prefillData.state);
     if (prefillData.city) setSelectedCity(prefillData.city);
     if (prefillData.neighborhood) {
-      let targetNeigh = prefillData.neighborhood;
+      let targetNeigh = sanitizeNeighborhoodLabel(prefillData.neighborhood);
       if (neighborhoodsList && neighborhoodsList.length > 0) {
-        const match = neighborhoodsList.find(n => normalizeString(n) === normalizeString(targetNeigh)) ||
-                      neighborhoodsList.find(n => cleanNeighborhood(n) === cleanNeighborhood(targetNeigh));
+        const match = targetNeigh
+          ? neighborhoodsList.find(n => normalizeString(n) === normalizeString(targetNeigh)) ||
+            neighborhoodsList.find(n => cleanNeighborhood(n) === cleanNeighborhood(targetNeigh))
+          : undefined;
         if (match) targetNeigh = match;
       }
       setSelectedNeighborhood(targetNeigh);
       setNeighborhoodInput(targetNeigh);
     }
-    if (prefillData.address) {
-      const parsed = parseAddressComponents(prefillData.address);
+    if (prefillData.address || prefillData.description || prefillData.title) {
+      const parsed = initialAddr;
       const cleanSt = parsed.street;
       setSelectedStreet(cleanSt);
       setStreetInput(cleanSt);
@@ -1064,7 +1095,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Load raw transactions when neighborhood/street changes (Local Mode)
   // Fetch all neighborhood transactions to allow client side segmentation and radius analysis
   useEffect(() => {
-    if (!selectedNeighborhood) {
+    const canQueryWithoutNeighborhood = isJuizDeFora && !!selectedStreet;
+    if (!selectedNeighborhood && !canQueryWithoutNeighborhood) {
       setRawTransactions([]);
       setRadiusTransactions([]);
       setRadiusAnchorPrecision('missing');
@@ -1077,7 +1109,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     async function loadTransactions() {
       setIsLoadingTransactions(true);
       try {
-        let url = `/api/itbi/transactions?state=${selectedState}&city=${selectedCity}&neighborhood=${encodeURIComponent(selectedNeighborhood)}`;
+        let url = `/api/itbi/transactions?state=${selectedState}&city=${selectedCity}`;
+        if (selectedNeighborhood) url += `&neighborhood=${encodeURIComponent(selectedNeighborhood)}`;
         if (prefillData?.id) {
           url += `&propertyId=${encodeURIComponent(prefillData.id)}`;
         }
@@ -1685,6 +1718,25 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     };
   }, [bidiBenchmark, exactBuildingTxs, sizeSqm, txSizeFilter, streetNumber]);
 
+  const jfBuildingPurchaseSales = useMemo(
+    () => sameNumberBuildingTxs.filter(tx => tx.isCompraEVenda === true),
+    [sameNumberBuildingTxs]
+  );
+  const jfStreetPurchaseSales = useMemo(
+    () => exactStreetTxs.filter(tx => tx.isCompraEVenda === true),
+    [exactStreetTxs]
+  );
+  const getJfVerifiedArea = (tx: ItbiTransaction) => isJuizDeFora ? getVerifiedJuizDeForaArea(tx) : undefined;
+  const getJfSourceUnitPrice = (tx: ItbiTransaction) => {
+    const officialArea = getJfVerifiedArea(tx);
+    if (!officialArea) return undefined;
+    const sourceUnitPrice = Number(tx.unitValueSqm);
+    const perSqm = tx.sourceVerified === true && sourceUnitPrice > 0
+      ? sourceUnitPrice
+      : getTxIntegralValue(tx) / officialArea;
+    return Number.isFinite(perSqm) && perSqm > 0 ? Math.round(perSqm) : undefined;
+  };
+
   // Combined stats for dynamic calculations
   const calculatedStats = useMemo(() => {
     if (exactBuildingStats) {
@@ -1951,16 +2003,20 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       }
     }
 
+    const validJuizDeForaUnitValue = !isJuizDeFora || itbiCompositeSqm === 0 ||
+      (itbiCompositeSqm >= 800 && itbiCompositeSqm <= 30000);
+    if (!validJuizDeForaUnitValue) itbiCompositeSqm = 0;
+
     return {
       itbiCompositeSqm,
       components: weighted.components,
       totalWeight: weighted.totalWeight,
       localSampleCount: weighted.localSampleCount,
-      priceable: weighted.priceable,
+      priceable: weighted.priceable && validJuizDeForaUnitValue,
       calibrated: weighted.calibrated,
       calibrationKind: weighted.calibrationKind
     };
-  }, [bidiBenchmark, exactBuildingStats, exactStreetStats, nearbyStats, neighborhoodStats, propertyType, prefillData?.propertyType, sizeSqm, radiusKm]);
+  }, [bidiBenchmark, exactBuildingStats, exactStreetStats, nearbyStats, neighborhoodStats, propertyType, prefillData?.propertyType, sizeSqm, radiusKm, isJuizDeFora]);
 
   // Detecção 100% AUTOMÁTICA do Ano de Construção / Habite-se / Registro na Matrícula & Edital
   const buildingAgeData = useMemo(() => {
@@ -4533,7 +4589,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           <span className="font-bold text-emerald-400">
                             {exactBuildingStats 
                               ? `R$ ${exactBuildingStats.avgSqm.toLocaleString('pt-BR')}/m² ${sizeSqm > 0 ? `(${formatBRL(exactBuildingStats.avgSqm * sizeSqm)})` : ''} • ${exactBuildingStats.count} tx${isJuizDeFora ? ' Compra e Venda' : ' válidas'}${exactBuildingStats.outliersCount > 0 ? ` • ${exactBuildingStats.outliersCount} expurgada` : ''}`
-                              : streetNumber ? (isJuizDeFora ? 'Sem transação de Compra e Venda neste número' : 'Sem transação específica neste número') : 'Informe o número do endereço'}
+                              : streetNumber && isJuizDeFora && jfBuildingPurchaseSales.length > 0
+                                ? `${jfBuildingPurchaseSales.length} vendas na fonte; nenhuma entrou na faixa de comparação de ${sizeSqm || 'área'} m²`
+                                : streetNumber ? (isJuizDeFora ? 'Sem venda confirmada neste número' : 'Sem transação específica neste número') : 'Informe o número do endereço'}
                           </span>
                         </div>
                         <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
@@ -4955,7 +5013,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             </div>
 
             {/* TABELA 1 (DESTAQUE): Transações no Mesmo Prédio / Número */}
-            {sameNumberBuildingTxs.length > 0 && (
+            {(isJuizDeFora ? jfBuildingPurchaseSales.length > 0 : sameNumberBuildingTxs.length > 0) && (
               <div className="bg-emerald-950/20 border border-emerald-900/50 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-900/40">
                   <div className="flex items-center space-x-2">
@@ -4964,12 +5022,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       <h3 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
                         <span>Transações Oficiais no Mesmo Prédio / Endereço (Nº {cleanNumber(streetNumber)})</span>
                         <span className="text-[10px] bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded font-mono font-bold">
-                          {exactBuildingTxs.filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.round(sizeSqm * 0.67) && tx.sizeSqm <= Math.round(sizeSqm * 1.33)))).length} {isJuizDeFora ? 'comparáveis de Compra e Venda' : 'imóveis no recorte'} · {sameNumberBuildingTxs.length} registros no nº
+                          {isJuizDeFora
+                            ? `${bidiBenchmark?.predio.validas || 0} usadas no preço · ${jfBuildingPurchaseSales.length} vendas registradas`
+                            : `${exactBuildingTxs.filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.round(sizeSqm * 0.67) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))).length} imóveis no recorte · ${sameNumberBuildingTxs.length} registros no nº`}
                         </span>
                       </h3>
                       <p className="text-[10px] text-emerald-400/80 mt-0.5">
                         {isJuizDeFora
-                          ? 'Escrituras oficiais de ITBI (Compra e Venda) registradas neste endereço em Juiz de Fora. Clique em uma linha para aplicar o valor na calculadora.'
+                          ? 'Valor e natureza preservados da fonte. O m² abaixo só aparece quando a venda passa pelo filtro de comparação de área.'
                           : 'Escrituras e impostos de ITBI recolhidos exatamente neste edifício. Clique em uma linha para aplicar os dados na calculadora.'}
                       </p>
                     </div>
@@ -4981,18 +5041,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <thead>
                       <tr className="border-b border-emerald-900/60 text-emerald-300 font-medium uppercase tracking-wider text-[9px] font-mono">
                         <th className="pb-2">Data</th>
-                        <th className="pb-2">Número</th>
-                        <th className="pb-2">Complemento / Apto</th>
                         {isJuizDeFora ? (
                           <>
+                            <th className="pb-2">Unidade</th>
                             <th className="pb-2 text-center">Natureza</th>
-                            <th className="pb-2 text-center">Fração</th>
                             <th className="pb-2 text-right">Preço Declarado</th>
-                            <th className="pb-2 text-center">Área informada</th>
-                            <th className="pb-2 text-right">Preço por m²</th>
+                            <th className="pb-2 text-right">Área e R$/m² da fonte</th>
                           </>
                         ) : (
                           <>
+                            <th className="pb-2">Número</th>
+                            <th className="pb-2">Complemento / Apto</th>
                             <th className="pb-2 text-center">Área Privativa</th>
                             <th className="pb-2 text-right">Preço Declarado</th>
                             <th className="pb-2 text-right">Valor m²</th>
@@ -5002,11 +5061,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-emerald-900/30 text-slate-300">
-                      {sameNumberBuildingTxs
-                        .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
+                      {(isJuizDeFora ? jfBuildingPurchaseSales : sameNumberBuildingTxs
+                        .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
                         .map((tx) => {
                         const neighborhoodConflict = isJuizDeFora && !!selectedNeighborhood && !!tx.neighborhood &&
                           cleanNeighborhood(tx.neighborhood) !== cleanNeighborhood(selectedNeighborhood);
+                        const usedInPrice = bidiBenchmark?.predio.transactionIds?.includes(tx.id) === true;
+                        const verifiedArea = getJfVerifiedArea(tx);
+                        const verifiedUnitPrice = getJfSourceUnitPrice(tx);
                         return (
                         <tr 
                           key={tx.id}
@@ -5025,34 +5087,27 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                             : 'Clique para importar esta transação na calculadora'}
                         >
                           <td className="py-2.5 font-mono text-emerald-300/80">{tx.date}</td>
-                          <td className="py-2.5 font-bold text-white font-mono">{tx.number || '-'}</td>
-                          <td className="py-2.5 font-semibold text-emerald-200 group-hover:text-emerald-100 transition-colors">
-                            {tx.complement || 'Unidade Principal'}
-                            {isJuizDeFora && tx.complement && <span className="block text-[9px] text-slate-500" title="Texto mantido conforme o registro original da prefeitura; não foi expandido automaticamente.">Complemento conforme fonte oficial</span>}
-                            {neighborhoodConflict && <span className="block mt-1 text-[9px] font-bold text-amber-300">Bairro divergente · fora da precificação</span>}
-                          </td>
                           {isJuizDeFora ? (
                             <>
+                              <td className="py-2.5 font-semibold text-emerald-200">{tx.number ? `Nº ${tx.number}` : ''}{tx.complement ? ` · ${tx.complement}` : ''}</td>
                               <td className="py-2.5 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
-                                  tx.isCompraEVenda === true
-                                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/50'
-                                    : 'bg-amber-950/80 text-amber-300 border border-amber-800/50'
-                                }`}>
-                                  {tx.naturezaOperacao || 'Natureza não identificada'}
+                                <span className="px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/50">
+                                  {tx.naturezaOperacao || 'Compra e venda'}{Number(tx.percentualTransmitido) > 0 && Number(tx.percentualTransmitido) < 99.995 ? ` · ${tx.percentualTransmitido}%` : ''}
                                 </span>
-                              </td>
-                              <td className="py-2.5 text-center font-mono font-bold text-white">
-                                {tx.percentualTransmitido ? `${tx.percentualTransmitido}%` : '100%'}
                               </td>
                               <td className="py-2.5 text-right font-mono font-bold text-slate-300">
                                 {formatBRL(tx.transactionValue)}
                               </td>
-                              <td className="py-2.5 text-center font-mono text-slate-500">Não consta</td>
-                              <td className="py-2.5 text-right font-mono text-slate-500">Não calculado</td>
+                              <td className="py-2.5 text-right font-mono text-slate-300" title={usedInPrice ? 'Área e valor por m² registrados na fonte; amostra incluída no preço.' : 'Venda oficial preservada, mas fora do recorte comparável usado no preço.'}>
+                                {verifiedArea && verifiedUnitPrice
+                                  ? `${verifiedArea} m² · ${formatBRL(verifiedUnitPrice)}/m²${usedInPrice ? ' ✓' : ''}`
+                                  : '—'}
+                              </td>
                             </>
                           ) : (
                             <>
+                              <td className="py-2.5 font-bold text-white font-mono">{tx.number || '-'}</td>
+                              <td className="py-2.5 font-semibold text-emerald-200 group-hover:text-emerald-100 transition-colors">{tx.complement || 'Unidade Principal'}</td>
                               <td className="py-2.5 text-center font-mono font-bold text-white">{tx.sizeSqm}m²</td>
                               <td className="py-2.5 text-right font-mono font-black text-emerald-400">{formatBRL(tx.transactionValue)}</td>
                               <td className="py-2.5 text-right font-mono font-black text-emerald-300">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>
@@ -5103,7 +5158,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </button>
                   ) : (
                     <span className="text-[9px] bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-800/40">
-                      {exactStreetTxs.filter(t => t.isCompraEVenda === true).length} Compra e Venda
+                      {jfStreetPurchaseSales.length} C&V · {bidiBenchmark?.rua.validas || 0} usadas no preço
                     </span>
                   )}
                 </div>
@@ -5113,14 +5168,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <thead>
                       <tr className="border-b border-slate-800 text-slate-455 font-medium uppercase tracking-wider text-[9px]">
                         <th className="pb-2 font-semibold">Data</th>
-                        <th className="pb-2 font-semibold">{isJuizDeFora ? 'Nº / Compl' : 'Nº / Apto'}</th>
+                        <th className="pb-2 font-semibold">{isJuizDeFora ? 'Nº / Unidade' : 'Nº / Apto'}</th>
                         {isJuizDeFora ? (
                           <>
-                            <th className="pb-2 text-center font-semibold">Natureza</th>
-                            <th className="pb-2 text-center font-semibold">Fração</th>
-                            <th className="pb-2 text-right font-semibold">Preço Declarado</th>
-                            <th className="pb-2 text-center font-semibold">Área informada</th>
-                            <th className="pb-2 text-right font-semibold">Preço por m²</th>
+                            <th className="pb-2 text-center font-semibold">Operação</th>
+                            <th className="pb-2 text-right font-semibold">Preço declarado</th>
+                            <th className="pb-2 text-right font-semibold">Área e R$/m² da fonte</th>
                           </>
                         ) : (
                           <>
@@ -5132,17 +5185,21 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300">
-                      {exactStreetTxs.length === 0 ? (
+                      {(isJuizDeFora ? jfStreetPurchaseSales.length === 0 : exactStreetTxs.length === 0) ? (
                         <tr>
-                          <td colSpan={isJuizDeFora ? 7 : 5} className="py-8 text-center text-slate-550 italic">
+                          <td colSpan={isJuizDeFora ? 5 : 5} className="py-8 text-center text-slate-550 italic">
                             Nenhuma transação individual encontrada nesta rua.
                           </td>
                         </tr>
                       ) : (
-                        exactStreetTxs
-                          .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
+                        (isJuizDeFora ? jfStreetPurchaseSales : exactStreetTxs
+                          .filter(tx => txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
                           .slice(0, 50)
-                          .map((tx) => (
+                          .map((tx) => {
+                            const usedInPrice = bidiBenchmark?.rua.transactionIds?.includes(tx.id) === true;
+                            const verifiedArea = getJfVerifiedArea(tx);
+                            const verifiedUnitPrice = getJfSourceUnitPrice(tx);
+                            return (
                             <tr 
                               key={tx.id} 
                               onClick={() => {
@@ -5163,22 +5220,18 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                               {isJuizDeFora ? (
                                 <>
                                   <td className="py-2.5 text-center">
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
-                                      tx.isCompraEVenda === true
-                                        ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/50'
-                                        : 'bg-amber-950/80 text-amber-300 border border-amber-800/50'
-                                    }`}>
-                                      {tx.naturezaOperacao || 'Natureza não identificada'}
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/50">
+                                      Compra e venda{Number(tx.percentualTransmitido) > 0 && Number(tx.percentualTransmitido) < 99.995 ? ` · ${tx.percentualTransmitido}%` : ''}
                                     </span>
-                                  </td>
-                                  <td className="py-2.5 text-center font-mono font-bold text-slate-200">
-                                    {tx.percentualTransmitido ? `${tx.percentualTransmitido}%` : '100%'}
                                   </td>
                                   <td className="py-2.5 text-right font-mono font-medium text-slate-300">
                                     {formatBRL(tx.transactionValue)}
                                   </td>
-                                  <td className="py-2.5 text-center font-mono text-slate-500">Não consta</td>
-                                  <td className="py-2.5 text-right font-mono text-slate-500">Não calculado</td>
+                                  <td className="py-2.5 text-right font-mono text-slate-300" title={usedInPrice ? 'Incluída no recorte ponderado de preço.' : 'Venda oficial preservada; não selecionada para o recorte de preço desta metragem.'}>
+                                    {verifiedArea && verifiedUnitPrice
+                                      ? `${verifiedArea} m² · ${formatBRL(verifiedUnitPrice)}/m²${usedInPrice ? ' ✓' : ''}`
+                                      : '—'}
+                                  </td>
                                 </>
                               ) : (
                                 <>
@@ -5188,7 +5241,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                 </>
                               )}
                             </tr>
-                          ))
+                          );})
                       )}
                     </tbody>
                   </table>
@@ -5204,7 +5257,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
                         <span>Amostras nas Ruas Próximas ao Entorno ({radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`})</span>
                         <span className="text-[10px] bg-violet-950 text-violet-300 px-2 py-0.5 rounded font-mono font-bold border border-violet-800/40">
-                          {nearbyStreetTxs.length} {isJuizDeFora ? 'tx de Compra e Venda' : 'tx válidas'}
+                          {isJuizDeFora ? nearbyStreetTxs.filter(tx => tx.isCompraEVenda === true).length : nearbyStreetTxs.length} {isJuizDeFora ? 'vendas' : 'tx válidas'}
                         </span>
                       </h3>
                       <p className="text-[10px] text-slate-450 mt-0.5">
@@ -5257,18 +5310,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <thead>
                       <tr className="border-b border-slate-800 text-slate-455 font-medium uppercase tracking-wider text-[9px]">
                         <th className="pb-2 font-semibold">Data</th>
-                        <th className="pb-2 font-semibold">Logradouro</th>
-                        <th className="pb-2 text-center font-semibold">Distância Real</th>
+                        <th className="pb-2 font-semibold">Logradouro · distância</th>
                         {isJuizDeFora ? (
                           <>
-                            <th className="pb-2 text-center font-semibold">Natureza</th>
-                            <th className="pb-2 text-center font-semibold">Fração</th>
-                            <th className="pb-2 text-right font-semibold">Preço Declarado</th>
-                            <th className="pb-2 text-center font-semibold">Área informada</th>
-                            <th className="pb-2 text-right font-semibold">Preço por m²</th>
+                            <th className="pb-2 text-center font-semibold">Operação</th>
+                            <th className="pb-2 text-right font-semibold">Preço declarado</th>
+                            <th className="pb-2 text-right font-semibold">Área e R$/m² da fonte</th>
                           </>
                         ) : (
                           <>
+                            <th className="pb-2 text-center font-semibold">Distância Real</th>
                             <th className="pb-2 text-center font-semibold">Área</th>
                             <th className="pb-2 text-right font-semibold">Preço Escritura</th>
                             <th className="pb-2 text-right font-semibold">Valor m²</th>
@@ -5277,9 +5328,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300">
-                      {nearbyStreetTxs.length === 0 ? (
+                      {(isJuizDeFora ? !nearbyStreetTxs.some(tx => tx.isCompraEVenda === true) : nearbyStreetTxs.length === 0) ? (
                         <tr>
-                          <td colSpan={isJuizDeFora ? 8 : 6} className="py-8 text-center text-slate-500 italic">
+                          <td colSpan={isJuizDeFora ? 5 : 6} className="py-8 text-center text-slate-500 italic">
                             {isLoadingTransactions ? 'Carregando transações do ITBI...' : `Nenhuma transação individual encontrada no raio estrito de ${radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`}.`}
                           </td>
                         </tr>
@@ -5289,6 +5340,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           .slice(0, 50)
                           .map((tx) => {
                             const distMeters = tx.distanceMeters || (typeof tx.distanceKm === 'number' ? Math.round(tx.distanceKm * 1000) : null);
+                            const usedInPrice = bidiBenchmark?.raio.transactionIds?.includes(tx.id) === true;
+                            const verifiedArea = getJfVerifiedArea(tx);
+                            const verifiedUnitPrice = getJfSourceUnitPrice(tx);
                             return (
                               <tr 
                                 key={tx.id} 
@@ -5305,35 +5359,36 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                               >
                                 <td className="py-2.5 font-mono text-slate-450">{tx.date}</td>
                                 <td className="py-2.5 font-medium text-slate-300 group-hover:text-indigo-400 transition-colors truncate max-w-[150px] block">
-                                  {tx.street || 'Não informado'} {tx.number ? `(${tx.number})` : ''}
+                                  {tx.street || ''} {tx.number ? `(${tx.number})` : ''}{isJuizDeFora && distMeters !== null ? ` · ${distMeters}m` : ''}
                                 </td>
-                                <td className="py-2.5 text-center">
+                                {!isJuizDeFora && <td className="py-2.5 text-center">
                                   <span className="px-1.5 py-0.5 rounded bg-violet-950/70 text-violet-300 font-mono text-[10px] font-bold border border-violet-800/40">
                                     {distMeters !== null ? `${distMeters}m` : 'no raio'}
                                   </span>
-                                </td>
+                                </td>}
                                 {isJuizDeFora ? (
                                   <>
                                     <td className="py-2.5 text-center">
-                                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
-                                        tx.isCompraEVenda === true
-                                          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/50'
-                                          : 'bg-amber-950/80 text-amber-300 border border-amber-800/50'
-                                      }`}>
-                                        {tx.naturezaOperacao || 'Natureza não identificada'}
+                                      <span className="px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/50">
+                                        Compra e venda{Number(tx.percentualTransmitido) > 0 && Number(tx.percentualTransmitido) < 99.995 ? ` · ${tx.percentualTransmitido}%` : ''}
                                       </span>
-                                    </td>
-                                    <td className="py-2.5 text-center font-mono font-bold text-slate-200">
-                                      {tx.percentualTransmitido ? `${tx.percentualTransmitido}%` : '100%'}
                                     </td>
                                     <td className="py-2.5 text-right font-mono font-medium text-slate-300">
                                       {formatBRL(tx.transactionValue)}
                                     </td>
-                                    <td className="py-2.5 text-center font-mono text-slate-500">Não consta</td>
-                                    <td className="py-2.5 text-right font-mono text-slate-500">Não calculado</td>
+                                    <td className="py-2.5 text-right font-mono text-slate-300" title={usedInPrice ? 'Incluída no recorte ponderado do raio.' : 'Venda oficial preservada; não selecionada para o recorte de preço desta metragem.'}>
+                                      {verifiedArea && verifiedUnitPrice
+                                        ? `${verifiedArea} m² · ${formatBRL(verifiedUnitPrice)}/m²${usedInPrice ? ' ✓' : ''}`
+                                        : '—'}
+                                    </td>
                                   </>
                                 ) : (
                                   <>
+                                    <td className="py-2.5 text-center">
+                                      <span className="px-1.5 py-0.5 rounded bg-violet-950/70 text-violet-300 font-mono text-[10px] font-bold border border-violet-800/40">
+                                        {distMeters !== null ? `${distMeters}m` : 'no raio'}
+                                      </span>
+                                    </td>
                                     <td className="py-2.5 text-center font-mono font-semibold">{tx.sizeSqm}m²</td>
                                     <td className="py-2.5 text-right font-mono font-semibold text-slate-200">{formatBRL(tx.transactionValue)}</td>
                                     <td className="py-2.5 text-right font-mono font-bold text-slate-400">R$ {tx.unitValueSqm.toLocaleString('pt-BR')}/m²</td>

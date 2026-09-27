@@ -1,7 +1,8 @@
 import { canonicalStreet, resolveOfficialStreet } from './streetMatching.ts';
 import { ItbiTransaction } from '../types.ts';
 import { computeFourTierValuation } from './fourTierValuation.ts';
-import { inferJfComparableArea, JuizDeForaAreaModel } from './juizDeForaAreaModel.ts';
+import { resolveComparableJfArea, JuizDeForaAreaModel } from './juizDeForaAreaModel.ts';
+import { deduplicateVerifiedItbiSourceRows } from './itbiSourceDeduplication.ts';
 
 export const DEFAULT_BENCHMARK_SIZE_MODE: 'similar' = 'similar';
 
@@ -21,6 +22,7 @@ export interface TierStats {
   fatorEscala?: number;
   areaMediaGeral?: number;
   cenarioArea?: 'A' | 'B';
+  transactionIds?: string[];
 }
 
 export interface BidirectionalBenchmarkResult {
@@ -189,7 +191,10 @@ export function computeBidirectionalBenchmarks(
   );
 
   // Isolamento Estrito da Natureza da Operação para Juiz de Fora (Apenas Compra e Venda baliza mercado):
-  const sourceTxs = isJuizDeFora ? allNeighborhoodTxs.filter(t => t.isCompraEVenda === true) : allNeighborhoodTxs;
+  const inputTransactions = isJuizDeFora
+    ? deduplicateVerifiedItbiSourceRows(allNeighborhoodTxs).transactions
+    : allNeighborhoodTxs;
+  const sourceTxs = isJuizDeFora ? inputTransactions.filter(t => t.isCompraEVenda === true) : inputTransactions;
   if (sourceTxs.length === 0) return null;
 
   const jfDates = isJuizDeFora ? sourceTxs.map(t => t.date).filter(Boolean).sort() : [];
@@ -230,26 +235,40 @@ export function computeBidirectionalBenchmarks(
     };
     const areaReference = areaModel?.referenceAreaSqm || 0;
     const elasticity = areaModel?.elasticity || 0.7;
-    // ITBI-JF has no unit area. Keep local sale data usable even if the
-    // verified-area calibration is weak; widen the comparison band and expose
-    // low confidence instead of dropping the street/building observations.
+    // Prefer official areas recorded in the city export. For area-less rows,
+    // infer comparison area only from a sufficiently strong independent model.
     const withinModelDomain = !!areaModel && area_alvo >= areaModel.minAreaSqm * 0.5 && area_alvo <= areaModel.maxAreaSqm * 2.5;
     const effectiveAreaModelConfidence = !areaModel || area_alvo < areaModel.minAreaSqm * 0.75 || area_alvo > areaModel.maxAreaSqm * 1.25
       ? 'low'
       : areaModel.confidence;
     const buildTier = (candidates: ItbiTransaction[], minCount: number) => {
       const amountRows = candidates.map(tx => ({ tx, value: validAmount(tx) })).filter(row => row.value > 0);
-      const sane = filterByIQR(amountRows.map(row => row.value));
-      const saneSet = new Set(sane.filtered);
-      const saneRows = amountRows.filter(row => saneSet.has(row.value));
-      // Use an ephemeral price/area cluster based on independently verified
-      // area anchors. It is a comparison aid only: never store inferred ITBI
-      // area or treat a transferred percentage as square metres.
+      // Prefer the area explicitly present in the official city CSV. Only when
+      // that field is absent may a sufficiently strong independent anchor model
+      // estimate an ephemeral comparable area. This never writes back to ITBI.
+      const plausibleRows = amountRows.flatMap(row => {
+        const comparable = resolveComparableJfArea(row.tx, areaModel);
+        if (!comparable) return [];
+        const perSqm = row.value / comparable.areaSqm;
+        // A hard market sanity bound prevents a fraction/percentage or malformed
+        // amount from creating a six- or eight-figure R$/m² result.
+        if (!Number.isFinite(perSqm) || perSqm < 800 || perSqm > 30000) return [];
+        return [{ ...row, equivalentArea: comparable.areaSqm, areaSource: comparable.source, perSqm }];
+      });
+      const saneRates = filterByIQR(plausibleRows.map(row => row.perSqm));
+      const saneRateCounts = new Map<number, number>();
+      for (const value of saneRates.filtered) saneRateCounts.set(value, (saneRateCounts.get(value) || 0) + 1);
+      const saneRows = plausibleRows.filter(row => {
+        const remaining = saneRateCounts.get(row.perSqm) || 0;
+        if (remaining <= 0) return false;
+        saneRateCounts.set(row.perSqm, remaining - 1);
+        return true;
+      });
       const areaBands: Array<[number, number]> = effectiveAreaModelConfidence === 'low'
         ? [[0.75, 1.25], [0.65, 1.45], [0.55, 1.6]]
         : [[0.8, 1.2], [0.7, 1.3], [0.55, 1.5]];
-      const clusterRows = areaModel && withinModelDomain && area_alvo > 0
-        ? saneRows.map(row => ({ ...row, equivalentArea: inferJfComparableArea(row.value, areaModel) }))
+      const clusterRows = area_alvo > 0
+        ? saneRows.filter(row => row.areaSource === 'official' || (!!areaModel && withinModelDomain))
         : [];
       let matches: typeof clusterRows = [];
       for (const [minFactor, maxFactor] of areaBands) {
@@ -261,9 +280,8 @@ export function computeBidirectionalBenchmarks(
         }
       }
       if (matches.length < minCount) matches = [];
-      const values = matches.map(row => row.value);
-      const total = values.length ? Math.round(computeMedian(values)) : 0;
-      const perSqm = total > 0 && area_alvo > 0 ? Math.round(total / area_alvo) : 0;
+      const perSqm = matches.length ? Math.round(computeMedian(matches.map(row => row.perSqm))) : 0;
+      const total = perSqm > 0 && area_alvo > 0 ? Math.round(perSqm * area_alvo) : 0;
       const outlierCount = amountRows.length - saneRows.length;
       return {
         total,
@@ -272,6 +290,7 @@ export function computeBidirectionalBenchmarks(
         validRows: matches.length,
         excludedRows: Math.max(0, candidates.length - matches.length),
         outlierCount,
+        transactionIds: matches.map(row => row.tx.id),
         distances: matches.map(row => Number(row.tx.distanceKm)).filter(Number.isFinite)
       };
     };
@@ -325,16 +344,16 @@ export function computeBidirectionalBenchmarks(
     const hasVerifiedRadius = surrounding.validRows >= 2;
     const fallbackLevel: '0.5km' | '1.0km' | '2.0km' | 'bairro' = hasVerifiedRadius ? '0.5km' : 'bairro';
     const radiusLabel = hasVerifiedRadius ? `Raio ITBI verificado até ${radiusKm || 0.5}km` : 'Sem amostras ITBI geolocalizadas no raio';
-    const tier = (value: number, total: number, validas: number, expurgadas: number, prelim: number): TierStats => ({ saneada: value, total, validas, expurgadas, prelim });
+    const tier = (value: number, total: number, validas: number, expurgadas: number, prelim: number, transactionIds: string[] = []): TierStats => ({ saneada: value, total, validas, expurgadas, prelim, transactionIds });
     const minSimilarSize = Math.max(15, Math.round(area_alvo * 0.67));
     const maxSimilarSize = Math.round(area_alvo * 1.33);
     const sourceDates = sourceTxs.map(tx => tx.date).filter(Boolean).sort();
 
     return {
-      bairro: tier(neighborhood.perSqm, neighborhood.totalRows, neighborhood.validRows, neighborhood.excludedRows, neighborhood.perSqm),
-      raio: { ...tier(surrounding.perSqm, surrounding.totalRows, surrounding.validRows, surrounding.excludedRows, surrounding.perSqm), effectiveRadiusKm: hasVerifiedRadius ? radiusKm || 0.5 : undefined, radiusLabel, fallbackLevel },
-      rua: tier(street.perSqm, street.totalRows, street.validRows, street.excludedRows, street.perSqm),
-      predio: tier(building.perSqm, building.totalRows, building.validRows, building.excludedRows, building.perSqm),
+      bairro: tier(neighborhood.perSqm, neighborhood.totalRows, neighborhood.validRows, neighborhood.excludedRows, neighborhood.perSqm, neighborhood.transactionIds),
+      raio: { ...tier(surrounding.perSqm, surrounding.totalRows, surrounding.validRows, surrounding.excludedRows, surrounding.perSqm, surrounding.transactionIds), effectiveRadiusKm: hasVerifiedRadius ? radiusKm || 0.5 : undefined, radiusLabel, fallbackLevel },
+      rua: tier(street.perSqm, street.totalRows, street.validRows, street.excludedRows, street.perSqm, street.transactionIds),
+      predio: tier(building.perSqm, building.totalRows, building.validRows, building.excludedRows, building.perSqm, building.transactionIds),
       mediaCorteReal,
       nivelUtilizado,
       flipRapidoSqm,

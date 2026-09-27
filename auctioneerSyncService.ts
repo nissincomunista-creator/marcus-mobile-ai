@@ -15,6 +15,7 @@ import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import { GoogleGenAI } from '@google/genai';
 import { PDFParse } from 'pdf-parse';
 import { readRegistryPdf, extractStructuredMatriculaFields } from './documentTextService.ts';
+import { parseAddressComponents } from './src/utils/addressComponents.ts';
 
 let documentOcrPausedUntil = 0;
 import { AuctionProperty, PropertyType } from './src/types.ts';
@@ -402,6 +403,12 @@ export function formatCleanAddress(addr: string): string {
   return cleaned;
 }
 
+function formatPreciseAuctionAddress(addr: string): string {
+  const parsed = parseAddressComponents(addr);
+  if (!parsed.street || !parsed.number) return formatCleanAddress(addr);
+  return formatCleanAddress([parsed.street, `nº ${parsed.number}`, parsed.complement].filter(Boolean).join(', '));
+}
+
 export function extractAddress(text: string, fallback: string): string {
   const cleanInput = unsquishText(text || '');
   const lines = cleanInput.split(/\r?\n|\s{2,}/).map(line => line.trim()).filter(Boolean);
@@ -416,7 +423,7 @@ export function extractAddress(text: string, fallback: string): string {
       .split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0]
       .replace(/\s+/g, ' ')
       .trim();
-    if (labeledAddress.length >= 8) return formatCleanAddress(labeledAddress.slice(0, 180));
+    if (labeledAddress.length >= 8) return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
   }
   const addressCandidates = lines
     .map((line, index) => {
@@ -437,11 +444,11 @@ export function extractAddress(text: string, fallback: string): string {
       .split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0]
       .replace(/\s+(?:bairro|cidade|estado)\s*[:\-].*$/i, '')
       .trim();
-    return formatCleanAddress(cleanExtracted);
+    return formatPreciseAuctionAddress(cleanExtracted);
   }
   const normalized = cleanInput.replace(/\s+/g, ' ').trim();
   const addressMatch = normalized.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
-  return addressMatch ? formatCleanAddress(addressMatch[0].replace(/\s{2,}/g, ' ').trim()) : formatCleanAddress(fallback);
+  return addressMatch ? formatPreciseAuctionAddress(addressMatch[0].replace(/\s{2,}/g, ' ').trim()) : formatPreciseAuctionAddress(fallback);
 }
 
 function extractDeclaredCity(text: string, state: string): string {
@@ -671,7 +678,9 @@ function isConfiguredAuctionLink(link: string): boolean {
 }
 
 function hasAuditableAddress(address: string | undefined): boolean {
-  return /\b(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(address || '') && /\d/.test(address || '');
+  const parsed = parseAddressComponents(address);
+  return !!parsed.street && !!parsed.number &&
+    /^(?:rua|avenida|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(parsed.street);
 }
 
 async function extractOfficialDocumentText(page: any, documentUrl: string): Promise<string> {
