@@ -1,12 +1,12 @@
 import { preserveSource, quarantine } from './auctionPipeline/quarantine.ts';
-import { catalogEligible, validateDraft } from './auctionPipeline/validation.ts';
-import { configureNeighborhoods, normalize as normalizeAuctionPlace } from './auctionPipeline/location.ts';
+import { catalogEligible, catalogVisible, validateDraft } from './auctionPipeline/validation.ts';
+import { configureNeighborhoods, enrichLocation, normalize as normalizeAuctionPlace } from './auctionPipeline/location.ts';
 import { declaredAuctionLocation } from './src/utils/auctionLocation.ts';
-import { assessAvailability, isRetired } from './auctionAvailability.ts';
+import { assessAvailability, isRetired, isExpiredAuction } from './auctionAvailability.ts';
 import { auditOfficialArea } from './src/utils/officialAreaAudit.ts';
 import { runListedPortalSync, parseSourcePage } from './listedPortalSync.ts';
-import { allowedSyncLocation, SYNC_TARGETS } from './src/utils/auctionSyncScope.ts';
-import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning } from './propertyLocationService.ts';
+import { allowedSyncLocation, SYNC_SOURCE_IDS, SYNC_TARGETS } from './src/utils/auctionSyncScope.ts';
+import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning, validOfficialLocation } from './propertyLocationService.ts';
 import { auctionCosts, calculateFlip } from './src/utils/flipCalculation.ts';
 import express from 'express';
 import path from 'path';
@@ -14,6 +14,7 @@ import fs from 'fs';
 import csvParser from 'csv-parser';
 import iconv from 'iconv-lite';
 import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
 import zlib from 'zlib';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
@@ -23,18 +24,30 @@ import crypto from 'crypto';
 import os from 'os';
 import puppeteer from 'puppeteer';
 import { launchPuppeteer, getPuppeteerLaunchOptions } from './src/utils/puppeteerConfig.ts';
-import { assessDataQuality, getVerifiedLocalComparableCount } from './src/utils/dataQuality.ts';
+import { assessDataQuality, getVerifiedLocalComparableCount, calculateSampleDensityLiquidity } from './src/utils/dataQuality.ts';
 import { PDFParse } from 'pdf-parse';
-import { readRegistryPdf } from './documentTextService.ts';
-import { AuctionProperty, ItbiTransaction, PropertyType, User, Session, AccessCode, SavedMarketAnalysis, ArrematacaoProperty } from './src/types.ts';
+import { readRegistryPdf, readRegistryPdfDetailed, extractStructuredMatriculaFields } from './documentTextService.ts';
+import { calculatePortalBenchmark } from './src/utils/portalBenchmarkEngine.ts';
+import { AuctionProperty, ItbiTransaction, ItbiStats, PropertyType, User, Session, AccessCode, SavedMarketAnalysis, ArrematacaoProperty } from './src/types.ts';
 import { initialAuctions, initialItbiTransactions } from './src/data.ts';
 import { scrapeLivePortals } from './portalScraper.ts';
-import { geocodeAddress, getCachedCoords, cleanQuery } from './geocodeService.ts';
-import { computeBidirectionalBenchmarks, isGenericStreet } from './src/utils/bidirectionalBenchmark.ts';
+import { geocodeAddress, getCachedCoords, cleanQuery, cleanBrazilianAddress } from './geocodeService.ts';
+import { computeBidirectionalBenchmarks, DEFAULT_BENCHMARK_SIZE_MODE, isGenericStreet, getTxIntegralValue, cleanStreetNumber } from './src/utils/bidirectionalBenchmark.ts';
+import { computeFourTierValuation } from './src/utils/fourTierValuation.ts';
+import { fitJuizDeForaAreaModel, JuizDeForaAreaModel } from './src/utils/juizDeForaAreaModel.ts';
+import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from './src/utils/quickFlipPricing.ts';
 import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
 import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts, parseOfficialLotDetail, canonicalAuctionLink, extractAuctionRoundsAndPrices } from './auctioneerSyncService.ts';
 
 dotenv.config();
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process] Ignorando Unhandled Rejection para manter o servidor online:', reason);
+});
+
+process.on('uncaughtException', (err, origin) => {
+  console.error('[Process] Ignorando Uncaught Exception para manter o servidor online:', err, origin);
+});
 
 declare global {
   namespace Express {
@@ -47,6 +60,8 @@ declare global {
 function normalizeString(str: string | null | undefined): string {
   if (!str) return '';
   return String(str)
+    .replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/_/g, ' ')
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -130,6 +145,7 @@ type StreetCoordinates = { lat: number; lng: number };
 interface RadialStreetCoordinatesCacheEntry {
   expiresAt: number;
   coordinates: Record<string, StreetCoordinates>;
+  resolvedStreets?: string[];
 }
 
 interface OsmRoadGeometry {
@@ -155,6 +171,56 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
     ; 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
   return R * c;
+}
+
+const streetCoordsLookup: Record<string, { lat: number; lng: number }> = {};
+try {
+  const sdPath = path.join(process.cwd(), 'src', 'utils', 'streetCoordsData.json');
+  if (fs.existsSync(sdPath)) {
+    Object.assign(streetCoordsLookup, JSON.parse(fs.readFileSync(sdPath, 'utf-8')));
+  }
+  const scPath = path.join(process.cwd(), 'street_coords_cache.json');
+  if (fs.existsSync(scPath)) {
+    Object.assign(streetCoordsLookup, JSON.parse(fs.readFileSync(scPath, 'utf-8')));
+  }
+} catch (e) {
+  console.error('Error loading street coordinates files:', e);
+}
+
+const cityStreetCoordsIndex = new Map<string, { lat: number; lng: number }>();
+for (const [k, hit] of Object.entries(streetCoordsLookup)) {
+  if (hit && Number.isFinite(hit.lat) && Number.isFinite(hit.lng)) {
+    const parts = k.split('_');
+    if (parts.length >= 4) {
+      const stateKey = parts[0];
+      const cityKey = parts[1];
+      const streetPart = parts.slice(3).join('_');
+      cityStreetCoordsIndex.set(`${stateKey}_${cityKey}_${streetPart}`, hit);
+    }
+  }
+}
+
+function getCachedStreetCoords(state?: string, city?: string, neighborhood?: string, street?: string): { lat: number; lng: number } | null {
+  if (!street) return null;
+  const stateKey = cleanQuery(state || 'RJ');
+  const c = cleanQuery(city || 'Rio de Janeiro');
+  const n = cleanQuery(neighborhood || '');
+  const streetKey = cleanQuery(street);
+  const s = streetKey.replace(/^r\.\s*/, 'rua ').replace(/^av\.\s*/, 'avn ').replace(/^est\.\s*/, 'etr ');
+  const sFull = streetKey.replace(/^r\.\s*/, 'rua ').replace(/^av\.\s*/, 'avenida ').replace(/^est\.\s*/, 'estrada ');
+  
+  const hit1 = streetCoordsLookup[`${stateKey}_${c}_${n}_${s}`]
+    || streetCoordsLookup[`${stateKey}_${c}_${n}_${sFull}`]
+    || streetCoordsLookup[`${stateKey}_${c}_${n}_${streetKey}`];
+  if (hit1 && Number.isFinite(hit1.lat) && Number.isFinite(hit1.lng)) return hit1;
+
+  // O(1) Fallback: mesma via no município
+  const hit2 = cityStreetCoordsIndex.get(`${stateKey}_${c}_${s}`)
+    || cityStreetCoordsIndex.get(`${stateKey}_${c}_${sFull}`)
+    || cityStreetCoordsIndex.get(`${stateKey}_${c}_${streetKey}`);
+  if (hit2 && Number.isFinite(hit2.lat) && Number.isFinite(hit2.lng)) return hit2;
+
+  return null;
 }
 
 function getSimulatedDistanceKm(streetA: string, streetB: string): number {
@@ -472,26 +538,18 @@ function makeRadialStreetCacheKey(
   ].join('|');
 }
 
-function escapeOverpassRegex(value: string): string {
-  return value.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
-}
-
 async function findOsmRoadsWithinRadius(
   anchorCoords: StreetCoordinates,
   radiusKm: number,
   candidateStreetNames: string[]
-): Promise<OsmRoadGeometry[]> {
-  const uniqueNames = Array.from(new Set(
-    candidateStreetNames.map(name => name.trim()).filter(name => name.length >= 3)
-  ));
-  if (uniqueNames.length === 0) return [];
+): Promise<OsmRoadGeometry[] | null> {
+  if (candidateStreetNames.length === 0) return [];
 
-  // A name-filtered Overpass query resolves an entire neighborhood in one
-  // request. It is both faster and more reliable than asking an LLM to invent
-  // a coordinate for each individual street.
-  const namePattern = uniqueNames.map(escapeOverpassRegex).join('|');
+  // Fetch the actual named road geometry in the selected circle, then match
+  // its names locally. A giant OR-regex over every ITBI street is fragile and
+  // can time out or silently omit the nearby roads we need.
   const radiusMeters = Math.round(Math.max(500, Math.min(2000, radiusKm * 1000)));
-  const query = `[out:json][timeout:20];way(around:${radiusMeters},${anchorCoords.lat},${anchorCoords.lng})["highway"]["name"~"^(${namePattern})$",i];out tags geom;`;
+  const query = `[out:json][timeout:20];way(around:${radiusMeters},${anchorCoords.lat},${anchorCoords.lng})["highway"]["name"];out tags geom;`;
   const endpoints = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter'
@@ -499,7 +557,7 @@ async function findOsmRoadsWithinRadius(
 
   for (const endpoint of endpoints) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25_000);
+    const timeout = setTimeout(() => controller.abort(), 10_000);
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -530,7 +588,7 @@ async function findOsmRoadsWithinRadius(
     }
   }
 
-  return [];
+  return null;
 }
 
 async function getStreetCoordinates(
@@ -539,13 +597,69 @@ async function getStreetCoordinates(
   neighborhood: string,
   streets: string[],
   anchorCoords?: StreetCoordinates,
-  radiusKm: number = 2
+  radiusKm: number = 2,
+  fastLocalOnly: boolean = false,
+  anchorScoped: boolean = false
 ): Promise<Record<string, StreetCoordinates>> {
   const uniqueStreets = Array.from(new Set(streets.map(street => street.trim()).filter(Boolean)));
   const result: Record<string, StreetCoordinates> = {};
   const validAnchor = isValidStreetCoordinates(anchorCoords) ? anchorCoords : undefined;
   const normalizedRadius = Math.max(0.5, Math.min(2, Number.isFinite(radiusKm) ? radiusKm : 2));
   let radialCache: RadialStreetCoordinatesCacheEntry | undefined;
+
+  // A city-wide street cache stores one arbitrary point on a long road. For
+  // radius calculations, use the nearest OSM road segment to this property.
+  if (anchorScoped && validAnchor) {
+    const cacheKey = makeRadialStreetCacheKey(uf, city, neighborhood, validAnchor, normalizedRadius);
+    const cached = radialStreetCoordinatesCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      radialCache = cached;
+      for (const street of uniqueStreets) {
+        const coordinates = cached.coordinates[street];
+        if (isValidStreetCoordinates(coordinates)) result[street] = coordinates;
+      }
+    } else if (cached) {
+      radialStreetCoordinatesCache.delete(cacheKey);
+    }
+
+    const resolved = new Set(radialCache?.resolvedStreets || []);
+    const unresolved = uniqueStreets.filter(street => !resolved.has(street));
+    if (unresolved.length > 0) {
+      const roads = await findOsmRoadsWithinRadius(validAnchor, normalizedRadius, unresolved);
+      if (roads !== null) {
+        for (const street of unresolved) {
+          let closest: { coordinate: StreetCoordinates; distanceKm: number } | null = null;
+          for (const road of roads) {
+            if (!streetAxesMatch(street, road.name)) continue;
+            const candidate = nearestPointOnRoad(validAnchor, road.geometry);
+            if (candidate && (!closest || candidate.distanceKm < closest.distanceKm)) closest = candidate;
+          }
+          if (closest) result[street] = closest.coordinate;
+        }
+
+        radialStreetCoordinatesCache.set(cacheKey, {
+          expiresAt: Date.now() + RADIAL_COORDINATES_CACHE_TTL_MS,
+          coordinates: { ...(radialCache?.coordinates || {}), ...result },
+          resolvedStreets: [...new Set([...(radialCache?.resolvedStreets || []), ...unresolved])]
+        });
+      }
+    }
+    return result;
+  }
+
+  // 1. Instant in-memory lookup (< 0.1ms) across streetCoordsLookup and geocodeCache
+  for (const street of uniqueStreets) {
+    if (result[street]) continue;
+    const hit = getCachedStreetCoords(uf, city, neighborhood, street) || getCachedCoords(street, neighborhood, city, uf);
+    if (hit && isValidStreetCoordinates(hit)) {
+      result[street] = { lat: hit.lat, lng: hit.lng };
+    }
+  }
+
+  // Se fastLocalOnly for solicitado (simulador online), retorna imediatamente sem chamadas de rede externas
+  if (fastLocalOnly) {
+    return result;
+  }
 
   if (validAnchor) {
     const cacheKey = makeRadialStreetCacheKey(uf, city, neighborhood, validAnchor, normalizedRadius);
@@ -566,14 +680,16 @@ async function getStreetCoordinates(
     // calculator changes wait for Overpass again without producing new data.
     if (!radialCache && unresolved.length > 0) {
       const roads = await findOsmRoadsWithinRadius(validAnchor, normalizedRadius, unresolved);
-      for (const street of unresolved) {
-        let closest: { coordinate: StreetCoordinates; distanceKm: number } | null = null;
-        for (const road of roads) {
-          if (!streetAxesMatch(street, road.name)) continue;
-          const candidate = nearestPointOnRoad(validAnchor, road.geometry);
-          if (candidate && (!closest || candidate.distanceKm < closest.distanceKm)) closest = candidate;
+      if (roads !== null) {
+        for (const street of unresolved) {
+          let closest: { coordinate: StreetCoordinates; distanceKm: number } | null = null;
+          for (const road of roads) {
+            if (!streetAxesMatch(street, road.name)) continue;
+            const candidate = nearestPointOnRoad(validAnchor, road.geometry);
+            if (candidate && (!closest || candidate.distanceKm < closest.distanceKm)) closest = candidate;
+          }
+          if (closest) result[street] = closest.coordinate;
         }
-        if (closest) result[street] = closest.coordinate;
       }
     }
 
@@ -683,11 +799,14 @@ app.use(express.json({ limit: '50mb' }));
 interface DataStore {
   auctions: AuctionProperty[];
   itbiTransactions: ItbiTransaction[];
+  itbiStats?: ItbiStats[];
   users: User[];
   sessions: Session[];
   accessCodes: AccessCode[];
   savedAnalyses?: SavedMarketAnalysis[];
   arrematacoes?: ArrematacaoProperty[];
+  calibrationVersion?: string;
+  jfCalibrationVersion?: string;
 }
 
 function loadStore(): DataStore {
@@ -730,6 +849,9 @@ function loadStore(): DataStore {
       storeData.accessCodes = parsed.accessCodes || [];
       storeData.savedAnalyses = parsed.savedAnalyses || [];
       storeData.arrematacoes = parsed.arrematacoes || [];
+      storeData.itbiStats = parsed.itbiStats || [];
+      storeData.calibrationVersion = parsed.calibrationVersion;
+      storeData.jfCalibrationVersion = parsed.jfCalibrationVersion;
       
       // If ITBI transactions are still empty but GZ exists, force unpack
       if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && fs.existsSync(GZ_STORE_PATH)) {
@@ -763,6 +885,27 @@ function loadStore(): DataStore {
         }
       }
 
+      const jfMigrationPath = path.join(process.cwd(), 'jf_itbi_migration.json');
+      if (fs.existsSync(jfMigrationPath)) {
+        try {
+          const migration = JSON.parse(fs.readFileSync(jfMigrationPath, 'utf8')) as { itbiTransactions?: ItbiTransaction[]; itbiStats?: ItbiStats[] };
+          const officialJfTransactions = Array.isArray(migration.itbiTransactions) ? migration.itbiTransactions : [];
+          if (officialJfTransactions.length < 10000 || officialJfTransactions.filter(tx => tx.isCompraEVenda === true).length < 8000) {
+            throw new Error('Base preparada de Juiz de Fora não passou pelo mínimo de integridade; migração preservada para revisão.');
+          }
+          const isJf = (tx: ItbiTransaction) => String(tx.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora') || tx.id.startsWith('itbi-jf');
+          storeData.itbiTransactions = [...storeData.itbiTransactions.filter(tx => !isJf(tx)), ...officialJfTransactions];
+          if (Array.isArray(migration.itbiStats)) storeData.itbiStats = migration.itbiStats;
+          (storeData as any).calibrationVersion = undefined;
+          saveStore(storeData);
+          fs.writeFileSync(GZ_STORE_PATH, zlib.gzipSync(Buffer.from(JSON.stringify(storeData), 'utf8')));
+          fs.renameSync(jfMigrationPath, `${jfMigrationPath}.applied`);
+          console.log(`[Store] Migração ITBI JF preparada carregada: ${officialJfTransactions.length} registros, ${officialJfTransactions.filter(tx => tx.isCompraEVenda === true).length} compras e vendas; áreas artificiais removidas.`);
+        } catch (error) {
+          console.error('[Store] Migração ITBI JF não foi aplicada; base atual preservada e arquivo mantido:', error);
+        }
+      }
+
       // Ensure admin role for first user if present
       if (storeData.users.length > 0 && !storeData.users[0].role) {
         storeData.users[0].role = 'admin';
@@ -770,11 +913,28 @@ function loadStore(): DataStore {
 
       // Normalize any old 'caixa_radar' to 'caixa'
       if (storeData.auctions) {
+        let restoredCaixa = 0;
         storeData.auctions.forEach(a => {
           if ((a as any).origin === 'caixa_radar') {
             a.origin = 'caixa';
           }
+          const isCaixa = a.origin === 'caixa' || (a.id && a.id.startsWith('auc-caixa-'));
+          if (isCaixa && a.ingestionStatus === 'expirado_por_data') {
+            a.ingestionStatus = 'ativo';
+            a.precisa_revisao = false;
+            a.availability = {
+              state: 'active',
+              status: 'ativo',
+              url: a.auctionLink || '',
+              checkedAt: new Date().toISOString(),
+              reason: 'Imóvel Caixa em modalidade contínua'
+            };
+            restoredCaixa++;
+          }
         });
+        if (restoredCaixa > 0) {
+          console.log(`[Store] Restaurados ${restoredCaixa} imóveis Caixa que haviam sido marcados incorretamente como expirado_por_data.`);
+        }
 
         // Security Gatekeeper: Strictly enforce target cities whitelist (Rio de Janeiro, Niterói, Juiz de Fora) and purge any mock seeds or non-property lots
         const initialCount = storeData.auctions.length;
@@ -786,8 +946,23 @@ function loadStore(): DataStore {
           const reason = !isAllowedTargetCity(a.city,a.state) ? 'fora_das_cidades_configuradas'
             : actual && (normalizeAuctionPlace(actual.city)!==normalizeAuctionPlace(a.city)||actual.state!==a.state) ? 'localidade_divergente_do_detalhe'
             : /^(auc-port-|auc-jud-|auc-ext-)/.test(a.id||'') ? 'registro_legado_sem_evidencia'
-            : !realEstate && nonPropTerms.some(term=>t.includes(term)) ? 'lote_nao_imobiliario' : '';
-          if(reason){a.ingestionStatus='quarentena_extracao';quarantine(a as any,[reason]);}
+            : !realEstate && nonPropTerms.some(term=>t.includes(term)) ? 'lote_nao_imobiliario'
+            : isExpiredAuction(a) ? 'leilao_encerrado_ou_expirado' : '';
+          if(reason){
+            if (reason === 'leilao_encerrado_ou_expirado') {
+              a.ingestionStatus = 'expirado_por_data';
+              a.availability = {
+                state: 'closed',
+                status: 'expirado_por_data',
+                url: a.auctionLink || '',
+                checkedAt: new Date().toISOString(),
+                reason: 'Todas as rodadas do leilão já transcorreram'
+              };
+            } else {
+              a.ingestionStatus='quarentena_extracao';
+              quarantine(a as any,[reason]);
+            }
+          }
         });
         storeData.auctions.forEach(a => {
           const canon = getCanonicalTargetCity(a.city, a.state);
@@ -814,11 +989,41 @@ function loadStore(): DataStore {
       const sourcePath = path.join(process.cwd(), 'itbi_source_corrections.json');
       const sourceCorrections = fs.existsSync(sourcePath) ? JSON.parse(fs.readFileSync(sourcePath, 'utf8')) : {};
       storeData.itbiTransactions = storeData.itbiTransactions.filter(t => !/-sim-/.test(t.id)).map(t => ({ ...t, ...(sourceCorrections[t.id] || {}) }));
-      const STORE_CALIBRATION_VERSION = 'v22_active_round_and_condo_area_sanitization';
+      const STORE_CALIBRATION_VERSION = 'v30_jf_four_tier_per_sqm';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
-        console.log('[Store] Migração integral adiada no Render Free; usando a base pré-calibrada e cálculo incremental para evitar estouro de memória.');
+        const jfCalibrationVersion = 'jf_v30_four_tier_per_sqm';
+        if (storeData.jfCalibrationVersion !== jfCalibrationVersion && storeData.auctions?.length && storeData.itbiTransactions?.length) {
+          console.log('[Store] Corrigindo os valores ITBI de Juiz de Fora em lote seletivo para não manter gabaritos com unidade incorreta.');
+          const indexes = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
+          const isJuizDeForaAuction = (auction: AuctionProperty) =>
+            normalizeString(auction.city || '').includes('juiz de fora');
+          let recalculatedJfAuctions = 0;
+          storeData.auctions = storeData.auctions.map(auction => {
+            if (!isJuizDeForaAuction(auction)) return auction;
+            recalculatedJfAuctions++;
+            return recalculateAuctionWithIndex(
+              auction,
+              indexes.avgSqmMap,
+              indexes.streetAvgSqmMap,
+              indexes.volMap,
+              indexes.neighCityMap,
+              indexes.cityAvgSqmMap,
+              indexes.stateAvgSqmMap,
+              indexes.cityStreetToNeighMap,
+              indexes.streetNumberNeighMap,
+              indexes.neighMap,
+              indexes.jfCityMap,
+              indexes.jfAreaModelByType
+            );
+          });
+          storeData.jfCalibrationVersion = jfCalibrationVersion;
+          void saveStoreAsync(storeData).then(() => {
+            console.log(`[Store] Recalibrados e persistidos ${recalculatedJfAuctions} imóveis de Juiz de Fora.`);
+          }).catch(error => console.error('[Store] Falha ao persistir recalibração de Juiz de Fora:', error));
+        }
+        console.log('[Store] Recalibração integral das demais cidades segue adiada no Render Free para limitar memória; Juiz de Fora recebeu a correção específica.');
       } else if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
         console.log(`[Store] Calibrando ${storeData.auctions.length} leilões com correção de rodadas ativas e saneamento de área condominial (v22)...`);
         const today = new Date().toISOString().slice(0, 10);
@@ -850,9 +1055,10 @@ function loadStore(): DataStore {
             }
           }
         });
-        const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(storeData.itbiTransactions);
-        storeData.auctions = storeData.auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
+        const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
+        storeData.auctions = storeData.auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType));
         (storeData as any).calibrationVersion = STORE_CALIBRATION_VERSION;
+        storeData.jfCalibrationVersion = 'jf_v30_four_tier_per_sqm';
         saveStore(storeData);
         try {
           const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(storeData)));
@@ -900,16 +1106,165 @@ function loadStore(): DataStore {
       console.error('Falha ao rodar o importador automatico de Excel:', importErr);
     }
   }
+
+  // Sanitize Portal sanity filter: Discard any portal m2 < 1500 R$/m2 in Rio de Janeiro
+  storeData.auctions.forEach(auc => {
+    const isRio = (auc.state || '').toUpperCase() === 'RJ' || String(auc.city || '').toLowerCase().includes('rio de janeiro');
+    if (isRio && auc.streetPortalAvgSqm !== undefined && auc.streetPortalAvgSqm < 1500) {
+      auc.streetPortalAvgSqm = undefined;
+      auc.m2MercadoPortal = 0;
+      auc.valorSugeridoPortal = 0;
+      auc.isBairroPortalFallback = true;
+    }
+  });
   
   return storeData;
 }
 
+let auctionCatalogResponseCache: {
+  auctionsRef: AuctionProperty[];
+  transactionsRef: ItbiTransaction[];
+  userId?: string;
+  revision: number;
+  signature: string;
+  payload: AuctionProperty[];
+} | null = null;
+const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v3.json.gz');
+const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-visible-pending-v6';
+
+function auctionResponseCacheSignature() {
+  try {
+    const stat = fs.statSync(STORE_PATH);
+    return [AUCTION_RESPONSE_CACHE_VERSION, stat.size, Math.trunc(stat.mtimeMs), store.auctions.length, store.itbiTransactions.length, store.calibrationVersion || ''].join('|');
+  } catch {
+    return `${AUCTION_RESPONSE_CACHE_VERSION}|missing-store`;
+  }
+}
+
+function readPersistedAuctionResponse(signature: string, userId?: string): AuctionProperty[] | null {
+  try {
+    const saved = JSON.parse(zlib.gunzipSync(fs.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString('utf8'));
+    return saved.signature === signature && saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistAuctionResponse(signature: string, userId: string | undefined, payloadJson: string) {
+  const tempPath = `${AUCTION_RESPONSE_CACHE_PATH}.${process.pid}.tmp`;
+  const serialized = `{"signature":${JSON.stringify(signature)},"userId":${JSON.stringify(userId ?? null)},"payload":${payloadJson}}`;
+  zlib.gzip(serialized, { level: 1 }, (gzipError, compressed) => {
+    if (gzipError) return;
+    try {
+      fs.mkdirSync(path.dirname(AUCTION_RESPONSE_CACHE_PATH), { recursive: true });
+      fs.writeFile(tempPath, compressed, writeError => {
+        if (writeError) return;
+        fs.rename(tempPath, AUCTION_RESPONSE_CACHE_PATH, renameError => {
+          if (!renameError) return;
+          try {
+            fs.copyFileSync(tempPath, AUCTION_RESPONSE_CACHE_PATH);
+            fs.unlinkSync(tempPath);
+          } catch (error) {
+            console.warn('[Cache] Não foi possível salvar o catálogo pré-calculado:', error);
+          }
+        });
+      });
+    } catch (error) {
+      console.warn('[Cache] Não foi possível preparar o catálogo pré-calculado:', error);
+    }
+  });
+}
+
+function sendAuctionResponse(req: express.Request, res: express.Response, payload: AuctionProperty[] | string) {
+  const json = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  if (!String(req.headers['accept-encoding'] || '').includes('gzip')) {
+    res.type('json').send(json);
+    return;
+  }
+  zlib.gzip(json, { level: 1 }, (error, compressed) => {
+    if (error) {
+      res.type('json').send(json);
+      return;
+    }
+    res.vary('Accept-Encoding');
+    res.setHeader('Content-Encoding', 'gzip');
+    res.type('json').send(compressed);
+  });
+}
+
+let activeAsyncStoreSave: Promise<void> | null = null;
+let deferredStoreSave: DataStore | null = null;
+
 function saveStore(targetStore: DataStore) {
+  if (activeAsyncStoreSave) {
+    deferredStoreSave = targetStore;
+    auctionCatalogResponseCache = null;
+    return;
+  }
   try {
     fs.writeFileSync(STORE_PATH, JSON.stringify(targetStore), 'utf-8');
+    auctionCatalogResponseCache = null;
   } catch (e) {
     console.error('Failed to save data_store.json', e);
   }
+}
+
+// The store includes more than 100k ITBI rows. Stream its JSON in small turns
+// so an opening sync can persist the finished catalog without freezing HTTP.
+async function saveStoreAsync(targetStore: DataStore) {
+  if (activeAsyncStoreSave) {
+    deferredStoreSave = targetStore;
+    await activeAsyncStoreSave;
+    const pending = deferredStoreSave;
+    deferredStoreSave = null;
+    if (pending) await saveStoreAsync(pending);
+    return;
+  }
+  const temporary = STORE_PATH + '.sync-tmp';
+  async function* chunks() {
+    yield '{';
+    let firstField = true;
+    for (const [key, value] of Object.entries(targetStore)) {
+      if (!firstField) yield ',';
+      firstField = false;
+      yield `${JSON.stringify(key)}:`;
+      if (Array.isArray(value)) {
+        yield '[';
+        for (let index = 0; index < value.length; index++) {
+          if (index) yield ',';
+          yield JSON.stringify(value[index]) ?? 'null';
+          if (index % 500 === 499) await new Promise<void>(resolve => setImmediate(resolve));
+        }
+        yield ']';
+      } else {
+        yield JSON.stringify(value) ?? 'null';
+      }
+    }
+    yield '}';
+  }
+  const operation = (async () => {
+    await pipeline(Readable.from(chunks(), { objectMode: false }), fs.createWriteStream(temporary, { encoding: 'utf8' }));
+    try {
+      await fs.promises.rename(temporary, STORE_PATH);
+    } catch (renameErr: any) {
+      if (['EPERM', 'EBUSY', 'EACCES', 'EXDEV'].includes(renameErr?.code)) {
+        await fs.promises.copyFile(temporary, STORE_PATH);
+        await fs.promises.unlink(temporary).catch(() => {});
+      } else {
+        throw renameErr;
+      }
+    }
+    auctionCatalogResponseCache = null;
+  })();
+  activeAsyncStoreSave = operation;
+  try {
+    await operation;
+  } finally {
+    if (activeAsyncStoreSave === operation) activeAsyncStoreSave = null;
+  }
+  const pending = deferredStoreSave;
+  deferredStoreSave = null;
+  if (pending) await saveStoreAsync(pending);
 }
 
 // Global cache for cross-neighborhood street resolution
@@ -935,7 +1290,51 @@ function getTypologyCategory(propType: string | null | undefined): 'residential'
 }
 
 // Precompute ITBI indexes for ultra-fast lookups
-function buildItbiIndexes(txs: ItbiTransaction[]) {
+let globalCityTransactionsMap = new Map<string, ItbiTransaction[]>();
+let globalCityTransactionSpatialIndex = new Map<string, Map<string, ItbiTransaction[]>>();
+let globalNeighborhoodRecentSales = new Map<string, number>();
+let globalNeighborhoodDeltaT = new Map<string, number>();
+const ITBI_SPATIAL_CELL_DEGREES = 0.01;
+
+function addTransactionToSpatialIndex(
+  index: Map<string, Map<string, ItbiTransaction[]>>,
+  cityKey: string,
+  tx: ItbiTransaction
+) {
+  const row = tx as ItbiTransaction & { transactionLocationLat?: number; transactionLocationLng?: number; transactionLocationPrecision?: string };
+  if ((row.transactionLocationPrecision !== 'exact_number' && row.transactionLocationPrecision !== 'street_centroid') || !Number.isFinite(row.transactionLocationLat) || !Number.isFinite(row.transactionLocationLng)) return;
+  let cityGrid = index.get(cityKey);
+  if (!cityGrid) { cityGrid = new Map(); index.set(cityKey, cityGrid); }
+  const cellKey = `${Math.floor(row.transactionLocationLat! / ITBI_SPATIAL_CELL_DEGREES)}|${Math.floor(row.transactionLocationLng! / ITBI_SPATIAL_CELL_DEGREES)}`;
+  let bucket = cityGrid.get(cellKey);
+  if (!bucket) { bucket = []; cityGrid.set(cellKey, bucket); }
+  bucket.push(tx);
+}
+
+function findTransactionsInRadius(cityKey: string, lat: number, lng: number, radiusKm: number) {
+  const cityGrid = globalCityTransactionSpatialIndex.get(cityKey);
+  if (!cityGrid || !Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+  const latCell = Math.floor(lat / ITBI_SPATIAL_CELL_DEGREES);
+  const lngCell = Math.floor(lng / ITBI_SPATIAL_CELL_DEGREES);
+  const candidates: ItbiTransaction[] = [];
+  const cellRadius = Math.max(2, Math.ceil(radiusKm / 1.0) + 1);
+  for (let dLat = -cellRadius; dLat <= cellRadius; dLat++) {
+    for (let dLng = -cellRadius; dLng <= cellRadius; dLng++) {
+      const bucket = cityGrid.get(`${latCell + dLat}|${lngCell + dLng}`);
+      if (bucket) candidates.push(...bucket);
+    }
+  }
+  const result = [];
+  for (const tx of candidates) {
+    const row = tx as ItbiTransaction & { transactionLocationLat?: number; transactionLocationLng?: number };
+    const distanceKm = calculateDistanceKm(lat, lng, row.transactionLocationLat!, row.transactionLocationLng!);
+    if (distanceKm > radiusKm) continue;
+    result.push({ ...tx, distanceKm: Number(distanceKm.toFixed(3)), distanceMeters: Math.round(distanceKm * 1000), distanceAnchorPrecision: 'official_address' as const });
+  }
+  return result;
+}
+
+function buildItbiIndexes(txs: ItbiTransaction[], calibrationAuctions: AuctionProperty[] = []) {
   const avgSqmMap = new Map<string, { sumSqm: number; count: number }>();
   const streetAvgSqmMap = new Map<string, { sumSqm: number; count: number }>();
   const cityAvgSqmMap = new Map<string, { sumSqm: number; count: number }>();
@@ -949,13 +1348,61 @@ function buildItbiIndexes(txs: ItbiTransaction[]) {
   // Baliza cada rua pelo raio (ruas do entorno) e corta +/- 25% para expurgar subavaliações e distorções
   const validTxSet = new Set<ItbiTransaction>();
   const neighMap = new Map<string, ItbiTransaction[]>();
+  const jfCityMap = new Map<string, ItbiTransaction[]>();
+  const cityTransactionsMap = new Map<string, ItbiTransaction[]>();
+  const cityTransactionSpatialIndex = new Map<string, Map<string, ItbiTransaction[]>>();
+  const jfAreaModelByType = new Map<string, JuizDeForaAreaModel>();
+  const jfAreaAnchors = calibrationAuctions
+    .filter(auc => (auc.origin === 'caixa' || auc.origin === 'caixa_radar') &&
+      auc.sizeVerified === true && auc.sizeSqm >= 20 && auc.sizeSqm <= 500 &&
+      Number(auc.evaluationPrice) >= 20000 && Number(auc.evaluationPrice) <= 10000000 &&
+      String(auc.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora'))
+    .map(auc => ({ sizeSqm: auc.sizeSqm, marketValue: Number(auc.evaluationPrice), propertyType: auc.propertyType, sizeVerified: true, source: auc.origin }));
+  for (const propertyType of ['Apartamento', 'Casa', 'Comercial', 'Terreno']) {
+    jfAreaModelByType.set(propertyType, fitJuizDeForaAreaModel(jfAreaAnchors, propertyType));
+  }
 
   for (let i = 0; i < txs.length; i++) {
     const t = txs[i];
+    const isJF = String(t.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora');
+    if (isJF) {
+      if (t.isCompraEVenda !== true) continue;
+      const val = t.normalizedTotalValue || t.transactionValue;
+      if (!val || val < 20000 || val > 35000000) continue;
+      (t as any)._core = getCoreStreetName(t.street);
+      const state = (t.state || 'MG').toLowerCase();
+      const city = normalizeString(t.city || 'Juiz de Fora');
+      const cityKey = `${state}|${city}`;
+      const allCityRows = cityTransactionsMap.get(cityKey) || [];
+      allCityRows.push(t);
+      cityTransactionsMap.set(cityKey, allCityRows);
+      addTransactionToSpatialIndex(cityTransactionSpatialIndex, cityKey, t);
+      const neigh = cleanNeighborhood(t.neighborhood);
+      const key = `${state}|${city}|${neigh}`;
+      let list = neighMap.get(key);
+      if (!list) {
+        list = [];
+        neighMap.set(key, list);
+      }
+      list.push(t);
+      let cityList = jfCityMap.get(cityKey);
+      if (!cityList) {
+        cityList = [];
+        jfCityMap.set(cityKey, cityList);
+      }
+      cityList.push(t);
+      continue;
+    }
+
     if (!t.unitValueSqm || t.unitValueSqm < 800 || t.unitValueSqm > 80000) continue;
     (t as any)._core = getCoreStreetName(t.street);
     const state = (t.state || 'SP').toLowerCase();
     const city = normalizeString(t.city || '');
+    const cityKey = `${state}|${city}`;
+    const allCityRows = cityTransactionsMap.get(cityKey) || [];
+    allCityRows.push(t);
+    cityTransactionsMap.set(cityKey, allCityRows);
+    addTransactionToSpatialIndex(cityTransactionSpatialIndex, cityKey, t);
     const neigh = cleanNeighborhood(t.neighborhood);
     const key = `${state}|${city}|${neigh}`;
     let list = neighMap.get(key);
@@ -967,6 +1414,13 @@ function buildItbiIndexes(txs: ItbiTransaction[]) {
   }
 
   for (const [, nTxs] of neighMap.entries()) {
+    const isJF = nTxs.some(t => String(t.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora'));
+    if (isJF) {
+      // ITBI de Juiz de Fora não informa metragem. Preserve o valor e a cota
+      // declarados; nunca converta valor/cota em m² ou valor por m².
+      for (const tx of nTxs) validTxSet.add(tx);
+      continue;
+    }
     const bVals = nTxs.map(t => t.unitValueSqm);
     const bPrelim = bVals.reduce((a, b) => a + b, 0) / bVals.length;
     const bVariance = bVals.reduce((acc, v) => acc + Math.pow(v - bPrelim, 2), 0) / bVals.length;
@@ -1024,11 +1478,66 @@ function buildItbiIndexes(txs: ItbiTransaction[]) {
 
   for (let i = 0; i < txs.length; i++) {
     const t = txs[i];
-    const state = (t.state || 'SP').toLowerCase();
+    const isJF = String(t.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora');
+    const state = (t.state || (isJF ? 'MG' : 'SP')).toLowerCase();
     const neigh = cleanNeighborhood(t.neighborhood);
     const propType = t.propertyType;
     const cat = getTypologyCategory(propType);
-    const normCity = normalizeString(t.city || '');
+    const normCity = normalizeString(t.city || (isJF ? 'Juiz de Fora' : ''));
+
+    if (isJF) {
+      if (t.isCompraEVenda !== true) continue;
+      const volKey = `${state}|${normCity}|${neigh}`;
+      volMap.set(volKey, (volMap.get(volKey) || 0) + 1);
+      neighCityMap.set(`${state}|${neigh}`, t.city || 'Juiz de Fora');
+
+      if (t.unitValueSqm > 0) {
+        const avgKey = `${state}|${normCity}|${neigh}|${propType}`;
+        let avgEntry = avgSqmMap.get(avgKey);
+        if (!avgEntry) {
+          avgEntry = { sumSqm: 0, count: 0 };
+          avgSqmMap.set(avgKey, avgEntry);
+        }
+        avgEntry.sumSqm += t.unitValueSqm;
+        avgEntry.count += 1;
+      }
+
+      if (t.street) {
+        const streetPhon = phoneticStreet(t.street);
+        if (streetPhon) {
+          const cityStreetKey = `${state}|${normCity}|${streetPhon}`;
+          let csEntry = cityStreetToNeighMap.get(cityStreetKey);
+          if (!csEntry) {
+            csEntry = { neighborhood: t.neighborhood, sumSqm: 0, count: 0, officialStreet: t.street };
+            cityStreetToNeighMap.set(cityStreetKey, csEntry);
+          }
+          csEntry.count += 1;
+          csEntry.sumSqm += t.unitValueSqm;
+
+          const streetKey = `${state}|${normCity}|${neigh}|${propType}|${streetPhon}`;
+          let stEntry = streetAvgSqmMap.get(streetKey);
+          if (!stEntry) {
+            stEntry = { sumSqm: 0, count: 0 };
+            streetAvgSqmMap.set(streetKey, stEntry);
+          }
+          stEntry.sumSqm += t.unitValueSqm;
+          stEntry.count += 1;
+
+          if (t.number) {
+            const numClean = parseInt(String(t.number).replace(/\D/g, ''), 10);
+            if (!isNaN(numClean) && numClean > 0) {
+              let numList = streetNumberNeighMap.get(cityStreetKey);
+              if (!numList) {
+                numList = [];
+                streetNumberNeighMap.set(cityStreetKey, numList);
+              }
+              numList.push({ number: numClean, neighborhood: t.neighborhood, unitValueSqm: t.unitValueSqm, propType: t.propertyType });
+            }
+          }
+        }
+      }
+      continue;
+    }
 
     // 1. Neighborhood + PropType (Strictly isolated by city)
     const avgKey = `${state}|${normCity}|${neigh}|${propType}`;
@@ -1188,9 +1697,43 @@ function buildItbiIndexes(txs: ItbiTransaction[]) {
     neighCityMap.set(`${state}|${neigh}`, city);
   }
 
+  const recentSalesCutoff = Date.now() - 24 * 30.4375 * 24 * 60 * 60 * 1000;
+  const neighborhoodRecentSales = new Map<string, number>();
+  const neighborhoodDeltaTMap = new Map<string, number>();
+  for (const [key, rows] of neighMap) {
+    let count = 0;
+    const timestamps: number[] = [];
+    for (const tx of rows) {
+      const dateText = String(tx.date || '').trim();
+      const brazilianDate = dateText.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      const transactionTime = brazilianDate
+        ? new Date(`${brazilianDate[3]}-${brazilianDate[2]}-${brazilianDate[1]}T12:00:00`).getTime()
+        : new Date(dateText).getTime();
+      if (Number.isFinite(transactionTime)) {
+        timestamps.push(transactionTime);
+        if (transactionTime >= recentSalesCutoff && transactionTime <= Date.now()) count++;
+      }
+    }
+    neighborhoodRecentSales.set(key, count);
+    if (timestamps.length > 1) {
+      timestamps.sort((a, b) => a - b);
+      const minDate = timestamps[0];
+      const maxDate = timestamps[timestamps.length - 1];
+      const spanDays = Math.max(1, (maxDate - minDate) / (24 * 60 * 60 * 1000));
+      const deltaT = spanDays / timestamps.length;
+      neighborhoodDeltaTMap.set(key, Number(deltaT.toFixed(2)));
+    } else if (timestamps.length === 1) {
+      neighborhoodDeltaTMap.set(key, 120);
+    }
+  }
+
   globalCityStreetToNeighMap = cityStreetToNeighMap;
   globalStreetNumberNeighMap = streetNumberNeighMap;
-  return { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap };
+  globalCityTransactionsMap = cityTransactionsMap;
+  globalCityTransactionSpatialIndex = cityTransactionSpatialIndex;
+  globalNeighborhoodRecentSales = neighborhoodRecentSales;
+  globalNeighborhoodDeltaT = neighborhoodDeltaTMap;
+  return { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType };
 }
 
 function estimateNotaryFees(price: number, origin: string, state = 'SP'): { notary: number; registration: number } {
@@ -1258,7 +1801,9 @@ function recalculateAuctionWithIndex(
   stateAvgSqmMap?: Map<string, { sumSqm: number; count: number }>,
   cityStreetToNeighMap?: Map<string, { neighborhood: string; sumSqm: number; count: number; officialStreet: string }>,
   streetNumberNeighMap?: Map<string, Array<{ number: number; neighborhood: string; unitValueSqm: number; propType: PropertyType }>>,
-  neighMap?: Map<string, ItbiTransaction[]>
+  neighMap?: Map<string, ItbiTransaction[]>,
+  jfCityMap?: Map<string, ItbiTransaction[]>,
+  jfAreaModelByType?: Map<string, JuizDeForaAreaModel>
 ): AuctionProperty {
   const state = (auc.state || 'SP').toLowerCase();
   let neigh = cleanNeighborhood(auc.neighborhood);
@@ -1351,6 +1896,14 @@ function recalculateAuctionWithIndex(
   auc.itbiBuildingCount = undefined;
   auc.itbiSurroundingAvgSqm = undefined;
   auc.itbiSurroundingCount = undefined;
+  auc.itbiIsAbsolutePricing = false;
+  auc.itbiIsDerivedSqm = false;
+  auc.itbiAbsoluteAvgPrice = undefined;
+  auc.itbiCompraEVendaCount = undefined;
+  auc.itbiPeriodRange = undefined;
+  auc.itbiAbsoluteAvgPrice = undefined;
+  auc.itbiCompraEVendaCount = undefined;
+  auc.itbiPeriodRange = undefined;
   auc.streetRadiusDeviationPct = undefined;
   auc.streetRadiusCalibrated = false;
 
@@ -1358,6 +1911,8 @@ function recalculateAuctionWithIndex(
   const isGeneric = isGenericStreet(rawStreet);
   const streetPhon = phoneticStreet(rawStreet);
   const aucNum = extractAddressNumber(auc.address);
+  const hasCoreListingIssue = !(auc.auctionPrice > 0) || auc.priceVerified === false ||
+    !(auc.sizeSqm > 0) || auc.sizeVerified === false || auc.addressVerified === false || isGeneric;
 
   // Se a rua for genérica ("rua projetada", "rua a", "quadra", "lote"), VEDADO especular ou alterar bairros:
   if (isGeneric) {
@@ -1710,21 +2265,20 @@ function recalculateAuctionWithIndex(
   // auction dates and unrelated years are never accepted.
   let buildingAge: number | undefined = undefined;
   let ageDepreciationPct = 0;
-  const registryText = auc.matriculaText || '';
-  const yearMatch = registryText.match(/(?:ano\s+de\s+constru[cç][aã]o|constru[ií]d[oa]\s+em|edifica[cç][aã]o\s+(?:foi\s+)?conclu[ií]da\s+em|conclus[aã]o\s+da\s+obra|habite-se)[^\d]{0,50}\b(19\d{2}|20\d{2})\b/i);
-  if (yearMatch) {
-    const y = parseInt(yearMatch[1], 10);
+  const registryText = `${auc.matriculaText || ''} ${auc.description || ''} ${auc.title || ''} ${auc.address || ''}`;
+  const yearMatch = registryText.match(/(?:ano\s*(?:de\s*)?constru[cç][aã]o|ano\s*[:=]|constru[ií]d[oa]\s+em|edifica[cç][aã]o\s+(?:foi\s+)?conclu[ií]da\s+em|conclus[aã]o\s+da\s+obra|habite-?se)[^\d]{0,50}\b(19\d{2}|20\d{2})\b/i)
+    || registryText.match(/av[.-]?\s*\d+.*?habite-?se.*?\b(19\d{2}|20\d{2})\b/i);
+  const persistedBuildingYear = Number(auc.buildingYear);
+  if ((persistedBuildingYear >= 1920 && persistedBuildingYear <= new Date().getFullYear()) || yearMatch) {
+    const y = persistedBuildingYear >= 1920 && persistedBuildingYear <= new Date().getFullYear()
+      ? persistedBuildingYear
+      : parseInt(yearMatch![1], 10);
     const curY = new Date().getFullYear();
     if (y >= 1920 && y <= curY) {
       buildingAge = curY - y;
     }
   }
-  if (buildingAge !== undefined && buildingAge > 12) {
-    if (buildingAge <= 25) ageDepreciationPct = 2;
-    else if (buildingAge <= 40) ageDepreciationPct = 3;
-    else if (buildingAge <= 55) ageDepreciationPct = 4;
-    else ageDepreciationPct = 5;
-  }
+  ageDepreciationPct = buildingAgeDepreciationPercent(buildingAge);
   auc.buildingAge = buildingAge;
   auc.ageDepreciationPct = ageDepreciationPct;
 
@@ -1736,53 +2290,132 @@ function recalculateAuctionWithIndex(
   let hasVerifiedLocalMicroData = false;
   let valuationSampleCount = 0;
   let valuationLevel = '';
-  let hasExactNeighborhoodReference = false;
+  let isJfAbsolute = false;
+  let jfGabaritoTotal = 0;
+  let jfFlipTotal = 0;
+  let jfCompraEVendaCount = 0;
+  let jfDateRange: { minDate?: string; maxDate?: string } | undefined = undefined;
+  let neighborhoodSalesLast24Months = 0;
+  let bidi: ReturnType<typeof computeBidirectionalBenchmarks> | null = null;
+
+  const isJuizDeForaAuc = String(auc.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora');
+
   if (neighMap) {
     const key = `${state}|${normCity}|${neigh}`;
-    const nTxs = neighMap.get(key);
-    if (nTxs && nTxs.length > 0) {
-      hasExactNeighborhoodReference = true;
+    const neighborhoodTxs = neighMap.get(key) || [];
+    const cityTxs = globalCityTransactionsMap.get(`${state}|${normCity}`) ||
+      (isJuizDeForaAuc ? (jfCityMap?.get(`${state}|${normCity}`) || []) : neighborhoodTxs);
+    const nTxs = isJuizDeForaAuc ? cityTxs : neighborhoodTxs;
+    if (nTxs.length > 0) {
+      neighborhoodSalesLast24Months = globalNeighborhoodRecentSales.get(key) || 0;
       const rawAddr = auc.address || '';
+      const benchmarkStreet = extractStreet(rawAddr);
       const numExtracted = extractAddressNumber(rawAddr);
       const sNum = numExtracted !== null ? String(numExtracted) : '';
-      const bidi = computeBidirectionalBenchmarks(nTxs, rawAddr, sNum, auc.sizeSqm || 0, 'similar', 0.5, auc.propertyType);
-      if (bidi && bidi.hasMicroData && bidi.flipRapidoSqm > 0) {
-        bidiSqm = bidi.flipRapidoSqm;
-        bidiGabaritoSqm = bidi.mediaCorteReal;
+
+      // Radius sales: official address location with fallback to street centroid
+      const officialAuctionLocation = getOfficialPropertyLocation(auc);
+      const hasOfficialAuctionPoint = officialAuctionLocation.status === 'located' &&
+        isValidStreetCoordinates({ lat: officialAuctionLocation.lat, lng: officialAuctionLocation.lng });
+      
+      let locLat = hasOfficialAuctionPoint ? officialAuctionLocation.lat! : undefined;
+      let locLng = hasOfficialAuctionPoint ? officialAuctionLocation.lng! : undefined;
+
+      // Fallback defensivo: se não tem ponto de endereço oficial, busca centroide da rua
+      if (!Number.isFinite(locLat) || !Number.isFinite(locLng)) {
+        const streetPoint = getCachedStreetCoords(auc.state, auc.city, auc.neighborhood, benchmarkStreet);
+        if (streetPoint && Number.isFinite(streetPoint.lat) && Number.isFinite(streetPoint.lng)) {
+          locLat = streetPoint.lat;
+          locLng = streetPoint.lng;
+        }
+      }
+
+      let radiusTxs: ItbiTransaction[] = [];
+      if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
+        let found = findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 0.5);
+        if (found.length < 8) {
+          const exp800 = findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 0.8);
+          if (exp800.length > found.length) found = exp800;
+        }
+        if (found.length < 8) {
+          const exp1200 = findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 1.2);
+          if (exp1200.length > found.length) found = exp1200;
+        }
+        radiusTxs = found;
+      }
+
+      bidi = computeBidirectionalBenchmarks(
+        nTxs,
+        benchmarkStreet,
+        sNum,
+        isJuizDeForaAuc && auc.sizeVerified !== true ? 0 : (auc.sizeSqm || 0),
+        DEFAULT_BENCHMARK_SIZE_MODE,
+        0.5,
+        auc.propertyType,
+        auc.neighborhood,
+        jfAreaModelByType?.get(auc.propertyType),
+        radiusTxs
+      );
+      const useImmediateRadius = !!bidi?.radiusVerified && bidi.fallbackLevel !== 'bairro';
+      const verifiedStreetValue = bidi?.rua.validas ? bidi.rua.saneada : 0;
+      const verifiedStreetCount = bidi?.rua.validas || 0;
+      const weighted = bidi ? computeFourTierValuation({
+        building: { value: bidi.predio.saneada, count: bidi.predio.validas },
+        street: { value: verifiedStreetValue, count: verifiedStreetCount },
+        surrounding: { value: useImmediateRadius ? bidi.raio.saneada : 0, count: useImmediateRadius ? bidi.raio.validas : 0 },
+        neighborhood: { value: bidi.bairro.saneada, count: bidi.bairro.validas }
+      }) : null;
+      if (bidi && weighted) {
+        const localCount = weighted.localSampleCount;
+        auc.itbiBuildingCount = bidi.predio.validas;
+        auc.itbiStreetCount = bidi.rua.validas;
+        auc.itbiNeighborhoodCount = bidi.bairro.validas;
+        auc.valuationCalibration = weighted.calibrationKind;
+        auc.isAreaHomogeneizada = bidi.isAreaHomogeneizada;
+        auc.fatorEscala = bidi.fatorEscala;
+        if (localCount > 0) {
+          valuationLevel = bidi.predio.validas > 0 ? 'Prédio' : bidi.rua.validas > 0 ? 'Rua' : 'Raio Entorno';
+          valuationSampleCount = localCount;
+        }
+      }
+      if (bidi && weighted?.priceable) {
+        const localCount = weighted.localSampleCount;
+        valuationLevel = bidi.predio.validas > 0 ? 'Prédio' : bidi.rua.validas > 0 ? 'Rua' : bidi.raio.validas > 0 ? 'Raio Entorno' : 'Bairro';
+        valuationSampleCount = localCount;
+        auc.itbiBuildingCount = bidi.predio.validas;
+        auc.itbiStreetCount = bidi.rua.validas;
+        auc.itbiNeighborhoodCount = bidi.bairro.validas;
+        auc.valuationCalibration = weighted.calibrationKind;
         hasMicroData = true;
-        valuationSampleCount = bidi.nivelUtilizado === 'Prédio'
-          ? bidi.predio.validas
-          : bidi.nivelUtilizado === 'Rua'
-            ? bidi.rua.validas
-            : bidi.nivelUtilizado === 'Raio Entorno'
-              ? bidi.raio.validas
-              : 0;
-        valuationLevel = bidi.nivelUtilizado;
-        hasVerifiedLocalMicroData = (valuationLevel === 'Prédio' && bidi.predio.validas > 0) ||
-          (valuationLevel === 'Rua' && bidi.rua.validas > 0);
-        auc.itbiSurroundingAvgSqm = bidi.radiusVerified ? (bidi.raio.saneada || undefined) : undefined;
-        auc.itbiSurroundingCount = bidi.radiusVerified ? (bidi.raio.validas || undefined) : undefined;
-        auc.itbiBuildingCount = bidi.predio.validas || undefined;
-        auc.streetRadiusDeviationPct = bidi.radiusVerified ? (bidi.ruaRaioDesvioPct || undefined) : undefined;
-        auc.streetRadiusCalibrated = bidi.radiusVerified && bidi.ruaRaioCalibrada;
+        hasVerifiedLocalMicroData = localCount >= 7 && !weighted.calibrated;
+        if (isJuizDeForaAuc || bidi.isAbsolutePricing) {
+          bidiSqm = 0;
+          bidiGabaritoSqm = 0;
+          auc.itbiStreetAvgSqm = bidi.rua.saneada || bidi.mediaCorteReal;
+          auc.itbiUnitValueAvg = bidi.mediaCorteReal;
+          auc.itbiSurroundingAvgSqm = bidi.raio.saneada || undefined;
+          auc.itbiSurroundingCount = bidi.raio.validas || undefined;
+          auc.itbiBuildingCount = bidi.predio.validas || undefined;
+          auc.itbiStreetCount = bidi.rua.validas || undefined;
+          auc.itbiIsDerivedSqm = false;
+          auc.itbiIsAbsolutePricing = true;
+          auc.itbiCompraEVendaCount = bidi.compraEVendaCount;
+          auc.itbiPeriodRange = bidi.dateRange;
+          isJfAbsolute = true;
+          jfGabaritoTotal = bidi.gabaritoTotal;
+          jfFlipTotal = bidi.flipTotal;
+        } else {
+          bidiSqm = (bidi.flipRapidoSqm && bidi.flipRapidoSqm > 0) ? bidi.flipRapidoSqm : Math.round(weighted.value * 0.90 * (bidi.buildingSafetyValveApplied ? 0.95 : 1.0));
+          bidiGabaritoSqm = bidi.buildingSafetyValveApplied ? Math.round(weighted.value * 0.95) : weighted.value;
+          auc.itbiSurroundingAvgSqm = bidi.radiusVerified ? (bidi.raio.saneada || undefined) : undefined;
+          auc.itbiSurroundingCount = bidi.radiusVerified ? (bidi.raio.validas || undefined) : undefined;
+          auc.itbiBuildingCount = bidi.predio.validas || undefined;
+          auc.streetRadiusDeviationPct = bidi.radiusVerified ? (bidi.ruaRaioDesvioPct || undefined) : undefined;
+          auc.streetRadiusCalibrated = bidi.radiusVerified && bidi.ruaRaioCalibrada;
+          auc.buildingSafetyValveApplied = bidi.buildingSafetyValveApplied;
+        }
       }
     }
-  }
-
-  // Fallback pericial: Se não houver amostras na rua/prédio, baliza pela mediana oficial saneada do bairro
-  const canUseOfficialNeighborhoodFallback = !hasMicroData &&
-    hasExactNeighborhoodReference &&
-    neighborhoodAvgSqm > 0;
-  if (canUseOfficialNeighborhoodFallback) {
-    bidiGabaritoSqm = neighborhoodAvgSqm;
-    bidiSqm = Math.round(neighborhoodAvgSqm * 0.90);
-    hasMicroData = true;
-    valuationSampleCount = nEntry?.count || 1;
-    valuationLevel = 'Bairro';
-    auc.valuationConfidence = 'projected';
-    auc.valuationBasis = isGeneric
-      ? 'Balizado pela Mediana Oficial do Bairro (Logradouro não informado no edital)'
-      : 'Balizado pela Mediana Oficial do Bairro (Sem escrituras recentes nesta via)';
   }
 
   // Endereço genérico não pode reutilizar uma média de rua/prédio incorreta.
@@ -1792,27 +2425,69 @@ function recalculateAuctionWithIndex(
   }
 
   auc.valuationLevel = (valuationLevel || 'Sem Dados Suficientes') as AuctionProperty['valuationLevel'];
-  auc.hasMicroBenchmark = hasVerifiedLocalMicroData;
-  auc.valuationConfidence = hasVerifiedLocalMicroData ? 'verified' : (canUseOfficialNeighborhoodFallback ? 'projected' : 'unavailable');
-  // Sample count is scoped to the selected level. Bairro/raio counts never
-  // masquerade as street/building comparables in liquidity or audit UI.
-  auc.valuationSampleCount = hasMicroData && valuationLevel !== 'Bairro' ? valuationSampleCount : undefined;
-  auc.valuationRadiusKm = hasMicroData ? 0.5 : undefined;
-  if (hasMicroData) auc.valuationBasis = hasVerifiedLocalMicroData
-    ? `ITBI verificado - ${valuationLevel} (${valuationSampleCount} amostras)`
-    : `Referência ITBI estimada - ${valuationLevel}${valuationSampleCount > 0 ? ` (${valuationSampleCount} amostras)` : ''}`;
-
-  // Valores de portal só podem sobreviver quando vieram de anúncios individuais auditáveis.
-  if (!auc.portalDataVerifiedAt || !auc.portalSampleCount) {
-    auc.portalZapAvg = undefined;
-    auc.portalQuintoAndarAvg = undefined;
-    auc.streetPortalAvgSqm = undefined;
+  auc.hasMicroBenchmark = hasVerifiedLocalMicroData && (!isJuizDeForaAuc || (bidi?.areaModelConfidence === 'high' && valuationSampleCount >= 3));
+  auc.valuationConfidence = hasVerifiedLocalMicroData ? (isJuizDeForaAuc ? 'projected' : 'verified') : hasMicroData ? 'projected' : 'unavailable';
+  auc.valuationSampleCount = hasVerifiedLocalMicroData ? valuationSampleCount : undefined;
+  auc.valuationRadiusKm = bidi?.radiusVerified ? bidi.effectiveRadiusKm : undefined;
+  if (isJuizDeForaAuc && bidi?.isAbsolutePricing) {
+    auc.valuationBasis = auc.valuationCalibration === 'radius_neighborhood'
+      ? `Calibrado por raio (${auc.itbiSurroundingCount || 0}) e bairro (${auc.itbiNeighborhoodCount || 0}); sem vendas locais confirmadas`
+      : hasVerifiedLocalMicroData
+      ? `ITBI Juiz de Fora por faixa de valor/área - ${valuationLevel} (${valuationSampleCount} vendas locais; calibrado em ${bidi.areaModelSampleCount || 0} avaliações oficiais, confiança ${bidi.areaModelConfidence || 'baixa'})`
+      : `Poucas vendas comparáveis em Juiz de Fora (${valuationSampleCount} amostras Compra e Venda)`;
+  } else if (hasMicroData) {
+    auc.valuationBasis = auc.valuationCalibration === 'radius_neighborhood'
+      ? `Calibrado por raio (${auc.itbiSurroundingCount || 0}) e bairro (${auc.itbiNeighborhoodCount || 0}); sem transações locais`
+      : auc.valuationCalibration === 'few_local_samples'
+        ? `Calibrado por baixa amostragem local (${valuationSampleCount}; menos de 7)`
+        : hasVerifiedLocalMicroData
+          ? `ITBI verificado - ${valuationLevel} (${valuationSampleCount} amostras)`
+          : `Referência ITBI estimada - ${valuationLevel}${valuationSampleCount > 0 ? ` (${valuationSampleCount} amostras)` : ''}`;
+  } else {
+    auc.valuationBasis = valuationSampleCount > 0
+      ? `Poucos dados ITBI locais para precificação ponderada (${valuationSampleCount} transação(ões))`
+      : 'Poucos dados ITBI locais para precificação ponderada';
   }
+
+  // Módulo 2: Benchmark de Mercado dos Portais Imobiliários (ZAP Imóveis / QuintoAndar)
+  const portalBench = calculatePortalBenchmark({
+    street: auc.address,
+    neighborhood: auc.neighborhood,
+    city: auc.city,
+    state: auc.state,
+    propertyType: auc.propertyType,
+    sizeSqm: auc.sizeSqm,
+    streetPortalAvgSqm: auc.streetPortalAvgSqm,
+    itbiStreetAvgSqm: itbiStreetAvgSqm || auc.itbiStreetAvgSqm,
+    itbiStreetCount: itbiStreetCount || auc.itbiStreetCount,
+    itbiUnitValueAvg: auc.itbiUnitValueAvg,
+    itbiSurroundingAvgSqm: auc.itbiSurroundingAvgSqm
+  });
+
+  const isRJ = (auc.state || '').toUpperCase() === 'RJ' || String(auc.city || '').toLowerCase().includes('rio de janeiro');
+  auc.m2MercadoPortal = portalBench.m2MercadoPortal;
+  auc.valorSugeridoPortal = portalBench.valorSugeridoPortal;
+  auc.fontePortal = portalBench.fontePortal;
+  auc.dataColetaPortal = portalBench.dataColetaPortal;
+  auc.isBairroPortalFallback = portalBench.isBairroPortalFallback;
+  auc.portalAreaBracket = portalBench.portalAreaBracket;
+  auc.streetPortalAvgSqm = (!portalBench.isBairroPortalFallback && portalBench.m2MercadoPortal >= (isRJ ? 1500 : 500)) ? portalBench.m2MercadoPortal : undefined;
+  auc.portalDataVerifiedAt = portalBench.dataColetaPortal;
 
   const ageFactor = ageDepreciationPct > 0 ? (1 - ageDepreciationPct / 100) : 1.0;
   const territorialFactor = commRisk.isRisk ? 0.85 : 1.0;
-  if ((hasMicroData || canUseOfficialNeighborhoodFallback) && bidiSqm > 0) {
-    auc.vendaBaixaPrice = Math.round(Math.round(bidiSqm * ageFactor * territorialFactor) * (auc.sizeSqm || 0));
+  if (isJfAbsolute && jfGabaritoTotal > 0) {
+    auc.vendaBaixaPrice = calculateQuickFlipAbsoluteTotal({ baseTotal: jfFlipTotal, depreciationPercent: ageDepreciationPct, communityRisk: commRisk.isRisk });
+    auc.estimatedValue = Math.round(jfGabaritoTotal * ageFactor * territorialFactor);
+    auc.vendaMediaPrice = auc.vendaBaixaPrice;
+    auc.itbiStreetAvgSqm = undefined;
+    auc.itbiUnitValueAvg = undefined;
+    auc.itbiAbsoluteAvgPrice = jfGabaritoTotal;
+    auc.itbiIsAbsolutePricing = true;
+    auc.itbiCompraEVendaCount = jfCompraEVendaCount;
+    auc.itbiPeriodRange = jfDateRange;
+  } else if (hasMicroData && bidiSqm > 0) {
+    auc.vendaBaixaPrice = calculateQuickFlipTotal({ basePerSqm: bidiSqm, sizeSqm: auc.sizeSqm || 0, depreciationPercent: ageDepreciationPct, communityRisk: commRisk.isRisk });
     if (bidiGabaritoSqm > 0) {
       auc.estimatedValue = Math.round(bidiGabaritoSqm * ageFactor * territorialFactor * (auc.sizeSqm || 0));
       // A média factual da rua é preservada para auditoria; o gabarito é o composto.
@@ -1871,7 +2546,11 @@ function recalculateAuctionWithIndex(
   auc.pendingCondoCost = condoAt;
   auc.pendingDebts = iptuAt + condoAt;
 
-  const leilCd = auc.auctioneerFee !== undefined ? auc.auctioneerFee : (origin === 'portal' ? 0 : Math.round(bidPrice * 0.05));
+  const textModality = `${auc.saleMode || ''} ${auc.title || ''} ${auc.description || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const isCaixa = origin === 'caixa' || auc.origin === 'caixa' || (auc.id && auc.id.includes('caixa'));
+  const caixaHasAuctioneer = isCaixa && /licitacao\s*aberta|sfi|leilao/.test(textModality);
+  const isDirectSale = isCaixa && !caixaHasAuctioneer;
+  const leilCd = auc.auctioneerFee !== undefined ? auc.auctioneerFee : ((origin === 'portal' || isDirectSale) ? 0 : Math.round(bidPrice * 0.05));
   auc.auctioneerFee = leilCd;
 
   const advCd = auc.lawyerFee !== undefined ? auc.lawyerFee : Math.round(bidPrice * 0.05);
@@ -1912,94 +2591,18 @@ function recalculateAuctionWithIndex(
     auc.calculatedRoi = undefined;
   }
 
-  // Multi-factor Empirical Real Estate Liquidity Score: 1 to 10
-  // Base neutra baixa; falta de microdados locais nunca começa em 5/10.
-  let score = 3;
+  auc.precisa_revisao = Boolean(hasCoreListingIssue);
 
-  const localComparableCount = getVerifiedLocalComparableCount(auc);
-  const streetTxs = localComparableCount;
-  const volKey = `${state}|${normCity}|${neigh}`;
-  const neighVol = volMap.get(volKey) || 0;
+  const deltaTKey = `${(auc.state || 'rj').toLowerCase()}|${normalizeString(auc.city || '')}|${cleanNeighborhood(auc.neighborhood)}`;
+  const deltaTDays = globalNeighborhoodDeltaT.get(deltaTKey);
+  auc.neighborhoodDeltaTDays = deltaTDays;
 
-  // 1. Evidência de giro na via. Os pesos são deliberadamente pequenos: a
-  // quantidade de escrituras mede confiança da análise, não liquidez sozinha.
-  if (streetTxs >= 10) score += 1.5;
-  else if (streetTxs >= 3) score += 1;
-  else if (streetTxs >= 1) score += 0.5;
-
-  // 2. Neighborhood Velocity
-  if (neighVol >= 40) score += 0.75;
-  else if (neighVol >= 15) score += 0.4;
-
-  // 3. Property Type General Liquidity
-  if (auc.propertyType === 'Apartamento') score += 0.5;
-  else if (auc.propertyType === 'Casa') score += 0;
-  else if (auc.propertyType === 'Comercial') score -= 0.5;
-  else if (auc.propertyType === 'Terreno' || auc.propertyType === 'Lote') score -= 1;
-
-  // 4. Physical Possession & Vacancy (Desocupado has faster turnover)
-  if (auc.occupied === false) score += 0.5;
-  else score -= 0.5;
-
-  // 5. Price Bracket Accessibility (Sub-350k represents majority of buyer demand in Brazil)
-  if (auc.auctionPrice > 0 && auc.auctionPrice <= 300000) score += 0.5;
-  else if (auc.auctionPrice > 1500000) score -= 0.5;
-
-  // 6. Discount Attractiveness (Steep discount from Caixa appraisal drives fast buyer interest)
-  if (auc.estimatedValue > 0 && auc.auctionPrice > 0) {
-    const discount = (auc.estimatedValue - auc.auctionPrice) / auc.estimatedValue;
-    if (discount >= 0.40) score += 0.5;
-  }
-
-  // 7. Financing / FGTS Acceptance
-  if (auc.allowsFinancing) score += 0.75;
-
-  // 8. Risk penalty
-  if (auc.riskLevel === 'Alto') score -= 0.75;
-
-  // 9. Retorno confirmado altera a nota de forma gradual. Falta de cálculo
-  // não é prejuízo e não pode reduzir todos os imóveis para 1/10.
-  if (typeof auc.calculatedRoi === 'number') {
-    if (auc.calculatedRoi >= 45) score += 0.75;
-    else if (auc.calculatedRoi >= 30) score += 0.4;
-    else if (auc.calculatedRoi < 15) score -= 0.75;
-  }
-  if (typeof auc.calculatedProfit === 'number') {
-    if (auc.calculatedProfit >= 50000) score += 0.4;
-    else if (auc.calculatedProfit < 0) score -= 1.5;
-  }
-
-  // 10. Poucas amostras reduzem confiança sem confundir ausência de dado com
-  // iliquidez. A contagem continua exposta para decisão humana.
-  if (streetTxs <= 1) score -= 0.5;
-
-  // Fonte insuficiente não pode promover um imóvel ao topo do garimpo.
-  if (auc.valuationConfidence === 'projected') {
-    score = Math.min(score - 1.5, 4);
-  } else if (auc.valuationConfidence !== 'verified') {
-    score = Math.min(score - 2, 2);
-  }
-
-  // Trava de confiança local: giro do bairro ou comparáveis apenas no raio
-  // não comprovam liquidez na via do imóvel. Notas acima de 6 exigem pelo menos
-  // cinco escrituras válidas na rua/prédio; uma amostra isolada não basta.
-  const streetOrBuildingCount = localComparableCount;
-  if (streetOrBuildingCount === 0) score = Math.min(score, 3);
-  else if (streetOrBuildingCount < 2) score = Math.min(score, 4);
-  else if (streetOrBuildingCount < 5) score = Math.min(score, 6);
-
-  // 11. Se for comunidade / área de risco: teto estrito 2/10
-  if (commRisk.isRisk) {
-    score = Math.min(score, 2);
-  }
-
-  // Imóvel com pendência de revisão: teto estrito 1/10
-  if (auc.precisa_revisao) {
-    score = 1;
-  }
-
-  // Final Clamp: realistic scores between 1 and 10
-  auc.liquidityScore = Math.round(Math.max(1, Math.min(10, score)));
+  // Liquidez baseada na metodologia de 3 eixos (Bairro Giro Médio, Volume Local, Deságio)
+  auc.liquidityScore = calculateSampleDensityLiquidity({
+    ...auc,
+    isCommunityRisk: commRisk.isRisk,
+    neighborhoodDeltaTDays: deltaTDays
+  }, neighborhoodSalesLast24Months, deltaTDays);
 
   // Determine Risk Level dynamically
   if (commRisk.isRisk) {
@@ -2012,7 +2615,7 @@ function recalculateAuctionWithIndex(
     auc.riskLevel = 'Baixo';
   }
 
-  if (!(auc.auctionPrice > 0) || auc.priceVerified === false || !(auc.sizeSqm > 0) || auc.sizeVerified === false) {
+  if (hasCoreListingIssue) {
     auc.calculatedProfit = undefined;
     auc.calculatedRoi = undefined;
     auc.liquidityScore = 1;
@@ -2023,31 +2626,75 @@ function recalculateAuctionWithIndex(
 
 let cachedItbiIndexResult: {
   txsRef: ItbiTransaction[];
+  auctionsRef: AuctionProperty[];
   indexes: ReturnType<typeof buildItbiIndexes>;
 } | null = null;
 
-function getOrBuildItbiIndexes(txs: ItbiTransaction[]) {
-  if (cachedItbiIndexResult && cachedItbiIndexResult.txsRef === txs) {
+function getOrBuildItbiIndexes(txs: ItbiTransaction[], calibrationAuctions: AuctionProperty[] = store.auctions) {
+  if (cachedItbiIndexResult && cachedItbiIndexResult.txsRef === txs && cachedItbiIndexResult.auctionsRef === calibrationAuctions) {
     return cachedItbiIndexResult.indexes;
   }
-  const indexes = buildItbiIndexes(txs);
-  cachedItbiIndexResult = { txsRef: txs, indexes };
+  const indexes = buildItbiIndexes(txs, calibrationAuctions);
+  cachedItbiIndexResult = { txsRef: txs, auctionsRef: calibrationAuctions, indexes };
   return indexes;
 }
 
 // Wrapper for backward compatibility / single recalculations
 function recalculateAuction(auc: AuctionProperty, txs: ItbiTransaction[]): AuctionProperty {
-  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = getOrBuildItbiIndexes(txs);
-  return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap);
+  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = getOrBuildItbiIndexes(txs);
+  return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType);
 }
 
 // Bulk recalculator using a single built index
 function recalculateAuctions(auctions: AuctionProperty[], txs: ItbiTransaction[]): AuctionProperty[] {
-  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = getOrBuildItbiIndexes(txs);
-  return auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap));
+  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = getOrBuildItbiIndexes(txs, auctions);
+  return auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType));
+}
+
+function hydrateItbiAddressPoints(transactions: ItbiTransaction[]): ItbiTransaction[] {
+  const locationPath = path.join(process.cwd(), 'itbi_address_locations.json');
+  try {
+    let locations: Record<string, { lat: number; lng: number; precision: string; spreadMeters?: number }> = {};
+    if (fs.existsSync(locationPath)) {
+      locations = JSON.parse(fs.readFileSync(locationPath, 'utf8'));
+    }
+    let matchedExact = 0;
+    let matchedCentroid = 0;
+    const hydrated = transactions.map(tx => {
+      const point = locations[tx.id];
+      if (point && point.precision === 'exact_number' && Number.isFinite(point.lat) && Number.isFinite(point.lng)) {
+        matchedExact++;
+        return {
+          ...tx,
+          transactionLocationLat: point.lat,
+          transactionLocationLng: point.lng,
+          transactionLocationPrecision: 'exact_number' as const,
+          transactionLocationSpreadMeters: point.spreadMeters
+        };
+      }
+      // Fallback defensivo: Centroide oficial da via (base de logradouros / cache)
+      const streetHit = getCachedStreetCoords(tx.state, tx.city, tx.neighborhood, tx.street);
+      if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+        matchedCentroid++;
+        return {
+          ...tx,
+          transactionLocationLat: streetHit.lat,
+          transactionLocationLng: streetHit.lng,
+          transactionLocationPrecision: 'street_centroid' as const
+        };
+      }
+      return tx;
+    });
+    console.info(`[ITBI] ${matchedExact} transações com ponto exato e ${matchedCentroid} com centroide de logradouro.`);
+    return hydrated;
+  } catch (err) {
+    console.warn('[ITBI] Erro ao hidratar coordenadas de endereço:', err);
+    return transactions;
+  }
 }
 
 let store = loadStore();
+store.itbiTransactions = hydrateItbiAddressPoints(store.itbiTransactions);
 configureNeighborhoods(store.itbiTransactions);
 
 // Request augmented type
@@ -2076,20 +2723,29 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
 // One server-owned run at a time, shared by boot, app opening and manual requests.
 let listedSyncRunning: Promise<unknown> | null = null;
 let availabilityRunning: Promise<void> | null = null;
+let openingSyncStage: 'preparing' | 'caixa' | 'leiloeiros' | null = null;
+let caixaDirectRunning = false;
 let catalogRevision = Date.now();
-function startAvailabilityCheck() {
+function startAvailabilityCheck(limit = 24) {
  if(availabilityRunning)return;
- availabilityRunning=(async()=>{
+ // Let the opening request return before walking the stored catalog and
+ // scheduling hundreds of source checks.
+ availabilityRunning=new Promise<void>(resolve=>setImmediate(resolve)).then(async()=>{
   const allowed=new Set(AUCTIONEER_PORTALS.filter(p=>!['emgea','vitrinebradesco','pestana'].includes(p.id)).map(p=>p.domain.replace(/^www\./,'')));
   const rows=store.auctions.flatMap(parent=>{
    const sources=new Map((parent.sourceRecords||[]).map(a=>[canonicalAuctionLink(a.auctionLink||''),a]));
    const {sourceRecords,offers,...primary}=parent;sources.set(canonicalAuctionLink(parent.auctionLink||''),primary as AuctionProperty);
    if(sources.size>1)parent.sourceRecords=[...sources.values()];
    return [...sources.values()].filter(a=>{try{return allowed.has(new URL(a.auctionLink||'').hostname.replace(/^www\./,''))}catch{return false}}).map(a=>({parentId:parent.id,...a}));
-  });
-  let cursor=0;
-  await Promise.all(Array.from({length:4},async()=>{while(cursor<rows.length){
-   const snapshot=rows[cursor++],url=snapshot.auctionLink!;let status=0,html='',finalUrl=url;
+   });
+   const selectedRows=rows.sort((a,b)=>{
+    const aChecked=Date.parse(a.availability?.checkedAt||'')||0;
+    const bChecked=Date.parse(b.availability?.checkedAt||'')||0;
+    return aChecked-bChecked;
+   }).slice(0,Math.max(0,limit));
+   let cursor=0;
+   await Promise.all(Array.from({length:Math.min(2,selectedRows.length)},async()=>{while(cursor<selectedRows.length){
+    const snapshot=selectedRows[cursor++],url=snapshot.auctionLink!;let status=0,html='',finalUrl=url;
    try {const response=await fetch(url,{signal:AbortSignal.timeout(15000)});status=response.status;finalUrl=response.url;html=await response.text();}catch{}
    const parent=store.auctions.find(a=>a.id===snapshot.parentId);if(!parent)continue;
    const current=parent.sourceRecords?.find(a=>canonicalAuctionLink(a.auctionLink||'')===canonicalAuctionLink(url))||parent;if(current.auctionLink!==url)continue;
@@ -2112,55 +2768,96 @@ function startAvailabilityCheck() {
   }}));
   for(const parent of store.auctions){if(parent.sourceRecords?.length){const merged=deduplicateAuctions(parent.sourceRecords)[0];Object.assign(parent,recalculateAuction({...merged,id:parent.id,saved:parent.saved},store.itbiTransactions));}}
   saveStore(store);
- })().catch(e=>console.error('[Availability]',e)).finally(()=>{availabilityRunning=null;});
+ }).catch(e=>console.error('[Availability]',e)).finally(()=>{availabilityRunning=null;});
 }
 
 function readListedSyncStatus() {
   try {
     const report = JSON.parse(fs.readFileSync('sync-audits/latest-listed-sync.json', 'utf8'));
-    if (!listedSyncRunning && report.status === 'running') report.status = 'interrupted';
-    return {...report,catalogRevision,availabilityRunning:Boolean(availabilityRunning)};
-  } catch { return {catalogRevision,availabilityRunning:Boolean(availabilityRunning)}; }
+    if (listedSyncRunning || caixaDirectRunning) report.status = 'running';
+    else if (report.status === 'running') report.status = 'interrupted';
+    return {...report,stage:openingSyncStage||(caixaDirectRunning?'caixa':null),catalogRevision,availabilityRunning:Boolean(availabilityRunning)};
+  } catch { return {status:listedSyncRunning||caixaDirectRunning?'running':'idle',stage:openingSyncStage||(caixaDirectRunning?'caixa':null),catalogRevision,availabilityRunning:Boolean(availabilityRunning)}; }
 }
 function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0], auditPath: string) {
   configureNeighborhoods(store.itbiTransactions);
   const previousAuctions=store.auctions;
-  store.auctions=structuredClone(previousAuctions);
+  const previousLength = previousAuctions.length;
+  const snapshots = previousAuctions.map(auction => ({ auction, value: { ...auction } }));
+  // Keep the catalog array identity stable between source batches so the
+  // 107k-row ITBI indexes are reused throughout one opening sync.
+  const itbiIndexes=getOrBuildItbiIndexes(store.itbiTransactions,previousAuctions);
+  const recalculate=(auc:AuctionProperty)=>recalculateAuctionWithIndex(
+    auc,itbiIndexes.avgSqmMap,itbiIndexes.streetAvgSqmMap,itbiIndexes.volMap,
+    itbiIndexes.neighCityMap,itbiIndexes.cityAvgSqmMap,itbiIndexes.stateAvgSqmMap,
+    itbiIndexes.cityStreetToNeighMap,itbiIndexes.streetNumberNeighMap,
+    itbiIndexes.neighMap,itbiIndexes.jfCityMap,itbiIndexes.jfAreaModelByType
+  );
   try {
     let imported = 0, updated = 0, pending = 0;
     for (const origin of ['extrajudicial', 'judicial'] as const) {
      for (const target of SYNC_TARGETS) {
       const rows = drafts.filter(row => row.origin === origin && row.state === target.state && row.city.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase() === target.city.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase());
       if (!rows.length) continue;
-      const result = reconcileAuctionDrafts(rows, origin, target.state, target.city, store.auctions, auc => recalculateAuction(auc, store.itbiTransactions), false, true);
+       const result = reconcileAuctionDrafts(rows, origin, target.state, target.city, store.auctions, recalculate, false, true);
       result.newAuctions.forEach(auction => { auction.userId = 'system'; auction.lastSyncedAt = new Date().toISOString(); });
       store.auctions.unshift(...result.newAuctions);
       if (result.pendingReview.length) fs.appendFileSync(auditPath, result.pendingReview.map(row => JSON.stringify(row)).join('\n')+'\n');
       imported += result.newAuctions.length; updated += result.updated; pending += result.pending;
     }
     }
-    // A failed write must fail the batch instead of reporting imports that were not saved.
-    const temporary = STORE_PATH + '.sync-tmp';
-    fs.writeFileSync(temporary, JSON.stringify(store), 'utf8');
-    fs.renameSync(temporary, STORE_PATH);
     catalogRevision++;
     return { imported, updated, pending };
 
-  } catch(error) { store.auctions=previousAuctions; throw error; }
+  } catch(error) {
+    const added = Math.max(0, previousAuctions.length - previousLength);
+    if (added) previousAuctions.splice(0, added);
+    for (const { auction, value } of snapshots) {
+      for (const key of Object.keys(auction)) if (!(key in value)) delete (auction as any)[key];
+      Object.assign(auction, value);
+    }
+    store.auctions=previousAuctions;
+    throw error;
+  }
 }
 function startListedSync(reason: string, ids?: string[]) {
-  if (listedSyncRunning) return false;
-  fs.mkdirSync('sync-audits/backups', { recursive: true });
+  if (listedSyncRunning || caixaDirectRunning) return false;
+  openingSyncStage = 'preparing';
   const backup = 'sync-audits/backups/before-listed-sync-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
-  fs.writeFileSync(backup, JSON.stringify(store));
-  listedSyncRunning = runListedPortalSync(reason, async (drafts,source) => applyListedDrafts(drafts, 'sync-audits/pending-'+source.id+'.jsonl')  , {ids}).catch(error => console.error('[Listed Sync] Falha:', error)).finally(() => { listedSyncRunning = null; });
+  // A synchronous JSON.stringify of the 50+ MB store blocked the UI while the
+  // app was opening. Snapshot the persisted file asynchronously, then start the
+  // single opening/manual sync after the backup is safely in place.
+  listedSyncRunning = new Promise<void>(resolve => setImmediate(resolve)).then(async()=>{
+    await fs.promises.mkdir('sync-audits/backups', { recursive: true });
+    if(fs.existsSync(STORE_PATH)) await fs.promises.copyFile(STORE_PATH, backup);
+    else await fs.promises.writeFile(backup, JSON.stringify(store), 'utf8');
+    if(reason==='app-open'){
+      openingSyncStage='caixa';
+      await runCaixaSyncExclusive(['RJ','MG'],'system');
+    }
+    openingSyncStage='leiloeiros';
+    const report = await runListedPortalSync(reason, async (drafts,source) => applyListedDrafts(drafts, 'sync-audits/pending-'+source.id+'.jsonl'), {ids});
+    await saveStoreAsync(store);
+    return report;
+  }).catch(async error => {
+    console.error('[Listed Sync] Falha:', error);
+    try { await saveStoreAsync(store); } catch (saveError) { console.error('[Listed Sync] Falha ao persistir os lotes já processados:', saveError); }
+  }).finally(() => { listedSyncRunning = null; openingSyncStage=null; });
   return true;
 }
 app.get('/api/sync/status', authMiddleware, (_req, res) => res.json(readListedSyncStatus()));
 app.post('/api/sync/start', authMiddleware, (req, res) => {
-  startAvailabilityCheck();
-  const started = startListedSync(req.body.reason === 'app-open' ? 'app-open' : 'manual');
-  res.status(202).json({started, running:true, report:readListedSyncStatus()});
+  const requestedIds: string[] | undefined = Array.isArray(req.body?.ids)
+    ? [...new Set<string>((req.body.ids as unknown[]).filter((id: unknown): id is string => typeof id === 'string' && SYNC_SOURCE_IDS.includes(id)))]
+    : undefined;
+  if (Array.isArray(req.body?.ids) && !requestedIds?.length) {
+    return res.status(400).json({ error: 'Nenhuma fonte válida foi informada.' });
+  }
+  // Check a small rotating batch of old source links; the opening sync below
+  // handles full listings. A full 2,700-link sweep made every launch sluggish.
+  if (!requestedIds) startAvailabilityCheck(24);
+  const started = startListedSync(req.body.reason === 'app-open' ? 'app-open' : 'manual', requestedIds);
+  res.status(202).json({started, running:Boolean(listedSyncRunning||caixaDirectRunning), report:readListedSyncStatus()});
 });
 
 // Auth API Endpoints
@@ -2511,14 +3208,83 @@ app.delete('/api/user/arrematacoes/:id', authMiddleware, (req, res) => {
 
 // GET /api/auctions
 app.get('/api/auctions', authMiddleware, (req, res) => {
-  const userAuctions = deduplicateAuctions(store.auctions.filter(a => catalogEligible(a) && (!a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible);
-  // Apply a cheap evidence gate to every stored score. Recomputing ITBI benchmarks
-  // during a catalog GET can stall large responses; full recalculation remains in
-  // the sync/update pipeline. Stale scores without street/building provenance are
-  // safely capped before the response is sent.
-  const enriched = userAuctions.map(original => {
-    const a = original;
-    a.liquidityScore = Math.min(Number(a.liquidityScore) || 1, assessDataQuality(a).liquidityCeiling);
+  configureNeighborhoods(store.itbiTransactions);
+  const cacheSignature = auctionResponseCacheSignature();
+  if (auctionCatalogResponseCache &&
+      auctionCatalogResponseCache.auctionsRef === store.auctions &&
+      auctionCatalogResponseCache.transactionsRef === store.itbiTransactions &&
+      auctionCatalogResponseCache.userId === req.userId &&
+      auctionCatalogResponseCache.revision === catalogRevision &&
+      auctionCatalogResponseCache.signature === cacheSignature) {
+    sendAuctionResponse(req, res, auctionCatalogResponseCache.payload);
+    setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
+    return;
+  }
+  const persistedPayload = readPersistedAuctionResponse(cacheSignature, req.userId);
+  if (persistedPayload) {
+    auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
+    sendAuctionResponse(req, res, persistedPayload);
+    setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
+    return;
+  }
+  const normalizedCatalog = store.auctions.map(a => {
+    if (!a.city) return a;
+    const location = enrichLocation({ ...a, city: a.city });
+    return location.neighborhood && location.neighborhood !== a.neighborhood ? { ...a, neighborhood: location.neighborhood } : a;
+  });
+  const userAuctions = deduplicateAuctions(normalizedCatalog.filter(a => catalogVisible(a) && (!a.userId || a.userId === req.userId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state))).filter(catalogVisible).map(a => {
+    // Aggregation can choose an older source record with a stale neighborhood.
+    // Re-run the official-address resolver on the consolidated property so a
+    // known source address remains authoritative in the card and map identity.
+    const verifiedLocation = enrichLocation({ ...a, city: a.city || '' });
+    return verifiedLocation.neighborhood && verifiedLocation.neighborhood !== a.neighborhood
+      ? { ...a, neighborhood: verifiedLocation.neighborhood }
+      : a;
+  });
+  // Rebuild trusted cards from current ITBI evidence. Active official lots that
+  // still need extraction review remain visible, but old derived values are
+  // removed so incomplete source data cannot advertise a false opportunity.
+  const enriched = userAuctions.map(a => {
+    if (!catalogEligible(a)) {
+      const isRio = (a.state || '').toUpperCase() === 'RJ' || String(a.city || '').toLowerCase().includes('rio de janeiro');
+      const safeStreetPortal = (isRio && a.streetPortalAvgSqm && a.streetPortalAvgSqm < 1500) ? undefined : a.streetPortalAvgSqm;
+      return {
+        ...a,
+        streetPortalAvgSqm: safeStreetPortal,
+        m2MercadoPortal: safeStreetPortal || 0,
+        precisa_revisao: true,
+        estimatedValue: undefined,
+        vendaBaixaPrice: undefined,
+        vendaMediaPrice: undefined,
+        calculatedProfit: undefined,
+        calculatedRoi: undefined,
+        liquidityScore: 1,
+        valuationConfidence: 'unavailable' as const,
+        valuationLevel: 'Sem Dados Suficientes' as const,
+        valuationBasis: 'Lote oficial ativo; preço, área ou bairro ainda precisa de confirmação para análise de mercado.',
+        valuationSampleCount: undefined,
+        itbiStreetAvgSqm: undefined,
+        itbiStreetCount: undefined,
+        itbiBuildingCount: undefined,
+        itbiUnitValueAvg: undefined,
+        itbiAbsoluteAvgPrice: undefined,
+        itbiIsAbsolutePricing: undefined,
+        itbiSurroundingAvgSqm: undefined,
+        itbiSurroundingCount: undefined,
+        itbiNeighborhoodCount: undefined,
+        streetRadiusCalibrated: undefined,
+        streetRadiusDeviationPct: undefined
+      };
+    }
+    return recalculateAuction(a, store.itbiTransactions);
+  }).map(a => {
+    const isRio = (a.state || '').toUpperCase() === 'RJ' || String(a.city || '').toLowerCase().includes('rio de janeiro');
+    if (isRio && a.streetPortalAvgSqm !== undefined && a.streetPortalAvgSqm < 1500) {
+      a.streetPortalAvgSqm = undefined;
+      a.m2MercadoPortal = 0;
+      a.valorSugeridoPortal = 0;
+      a.isBairroPortalFallback = true;
+    }
     // Sanitize distorted rural terrains or runaway ROIs
     if (a.auctionPrice > 0 && a.priceVerified !== false && a.sizeSqm > 0 && a.sizeVerified !== false && (a.propertyType === 'Terreno' || (a.sizeSqm && a.sizeSqm > 1000)) && a.evaluationPrice && a.evaluationPrice > 0) {
       if (a.estimatedValue > a.evaluationPrice * 2.5) {
@@ -2542,8 +3308,29 @@ app.get('/api/auctions', authMiddleware, (req, res) => {
       }
     }
     return a;
+  }).map(a => {
+    // Recalculation can correct a neighborhood from ITBI street-number data.
+    // Resolve the official listing address once more after that mutation so
+    // its explicit municipality neighborhood remains the final card/map value.
+    const verifiedLocation = enrichLocation({ ...a, city: a.city || '' });
+    return verifiedLocation.neighborhood && verifiedLocation.neighborhood !== a.neighborhood
+      ? { ...a, neighborhood: verifiedLocation.neighborhood }
+      : a;
   });
-  res.json(enriched);
+  auctionCatalogResponseCache = {
+    auctionsRef: store.auctions,
+    transactionsRef: store.itbiTransactions,
+    userId: req.userId,
+    revision: catalogRevision,
+    signature: cacheSignature,
+    payload: enriched
+  };
+  const serializedPayload = JSON.stringify(enriched);
+  sendAuctionResponse(req, res, serializedPayload);
+  persistAuctionResponse(cacheSignature, req.userId, serializedPayload);
+  // Location matching runs only after the initial catalog response has been
+  // sent, so the map backfill cannot hold the app's opening screen.
+  setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
 });
 
 // All verified building locations; no viewport or listing cap.
@@ -2551,7 +3338,7 @@ app.get('/api/map/locations', authMiddleware, (req, res) => {
   ensureOfficialLocationCoverage(store.auctions);
   res.setHeader('X-Map-Refreshing', isMapLocationRefreshRunning() ? '1' : '0');
   res.setHeader('Cache-Control', 'no-store');
-  const locations = deduplicateAuctions(store.auctions.filter(a => catalogEligible(a) && (!a.userId || a.userId === req.userId || ['caixa_radar','caixa','judicial','extrajudicial','portal'].includes(a.origin || '')) && isAllowedTargetCity(a.city, a.state))).filter(catalogEligible).flatMap(a => {
+  const locations = deduplicateAuctions(store.auctions.filter(a => catalogVisible(a) && (!a.userId || a.userId === req.userId || ['caixa_radar','caixa','judicial','extrajudicial','portal'].includes(a.origin || '')) && isAllowedTargetCity(a.city, a.state))).filter(catalogVisible).flatMap(a => {
     const point = getOfficialPropertyLocation(a);
     return [point];
   });
@@ -2578,8 +3365,8 @@ app.get('/api/auctions/bbox', (req, res) => {
   }
 
   const userAuctions = deduplicateAuctions(store.auctions.filter(a => 
-    catalogEligible(a) && (!a.userId || a.userId === requestUserId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state)
-  )).filter(catalogEligible);
+    catalogVisible(a) && (!a.userId || a.userId === requestUserId || a.origin === 'caixa_radar' || a.origin === 'caixa' || a.origin === 'judicial' || a.origin === 'extrajudicial' || a.origin === 'portal') && isAllowedTargetCity(a.city, a.state)
+  )).filter(catalogVisible);
 
   const inside: AuctionProperty[] = [];
   for (const a of userAuctions) {
@@ -2702,10 +3489,18 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
 
   const recalculated = recalculateAuction(merged, store.itbiTransactions);
 
-  // A calculator may have a stricter geolocated radius sample than the bulk
-  // store recalculator. Preserve that audited result so card and simulator are
-  // exactly equal, then recompute profit from the same exit value.
-  if (['verified', 'projected'].includes(updatedFields.valuationConfidence) && !isGenericStreet(merged.address) && Number(updatedFields.vendaBaixaPrice) > 0 && Number(updatedFields.estimatedValue) > 0) {
+  // Preserve the calculator's strict-radius valuation when it is locally
+  // supported or explicitly marked as a conservative contextual calibration.
+  const updatedLocalCount = (Number(updatedFields.itbiBuildingCount) || 0) + (Number(updatedFields.itbiStreetCount) || 0);
+  const updatedRadiusCount = Number(updatedFields.itbiSurroundingCount) || 0;
+  const updatedNeighborhoodCount = Number(updatedFields.itbiNeighborhoodCount) || 0;
+  const hasContextCalibration = updatedFields.valuationCalibration === 'radius_neighborhood' &&
+    updatedRadiusCount >= 5 && updatedNeighborhoodCount >= 7;
+  const hasFewLocalCalibration = updatedFields.valuationCalibration === 'few_local_samples' && updatedLocalCount >= 2 && updatedLocalCount < 7;
+  const hasVerifiedLocalPricing = updatedLocalCount >= 7 && updatedFields.valuationConfidence === 'verified' &&
+    ['Prédio', 'Rua'].includes(String(updatedFields.valuationLevel));
+  if ((hasVerifiedLocalPricing || hasContextCalibration || hasFewLocalCalibration) &&
+    !isGenericStreet(merged.address) && Number(updatedFields.vendaBaixaPrice) > 0 && Number(updatedFields.estimatedValue) > 0) {
     const calculatorStreetCount = Number(updatedFields.itbiStreetCount) || 0;
     const calculatorBuildingCount = Number(updatedFields.itbiBuildingCount) || 0;
     const calculatorRadiusCount = Number(updatedFields.itbiSurroundingCount) || 0;
@@ -2713,23 +3508,22 @@ app.put('/api/auctions/:id', authMiddleware, (req, res) => {
       ? updatedFields.valuationLevel as AuctionProperty['valuationLevel']
       : 'Sem Dados Suficientes';
     const calculatorSampleCount = Number(updatedFields.valuationSampleCount) || 0;
-    const hasVerifiedLocalComparables =
-      (calculatorLevel === 'Prédio' && calculatorBuildingCount >= 2) ||
-      (calculatorLevel === 'Rua' && calculatorSampleCount >= 2);
+    const hasVerifiedLocalComparables = calculatorBuildingCount + calculatorStreetCount >= 7 && !updatedFields.valuationCalibration;
     recalculated.vendaBaixaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.vendaMediaPrice = Number(updatedFields.vendaBaixaPrice);
     recalculated.estimatedValue = Number(updatedFields.estimatedValue);
     const calculatorStreetAvgSqm = Number(updatedFields.itbiStreetAvgSqm) || 0;
-    if (calculatorStreetCount > 0) recalculated.itbiStreetCount = calculatorStreetCount;
-    if (calculatorBuildingCount > 0) recalculated.itbiBuildingCount = calculatorBuildingCount;
+    recalculated.itbiStreetCount = calculatorStreetCount;
+    recalculated.itbiBuildingCount = calculatorBuildingCount;
+    recalculated.itbiNeighborhoodCount = updatedNeighborhoodCount;
+    recalculated.valuationCalibration = updatedFields.valuationCalibration as AuctionProperty['valuationCalibration'];
     recalculated.valuationLevel = calculatorLevel;
     recalculated.valuationSampleCount = calculatorSampleCount || undefined;
     if (calculatorStreetAvgSqm > 0) recalculated.itbiStreetAvgSqm = calculatorStreetAvgSqm;
     recalculated.valuationConfidence = updatedFields.valuationConfidence === 'verified' && hasVerifiedLocalComparables ? 'verified' : 'projected';
-    // A nota não sobe por amostras de bairro, um único comparável ou campos enviados pelo browser.
-    const localCount = getVerifiedLocalComparableCount(recalculated);
-    const evidenceCeiling = localCount === 0 ? 3 : localCount === 1 ? 4 : 6;
-    recalculated.liquidityScore = Math.min(recalculated.liquidityScore || 1, evidenceCeiling);
+    recalculated.isAreaHomogeneizada = Boolean(updatedFields.isAreaHomogeneizada);
+    if (updatedFields.fatorEscala !== undefined) recalculated.fatorEscala = Number(updatedFields.fatorEscala);
+    recalculated.liquidityScore = calculateSampleDensityLiquidity(recalculated);
     recalculated.hasMicroBenchmark = true;
     recalculated.valuationBasis = String(updatedFields.valuationBasis || 'ITBI verificado pela calculadora');
     recalculated.valuationRadiusKm = Number(updatedFields.valuationRadiusKm) || 0.5;
@@ -2792,18 +3586,6 @@ app.delete('/api/auctions/:id', authMiddleware, (req, res) => {
   res.json({ success: true, message: 'Leilão removido com sucesso.' });
 });
 
-interface ItbiStats {
-  state: string;
-  city: string;
-  neighborhood: string;
-  propertyType: PropertyType;
-  averageValueSqm: number;
-  minValueSqm: number;
-  maxValueSqm: number;
-  transactionCount: number;
-  averageTotalValue: number;
-}
-
 function getItbiStats(txs: ItbiTransaction[]): ItbiStats[] {
   const groups = new Map<string, {
     state: string;
@@ -2815,6 +3597,10 @@ function getItbiStats(txs: ItbiTransaction[]): ItbiStats[] {
     count: number;
     min: number;
     max: number;
+    compraEVendaCount: number;
+    isAbsolutePricing: boolean;
+    minDate?: string;
+    maxDate?: string;
   }>();
 
   for (let i = 0; i < txs.length; i++) {
@@ -2825,9 +3611,18 @@ function getItbiStats(txs: ItbiTransaction[]): ItbiStats[] {
     const city = (t.city || 'São Paulo').trim();
     const neigh = t.neighborhood.trim();
     const propType = t.propertyType || 'Apartamento';
+    const isJF = state === 'MG' || city.toLowerCase().includes('juiz');
+
+    // Segregar natureza da operação: Para Juiz de Fora, considerar apenas Compra e Venda
+    if (isJF && t.isCompraEVenda !== true) {
+      continue;
+    }
 
     const key = `${state}|${city}|${cleanNeighborhood(neigh)}|${propType}`;
     let group = groups.get(key);
+    const txVal = isJF ? (t.normalizedTotalValue || t.transactionValue || 0) : (t.unitValueSqm || 0);
+    const totalVal = t.normalizedTotalValue || t.transactionValue || 0;
+
     if (!group) {
       group = {
         state,
@@ -2837,18 +3632,26 @@ function getItbiStats(txs: ItbiTransaction[]): ItbiStats[] {
         sumSqm: 0,
         sumVal: 0,
         count: 0,
-        min: t.unitValueSqm || 0,
-        max: t.unitValueSqm || 0
+        min: txVal,
+        max: txVal,
+        compraEVendaCount: 0,
+        isAbsolutePricing: isJF,
+        minDate: t.date || undefined,
+        maxDate: t.date || undefined
       };
       groups.set(key, group);
     }
 
-    const unitVal = t.unitValueSqm || 0;
-    group.sumSqm += unitVal;
-    group.sumVal += t.transactionValue || 0;
+    group.sumSqm += (t.unitValueSqm || 0);
+    group.sumVal += totalVal;
     group.count += 1;
-    if (unitVal < group.min) group.min = unitVal;
-    if (unitVal > group.max) group.max = unitVal;
+    if (t.isCompraEVenda !== false) group.compraEVendaCount += 1;
+    if (txVal < group.min) group.min = txVal;
+    if (txVal > group.max) group.max = txVal;
+    if (t.date) {
+      if (!group.minDate || t.date < group.minDate) group.minDate = t.date;
+      if (!group.maxDate || t.date > group.maxDate) group.maxDate = t.date;
+    }
   }
 
   const result: ItbiStats[] = [];
@@ -2858,11 +3661,14 @@ function getItbiStats(txs: ItbiTransaction[]): ItbiStats[] {
       city: g.city,
       neighborhood: g.neighborhood,
       propertyType: g.propertyType,
-      averageValueSqm: g.count > 0 ? Math.round(g.sumSqm / g.count) : 0,
-      minValueSqm: g.min,
-      maxValueSqm: g.max,
+      averageValueSqm: g.isAbsolutePricing ? 0 : (g.count > 0 ? Math.round(g.sumSqm / g.count) : 0),
+      minValueSqm: g.isAbsolutePricing ? 0 : g.min,
+      maxValueSqm: g.isAbsolutePricing ? 0 : g.max,
       transactionCount: g.count,
-      averageTotalValue: g.count > 0 ? Math.round(g.sumVal / g.count) : 0
+      averageTotalValue: g.count > 0 ? Math.round(g.sumVal / g.count) : 0,
+      compraEVendaCount: g.compraEVendaCount,
+      isAbsolutePricing: g.isAbsolutePricing,
+      periodRange: (g.minDate && g.maxDate) ? { minDate: g.minDate, maxDate: g.maxDate } : undefined
     });
   }
   return result;
@@ -2926,12 +3732,13 @@ app.get('/api/itbi/streets', (req, res) => {
     return res.status(400).json({ error: 'Neighborhood is required.' });
   }
   
-  // Filter transactions matching neighborhood and state/city (case-insensitive)
+  const isJF = (state as string)?.toUpperCase() === 'MG' || (city as string)?.toLowerCase().includes('juiz');
   const neighNorm = cleanNeighborhood(neighborhood as string);
   const txs = store.itbiTransactions.filter(t => 
     (!state || (t.state || 'SP').toLowerCase() === (state as string).toLowerCase()) &&
     (!city || (t.city || 'São Paulo').toLowerCase() === (city as string).toLowerCase()) &&
-    (cleanNeighborhood(t.neighborhood) === neighNorm)
+    (cleanNeighborhood(t.neighborhood) === neighNorm) &&
+    (!isJF || t.isCompraEVenda === true)
   );
 
   // Group by street name using cleaned street name to unify variations
@@ -2942,39 +3749,56 @@ app.get('/api/itbi/streets', (req, res) => {
     count: number;
     min: number;
     max: number;
+    compraEVendaCount: number;
+    minDate?: string;
+    maxDate?: string;
   }>();
 
   txs.forEach(t => {
     const streetName = t.street ? t.street.trim() : 'Não informado';
     const key = cleanStreetName(streetName);
     let group = streetGroups.get(key);
+    const txVal = isJF ? (t.normalizedTotalValue || t.transactionValue || 0) : (t.unitValueSqm || 0);
+    const totalVal = t.normalizedTotalValue || t.transactionValue || 0;
+
     if (!group) {
       group = {
         street: streetName,
         sumSqm: 0,
         sumVal: 0,
         count: 0,
-        min: t.unitValueSqm || 0,
-        max: t.unitValueSqm || 0
+        min: txVal,
+        max: txVal,
+        compraEVendaCount: 0,
+        minDate: t.date || undefined,
+        maxDate: t.date || undefined
       };
       streetGroups.set(key, group);
     }
     const unitVal = t.unitValueSqm || 0;
     group.sumSqm += unitVal;
-    group.sumVal += t.transactionValue || 0;
+    group.sumVal += totalVal;
     group.count += 1;
-    if (unitVal < group.min) group.min = unitVal;
-    if (unitVal > group.max) group.max = unitVal;
+    if (t.isCompraEVenda !== false) group.compraEVendaCount += 1;
+    if (txVal < group.min) group.min = txVal;
+    if (txVal > group.max) group.max = txVal;
+    if (t.date) {
+      if (!group.minDate || t.date < group.minDate) group.minDate = t.date;
+      if (!group.maxDate || t.date > group.maxDate) group.maxDate = t.date;
+    }
   });
 
   const result = Array.from(streetGroups.values()).map(g => ({
     street: g.street,
-    averageValueSqm: g.count > 0 ? Math.round(g.sumSqm / g.count) : 0,
-    minValueSqm: g.min,
-    maxValueSqm: g.max,
+    averageValueSqm: isJF ? 0 : (g.count > 0 ? Math.round(g.sumSqm / g.count) : 0),
+    minValueSqm: isJF ? 0 : g.min,
+    maxValueSqm: isJF ? 0 : g.max,
     transactionCount: g.count,
-    averageTotalValue: g.count > 0 ? Math.round(g.sumVal / g.count) : 0
-  })).sort((a, b) => b.averageValueSqm - a.averageValueSqm);
+    averageTotalValue: g.count > 0 ? Math.round(g.sumVal / g.count) : 0,
+    isAbsolutePricing: isJF,
+    compraEVendaCount: g.compraEVendaCount,
+    periodRange: (g.minDate && g.maxDate) ? { minDate: g.minDate, maxDate: g.maxDate } : undefined
+  })).sort((a, b) => isJF ? (b.averageTotalValue - a.averageTotalValue) : (b.averageValueSqm - a.averageValueSqm));
 
   res.json(result);
 });
@@ -3006,8 +3830,20 @@ app.get('/api/itbi/resolve-street', (req, res) => {
 });
 
 // GET /api/itbi/transactions
+app.get('/api/itbi/jf-area-model', (req, res) => {
+  const propertyType = String(req.query.propertyType || 'Apartamento');
+  const anchors = store.auctions
+    .filter(auc => (auc.origin === 'caixa' || auc.origin === 'caixa_radar') &&
+      auc.sizeVerified === true && auc.sizeSqm >= 20 && auc.sizeSqm <= 500 &&
+      Number(auc.evaluationPrice) >= 20000 && Number(auc.evaluationPrice) <= 10000000 &&
+      String(auc.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora'))
+    .map(auc => ({ sizeSqm: auc.sizeSqm, marketValue: Number(auc.evaluationPrice), propertyType: auc.propertyType, sizeVerified: true, source: auc.origin }));
+  return res.json(fitJuizDeForaAreaModel(anchors, propertyType));
+});
+
 app.get('/api/itbi/transactions', async (req, res) => {
-  const { state, city, neighborhood, street, propertyType, targetStreet, radiusKm } = req.query;
+  try {
+    const { state, city, neighborhood, street, propertyType, targetStreet, targetNumber, radiusKm, propertyId } = req.query;
   
   let txs = store.itbiTransactions;
   
@@ -3025,6 +3861,19 @@ app.get('/api/itbi/transactions', async (req, res) => {
     const neighNorm = cleanNeighborhood(neighborhood as string);
     txs = txs.filter(t => cleanNeighborhood(t.neighborhood) === neighNorm);
   }
+  // The JF PDFs often carry a different neighborhood for units at the same
+  // street/building. Keep the chosen neighborhood, then union exact street
+  // matches from the same municipality so those sales are not silently lost.
+  if (targetStreet && filterState === 'MG' && normalizeString(filterCity).includes('juiz')) {
+    const targetStreetText = String(targetStreet);
+    const sameStreetCityRows = store.itbiTransactions.filter(tx =>
+      (tx.state || '').toUpperCase() === 'MG' &&
+      normalizeString(tx.city || '') === normalizeString(filterCity) &&
+      tx.isCompraEVenda === true && tx.street && streetAxesMatch(tx.street, targetStreetText)
+    );
+    const byId = new Map([...txs, ...sameStreetCityRows].map(tx => [tx.id, tx]));
+    txs = Array.from(byId.values());
+  }
   if (street) {
     const queryClean = cleanStreetName(street as string);
     const queryCore = getCoreStreetName(street as string);
@@ -3039,103 +3888,110 @@ app.get('/api/itbi/transactions', async (req, res) => {
     txs = txs.filter(t => t.propertyType.toLowerCase() === (propertyType as string).toLowerCase());
   }
   
-  // Calculate real distance if targetStreet and neighborhood are specified
-  if (targetStreet && filterNeighborhood) {
-    const tgt = targetStreet as string;
-    const requestedRadius = radiusKm ? parseFloat(radiusKm as string) : 2;
-    const rad = Number.isFinite(requestedRadius) ? Math.max(0.5, Math.min(2, requestedRadius)) : 2;
-    
-    // Find all unique streets in the current filtered list of transactions
-    const streetFrequency = new Map<string, number>();
-    for (const tx of txs) {
-      const streetName = tx.street?.trim();
-      if (streetName) streetFrequency.set(streetName, (streetFrequency.get(streetName) || 0) + 1);
-    }
-    const uniqueStreets = Array.from(streetFrequency.entries())
-      .sort((left, right) => right[1] - left[1])
-      .map(([streetName]) => streetName);
-    if (!uniqueStreets.some(streetName => streetAxesMatch(streetName, tgt))) {
-      uniqueStreets.push(tgt);
-    }
-
-    try {
-      let tgtCoords: { lat: number; lng: number } | null = null;
-
-      // Ensure target street has exact coordinates via geocodeAddress first
-      const tgtGeo = await geocodeAddress(tgt, { neighborhood: filterNeighborhood, city: filterCity, state: filterState });
-      if (tgtGeo && !isNaN(tgtGeo.lat) && !isNaN(tgtGeo.lng)) {
-        tgtCoords = { lat: tgtGeo.lat, lng: tgtGeo.lng };
+  let radiusTransactions: ItbiTransaction[] = [];
+  let radiusAnchorPrecision: 'official_address' | 'geocoded_number' | 'missing' = 'missing';
+  if (targetStreet && filterNeighborhood && req.query.includeRadius === 'true') {
+    const rawTarget = String(targetStreet);
+    const parsedAddr = cleanBrazilianAddress(rawTarget);
+    const tgt = parsedAddr.street || rawTarget.split(',')[0].trim() || rawTarget;
+    const requestedRadius = radiusKm ? parseFloat(String(radiusKm)) : 2;
+    const maxRadius = Number.isFinite(requestedRadius) ? Math.max(0.5, Math.min(2, requestedRadius)) : 2;
+    let targetCoords: { lat: number; lng: number } | null = null;
+    const targetProperty = propertyId ? store.auctions.find(a => a.id === String(propertyId)) : undefined;
+    if (targetProperty && (targetProperty.state || '').toUpperCase() === filterState &&
+        cleanNeighborhood(targetProperty.city) === cleanNeighborhood(filterCity) &&
+        streetAxesMatch(targetProperty.address || '', tgt)) {
+      const official = getOfficialPropertyLocation(targetProperty);
+      if (official.status === 'located' && validOfficialLocation(official)) {
+        targetCoords = { lat: official.lat!, lng: official.lng! };
+        radiusAnchorPrecision = 'official_address';
+      } else if (Number.isFinite(targetProperty.lat) && Number.isFinite(targetProperty.lng)) {
+        targetCoords = { lat: targetProperty.lat!, lng: targetProperty.lng! };
+        radiusAnchorPrecision = (targetProperty.status_geocodificacao === 'GEOCODE_NUMERO' ? 'geocoded_number' : 'street_centroid') as any;
       }
+    }
 
-      // Get coordinates for all these streets, anchored to tgtCoords if available
-      // The calculator can switch between 500m, 1km and 2km without making a
-      // new request. Hydrate the full supported 2km envelope here, then let
-      // the client apply the selected radius to the verified distances.
-      const coordsMap = await getStreetCoordinates(
-        filterState,
-        filterCity,
-        filterNeighborhood,
-        uniqueStreets,
-        tgtCoords || undefined,
-        2
-      );
-      if (tgtCoords) {
-        coordsMap[tgt] = tgtCoords;
-      } else {
-        tgtCoords = coordsMap[tgt];
-      }
-      
-      if (!tgtCoords) {
-        // Find match by cleaned or core street name
-        const tgtClean = cleanStreetName(tgt);
-        const tgtCore = getCoreStreetName(tgt);
-        for (const [sKey, coords] of Object.entries(coordsMap)) {
-          if (cleanStreetName(sKey) === tgtClean || (tgtCore && getCoreStreetName(sKey) === tgtCore)) {
-            tgtCoords = coords;
-            break;
-          }
+    // Manual calculator addresses may use an exact-number geocode, or fallback to street centroid
+    if (!targetCoords && targetNumber && cleanStreetNumber(String(targetNumber))) {
+      try {
+        const result = await geocodeAddress(`${tgt}, ${targetNumber}`, {
+          neighborhood: filterNeighborhood, city: filterCity, state: filterState, allowStreetFallback: false
+        });
+        if (result?.precision === 'rooftop' && cleanStreetNumber(String(result.matchedNumber)) === cleanStreetNumber(String(targetNumber)) &&
+            cleanNeighborhood(result.matchedCity) === cleanNeighborhood(filterCity) && streetAxesMatch(result.matchedStreet || '', tgt)) {
+          targetCoords = { lat: result.lat, lng: result.lng };
+          radiusAnchorPrecision = 'geocoded_number';
         }
+      } catch (error) {
+        console.warn('[ITBI] Não foi possível confirmar a coordenada numerada do imóvel-alvo:', error);
       }
+    }
 
-      if (tgtCoords) {
-        txs = txs.map(t => {
-          if (!t.street) return t;
-          let sCoords = coordsMap[t.street];
-          if (!sCoords) {
-            const sClean = cleanStreetName(t.street);
-            const sCore = getCoreStreetName(t.street);
-            for (const [sKey, coords] of Object.entries(coordsMap)) {
-              if (cleanStreetName(sKey) === sClean || (sCore && getCoreStreetName(sKey) === sCore)) {
-                sCoords = coords;
-                break;
-              }
-            }
+    // Camada Secundária: Fallback para centroide oficial da via (base de logradouros) se sem coordenada pontual
+    if (!targetCoords) {
+      const streetHit = getCachedStreetCoords(filterState, filterCity, filterNeighborhood, tgt);
+      if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+        targetCoords = streetHit;
+        radiusAnchorPrecision = 'street_centroid' as any;
+      }
+    }
+
+    if (targetCoords) {
+      const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(String(propertyType || ''));
+
+      const queryRadialPool = (searchRadiusKm: number, allowBroadResidential: boolean) => {
+        const rows = store.itbiTransactions.filter(tx => {
+          if ((tx.state || '').toUpperCase() !== filterState) return false;
+          if (cleanNeighborhood(tx.city) !== cleanNeighborhood(filterCity)) return false;
+          if (!Number.isFinite(tx.transactionLocationLat) || !Number.isFinite(tx.transactionLocationLng)) return false;
+          if (tx.transactionLocationPrecision !== 'exact_number' && tx.transactionLocationPrecision !== 'street_centroid') return false;
+
+          if (!allowBroadResidential) {
+            if (propertyType && tx.propertyType.toLowerCase() !== String(propertyType).toLowerCase()) return false;
+          } else if (isResidentialTarget) {
+            if (!/apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(tx.propertyType || '')) return false;
+          } else {
+            if (propertyType && tx.propertyType.toLowerCase() !== String(propertyType).toLowerCase()) return false;
           }
-          if (sCoords) {
-            const dist = calculateDistanceKm(tgtCoords.lat, tgtCoords.lng, sCoords.lat, sCoords.lng);
-            return { 
-              ...t, 
-              distanceKm: parseFloat(dist.toFixed(3)),
-              distanceMeters: Math.round(dist * 1000)
-            };
-          }
-          return t;
+          return true;
         });
 
-        // Only filter out if strictRadius query parameter is explicitly requested
-        if (req.query.strictRadius === 'true' && radiusKm) {
-          txs = txs.filter(t => (t as any).distanceKm !== undefined && (t as any).distanceKm <= rad);
+        return rows.map(tx => {
+          const dist = calculateDistanceKm(targetCoords!.lat, targetCoords!.lng, tx.transactionLocationLat!, tx.transactionLocationLng!);
+          return {
+            ...tx,
+            distanceKm: Number(dist.toFixed(3)),
+            distanceMeters: Math.round(dist * 1000),
+            distanceAnchorPrecision: radiusAnchorPrecision as any
+          };
+        }).filter(tx => Number(tx.distanceKm) <= searchRadiusKm);
+      };
+
+      // Sempre buscar até 2.0 km com cálculo geodésico rigoroso para permitir que o comparativo 1-a-1
+      // e o benchmark executem a expansão dinâmica (500m -> 1000m -> 2000m) no Item 3 (Ruas do Entorno)
+      let candidates = queryRadialPool(2.0, false);
+      if (candidates.length < 8 && isResidentialTarget) {
+        const broad = queryRadialPool(2.0, true);
+        if (broad.length > candidates.length) {
+          candidates = broad;
         }
       }
-    } catch (err) {
-      console.error('Error calculating distances for transactions:', err);
+
+      radiusTransactions = candidates;
     }
   }
 
   // Sort by date descending
   txs = [...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
+  if (req.query.includeRadius === 'true') {
+    return res.json({ transactions: txs, radiusTransactions, radiusAnchorPrecision });
+  }
   res.json(txs);
+  } catch (error: any) {
+    console.error('[ITBI Transactions Route Error]:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
 });
 
 
@@ -4565,35 +5421,23 @@ app.post('/api/parse-pdf', async (req, res) => {
     const buffer = Buffer.from(cleanBase64, 'base64');
     
     console.log(`[PDF Parser] Processando arquivo: ${filename || 'sem nome'} (${Math.round(buffer.length / 1024)} KB), tipo: ${type || 'geral'}`);
-    let text = '';
-    let numpages = 1;
-    try {
-      const parser = new PDFParse({ data: new Uint8Array(buffer) });
-      const textRes = await parser.getText();
-      text = (textRes.text || '').trim();
-      numpages = textRes.pages?.length || 1;
-      await parser.destroy();
-    } catch (parseErr) {
-      console.warn('[PDF Parser] PDFParse direto falhou:', parseErr);
-      text = '';
-    }
-
-    // Validação Pericial do Texto Extraído:
-    // Expurga lixo de encoding/fontes binárias como "[ c Y W ^ [ d d [ Y e f d g h h X..."
-    const lettersCount = (text.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
-    const isReadable = text.length >= 25 && (lettersCount / text.length) >= 0.40;
-    const hasLegalKeywords = /\b(matricula|matrícula|imovel|imóvel|apartamento|casa|terreno|edital|registro|cartorio|cartório|caixa|leilao|leilão|comarca|oficio|ofício|devedor|alienacao|alienação|averbacao|averbação|penhora|hipoteca|livro|certidao|certidão|quitacao|quitação|rgi|lote)\b/i.test(text);
-
-    if (!isReadable || (!hasLegalKeywords && text.length > 50)) {
-      console.warn(`[PDF Parser] Texto extraído (${text.length} chars) não possui palavras em português válidas ou contém artefatos binários. Marcado como digitalização sem OCR.`);
-      text = '';
-    }
     
-    console.log(`[PDF Parser] Texto final validado: ${text.length} caracteres, ${numpages} páginas.`);
+    // Executa pipeline pericial híbrido (PyMuPDF filtrado + OCR 300 DPI se necessário + regex estruturado)
+    const result = await readRegistryPdfDetailed(new Uint8Array(buffer));
+    const text = result.inteiroTeor;
+    const numpages = 1;
+
+    console.log(`[PDF Parser] Texto validado: ${text.length} caracteres. Matrícula: ${result.matriculaNumero || 'não detectada'}, Cartório: ${result.cartorioRgi || 'não detectado'}`);
 
     return res.json({
       success: true,
       text,
+      inteiro_teor: text,
+      matricula_numero: result.matriculaNumero || null,
+      cartorio_rgi: result.cartorioRgi || null,
+      matriculaNumero: result.matriculaNumero || null,
+      registryOffice: result.cartorioRgi || null,
+      wasOcr: result.wasOcr,
       numpages,
       info: {}
     });
@@ -5140,7 +5984,14 @@ function getStreetForNeighborhood(neighborhood: string, state: string): string {
   }
 }
 
-// Reusable automated multi-state Caixa direct scraper function (headless Puppeteer to bypass Radware CAPTCHA)
+async function runCaixaSyncExclusive(targetStates: string[], userId: string) {
+  if (caixaDirectRunning) throw new Error('A sincronização da Caixa já está em andamento.');
+  caixaDirectRunning = true;
+  try { return await syncCaixaDirect(targetStates, userId); }
+  finally { caixaDirectRunning = false; }
+}
+
+// Reusable automated multi-state Caixa direct scraper function.
 async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: string = 'system'): Promise<number> {
   console.log(`[Caixa Auto-Sync] Iniciando varredura oficial direta da Caixa via Puppeteer para: ${targetStates.join(', ')}`);
   const todayStr = new Date().toISOString().split('T')[0];
@@ -5153,9 +6004,12 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
     neighCityMap,
     cityStreetToNeighMap,
     streetNumberNeighMap,
-    neighMap
-  } = buildItbiIndexes(store.itbiTransactions);
+    neighMap,
+    jfCityMap,
+    jfAreaModelByType
+  } = getOrBuildItbiIndexes(store.itbiTransactions, store.auctions);
   let totalImported = 0;
+  let caixaStatesReplaced = 0;
 
   let browser: any = null;
   try {
@@ -5174,53 +6028,77 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
     for (const uf of targetStates) {
       try {
         const importedList: AuctionProperty[] = [];
+        let stateProcessedSuccessfully = false;
         console.log(`[Caixa Auto-Sync] Baixando planilha oficial de ${uf} dos servidores da Caixa...`);
-        const base64 = await page.evaluate(async (ufParam) => {
+        const content = await page.evaluate(async (ufParam) => {
           const res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now());
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' ao baixar CSV oficial');
           const buffer = await res.arrayBuffer();
-          let binary = '';
-          const bytes = new Uint8Array(buffer);
-          for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          return btoa(binary);
+          return new TextDecoder('windows-1252').decode(buffer);
         }, uf);
 
-        if (!base64) {
+        if (!content) {
           console.warn(`[Caixa Auto-Sync] Nenhum dado retornado para ${uf}`);
           continue;
         }
 
-        const buffer = Buffer.from(base64, 'base64');
-        const content = iconv.decode(buffer, 'latin1');
-        const lines = content.split('\n');
-
-        let headerIdx = -1;
-        for (let i = 0; i < Math.min(lines.length, 10); i++) {
-          if (lines[i].includes('UF') && (lines[i].includes('Cidade') || lines[i].includes('Bairro'))) {
-            headerIdx = i;
+        let headerStart = -1;
+        let lineStart = 0;
+        for (let line = 0; line < 10 && lineStart < content.length; line++) {
+          const lineEnd = content.indexOf('\n', lineStart);
+          const headerLine = content.slice(lineStart, lineEnd < 0 ? content.length : lineEnd);
+          if (headerLine.includes('UF') && (headerLine.includes('Cidade') || headerLine.includes('Bairro'))) {
+            headerStart = lineStart;
             break;
           }
+          if (lineEnd < 0) break;
+          lineStart = lineEnd + 1;
         }
-        if (headerIdx === -1) {
+        if (headerStart < 0) {
           console.warn(`[Caixa Auto-Sync] Cabeçalho CSV não identificado para ${uf}`);
           continue;
         }
 
-        const cleanContent = lines.slice(headerIdx).join('\n');
-        const stream = Readable.from(Buffer.from(cleanContent, 'utf-8'));
+        const cleanContent = content.slice(headerStart);
         const results: any[] = [];
+        let parsedRows = 0;
+        const csvInput = Readable.from((function* () {
+          const chunkSize = 64 * 1024;
+          for (let offset = 0; offset < cleanContent.length; offset += chunkSize) {
+            yield cleanContent.slice(offset, offset + chunkSize);
+          }
+        })(), { objectMode: false });
+        const stream = csvInput.pipe(csvParser({ separator: ';' }));
         await new Promise((resolve, reject) => {
-          stream
-            .pipe(csvParser({ separator: ';' }))
-            .on('data', (d) => results.push(d))
+          stream.on('data', (rawRow) => {
+            parsedRows++;
+            const row: Record<string, string> = {};
+            for (const k of Object.keys(rawRow)) {
+              const normKey = k.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+              row[normKey] = rawRow[k];
+            }
+            const rowUf = (row.uf || uf).toUpperCase().trim();
+            const rawCity = (row.cidade || '').trim();
+            if (!rawCity) return;
+            const rowCity = cleanCaixaCity(rawCity, rowUf);
+            // Keep only requested municipalities while parsing, instead of
+            // retaining every listing in the nationwide state spreadsheet.
+            if (row.ndoimovel && isAllowedTargetCity(rowCity, rowUf)) results.push(row);
+            if (parsedRows % 3000 === 0) {
+              stream.pause();
+              setImmediate(() => stream.resume());
+            }
+          })
             .on('end', resolve)
             .on('error', reject);
         });
+        stateProcessedSuccessfully = true;
 
-        console.log(`[Caixa Auto-Sync] Registros obtidos da Caixa para ${uf}: ${results.length}`);
+        console.log(`[Caixa Auto-Sync] Registros da Caixa lidos para ${uf}: ${parsedRows}; nas cidades selecionadas: ${results.length}`);
 
-        for (const rawRow of results) {
+        for (let rowIndex = 0; rowIndex < results.length; rowIndex++) {
+          if (rowIndex > 0 && rowIndex % 50 === 0) await new Promise<void>(resolve => setImmediate(resolve));
+          const rawRow = results[rowIndex];
           const row: Record<string, string> = {};
           for (const k of Object.keys(rawRow)) {
             const normKey = k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '').trim();
@@ -5235,7 +6113,9 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
           const precoStr = (row.preco || '0').replace(/\./g, '').replace(',', '.');
           const avaliacaoStr = (row.valordeavaliacao || '0').replace(/\./g, '').replace(',', '.');
           const descricaoCaixa = (row.descricao || '').trim();
-          const linkCaixa = getCaixaCatalogField(row, 'linkdeacesso', 'link') || 'https://venda-imoveis.caixa.gov.br/';
+          const caixaPropertyId = String(row.ndoimovel || '').replace(/\s+/g, '');
+          const linkCaixa = getCaixaCatalogField(row, 'linkdeacesso', 'link')
+            || (caixaPropertyId ? `https://venda-imoveis.caixa.gov.br/sistema/detalhe-imovel.asp?hdnimovel=${encodeURIComponent(caixaPropertyId)}` : 'https://venda-imoveis.caixa.gov.br/');
           const modalidadeRaw = getCaixaCatalogField(row, 'modalidadedevenda', 'modalidadedavenda', 'modalidade');
           const saleMode = normalizeCaixaSaleMode(modalidadeRaw, descricaoCaixa);
 
@@ -5246,8 +6126,6 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
           const cleanBairro = rawBairro ? rawBairro.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Não informado';
 
           const auctionPrice = Number(precoStr) || 0;
-          if (auctionPrice === 0) continue;
-
           // Se já existir no store, ignora para não duplicar
           let propertyType: PropertyType = 'Casa';
           const descLower = descricaoCaixa.toLowerCase();
@@ -5310,9 +6188,32 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
           };
 
           const sourceEvidencePath = preserveSource(linkCaixa, '<pre>' + JSON.stringify(row) + '</pre>');
-          const validated = validateDraft({...newAuc, city: cleanCidade, state: ufCaixa, auctionLink: linkCaixa, sourceVerified: true, originVerified: true, priceVerified: true, sourceEvidencePath});
-          if (!validated.accepted) continue;
-          Object.assign(newAuc, {neighborhood: validated.draft.neighborhood, priceVerified: true, sizeVerified: sizeSqm > 0, ingestionStatus: 'ativo'});
+          const priceVerified = auctionPrice > 0;
+          const validated = validateDraft({...newAuc, city: cleanCidade, state: ufCaixa, auctionLink: linkCaixa, sourceVerified: true, originVerified: true, priceVerified, sourceEvidencePath});
+          const onlyMissingPrice = auctionPrice === 0 && validated.reasons.every(reason => reason === 'preco_minimo_nao_confirmado');
+          if (!validated.accepted && !onlyMissingPrice) continue;
+          Object.assign(newAuc, {
+            neighborhood: validated.draft.neighborhood,
+            priceVerified,
+            sizeVerified: sizeSqm > 0,
+            ingestionStatus: onlyMissingPrice ? 'quarentena_extracao' : 'ativo'
+          });
+          if (onlyMissingPrice) {
+            Object.assign(newAuc, {
+              precisa_revisao: true,
+              liquidityScore: 1,
+              riskLevel: 'Alto',
+              valuationConfidence: 'unavailable',
+              valuationBasis: 'Lote oficial da Caixa sem lance mínimo confirmado; aguardando atualização da fonte.',
+              estimatedValue: undefined,
+              calculatedRoi: undefined,
+              calculatedProfit: undefined,
+              vendaBaixaPrice: undefined,
+              vendaMediaPrice: undefined
+            });
+            importedList.push(newAuc);
+            continue;
+          }
           const recalculated = recalculateAuctionWithIndex(
             newAuc,
             avgSqmMap,
@@ -5323,17 +6224,22 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
             stateAvgSqmMap,
             cityStreetToNeighMap,
             streetNumberNeighMap,
-            neighMap
+            neighMap,
+            jfCityMap,
+            jfAreaModelByType
           );
           importedList.push(recalculated);
         }
 
-        // Substituted state list: Prunes sold properties and ensures 100% active fresh catalog
-        if (importedList.length > 0) {
+        // Replace only after the official CSV was fully parsed. An empty
+        // filtered result is meaningful too: it removes Caixa offers that
+        // disappeared from the official list instead of keeping stale cards.
+        if (stateProcessedSuccessfully) {
           store.auctions = store.auctions.filter(a => !(a.origin === 'caixa' && (a.state || 'RJ').toUpperCase() === uf.toUpperCase() && isAllowedTargetCity(a.city, a.state)));
           store.auctions.unshift(...importedList);
           totalImported += importedList.length;
-          console.log(`[Caixa Auto-Sync] Estado ${uf} atualizado com sucesso! ${importedList.length} imóveis ativos (imóveis vendidos removidos).`);
+          caixaStatesReplaced++;
+          console.log(`[Caixa Auto-Sync] Estado ${uf} atualizado com sucesso! ${importedList.length} imóveis ativos (ofertas ausentes da planilha oficial removidas).`);
         }
       } catch (ufErr: any) {
         console.error(`[Caixa Auto-Sync] Erro ao processar estado ${uf}:`, ufErr.message);
@@ -5347,8 +6253,8 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
     }
   }
 
-  if (totalImported > 0) {
-    saveStore(store);
+  if (caixaStatesReplaced > 0) {
+    await saveStoreAsync(store);
   }
 
   console.log(`[Caixa Auto-Sync] Varredura finalizada. Total de imóveis sincronizados: ${totalImported}`);
@@ -5359,8 +6265,9 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
 app.post('/api/garimpar/caixa', authMiddleware, async (req, res) => {
   const stateParam = req.body.state || req.query.state || 'RJ';
   const uf = String(stateParam).toUpperCase().trim();
+  if(listedSyncRunning||caixaDirectRunning)return res.status(409).json({error:'Já existe uma sincronização da Caixa em andamento.'});
   try {
-    const totalImported = await syncCaixaDirect([uf], req.userId);
+    const totalImported = await runCaixaSyncExclusive([uf], req.userId);
     res.json({
       success: true,
       count: totalImported,
@@ -5374,8 +6281,9 @@ app.post('/api/garimpar/caixa', authMiddleware, async (req, res) => {
 // POST /api/garimpar/caixa-auto (Automated multi-state Caixa synchronization for RJ, MG)
 app.post('/api/garimpar/caixa-auto', authMiddleware, async (req, res) => {
   const targetStates: string[] = req.body.states || ['RJ', 'MG'];
+  if(listedSyncRunning||caixaDirectRunning)return res.status(409).json({error:'Já existe uma sincronização de leilões em andamento.'});
   try {
-    const totalImported = await syncCaixaDirect(targetStates, req.userId);
+    const totalImported = await runCaixaSyncExclusive(targetStates, req.userId);
     res.json({
       success: true,
       added: totalImported,
@@ -5502,9 +6410,9 @@ export async function runSecurityAuditAndFullSync(targetStore: DataStore, forceR
   }
 
   // 3. Recalculate 100% of stored properties with official ITBI indices (v19)
-  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap } = buildItbiIndexes(targetStore.itbiTransactions);
+  const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = buildItbiIndexes(targetStore.itbiTransactions, targetStore.auctions);
   targetStore.auctions = targetStore.auctions.map(auc => {
-    return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap);
+    return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType);
   });
 
   // 4. Verify target cities counts
@@ -6059,7 +6967,7 @@ Não inclua nenhuma outra marcação além do JSON puro dentro do bloco de códi
           ? (targetCity === 'Santos Dumont' ? ['Centro', 'Vila Esperança', 'São Sebastião'] : ['Centro', 'São Mateus', 'Cascatinha'])
           : (uf === 'RJ' ? ['Copacabana', 'Tijuca', 'Barra da Tijuca'] : ['Pinheiros', 'Vila Mariana', 'Jardins']));
 
-    const { avgSqmMap, streetAvgSqmMap, volMap, neighCityMap } = buildItbiIndexes(store.itbiTransactions);
+    const { avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, neighMap, jfCityMap, jfAreaModelByType } = buildItbiIndexes(store.itbiTransactions, store.auctions);
 
     sampleNeighs.forEach((neigh, idx) => {
       // Find a real street from ITBI in this neighborhood
@@ -6131,7 +7039,7 @@ Não inclua nenhuma outra marcação além do JSON puro dentro do bloco de códi
         origin: 'portal'
       };
 
-      const recalculated = recalculateAuctionWithIndex(fakeAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap);
+      const recalculated = recalculateAuctionWithIndex(fakeAuc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, undefined, undefined, undefined, undefined, neighMap, jfCityMap, jfAreaModelByType);
       minedAuctions.push(recalculated);
     });
   }
@@ -6417,7 +7325,6 @@ async function start() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
-    
     // Automatic synchronization is requested once by the app when it opens.
     // No boot-time or recurring collection may interrupt an active session.
   });

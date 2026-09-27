@@ -23,6 +23,7 @@ export default function SidebarMapWidget({
   const markersGroupRef = useRef<any>(null);
   const [mapMode, setMapMode] = useState<'roadmap' | 'satellite'>('roadmap');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [locationsById, setLocationsById] = useState<Record<string, any>>({});
   const tileLayerRef = useRef<any>(null);
 
   // Format currency
@@ -42,6 +43,31 @@ export default function SidebarMapWidget({
     }
     return { center: [-22.9068, -43.1729], zoom: 11 }; // Rio de Janeiro default
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/map/locations', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          signal: controller.signal
+        });
+        if (!response.ok) return;
+        const rows = await response.json();
+        if (!cancelled && Array.isArray(rows)) {
+          setLocationsById(Object.fromEntries(rows.map((row: any) => [row.id, row])));
+          if (response.headers.get('X-Map-Refreshing') === '1') timer = setTimeout(load, 15000);
+        }
+      } catch (error) {
+        if (!cancelled) console.warn('Falha ao carregar coordenadas verificadas do mapa lateral:', error);
+      }
+    };
+    void load();
+    return () => { cancelled = true; controller.abort(); if (timer) clearTimeout(timer); };
+  }, [auctions.map(auction => auction.id).join('|')]);
 
   // Initialize Map
   useEffect(() => {
@@ -142,7 +168,7 @@ export default function SidebarMapWidget({
     const sample = auctions.slice(0, 150); // Plot up to 150 for fluid sidebar performance
 
     sample.forEach((auc) => {
-      const coords = getPropertyCoordinates(auc);
+      const coords = getPropertyCoordinates({ ...auc, mapLocation: locationsById[auc.id] } as AuctionProperty);
       if (!coords) return;
 
       const isCaixa = (auc.origin || '').toLowerCase().includes('caixa');
@@ -191,7 +217,7 @@ export default function SidebarMapWidget({
     // Recenter map on selected city/state
     const { center, zoom } = getTargetCenterAndZoom();
     map.setView(center, zoom, { animate: true });
-  }, [auctions, selectedCity, selectedState, isCollapsed]);
+  }, [auctions, locationsById, selectedCity, selectedState, isCollapsed]);
 
   return (
     <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all">

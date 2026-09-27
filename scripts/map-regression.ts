@@ -18,4 +18,15 @@ assert.equal(points.size,350);
 for(const point of points.values()) { assert.equal(point.displayLat,-22.866237);assert.equal(point.displayLon,-43.293378);assert.equal(point.isSpiderfied,false); }
 const exported=exportToGeoJSON(geocoded);assert.equal(exported.features.length,350);
 assert(exported.features.every((f:any)=>f.geometry.coordinates[0]===-43.293378 && f.geometry.coordinates[1]===-22.866237));
-console.log('Map regressions passed: address identity, city/state/block isolation, provenance, invalid coordinates, 350 colocated records without displacement or truncation.');
+const exactGeocode:any = { ...source, source:'GEOCODE_NUMBER', cnefeId:undefined, geocodeLevel:undefined, geocoderProvider:'photon', geocoderPrecision:'rooftop', matchedCity:'Rio de Janeiro' };
+assert.deepEqual(getPropertyCoordinates({ ...property, mapLocation:exactGeocode }),[-22.866237,-43.293378]);
+assert(validOfficialLocation(exactGeocode));
+assert.equal(validOfficialLocation({...exactGeocode,matchedNumber:'4015'}),false,'The server must reject a geocoder result for another house number');
+assert.equal(validOfficialLocation({...exactGeocode,matchedCity:'Niterói'}),false,'The server must reject a geocoder result in another municipality');
+assert.equal(validOfficialLocation({...exactGeocode,matchedStreet:'Rua Visconde de Pirajá'}),false,'The server must reject a geocoder result on another street');
+assert.equal(getPropertyCoordinates({ ...property, mapLocation:{...exactGeocode,matchedNumber:'4015'} }),null,'Exact geocoders must match the advertised building number');
+assert.equal(getPropertyCoordinates({ ...property, mapLocation:{...exactGeocode,matchedCity:'Niterói'} }),null,'Exact geocoders must match the advertised city');
+assert.equal(getPropertyCoordinates({ ...property, mapLocation:{...exactGeocode,geocoderPrecision:'street'} }),null,'Street-centre geocodes must not become property pins');
+assert.equal(getPropertyCoordinates({ ...property, mapLocation:undefined, latitude:-22.9,longitude:-43.2,status_geocodificacao:'EXATO_PREDIO' } as any),null,'Unproven direct coordinates must not become property pins');
+assert.equal(getPropertyCoordinates({ ...property, mapLocation:undefined }),null,'Properties without verified coordinates must not use neighbourhood/city centroid fallbacks');
+console.log('Map regressions passed: exact address identity, CNEFE/provider evidence, number and city match, rejection of street/centroid fallbacks, and 350 colocated properties without displacement.');

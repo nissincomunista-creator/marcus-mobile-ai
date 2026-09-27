@@ -108,6 +108,29 @@ export async function collectRioLinks(dir:string,onPage:(links:Array<{url:string
  }
  if(incomplete)throw Error('Inventário Rio informou páginas adicionais; cobertura ainda não confirmada');
 }
+
+/** Convert one official Pestana API lot into a source-verified auction draft. */
+export function pestanaApiDraft(lot:any,event:any):ScrapedAuctionDraft|null {
+ const location=sourceAuctionLocation(lot?.descricao||'');
+ if(!location||!allowedSyncLocation(location.city,location.state))return null;
+ const property=lot.bens?.[0];
+ const description=(lot.bens||[]).flatMap((b:any)=>[b.descricao,b.observacao,...(b.caracteristicas||[]).map((c:any)=>c.valor)]).filter(Boolean).join('\n');
+ const text=cheerio.load(description).text();
+ const origin=property?.origem==='Judicial'?'judicial':'extrajudicial';
+ const law=lot.informacoesLei9514,dates=event.informacoesLei9514;
+ const displayedPrice=[lot.valorInicial,lot.lanceInicial,lot.lanceMinimo,lot.valorFiltro].map(Number).find(value=>Number.isFinite(value)&&value>0)||0;
+ const rounds=law?.pertenceLei
+  ?[{date:dateOnly(dates?.dataLeilao1||''),price:Number(law.valorLeilao1)},{date:dateOnly(dates?.dataLeilao2||''),price:Number(law.valorLeilao2)}]
+  :[{date:dateOnly(event.data||''),price:displayedPrice}];
+ const today=new Date().toISOString().slice(0,10);
+ const next=rounds.filter(r=>r.date>=today&&r.price>0).sort((a,b)=>a.date.localeCompare(b.date))[0]||rounds.at(-1)!;
+ const url=`https://www.pestanaleiloes.com.br/agenda-de-leiloes/${lot.leilao}/${lot.id}`;
+ const base:ScrapedAuctionDraft={portalId:'pestana',auctioneerName:'Pestana Leilões',title:lot.descricao,...location,address:'',neighborhood:'',propertyType:'Apartamento',sizeSqm:0,auctionPrice:0,auctionDate:'',auctionLink:url,origin,locationScopeVerified:true};
+ const draft=parseOfficialLotDetail(base,{title:lot.descricao,text,image:'',structuredAddresses:[],structuredSizes:[],documentLinks:[]},url);
+ const originVerified=property?.origem==='Judicial'||Boolean(law?.pertenceLei)||/banco|santander|bradesco|ita[uú]|sicredi/i.test(event.nome||'');
+ return {...draft,...location,origin,originVerified,sourceVerified:true,sourceClosed:lot.visivel===false||/retirado|vendido|arrematado|cancelado|suspenso/i.test(lot.status||''),auctionPrice:next.price||0,priceVerified:next.price>0,auctionDate:next.date,firstAuctionDate:rounds[0]?.date,secondAuctionDate:rounds[1]?.date,matriculaUrl:property?.documentos?.find((d:any)=>/matr[ií]cula/i.test(d.nome))?.link};
+}
+
 export async function collectPestanaApi(dir:string,onPage:(rows:ScrapedAuctionDraft[],total:number)=>Promise<void>){
  const events=await publicJson('https://www.pestanaleiloes.com.br/api/v2/leilao');
  if(!Array.isArray(events))throw Error('Inventário Pestana inválido');
@@ -126,19 +149,8 @@ export async function collectPestanaApi(dir:string,onPage:(rows:ScrapedAuctionDr
    if(!Array.isArray(details))throw Error('Detalhes Pestana inválidos');
    const rows:ScrapedAuctionDraft[]=[];
    for(const lot of details){
-    const location=sourceAuctionLocation(lot.descricao||'');if(!location||!allowedSyncLocation(location.city,location.state))continue;
     const event=propertyEvents.find((e:any)=>e.id===lot.leilao);if(!event)continue;
-    const property=lot.bens?.[0];
-    const description=(lot.bens||[]).flatMap((b:any)=>[b.descricao,b.observacao,...(b.caracteristicas||[]).map((c:any)=>c.valor)]).filter(Boolean).join('\n');
-    const text=cheerio.load(description).text();
-    const origin=property?.origem==='Judicial'?'judicial':'extrajudicial';
-    const law=lot.informacoesLei9514,dates=event.informacoesLei9514;
-    const rounds=law?.pertenceLei?[{date:dateOnly(dates?.dataLeilao1||''),price:Number(law.valorLeilao1)},{date:dateOnly(dates?.dataLeilao2||''),price:Number(law.valorLeilao2)}]:[{date:dateOnly(event.data||''),price:Number(lot.valorInicial)}];
-    const today=new Date().toISOString().slice(0,10);const next=rounds.filter(r=>r.date>=today&&r.price>0).sort((a,b)=>a.date.localeCompare(b.date))[0]||rounds.at(-1)!;
-    const url=`https://www.pestanaleiloes.com.br/agenda-de-leiloes/${lot.leilao}/${lot.id}`;
-    const base:ScrapedAuctionDraft={portalId:'pestana',auctioneerName:'Pestana Leilões',title:lot.descricao,...location,address:'',neighborhood:'',propertyType:'Apartamento',sizeSqm:0,auctionPrice:0,auctionDate:'',auctionLink:url,origin,locationScopeVerified:true};
-    const draft=parseOfficialLotDetail(base,{title:lot.descricao,text,image:'',structuredAddresses:[],structuredSizes:[],documentLinks:[]},url);
-    rows.push({...draft,...location,origin,originVerified:property?.origem==='Judicial'||Boolean(law?.pertenceLei)||/banco|santander|bradesco|ita[uú]|sicredi/i.test(event.nome),sourceClosed:lot.visivel===false||/retirado|vendido|arrematado|cancelado|suspenso/i.test(lot.status),auctionPrice:next.price||0,priceVerified:next.price>0,auctionDate:next.date,firstAuctionDate:rounds[0]?.date,secondAuctionDate:rounds[1]?.date,matriculaUrl:property?.documentos?.find((d:any)=>/matr[ií]cula/i.test(d.nome))?.link});
+    const draft=pestanaApiDraft(lot,event);if(draft)rows.push(draft);
    }
    await onPage(rows,cards.length);
    if(details.length!==targets.length)throw Error('Alguns detalhes Pestana não retornaram; conferir relatório');

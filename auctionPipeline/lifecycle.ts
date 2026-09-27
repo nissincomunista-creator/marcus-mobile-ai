@@ -29,4 +29,39 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  if(statusText.some(t=>/^(?:(?:lote|leil[aã]o)\s+)?(?:aberto(?: para lances)?|em andamento|dispon[ií]vel|liberado para lance)$/i.test(t)))return {...base,state:'active',status:'ativo',reason:'Disponibilidade explícita na fonte'};
  return {...previous,...base,state:previous?.state||'unknown',reason:'Página acessível; situação não confirmada'};
 }
-export const isRetired=(a:{availability?:Availability})=>a.availability?.state==='closed'||a.availability?.state==='removed';
+export const isExpiredAuction = (a: any, now = new Date().toISOString()): boolean => {
+  if (!a) return false;
+
+  // Imóveis Caixa estão em modalidades contínuas (venda online, licitação aberta, venda direta)
+  // e seu auctionDate reflete a data de importação do edital, e não expiração de praça judicial.
+  if (a.origin === 'caixa' || (a.id && a.id.startsWith('auc-caixa-'))) {
+    return false;
+  }
+
+  if (a.availability?.state === 'closed' || a.availability?.state === 'removed') return true;
+  if (a.sourceClosed === true) return true;
+  if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return true;
+  if (a.ingestionStatus === 'expirado_por_data' || a.ingestionStatus === 'expirado_link_invalido' || a.ingestionStatus === 'finalizado') return true;
+
+  const mode = `${a.saleMode || ''} ${a.title || ''}`;
+  if (/venda direta|proposta continuada|venda online cont/i.test(mode)) {
+    return false;
+  }
+
+  const rawDates = [a.secondAuctionDate, a.auctionDate, a.firstAuctionDate, a.thirdAuctionDate].filter(Boolean);
+  if (rawDates.length === 0) return false;
+
+  const nowMs = Date.parse(now);
+  const parsedDates = rawDates.map(dayEnd).filter(Number.isFinite);
+  if (parsedDates.length > 0 && parsedDates.every(d => d < nowMs)) {
+    return true;
+  }
+  return false;
+};
+
+export const isRetired = (a: any) =>
+  a?.availability?.state === 'closed' ||
+  a?.availability?.state === 'removed' ||
+  a?.sourceClosed === true ||
+  isExpiredAuction(a);
+

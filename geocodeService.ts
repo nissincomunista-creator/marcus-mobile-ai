@@ -268,6 +268,7 @@ interface GeocodeSearchContext {
   number: string;
   city: string;
   state: string;
+  postalCode?: string;
 }
 
 function buildCandidate(
@@ -345,7 +346,20 @@ async function queryPhoton(query: string, context: GeocodeSearchContext): Promis
 
 async function queryNominatim(query: string, context: GeocodeSearchContext): Promise<GeocodeResult | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&countrycodes=br&q=${encodeURIComponent(query)}`;
+    const params = new URLSearchParams({ format: 'jsonv2', addressdetails: '1', limit: '8', countrycodes: 'br' });
+    if (context.postalCode && context.number) {
+      // Structured search keeps the exact house number and CEP together. It
+      // gives the provider a second, less ambiguous representation of the
+      // same address without accepting a street-centre result as a rooftop.
+      params.set('street', `${context.number} ${context.street}`);
+      params.set('city', context.city);
+      params.set('state', context.state === 'RJ' ? 'Rio de Janeiro' : context.state === 'MG' ? 'Minas Gerais' : context.state);
+      params.set('country', 'Brasil');
+      params.set('postalcode', context.postalCode);
+    } else {
+      params.set('q', query);
+    }
+    const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
     const response = await fetch(url, {
       headers: { 'User-Agent': 'MarcusAssessoriaApp/2.0 (imoveis@marcus.com.br)' }
     });
@@ -400,7 +414,8 @@ export async function geocodeAddress(
   const cached = getCachedCoords(query, neighborhood, city, state);
   if (cached && (cached.precision === 'rooftop' || options?.allowStreetFallback !== false)) return cached;
 
-  const context: GeocodeSearchContext = { street, number, city, state };
+  const postalCode = query.match(/\b\d{5}-?\d{3}\b/)?.[0].replace(/\D/g, '');
+  const context: GeocodeSearchContext = { street, number, city, state, postalCode };
   const exactQuery = `${street}${number ? `, ${number}` : ''}, ${neighborhood ? `${neighborhood}, ` : ''}${city} - ${state}, Brasil`;
   const exactHit = await queryNominatim(exactQuery, context) || await queryPhoton(exactQuery, context);
   if (exactHit && (exactHit.precision === 'rooftop' || options?.allowStreetFallback !== false)) {

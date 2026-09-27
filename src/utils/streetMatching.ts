@@ -10,8 +10,14 @@ export function canonicalStreet(value?: string | null): string {
     visc: 'visconde', bpo: 'bispo', dom: 'dom'
   };
 
-  // 1. Normalização de acentos e minúsculas
-  let s = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  // 1. Normalização de acentos, entidades XML hex (_x0020_) e minúsculas
+  let s = String(value)
+    .replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/_/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 
   // 2. Extrai até a vírgula e remove numeração / complementos prediais
   s = s.split(',')[0]

@@ -230,55 +230,41 @@ export default function App() {
     async function fetchData() {
       setIsLoading(true);
       setRpcError(null);
+      // These are secondary widgets. Fetch them in the background so slow
+      // host discovery or license data cannot hold the main property list.
+      void fetch('/api/network/host-info').then(async hostRes => {
+        if (hostRes.ok) setHostInfo(await hostRes.json());
+      }).catch(hErr => console.error('Host info error:', hErr));
+      void authFetch('/api/admin/licenses').then(async licRes => {
+        if (licRes.ok) setAccessCodes(await licRes.json());
+      }).catch(lErr => console.error('Licenses fetch error:', lErr));
       try {
-        // Auto login check (silencioso e sem bloqueio)
-        try {
-          const meRes = await authFetch('/api/auth/me');
-          if (meRes.ok) {
-            const meData = await meRes.json();
-            if (meData?.user) setUser(meData.user);
-          }
-        } catch {
-          // Mantém usuário Marcus admin por padrão
-        }
-
-        const [aucRes, itbiRes] = await Promise.all([
-          authFetch('/api/auctions'),
-          authFetch('/api/itbi')
+        // Show the catalogue as soon as its response is ready. The compact
+        // ITBI summary is useful for secondary estimates, but must not hold
+        // the user's first view of the auction list.
+        const [meRes, aucRes] = await Promise.all([
+          authFetch('/api/auth/me').catch(() => null),
+          authFetch('/api/auctions')
         ]);
 
-        if (!aucRes.ok || !itbiRes.ok) {
+        if (meRes?.ok) {
+          const meData = await meRes.json();
+          if (meData?.user) setUser(meData.user);
+        }
+
+        if (!aucRes.ok) {
           throw new Error('Falha ao comunicar com os servidores de garimpo.');
         }
 
         const aucData = await aucRes.json();
-        const itbiData = await itbiRes.json();
-
-        setAuctions(aucData);
-        setItbiStats(itbiData.stats || []);
-        setItbiCount(itbiData.totalCount || 0);
-
-        try {
-          const hostRes = await fetch('/api/network/host-info');
-          if (hostRes.ok) {
-            const hData = await hostRes.json();
-            setHostInfo(hData);
-          }
-        } catch (hErr) {
-          console.error('Host info error:', hErr);
-        }
-
-        // Fetch licenses / access codes if logged in
-        try {
-          const licRes = await authFetch('/api/admin/licenses');
-          if (licRes.ok) {
-            const licData = await licRes.json();
-            setAccessCodes(licData || []);
-          }
-        } catch (lErr) {
-          console.error('Licenses fetch error:', lErr);
-        }
-
+        setAuctions(Array.isArray(aucData) ? aucData : []);
+        void authFetch('/api/itbi').then(async itbiRes => {
+          if (!itbiRes.ok) throw new Error(`HTTP ${itbiRes.status}`);
+          return itbiRes.json();
+        }).then(itbiData => {
+          setItbiStats(Array.isArray(itbiData?.stats) ? itbiData.stats : []);
+          setItbiCount(Number(itbiData?.totalCount) || 0);
+        }).catch(error => console.warn('Resumo ITBI não carregado durante a abertura:', error));
       } catch (e: any) {
         console.error('Error fetching data on app load:', e);
         setRpcError(e.message || 'Erro de conexão com o painel fullstack.');
@@ -342,7 +328,7 @@ export default function App() {
       const res = await authFetch('/api/garimpar/caixa-auto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ states: ['RJ', 'SP', 'MG'] })
+        body: JSON.stringify({ states: ['RJ', 'MG'] })
       });
       const data = await res.json();
       if (res.ok) {
@@ -436,8 +422,8 @@ export default function App() {
     setTimeout(() => setCopiedInviteCode(null), 3000);
   };
 
-  const refreshMarketData = async () => {
-    setIsLoading(true);
+  const refreshMarketData = async (options: { silent?: boolean } = {}) => {
+    if (!options.silent) setIsLoading(true);
     try {
       const [aucRes, itbiRes] = await Promise.all([
         authFetch('/api/auctions'),
@@ -453,8 +439,8 @@ export default function App() {
     } catch (e) {
       console.error(e);
     } finally {
-      setIsLoading(false);
-    }
+        if (!options.silent) setIsLoading(false);
+      }
   };
 
   useAuctionStartupSync();

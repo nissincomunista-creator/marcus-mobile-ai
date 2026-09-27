@@ -20,4 +20,17 @@ export function validateDraft<T extends {auctionLink:string;title:string;descrip
  if(options.persist!==false){if(reasons.length)quarantine(draft as any,reasons,html);else resolveQuarantine(draft.auctionLink);}
  return {draft:{...draft,sourceAvailability:dated},accepted:!reasons.length,retired:false,reasons};
 }
-export const catalogEligible=(a:{auctionPrice?:number;priceVerified?:boolean;neighborhood?:string;ingestionStatus?:string;availability?:any})=>!isRetired(a)&&a.ingestionStatus!=='quarentena_extracao'&&Number(a.auctionPrice)>0&&a.priceVerified===true&&!!a.neighborhood&&!/^(?:n[aã]o informado|desconhecido|a confirmar)$/i.test(a.neighborhood);
+const OFFICIAL_CATALOG_ORIGINS=new Set(['caixa','caixa_radar','judicial','extrajudicial','portal']);
+
+// Visibility and calculation readiness are separate gates. An active official
+// lot with an unresolved bid or neighborhood still belongs in the catalog, but
+// it must not receive a market value, ROI, flip price, or rank.
+export const catalogVisible=(a:{id?:string;title?:string;auctionLink?:string;origin?:string;userId?:string;city?:string;state?:string;ingestionStatus?:string;availability?:any;sourceAvailability?:any})=>{
+ if(!a||isRetired(a)||a.sourceAvailability?.state==='closed'||a.sourceAvailability?.state==='removed')return false;
+ const hasOfficialIdentity=OFFICIAL_CATALOG_ORIGINS.has(a.origin||'')&&Boolean(a.auctionLink&&/^https?:\/\//i.test(a.auctionLink));
+ const hasOwnedIdentity=Boolean(a.userId&&a.id);
+ return Boolean(a.title&&a.city&&a.state&&(hasOfficialIdentity||hasOwnedIdentity));
+};
+
+export const catalogEligible=(a:{auctionPrice?:number;priceVerified?:boolean;neighborhood?:string;ingestionStatus?:string;availability?:any;sourceAvailability?:any;sizeSqm?:number;sizeVerified?:boolean})=>
+ catalogVisible(a)&&a.ingestionStatus!=='quarentena_extracao'&&Number(a.auctionPrice)>0&&a.priceVerified===true&&Number(a.sizeSqm)>0&&a.sizeVerified===true&&!!a.neighborhood&&!/^(?:n[aã]o informado|desconhecido|a confirmar)$/i.test(a.neighborhood);

@@ -24,21 +24,43 @@ Function IsServerOnline()
     Err.Clear
 End Function
 
+Function IsServerProcessRunning()
+    On Error Resume Next
+    Dim processes, process
+    Set processes = GetObject("winmgmts:\\.\root\cimv2").ExecQuery("SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='node.exe'")
+    IsServerProcessRunning = False
+    For Each process In processes
+        If InStr(1, process.CommandLine, "dist/server.cjs", vbTextCompare) > 0 Or _
+           InStr(1, process.CommandLine, "tsx server.ts", vbTextCompare) > 0 Then
+            IsServerProcessRunning = True
+            Exit For
+        End If
+    Next
+    Err.Clear
+End Function
+
 ' Se o servidor nao estiver ativo, inicia o Node em segundo plano
 If Not IsServerOnline() Then
-    If fso.FileExists(appDir & "\dist\server.cjs") Then
-        WshShell.Run "cmd.exe /c node dist/server.cjs", 0, False
-    Else
-        WshShell.Run "cmd.exe /c npm run dev", 0, False
+    If Not IsServerProcessRunning() Then
+        If fso.FileExists(appDir & "\dist\server.cjs") Then
+            WshShell.Run "cmd.exe /c node dist/server.cjs", 0, False
+        Else
+            WshShell.Run "cmd.exe /c npm run dev", 0, False
+        End If
     End If
     
-    ' Aguarda ativamente o servidor responder em loop (ate 30 segundos)
+    ' Aguarda ativamente o servidor responder em loop (até 60 segundos).
     Dim attempts
     attempts = 0
-    Do While Not IsServerOnline() And attempts < 30
+    Do While Not IsServerOnline() And attempts < 120
         WScript.Sleep 500
         attempts = attempts + 1
     Loop
+End If
+
+If Not IsServerOnline() Then
+    WshShell.Popup "O servidor do aplicativo ainda não respondeu. Aguarde alguns segundos e abra o atalho novamente.", 8, "Marcus - Garimpo de Leilões", 48
+    WScript.Quit 1
 End If
 
 ' Localiza o Chrome e mantém o Edge apenas como contingência
