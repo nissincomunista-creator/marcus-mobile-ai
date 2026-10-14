@@ -9,7 +9,8 @@ import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import { AUCTIONEER_PORTALS, canonicalAuctionLink, parseOfficialLotDetail, extractAddress, type ScrapedAuctionDraft } from './auctioneerSyncService.ts';
 import { SYNC_SOURCE_IDS, SYNC_TARGETS, allowedSyncLocation, normalizeAuctionText as norm } from './src/utils/auctionSyncScope.ts';
 import { sourceAuctionLocation, sourceNeighborhoodLocation, sourceTargetCityLocation } from './src/utils/auctionGeography.ts';
-import { collectBankApi, collectSoldApi, collectPestanaApi, collectRioLinks } from './listedPortalApis.ts';
+import { collectBankApi, collectSoldApi, collectPestanaApi, collectRioLinks, collectMariaFilomenaApi } from './listedPortalApis.ts';
+import { scrapeLeilaoImovel } from './scrapers/leilaoImovelScraper.ts';
 
 export interface PortalRun {
  id: string; name: string; status: 'queued'|'running'|'completed'|'partial'|'failed';
@@ -61,7 +62,7 @@ export function sourceSeedUrls(id:string, base:string):string[] {
  if(id==='onildo')return [base+'/Principal.asp'];
  if(id==='schulmann')return [base+'/thumbs.php?tipo=leiloes-online'];
  if(id==='paulobotelho')return [base+'/lotes/imoveis?page=1',base];
- if(id==='rioleiloes')return [base+'/leilao/index/imoveis'];
+ if(['rioleiloes','mariafilomena'].includes(id))return [base+'/leilao/index/imoveis'];
  if(id==='rogeriomenezes')return [`${base}/busca?interesse=imovel`,`${base}/busca?interesse=apartamento`,`${base}/busca?interesse=terreno`,`${base}/busca?interesse=casa`,`${base}/busca?interesse=comercial`,`${base}/busca?interesse=loja`];
  const config=portalConfigs.find(p=>p.id===id)!;
  return [config.searchUrl||base];
@@ -157,9 +158,53 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   let lastFlushAt=0;
   const flush=async()=>{if(!batches.length)return;const rows=batches.splice(0);lastFlushAt=Date.now();fs.appendFileSync(path.join(dir,config.id+'.jsonl'),rows.map(r=>JSON.stringify(r)).join('\n')+'\n');const audits=rows.filter(r=>r.areaAudit).map(r=>JSON.stringify({source:config.id,url:r.auctionLink,...r.areaAudit}));if(audits.length)fs.appendFileSync(path.join(dir,'area-audit.jsonl'),audits.join('\n')+'\n');const counts=await onDrafts(rows,progress);progress.imported+=counts.imported;progress.updated+=counts.updated;progress.pending+=counts.pending;save();};
   try{
-   if(['emgea','vitrinebradesco','pestana'].includes(config.id)){
+   if(config.id==='leilaoimovel'){
+     navigated=true;
+     console.log('[Listed Sync] Leilão Imóvel: iniciando varredura sem limites com descarte zero e motor canônico');
+     await scrapeLeilaoImovel({
+       targets: SYNC_TARGETS.filter(t => t.state === 'RJ'),
+       onBatch: async (batch) => {
+         const drafts: ScrapedAuctionDraft[] = batch.map(b => ({
+           portalId: 'leilaoimovel',
+           auctioneerName: b.auctioneerName || 'Leilão Imóvel',
+           title: b.title || '',
+           address: b.address || '',
+           neighborhood: b.neighborhood || '',
+           city: b.city || '',
+           state: b.state || '',
+           propertyType: b.propertyType || 'Apartamento',
+           sizeSqm: b.sizeSqm || 0,
+           auctionPrice: b.auctionPrice || 0,
+           auctionDate: b.auctionDate || '',
+           firstAuctionDate: b.firstAuctionDate,
+           firstAuctionPrice: b.firstAuctionPrice,
+           auctionLink: b.auctionLink || '',
+           imageUrl: b.imageUrl,
+           description: b.description || '',
+           origin: (b.origin === 'judicial' ? 'judicial' : 'extrajudicial'),
+           priceVerified: b.priceVerified,
+           sizeVerified: b.sizeVerified,
+           addressVerified: b.addressVerified,
+           originVerified: true,
+           sourceVerified: true,
+           locationScopeVerified: true,
+           requer_auditoria_endereco: b.requer_auditoria_endereco
+         }));
+         progress.pages++;
+         progress.discovered += drafts.length;
+         progress.fetched += drafts.length;
+         progress.accepted += drafts.length;
+         batches.push(...drafts.map(row => ({ ...row, sourceEvidencePath: preserveSource(row.auctionLink, '<pre>' + JSON.stringify(row) + '</pre>') })));
+         await flush();
+         return { imported: progress.imported, updated: progress.updated };
+       }
+     });
+     progress.status='completed';
+     continue;
+    }
+    if(['emgea','vitrinebradesco','pestana','mariafilomena'].includes(config.id)){
     const onPage=async(rows:ScrapedAuctionDraft[],total:number)=>{navigated=true;progress.pages++;progress.discovered+=total;progress.fetched+=total;progress.accepted+=rows.length;batches.push(...rows.map(row=>({...row,sourceEvidencePath:preserveSource(row.auctionLink,'<pre>'+JSON.stringify(row)+'</pre>')})));await flush();save();};
-    if(config.id==='pestana')await collectPestanaApi(dir,onPage);else await collectBankApi(config.id,dir,onPage);
+    if(config.id==='pestana')await collectPestanaApi(dir,onPage);else if(config.id==='mariafilomena')await collectMariaFilomenaApi(dir,onPage);else await collectBankApi(config.id,dir,onPage);
     progress.status='completed';continue;
    }
    if(config.id==='sold'){
@@ -201,7 +246,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
       if(config.id==='leilaoimovel'&&/imovel-caixa-economica-federal-cef/i.test(url))return;
       if(config.id==='leilaoimovel')await wait(700);
       let response;try{response=await load(url);}catch(error){if(!canRenderFallback(config.id,error))throw error;response=await load(url,true);}let page=parseSourcePage(response.html,response.url);progress.fetched++;
-      if(config.id==='rioleiloes'||config.id==='sold'){response=await load(url,true);page=parseSourcePage(response.html,response.url);}
+      if(config.id==='rioleiloes'||config.id==='sold'||config.id==='mariafilomena'){response=await load(url,true);page=parseSourcePage(response.html,response.url);}
       let sourcePortal=config;
       if(config.id==='leilaoimovel'){
        // The aggregator is discovery-only. Confirm every candidate on the
@@ -248,7 +293,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
      // cuts long sequential scans without hammering any single auctioneer.
      let detailCursor=0;
      const detailWorker=async()=>{while(detailCursor<pending.length){const item=pending[detailCursor++];await processDetail(item);}};
-      await Promise.all(Array.from({length:Math.min(1,pending.length)},detailWorker));
+      await Promise.all(Array.from({length:Math.min(2,pending.length)},detailWorker));
     await flush();save();
    }
    if(!progress.discovered&&!confirmedEmpty)progress.errors.push({url:config.baseUrl,message:'Nenhum lote identificado; a ausência de ofertas não foi confirmada.'});
@@ -259,7 +304,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   // Keep the machine responsive while the opening sync is running. Each
   // portal can still use two detail requests, so three portal workers cap the
   // total at six detail pages instead of twelve competing for memory/CPU.
-  try{await Promise.all(Array.from({length:Math.min(2,configs.length)},worker));report.status=report.sources.every(s=>s.status==='completed')?'completed':'partial';}
+  try{await Promise.all(Array.from({length:Math.min(4,configs.length)},worker));report.status=report.sources.every(s=>s.status==='completed')?'completed':'partial';}
  catch(error){report.status='failed';throw error;}
  finally{if(browserPromise){const browser=await browserPromise.catch(()=>null);if(browser)await browser.close().catch(()=>{});}report.finishedAt=new Date().toISOString();save();}
  return report;

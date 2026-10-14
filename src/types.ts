@@ -1,5 +1,9 @@
 export type PropertyType = 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno' | 'Lote';
 
+import type { CaixaModality, CaixaModalityInfo } from './utils/caixaModality';
+export type { CaixaModality, CaixaModalityInfo };
+export { normalizeCaixaModality, CAIXA_MODALITY_CONFIG, isCaixaAuction, getCaixaModality } from './utils/caixaModality';
+
 export const VALID_ITBI_CITIES_BY_STATE: Record<string, string[]> = {
   RJ: ['Rio de Janeiro', 'Niterói'],
   MG: ['Juiz de Fora']
@@ -57,6 +61,7 @@ export interface AuctionProperty {
   sizeApproximate?: boolean;
   areaAudit?: import('./utils/officialAreaAudit').AreaAudit;
   priceVerified?: boolean;
+  isSobAnalise?: boolean;
   id: string;
   title: string;
   address: string;
@@ -101,6 +106,9 @@ export interface AuctionProperty {
   dataColetaPortal?: string; // Timestamp da consulta
   isBairroPortalFallback?: boolean; // True: (Referência: Bairro), False: Mesma Rua
   portalAreaBracket?: string; // ex: '50-100m²'
+  portalStreetUrl?: string; // URL da análise da rua (ex: Morada Virtual)
+  portalTypologyAvgPrice?: number; // Preço médio pedido nos anúncios da rua
+  portalLeadText?: string; // Resumo analítico de mercado da rua
 
   // Módulo 1: Aliases de Matrícula e RGI
   matricula_numero?: string;
@@ -134,6 +142,8 @@ export interface AuctionProperty {
   neighborhoodDeltaTDays?: number;
   isAreaHomogeneizada?: boolean;
   fatorEscala?: number;
+  isCrossTypologyApplied?: boolean;
+  crossTypologyOrigin?: string;
   riskLevel?: 'Baixo' | 'Médio' | 'Alto';
   isCommunityRisk?: boolean; // True only if inside or less than 200m from an identified community area
   communityName?: string; // e.g. Morro do São João
@@ -173,6 +183,7 @@ export interface AuctionProperty {
   auctioneerFeePercent?: number; // Leiloeiro %
   lawyerFee?: number; // Advogado
   lawyerFeePercent?: number; // Advogado %
+  custoCarregamentoEstimado?: number; // Custo de Carregamento Estimado (1.5% do Gabarito ITBI)
   
   vendaMediaPrice?: number; // Preço Venda Média
   vendaBaixaPrice?: number; // Preço Venda Baixa
@@ -193,6 +204,7 @@ export interface AuctionProperty {
   maxInstallments?: number;
   minDownpaymentPercent?: number;
   saleMode?: string; // e.g. 'Venda Direta Online', 'Licitação Aberta', 'Leilão Online', 'Venda Online'
+  modalidadeCaixa?: CaixaModality | 'OUTRO';
 
   // AI detailed legal checks
   legalAnalysisDebtor?: string;
@@ -209,6 +221,7 @@ export interface AuctionProperty {
   registryCost?: number;
   condoDebts?: number;
   precisa_revisao?: boolean;
+  requer_auditoria_endereco?: boolean;
   status_geocodificacao?: string;
 }
 

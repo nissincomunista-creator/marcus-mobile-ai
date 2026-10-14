@@ -1,3 +1,49 @@
+import { ItbiTransaction } from '../types.ts';
+
+/**
+ * Filtro Universal Anti-Fiduciária e Saneamento de Amostras de ITBI:
+ * - Rio de Janeiro: Toda transação só é aceita se não possuir centavos (vl_declarado % 1 === 0)
+ *   e for múltiplo exato de R$ 100 (vl_declarado % 100 === 0). Transações com valores quebrados
+ *   decorrem de liquidação de saldo devedor/garantia (Lei 9.514/97) e são expurgadas compulsoriamente.
+ * - Juiz de Fora: Mantém a regra de natureza explícita (COMPRA E VENDA / COMPRA E VENDA PURA).
+ * - Niterói: Mantém a média oficial da via municipal já saneada pela prefeitura.
+ */
+export function isVoluntaryMarketSale(tx: ItbiTransaction): boolean {
+  if (!tx) return false;
+
+  const city = String(tx.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+  const state = String(tx.state || '').toUpperCase().trim();
+
+  // 1. Juiz de Fora (e bases que possuam a coluna de natureza explícita)
+  if (city.includes('JUIZ DE FORA') || state === 'MG') {
+    if (tx.isCompraEVenda === true) return true;
+    if (tx.naturezaOperacao) {
+      const nat = String(tx.naturezaOperacao).trim().toUpperCase();
+      return nat === 'COMPRA E VENDA' || nat === 'COMPRA E VENDA PURA';
+    }
+    return false;
+  }
+
+  // 2. Niterói (média de rua oficial da prefeitura já saneada)
+  if (city.includes('NITEROI') || (tx as any).sourceAggregation === 'municipal_street_average') {
+    return true;
+  }
+
+  // 3. Rio de Janeiro (e demais municípios sem discriminação de natureza):
+  // Filtro Universal Anti-Fiduciária: Múltiplos de R$ 100 e sem centavos fracionados
+  const val = Number(tx.transactionValue);
+  if (!Number.isFinite(val) || val <= 0) return false;
+
+  // 1. Não possuir centavos fracionados (vl_declarado % 1 === 0)
+  if (Math.abs(val - Math.round(val)) > 1e-4) return false;
+
+  // 2. For múltiplo exato de R$ 100 (vl_declarado % 100 === 0)
+  const intVal = Math.round(val);
+  if (intVal % 100 !== 0) return false;
+
+  return true;
+}
+
 export interface ItbiTierInput {
   value: number;
   count: number;
@@ -46,19 +92,51 @@ export function computeFourTierValuation(input: {
   const minimumLocalSamples = Math.max(2, input.minimumLocalSamples ?? 2);
   const calibratedWithoutLocal = input.allowContextOnly !== false && localSampleCount < minimumLocalSamples &&
     (input.surrounding?.count || 0) >= 5 && (input.neighborhood?.count || 0) >= 7;
-  // A lone local deed is too unstable to carry the 40% building or 35% street
-  // weight. When there are fewer than two local deeds, calibrate from the
-  // verified radius and neighborhood only.
-  const activeTiers = calibratedWithoutLocal
-    ? tiers.filter(tier => tier.id === 'surrounding' || tier.id === 'neighborhood')
-    : tiers;
+
+  // Solid local hierarchy (SSOT - NBR 14.653):
+  // 1. Condomínio/Prédio com >= 2 vendas: O prédio é a referência direta e soberana.
+  // 2. Condomínio com 1 venda e Rua com >= 5: Pondera prédio + rua sem contaminação externa.
+  // 3. Mesma Rua com >= 5 vendas (e sem vendas no prédio): A rua é a referência direta e soberana,
+  //    impedindo que distorções radiais do entorno ou média ampla do bairro poluam a realidade fática da via.
+  const bldgCount = input.building?.count || 0;
+  const streetCount = input.street?.count || 0;
+  const hasSolidBuilding = bldgCount >= 2;
+  const hasBuildingAndSolidStreet = bldgCount >= 1 && streetCount >= 5;
+  const hasSolidStreet = streetCount >= 5 && bldgCount === 0;
+
+  let activeTiers: ItbiWeightedComponent[];
+  if (hasSolidBuilding) {
+    activeTiers = tiers.filter(tier => tier.id === 'building');
+  } else if (hasBuildingAndSolidStreet) {
+    activeTiers = tiers.filter(tier => tier.id === 'building' || tier.id === 'street');
+  } else if (hasSolidStreet) {
+    activeTiers = tiers.filter(tier => tier.id === 'street');
+  } else if (calibratedWithoutLocal) {
+    activeTiers = tiers.filter(tier => tier.id === 'surrounding' || tier.id === 'neighborhood');
+  } else {
+    activeTiers = tiers;
+  }
   const activeWeight = activeTiers.reduce((sum, tier) => sum + tier.weight, 0);
   const priceable = (localSampleCount >= minimumLocalSamples || calibratedWithoutLocal) && activeWeight > 0;
   const weightedSum = activeTiers.reduce((sum, tier) => sum + tier.value * tier.weight, 0);
+  let finalValue = priceable ? Math.round(weightedSum / activeWeight) : 0;
+
+  // Calibração Conservadora: quando a amostragem local é frágil (< 3 transações)
+  // e o valor é calibrado pelo entorno, o valor resultante NUNCA pode inflacionar
+  // acima do teto da mediana/média do bairro * 1.05
+  const isFragileSampling = localSampleCount < 3 || calibratedWithoutLocal;
+  const neighborhoodValue = input.neighborhood?.value || 0;
+  if (isFragileSampling && finalValue > 0 && neighborhoodValue > 0) {
+    const neighborhoodCeiling = Math.round(neighborhoodValue * 1.05);
+    if (finalValue > neighborhoodCeiling) {
+      finalValue = neighborhoodCeiling;
+    }
+  }
+
   const calibrated = priceable && (localSampleCount < 7);
 
   return {
-    value: priceable ? Math.round(weightedSum / activeWeight) : 0,
+    value: finalValue,
     totalWeight: activeWeight,
     localSampleCount,
     priceable,

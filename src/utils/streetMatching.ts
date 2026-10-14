@@ -1,4 +1,6 @@
 // Shared by the calculator and the server. Robust street normalization and matching (NBR 14.653).
+import { sanitizeStreetName } from './addressParser.ts';
+
 export function canonicalStreet(value?: string | null): string {
   if (!value) return '';
 
@@ -10,8 +12,11 @@ export function canonicalStreet(value?: string | null): string {
     visc: 'visconde', bpo: 'bispo', dom: 'dom'
   };
 
-  // 1. Normalização de acentos, entidades XML hex (_x0020_) e minúsculas
-  let s = String(value)
+  // 1. Sanitizar primeiro com o higienizador universal anti-junk
+  const cleaned = sanitizeStreetName(value);
+
+  // 2. Normalização de acentos, entidades XML hex (_x0020_) e minúsculas
+  let s = String(cleaned)
     .replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/_/g, ' ')
     .normalize('NFD')
@@ -19,22 +24,20 @@ export function canonicalStreet(value?: string | null): string {
     .toLowerCase()
     .trim();
 
-  // 2. Extrai até a vírgula e remove numeração / complementos prediais
+  // 3. Extrai até a vírgula e remove numeração / complementos prediais
   s = s.split(',')[0]
     .replace(/\s+n[ºo°.]?\s*\d+.*$/i, '')
-    .replace(/\s+(?:apto|apt|ap|bloco|bl|casa|lote|qd|quadra)\b.*$/i, '');
+    .replace(/\s+(?:apto|apt|ap|bloco|bl|casa|lote|qd|quadra|sala|loja)\b.*$/i, '');
 
-  // 3. Remove prefixos de tipos de logradouro
+  // 4. Remove prefixos de tipos de logradouro
   s = s.replace(/^(?:rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|trav|praca|prc|pca|alameda|alm|al|rodovia|rod|largo|lrg|vila|vl|beco|servidao|passagem|psg|boulevard|blvd|via)\b\.?\s*/i, '');
 
-  // 4. Remove pontuações e caracteres especiais
+  // 5. Remove pontuações e caracteres especiais
   const tokens = s.replace(/[^a-z0-9]/g, ' ')
     .split(/\s+/)
     .filter(t => t && !['de', 'da', 'do', 'das', 'dos', 'e'].includes(t))
     .map(t => titles[t] || t);
 
-  // Se o primeiro token for um título de honraria/cargo (ex: doutor, presidente, general),
-  // e existirem outros tokens significativos, permite match mais flexível
   return tokens.join(' ').trim();
 }
 
@@ -50,45 +53,92 @@ function editDistance(a: string, b: string): number {
   return row[b.length];
 }
 
+function calculateStringSimilarity(a: string, b: string): number {
+  if (a === b) return 1.0;
+  if (!a || !b) return 0.0;
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1.0;
+  const dist = editDistance(a, b);
+  return 1 - dist / maxLen;
+}
+
 export function resolveOfficialStreet(target: string, candidates: string[]): string | null {
+  if (!target || !Array.isArray(candidates) || candidates.length === 0) return null;
   const wanted = canonicalStreet(target);
   if (!wanted) return null;
 
-  const unique = [...new Set(candidates.filter(Boolean))].map(street => ({
-    street,
-    key: canonicalStreet(street)
+  const unique = [...new Set(candidates.map(c => typeof c === 'string' ? c : (c as any)?.street).filter(Boolean))].map(street => ({
+    street: String(street),
+    key: canonicalStreet(String(street))
   })).filter(c => c.key.length > 0);
 
-  // Match exato após normalização
+  // 1. Match exato após normalização
   const exact = unique.filter(c => c.key === wanted);
   if (exact.length) return exact[0].street;
 
-  // Match fonético / token-wise
-  const tokens = wanted.split(' ');
+  const wantedTokens = wanted.split(/\s+/).filter(Boolean);
+
+  // 2. Coincidência total de tokens principais (ex: "silva rabelo" em "silva rabelo" ou com conectivos)
+  const tokenMatch = unique.filter(c => {
+    const cTokens = c.key.split(/\s+/).filter(Boolean);
+    if (cTokens.length >= 2 && wantedTokens.length >= 2) {
+      const allInWanted = cTokens.every(t => wantedTokens.includes(t));
+      const allInCandidate = wantedTokens.every(t => cTokens.includes(t));
+      return allInWanted || allInCandidate;
+    }
+    return false;
+  });
+  if (tokenMatch.length === 1) return tokenMatch[0].street;
+  if (tokenMatch.length > 1) {
+    // Escolhe o de tamanho mais próximo
+    tokenMatch.sort((a, b) => Math.abs(a.key.length - wanted.length) - Math.abs(b.key.length - wanted.length));
+    return tokenMatch[0].street;
+  }
+
+  // 3. Substring match de raiz única quando tamanho expressivo (>= 4 caracteres)
+  const substringMatch = unique.filter(c => {
+    if (c.key.length >= 5 && wanted.length >= 5) {
+      return c.key.includes(wanted) || wanted.includes(c.key);
+    }
+    return false;
+  });
+  if (substringMatch.length === 1) return substringMatch[0].street;
+
+  // 4. Algoritmo de Similaridade e Auto-Seleção (NBR 14.653 / threshold 75%)
   const scored = unique.map(c => {
-    const ts = c.key.split(' ');
-    // Caso especial: um tem título (ex: "doutor arnaldo") e outro não ("arnaldo")
-    const simplifiedWanted = tokens.filter(t => !['doutor', 'doutora', 'presidente', 'general', 'coronel', 'padre', 'santa', 'santo', 'marechal'].includes(t)).join(' ');
+    const ts = c.key.split(/\s+/).filter(Boolean);
+    const simplifiedWanted = wantedTokens.filter(t => !['doutor', 'doutora', 'presidente', 'general', 'coronel', 'padre', 'santa', 'santo', 'marechal'].includes(t)).join(' ');
     const simplifiedCandidate = ts.filter(t => !['doutor', 'doutora', 'presidente', 'general', 'coronel', 'padre', 'santa', 'santo', 'marechal'].includes(t)).join(' ');
     if (simplifiedWanted && simplifiedCandidate && simplifiedWanted === simplifiedCandidate) {
       return { ...c, score: 0.95 };
     }
 
-    if (ts.length !== tokens.length) return { ...c, score: 0 };
-    let score = 0;
-    for (let i = 0; i < tokens.length; i++) {
-      const a = tokens[i];
-      const b = ts[i];
-      if (a === b) score += 1;
-      else if (a.length >= 2 && b.length >= 2 && (a.startsWith(b) || b.startsWith(a))) score += 0.9;
-      else if (Math.min(a.length, b.length) >= 4 && editDistance(a, b) === 1) score += 0.85;
-      else return { ...c, score: 0 };
-    }
-    return { ...c, score: score / tokens.length };
-  }).filter(c => c.score >= 0.85).sort((a, b) => b.score - a.score);
+    // Levenshtein normalizado global
+    const globalSim = calculateStringSimilarity(wanted, c.key);
 
-  if (!scored.length || (scored[1] && scored[0].key !== scored[1].key && scored[0].score - scored[1].score < 0.08)) {
-    return null;
+    // Similaridade token a token
+    let tokenScore = 0;
+    const minTokens = Math.min(wantedTokens.length, ts.length);
+    for (let i = 0; i < minTokens; i++) {
+      const a = wantedTokens[i];
+      const b = ts[i];
+      if (a === b) tokenScore += 1;
+      else if (a.length >= 3 && b.length >= 3 && (a.startsWith(b) || b.startsWith(a))) tokenScore += 0.9;
+      else if (Math.min(a.length, b.length) >= 4 && editDistance(a, b) === 1) tokenScore += 0.85;
+      else tokenScore += calculateStringSimilarity(a, b) * 0.8;
+    }
+    const avgTokenScore = minTokens > 0 ? tokenScore / Math.max(wantedTokens.length, ts.length) : 0;
+    const finalScore = Math.max(globalSim, avgTokenScore);
+
+    return { ...c, score: finalScore };
+  }).filter(c => c.score >= 0.75).sort((a, b) => b.score - a.score);
+
+  if (!scored.length) return null;
+
+  // Se o primeiro tiver score isolado ou destacado
+  if (!scored[1] || scored[0].score - scored[1].score >= 0.05) {
+    return scored[0].street;
   }
+
   return scored[0].street;
 }

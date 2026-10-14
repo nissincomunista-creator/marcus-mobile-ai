@@ -1,7 +1,9 @@
 import { aggregateAuctions } from './auctionPipeline/aggregation.ts';
+import { retireAuctionSource } from './auctionPipeline/retirement.ts';
 import { validateDraft } from './auctionPipeline/validation.ts';
 import { preserveSource } from './auctionPipeline/quarantine.ts';
-import { propertyIdentity } from './auctionIdentity.ts';
+import { propertyIdentity, getCanonicalPropertyKey } from './auctionIdentity.ts';
+import { toCanonicalPropertyType } from './src/utils/propertyTypes.ts';
 import { assessAvailability } from './auctionAvailability.ts';
 import { auditOfficialArea, type AreaAudit } from './src/utils/officialAreaAudit.ts';
 import { createHash } from 'node:crypto';
@@ -36,6 +38,7 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "alexandrecosta", name: "Alexandre Costa Leilões", domain: "alexandrecostaleiloes.com.br", baseUrl: "https://www.alexandrecostaleiloes.com.br", genericScrape: true, enabled: true },
   { id: "ayupp", name: "Fabiano Ayupp Leiloeiro", domain: "fabianoayuppleiloeiro.com.br", baseUrl: "https://fabianoayuppleiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "rioleiloes", name: "Rio Leilões", domain: "rioleiloes.com.br", baseUrl: "https://www.rioleiloes.com.br", genericScrape: true, enabled: true },
+  { id: "mariafilomena", name: "Leilões Maria Filomena", domain: "leiloesmariafilomena.com.br", baseUrl: "https://www.leiloesmariafilomena.com.br", searchUrl: "https://www.leiloesmariafilomena.com.br/leilao/index/imoveis", genericScrape: true, enabled: true },
   { id: "frazao", name: "Frazão Leilões", domain: "frazaoleiloes.com.br", baseUrl: "https://www.frazaoleiloes.com.br", enabled: true },
   { id: "biasi", name: "Biasi Leilões", domain: "biasileiloes.com.br", baseUrl: "https://www.biasileiloes.com.br", enabled: true },
   { id: "megaleiloes", name: "Mega Leilões", domain: "megaleiloes.com.br", baseUrl: "https://www.megaleiloes.com.br", enabled: true },
@@ -276,6 +279,7 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
 ];
 
 export interface ScrapedAuctionDraft {
+  processNumber?: string;
   portalId: string;
   auctioneerName: string;
   title: string;
@@ -334,21 +338,8 @@ function normalizeStr(str: string | undefined | null): string {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
-function parseType(text: string): PropertyType {
-  const norm = normalizeStr(text);
-  if (norm.includes('apartamento') || norm.includes('apto') || norm.includes('studio') || norm.includes('cobertura') || norm.includes('flat')) {
-    return 'Apartamento';
-  }
-  if (norm.includes('casa') || norm.includes('sobrado') || norm.includes('vila')) {
-    return 'Casa';
-  }
-  if (norm.includes('terreno') || norm.includes('lote') || norm.includes('gleba')) {
-    return 'Terreno';
-  }
-  if (norm.includes('comercial') || norm.includes('sala') || norm.includes('loja') || norm.includes('galp') || norm.includes('predio') || norm.includes('prédio')) {
-    return 'Comercial';
-  }
-  return 'Apartamento';
+export function parseType(text: string, title?: string, desc?: string): PropertyType {
+  return toCanonicalPropertyType('', title ? (title + ' ' + text) : text, desc || '');
 }
 
 function isPropertyLotEvidence(text: string): boolean {
@@ -2209,8 +2200,10 @@ export function extractUnitComplement(address?: string): string {
   return parts.join('-');
 }
 
-export function getPropertyDedupeKey(address?: string, city?: string, state?: string, processNumber?: string, auctionId?: string, propertyType?: PropertyType, title?: string, description?: string): string | null {
-  return propertyIdentity(address,city,state,propertyType,`${title||''}\n${description||''}`);
+export function getPropertyDedupeKey(address?: string, city?: string, state?: string, processNumber?: string, auctionId?: string, propertyType?: PropertyType, title?: string, description?: string, auctionLink?: string, origin?: string): string | null {
+  return getCanonicalPropertyKey({
+    address, city, state, processNumber, id: auctionId, propertyType, title, description, auctionLink, origin
+  }) || propertyIdentity(address, city, state, propertyType, (title || '') + '\n' + (description || ''));
 }
 
 export function deduplicateAuctions(auctions: AuctionProperty[]): AuctionProperty[] {
@@ -2226,7 +2219,7 @@ export function reconcileAuctionDrafts(
   const existingLinks = new Set(linkIndex.keys());
   const existingKeys = new Map<string, AuctionProperty>();
   for (const a of existingAuctions) {
-    const k = getPropertyDedupeKey(a.address, a.city, a.state, a.processNumber, a.id, a.propertyType, a.title, a.description);
+    const k = getPropertyDedupeKey(a.address, a.city, a.state, a.processNumber, a.id, a.propertyType, a.title, a.description, a.auctionLink, a.origin);
     if (k) existingKeys.set(k, a);
   }
 
@@ -2241,9 +2234,7 @@ export function reconcileAuctionDrafts(
     draft=validation.draft;
     if(validation.retired){
       const previous=linkIndex.get(draft.auctionLink);
-      if(previous&&canonicalAuctionLink(previous.auctionLink||'')===draft.auctionLink){
-        Object.assign(previous,{sourceClosed:true,availability:draft.sourceAvailability,ingestionStatus:draft.sourceAvailability?.status||'finalizado'});
-      }
+      if(previous && draft.sourceAvailability && retireAuctionSource(previous,draft.auctionLink,draft.sourceAvailability,canonicalAuctionLink)) updated++;
       pendingReview.push({draft,reason:draft.sourceAvailability?.reason||'closed_or_expired_at_source'});continue;
     }
     if(!validation.accepted&&!validation.retired){
@@ -2289,7 +2280,7 @@ export function reconcileAuctionDrafts(
     if (addressCity && normalizeStr(addressCity) !== normalizeStr(draft.city)) { pendingReview.push({draft,reason:'outside_requested_city'}); continue; }
     const completeAddress = draft.address || '';
 
-    const draftKey = getPropertyDedupeKey(completeAddress, draft.city, draft.state, undefined, undefined, draft.propertyType, draft.title, draft.description);
+    const draftKey = getPropertyDedupeKey(completeAddress, draft.city, draft.state, draft.processNumber, undefined, draft.propertyType, draft.title, draft.description, draft.auctionLink, targetType);
     const existing = (existingLinks.has(draft.auctionLink)
       ? linkIndex.get(draft.auctionLink)
       : (draftKey ? existingKeys.get(draftKey) : null));
@@ -2346,6 +2337,8 @@ export function reconcileAuctionDrafts(
 
     const rawAuc: AuctionProperty = {
       id: baseId,
+      canonicalPropertyId: draftKey || undefined,
+      requer_auditoria_endereco: !isAuditable || !calculationReady,
       ingestionStatus: calculationReady ? 'ativo' : 'quarentena_extracao',
       title: draft.title,
       address: completeAddress,

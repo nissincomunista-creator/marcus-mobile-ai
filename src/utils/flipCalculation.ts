@@ -11,6 +11,11 @@ export function auctionCosts(p: any) {
   const caixa = p.origin === 'caixa' || p.acquisitionRule === 'caixa' || p.id?.includes('caixa');
   const caixaWithFee = isCaixaAuctionWithFee(p);
   const isDirectSale = caixa && !caixaWithFee;
+  const gabarito = Number(p.estimatedValue) || Number(p.vendaBaixaPrice) || Number(p.vendaMediaPrice) || 0;
+  const custoCarregamento = p.custoCarregamentoEstimado !== undefined
+    ? Number(p.custoCarregamentoEstimado) || 0
+    : Math.round(gabarito * 0.015);
+
   return {
     bid,
     auctioneer: p.auctioneerFee !== undefined ? p.auctioneerFee : (isDirectSale ? 0 : Math.round(bid * 0.05)),
@@ -19,15 +24,14 @@ export function auctionCosts(p: any) {
     repair: p.estimatedRepair ?? Math.round(bid * 0.05),
     legal: p.lawyerFee ?? (caixa ? 6000 : (p.otherCosts || 0)),
     iptu: p.pendingIptuCost ?? 0,
-    condo: p.pendingCondoCost ?? (String(p.propertyType).toLowerCase().includes('casa') ? 0 : (p.pendingDebts || 0))
+    condo: (p.propertyType && /casa|sobrado/i.test(p.propertyType)) ? 0 : (p.pendingCondoCost ?? p.pendingDebts ?? 0),
+    custoCarregamento
   };
 }
 export function calculateFlip(exitValue: number, acquisitionCost: number, monthlyHolding = 0) {
   const brokerFee = Math.round(exitValue * 0.04);
   const holding = monthlyHolding * 3;
-  const grossGain = exitValue - acquisitionCost - holding - brokerFee;
-  const tax = grossGain > 0 ? Math.round(grossGain * 0.15) : 0;
-  const netProfit = grossGain - tax;
-  const roi = acquisitionCost > 0 ? Number((netProfit / (acquisitionCost + holding) * 100).toFixed(2)) : 0;
-  return { brokerFee, holding, grossGain, tax, netProfit, roi };
+  const netProfit = Math.round(exitValue - acquisitionCost);
+  const roi = acquisitionCost > 0 ? Number(((netProfit / acquisitionCost) * 100).toFixed(2)) : 0;
+  return { brokerFee, holding, grossGain: netProfit, tax: 0, netProfit, roi };
 }

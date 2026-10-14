@@ -1,10 +1,12 @@
+import { locationAddress, addressUnits } from './src/utils/locationAddress.ts';
+import { canonicalStreet } from './src/utils/streetMatching.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cleanBrazilianAddress, geocodeAddress, getCachedCoords } from './geocodeService.ts';
 
-type Address = { id?: string; address?: string; city?: string; state?: string; neighborhood?: string };
+type Address = { description?: string; id?: string; address?: string; city?: string; state?: string; neighborhood?: string };
 export type OfficialLocation = Address & {
   status: 'located' | 'pending'; reason?: string; lat?: number; lng?: number;
   precision?: 'address'; source?: string; sourceUrl?: string;
@@ -47,10 +49,12 @@ export function validOfficialLocation(r: OfficialLocation): boolean {
     normalize(r.complements?.casa) === requestedHouseUnit.number &&
     (!requestedHouseUnit.suffix || normalize(r.complements?.outros) === requestedHouseUnit.suffix)
   );
-  const hasCnefeEvidence = r.source === 'IBGE_CNEFE_2022' && [1, 2].includes(r.geocodeLevel!) && !!r.cnefeId && cnefeHouseMatches &&
+  const requestedUnits = addressUnits(r.address || '');
+  const blockMatches = !requestedUnits.bloco || r.complements?.bloco === requestedUnits.bloco;
+  const hasCnefeEvidence = r.source === 'IBGE_CNEFE_2022' && [1, 2].includes(r.geocodeLevel!) && !!r.cnefeId && cnefeHouseMatches && blockMatches &&
     Number.isFinite(r.spreadMeters) && r.spreadMeters! >= 0 && r.spreadMeters! <= 20;
   const requestedNumber = cleanBrazilianAddress(r.address || '').number;
-  const hasExactGeocoderEvidence = r.source === 'GEOCODE_NUMBER' &&
+  const hasExactGeocoderEvidence = r.source === 'GEOCODE_NUMBER' && !requestedUnits.bloco &&
     ['nominatim', 'photon'].includes(String(r.geocoderProvider)) && r.geocoderPrecision === 'rooftop' &&
     !!requestedNumber && normalize(requestedNumber) === normalize(r.matchedNumber) &&
     !!r.city && normalize(r.city) === normalize(r.matchedCity) &&
@@ -77,10 +81,46 @@ function refresh() {
     byAddress = next; stamp = stat.mtimeMs;
   } catch (error) { console.error('Não foi possível carregar as localizações oficiais:', error); }
 }
+type CachedCandidate = { lat: number; lng: number; level: string; street: string; number: string; locality: string; cnefeId: string; complements: Record<string, string> };
+const candidateFiles = new Map<string, { stamp: number; candidates: Record<string, CachedCandidate[]> }>();
+function resolveCachedNumber(p: Address): OfficialLocation | null {
+  try {
+    const root = path.join(process.cwd(), '.cache', 'map-cnefe');
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+    const municipality = manifest.find((m: any) => normalize(m.city) === normalize(p.city) && normalize(m.state) === normalize(p.state));
+    if (!municipality) return null;
+    const sourceFile = path.join(root, 'resolved', path.basename(municipality.name) + '.json');
+    const mtime = fs.statSync(sourceFile).mtimeMs;
+    let cached = candidateFiles.get(sourceFile);
+    if (!cached || cached.stamp !== mtime) {
+      cached = { stamp: mtime, candidates: JSON.parse(fs.readFileSync(sourceFile, 'utf8')).candidates || {} };
+      candidateFiles.set(sourceFile, cached);
+    }
+    const parsed = cleanBrazilianAddress(p.address || '');
+    const number = String(parsed.number || '').replace(/^0+(?=\d)/, '');
+    const units = addressUnits(p.address || '');
+    const rows = (cached.candidates[`${canonicalStreet(parsed.street)}|${number}`] || []).filter(c =>
+      ['1', '2'].includes(String(c.level)) && canonicalStreet(c.street) === canonicalStreet(parsed.street) &&
+      Object.entries(units).every(([key, value]) => String(c.complements?.[key] || '').toLowerCase().replace(/^0+(?=\d)/, '') === value));
+    if (!rows.length) return null;
+    const first = rows[0];
+    const spread = Math.max(...rows.map(c => Math.hypot((c.lat - first.lat) * 111320,
+      (c.lng - first.lng) * 111320 * Math.cos(first.lat * Math.PI / 180))));
+    if (!Number.isFinite(spread) || spread > 20) return null;
+    const result: OfficialLocation = { ...p, status: 'located', precision: 'address', source: 'IBGE_CNEFE_2022',
+      sourceUrl: municipality.url, lat: first.lat, lng: first.lng, matchedStreet: first.street,
+      matchedNumber: first.number, matchedLocality: first.locality, cnefeId: first.cnefeId,
+      geocodeLevel: Number(first.level), spreadMeters: spread, complements: first.complements };
+    return validOfficialLocation(result) ? result : null;
+  } catch { return null; }
+}
 export function getOfficialPropertyLocation(p: Address): OfficialLocation {
+  p = { ...p, address: locationAddress(p) };
   refresh();
   const row = byAddress.get(propertyLocationKey(p));
   if (row && validOfficialLocation(row)) return { ...row, id: p.id, address: p.address };
+  const numbered = resolveCachedNumber(p);
+  if (numbered) return numbered;
   // Reuse an already-verified numbered geocoder result even when the address
   // register has no matching unit/block row. Never promote street interpolation.
   const parsed = cleanBrazilianAddress(p.address || '');
@@ -229,12 +269,12 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
 export function ensureOfficialLocationCoverage(properties: Address[]) {
   if (refreshing) return;
   refresh();
-  const hasMissingLocationRecord = properties.some(p => !byAddress.has(propertyLocationKey(p)));
+  const hasMissingLocationRecord = properties.some(p => !byAddress.has(propertyLocationKey({ ...p, address: locationAddress(p) })));
   if (!hasMissingLocationRecord) {
     void geocodePendingPropertyLocations(properties);
     return;
   }
-  const inputs = properties.map(p => ({ id:p.id, address:p.address || '', city:p.city || '', state:p.state || '', neighborhood:p.neighborhood || '' }));
+  const inputs = properties.map(p => ({ id:p.id, address:locationAddress(p), city:p.city || '', state:p.state || '', neighborhood:p.neighborhood || '' }));
   const fingerprint = createHash('sha256').update(JSON.stringify(inputs)).digest('hex');
   if (fingerprint === lastRefreshKey) return;
   const cache = path.join(process.cwd(), '.cache', 'map-cnefe');

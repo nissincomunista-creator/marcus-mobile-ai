@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { AuctionProperty, BRAZIL_STATES, VALID_ITBI_CITIES_BY_STATE } from '../types.ts';
+import { CaixaModality, normalizeCaixaModality, CAIXA_MODALITY_CONFIG, isCaixaAuction, getCaixaModality } from '../utils/caixaModality.ts';
 import { 
   Building2, 
   TrendingUp, 
@@ -48,10 +49,11 @@ import { auctionCosts } from '../utils/flipCalculation.ts';
 export function calculateSpreadSqm(auc: AuctionProperty): number {
   const area = Number(auc.sizeSqm) || 0;
   if (area <= 0) return 0;
-  const valorVenda = Number(auc.vendaBaixaPrice) || Number(auc.vendaMediaPrice) || Number(auc.estimatedValue) || 0;
+  // O spread real de mercado exige preço de saída fático (Flip ITBI):
+  const valorVenda = Number(auc.vendaBaixaPrice) || Number(auc.vendaMediaPrice) || 0;
   if (valorVenda <= 0) return 0;
   const costs = auctionCosts(auc);
-  const custoTotal = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo;
+  const custoTotal = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo + costs.custoCarregamento;
   const custoM2 = custoTotal / area;
   const vendaM2 = valorVenda / area;
   return Math.round(vendaM2 - custoM2);
@@ -149,9 +151,16 @@ export default function Dashboard({
   const [onlyHighReturn, setOnlyHighReturn] = useState(false);
   const [onlyAnalysisAboveEdital, setOnlyAnalysisAboveEdital] = useState(false);
   const [itbiConfidenceFilter, setItbiConfidenceFilter] = useState<'all' | 'verified'>('all');
+  const [prestigeFilter, setPrestigeFilter] = useState<'all' | 'nobre' | 'prime'>('all');
   const [capitalBudget, setCapitalBudget] = useState<string>('');
-  const [caixaSubModes, setCaixaSubModes] = useState<{ vendaDireta: boolean; licitacao: boolean; leilaoSfi: boolean }>({
+  const [caixaSubModes, setCaixaSubModes] = useState<{
+    vendaDireta: boolean;
+    vendaOnline: boolean;
+    licitacao: boolean;
+    leilaoSfi: boolean;
+  }>({
     vendaDireta: true,
+    vendaOnline: true,
     licitacao: true,
     leilaoSfi: true
   });
@@ -342,6 +351,33 @@ export default function Dashboard({
     return uniqueNeighborhoodsWithCount.filter(n => normalizeText(n.name).includes(query));
   }, [uniqueNeighborhoodsWithCount, neighborhoodSearch]);
 
+  // Contadores dinâmicos para sub-modalidades Caixa no escopo geográfico ativo
+  const caixaModalityCounts = useMemo(() => {
+    const counts = {
+      vendaDireta: 0,
+      vendaOnline: 0,
+      licitacao: 0,
+      leilaoSfi: 0,
+      total: 0
+    };
+    auctions.forEach(a => {
+      if (!isCaixaAuction(a)) return;
+      if (selectedStateFilter && (a.state || 'RJ').toUpperCase() !== selectedStateFilter.toUpperCase()) return;
+      if (selectedCityFilter) {
+        const normCity = normalizeText(selectedCityFilter);
+        const aCity = normalizeText(a.city || '');
+        if (!aCity.includes(normCity) && !normCity.includes(aCity)) return;
+      }
+      counts.total++;
+      const mod = getCaixaModality(a);
+      if (mod === 'VENDA_DIRETA_ONLINE') counts.vendaDireta++;
+      else if (mod === 'VENDA_ONLINE') counts.vendaOnline++;
+      else if (mod === 'LICITACAO_ABERTA') counts.licitacao++;
+      else if (mod === 'LEILAO_SFI') counts.leilaoSfi++;
+    });
+    return counts;
+  }, [auctions, selectedStateFilter, selectedCityFilter]);
+
   const handleToggleNeighborhood = (neigh: string) => {
     setSelectedNeighborhoods(prev => {
       if (prev.includes(neigh)) {
@@ -369,7 +405,43 @@ export default function Dashboard({
 
   // Helper for acquisition mode badges
   const getSaleModeBadge = useCallback((auc: AuctionProperty) => {
-    const isCaixaAuction = auc.origin === 'caixa' || auc.origin === 'caixa_radar' || auc.id.startsWith('auc-caixa');
+    const isCaixa = isCaixaAuction(auc);
+    if (isCaixa) {
+      const modality = getCaixaModality(auc);
+      if (modality === 'VENDA_DIRETA_ONLINE') {
+        return {
+          label: 'Venda Direta Online',
+          type: 'venda_direta_online',
+          icon: '🤝',
+          className: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-xs'
+        };
+      }
+      if (modality === 'VENDA_ONLINE') {
+        return {
+          label: 'Venda Online',
+          type: 'venda_online',
+          icon: '⏱️',
+          className: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/60 shadow-xs'
+        };
+      }
+      if (modality === 'LICITACAO_ABERTA') {
+        return {
+          label: 'Licitação Aberta',
+          type: 'licitacao_aberta',
+          icon: '📢',
+          className: 'bg-amber-950/90 text-amber-300 border-amber-500/60 shadow-xs'
+        };
+      }
+      if (modality === 'LEILAO_SFI') {
+        return {
+          label: 'Leilão SFI Online',
+          type: 'leilao_sfi',
+          icon: '⚖️',
+          className: 'bg-indigo-950/90 text-indigo-300 border-indigo-500/60 shadow-xs'
+        };
+      }
+    }
+
     let mode = auc.saleMode;
     if (!mode && auc.description) {
       const mMatch = auc.description.match(/Modalidade:\s*([^.]+)/i);
@@ -385,7 +457,6 @@ export default function Dashboard({
       else if (textLower.includes('online')) mode = 'Leilão Online';
       else if (auc.origin === 'judicial') mode = 'Leilão Judicial Online';
       else if (auc.origin === 'extrajudicial') mode = 'Leilão Extrajudicial Online';
-      else if (isCaixaAuction) mode = 'Venda Direta Online';
       else mode = 'Leilão Online';
     }
 
@@ -394,9 +465,18 @@ export default function Dashboard({
     if (modeLower.includes('venda direta')) {
       return {
         label: modeLower.includes('online') ? 'Venda Direta Online' : 'Venda Direta',
-        type: 'venda_direta',
+        type: 'venda_direta_online',
         icon: '🤝',
         className: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-xs'
+      };
+    }
+
+    if (modeLower.includes('venda online')) {
+      return {
+        label: 'Venda Online',
+        type: 'venda_online',
+        icon: '⏱️',
+        className: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/60 shadow-xs'
       };
     }
     
@@ -495,20 +575,23 @@ export default function Dashboard({
       result = result.filter(a => a.auctionPrice <= maxP);
     }
 
-    // Caixa sub-modes filter
+    // Caixa sub-modes filter (Separação canônica estrita - Sem colisões de substring)
     if (selectedOriginFilter === 'caixa') {
       result = result.filter(a => {
-        const badge = getSaleModeBadge(a);
-        if (badge.type === 'venda_direta' && !caixaSubModes.vendaDireta) return false;
-        if (badge.type === 'licitacao_aberta' && !caixaSubModes.licitacao) return false;
-        if (badge.type === 'leilao_sfi' && !caixaSubModes.leilaoSfi) return false;
+        const isCaixa = isCaixaAuction(a);
+        if (!isCaixa) return false;
+        const modality = getCaixaModality(a);
+        if (modality === 'VENDA_DIRETA_ONLINE') return caixaSubModes.vendaDireta;
+        if (modality === 'VENDA_ONLINE') return caixaSubModes.vendaOnline;
+        if (modality === 'LICITACAO_ABERTA') return caixaSubModes.licitacao;
+        if (modality === 'LEILAO_SFI') return caixaSubModes.leilaoSfi;
         return true;
       });
     }
 
     // Yield / Profit filters
     if (onlyHighReturn) {
-      result = result.filter(a => (a.calculatedRoi || 0) >= 40 && Math.min(a.liquidityScore || 1, assessDataQuality(a).liquidityCeiling) >= 7);
+      result = result.filter(a => (a.calculatedRoi || 0) >= 40 && Math.min(a.liquidityScore ?? 0, assessDataQuality(a).liquidityCeiling) >= 7);
     }
 
     if (minRoiFilter > 0) {
@@ -521,6 +604,22 @@ export default function Dashboard({
 
     if (itbiConfidenceFilter === 'verified') {
       result = result.filter(a => a.valuationConfidence === 'verified' && (a.itbiStreetCount || 0) > 0);
+    }
+
+    if (prestigeFilter === 'nobre') {
+      result = result.filter(a => {
+        const area = Number(a.sizeSqm) || 0;
+        const flipPrice = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0;
+        const flipM2 = area > 0 ? flipPrice / area : 0;
+        return flipM2 >= 4500;
+      });
+    } else if (prestigeFilter === 'prime') {
+      result = result.filter(a => {
+        const area = Number(a.sizeSqm) || 0;
+        const flipPrice = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0;
+        const flipM2 = area > 0 ? flipPrice / area : 0;
+        return flipM2 >= 8000;
+      });
     }
 
     // As estratégias NÃO eliminam nenhum imóvel da lista — funcionam estritamente como ranqueamento multi-critério (sobem os melhores para o topo)
@@ -538,80 +637,129 @@ export default function Dashboard({
       });
     }
 
-    // Ranqueamento conjunto das estratégias ativas:
-    // Fórmula de Ranqueamento Ordinal Ponderado:
-    // Score_Estrategia = (2.0 * rank_lucro) + (1.5 * rank_spread) + (1.2 * rank_liquidez) + (1.0 * rank_roi)
-    // ORDER BY Score_Estrategia ASC (menor soma de posições ordinais vence)
-    const activeStrategiesCount = (strategyFilters.liquidity ? 1 : 0) +
-                                  (strategyFilters.roi ? 1 : 0) +
-                                  (strategyFilters.profit ? 1 : 0) +
-                                  (strategyFilters.spread ? 1 : 0);
-    const strategyRank = new Map<AuctionProperty, number>();
     const qualityByAuction = new Map(result.map(property => [property, assessDataQuality(property)] as const));
 
-    if (activeStrategiesCount > 0 && result.length > 0) {
-      const N = result.length;
-      const getOrdinalRankMap = (sortedProps: AuctionProperty[]) => {
-        const map = new Map<AuctionProperty, number>();
-        sortedProps.forEach((prop, idx) => {
-          map.set(prop, idx + 1);
-        });
-        return map;
-      };
+    // 1. Quarentena de Imóveis Inauditáveis / Sob Análise / Sem Preço de Flip / Liquidez 0
+    const isQuarantineAuction = (a: AuctionProperty) => {
+      const q = qualityByAuction.get(a);
+      const effectiveLiq = Math.min(a.liquidityScore ?? 0, q?.liquidityCeiling ?? 10);
+      const flipPrice = Number(a.vendaBaixaPrice) || 0;
+      return (
+        flipPrice <= 0 ||
+        effectiveLiq === 0 ||
+        a.precisa_revisao === true ||
+        a.valuationConfidence === 'unavailable' ||
+        (Number(a.sizeSqm) || 0) <= 0
+      );
+    };
 
-      const profitSorted = strategyFilters.profit
-        ? [...result].sort((a, b) => (Number(b.calculatedProfit) || -999999) - (Number(a.calculatedProfit) || -999999))
-        : [];
-      const profitRanks = strategyFilters.profit ? getOrdinalRankMap(profitSorted) : null;
+    const eligibleAuctions: AuctionProperty[] = [];
+    const quarantinedAuctions: AuctionProperty[] = [];
 
-      const spreadSorted = strategyFilters.spread
-        ? [...result].sort((a, b) => calculateSpreadSqm(b) - calculateSpreadSqm(a))
-        : [];
-      const spreadRanks = strategyFilters.spread ? getOrdinalRankMap(spreadSorted) : null;
-
-      const liquiditySorted = strategyFilters.liquidity
-        ? [...result].sort((a, b) => {
-            const ceilingA = qualityByAuction.get(a)?.liquidityCeiling ?? 10;
-            const ceilingB = qualityByAuction.get(b)?.liquidityCeiling ?? 10;
-            const scoreA = Math.min(a.liquidityScore || 1, ceilingA);
-            const scoreB = Math.min(b.liquidityScore || 1, ceilingB);
-            return scoreB - scoreA;
-          })
-        : [];
-      const liquidityRanks = strategyFilters.liquidity ? getOrdinalRankMap(liquiditySorted) : null;
-
-      const roiSorted = strategyFilters.roi
-        ? [...result].sort((a, b) => (Number(b.calculatedRoi) || -999) - (Number(a.calculatedRoi) || -999))
-        : [];
-      const roiRanks = strategyFilters.roi ? getOrdinalRankMap(roiSorted) : null;
-
-      for (const property of result) {
-        let weightedSum = 0;
-        if (profitRanks) weightedSum += 2.5 * (profitRanks.get(property) ?? N);
-        if (spreadRanks) weightedSum += 2.0 * (spreadRanks.get(property) ?? N);
-        if (liquidityRanks) weightedSum += 1.2 * (liquidityRanks.get(property) ?? N);
-        if (roiRanks) weightedSum += 1.0 * (roiRanks.get(property) ?? N);
-        strategyRank.set(property, weightedSum);
+    for (const prop of result) {
+      if (isQuarantineAuction(prop)) {
+        quarantinedAuctions.push(prop);
+      } else {
+        eligibleAuctions.push(prop);
       }
     }
 
-    result.sort((a, b) => {
-      // Registros sem precificação ITBI suficiente ficam depois dos lotes auditados.
-      const qualityA = qualityByAuction.get(a)!;
-      const qualityB = qualityByAuction.get(b)!;
-      if (qualityA.isIncompleto !== qualityB.isIncompleto) {
-        return qualityA.isIncompleto ? 1 : -1;
+    // 2. Cálculo de Percentis (0 a 100) para Imóveis Elegíveis
+    const computePercentileMap = (items: AuctionProperty[], getValue: (a: AuctionProperty) => number) => {
+      const map = new Map<AuctionProperty, number>();
+      if (items.length === 0) return map;
+      if (items.length === 1) {
+        map.set(items[0], 100);
+        return map;
+      }
+      const sorted = [...items].sort((a, b) => getValue(a) - getValue(b));
+      const M = sorted.length;
+      for (let i = 0; i < M; i++) {
+        let j = i;
+        while (j + 1 < M && getValue(sorted[j + 1]) === getValue(sorted[i])) {
+          j++;
+        }
+        const avgRank = (i + j) / 2;
+        const percentile = (avgRank / (M - 1)) * 100;
+        for (let k = i; k <= j; k++) {
+          map.set(sorted[k], percentile);
+        }
+        i = j;
+      }
+      return map;
+    };
+
+    const getAucLucroReal = (a: AuctionProperty): number => {
+      const flipPrice = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0;
+      if (flipPrice <= 0) return (Number(a.calculatedProfit) || 0);
+      const costs = auctionCosts(a);
+      const totalCost = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo + costs.custoCarregamento;
+      return Math.round(flipPrice - totalCost);
+    };
+
+    const getAucRoi = (a: AuctionProperty): number => {
+      const flipPrice = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0;
+      if (flipPrice <= 0) return (Number(a.calculatedRoi) || 0);
+      const costs = auctionCosts(a);
+      const totalCost = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo + costs.custoCarregamento;
+      return totalCost > 0 ? Number((((flipPrice - totalCost) / totalCost) * 100).toFixed(2)) : 0;
+    };
+
+    const spreadPercentiles = computePercentileMap(eligibleAuctions, a => calculateSpreadSqm(a));
+    const liquidityPercentiles = computePercentileMap(eligibleAuctions, a => {
+      const ceiling = qualityByAuction.get(a)?.liquidityCeiling ?? 10;
+      return Math.min(a.liquidityScore ?? 0, ceiling);
+    });
+    const profitPercentiles = computePercentileMap(eligibleAuctions, a => getAucLucroReal(a));
+    const roiPercentiles = computePercentileMap(eligibleAuctions, a => getAucRoi(a));
+    const m2FlipPercentiles = computePercentileMap(eligibleAuctions, a => {
+      const area = Number(a.sizeSqm) || 0;
+      const flipPrice = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0;
+      return area > 0 ? flipPrice / area : 0;
+    });
+
+    // 3. Pesos Hierárquicos Normalizados (Spread 0.50, Liquidez 0.30, Lucro 0.10, M² Flip / ROI 0.10)
+    // Se [Maior Spread] e [Maior Liquidez] estiverem ativos: Spread 0.625, Liquidez 0.375
+    const activeWeights = {
+      spread: strategyFilters.spread ? 0.50 : 0,
+      liquidity: strategyFilters.liquidity ? 0.30 : 0,
+      profit: strategyFilters.profit ? 0.10 : 0,
+      roi: strategyFilters.roi ? 0.10 : 0,
+    };
+    const totalWeight = activeWeights.spread + activeWeights.liquidity + activeWeights.profit + activeWeights.roi;
+    const strategyScoreMap = new Map<AuctionProperty, number>();
+
+    if (totalWeight > 0) {
+      const wSpread = activeWeights.spread / totalWeight;
+      const wLiq = activeWeights.liquidity / totalWeight;
+      const wProfit = activeWeights.profit / totalWeight;
+      const wRoi = activeWeights.roi / totalWeight;
+
+      for (const prop of eligibleAuctions) {
+        const pSpread = spreadPercentiles.get(prop) ?? 0;
+        const pLiq = liquidityPercentiles.get(prop) ?? 0;
+        const pProfit = profitPercentiles.get(prop) ?? 0;
+        const pM2Flip = m2FlipPercentiles.get(prop) ?? 0;
+        const pRoi = roiPercentiles.get(prop) ?? 0;
+        // Ponderação com Spread, Liquidez, Lucro e padrão de revenda/ROI
+        const score = (wSpread * pSpread) + (wLiq * pLiq) + (wProfit * pProfit) + (wRoi * ((pM2Flip + pRoi) / 2));
+        strategyScoreMap.set(prop, score);
+      }
+    }
+    for (const prop of quarantinedAuctions) {
+      strategyScoreMap.set(prop, 0);
+    }
+
+    // 4. Ordenação dos Imóveis Elegíveis
+    eligibleAuctions.sort((a, b) => {
+      // 1. Se filtros de estratégia estiverem ativos, ordena pelo Score ponderado composto decrescente (maior score no topo)
+      if (totalWeight > 0) {
+        const scoreA = strategyScoreMap.get(a) ?? 0;
+        const scoreB = strategyScoreMap.get(b) ?? 0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
       }
 
-      // Ordenação das estratégias pelo Score ponderado ordinal (menor score ordinal vence!)
-      if (activeStrategiesCount > 0) {
-        const scoreA = strategyRank.get(a) ?? Infinity;
-        const scoreB = strategyRank.get(b) ?? Infinity;
-        if (scoreA !== scoreB) return scoreA - scoreB;
-      }
-
-      // Urgência/novidade remain useful tie-breakers without suppressing active
-      // investment strategies from the ranking.
+      // 2. Ordenação temporal se ativa
       if (temporalSortMode === 'urgent') {
         const dateA = a.firstAuctionDate || a.auctionDate || '9999-12-31';
         const dateB = b.firstAuctionDate || b.auctionDate || '9999-12-31';
@@ -622,10 +770,8 @@ export default function Dashboard({
         if (newestOrder) return newestOrder;
       }
 
-      const activeSortKey = sortBy || 'roi';
-      if (activeSortKey === 'profit') return (b.calculatedProfit || 0) - (a.calculatedProfit || 0);
-      if (activeSortKey === 'roi') return (b.calculatedRoi || 0) - (a.calculatedRoi || 0);
-      if (activeSortKey === 'liquidity') return Math.min(b.liquidityScore || 1, assessDataQuality(b).liquidityCeiling) - Math.min(a.liquidityScore || 1, assessDataQuality(a).liquidityCeiling);
+      // 3. Dropdown sortBy se selecionado
+      const activeSortKey = sortBy || 'spread';
       if (activeSortKey === 'price_asc') return a.auctionPrice - b.auctionPrice;
       if (activeSortKey === 'price_desc') return b.auctionPrice - a.auctionPrice;
       if (activeSortKey === 'closing_date') {
@@ -633,8 +779,54 @@ export default function Dashboard({
         const dB = b.firstAuctionDate || b.auctionDate || '9999-12-31';
         return dA.localeCompare(dB);
       }
-      return (b.calculatedRoi || 0) - (a.calculatedRoi || 0);
+      if (activeSortKey === 'profit' && totalWeight === 0) {
+        const profitB = getAucLucroReal(b);
+        const profitA = getAucLucroReal(a);
+        if (profitB !== profitA) return profitB - profitA;
+      }
+      if (activeSortKey === 'roi' && totalWeight === 0) {
+        const roiDiff = getAucRoi(b) - getAucRoi(a);
+        if (roiDiff !== 0) return roiDiff;
+      }
+      if (activeSortKey === 'liquidity' && totalWeight === 0) {
+        const ceilingA = qualityByAuction.get(a)?.liquidityCeiling ?? 10;
+        const ceilingB = qualityByAuction.get(b)?.liquidityCeiling ?? 10;
+        const liqB = Math.min(b.liquidityScore ?? 0, ceilingB);
+        const liqA = Math.min(a.liquidityScore ?? 0, ceilingA);
+        if (liqB !== liqA) return liqB - liqA;
+      }
+
+      // Prioridade SSOT do Ranqueamento:
+      // 1º Spread por m² (maior spread fica acima)
+      // 2º Lucro Real (segundo fator de peso)
+      // 3º Liquidez (depois liquidez)
+      // 4º ROI (desempate residual)
+      const spreadB = calculateSpreadSqm(b);
+      const spreadA = calculateSpreadSqm(a);
+      if (spreadB !== spreadA) return spreadB - spreadA;
+
+      const profitB = getAucLucroReal(b);
+      const profitA = getAucLucroReal(a);
+      if (profitB !== profitA) return profitB - profitA;
+
+      const ceilingA = qualityByAuction.get(a)?.liquidityCeiling ?? 10;
+      const ceilingB = qualityByAuction.get(b)?.liquidityCeiling ?? 10;
+      const liqB = Math.min(b.liquidityScore ?? 0, ceilingB);
+      const liqA = Math.min(a.liquidityScore ?? 0, ceilingA);
+      if (liqB !== liqA) return liqB - liqA;
+
+      const m2FlipB = (Number(b.vendaBaixaPrice) || Number(b.vendaMediaPrice) || 0) / (Number(b.sizeSqm) || 1);
+      const m2FlipA = (Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0) / (Number(a.sizeSqm) || 1);
+      if (m2FlipB !== m2FlipA) return m2FlipB - m2FlipA;
+
+      return getAucRoi(b) - getAucRoi(a);
     });
+
+    // 5. Ordenação defensiva dos Quarentenados (menor preço de leilão)
+    quarantinedAuctions.sort((a, b) => (a.auctionPrice || 0) - (b.auctionPrice || 0));
+
+    // 6. Concatenar: Elegíveis primeiro, Quarentena no final absoluto
+    result = [...eligibleAuctions, ...quarantinedAuctions];
 
     return result;
   }, [
@@ -655,6 +847,7 @@ export default function Dashboard({
     minRoiFilter,
     onlyAnalysisAboveEdital,
     itbiConfidenceFilter,
+    prestigeFilter,
     capitalBudget,
     temporalSortMode,
     strategyFilters,
@@ -689,6 +882,7 @@ export default function Dashboard({
     setOnlyHighReturn(false);
     setOnlyAnalysisAboveEdital(false);
     setItbiConfidenceFilter('all');
+    setPrestigeFilter('all');
     setCapitalBudget('');
     setTemporalSortMode('neutral');
     setStrategyFilters({
@@ -945,37 +1139,115 @@ export default function Dashboard({
 
               {/* Sub-opções específicas quando Caixa estiver selecionada */}
               {selectedOriginFilter === 'caixa' && (
-                <div className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl space-y-2 mt-2">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase font-mono">
-                    Sub-modalidades Caixa
-                  </span>
-                  <div className="space-y-1 text-xs">
-                    <label className="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
-                      <input
-                        type="checkbox"
-                        checked={caixaSubModes.vendaDireta}
-                        onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaDireta: e.target.checked }))}
-                        className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
-                      />
-                      <span>Venda Direta Online</span>
+                <div className="p-2.5 bg-slate-950 border border-blue-900/40 rounded-xl space-y-2 mt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-blue-400 block uppercase font-mono">
+                      Sub-modalidades Caixa ({caixaModalityCounts.total})
+                    </span>
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                      <button
+                        type="button"
+                        onClick={() => setCaixaSubModes({ vendaDireta: true, vendaOnline: true, licitacao: true, leilaoSfi: true })}
+                        className="text-indigo-400 hover:text-white transition-colors cursor-pointer"
+                        title="Marcar todas as modalidades Caixa"
+                      >
+                        Todas
+                      </button>
+                      <span className="text-slate-600">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setCaixaSubModes({ vendaDireta: false, vendaOnline: false, licitacao: false, leilaoSfi: false })}
+                        className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                        title="Desmarcar todas"
+                      >
+                        Nenhuma
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs">
+                    {/* 1. Venda Direta Online */}
+                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={caixaSubModes.vendaDireta}
+                          onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaDireta: e.target.checked }))}
+                          className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span className="flex items-center gap-1">
+                          <span>🤝</span>
+                          <span className="font-semibold text-slate-200">Venda Direta Online</span>
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                        caixaModalityCounts.vendaDireta > 0 ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/40' : 'bg-black/30 text-slate-600'
+                      }`}>
+                        {caixaModalityCounts.vendaDireta}
+                      </span>
                     </label>
-                    <label className="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
-                      <input
-                        type="checkbox"
-                        checked={caixaSubModes.licitacao}
-                        onChange={e => setCaixaSubModes(prev => ({ ...prev, licitacao: e.target.checked }))}
-                        className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
-                      />
-                      <span>Licitação Aberta</span>
+
+                    {/* 2. Venda Online (Disputa cronômetro) */}
+                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={caixaSubModes.vendaOnline}
+                          onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaOnline: e.target.checked }))}
+                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span className="flex items-center gap-1">
+                          <span>⏱️</span>
+                          <span className="font-semibold text-slate-200">Venda Online</span>
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                        caixaModalityCounts.vendaOnline > 0 ? 'bg-cyan-950/80 text-cyan-300 font-bold border border-cyan-800/40' : 'bg-black/30 text-slate-600'
+                      }`}>
+                        {caixaModalityCounts.vendaOnline}
+                      </span>
                     </label>
-                    <label className="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
-                      <input
-                        type="checkbox"
-                        checked={caixaSubModes.leilaoSfi}
-                        onChange={e => setCaixaSubModes(prev => ({ ...prev, leilaoSfi: e.target.checked }))}
-                        className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
-                      />
-                      <span>Leilão SFI (1º/2º Leilão)</span>
+
+                    {/* 3. Licitação Aberta */}
+                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={caixaSubModes.licitacao}
+                          onChange={e => setCaixaSubModes(prev => ({ ...prev, licitacao: e.target.checked }))}
+                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span className="flex items-center gap-1">
+                          <span>📢</span>
+                          <span className="font-semibold text-slate-200">Licitação Aberta</span>
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                        caixaModalityCounts.licitacao > 0 ? 'bg-amber-950/80 text-amber-300 font-bold border border-amber-800/40' : 'bg-black/30 text-slate-600'
+                      }`}>
+                        {caixaModalityCounts.licitacao}
+                      </span>
+                    </label>
+
+                    {/* 4. Leilão SFI */}
+                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={caixaSubModes.leilaoSfi}
+                          onChange={e => setCaixaSubModes(prev => ({ ...prev, leilaoSfi: e.target.checked }))}
+                          className="rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span className="flex items-center gap-1">
+                          <span>⚖️</span>
+                          <span className="font-semibold text-slate-200">Leilão SFI (1º/2º)</span>
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                        caixaModalityCounts.leilaoSfi > 0 ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-800/40' : 'bg-black/30 text-slate-600'
+                      }`}>
+                        {caixaModalityCounts.leilaoSfi}
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -1324,6 +1596,45 @@ export default function Dashboard({
                   </button>
                 </div>
               </div>
+
+              {/* Padrão de Mercado (M² Flip) */}
+              <div className="pt-2 border-t border-slate-800/80">
+                <span className="text-[10px] text-slate-400 block mb-1">Padrão de Mercado (M² Flip)</span>
+                <div className="grid grid-cols-3 gap-1">
+                  <button
+                    onClick={() => setPrestigeFilter('all')}
+                    className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
+                      prestigeFilter === 'all'
+                        ? 'bg-slate-750 text-white border-slate-600'
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => setPrestigeFilter('nobre')}
+                    className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
+                      prestigeFilter === 'nobre'
+                        ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/60 shadow-xs'
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                    title="Consolidado / Nobre: preco_m2_flip >= 4500"
+                  >
+                    Nobre (≥ 4.5k)
+                  </button>
+                  <button
+                    onClick={() => setPrestigeFilter('prime')}
+                    className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
+                      prestigeFilter === 'prime'
+                        ? 'bg-purple-600/30 text-purple-300 border-purple-500/60 shadow-xs'
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                    title="Alto Padrão / Prime: preco_m2_flip >= 8000"
+                  >
+                    Prime (≥ 8k)
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* 6. ALOCAÇÃO DE CAPITAL (Orçamento Numérico) */}
@@ -1568,13 +1879,14 @@ export default function Dashboard({
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <AnimatePresence mode="popLayout">
                 {filteredAndSortedAuctions.slice(0, visibleCount).map((auc, idx) => {
-                  const repairCost = auc.estimatedRepair || Math.round(auc.auctionPrice * 0.05);
-                  const condoDebt = auc.pendingCondoCost || (auc.origin === 'caixa' ? Math.round(((auc as any).evaluationPrice || auc.estimatedValue || auc.auctionPrice * 1.5) * 0.10) : (auc.pendingDebts || 0));
-                  const totalCost = auc.auctionPrice + repairCost + condoDebt + (auc.otherCosts || (auc.itbiCost || 0) + (auc.notaryCost || 0));
+                  const costs = auctionCosts(auc);
+                  const totalCost = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo + costs.custoCarregamento;
                   const isSelected = selectedAuctionId === auc.id;
                   const quality = assessDataQuality(auc);
-                  const isFeatured = quality.canBeFeatured;
                   const spreadSqm = calculateSpreadSqm(auc);
+                  const flipPrice = Number(auc.vendaBaixaPrice) || Number(auc.vendaMediaPrice) || 0;
+                  const lucroReal = flipPrice > 0 ? Math.round(flipPrice - totalCost) : (auc.calculatedProfit !== undefined ? Number(auc.calculatedProfit) : undefined);
+                  const roi = (lucroReal !== undefined && totalCost > 0) ? Number(((lucroReal / totalCost) * 100).toFixed(2)) : (auc.calculatedRoi !== undefined ? Number(auc.calculatedRoi) : undefined);
 
                   return (
                     <motion.div
@@ -1589,8 +1901,6 @@ export default function Dashboard({
                       className={`auction-card bg-slate-900/95 border rounded-2xl shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                         isSelected
                           ? 'border-indigo-400 ring-2 ring-indigo-400/60 shadow-[0_20px_50px_rgba(99,102,241,0.25)]'
-                          : isFeatured
-                          ? 'border-indigo-500/50 ring-1 ring-indigo-500/30'
                           : 'border-slate-800 hover:border-slate-700'
                       }`}
                     >
@@ -1600,7 +1910,7 @@ export default function Dashboard({
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0 space-y-2">
                             
-                            {/* Badges de Status e Avisos dos Cards */}
+                            {/* Badges de Status dos Cards (Limpos e Diretos) */}
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-800 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-700">
                                 {auc.propertyType} • {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
@@ -1618,14 +1928,6 @@ export default function Dashboard({
                                 );
                               })()}
 
-                              {/* Badge Oficial do Portal Zuk */}
-                              {(auc.leiloeiro === 'Portal Zuk' || (auc.auctionLink && auc.auctionLink.includes('portalzuk')) || (auc.id && auc.id.includes('portalzuk'))) && (
-                                <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-purple-950/90 text-purple-300 border border-purple-500/60 shadow-xs flex items-center gap-1">
-                                  <span>🏛️</span>
-                                  <span>Portal Zuk</span>
-                                </span>
-                              )}
-
                               {/* Risco (Aviso com alto contraste e cores vivas) */}
                               <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
                                 auc.riskLevel === 'Baixo' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50' :
@@ -1634,26 +1936,6 @@ export default function Dashboard({
                               }`}>
                                 Risco {auc.riskLevel || 'Baixo'}
                               </span>
-
-                              {/* Badge de Qualidade de Dados */}
-                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${quality.badgeClass}`} title={quality.reasons.join('; ') || 'Auditoria pericial 100% verificada'}>
-                                {quality.isIncompleto && 'ℹ️ '}
-                                {quality.badgeLabel}
-                              </span>
-
-                              {/* Trava Rígida de Incerteza Local: Risco de Amostragem */}
-                              {quality.hasNoLocalHistory && (
-                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-950/90 text-amber-300 border border-amber-600/60 shadow-xs flex items-center gap-1" title="Risco de Amostragem: Sem histórico de transações na via ou no condomínio. Pontuação de liquidez travada no teto de 5.0/10.">
-                                  <span>⚠️</span>
-                                  <span>Risco de Amostragem: Sem histórico na via</span>
-                                </span>
-                              )}
-
-                              {isFeatured && (
-                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-950 border border-amber-400 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-500/50 flex items-center gap-0.5">
-                                  ★ Destaque
-                                </span>
-                              )}
                             </div>
 
                             {/* Título e Endereço */}
@@ -1739,36 +2021,39 @@ export default function Dashboard({
                           </div>
 
                           {/* Custo Total Est. com Tooltip */}
-                          <div className="relative group/cost flex flex-col justify-center cursor-help">
+                          <div className="relative group/cost flex flex-col justify-center cursor-help whitespace-nowrap">
                             <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider whitespace-nowrap">
                                 Custo Total
                               </span>
                               <Info className="w-2.5 h-2.5 text-slate-500" />
                             </div>
-                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 whitespace-nowrap">
                               {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
                             </span>
                             {/* Tooltip */}
-                            <div className="absolute bottom-full left-0 mb-2 w-60 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
+                            <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
                               <div className="font-bold text-indigo-300 border-b border-slate-800 pb-1">Composição do Custo</div>
-                              <div className="flex justify-between"><span>Lance:</span><strong>{auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}</strong></div>
-                              <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(repairCost)}</strong></div>
-                              <div className="flex justify-between"><span>Dívidas/Condomínio:</span><strong>{formatBRL(condoDebt)}</strong></div>
-                              <div className="flex justify-between"><span>ITBI & Custos:</span><strong>{formatBRL(auc.otherCosts || 0)}</strong></div>
+                              <div className="flex justify-between"><span>Lance:</span><strong>{costs.bid > 0 ? formatBRL(costs.bid) : 'Lance não confirmado'}</strong></div>
+                              {costs.auctioneer > 0 && <div className="flex justify-between"><span>Comissão Leiloeiro (5%):</span><strong>{formatBRL(costs.auctioneer)}</strong></div>}
+                              <div className="flex justify-between"><span>ITBI & RGI:</span><strong>{formatBRL(costs.itbi + costs.registry)}</strong></div>
+                              <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(costs.repair)}</strong></div>
+                              {(costs.iptu > 0 || costs.condo > 0) && <div className="flex justify-between"><span>Dívidas (IPTU/Condomínio):</span><strong>{formatBRL(costs.iptu + costs.condo)}</strong></div>}
+                              <div className="flex justify-between"><span>Carregamento (1.5% Gabarito):</span><strong>{formatBRL(costs.custoCarregamento)}</strong></div>
+                              <div className="flex justify-between border-t border-slate-800 pt-1 font-bold text-slate-100"><span>Total:</span><strong>{formatBRL(totalCost)}</strong></div>
                             </div>
                           </div>
 
                           {/* Lucro Estimado Real com valor neutro limpo */}
-                          <div className="flex flex-col justify-center">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                          <div className="flex flex-col justify-center whitespace-nowrap">
+                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider whitespace-nowrap">
                               Lucro Real Est.
                             </span>
-                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
-                              {auc.calculatedProfit ? formatBRL(auc.calculatedProfit) : 'Sob análise'}
+                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 whitespace-nowrap">
+                              {lucroReal !== undefined ? formatBRL(lucroReal) : 'Sob análise'}
                             </span>
                             {spreadSqm > 0 && (
-                              <span className="text-[9.5px] font-mono text-emerald-400 font-bold mt-0.5" title="Spread líquido de saída por m² privativo">
+                              <span className="text-[9.5px] font-mono text-emerald-400 font-bold mt-0.5 whitespace-nowrap" title="Spread líquido de saída por m² privativo">
                                 Spread: {formatBRL(spreadSqm)}/m²
                               </span>
                             )}
@@ -1822,12 +2107,12 @@ export default function Dashboard({
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
                           
                           {/* ROI Projetado */}
-                          <div className="flex flex-col justify-center">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                          <div className="flex flex-col justify-center whitespace-nowrap">
+                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider whitespace-nowrap">
                               ROI Projetado
                             </span>
-                            <span className="text-xs sm:text-sm font-black font-mono text-slate-200 mt-0.5">
-                              {auc.calculatedRoi !== undefined ? `${auc.calculatedRoi}%` : 'Sob análise'}
+                            <span className="text-xs sm:text-sm font-black font-mono text-slate-200 mt-0.5 whitespace-nowrap">
+                              {roi !== undefined ? `${roi}%` : 'Sob análise'}
                             </span>
                           </div>
 
@@ -1842,41 +2127,67 @@ export default function Dashboard({
                           </div>
 
                           {/* Liquidez com Tooltip */}
-                          <div className="relative group/liq flex flex-col justify-center cursor-help">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Liquidez</span>
-                              <Info className="w-2.5 h-2.5 text-slate-500" />
-                            </div>
-                            <span className="text-xs sm:text-sm font-black font-mono text-slate-200 mt-0.5">
-                              {Math.min(auc.liquidityScore || 1, assessDataQuality(auc).liquidityCeiling)}/10
-                            </span>
+                          {(() => {
+                            const streetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
+                            const hasStreetData = streetCount > 0;
+                            const isCalibratedBadge = quality.badgeLabel.includes('Calibrado') || Boolean(auc.valuationCalibration);
+                            const effectiveCeiling = !hasStreetData 
+                              ? 0 
+                              : (isCalibratedBadge 
+                                  ? ((Number(auc.itbiSurroundingCount) || 0) < 5 ? 3.0 : 5.0) 
+                                  : quality.liquidityCeiling);
+                            const finalLiquidity = !hasStreetData ? 0 : Math.min(auc.liquidityScore ?? 0, effectiveCeiling);
 
-                            {/* Tooltip de Liquidez */}
-                            <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
-                              <div className="text-[11px] font-bold text-slate-200 flex items-center gap-1 mb-1">
-                                <span>📊 Critérios de Liquidez ({Math.min(auc.liquidityScore || 1, assessDataQuality(auc).liquidityCeiling)}/10)</span>
+                            return (
+                              <div className="relative group/liq flex flex-col justify-center cursor-help">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Liquidez</span>
+                                  <Info className="w-2.5 h-2.5 text-slate-500" />
+                                </div>
+                                <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${finalLiquidity === 0 ? 'text-slate-400' : 'text-slate-200'}`}>
+                                  {finalLiquidity}/10
+                                </span>
+
+                                {/* Tooltip de Liquidez */}
+                                <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
+                                  <div className="text-[11px] font-bold text-slate-200 flex items-center gap-1 mb-1">
+                                    <span>📊 Critérios de Liquidez ({finalLiquidity}/10)</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-300 leading-relaxed">
+                                    {!hasStreetData ? (
+                                      <span className="text-amber-300 font-bold block mb-1">
+                                        ⚠️ Sem dados na rua: Nenhuma transação registrada na via pública. Liquidez zerada (0/10).
+                                      </span>
+                                    ) : isCalibratedBadge ? (
+                                      <span className="text-amber-300 font-bold block mb-1">
+                                        ⚠️ Amostragem Calibrada: Dados locais insuficientes ({auc.itbiStreetCount || 0} na rua, {auc.itbiBuildingCount || 0} no prédio). Liquidez travada no teto máximo de {effectiveCeiling}/10.
+                                      </span>
+                                    ) : quality.hasNoLocalHistory ? (
+                                      <span className="text-amber-300 font-bold block mb-1">
+                                        ⚠️ Escuridão Amostral: Sem histórico de transações na via ou condomínio. Liquidez travada no teto de {quality.liquidityCeiling <= 1 ? '1.0/10' : '3.0/10'}.
+                                      </span>
+                                    ) : quality.hasFragileLocalHistory ? (
+                                      <span className="text-amber-300 font-bold block mb-1">
+                                        ⚠️ Amostragem Frágil: Poucas transações na via ({auc.itbiStreetCount || 0} na rua, {auc.itbiBuildingCount || 0} no prédio). Liquidez travada no teto máximo de 5.0/10.
+                                      </span>
+                                    ) : null}
+                                    Giro factual estritamente apurado pela densidade de escrituras públicas (ITBI) registradas no condomínio/prédio, na rua, no raio geodésico do entorno e no bairro. Apartamentos exigem transações no condomínio para pontuação máxima (sem vendas no prédio, a liquidez fica calibrada em no máximo 5-6). Casas e comerciais avaliam diretamente a densidade da rua e entorno.
+                                  </p>
+                                </div>
                               </div>
-                              <p className="text-[10px] text-slate-300 leading-relaxed">
-                                {quality.hasNoLocalHistory && (
-                                  <span className="text-amber-300 font-bold block mb-1">
-                                    ⚠️ Risco de Amostragem: Sem histórico de transações na via ou condomínio. Liquidez travada no teto máximo de 5.0/10.
-                                  </span>
-                                )}
-                                Giro factual estritamente apurado pela densidade de escrituras públicas (ITBI) registradas no condomínio/prédio, na rua, no raio geodésico do entorno e no bairro. Apartamentos exigem transações no condomínio para pontuação máxima (sem vendas no prédio, a liquidez fica calibrada em no máximo 5-6). Casas e comerciais avaliam diretamente a densidade da rua e entorno.
-                              </p>
-                            </div>
-                          </div>
+                            );
+                          })()}
 
                           {/* Flip Rápido (60d) com Tooltip */}
-                          <div className="relative group/flip flex flex-col justify-center cursor-help">
+                          <div className="relative group/flip flex flex-col justify-center cursor-help whitespace-nowrap">
                             <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
+                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate whitespace-nowrap">
                                 Flip Rápido (60d)
                               </span>
                               <Info className="w-2.5 h-2.5 text-slate-500" />
                             </div>
                             <span className="text-[11px] sm:text-xs xl:text-sm font-black text-slate-200 font-mono mt-0.5 whitespace-nowrap">
-                              {auc.vendaBaixaPrice ? formatBRL(auc.vendaBaixaPrice) : 'Sob análise'}
+                              {flipPrice > 0 ? formatBRL(flipPrice) : 'Amostragem Insuficiente (Análise Manual)'}
                             </span>
 
                             {/* Tooltip de Flip Rápido */}
@@ -1913,14 +2224,24 @@ export default function Dashboard({
                           const hasValidSalePortal = rawPortalSqm > 0 && (!isRioDeJaneiroCity || rawPortalSqm >= 1500);
 
                           return (
-                            <div className="border-t border-slate-800/80 pt-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
-                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                            <div className="border-t border-slate-800/80 pt-2.5 flex items-center justify-between text-xs">
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 w-full justify-between">
                                 {hasValidSalePortal ? (
-                                  <div className="flex items-center space-x-1.5">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-[10px] font-bold uppercase font-mono text-slate-400">Portais Imobiliários - Metro Quadrado Rua:</span>
                                     <span className="font-mono font-bold text-slate-100 text-[12px]">
                                       {formatBRL(rawPortalSqm)}/m²
                                     </span>
+                                    {auc.portalSampleCount ? (
+                                      <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-800/50 px-1.5 py-0.5 rounded">
+                                        ({auc.portalSampleCount.toLocaleString('pt-BR')} anúncios na via)
+                                      </span>
+                                    ) : null}
+                                    {auc.portalTypologyAvgPrice ? (
+                                      <span className="text-[10px] text-slate-400 hidden md:inline">
+                                        · Preço médio anúncios: <strong className="text-slate-200 font-mono">{formatBRL(auc.portalTypologyAvgPrice)}</strong>
+                                      </span>
+                                    ) : null}
                                   </div>
                                 ) : (
                                   <div className="flex items-center space-x-1.5">
@@ -1930,25 +2251,21 @@ export default function Dashboard({
                                     </span>
                                   </div>
                                 )}
+
+                                {auc.portalStreetUrl && (
+                                  <a
+                                    href={auc.portalStreetUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-0.5 transition-colors underline ml-auto"
+                                    title="Ver análise completa da rua no Morada Virtual"
+                                  >
+                                    <span>Análise da Rua</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
                               </div>
-
-                              {hasValidSalePortal && (
-                                <div className="flex items-center space-x-2">
-                                  {/* Badge da Fonte */}
-                                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                                    (auc.fontePortal || 'ZAP Imóveis').includes('QuintoAndar')
-                                      ? 'bg-blue-950/70 text-blue-300 border-blue-800/60'
-                                      : 'bg-amber-950/70 text-amber-300 border-amber-800/60'
-                                  }`}>
-                                    {auc.fontePortal || 'ZAP Imóveis'}
-                                  </span>
-
-                                  {/* Badge do Nível de Referência */}
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-950/70 text-emerald-300 border-emerald-800/60">
-                                    Mesma Rua
-                                  </span>
-                                </div>
-                              )}
                             </div>
                           );
                         })()}
@@ -2031,7 +2348,7 @@ export default function Dashboard({
                             </span>
                           ) : (
                             <span className="text-[11px] bg-slate-950 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-full font-mono" title="Média oficial de ITBI">
-                              🏛️ ITBI RUA: <strong className="text-slate-200">{auc.itbiStreetAvgSqm ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²` : 'Sem dados'}</strong> | ENTORNO: <strong className="text-slate-200">{auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiUnitValueAvg)}/m²` : '-'}</strong>
+                              🏛️ ITBI RUA: <strong className="text-slate-200">{(auc.itbiStreetCount && auc.itbiStreetCount > 0 && auc.itbiStreetAvgSqm) ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²` : 'Sem dados'}</strong> | ENTORNO: <strong className="text-slate-200">{auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiUnitValueAvg)}/m²` : '-'}</strong>
                             </span>
                           )}
 
@@ -2140,12 +2457,23 @@ export default function Dashboard({
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white text-base">
-                      Simulação de Viabilidade & Jurídico
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      {simulatingAuction.title} • {simulatingAuction.neighborhood}, {simulatingAuction.city} - {simulatingAuction.state}
-                    </p>
+                    {(() => {
+                      const realNeighborhood = simulatingAuction.officialNeighborhood || 
+                        (simulatingAuction as any).bairroReal || 
+                        (simulatingAuction.divergentNeighborhoodNotice ? cleanDivergentNotice(simulatingAuction.divergentNeighborhoodNotice)?.match(/Bairro Real:\s*([^(]+)/i)?.[1]?.trim() : undefined) || 
+                        simulatingAuction.neighborhood;
+
+                      return (
+                        <>
+                          <h3 className="font-bold text-white text-base">
+                            Simulação de Viabilidade & Jurídico
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            {simulatingAuction.title} • {realNeighborhood}, {simulatingAuction.city} - {simulatingAuction.state}
+                          </p>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <button
@@ -2159,16 +2487,26 @@ export default function Dashboard({
               <RealValueCalculator
                 key={simulatingAuction.id}
                 itbiStats={itbiStats}
-                prefillData={{
-                  ...simulatingAuction,
-                  id: simulatingAuction.id,
-                  title: simulatingAuction.title,
-                  description: simulatingAuction.description,
-                  auctionLink: simulatingAuction.auctionLink,
-                  state: simulatingAuction.state || selectedStateFilter || 'RJ',
-                  city: simulatingAuction.city,
-                  neighborhood: simulatingAuction.neighborhood,
-                  address: simulatingAuction.address,
+                prefillData={(() => {
+                  const realNeighborhood = simulatingAuction.officialNeighborhood || 
+                    (simulatingAuction as any).bairroReal || 
+                    (simulatingAuction.divergentNeighborhoodNotice ? cleanDivergentNotice(simulatingAuction.divergentNeighborhoodNotice)?.match(/Bairro Real:\s*([^(]+)/i)?.[1]?.trim() : undefined) || 
+                    simulatingAuction.neighborhood;
+
+                  return {
+                    ...simulatingAuction,
+                    id: simulatingAuction.id,
+                    title: simulatingAuction.title,
+                    description: simulatingAuction.description,
+                    auctionLink: simulatingAuction.auctionLink,
+                    state: simulatingAuction.state || selectedStateFilter || 'RJ',
+                    city: simulatingAuction.city,
+                    neighborhood: realNeighborhood,
+                    officialNeighborhood: realNeighborhood,
+                    bairroReal: realNeighborhood,
+                    originalListedNeighborhood: simulatingAuction.originalListedNeighborhood || simulatingAuction.neighborhood,
+                    divergentNeighborhoodNotice: simulatingAuction.divergentNeighborhoodNotice,
+                    address: simulatingAuction.address,
                   matriculaText: simulatingAuction.matriculaText,
                   propertyType: simulatingAuction.propertyType,
                   sizeSqm: simulatingAuction.sizeSqm,
@@ -2199,7 +2537,8 @@ export default function Dashboard({
                   communityDistanceM: simulatingAuction.communityDistanceM,
                   ageDepreciationPct: simulatingAuction.ageDepreciationPct,
                   buildingAge: (simulatingAuction as any).buildingAge,
-                }}
+                };
+              })()}
                 onUpdateProperty={async (updates) => {
                   await onUpdateProperty({ id: simulatingAuction.id, ...updates });
                   setSimulatingAuction(prev => prev ? { ...prev, ...updates } : null);
@@ -2210,6 +2549,10 @@ export default function Dashboard({
                       body: JSON.stringify(updates)
                     }).catch(() => {});
                   } catch (e) {}
+                }}
+                onValuationComplete={(lotId, result) => {
+                  void onUpdateProperty({ id: lotId, ...result });
+                  setSimulatingAuction(prev => (prev && prev.id === lotId) ? { ...prev, ...result } : prev);
                 }}
                 onClose={() => setSimulatingAuction(null)}
               />

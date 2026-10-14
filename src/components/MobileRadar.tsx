@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AuctionProperty, CalculatorState } from '../types';
+import { calculateSpreadSqm } from './Dashboard.tsx';
 import { Search, Sparkles, MapPin, DollarSign, TrendingUp, ExternalLink, Calculator, Filter } from 'lucide-react';
 
 interface MobileRadarProps {
@@ -52,10 +53,28 @@ export const MobileRadar: React.FC<MobileRadarProps> = ({
       );
     }
 
-    if (sortBy === 'profit') {
-      result.sort((a, b) => (b.calculatedProfit || 0) - (a.calculatedProfit || 0));
+    if (sortBy === 'spread' || !sortBy) {
+      result.sort((a, b) => {
+        const spreadDiff = calculateSpreadSqm(b) - calculateSpreadSqm(a);
+        if (spreadDiff !== 0) return spreadDiff;
+        const profitDiff = (Number(b.calculatedProfit) || 0) - (Number(a.calculatedProfit) || 0);
+        if (profitDiff !== 0) return profitDiff;
+        const liqDiff = (b.liquidityScore ?? 0) - (a.liquidityScore ?? 0);
+        if (liqDiff !== 0) return liqDiff;
+        return (Number(b.calculatedRoi) || 0) - (Number(a.calculatedRoi) || 0);
+      });
+    } else if (sortBy === 'profit') {
+      result.sort((a, b) => {
+        const profitDiff = (Number(b.calculatedProfit) || 0) - (Number(a.calculatedProfit) || 0);
+        if (profitDiff !== 0) return profitDiff;
+        const spreadDiff = calculateSpreadSqm(b) - calculateSpreadSqm(a);
+        if (spreadDiff !== 0) return spreadDiff;
+        const liqDiff = (b.liquidityScore ?? 0) - (a.liquidityScore ?? 0);
+        if (liqDiff !== 0) return liqDiff;
+        return (Number(b.calculatedRoi) || 0) - (Number(a.calculatedRoi) || 0);
+      });
     } else if (sortBy === 'roi') {
-      result.sort((a, b) => (b.calculatedRoi || 0) - (a.calculatedRoi || 0));
+      result.sort((a, b) => (Number(b.calculatedRoi) || 0) - (Number(a.calculatedRoi) || 0));
     } else if (sortBy === 'price_asc') {
       result.sort((a, b) => (a.auctionPrice || 0) - (b.auctionPrice || 0));
     }
@@ -115,6 +134,7 @@ export const MobileRadar: React.FC<MobileRadarProps> = ({
           onChange={(e) => onSortByChange(e.target.value)}
           className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-2 py-2 focus:outline-none cursor-pointer"
         >
+          <option value="spread">Maior Spread por m²</option>
           <option value="profit">Maior Lucro</option>
           <option value="roi">Maior ROI</option>
           <option value="price_asc">Menor Preço</option>

@@ -158,3 +158,131 @@ export async function collectPestanaApi(dir:string,onPage:(rows:ScrapedAuctionDr
   if(cards.length!==requested.length)throw Error('Inventário Pestana não retornou todos os lotes anunciados');
  }
 }
+
+export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
+  if (!lot) return null;
+  const rawTitle = lot.nm_titulo_lote || '';
+  const rawAuctionTitle = lot.nm_titulo_leilao || '';
+  if (/simula[cç][aã]o|teste/i.test(rawTitle) || /simula[cç][aã]o|teste/i.test(rawAuctionTitle)) return null;
+
+  const city = lot.nm_cidade || '';
+  const state = (lot.nm_estado || '').toUpperCase();
+  if (!allowedSyncLocation(city, state)) return null;
+
+  const descHtml = lot.nm_descricao || '';
+  const $ = cheerio.load(descHtml);
+  const descText = $('body').text().replace(/\s+/g, ' ').trim();
+  
+  const title = rawTitle || descText.slice(0, 100);
+  const url = `https://www.leiloesmariafilomena.com.br/leilao/index/leilao_id/${lot.leilao_id}/lote/${lot.lote_id}`;
+  
+  let propertyType: 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno' = 'Apartamento';
+  const subcat = (lot.nm_subcategoria || '').toLowerCase();
+  if (subcat.includes('casa')) propertyType = 'Casa';
+  else if (subcat.includes('terreno') || subcat.includes('lote') || subcat.includes('chácara') || subcat.includes('sítio')) propertyType = 'Terreno';
+  else if (subcat.includes('comercial') || subcat.includes('sala') || subcat.includes('escritório') || subcat.includes('vaga') || subcat.includes('box')) propertyType = 'Comercial';
+  
+  const price = Number(lot.vl_lanceinicial || lot.vl_lanceminimo || 0);
+  const dateRaw = lot.dt_fechamento || '';
+  const dateOnlyStr = dateRaw ? dateRaw.slice(0, 10) : '';
+  
+  const matriculaAnexo = (lot.anexos || []).find((a: any) => /matr[íi]cula/i.test(a.nm || ''));
+  const matriculaUrl = matriculaAnexo?.nm_path_completo || '';
+  
+  const matriculaMatch = descText.match(/Matr[íi]cula\s+(?:n[ºo°]\s*)?([0-9.]+)/i);
+  const matriculaNumber = matriculaMatch ? matriculaMatch[1].replace(/\./g, '') : undefined;
+  
+  const isOccupied = /OCUPA[CÇ][AÃ]O:\s*OCUPADO/i.test(descText) ? true : /DESOCUPADO/i.test(descText) ? false : undefined;
+  
+  const allowsInstallments = /pagamento parcelado|parcelamento|saldo restante poderá ser realizado em até/i.test(descText);
+  const parcelasMatch = descText.match(/at[ée]\s*(\d+)\s*parcelas/i);
+  const maxInstallments = parcelasMatch ? Number(parcelasMatch[1]) : allowsInstallments ? 30 : 0;
+  
+  const entradaMatch = descText.match(/sinal(?:\s+correspondente\s+a)?\s*(\d+)%/i);
+  const minDownpaymentPercent = entradaMatch ? Number(entradaMatch[1]) : allowsInstallments ? 20 : 100;
+  
+  const addrMatch = descText.match(/situado\s+(?:na|no|à|ao)\s+([^,]+,\s*n[ºo°]?\s*[^,]+(?:,[^.]+)?)/i);
+  const address = addrMatch ? addrMatch[1].trim() : '';
+  
+  const bairroMatch = descText.match(/,\s*([A-ZÀ-ÿ\s]{3,30}),\s*(?:Rio de Janeiro|Niterói|São Gonçalo|Nova Iguaçu|Maricá)/i);
+  const neighborhood = bairroMatch ? bairroMatch[1].trim() : '';
+
+  const imageUrl = lot.fotos?.[0]?.nm_path_completo || '';
+  const origin: 'extrajudicial' | 'judicial' = (lot.nm_statusleilao || '').toLowerCase().includes('judicial') && !(lot.nm_statusleilao || '').toLowerCase().includes('extrajudicial') ? 'judicial' : 'extrajudicial';
+
+  const base: ScrapedAuctionDraft = {
+    portalId: 'mariafilomena',
+    auctioneerName: 'Leilões Maria Filomena',
+    title,
+    address,
+    neighborhood,
+    city,
+    state,
+    propertyType,
+    sizeSqm: 0,
+    auctionPrice: price,
+    firstAuctionPrice: price,
+    auctionDate: dateOnlyStr,
+    firstAuctionDate: dateOnlyStr,
+    auctionLink: url,
+    imageUrl,
+    description: descText,
+    origin,
+    originVerified: true,
+    sourceVerified: true,
+    locationScopeVerified: true,
+    priceVerified: price > 0,
+    occupied: isOccupied,
+    allowsInstallments,
+    maxInstallments,
+    minDownpaymentPercent,
+    matriculaUrl,
+    matriculaNumber
+  };
+
+  return parseOfficialLotDetail(base, {
+    title,
+    text: descText,
+    image: imageUrl,
+    structuredAddresses: address ? [address] : [],
+    structuredSizes: [],
+    documentLinks: (lot.anexos || []).map((a: any) => ({ name: a.nm, url: a.nm_path_completo })),
+    officialFinancials: {
+      auctionPrice: price,
+      priceVerified: price > 0,
+      auctionDate: dateOnlyStr,
+      firstAuctionPrice: price,
+      firstAuctionDate: dateOnlyStr
+    }
+  }, url, '', matriculaUrl);
+}
+
+export async function collectMariaFilomenaApi(
+  dir: string,
+  onPage: (rows: ScrapedAuctionDraft[], total: number) => Promise<void>
+) {
+  let page = 1;
+  let totalPages = 1;
+  while (page <= totalPages) {
+    const form = new URLSearchParams({ pg: String(page), tipo: '', categoria: '3', estado: '', cidade: '' });
+    const response = await fetch('https://www.leiloesmariafilomena.com.br/core/api/get-lotes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form,
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!response.ok) throw Error(`Maria Filomena API: HTTP ${response.status}`);
+    const data = await response.json();
+    fs.writeFileSync(path.join(dir, `mariafilomena-api-${page}.json`), JSON.stringify(data));
+    totalPages = Number(data.totalPages) || 1;
+    const items = data.items || [];
+    const drafts: ScrapedAuctionDraft[] = [];
+    for (const lot of items) {
+      const draft = mariaFilomenaLotToDraft(lot);
+      if (draft) drafts.push(draft);
+    }
+    await onPage(drafts, items.length);
+    page++;
+  }
+}
+

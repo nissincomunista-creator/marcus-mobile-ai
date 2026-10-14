@@ -11,6 +11,7 @@ export interface DataQualityReport {
   canBeFeatured: boolean;
   liquidityCeiling: number;
   hasNoLocalHistory: boolean;
+  hasFragileLocalHistory: boolean;
   reasons: string[];
   badgeLabel: string;
   badgeClass: string;
@@ -80,6 +81,46 @@ export function getVerifiedLocalComparableCount(auc: AuctionProperty): number {
  *    precisa_revisao => 1.0.
  *    Área de risco / comunidade => trava em no máx 2.0.
  */
+/**
+ * Quórum Composto de Precificação e Trava de Supressão de Flip:
+ * - Nível Verde (Soberania Própria): transacoes_predio >= 1 OU transacoes_rua >= 5 -> NÃO suprime (false)
+ * - Nível Amarelo (Dependência de Entorno): transacoes_predio === 0 E transacoes_rua entre 2 e 4:
+ *     * SE transacoes_raio_500m >= 10: NÃO suprime (false)
+ *     * SE transacoes_raio_500m < 10: SUPRIME (true)
+ * - Nível Vermelho (Vazio Amostral Crítico): transacoes_predio === 0 E transacoes_rua <= 1 -> SUPRIME (true)
+ */
+export function isFlipSuppressedByVazioAmostral(auc: {
+  itbiBuildingCount?: number;
+  itbiStreetCount?: number;
+  itbiSurroundingCount?: number;
+  itbiNeighborhoodCount?: number;
+  valuationCalibration?: string;
+}): boolean {
+  const bldg = Math.max(0, Number(auc.itbiBuildingCount) || 0);
+  const street = Math.max(0, Number(auc.itbiStreetCount) || 0);
+  const surr = Math.max(0, Number(auc.itbiSurroundingCount) || 0);
+  const neigh = Math.max(0, Number(auc.itbiNeighborhoodCount) || 0);
+
+  // 1. Nível Verde (Soberania Própria)
+  if (bldg >= 1 || street >= 5) {
+    return false;
+  }
+
+  // 2. Calibração Contextual Aprovada NBR (fourTierValuation):
+  // Se houver amostragem no entorno (>= 5) e bairro (>= 7), ou se rua >= 2 com suporte de entorno (>= 5) ou bairro (>= 7)
+  if (surr >= 5 && (neigh >= 7 || street >= 1)) {
+    return false;
+  }
+
+  // 3. Nível Amarelo (Dependência de Entorno)
+  if (street >= 2) {
+    return surr < 5 && neigh < 7;
+  }
+
+  // 4. Nível Vermelho (Vazio Amostral Crítico)
+  return true;
+}
+
 export function calculateSampleDensityLiquidity(
   auc: {
     propertyType?: string;
@@ -99,17 +140,24 @@ export function calculateSampleDensityLiquidity(
     itbiStreetAvgSqm?: number;
     sizeSqm?: number;
     neighborhoodDeltaTDays?: number;
+    valuationCalibration?: string;
+    valuationConfidence?: string;
   },
   neighborhoodSalesLast24Months?: number,
   neighborhoodDeltaTDaysParam?: number
 ): number {
+  const streetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
+  const bldgCount = Math.max(0, Number(auc.itbiBuildingCount) || 0);
+  const surroundingCount = Math.max(0, Number(auc.itbiSurroundingCount) || 0);
+  const neighCount = Math.max(0, Number(auc.itbiNeighborhoodCount) || Number(neighborhoodSalesLast24Months) || 0);
+
+  // REGRA MANDATÓRIA: Sem dados na via pública (streetCount === 0 E bldgCount === 0),
+  // e sem calibração contextual aprovada (surroundingCount < 5 || neighCount < 7), liquidez é estritamente ZERO (0 / 10).
+  const hasApprovedContext = surroundingCount >= 5 && (neighCount >= 7 || streetCount >= 1);
+  if (streetCount === 0 && bldgCount === 0 && !hasApprovedContext) return 0;
   if (auc.precisa_revisao) return 1;
 
   const isApartment = (auc.propertyType || '').toLowerCase().includes('apart');
-  const bldgCount = Math.max(0, Number(auc.itbiBuildingCount) || 0);
-  const streetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
-  const surroundingCount = Math.max(0, Number(auc.itbiSurroundingCount) || 0);
-  const neighCount = Math.max(0, Number(auc.itbiNeighborhoodCount) || Number(neighborhoodSalesLast24Months) || 0);
 
   // 1. Eixo Bairro (Giro Médio - Peso 40%)
   const deltaT = auc.neighborhoodDeltaTDays ?? neighborhoodDeltaTDaysParam;
@@ -186,7 +234,9 @@ export function calculateSampleDensityLiquidity(
     notaDesagio = 6.0;
   }
 
-  const hasLocalHistory = (streetCount >= 1 || bldgCount >= 1);
+  // Comprovação de histórico local na via pública:
+  // Notas >= 8.0 exigem estritamente streetCount >= 3 E (bldgCount >= 2 OU streetCount >= 5)
+  const hasSolidLocalHistory = streetCount >= 3 && (bldgCount >= 2 || streetCount >= 5);
   const localComparableCount = bldgCount + streetCount;
 
   // Composição Ponderada
@@ -194,27 +244,67 @@ export function calculateSampleDensityLiquidity(
 
   // 4. Trava Protetiva Global:
   // Se o imóvel está em Bairro com nota >= 9.0 e deságio >= 45%, a liquidez final JAMAIS pode ser menor que 8.0,
-  // DESDE QUE haja comprovação de pelo menos 1 transação válida no condomínio ou na própria via.
-  if (hasLocalHistory && notaBairro >= 9.0 && desagio >= 0.45) {
+  // DESDE QUE haja comprovação de histórico local sólido (streetCount >= 3 E (bldgCount >= 2 OU streetCount >= 5)).
+  if (hasSolidLocalHistory && notaBairro >= 9.0 && desagio >= 0.45) {
     rawScore = Math.max(rawScore, 8.0);
-  }
-
-  // 5. Trava Rígida de Incerteza Local (streetCount == 0 E bldgCount == 0):
-  // - Anulação Total de Pisos: O piso de nota 8.0 fica TERMINANTEMENTE DESATIVADO (garantido pela checagem hasLocalHistory acima).
-  // - Teto Máximo Obrigatório: O Score_Liquidez fica travado no limite máximo de 5.0 / 10
-  //   (para qualquer tipologia: Casa, Apartamento ou Comercial).
-  // - Para que um imóvel receba Liquidez 8, 9 ou 10, é obrigatória a comprovação de pelo menos 1 transação
-  //   válida registrada na própria via (transacoes_rua >= 1) ou no condomínio (transacoes_predio >= 1).
-  if (!hasLocalHistory) {
-    rawScore = Math.min(rawScore, 5.0);
-  }
-  if (localComparableCount < 5) {
-    rawScore = Math.min(rawScore, 5.0);
   }
 
   // Trava para área de risco / comunidade
   if (auc.isCommunityRisk || auc.riskLevel === 'Alto') {
     rawScore = Math.min(rawScore, 2);
+  }
+
+  // 5. Hierarquia Estrita de Travas de Liquidez por Densidade Amostral:
+  // Trava Vazio Amostral Crítico:
+  const isVazio = isFlipSuppressedByVazioAmostral({
+    itbiBuildingCount: bldgCount,
+    itbiStreetCount: streetCount,
+    itbiSurroundingCount: surroundingCount,
+    itbiNeighborhoodCount: neighCount,
+    valuationCalibration: auc.valuationCalibration
+  });
+
+  if (isVazio) {
+    if (surroundingCount < 5) {
+      return 1;
+    }
+    return Math.min(3, Math.round(rawScore));
+  }
+
+  // Trava Rígida de Calibração (Fim do 9/10 com poucas amostras):
+  // Se o imóvel depende de calibração por raio ou bairro (ausência de dados locais sólidos),
+  // a liquidez fica IMEDIATA E COMPULSORIAMENTE LIMITADA AO TETO DE 5.0 / 10 (ou 3.0 se entorno for insuficiente).
+  // É terminantemente proibido exibir score 8, 9 ou 10 em qualquer lote que dependa de calibração por raio/bairro.
+  const isCalibrated = Boolean(auc.valuationCalibration) || 
+    auc.valuationCalibration === 'few_local_samples' || 
+    auc.valuationCalibration === 'radius_neighborhood' ||
+    auc.valuationConfidence === 'projected';
+
+  if (isCalibrated) {
+    const calibCeiling = surroundingCount < 5 ? 3.0 : 5.0;
+    return Math.min(calibCeiling, Math.round(rawScore * 2) / 2);
+  }
+
+  // Falha do operador 'OU': se streetCount === 0, Score de Liquidez travado em NO MÁXIMO 5.5 / 10,
+  // mesmo com transações internas do prédio (corrige Del Castilho que recebia 9/10).
+  // Notas 8, 9, 10 estritamente revogadas para ruas zeradas.
+  if (streetCount === 0) {
+    return Math.min(5.5, Math.round(rawScore * 2) / 2);
+  }
+
+  // Nível 2 - Amostragem Frágil (rua < 3 && predio <= 1):
+  if (streetCount < 3 && bldgCount <= 1) {
+    return Math.min(5, Math.round(rawScore));
+  }
+
+  // Nível 3 - Amostragem Média (rua entre 3 e 4 transações e predio <= 1):
+  if (streetCount >= 3 && streetCount <= 4 && bldgCount <= 1) {
+    return Math.min(6.5, Math.round(rawScore * 2) / 2);
+  }
+
+  // Notas 8.0, 9.0 ou 10.0: Histórico de mercado sólido obrigatório na via (streetCount >= 3 && (predio >= 2 OU rua >= 5))
+  if (!hasSolidLocalHistory) {
+    return Math.min(7, Math.round(rawScore));
   }
 
   return Math.round(Math.max(1, Math.min(10, rawScore)));
@@ -267,17 +357,17 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
 
   const explicitBuildingCount = Math.max(0, Number(auc.itbiBuildingCount) || 0);
   const explicitStreetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
-  const hasLocalHistory = (explicitBuildingCount >= 1 || explicitStreetCount >= 1);
-  const hasNoLocalHistory = !hasLocalHistory;
+  const explicitSurroundingCount = Math.max(0, Number(auc.itbiSurroundingCount) || 0);
+  const hasSolidLocalHistory = explicitStreetCount >= 3 && (explicitBuildingCount >= 2 || explicitStreetCount >= 5);
+  const hasNoLocalHistory = (explicitBuildingCount === 0 && explicitStreetCount === 0);
+  const hasFragileLocalHistory = (!hasNoLocalHistory && (explicitStreetCount < 3 && explicitBuildingCount <= 1));
 
   if (hasNoLocalHistory) {
-    reasons.push('Risco de Amostragem: Sem histórico na via');
-  }
-
-  // Trava de liquidez proporcional estritamente à densidade amostral
-  let liquidityCeiling = calculateSampleDensityLiquidity(auc);
-  if (hasNoLocalHistory) {
-    liquidityCeiling = Math.min(liquidityCeiling, 5.0);
+    reasons.push(explicitSurroundingCount < 5
+      ? 'Escuridão Amostral: Sem histórico na via ou entorno'
+      : 'Risco de Amostragem: Sem histórico na via');
+  } else if (hasFragileLocalHistory) {
+    reasons.push('Amostragem Frágil: Poucas transações na via');
   }
 
   // Trava Selo Destaque (Anti-Falso Positivo)
@@ -297,7 +387,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
   const canBeFeatured = 
     status === 'Auditado' &&
     !auc.precisa_revisao &&
-    hasLocalHistory &&
+    hasSolidLocalHistory &&
     localComparableCount >= 5 &&
     auc.valuationConfidence === 'verified' &&
     (auc.calculatedRoi || 0) >= 35 &&
@@ -323,6 +413,16 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
     badgeClass = 'bg-amber-950/70 text-amber-300 border-amber-600/50';
   }
 
+  // Trava de liquidez proporcional estritamente à densidade amostral
+  let liquidityCeiling = calculateSampleDensityLiquidity(auc);
+  const isCalibratedBadge = hasExplicitCalibration || (typeof badgeLabel === 'string' && badgeLabel.includes('Calibrado'));
+  if (explicitStreetCount === 0 && explicitBuildingCount === 0 && !isCalibratedBadge) {
+    liquidityCeiling = 0;
+  } else if (isCalibratedBadge) {
+    const maxCeiling = explicitSurroundingCount < 5 ? 3.0 : 5.0;
+    liquidityCeiling = Math.min(liquidityCeiling, maxCeiling);
+  }
+
   return {
     status,
     isAuditado: status === 'Auditado',
@@ -331,6 +431,7 @@ export function assessDataQuality(auc: AuctionProperty): DataQualityReport {
     canBeFeatured,
     liquidityCeiling,
     hasNoLocalHistory,
+    hasFragileLocalHistory,
     reasons,
     badgeLabel,
     badgeClass

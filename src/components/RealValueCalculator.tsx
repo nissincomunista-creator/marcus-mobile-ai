@@ -1,5 +1,9 @@
+import { fetchCalculatorJson, filterStreetSuggestions, parseCalculatorBRL } from '../utils/calculatorItbi.ts';
+import { locationAddress, addressUnits } from '../utils/locationAddress.ts';
+import { selectRadiusTransactions } from '../utils/itbiRadius.ts';
 import { auctionCosts, calculateFlip } from '../utils/flipCalculation.ts';
-import { resolveOfficialStreet } from '../utils/streetMatching.ts';
+import { resolveOfficialStreet, canonicalStreet } from '../utils/streetMatching.ts';
+import { sanitizeStreetName, parseCleanAddress } from '../utils/addressParser.ts';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { auditRegistryText } from '../utils/registryAudit.ts';
 import { 
@@ -46,7 +50,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import ExecutiveReportModal, { ExecutiveReportData } from './ExecutiveReportModal.tsx';
 import { ItbiTransaction, SavedMarketAnalysis, PropertyType, MatriculaAnalysisReport, MatriculaGravame, MatriculaAuditData, EditalAuditData } from '../types.ts';
-import { computeBidirectionalBenchmarks, DEFAULT_BENCHMARK_SIZE_MODE, BidirectionalBenchmarkResult, getTxIntegralValue, filterByIQR, computeMedian } from '../utils/bidirectionalBenchmark.ts';
+import { computeBidirectionalBenchmarks, DEFAULT_BENCHMARK_SIZE_MODE, BidirectionalBenchmarkResult, getTxIntegralValue, filterByIQR, computeMedian, isVoluntaryMarketSale } from '../utils/bidirectionalBenchmark.ts';
 import { computeFourTierValuation } from '../utils/fourTierValuation.ts';
 import { JuizDeForaAreaModel } from '../utils/juizDeForaAreaModel.ts';
 import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from '../utils/quickFlipPricing.ts';
@@ -88,6 +92,10 @@ export interface PrefilledCalculatorData {
   state?: string;
   city?: string;
   neighborhood?: string;
+  officialNeighborhood?: string;
+  bairroReal?: string;
+  originalListedNeighborhood?: string;
+  divergentNeighborhoodNotice?: string;
   address?: string;
   propertyType?: string;
   sizeSqm?: number;
@@ -205,8 +213,9 @@ function phoneticStreet(street: string | null | undefined): string {
 }
 
 function findBestStreetMatch(target: string | null | undefined, candidateList: any[]): any | null {
-  const name = resolveOfficialStreet(target || '', candidateList.map(c => typeof c === 'string' ? c : c.street || ''));
-  return name ? candidateList.find(c => (typeof c === 'string' ? c : c.street) === name) || null : null;
+  if (!Array.isArray(candidateList) || candidateList.length === 0) return null;
+  const name = resolveOfficialStreet(target || '', candidateList.map(c => typeof c === 'string' ? c : c?.street || ''));
+  return name ? candidateList.find(c => (typeof c === 'string' ? c : c?.street) === name) || null : null;
 }
 
 function parseAddressComponents(rawAddress: string | null | undefined): {
@@ -214,80 +223,9 @@ function parseAddressComponents(rawAddress: string | null | undefined): {
   number: string;
   complement: string;
 } {
-  if (!rawAddress) return { street: '', number: '', complement: '' };
-  let text = String(rawAddress).trim();
-
-  // 1. Remove parenthetical notes like (Antiga Rua ...), (Lote ...), (Pavuna - RJ), etc.
-  text = text.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
-
-  // 2. Remove CEP and state abbreviations at the end
-  text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, '');
-  text = text.replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, '').trim();
-
-  // 3. Cut off legal registry text, PA/PAL, lote/quadra suffixes that pollute address
-  const legalCutoffs = [
-    /,\s*(?:constitu[ií]d[oa]|formad[oa]|inscrit[oa]|matriculado|objeto|lote\s+n?[ºo°]?\s*\d+|quadra\s+[a-z0-9]+|pa\s*n?[ºo°]?\s*\d+|pal\s*n?[ºo°]?\s*\d+|do\s+bairro\b|designad[oa]|sublote).*$/i,
-    /\b(?:constitu[ií]d[oa]|formad[oa])\s+pelo\s+lote.*$/i,
-    /\bdo\s+PA\s*n?[ºo°]?\s*\d+.*$/i,
-    /\bPA\s*n?[ºo°]?\s*\d+.*$/i,
-    /\bdo\s+bairro\s+[A-Za-zÀ-ÿ\s]+.*$/i,
-    /\bmatr[íi]cula:?.*$/i
-  ];
-
-  for (const cutoff of legalCutoffs) {
-    text = text.replace(cutoff, '').trim();
-  }
-
-  // 4. Handle concatenated streets like "Rua 02, Avenida Marechal Fontenele, nº 4.553, lote 472"
-  const multiStreetMatch = text.match(/(?:rua\s*\d{1,2}|casa\s*\d+|bloco\s*\w+),\s*((?:avenida|av\.|rua|r\.|estrada|est\.|travessa|trv\.|alameda|praca)\s+[^,]+),\s*(.*)/i);
-  if (multiStreetMatch) {
-    text = `${multiStreetMatch[1]}, ${multiStreetMatch[2]}`;
-  }
-
-  // 5. Extract number strictly
-  let number = '';
-  let complement = '';
-
-  // Match pattern: ', nº 33 e 33- FUNDOS' or ', nº 4.553' or ', n. 123'
-  const numPrefixMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+(?:\.\d+)?)\s*(?:e\s*\d+)?\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sobrado)?/i);
-  if (numPrefixMatch) {
-    number = numPrefixMatch[1].replace(/\./g, '');
-    if (numPrefixMatch[2]) complement = numPrefixMatch[2].trim();
-  } else {
-    // Match pattern: ', 123' or ', 4553'
-    const commaNumMatch = text.match(/,\s*(\d{1,6})\b(?:\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl))?/i);
-    if (commaNumMatch) {
-      number = commaNumMatch[1];
-      if (commaNumMatch[2]) complement = commaNumMatch[2].trim();
-    }
-  }
-
-  // 6. Extract street name (everything before the number)
-  let street = text;
-  if (number) {
-    const numIdx = street.search(new RegExp('(?:,\\s*|\\s+)(?:n[ºo°.]?|num(?:ero)?\\.?|nro\\.?)?\\s*' + number.replace(/(\d+)/, '(?:$1|' + Number(number).toLocaleString('pt-BR') + ')'), 'i'));
-    if (numIdx > 0) {
-      street = street.slice(0, numIdx);
-    }
-  }
-
-  // Clean street punctuation
-  street = street
-    .replace(/,\s*(?:n[ºo°.]?|num|\d).*$/i, '')
-    .replace(/,\s*$/, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Normalize common abbreviations
-  street = street
-    .replace(/^r\.\s*/i, 'Rua ')
-    .replace(/^av\.\s*/i, 'Avenida ')
-    .replace(/^est\.\s*/i, 'Estrada ')
-    .replace(/^tr\.\s*/i, 'Travessa ')
-    .replace(/^pca\.\s*/i, 'Praça ');
-
-  return { street, number, complement };
+  return parseCleanAddress(rawAddress);
 }
+
 
 function cleanStreetName(street: string | null | undefined): string {
   if (!street) return '';
@@ -332,6 +270,7 @@ interface RealValueCalculatorProps {
   itbiStats?: ItbiStats[];
   prefillData?: PrefilledCalculatorData | null;
   onUpdateProperty?: (updates: Partial<any>) => Promise<void> | void;
+  onValuationComplete?: (lotId: string, valuationResult: any) => void;
   onClose?: () => void;
 }
 
@@ -340,19 +279,23 @@ function hasValidDistance(tx: ItbiTransaction): boolean {
   return Number.isFinite(distanceKm) && distanceKm >= 0;
 }
 
-export default function RealValueCalculator({ itbiStats = [], prefillData, onUpdateProperty, onClose }: RealValueCalculatorProps) {
+export default function RealValueCalculator({ itbiStats = [], prefillData, onUpdateProperty, onValuationComplete, onClose }: RealValueCalculatorProps) {
   // Navigation mode for results display
   const [activeTab, setActiveTab] = useState<'local' | 'online' | 'matricula'>('local');
 
-  const initialAddr = useMemo(() => parseAddressComponents(prefillData?.address), [prefillData?.address]);
+  const initialAddr = useMemo(() => parseAddressComponents(locationAddress(prefillData || {})) || { street: '', number: '', complement: '' }, [prefillData?.address, prefillData?.description]);
 
   // Unified Form Inputs (Shared between local and online modes)
+  const effectiveInitialNeigh = prefillData?.officialNeighborhood || 
+    (prefillData as any)?.bairroReal || 
+    (prefillData?.divergentNeighborhoodNotice ? prefillData.divergentNeighborhoodNotice.match(/Bairro Real:\s*([^(]+)/i)?.[1]?.trim() : undefined) || 
+    prefillData?.neighborhood || '';
   const [selectedState, setSelectedState] = useState(prefillData?.state || 'RJ');
   const [selectedCity, setSelectedCity] = useState(prefillData?.city || 'Rio de Janeiro');
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState(prefillData?.neighborhood || '');
-  const [selectedStreet, setSelectedStreet] = useState(initialAddr.street || '');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState(effectiveInitialNeigh);
+  const [selectedStreet, setSelectedStreet] = useState(initialAddr?.street || '');
   const [streetNumber, setStreetNumber] = useState(
-    initialAddr.number ? (initialAddr.complement ? `${initialAddr.number}, ${initialAddr.complement}` : initialAddr.number) : (initialAddr.complement || '')
+    initialAddr?.number ? (initialAddr.complement ? `${initialAddr.number}, ${initialAddr.complement}` : initialAddr.number) : (initialAddr?.complement || '')
   ); // Number & complement input
   const [propertyType, setPropertyType] = useState(prefillData?.propertyType || 'Apartamento');
   const [sizeSqm, setSizeSqm] = useState(prefillData?.sizeSqm || 0);
@@ -403,9 +346,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [customSalePrice, setCustomSalePrice] = useState<number | ''>('');
 
   // Autocomplete suggestions search states
-  const [neighborhoodInput, setNeighborhoodInput] = useState('');
+  const [neighborhoodInput, setNeighborhoodInput] = useState(effectiveInitialNeigh);
   const [showNeighborhoodDropdown, setShowNeighborhoodDropdown] = useState(false);
-  const [streetInput, setStreetInput] = useState('');
+  const [streetInput, setStreetInput] = useState(initialAddr.street || '');
+  const [streetSearchQuery, setStreetSearchQuery] = useState('');
+  const [itbiRetry, setItbiRetry] = useState(0);
+  const [streetsError, setStreetsError] = useState('');
+  const [transactionsError, setTransactionsError] = useState('');
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
 
   // Online search states
@@ -481,23 +428,25 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
     if (prefillData.state) setSelectedState(prefillData.state);
     if (prefillData.city) setSelectedCity(prefillData.city);
-    if (prefillData.neighborhood) {
-      let targetNeigh = prefillData.neighborhood;
+    const targetNeigh = effectiveInitialNeigh;
+    if (targetNeigh) {
+      let matched = targetNeigh;
       if (neighborhoodsList && neighborhoodsList.length > 0) {
         const match = neighborhoodsList.find(n => normalizeString(n) === normalizeString(targetNeigh)) ||
                       neighborhoodsList.find(n => cleanNeighborhood(n) === cleanNeighborhood(targetNeigh));
-        if (match) targetNeigh = match;
+        if (match) matched = match;
       }
-      setSelectedNeighborhood(targetNeigh);
-      setNeighborhoodInput(targetNeigh);
+      setSelectedNeighborhood(matched);
+      setNeighborhoodInput(matched);
     }
     if (prefillData.address) {
-      const parsed = parseAddressComponents(prefillData.address);
+      const parsed = parseAddressComponents(locationAddress(prefillData));
       const cleanSt = parsed.street;
       setSelectedStreet(cleanSt);
       setStreetInput(cleanSt);
-      // Feed ONLY the numeric street number
-      setStreetNumber(parsed.number || '');
+      // Block/unit disambiguates addresses shared by multiple buildings.
+      const units = addressUnits(locationAddress(prefillData));
+      setStreetNumber([parsed.number, ...Object.entries(units).map(([key, value]) => `${key} ${value}`)].filter(Boolean).join(', '));
     }
     if (prefillData.propertyType) setPropertyType(prefillData.propertyType);
     if (prefillData.sizeSqm) setSizeSqm(prefillData.sizeSqm);
@@ -1002,16 +951,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   }, [arrematePrice]);
 
   const handleArremateChange = (valStr: string) => {
-    // Remove all non-digits
-    const clean = valStr.replace(/[^\d]/g, '');
-    if (clean === '') {
-      setArremateInputStr('');
-      setArrematePrice(0);
-      return;
-    }
-    const num = parseInt(clean, 10);
+    const num = parseCalculatorBRL(valStr);
+    if (!Number.isFinite(num)) return;
     setArrematePrice(num);
-    setArremateInputStr(num.toLocaleString('pt-BR'));
+    // Keep the decimal separator while typing; format only after leaving the field.
+    setArremateInputStr(valStr.replace(/R\$/gi, '').trim());
     setReformCostInput(Math.round(num * 0.05));
   };
 
@@ -1031,40 +975,34 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [aiReport, setAiReport] = useState('');
   const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
 
-  // Load streets when neighborhood changes (strictly suggestions, never overwrite user-typed inputs)
+  const visibleStreetSuggestions = useMemo(
+    () => filterStreetSuggestions(streetsList, streetSearchQuery), [streetsList, streetSearchQuery]
+  );
+
+  // Opening the menu shows every street of the bairro. Only new typing filters it.
   useEffect(() => {
-    if (!selectedNeighborhood) {
-      setStreetsList([]);
-      return;
-    }
-
-    let isSubscribed = true;
-
-    async function loadStreets() {
-      setIsLoadingStreets(true);
-      try {
-        const res = await fetch(`/api/itbi/streets?state=${selectedState}&city=${selectedCity}&neighborhood=${encodeURIComponent(selectedNeighborhood)}`);
-        if (res.ok && isSubscribed) {
-          const data = await res.json();
-          setStreetsList(Array.isArray(data) ? data : []);
-        }
-      } catch (e) {
-        console.error('Error fetching streets:', e);
-      } finally {
-        if (isSubscribed) {
-          setIsLoadingStreets(false);
-        }
+    setStreetsList([]);
+    setStreetsError('');
+    if (!selectedNeighborhood) { setIsLoadingStreets(false); return; }
+    const controller = new AbortController();
+    setIsLoadingStreets(true);
+    const params = new URLSearchParams({ state: selectedState, city: selectedCity, neighborhood: selectedNeighborhood });
+    void fetchCalculatorJson(`/api/itbi/streets?${params}`, controller.signal).then(data => {
+      if (!Array.isArray(data)) throw new Error('Lista de ruas inválida');
+      if (!controller.signal.aborted) setStreetsList(data);
+    }).catch(error => {
+      if (!controller.signal.aborted) {
+        console.error('Error fetching streets:', error);
+        setStreetsError('Não foi possível carregar as ruas do bairro.');
       }
-    }
-
-    loadStreets();
-    return () => { isSubscribed = false; };
-  }, [selectedNeighborhood, selectedState, selectedCity]);
+    }).finally(() => { if (!controller.signal.aborted) setIsLoadingStreets(false); });
+    return () => controller.abort();
+  }, [selectedNeighborhood, selectedState, selectedCity, itbiRetry]);
 
   // Load raw transactions when neighborhood/street changes (Local Mode)
   // Fetch all neighborhood transactions to allow client side segmentation and radius analysis
   useEffect(() => {
-    if (!selectedNeighborhood) {
+    if (!selectedNeighborhood && !selectedStreet) {
       setRawTransactions([]);
       setRadiusTransactions([]);
       setRadiusAnchorPrecision('missing');
@@ -1076,8 +1014,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
     async function loadTransactions() {
       setIsLoadingTransactions(true);
+      setTransactionsError('');
+      setRawTransactions([]);
+      setRadiusTransactions([]);
+      setRadiusAnchorPrecision('missing');
       try {
-        let url = `/api/itbi/transactions?state=${selectedState}&city=${selectedCity}&neighborhood=${encodeURIComponent(selectedNeighborhood)}`;
+        let url = `/api/itbi/transactions?state=${encodeURIComponent(selectedState)}&city=${encodeURIComponent(selectedCity)}`;
+        if (selectedNeighborhood) url += `&neighborhood=${encodeURIComponent(selectedNeighborhood)}`;
         if (prefillData?.id) {
           url += `&propertyId=${encodeURIComponent(prefillData.id)}`;
         }
@@ -1085,24 +1028,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           url += `&propertyType=${encodeURIComponent(propertyType)}`;
         }
         if (selectedStreet) {
-          const targetNumber = String(streetNumber || '').match(/\d+/)?.[0] || '';
+          const targetNumber = String(streetNumber || '').trim();
           url += `&targetStreet=${encodeURIComponent(selectedStreet)}&targetNumber=${encodeURIComponent(targetNumber)}&radiusKm=${radiusKm}&includeRadius=true`;
         }
         
-        const res = await fetch(url, { signal: controller.signal });
-        if (res.ok) {
-          const data = await res.json();
-          if (!controller.signal.aborted) {
-            if (Array.isArray(data)) {
-              setRawTransactions(data);
-              setRadiusTransactions([]);
-              setRadiusAnchorPrecision('missing');
-            } else {
-              setRawTransactions(Array.isArray(data.transactions) ? data.transactions : []);
-              setRadiusTransactions(Array.isArray(data.radiusTransactions) ? data.radiusTransactions : []);
-              setRadiusAnchorPrecision(data.radiusAnchorPrecision || 'missing');
-            }
-          }
+        const data = await fetchCalculatorJson(url, controller.signal);
+        if (!Array.isArray(data) && !Array.isArray(data?.transactions)) throw new Error('Transações ITBI inválidas');
+        if (!controller.signal.aborted) {
+          setRawTransactions(Array.isArray(data) ? data : data.transactions);
+          setRadiusTransactions(Array.isArray(data?.radiusTransactions) ? data.radiusTransactions : []);
+          setRadiusAnchorPrecision(data?.radiusAnchorPrecision || 'missing');
         }
         if (isJuizDeFora) {
           const modelRes = await fetch(`/api/itbi/jf-area-model?propertyType=${encodeURIComponent(propertyType || 'Apartamento')}`, { signal: controller.signal });
@@ -1115,6 +1050,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       } catch (e) {
         if (!controller.signal.aborted) {
           console.error('Error fetching transactions:', e);
+          setTransactionsError('Não foi possível carregar os dados ITBI para calcular este imóvel.');
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -1126,7 +1062,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     loadTransactions();
     setAiReport(''); // Reset AI report on filter change
     return () => controller.abort();
-  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet, radiusKm, isJuizDeFora, prefillData?.id]);
+  }, [selectedNeighborhood, propertyType, selectedState, selectedCity, selectedStreet, streetNumber, radiusKm, isJuizDeFora, prefillData?.id, itbiRetry]);
 
   const exactStreetTxs = useMemo(() => {
     if (!selectedStreet || rawTransactions.length === 0) return [];
@@ -1134,6 +1070,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const streetCore = getCoreStreetName(selectedStreet);
     const streetPhon = phoneticStreet(selectedStreet);
     return rawTransactions.filter(tx => {
+      if (!isVoluntaryMarketSale(tx)) return false;
       if (!tx.street) return false;
       const tClean = cleanStreetName(tx.street);
       const tCore = getCoreStreetName(tx.street);
@@ -1145,91 +1082,19 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     });
   }, [rawTransactions, selectedStreet]);
 
-  // Item 3: Ruas do Entorno com Expansão Dinâmica de Raio (500m -> 1000m -> 2000m se < 5 tx)
-  // Exclui estritamente o logradouro do imóvel
+  // The selected circle does not depend on the bairro having its own transactions.
   const nearbyStreetData = useMemo(() => {
-    if (rawTransactions.length === 0) {
-      return { 
-        txs: [], 
-        effectiveRadiusKm: 0.5, 
-        radiusLabel: 'Sem amostras no entorno', 
-        item3Label: '3. Ruas do Entorno (0.5 km) - 0 tx',
-        card3Title: '3. Ruas do Entorno (0.5 km)',
-        fallbackLevel: '0.5km' as const 
-      };
-    }
-    if (!selectedStreet) {
-      return { 
-        txs: rawTransactions, 
-        effectiveRadiusKm: radiusKm, 
-        radiusLabel: `Ruas do Entorno (~${radiusKm}km)`, 
-        item3Label: `3. Ruas do Entorno (~${radiusKm}km) - ${rawTransactions.length} tx`,
-        card3Title: `3. Ruas do Entorno (~${radiusKm}km)`,
-        fallbackLevel: '0.5km' as const 
-      };
-    }
-
-    const isTargetStreet = (txStreet?: string) => {
-      if (!txStreet || !selectedStreet) return false;
-      const sClean = cleanStreetName(selectedStreet);
-      const sCore = getCoreStreetName(selectedStreet);
-      const tClean = cleanStreetName(txStreet);
-      const tCore = getCoreStreetName(txStreet);
-      return tClean === sClean || 
-             (sCore && tCore === sCore) || 
-             stringSimilarity(tClean, sClean) >= 0.75;
-    };
-
-    // Item 3 exclui estritamente o logradouro do imóvel
-    const candidates = radiusTransactions.filter(tx => {
-      if (!tx.street) return false;
-      if (isTargetStreet(tx.street)) return false;
-      return hasValidDistance(tx);
-    });
-
-    // Tentativa 1: Executar busca radial em raio = 500m (0.5 km)
-    const txs500 = candidates.filter(t => Number(t.distanceKm) <= 0.5);
-    if (txs500.length >= 5) {
-      return {
-        txs: txs500,
-        effectiveRadiusKm: 0.5,
-        radiusLabel: `Raio geodésico: 0.5 km (${txs500.length} tx)`,
-        item3Label: `3. Ruas do Entorno (0.5 km) - ${txs500.length} tx`,
-        card3Title: `3. Ruas do Entorno (0.5 km)`,
-        fallbackLevel: '0.5km' as const
-      };
-    }
-
-    // Tentativa 2 (Gatilho se contagem < 5): Expandir automaticamente para raio = 1000m (1.0 km)
-    const txs1000 = candidates.filter(t => Number(t.distanceKm) <= 1.0);
-    if (txs1000.length >= 5) {
-      return {
-        txs: txs1000,
-        effectiveRadiusKm: 1.0,
-        radiusLabel: `Raio expandido para 1.0 km (${txs1000.length} tx)`,
-        item3Label: `3. Ruas do Entorno (Raio expandido para 1.0 km) - ${txs1000.length} tx`,
-        card3Title: `3. Ruas do Entorno (Raio expandido para 1.0 km)`,
-        fallbackLevel: '1.0km' as const
-      };
-    }
-
-    // Tentativa 3 (Gatilho se contagem < 5): Expandir para raio = 2000m (2.0 km)
-    const txs2000 = candidates.filter(t => Number(t.distanceKm) <= 2.0);
+    const txs = selectRadiusTransactions(radiusTransactions, radiusKm).filter(isVoluntaryMarketSale);
+    const label = `Ruas do Entorno (${radiusKm} km)`;
     return {
-      txs: txs2000,
-      effectiveRadiusKm: 2.0,
-      radiusLabel: txs2000.length > 0 
-        ? `Raio expandido para 2.0 km (${txs2000.length} tx)` 
-        : 'Sem amostras no entorno até 2.0 km',
-      item3Label: txs2000.length > 0
-        ? `3. Ruas do Entorno (Raio expandido para 2.0 km) - ${txs2000.length} tx`
-        : `3. Ruas do Entorno (0 tx no raio de 2.0 km)`,
-      card3Title: txs2000.length > 0
-        ? `3. Ruas do Entorno (Raio expandido para 2.0 km)`
-        : `3. Ruas do Entorno (~2.0 km)`,
-      fallbackLevel: '2.0km' as const
+      txs,
+      effectiveRadiusKm: radiusKm,
+      radiusLabel: `${label} — ${txs.length} transações geolocalizadas`,
+      item3Label: `3. ${label} — ${txs.length} tx`,
+      card3Title: `3. ${label}`,
+      fallbackLevel: (radiusKm <= 0.5 ? '0.5km' : radiusKm <= 1 ? '1.0km' : '2.0km') as '0.5km' | '1.0km' | '2.0km'
     };
-  }, [rawTransactions, radiusTransactions, selectedStreet]);
+  }, [radiusTransactions, radiusKm]);
 
   const nearbyStreetTxs = nearbyStreetData.txs;
 
@@ -1345,12 +1210,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Médias de m² para cada botão de raio (500m, 1.0km, 2.0km) sincronizadas com txSizeFilter (Área Similar vs Todas)
   const radiusAverages = useMemo(() => {
     const calcAvg = (maxDist: number) => {
-      const txs = (radiusTransactions || []).filter(tx => {
-        if (hasValidDistance(tx)) {
-          return Number(tx.distanceKm) <= maxDist;
-        }
-        return false;
-      });
+      const txs = selectRadiusTransactions(radiusTransactions, maxDist).filter(isVoluntaryMarketSale);
       if (txs.length === 0) return null;
       const robust = calculateRobustStats(txs, sizeSqm, txSizeFilter, `Raio ${maxDist}km`);
       return robust ? robust.avgSqm : null;
@@ -1487,97 +1347,19 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       };
     }
 
-    if (isJuizDeFora) return null;
+    return null;
+  }, [bidiBenchmark, nearbyStreetData.radiusLabel, nearbyStreetTxs, selectedStreet, sizeSqm, txSizeFilter, radiusKm]);
 
-    const txsToUse = selectedStreet ? nearbyStreetTxs : rawTransactions;
-
-    if (txsToUse.length === 0) {
-      if (selectedStreet) {
-        return {
-          avgSqm: 0,
-          medianSqm: 0,
-          source: nearbyStreetData.radiusLabel,
-          count: 0,
-          minSqm: 0,
-          maxSqm: 0,
-          rawAvgSqm: 0,
-          rawCount: 0,
-          outliersCount: 0,
-          similarAvgSqm: 0,
-          similarCount: 0,
-          allAreasAvgSqm: 0,
-          allAreasCount: 0,
-          isSimilarActive: txSizeFilter === 'similar',
-          minSimilarSize: Math.round(sizeSqm * 0.67),
-          maxSimilarSize: Math.round(sizeSqm * 1.33)
-        };
-      }
-      const neighStats = itbiStats.find(stat => 
-        stat.neighborhood && selectedNeighborhood &&
-        cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood) &&
-        stat.propertyType && propertyType &&
-        stat.propertyType.toLowerCase() === propertyType.toLowerCase()
-      ) || itbiStats.find(stat => 
-        stat.neighborhood && selectedNeighborhood &&
-        cleanNeighborhood(stat.neighborhood) === cleanNeighborhood(selectedNeighborhood)
-      );
-      
-      const allVals = itbiStats.map(s => s.averageValueSqm).filter(Boolean);
-      const overallAvg = allVals.length > 0 
-        ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) 
-        : 4000;
-      
-      const baseAvg = neighStats?.averageValueSqm || (neighborhoodStats?.avgSqm || overallAvg);
-
-      return {
-        avgSqm: baseAvg,
-        medianSqm: baseAvg,
-        source: neighStats?.averageValueSqm ? 'Média do Bairro (Sem dados no raio)' : 'Média Regional',
-        count: 0,
-        minSqm: neighStats?.minValueSqm || Math.round(baseAvg * 0.7),
-        maxSqm: neighStats?.maxValueSqm || Math.round(baseAvg * 1.5),
-        rawAvgSqm: baseAvg,
-        rawCount: 0,
-        outliersCount: 0,
-        similarAvgSqm: baseAvg,
-        similarCount: 0,
-        allAreasAvgSqm: baseAvg,
-        allAreasCount: 0,
-        isSimilarActive: false,
-        minSimilarSize: Math.round(sizeSqm * 0.67),
-        maxSimilarSize: Math.round(sizeSqm * 1.33)
-      };
-    }
-    
-    const computed = calculateRobustStats(
-      txsToUse,
-      sizeSqm,
-      txSizeFilter,
-      selectedStreet ? `Média do Entorno (Raio Geodésico de ${radiusKm.toFixed(1)}km)` : 'Média do Entorno (Bairro)'
-    );
-    if (computed) return computed;
-
-    const allVals = itbiStats.map(s => s.averageValueSqm).filter(Boolean);
-    const defaultFallback = allVals.length > 0 ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) : 6500;
-    return {
-      avgSqm: defaultFallback,
-      medianSqm: defaultFallback,
-      source: 'Média do Entorno (Bairro)',
-      count: txsToUse.length,
-      minSqm: Math.round(defaultFallback * 0.7),
-      maxSqm: Math.round(defaultFallback * 1.4),
-      rawAvgSqm: defaultFallback,
-      rawCount: txsToUse.length,
-      outliersCount: 0,
-      similarAvgSqm: defaultFallback,
-      similarCount: 0,
-      allAreasAvgSqm: defaultFallback,
-      allAreasCount: txsToUse.length,
-      isSimilarActive: false,
-      minSimilarSize: Math.round(sizeSqm * 0.75),
-      maxSimilarSize: Math.round(sizeSqm * 1.25)
-    };
-  }, [bidiBenchmark, nearbyStreetData.radiusLabel, nearbyStreetTxs, rawTransactions, selectedStreet, selectedNeighborhood, propertyType, itbiStats, sizeSqm, txSizeFilter, neighborhoodStats, radiusKm, isJuizDeFora]);
+  // 3b. Rua Limpa (Exclui compulsoriamente o número predial do próprio condomínio)
+  const cleanStreetTxs = useMemo(() => {
+    if (!selectedStreet || exactStreetTxs.length === 0) return [];
+    const targetNum = cleanNumber(streetNumber);
+    if (!targetNum) return exactStreetTxs;
+    return exactStreetTxs.filter(tx => {
+      if (!tx.number) return true;
+      return cleanNumber(tx.number) !== targetNum;
+    });
+  }, [exactStreetTxs, streetNumber]);
 
   // 3. Aggregate stats from matching transactions (Exact Street Stats) with Raio ±25% Outlier Defense
   const exactStreetStats = useMemo(() => {
@@ -1604,7 +1386,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       };
     }
 
-    const stats = calculateRobustStats(exactStreetTxs, sizeSqm, txSizeFilter, 'Média da Mesma Rua');
+    const stats = calculateRobustStats(cleanStreetTxs, sizeSqm, txSizeFilter, 'Média da Mesma Rua');
     if (!stats) return null;
 
     const upperRef = neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0;
@@ -1626,7 +1408,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       };
     }
     return stats;
-  }, [bidiBenchmark, exactStreetTxs, sizeSqm, txSizeFilter, neighborhoodStats, nearbyStats]);
+  }, [bidiBenchmark, cleanStreetTxs, sizeSqm, txSizeFilter, neighborhoodStats, nearbyStats]);
 
   // 4. Transactions in the exact same building/number with Street ±25% Outlier Defense
   const exactBuildingTxs = useMemo(() => {
@@ -2155,11 +1937,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const verifiedStreetCount = bidiBenchmark.rua.validas || exactStreetStats?.count || 0;
     const verifiedBuildingCount = bidiBenchmark.predio.validas || exactBuildingStats?.count || 0;
     const verifiedLocalCount = verifiedStreetCount + verifiedBuildingCount;
+    const isStronglyVerified = verifiedLocalCount >= 3;
     const verifiedStreetAvgSqm = bidiBenchmark.rua.saneada || exactStreetStats?.avgSqm || bidiBenchmark.predio.saneada || 0;
     const valuationLevel = bidiBenchmark.nivelUtilizado;
     const valuationCalibration = bidiBenchmark.calibrationKind;
-    const isStronglyVerified = verifiedLocalCount >= 7 && !valuationCalibration;
-    await onUpdateProperty({
+    const payload = {
       id: prefillData.id,
       sizeSqm: sizeSqm,
       sizeVerified: true,
@@ -2193,8 +1975,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       streetRadiusDeviationPct: bidiBenchmark.radiusVerified ? (bidiBenchmark.ruaRaioDesvioPct || undefined) : undefined,
       streetRadiusCalibrated: bidiBenchmark.radiusVerified && bidiBenchmark.ruaRaioCalibrada,
       calculatedProfit: flip60NetProfit,
-      calculatedRoi: flip60Roi
-    });
+      calculatedRoi: flip60Roi,
+      precisa_revisao: false
+    };
+    if (onValuationComplete) {
+      onValuationComplete(prefillData.id, payload);
+    }
+    await onUpdateProperty(payload);
   };
 
   // On first open, persist the exact 60-day price shown in step 4 after
@@ -2220,14 +2007,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const estimatedValue = bidiBenchmark.isAbsolutePricing
       ? Math.round(bidiBenchmark.gabaritoTotal * buildingAgeData.factor * (prefillData?.isCommunityRisk ? 0.85 : 1))
       : Math.round(gabaritoBase * buildingAgeData.factor * (prefillData?.isCommunityRisk ? 0.85 : 1));
-    void Promise.resolve(onUpdateProperty({
+    const payload = {
       id: propertyId,
       // Preserve the calculator's own local ITBI evidence through the server
       // recalculation, which otherwise uses a broader default benchmark.
       vendaBaixaPrice: suggestedQuickSaleTotal,
       vendaMediaPrice: suggestedQuickSaleTotal,
       estimatedValue,
-      valuationConfidence: verifiedLocalCount >= 7 && !valuationCalibration ? 'verified' : 'projected',
+      valuationConfidence: (verifiedLocalCount >= 7 && !valuationCalibration ? 'verified' : 'projected') as any,
       valuationCalibration,
       valuationLevel: bidiBenchmark.nivelUtilizado,
       valuationSampleCount: verifiedLocalCount,
@@ -2243,8 +2030,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       calculatedProfit: flip60NetProfit,
       calculatedRoi: flip60Roi,
       buildingYear: buildingAgeData.detectedYear ?? undefined,
-      ageDepreciationPct: buildingAgeData.depreciationPct
-    })).catch(error => console.error('Falha ao sincronizar flip do simulador com o card:', error));
+      ageDepreciationPct: buildingAgeData.depreciationPct,
+      precisa_revisao: false
+    };
+    if (onValuationComplete) {
+      onValuationComplete(propertyId, payload);
+    }
+    void Promise.resolve(onUpdateProperty(payload)).catch(error => console.error('Falha ao sincronizar flip do simulador com o card:', error));
   }, [prefillData?.id, onUpdateProperty, initialSourceDocsCheckComplete, isLoadingTransactions,
     isFetchingCaixaDocs, isAuditingMatricula, hasRealMicroData, bidiBenchmark,
     suggestedQuickSaleTotal, itbiWeightedStats.localSampleCount, flip60NetProfit, flip60Roi,
@@ -2912,7 +2704,15 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
             {/* Autocomplete Neighborhood */}
             <div className="relative">
-              <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Bairro (Digite para Buscar):</label>
+              <div className="flex items-center justify-between mb-0.5">
+                <label className="block text-slate-400 font-semibold font-mono uppercase text-[9px]">Bairro (Digite para Buscar):</label>
+                {prefillData?.divergentNeighborhoodNotice && (
+                  <span className="text-[9.5px] bg-amber-950/80 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1 shadow-xs">
+                    <span>⚠️</span>
+                    <span>{prefillData.divergentNeighborhoodNotice}</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 placeholder="Digite o nome do bairro..."
@@ -2966,15 +2766,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 onChange={(e) => {
                   const val = e.target.value;
                   setStreetInput(val);
+                  setStreetSearchQuery(val);
                   setSelectedStreet(val);
                   setShowStreetDropdown(true);
                 }}
-                onFocus={() => setShowStreetDropdown(true)}
+                onFocus={() => { setStreetSearchQuery(''); setShowStreetDropdown(true); }}
+                role="combobox" aria-label="Logradouro" aria-expanded={showStreetDropdown} aria-controls="calculator-street-options"
                 onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)}
                 className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200"
               />
               {showStreetDropdown && (
-                <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 rounded-lg shadow-lg z-50 divide-y divide-slate-850">
+                <div id="calculator-street-options" role="listbox" aria-label="Ruas do bairro" className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 rounded-lg shadow-lg z-50 divide-y divide-slate-850">
                   <div
                     onClick={() => {
                       setSelectedStreet('');
@@ -2985,27 +2787,36 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   >
                     Todos logradouros / Geral do Bairro
                   </div>
-                  {streetsList
-                    .filter(st => normalizeString(st.street).includes(normalizeString(streetInput)))
-                    .map(st => (
-                      <div
-                        key={st.street}
-                        onClick={() => {
-                          setSelectedStreet(st.street);
-                          setStreetInput(st.street);
-                          setShowStreetDropdown(false);
-                        }}
-                        className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors"
-                      >
-                        {st.street}
-                      </div>
-                    ))}
-                  {streetsList.filter(st => normalizeString(st.street).includes(normalizeString(streetInput))).length === 0 && (
-                    <div className="px-3 py-2 text-xs text-slate-500">Nenhuma rua no banco ITBI (usando busca livre)</div>
+                  {visibleStreetSuggestions.map((st, sIdx) => {
+                      const stName = st?.street || '';
+                      return (
+                        <div
+                          key={stName || `st-${sIdx}`}
+                          role="option" aria-selected={selectedStreet === stName}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setSelectedStreet(stName);
+                            setStreetInput(stName);
+                            setShowStreetDropdown(false);
+                          }}
+                          className="px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors"
+                        >
+                          {stName}
+                        </div>
+                      );
+                    })}
+                  {isLoadingStreets ? <div className="px-3 py-2 text-xs text-slate-400">Carregando ruas…</div> : streetsError ? (
+                    <button type="button" className="px-3 py-2 text-xs text-amber-300" onMouseDown={e => e.preventDefault()} onClick={() => setItbiRetry(v => v + 1)}>{streetsError} Tentar novamente</button>
+                  ) : visibleStreetSuggestions.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-slate-400">{streetsList.length ? 'Nenhuma rua corresponde à busca. Apague o texto para ver as demais.' : 'Sem ruas cadastradas no ITBI deste bairro. O endereço pode ser digitado.'}</div>
                   )}
                 </div>
               )}
             </div>
+
+            {transactionsError && <div role="alert" className="text-xs text-amber-300">
+              {transactionsError} <button type="button" className="underline" onClick={() => setItbiRetry(v => v + 1)}>Tentar novamente</button>
+            </div>}
 
             {/* Street Number / Complement */}
             <div>
@@ -3188,6 +2999,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     type="text"
                     value={arremateInputStr}
                     onChange={(e) => handleArremateChange(e.target.value)}
+                    onBlur={() => setArremateInputStr(arrematePrice > 0 ? arrematePrice.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '')}
+                    inputMode="decimal"
                     className="w-full bg-transparent border-0 outline-none text-white font-black text-sm sm:text-base font-mono"
                     placeholder="Digite o lance..."
                   />
@@ -4810,7 +4623,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         )}
                       </>
                     ) : (
-                      <span className="text-sm font-black text-slate-400 font-mono">Sem amostras no raio</span>
+                      <span className="text-sm font-black text-slate-400 font-mono">{isLoadingTransactions ? 'Buscando transações do entorno…' : radiusAnchorPrecision === 'missing' ? 'Endereço ainda sem coordenada confirmada' : nearbyStreetTxs.length > 0 ? 'Amostras encontradas; sem comparáveis para precificação' : 'Sem transações geolocalizadas neste raio'}</span>
                     )}
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -5103,7 +4916,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </button>
                   ) : (
                     <span className="text-[9px] bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-800/40">
-                      {exactStreetTxs.filter(t => t.isCompraEVenda === true).length} Compra e Venda
+                      {cleanStreetTxs.filter(t => t.isCompraEVenda === true).length} Compra e Venda
                     </span>
                   )}
                 </div>
@@ -5132,14 +4945,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300">
-                      {exactStreetTxs.length === 0 ? (
+                      {cleanStreetTxs.length === 0 ? (
                         <tr>
                           <td colSpan={isJuizDeFora ? 7 : 5} className="py-8 text-center text-slate-550 italic">
                             Nenhuma transação individual encontrada nesta rua.
                           </td>
                         </tr>
                       ) : (
-                        exactStreetTxs
+                        cleanStreetTxs
                           .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
                           .slice(0, 50)
                           .map((tx) => (

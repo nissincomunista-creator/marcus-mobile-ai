@@ -1,7 +1,10 @@
+import { normalizeRadiusKm, selectRadiusTransactions } from './itbiRadius.ts';
 import { canonicalStreet, resolveOfficialStreet } from './streetMatching.ts';
 import { ItbiTransaction } from '../types.ts';
-import { computeFourTierValuation } from './fourTierValuation.ts';
+import { computeFourTierValuation, isVoluntaryMarketSale } from './fourTierValuation.ts';
 import { inferJfComparableArea, JuizDeForaAreaModel } from './juizDeForaAreaModel.ts';
+
+export { isVoluntaryMarketSale } from './fourTierValuation.ts';
 
 export const DEFAULT_BENCHMARK_SIZE_MODE: 'similar' = 'similar';
 
@@ -21,6 +24,8 @@ export interface TierStats {
   fatorEscala?: number;
   areaMediaGeral?: number;
   cenarioArea?: 'A' | 'B';
+  isCrossTypologyApplied?: boolean;
+  crossTypologyOrigin?: string;
 }
 
 export interface BidirectionalBenchmarkResult {
@@ -39,6 +44,8 @@ export interface BidirectionalBenchmarkResult {
   effectiveRadiusKm?: number;
   radiusLabel?: string;
   fallbackLevel?: '0.5km' | '1.0km' | '2.0km' | 'bairro';
+  isCrossTypologyApplied?: boolean;
+  crossTypologyOrigin?: string;
   minSimilarSize: number;
   maxSimilarSize: number;
   hasMicroData: boolean;
@@ -182,15 +189,18 @@ export function computeBidirectionalBenchmarks(
   areaModel?: JuizDeForaAreaModel,
   radiusTransactions?: ItbiTransaction[]
 ): BidirectionalBenchmarkResult | null {
-  if (!allNeighborhoodTxs || allNeighborhoodTxs.length === 0) return null;
+  if (!allNeighborhoodTxs?.length && !radiusTransactions?.length) return null;
 
-  const isJuizDeFora = allNeighborhoodTxs.some(t =>
+  const isJuizDeFora = [...allNeighborhoodTxs, ...(radiusTransactions || [])].some(t =>
     String(t.city || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('juiz de fora')
   );
 
-  // Isolamento Estrito da Natureza da Operação para Juiz de Fora (Apenas Compra e Venda baliza mercado):
-  const sourceTxs = isJuizDeFora ? allNeighborhoodTxs.filter(t => t.isCompraEVenda === true) : allNeighborhoodTxs;
-  if (sourceTxs.length === 0) return null;
+  // Filtro Universal de Venda Voluntária de Mercado (Anti-Fiduciária):
+  // 1. Juiz de Fora: Compra e Venda estrita
+  // 2. Niterói: Média oficial da via municipal
+  // 3. Rio de Janeiro: Múltiplos exatos de R$ 100 e sem centavos (expurgo de execuções fiduciárias da Lei 9.514/97)
+  const sourceTxs = allNeighborhoodTxs.filter(isVoluntaryMarketSale);
+  if (!sourceTxs.length && !radiusTransactions?.some(isVoluntaryMarketSale)) return null;
 
   const jfDates = isJuizDeFora ? sourceTxs.map(t => t.date).filter(Boolean).sort() : [];
   const dateRange = jfDates.length > 0 ? { minDate: jfDates[0], maxDate: jfDates[jfDates.length - 1] } : undefined;
@@ -287,14 +297,9 @@ export function computeBidirectionalBenchmarks(
     const buildingRows = targetNum ? streetMatches.filter(t => cleanStreetNumber(t.number) === targetNum) : [];
     const buildingIds = new Set(buildingRows.map(tx => tx.id));
     const streetRows = streetMatches.filter(tx => !buildingIds.has(tx.id));
-    const immediateRows = (radiusTransactions || comparablePool).filter(t => {
-      if (t.transactionLocationPrecision !== 'exact_number') return false;
-      if (t.propertyType !== targetPropType) return false;
-      if (radiusTransactions && !typeTxs.some(local => local.id === t.id)) return false;
-      if (!Number.isFinite(Number(t.distanceKm))) return false;
-      const distance = Number(t.distanceKm);
-      return distance <= (radiusKm || 0.5);
-    });
+    const immediateRows = selectRadiusTransactions(radiusTransactions || comparablePool, radiusKm)
+      .filter(isVoluntaryMarketSale)
+      .filter(t => !targetPropType || t.propertyType === targetPropType);
     const usedLocalIds = new Set([...streetMatches.map(tx => tx.id), ...immediateRows.map(tx => tx.id)]);
     const neighborhoodRows = neighborhoodPool.filter(tx => !usedLocalIds.has(tx.id));
 
@@ -374,90 +379,35 @@ export function computeBidirectionalBenchmarks(
   const maxSize = Math.round(size * 1.33);
 
   // 1. Nível Bairro Macro (Ponderação Adaptativa NBR 14.653)
-  const allBVals = typeTxs.filter(t => isValValid(getTxVal(t)));
-  if (allBVals.length === 0) return null;
+  const allBVals = typeTxs.filter(t => isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && String(t.neighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === targetNeighborhood.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())));
+  if (!allBVals.length && !radiusTransactions?.length) return null;
 
   const similarBTxs = allBVals.filter(t => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
   const isBCenarioA = similarBTxs.length >= 4 && sizeMode !== 'all';
   const bWorkingTxs = isBCenarioA ? similarBTxs : allBVals;
   const bVals = bWorkingTxs.map(t => getTxVal(t));
 
-  const bPrelim = bVals.reduce((a, b) => a + b, 0) / bVals.length;
-  const bVariance = bVals.reduce((acc, v) => acc + Math.pow(v - bPrelim, 2), 0) / bVals.length;
+  const bPrelim = bVals.reduce((a, b) => a + b, 0) / Math.max(1, bVals.length);
+  const bVariance = bVals.reduce((acc, v) => acc + Math.pow(v - bPrelim, 2), 0) / Math.max(1, bVals.length);
   const bStd = Math.sqrt(bVariance);
   const bValid = bVals.filter(v => Math.abs(v - bPrelim) <= 2.2 * bStd);
   const bSaneadaRaw = bValid.length > 0 ? Math.round(bValid.reduce((a, b) => a + b, 0) / bValid.length) : Math.round(bPrelim);
   const bAreaMedia = bWorkingTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / Math.max(1, bWorkingTxs.length);
-  const bFator = !isBCenarioA ? Math.pow(bAreaMedia / size, 0.15) : 1.0;
-  const bSaneada = !isBCenarioA ? Math.round(bSaneadaRaw * bFator) : bSaneadaRaw;
+  const isBLargeArea = size > 1.5 * bAreaMedia;
+  const bFator = isBLargeArea
+    ? Math.pow(bAreaMedia / size, 0.20)
+    : (!isBCenarioA ? Math.pow(bAreaMedia / size, 0.15) : 1.0);
+  const bSaneada = (isBLargeArea || !isBCenarioA) ? Math.round(bSaneadaRaw * bFator) : bSaneadaRaw;
   const bExpurgados = bVals.length - bValid.length;
 
-  // Segmentação Geoespacial com Defesa e Fallback Defensivo do Entorno
-  const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || '');
-  const radiusSource = (radiusTransactions || typeTxs)
-    .filter(t => {
-      if (t.transactionLocationPrecision !== 'exact_number' && t.transactionLocationPrecision !== 'street_centroid') return false;
-      if (targetPropType && t.propertyType !== targetPropType) {
-        if (!isResidentialTarget || !/apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || '')) return false;
-      }
-      return true;
-    });
-
-  const isTargetStreetTx = (t: ItbiTransaction) => {
-    if (!t.street) return false;
-    if (targetCore && cleanStreetCore(t.street) === targetCore) return true;
-    return false;
-  };
-
-  const geolocatedSurrounding = radiusSource.filter(t => 
-    t.distanceKm !== null && 
-    t.distanceKm !== undefined && 
-    Number.isFinite(Number(t.distanceKm)) &&
-    !isTargetStreetTx(t)
-  );
-
-  let raioTxs: ItbiTransaction[] = [];
-  let effectiveRadiusKm = 0.5;
-  let radiusLabel = `3. Ruas do Entorno (0.5 km) - 0 tx`;
-  let fallbackLevel: '0.5km' | '1.0km' | '2.0km' | 'bairro' = '0.5km';
-  let hasVerifiedRadius = false;
-
-  if (geolocatedSurrounding.length > 0) {
-    // Tentativa 1: Executar busca radial em raio = 500m (0.5 km)
-    const txs500 = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= 0.5);
-    if (txs500.length >= 5) {
-      raioTxs = txs500;
-      effectiveRadiusKm = 0.5;
-      radiusLabel = `3. Ruas do Entorno (0.5 km) - ${raioTxs.length} tx`;
-      fallbackLevel = '0.5km';
-      hasVerifiedRadius = true;
-    } else {
-      // Tentativa 2 (Gatilho se contagem < 5): Expandir automaticamente para raio = 1000m (1.0 km)
-      const txs1000 = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= 1.0);
-      if (txs1000.length >= 5) {
-        raioTxs = txs1000;
-        effectiveRadiusKm = 1.0;
-        radiusLabel = `3. Ruas do Entorno (Raio expandido para 1.0 km) - ${raioTxs.length} tx`;
-        fallbackLevel = '1.0km';
-        hasVerifiedRadius = true;
-      } else {
-        // Tentativa 3 (Gatilho se contagem < 5): Expandir para raio = 2000m (2.0 km)
-        const txs2000 = geolocatedSurrounding.filter(t => Number(t.distanceKm) <= 2.0);
-        raioTxs = txs2000;
-        effectiveRadiusKm = 2.0;
-        radiusLabel = txs2000.length > 0
-          ? `3. Ruas do Entorno (Raio expandido para 2.0 km) - ${raioTxs.length} tx`
-          : `3. Ruas do Entorno (0 tx no raio de 2.0 km)`;
-        fallbackLevel = '2.0km';
-        hasVerifiedRadius = raioTxs.length > 0;
-      }
-    }
-  } else {
-    raioTxs = [];
-    radiusLabel = `3. Ruas do Entorno (Sem amostras no entorno)`;
-    fallbackLevel = 'bairro';
-    hasVerifiedRadius = false;
-  }
+  const effectiveRadiusKm = normalizeRadiusKm(radiusKm);
+  const raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm)
+    .filter(isVoluntaryMarketSale)
+    .filter(t => !targetPropType || t.propertyType === targetPropType);
+  const hasVerifiedRadius = raioTxs.length > 0;
+  const radiusLabel = `3. Ruas do Entorno (${effectiveRadiusKm} km) - ${raioTxs.length} tx`;
+  const fallbackLevel: '0.5km' | '1.0km' | '2.0km' | 'bairro' =
+    effectiveRadiusKm <= 0.5 ? '0.5km' : effectiveRadiusKm <= 1 ? '1.0km' : '2.0km';
 
   // 2. Nível Raio (Ruas do Entorno - Ponderação Adaptativa NBR 14.653)
   const raioValidSource = raioTxs.filter(t => isValValid(getTxVal(t)));
@@ -479,17 +429,51 @@ export function computeBidirectionalBenchmarks(
     ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length)
     : (hasVerifiedRadius ? Math.round(refCorteRaio) : 0);
   const raioAreaMedia = raioWorkingTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / Math.max(1, raioWorkingTxs.length);
-  const raioFator = !isRaioCenarioA && hasVerifiedRadius ? Math.pow(raioAreaMedia / size, 0.15) : 1.0;
-  const raioSaneada = !isRaioCenarioA && hasVerifiedRadius ? Math.round(raioSaneadaRaw * raioFator) : raioSaneadaRaw;
+  const isRaioLargeArea = hasVerifiedRadius && (size > 1.5 * raioAreaMedia);
+  const raioFator = isRaioLargeArea
+    ? Math.pow(raioAreaMedia / size, 0.20)
+    : (!isRaioCenarioA && hasVerifiedRadius ? Math.pow(raioAreaMedia / size, 0.15) : 1.0);
+  const raioSaneada = (isRaioLargeArea || (!isRaioCenarioA && hasVerifiedRadius)) ? Math.round(raioSaneadaRaw * raioFator) : raioSaneadaRaw;
   const raioExpurgados = raioVals.length - raioValid.length;
 
-  // 3. Nível Rua (Ponderação Adaptativa NBR 14.653)
-  const allRuaTxs = targetCore ? typeTxs.filter(t => cleanStreetCore(t.street) === targetCore && isValValid(getTxVal(t))) : [];
-  const ruaSimilarTxs = allRuaTxs.filter(t => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
+  // 3 & 4. Comparáveis da Mesma Via Pública (Isolamento de Rua Limpa vs Prédio)
+  const streetCandidateTxs = targetCore ? typeTxs.filter(t => cleanStreetCore(t.street) === targetCore && isValValid(getTxVal(t))) : [];
+
+  // 4. Nível Prédio (Mesmo Edifício / Número Predial - Ponderação Adaptativa NBR 14.653)
+  // Descarte de amostras isoladas com disparidade extrema de metragem (> 2.0x ou < 0.5x da área alvo)
+  const allPredioTxs = targetNum ? streetCandidateTxs.filter(t => {
+    if (cleanStreetNumber(t.number) !== targetNum) return false;
+    if (size > 0 && (t.sizeSqm < size * 0.5 || t.sizeSqm > size * 2.0)) return false;
+    return true;
+  }) : [];
+
+  // 3. Nível Rua Limpa (Isolamento da Rua Limpa: Exclui compulsoriamente o número predial do imóvel avaliado)
+  // A "Mesma Rua" reflete unicamente os demais números e empreendimentos da via, sem contaminação do próprio condomínio.
+  const allRuaTxs = targetCore ? streetCandidateTxs.filter(t => {
+    if (targetNum && cleanStreetNumber(t.number) === targetNum) return false;
+    return true;
+  }) : [];
+
+  // Filtro de Outliers Estatísticos na Mesma Rua (Caso Anil):
+  // Ao apurar as amostras da mesma rua, calcula a mediana do valor_m2.
+  // Descarte Imediato: Qualquer amostra com variação superior a +50% ou inferior a -50%
+  // em relação à mediana da rua deve ser compulsoriamente expurgada da composição do Gabarito e da Homogeneização de Área NBR.
+  const rawRuaVals = allRuaTxs.map(t => getTxVal(t)).filter(isValValid);
+  const ruaStreetMedian = rawRuaVals.length > 0 ? computeMedian(rawRuaVals) : 0;
+  const isRuaOutlier = (v: number) => ruaStreetMedian > 0 && (v > ruaStreetMedian * 1.50 || v < ruaStreetMedian * 0.50);
+
+  const sanitizedRuaTxs = allRuaTxs.filter(t => {
+    const v = getTxVal(t);
+    if (!isValValid(v)) return false;
+    if (rawRuaVals.length >= 2 && isRuaOutlier(v)) return false;
+    return true;
+  });
+
+  const ruaSimilarTxs = sanitizedRuaTxs.filter(t => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
   const isRuaCenarioA = ruaSimilarTxs.length >= 4 && sizeMode !== 'all';
-  const ruaWorkingTxs = isRuaCenarioA ? ruaSimilarTxs : allRuaTxs;
-  const ruaVals = ruaWorkingTxs.map(t => getTxVal(t));
-  const ruaPrelim = ruaVals.length > 0 ? Math.round(ruaVals.reduce((a, b) => a + b, 0) / ruaVals.length) : 0;
+  let ruaWorkingTxs = isRuaCenarioA ? ruaSimilarTxs : sanitizedRuaTxs;
+  let ruaVals = ruaWorkingTxs.map(t => getTxVal(t));
+  let ruaPrelim = ruaVals.length > 0 ? Math.round(ruaVals.reduce((a, b) => a + b, 0) / ruaVals.length) : 0;
 
   let ruaValid: number[] = [];
   let ruaSaneadaRaw = 0;
@@ -526,13 +510,105 @@ export function computeBidirectionalBenchmarks(
     ruaCorteMin = 0;
     ruaCorteMax = 0;
   }
+
+  let isCrossTypologyApplied = false;
+  let crossTypologyOrigin = '';
+  let crossFatorEscala = 1.0;
+
+  const isResidentialCasa = /casa|sobrado/i.test(targetPropType || '');
+  const isResidentialApto = /apart|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || '');
+
+  // Homogeneização de Tipologia Cruzada na Mesma Rua (NBR 14653-2):
+  // Ativa se a via tiver < 3 amostras da tipologia alvo (ruaValid.length < 3), mas >= 3 amostras de outra tipologia residencial na mesma rua:
+  if ((isResidentialCasa || isResidentialApto) && ruaValid.length < 3 && targetCore) {
+    const altStreetTxs = sourceTxs.filter(t => {
+      if (cleanStreetCore(t.street) !== targetCore) return false;
+      if (!isValValid(getTxVal(t))) return false;
+      if (targetNum && cleanStreetNumber(t.number) === targetNum) return false;
+      if (isResidentialCasa) {
+        return /apart|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || '');
+      }
+      if (isResidentialApto) {
+        return /casa|sobrado/i.test(t.propertyType || '');
+      }
+      return false;
+    });
+
+    if (altStreetTxs.length >= 3) {
+      const rawAltVals = altStreetTxs.map(t => getTxVal(t)).filter(isValValid);
+      const altMedian = rawAltVals.length > 0 ? computeMedian(rawAltVals) : 0;
+      const isAltOutlier = (v: number) => altMedian > 0 && (v > altMedian * 1.50 || v < altMedian * 0.50);
+      const sanitizedAltTxs = altStreetTxs.filter(t => {
+        const v = getTxVal(t);
+        if (!isValValid(v)) return false;
+        if (rawAltVals.length >= 2 && isAltOutlier(v)) return false;
+        return true;
+      });
+
+      if (sanitizedAltTxs.length >= 3) {
+        const sanitizedAltVals = sanitizedAltTxs.map(t => getTxVal(t));
+        const medianaM2Alt = computeMedian(sanitizedAltVals);
+
+        // Fator NBR 14653-2:
+        // CASA avaliando amostras de APARTAMENTO: m2_apto_convertido = mediana_m2_apartamentos * 0.85
+        // APARTAMENTO avaliando amostras de CASA: m2_casa_convertida = mediana_m2_casas * 1.15
+        const normNeigh = (targetNeighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        const isDenseVerticalZone = ['copacabana', 'ipanema', 'leblon', 'flamengo', 'botafogo', 'lagoa', 'leme', 'gavea', 'jardim botanico'].includes(normNeigh);
+        const typologyFactor = isDenseVerticalZone ? 1.0 : (isResidentialCasa ? 0.85 : 1.15);
+        const m2AltConvertido = medianaM2Alt * typologyFactor;
+
+        // Gabarito de Rua Ponderado NBR:
+        // Se houver 1 ou 2 imóveis da tipologia alvo na via: 40% local + 60% tipologia convertida
+        // Se houver 0: 100% tipologia convertida
+        let m2RuaComposto = m2AltConvertido;
+        if (ruaValid.length > 0) {
+          const localTargetMedian = computeMedian(ruaValid);
+          m2RuaComposto = (localTargetMedian * 0.40) + (m2AltConvertido * 0.60);
+        }
+
+        // Fator de Escala de Área Berrini (NBR 14653) aplicado UMA ÚNICA VEZ sobre m2RuaComposto:
+        const combinedTxs = [...ruaWorkingTxs, ...sanitizedAltTxs];
+        const areaReferencia = combinedTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / combinedTxs.length;
+        const areaAlvo = size > 0 ? size : areaReferencia;
+        crossFatorEscala = Math.pow(areaReferencia / areaAlvo, 0.20);
+        const m2Final = Math.round(m2RuaComposto * crossFatorEscala);
+
+        ruaSaneadaRaw = m2Final;
+        ruaValid = [...ruaValid, ...sanitizedAltVals];
+        ruaWorkingTxs = [...ruaWorkingTxs, ...sanitizedAltTxs];
+        ruaPrelim = m2Final;
+        refCorteRua = m2Final;
+        isCrossTypologyApplied = true;
+        crossTypologyOrigin = isResidentialCasa ? 'Apartamento' : 'Casa';
+      }
+    }
+  }
+
   const ruaAreaMedia = ruaWorkingTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / Math.max(1, ruaWorkingTxs.length);
-  const ruaFator = !isRuaCenarioA && ruaValid.length > 0 ? Math.pow(ruaAreaMedia / size, 0.15) : 1.0;
-  const ruaSaneada = !isRuaCenarioA && ruaValid.length > 0 ? Math.round(ruaSaneadaRaw * ruaFator) : ruaSaneadaRaw;
-  const ruaExpurgados = ruaVals.length - ruaValid.length;
+  const isRuaLargeArea = !isCrossTypologyApplied && ruaValid.length > 0 && (size > 1.5 * ruaAreaMedia);
+  const ruaFator = isCrossTypologyApplied
+    ? crossFatorEscala
+    : (isRuaLargeArea
+      ? Math.pow(ruaAreaMedia / size, 0.20)
+      : (!isRuaCenarioA && ruaValid.length > 0 ? Math.pow(ruaAreaMedia / size, 0.15) : 1.0));
+  let ruaSaneada = isCrossTypologyApplied
+    ? ruaSaneadaRaw
+    : ((isRuaLargeArea || (!isRuaCenarioA && ruaValid.length > 0)) ? Math.round(ruaSaneadaRaw * ruaFator) : ruaSaneadaRaw);
+  const ruaExpurgados = isCrossTypologyApplied ? (ruaWorkingTxs.length - ruaValid.length) : (ruaVals.length - ruaValid.length);
+
+  // Teto de Sanidade Relativo ao Bairro (para ruas com menos de 10 transações):
+  // O valor unitário ponderado final da via não pode exceder o teto de mediana_bairro * 1.45.
+  if (ruaValid.length < 10 && ruaSaneada > 0 && bSaneada > 0) {
+    ruaSaneada = Math.min(ruaSaneada, Math.round(bSaneada * 1.45));
+  }
+
+  // Calibração Conservadora: quando a rua tem amostragem frágil (< 3 transações)
+  // e é calibrada pelo entorno / bairro, o valor é travado no teto da mediana do bairro * 1.05
+  if (!isCrossTypologyApplied && ruaValid.length < 3 && ruaSaneada > 0 && bSaneada > 0) {
+    ruaSaneada = Math.min(ruaSaneada, Math.round(bSaneada * 1.05));
+  }
 
   // 4. Nível Prédio (Mesmo Edifício / Número Predial - Ponderação Adaptativa NBR 14.653)
-  const allPredioTxs = targetNum ? allRuaTxs.filter(t => cleanStreetNumber(t.number) === targetNum) : [];
   const predioSimilarTxs = allPredioTxs.filter(t => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
   const isPredioCenarioA = predioSimilarTxs.length >= 4 && sizeMode !== 'all';
   const predioWorkingTxs = isPredioCenarioA ? predioSimilarTxs : allPredioTxs;
@@ -569,19 +645,26 @@ export function computeBidirectionalBenchmarks(
     predioCorteMax = 0;
   }
   const predioAreaMedia = predioWorkingTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / Math.max(1, predioWorkingTxs.length);
-  const predioFator = !isPredioCenarioA && predioValid.length > 0 ? Math.pow(predioAreaMedia / size, 0.15) : 1.0;
-  const predioSaneada = !isPredioCenarioA && predioValid.length > 0 ? Math.round(predioSaneadaRaw * predioFator) : predioSaneadaRaw;
+  const isPredioLargeArea = predioValid.length > 0 && (size > 1.5 * predioAreaMedia);
+  const predioFator = isPredioLargeArea
+    ? Math.pow(predioAreaMedia / size, 0.20)
+    : (!isPredioCenarioA && predioValid.length > 0 ? Math.pow(predioAreaMedia / size, 0.15) : 1.0);
+  const predioSaneada = (isPredioLargeArea || (!isPredioCenarioA && predioValid.length > 0)) ? Math.round(predioSaneadaRaw * predioFator) : predioSaneadaRaw;
   const predioExpurgados = predioVals.length - predioValid.length;
 
   // 5. Weighted four-tier valuation (NBR 14.653)
   const weightedValuation = computeFourTierValuation({
     building: { value: predioSaneada, count: predioValid.length },
     street: { value: ruaSaneada, count: ruaValid.length },
-    surrounding: { value: hasVerifiedRadius && fallbackLevel !== 'bairro' ? raioSaneada : 0, count: hasVerifiedRadius && fallbackLevel !== 'bairro' ? raioValid.length : 0 },
+    surrounding: { value: hasVerifiedRadius ? raioSaneada : 0, count: hasVerifiedRadius ? raioValid.length : 0 },
     neighborhood: { value: bSaneada, count: bValid.length },
     radiusKm: effectiveRadiusKm
   });
   let mediaCorteReal = weightedValuation.value;
+  // Calibração Conservadora: Teto pela Mediana Geral do Bairro * 1.05 se amostragem local for frágil (< 3 locais)
+  if (!isCrossTypologyApplied && ruaValid.length < 3 && predioValid.length === 0 && bSaneada > 0) {
+    mediaCorteReal = Math.min(mediaCorteReal, Math.round(bSaneada * 1.05));
+  }
   let nivelUtilizado: 'Prédio' | 'Rua' | 'Raio Entorno' | 'Bairro' | 'Sem Dados Suficientes' = 'Sem Dados Suficientes';
   let hasMicroData = weightedValuation.priceable;
 
@@ -589,30 +672,30 @@ export function computeBidirectionalBenchmarks(
     nivelUtilizado = predioValid.length > 0 ? 'Prédio' : ruaValid.length > 0 ? 'Rua' : (raioValid.length > 0 ? 'Raio Entorno' : 'Bairro');
   }
 
-  // Identificação do Cenário de Homogeneização Adotado
+  // Identificação do Cenário de Homogeneização Adotado (NBR 14.653 / Berrini)
   let adoptedHomogeneizado = false;
   let adoptedFatorEscala = 1.0;
   let adoptedAreaMedia = size;
   let adoptedCenario: 'A' | 'B' = 'A';
 
   if (nivelUtilizado === 'Prédio') {
-    adoptedCenario = isPredioCenarioA ? 'A' : 'B';
-    adoptedHomogeneizado = !isPredioCenarioA && predioValid.length > 0;
+    adoptedCenario = isPredioCenarioA && !isPredioLargeArea ? 'A' : 'B';
+    adoptedHomogeneizado = (isPredioLargeArea || !isPredioCenarioA) && predioValid.length > 0;
     adoptedFatorEscala = predioFator;
     adoptedAreaMedia = predioAreaMedia;
   } else if (nivelUtilizado === 'Rua') {
-    adoptedCenario = isRuaCenarioA ? 'A' : 'B';
-    adoptedHomogeneizado = !isRuaCenarioA && ruaValid.length > 0;
-    adoptedFatorEscala = ruaFator;
+    adoptedCenario = isRuaCenarioA && !isRuaLargeArea ? 'A' : 'B';
+    adoptedHomogeneizado = (isCrossTypologyApplied || isRuaLargeArea || !isRuaCenarioA) && ruaValid.length > 0;
+    adoptedFatorEscala = isCrossTypologyApplied ? crossFatorEscala : ruaFator;
     adoptedAreaMedia = ruaAreaMedia;
   } else if (nivelUtilizado === 'Raio Entorno') {
-    adoptedCenario = isRaioCenarioA ? 'A' : 'B';
-    adoptedHomogeneizado = !isRaioCenarioA && raioValid.length > 0;
+    adoptedCenario = isRaioCenarioA && !isRaioLargeArea ? 'A' : 'B';
+    adoptedHomogeneizado = (isRaioLargeArea || !isRaioCenarioA) && raioValid.length > 0;
     adoptedFatorEscala = raioFator;
     adoptedAreaMedia = raioAreaMedia;
   } else if (nivelUtilizado === 'Bairro') {
-    adoptedCenario = isBCenarioA ? 'A' : 'B';
-    adoptedHomogeneizado = !isBCenarioA && bValid.length > 0;
+    adoptedCenario = isBCenarioA && !isBLargeArea ? 'A' : 'B';
+    adoptedHomogeneizado = (isBLargeArea || !isBCenarioA) && bValid.length > 0;
     adoptedFatorEscala = bFator;
     adoptedAreaMedia = bAreaMedia;
   }
@@ -663,7 +746,12 @@ export function computeBidirectionalBenchmarks(
       prelim: ruaPrelim,
       refCorte: refCorteRua,
       corteMin: ruaCorteMin,
-      corteMax: ruaCorteMax
+      corteMax: ruaCorteMax,
+      isHomogeneizado: isCrossTypologyApplied ? true : undefined,
+      fatorEscala: isCrossTypologyApplied ? Number(crossFatorEscala.toFixed(3)) : undefined,
+      areaMediaGeral: isCrossTypologyApplied ? Math.round(ruaAreaMedia) : undefined,
+      isCrossTypologyApplied,
+      crossTypologyOrigin: isCrossTypologyApplied ? crossTypologyOrigin : undefined
     },
     predio: {
       saneada: predioSaneada,
@@ -685,6 +773,8 @@ export function computeBidirectionalBenchmarks(
     effectiveRadiusKm,
     radiusLabel,
     fallbackLevel,
+    isCrossTypologyApplied,
+    crossTypologyOrigin: isCrossTypologyApplied ? crossTypologyOrigin : undefined,
     minSimilarSize: minSize,
     maxSimilarSize: maxSize,
     hasMicroData,

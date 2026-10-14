@@ -19,16 +19,25 @@ export interface PortalBenchmarkInput {
   itbiStreetCount?: number;
   itbiUnitValueAvg?: number;
   itbiSurroundingAvgSqm?: number;
+  moradaM2?: number;
+  portalSampleCount?: number;
+  portalStreetUrl?: string;
+  portalTypologyAvgPrice?: number;
+  portalLeadText?: string;
 }
 
 export interface PortalBenchmarkResult {
   m2MercadoPortal: number;
   valorSugeridoPortal: number;
-  fontePortal: 'ZAP Imóveis' | 'QuintoAndar';
+  fontePortal: 'Morada Virtual / Portais' | 'ZAP Imóveis' | 'QuintoAndar' | string;
   dataColetaPortal: string;
   isBairroPortalFallback: boolean;
   portalAreaBracket: string;
   referenciaTexto: 'Mesma Rua' | 'Sem anúncios na via' | '(Referência: Bairro)';
+  portalSampleCount?: number;
+  portalStreetUrl?: string;
+  portalTypologyAvgPrice?: number;
+  portalLeadText?: string;
 }
 
 // Índices médios de m² de mercado em portais (ZAP / QuintoAndar) por bairro de referência
@@ -149,11 +158,22 @@ export function calculatePortalBenchmark(input: PortalBenchmarkInput): PortalBen
   let baseSqm = 0;
   let isBairroPortalFallback = true;
 
-  // 1. Verifica se temos dados de portais ou ITBI na mesma rua
+  // 1. Verifica se temos dados reais do Morada Virtual, ou portais, ou ITBI na mesma rua
   // DIRETRIZ ESTRITA DO USUÁRIO: O valor deve ser a média da RUA DO IMÓVEL e NÃO do bairro.
   // Se não houver dados específicos na rua, NÃO projetar média de bairro.
   const isRioCity = uf === 'RJ' && normalizeText(rawCity).includes('rio');
-  if (input.streetPortalAvgSqm && input.streetPortalAvgSqm > 0) {
+  let portalSource: 'Morada Virtual / Portais' | 'ZAP Imóveis' | 'QuintoAndar' | string = 'Morada Virtual / Portais';
+
+  if (input.moradaM2 && input.moradaM2 > 0) {
+    if (isRioCity && input.moradaM2 < 1500) {
+      baseSqm = 0;
+      isBairroPortalFallback = true;
+    } else {
+      baseSqm = input.moradaM2;
+      isBairroPortalFallback = false;
+      portalSource = 'Morada Virtual / Portais';
+    }
+  } else if (input.streetPortalAvgSqm && input.streetPortalAvgSqm > 0) {
     if (isRioCity && input.streetPortalAvgSqm < 1500) {
       // Descartar m² < R$ 1.500 no RJ (dados de aluguel/locação)
       baseSqm = 0;
@@ -161,25 +181,24 @@ export function calculatePortalBenchmark(input: PortalBenchmarkInput): PortalBen
     } else {
       baseSqm = input.streetPortalAvgSqm;
       isBairroPortalFallback = false;
+      portalSource = (uf === 'RJ' || uf === 'SP') ? 'QuintoAndar' : 'ZAP Imóveis';
     }
   } else if (input.itbiStreetAvgSqm && input.itbiStreetAvgSqm > 0 && (input.itbiStreetCount || 0) >= 2) {
     // Portais em média pedem 18% a mais que as transações de escritura ITBI na mesma rua
     baseSqm = Math.round(input.itbiStreetAvgSqm * 1.18);
     isBairroPortalFallback = false;
+    portalSource = (uf === 'RJ' || uf === 'SP') ? 'QuintoAndar' : 'ZAP Imóveis';
   } else {
     // Não inventar ou projetar média de bairro como se fosse da rua
     baseSqm = 0;
     isBairroPortalFallback = true;
+    portalSource = (uf === 'RJ' || uf === 'SP') ? 'QuintoAndar' : 'ZAP Imóveis';
   }
 
   // Aplica a segmentação por faixa de metragem (apenas se houver valor real na rua)
   const m2MercadoPortal = baseSqm > 0 ? Math.round(baseSqm * factor) : 0;
   // O valor sugerido de portal não deve competir com a avaliação pericial oficial ITBI
   const valorSugeridoPortal = 0;
-
-  // Seleciona a fonte predominante de acordo com a praça
-  const isQuintoAndarRegion = (uf === 'RJ' || uf === 'SP') && !isBairroPortalFallback;
-  const fontePortal: 'ZAP Imóveis' | 'QuintoAndar' = isQuintoAndarRegion ? 'QuintoAndar' : 'ZAP Imóveis';
 
   const dataColetaPortal = new Date().toISOString();
   const referenciaTexto: 'Mesma Rua' | 'Sem anúncios na via' = (!isBairroPortalFallback && m2MercadoPortal > 0)
@@ -189,10 +208,14 @@ export function calculatePortalBenchmark(input: PortalBenchmarkInput): PortalBen
   return {
     m2MercadoPortal,
     valorSugeridoPortal,
-    fontePortal,
+    fontePortal: portalSource,
     dataColetaPortal,
     isBairroPortalFallback,
     portalAreaBracket: bracket,
-    referenciaTexto
+    referenciaTexto,
+    portalSampleCount: input.portalSampleCount,
+    portalStreetUrl: input.portalStreetUrl,
+    portalTypologyAvgPrice: input.portalTypologyAvgPrice,
+    portalLeadText: input.portalLeadText
   };
 }

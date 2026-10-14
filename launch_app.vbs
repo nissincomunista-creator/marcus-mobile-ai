@@ -5,23 +5,37 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 appDir = fso.GetParentFolderName(WScript.ScriptFullName)
 WshShell.CurrentDirectory = appDir
 
-Function IsServerOnline()
+Function CheckUrl(url)
     On Error Resume Next
     Dim http
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-    http.open "GET", "http://localhost:3000/api/network/host-info", False
-    http.setTimeouts 800, 800, 800, 800
+    http.open "GET", url, False
+    http.setTimeouts 2500, 2500, 2500, 2500
     http.send
     If Err.Number = 0 Then
         If http.status = 200 Or http.status = 304 Or http.status = 404 Then
-            IsServerOnline = True
+            CheckUrl = True
         Else
-            IsServerOnline = False
+            CheckUrl = False
         End If
+    Else
+        CheckUrl = False
+    End If
+    Err.Clear
+End Function
+
+Function IsServerOnline()
+    If CheckUrl("http://127.0.0.1:3000/api/network/host-info") Then
+        IsServerOnline = True
+    ElseIf CheckUrl("http://localhost:3000/api/network/host-info") Then
+        IsServerOnline = True
+    ElseIf CheckUrl("http://127.0.0.1:3000/") Then
+        IsServerOnline = True
+    ElseIf CheckUrl("http://localhost:3000/") Then
+        IsServerOnline = True
     Else
         IsServerOnline = False
     End If
-    Err.Clear
 End Function
 
 Function IsServerProcessRunning()
@@ -30,8 +44,9 @@ Function IsServerProcessRunning()
     Set processes = GetObject("winmgmts:\\.\root\cimv2").ExecQuery("SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name='node.exe'")
     IsServerProcessRunning = False
     For Each process In processes
-        If InStr(1, process.CommandLine, "dist/server.cjs", vbTextCompare) > 0 Or _
-           InStr(1, process.CommandLine, "tsx server.ts", vbTextCompare) > 0 Then
+        Dim cmd
+        cmd = LCase(process.CommandLine & "")
+        If InStr(cmd, "server.cjs") > 0 Or InStr(cmd, "server.ts") > 0 Then
             IsServerProcessRunning = True
             Exit For
         End If
@@ -43,27 +58,27 @@ End Function
 If Not IsServerOnline() Then
     If Not IsServerProcessRunning() Then
         If fso.FileExists(appDir & "\dist\server.cjs") Then
-            WshShell.Run "cmd.exe /c node dist/server.cjs", 0, False
+            WshShell.Run "cmd.exe /c cd /d """ & appDir & """ && node dist\server.cjs", 0, False
         Else
-            WshShell.Run "cmd.exe /c npm run dev", 0, False
+            WshShell.Run "cmd.exe /c cd /d """ & appDir & """ && npm run dev", 0, False
         End If
     End If
     
-    ' Aguarda ativamente o servidor responder em loop (até 60 segundos).
+    ' Aguarda ativamente o servidor responder em loop (ate 90 segundos).
     Dim attempts
     attempts = 0
-    Do While Not IsServerOnline() And attempts < 120
+    Do While Not IsServerOnline() And attempts < 180
         WScript.Sleep 500
         attempts = attempts + 1
     Loop
 End If
 
 If Not IsServerOnline() Then
-    WshShell.Popup "O servidor do aplicativo ainda não respondeu. Aguarde alguns segundos e abra o atalho novamente.", 8, "Marcus - Garimpo de Leilões", 48
+    WshShell.Popup "O servidor do aplicativo ainda nao respondeu. Aguarde alguns instantes e abra o atalho novamente.", 8, "Marcus - Garimpo de Leiloes", 48
     WScript.Quit 1
 End If
 
-' Localiza o Chrome e mantém o Edge apenas como contingência
+' Localiza o Chrome e mantem o Edge apenas como contingencia
 edgePath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 If Not fso.FileExists(edgePath) Then
     edgePath = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"

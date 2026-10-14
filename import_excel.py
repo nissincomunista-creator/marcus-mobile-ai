@@ -6,11 +6,12 @@ import re
 import openpyxl
 
 possible_paths = [
+    r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-5.xlsx",
+    r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-5.xlsx",
+    r"C:\Users\Marcus\OneDrive\Desktop\app garimpo leilao\itbi 2025-26.xlsx.xlsx",
     r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-4 (1).xlsx",
     r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-4.xlsx",
     r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-4.xlsx",
-    r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-5.xlsx",
-    r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-5.xlsx",
     r"C:\Users\Marcus\OneDrive\Desktop\ITBI_TRANSACOES_2025_diante-4.xlsx"
 ]
 
@@ -33,6 +34,38 @@ def clean_number_str(val):
     if m:
         return str(int(m.group(0)))
     return s
+
+def parse_monetary_or_decimal(raw_val):
+    if raw_val is None:
+        return 0.0
+    if isinstance(raw_val, (int, float)):
+        return float(raw_val)
+    s = clean_excel_str(raw_val).strip()
+    if not s or s.lower() == 'nan':
+        return 0.0
+    # Remove currency symbols, non-numeric chars except digits, comma, period
+    s = re.sub(r'[^\d,.]', '', s)
+    if not s:
+        return 0.0
+    if ',' in s and '.' in s:
+        s = s.replace('.', '').replace(',', '.')
+    elif ',' in s:
+        s = s.replace(',', '.')
+    try:
+        return float(s)
+    except Exception:
+        return 0.0
+
+def is_voluntary_market_sale(val):
+    if val <= 0:
+        return False
+    if abs(val - round(val)) > 1e-4:
+        return False
+    if int(round(val)) % 100 != 0:
+        return False
+    return True
+
+PERIPHERAL_BAIRROS = {'COSMOS', 'GUARATIBA', 'SANTA CRUZ', 'CAMPO GRANDE', 'INHOAIBA'}
 
 def determine_property_type(tipologia, descricao):
     tipologia_str = clean_excel_str(tipologia).upper()
@@ -132,28 +165,10 @@ def import_data():
 
         bairro_str = clean_excel_str(raw_bairro).upper()
 
-        # Values
-        val = 0.0
-        m2 = 0.0
-        area = 0.0
-
-        if val_idx is not None and row[val_idx] is not None:
-            try:
-                val = float(row[val_idx])
-            except Exception:
-                val = 0.0
-
-        if m2_idx is not None and row[m2_idx] is not None:
-            try:
-                m2 = float(row[m2_idx])
-            except Exception:
-                m2 = 0.0
-
-        if area_idx is not None and row[area_idx] is not None:
-            try:
-                area = float(row[area_idx])
-            except Exception:
-                area = 0.0
+        # Values with strict numeric/currency casting
+        val = parse_monetary_or_decimal(row[val_idx]) if val_idx is not None else 0.0
+        m2 = parse_monetary_or_decimal(row[m2_idx]) if m2_idx is not None else 0.0
+        area = parse_monetary_or_decimal(row[area_idx]) if area_idx is not None else 0.0
 
         # Recover missing metrics
         if val <= 0 and m2 > 0 and area > 0:
@@ -164,6 +179,12 @@ def import_data():
             area = round(val / m2, 2)
 
         if m2 <= 0 or val <= 0:
+            skipped_nan += 1
+            continue
+
+        # Filtro de Sanidade Anti-Outlier em Bairros Periféricos:
+        # Em bairros periféricos da Zona Oeste, valores residenciais acima de R$ 7.000/m² são aberrações matemáticas ou erros de fonte
+        if bairro_str in PERIPHERAL_BAIRROS and m2 > 7000:
             skipped_nan += 1
             continue
 
@@ -209,7 +230,9 @@ def import_data():
             "_core": canonical_street(street_str),
             "sourceFile": os.path.basename(excel_path),
             "sourceRow": row_count + 1,
-            "sourceVerified": True
+            "sourceVerified": True,
+            "isCompraEVenda": is_voluntary_market_sale(val),
+            "isFiduciario": not is_voluntary_market_sale(val)
         })
 
     print(f"Total rows examined: {row_count}")

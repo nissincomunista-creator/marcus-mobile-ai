@@ -142,7 +142,7 @@ export default function App() {
   const [selectedStateFilter, setSelectedStateFilter] = useState('');
   const [maxPriceFilter, setMaxPriceFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
-  const [sortBy, setSortBy] = useState('roi');
+  const [sortBy, setSortBy] = useState('spread');
   const [selectedOriginFilter, setSelectedOriginFilter] = useState<'todos' | 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal'>('todos');
 
   // Modal toggle state
@@ -443,7 +443,22 @@ export default function App() {
       }
   };
 
-  useAuctionStartupSync();
+  const openingSyncPhase = useAuctionStartupSync();
+  const [openingCatalogApplied, setOpeningCatalogApplied] = useState(false);
+  const [applyingOpeningCatalog, setApplyingOpeningCatalog] = useState(false);
+  const applyOpeningCatalog = async () => {
+    setApplyingOpeningCatalog(true);
+    try {
+      const response = await authFetch('/api/auctions');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const catalog = await response.json();
+      if (!Array.isArray(catalog)) throw new Error('Catálogo inválido');
+      setAuctions(catalog);
+      setOpeningCatalogApplied(true);
+      setLastSyncTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    } catch (error) { console.error('Não foi possível aplicar o catálogo atualizado', error); }
+    finally { setApplyingOpeningCatalog(false); }
+  };
 
   const handleGarimparJudiciais = async (city?: string) => {
     setIsMining(true);
@@ -599,6 +614,7 @@ export default function App() {
 
   const handleUpdatePropertyDirectly = async (updates: Partial<AuctionProperty>) => {
     if (!updates.id) return;
+    setAuctions(prev => prev.map(a => a.id === updates.id ? { ...a, ...updates } : a));
     try {
       const response = await authFetch(`/api/auctions/${updates.id}`, {
         method: 'PUT',
@@ -653,7 +669,7 @@ export default function App() {
       setSelectedStateFilter('');
       setMaxPriceFilter('');
       setPaymentFilter('');
-      setSortBy('roi');
+      setSortBy('spread');
       setSelectedAuctionId(null);
       await refreshMarketData();
     } catch (e: any) {
@@ -804,7 +820,11 @@ export default function App() {
             {/* Discrete Sync Live Indicator */}
             <div className="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-slate-400 shadow-inner">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span>Sync: Atualizado hoje às <strong className="text-slate-200">{lastSyncTime}</strong></span>
+              {openingSyncPhase === 'running' ? <span>Verificando anúncios nas fontes…</span>
+                : openingSyncPhase === 'ready' && !openingCatalogApplied
+                  ? <button onClick={applyOpeningCatalog} disabled={applyingOpeningCatalog} className="text-emerald-300 underline">{applyingOpeningCatalog ? 'Carregando catálogo…' : 'Atualização pronta — aplicar'}</button>
+                  : openingSyncPhase === 'error' ? <span className="text-amber-300">Verificação incompleta</span>
+                  : <span>Sync: Atualizado às <strong className="text-slate-200">{lastSyncTime}</strong></span>}
               <span className="text-slate-600">|</span>
               <span className="text-emerald-400 font-bold">{auctions.length} lotes</span>
             </div>
@@ -1195,7 +1215,7 @@ export default function App() {
           </div>
         )}
 
-        {isLoading ? (
+        {isLoading && activeTab !== 'calculadora' ? (
           /* Loading skeleton loader */
           <div className="space-y-6 py-12 text-center text-gray-400">
             <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
@@ -1311,6 +1331,7 @@ export default function App() {
                           communityDistanceM: activeSelectedAuction.communityDistanceM,
                         }}
                         onUpdateProperty={handleUpdatePropertyDirectly}
+                        onValuationComplete={(lotId, result) => { void handleUpdatePropertyDirectly({ id: lotId, ...result }); }}
                         onClose={() => setSelectedAuctionId(null)}
                       />
                     </div>
