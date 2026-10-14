@@ -3287,7 +3287,12 @@ app.get('/api/auctions', authMiddleware, (req, res) => {
         streetRadiusDeviationPct: undefined
       };
     }
-    return recalculateAuction(a, store.itbiTransactions);
+    // Listing reads must reuse the values persisted by ingestion/calculation.
+    // Re-running the complete ITBI valuation for every lot on every request
+    // kept the Garimpo screen waiting for over a minute on mobile. Sync and
+    // explicit write/import paths recalculate affected properties; a catalog
+    // GET only filters and returns their latest stored values.
+    return a;
   }).map(a => {
     const isRio = (a.state || '').toUpperCase() === 'RJ' || String(a.city || '').toLowerCase().includes('rio de janeiro');
     if (isRio && a.streetPortalAvgSqm !== undefined && a.streetPortalAvgSqm < 1500) {

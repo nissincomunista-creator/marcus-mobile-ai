@@ -8488,7 +8488,7 @@ app.get("/api/auctions", authMiddleware, (req, res) => {
         streetRadiusDeviationPct: void 0
       };
     }
-    return recalculateAuction(a, store.itbiTransactions);
+    return a;
   }).map((a) => {
     const isRio = (a.state || "").toUpperCase() === "RJ" || String(a.city || "").toLowerCase().includes("rio de janeiro");
     if (isRio && a.streetPortalAvgSqm !== void 0 && a.streetPortalAvgSqm < 1500) {
