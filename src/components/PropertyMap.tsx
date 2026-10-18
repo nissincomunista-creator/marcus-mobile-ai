@@ -145,8 +145,8 @@ export default function PropertyMap({
       mapRef.current = map;
       setMapReady(true);
 
-      const tileRoad = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
+      const tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxNativeZoom: 19,
         maxZoom: 20
       });
@@ -159,11 +159,11 @@ export default function PropertyMap({
         clusterGroup = L.markerClusterGroup({
           showCoverageOnHover: false,
           zoomToBoundsOnClick: true,
-          spiderfyOnMaxZoom: true,
+          spiderfyOnMaxZoom: false,
           removeOutsideVisibleBounds: true,
           animate: true,
           animateAddingMarkers: false,
-          maxClusterRadius: 42,
+          maxClusterRadius: 38,
           iconCreateFunction: (cluster: any) => {
             const count = cluster.getChildCount();
             const countLabel = count > 999 ? `+${(count / 1000).toFixed(1)}k` : `+${count}`;
@@ -242,8 +242,8 @@ export default function PropertyMap({
         maxZoom: 20
       });
     } else {
-      layer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
+      layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxNativeZoom: 19,
         maxZoom: 20
       });
@@ -337,11 +337,12 @@ export default function PropertyMap({
     if (!mapReady || !mapRef.current || !locationsLoaded) return;
     const key = initialSelectedPropertyId || 'initial';
     if (initialFitRef.current === key) return;
-    const selected = initialSelectedPropertyId && resolvedCoordinates[initialSelectedPropertyId];
-    const points = (initialFilteredAuctions || auctions).map(a => resolvedCoordinates[a.id]).filter(Boolean);
+    const targetProp = initialSelectedPropertyId ? auctions.find(a => a.id === initialSelectedPropertyId) : null;
+    const selected = (initialSelectedPropertyId && resolvedCoordinates[initialSelectedPropertyId]) || (targetProp ? getMapCoordinates(targetProp) : null);
+    const points = (initialFilteredAuctions || auctions).map(a => resolvedCoordinates[a.id] || getMapCoordinates(a)).filter(Boolean);
     if (selected) { mapRef.current.setView(selected, 18); initialFitRef.current = key; }
     else if (points.length) { mapRef.current.fitBounds(points, { padding: [35,35], maxZoom: 17 }); initialFitRef.current = key; }
-  }, [mapReady, locationsLoaded, resolvedCoordinates, initialSelectedPropertyId, initialFilteredAuctions, auctions]);
+  }, [mapReady, locationsLoaded, resolvedCoordinates, initialSelectedPropertyId, initialFilteredAuctions, auctions, getMapCoordinates]);
 
 
 

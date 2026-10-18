@@ -40,6 +40,8 @@ export interface ScrapedPortalListing {
   total_taxas?: number;
   total_rental_package?: number;
   transaction_type?: 'venda' | 'aluguel';
+  lat?: number;
+  lng?: number;
 }
 
 export function normalizeSlug(str: string): string {
@@ -196,37 +198,40 @@ export function detectNeighborhoodFromCardAndUrl(
   const normText = (cardText || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   const normCity = normalizeSlug(city || '').replace(/-/g, ' ');
-  const cityCandidates = normCity ? (NEIGHBORHOOD_CATALOG.byCity[normCity] || []) : [];
-  const candidateLists = cityCandidates.length > 0
-    ? [cityCandidates, NEIGHBORHOOD_CATALOG.all]
-    : [NEIGHBORHOOD_CATALOG.all];
+  const cityCandidates = normCity ? (NEIGHBORHOOD_CATALOG.byCity[normCity] || []) : NEIGHBORHOOD_CATALOG.all;
 
-  for (const candidateList of candidateLists) {
-    // 1. Extração direta no texto do card por limites de palavra (whole word)
-    for (const n of candidateList) {
-      if (n.length < 3) continue;
-      const regex = new RegExp(`(?:^|[^a-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^a-z0-9])`, 'i');
-      if (regex.test(normText)) {
-        return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      }
-    }
-
-    // 2. Extração pelo slug da URL contra a lista oficial de bairros
-    for (const n of candidateList) {
-      if (n.length < 3) continue;
-      const slug = n.replace(/\s+/g, '-');
-      if (
-        normUrl.includes('-' + slug + '-') ||
-        normUrl.includes('/' + slug + '-') ||
-        normUrl.includes('-' + slug + '/') ||
-        normUrl.endsWith('-' + slug)
-      ) {
-        return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      }
+  // 1. Prioridade absoluta: se targetNeigh foi fornecido e a busca/anúncio o referencia
+  if (targetNeigh) {
+    const targetSlug = normalizeSlug(targetNeigh);
+    const targetNorm = targetNeigh.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    if (
+      normUrl.includes('-' + targetSlug + '-') ||
+      normUrl.includes('/' + targetSlug + '-') ||
+      normUrl.includes('-' + targetSlug + '/') ||
+      normUrl.includes('/' + targetSlug + '/') ||
+      normUrl.endsWith('-' + targetSlug) ||
+      new RegExp(`\\b${targetNorm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`).test(normText)
+    ) {
+      return targetNeigh;
     }
   }
 
-  // 3. Extração por regex no padrão de endereço dos portais ("Rua X - Bairro, Cidade")
+  // 2. Extração pelo slug canônico da URL contra os bairros oficiais da cidade
+  for (const n of cityCandidates) {
+    if (n.length < 3) continue;
+    const slug = n.replace(/\s+/g, '-');
+    if (
+      normUrl.includes('-' + slug + '-') ||
+      normUrl.includes('/' + slug + '-') ||
+      normUrl.includes('-' + slug + '/') ||
+      normUrl.includes('/' + slug + '/') ||
+      normUrl.endsWith('-' + slug)
+    ) {
+      return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+  }
+
+  // 3. Extração por regex estrita no endereço do card ("Rua X - Bairro, Cidade")
   const textMatches = [
     cardText.match(/[-–—]\s*([A-Za-zÀ-ÿ\s]+?)\s*,\s*(?:Rio de Janeiro|Niterói|Juiz de Fora)/i),
     cardText.match(/,\s*([A-Za-zÀ-ÿ\s]+?)\s*[-–—]\s*(?:Rio de Janeiro|RJ|Niterói|Juiz de Fora|MG)/i),
@@ -238,14 +243,13 @@ export function detectNeighborhoodFromCardAndUrl(
     if (m && m[1]) {
       const candidate = m[1].trim();
       const candNorm = candidate.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-      if (['rio de janeiro', 'rj', 'brasil', 'zona norte', 'zona sul', 'zona oeste', 'centro', 'mg'].includes(candNorm)) continue;
-      for (const n of NEIGHBORHOOD_CATALOG.all) {
-        if (candNorm === n || candNorm.includes(n)) {
+      if (['rio de janeiro', 'rj', 'brasil', 'zona norte', 'zona sul', 'zona oeste', 'centro metropolitano', 'centro empresarial', 'mg'].includes(candNorm)) continue;
+      
+      // Procura correspondência exata ou por limite de palavra estrito (\b) para não confundir "centro" em "centro médico"
+      for (const n of cityCandidates) {
+        if (candNorm === n || new RegExp(`^${n.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`).test(candNorm)) {
           return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
-      }
-      if (candidate.length >= 3 && candidate.length <= 35) {
-        return candidate;
       }
     }
   }
@@ -321,10 +325,15 @@ export function sanitizePropertyArea(
   }
 
   // 1. Prioridade Absoluta: menção explícita de Área Útil, Privativa ou Construída no texto/card
-  const usableMatch = text.match(/(?:área\s*(?:útil|privativa|constru[íi]da)|privativ[ao]|útil|constru[íi]da)[:\s]*(\d+)\s*m[²2]?/i) ||
-                      text.match(/(\d+)\s*m[²2]?\s*(?:útil|util|privativ[ao]|priv|úteis|constru[íi]da|constr)/i);
-  if (usableMatch) {
-    const val = parseInt(usableMatch[1] || usableMatch[2], 10);
+  const postfixMatch = text.match(/(\d+)\s*m[²2]?\s*(?:útil|util|privativ[ao]|priv|úteis|constru[íi]da|constr)/i);
+  if (postfixMatch) {
+    const val = parseInt(postfixMatch[1], 10);
+    if (val >= 15 && val <= 800) return val;
+  }
+
+  const prefixMatch = text.match(/(?:área\s+(?:útil|privativa|constru[íi]da|privada))[:\s]*(\d+)\s*m[²2]?/i);
+  if (prefixMatch) {
+    const val = parseInt(prefixMatch[1], 10);
     if (val >= 15 && val <= 800) return val;
   }
 
@@ -1281,12 +1290,12 @@ export async function scrapeImovelweb(
 
         // Metragem Útil / Privativa vs Metragem de Terreno / Total
         const utilMatch = text.match(/(\d+)\s*m[²2]?\s*(?:útil|util|privativ[ao]|priv|constr|constru[íi]da)/i) ||
-                          text.match(/(?:área\s*(?:útil|privativa|constru[íi]da)|útil|privativa)[:\s]*(\d+)\s*m[²2]?/i);
+                          text.match(/(?:área\s+(?:útil|privativa|constru[íi]da|privada))[:\s]*(\d+)\s*m[²2]?/i);
         const totMatch = text.match(/(\d+)\s*m[²2]?\s*(?:tot|total|terreno|lote)/i) ||
                          text.match(/(?:área\s*(?:total|do\s*terreno)|terreno)[:\s]*(\d+)\s*m[²2]?/i);
         const sizeMatch = text.match(/(\d+)\s*m[²2]/i);
 
-        const usefulArea = utilMatch ? parseInt(utilMatch[1] || utilMatch[2], 10) : 0;
+        const usefulArea = utilMatch ? parseInt(utilMatch[1], 10) : 0;
         const totalArea = totMatch ? parseInt(totMatch[1] || totMatch[2], 10) : 0;
         const anyArea = sizeMatch ? parseInt(sizeMatch[1], 10) : 65;
 
@@ -1344,8 +1353,8 @@ export async function scrapeImovelweb(
       // Exclui completamente terrenos e lotes do módulo Flip e Locação
       if (typo.propertyType === 'Terreno') continue;
 
-      const initialArea = item.usefulArea || item.anyArea;
-      const sanitizedArea = sanitizePropertyArea(item.cardText || '', initialArea, typo.propertyType, item.price, item.href);
+      const initialArea = item.usefulArea > 0 ? item.usefulArea : (item.anyArea > 0 ? item.anyArea : 65);
+      const sanitizedArea = item.usefulArea > 0 ? item.usefulArea : sanitizePropertyArea(item.cardText || '', initialArea, typo.propertyType, item.price, item.href);
       const relDate = parseRelativePublicationDate(item.pubText);
       const m2Val = Math.round(item.price / (sanitizedArea || 1));
 
@@ -1438,10 +1447,19 @@ export function enrichListingsWithMarketBenchmark(
   }
 
   return listings.map(item => {
-    const valorMercadoEstimado = Math.round(item.area_m2 * refM2);
+    let itemM2 = refM2;
+    if (item.tipo_imovel && /casa|sobrado/i.test(item.tipo_imovel)) {
+      itemM2 = Math.round(itemM2 * 0.58);
+    }
+    if (item.area_m2 > 120) {
+      const scale = Math.max(0.50, Math.pow(100 / item.area_m2, 0.18));
+      itemM2 = Math.round(itemM2 * scale);
+    }
+
+    const valorMercadoEstimado = Math.round(item.area_m2 * itemM2);
+    const flipExit = Math.round(valorMercadoEstimado * 0.90);
     const diff = valorMercadoEstimado - item.preco_anunciado;
     const descontoMercadoPct = valorMercadoEstimado > 0 ? Math.round((diff / valorMercadoEstimado) * 100) : 0;
-    const oportunidadeAbaixoMercado = descontoMercadoPct >= 15;
 
     // Cálculo exato de custos de aquisição e reforma para ROI do House Flip
     const preco = item.preco_anunciado;
@@ -1450,12 +1468,13 @@ export function enrichListingsWithMarketBenchmark(
     const repair = Math.round(item.area_m2 * 350);
     const holding = Math.round(valorMercadoEstimado * 0.015);
     const totalCost = preco + itbi + registry + repair + holding + (item.valor_condominio || 0) + (item.valor_iptu || 0);
-    const calculatedProfit = valorMercadoEstimado > totalCost ? Math.round(valorMercadoEstimado - totalCost) : 0;
+    const calculatedProfit = flipExit > totalCost ? Math.round(flipExit - totalCost) : 0;
     const calculatedRoi = totalCost > 0 ? Number(((calculatedProfit / totalCost) * 100).toFixed(2)) : 0;
+    const oportunidadeAbaixoMercado = calculatedProfit > 0 && calculatedRoi >= 15;
 
     return {
       ...item,
-      m2_referencia_bairro: refM2,
+      m2_referencia_bairro: itemM2,
       valor_mercado_estimado: valorMercadoEstimado,
       desconto_mercado_pct: descontoMercadoPct,
       oportunidade_abaixo_mercado: oportunidadeAbaixoMercado,
@@ -1477,17 +1496,23 @@ export function convertPortalListingToAuctionProperty(
   const preco = listing.preco_anunciado;
   const area = listing.area_m2 || 50;
   const m2Ref = listing.m2_referencia_bairro || 3600;
-  const estimatedVal = listing.valor_mercado_estimado || Math.round(area * m2Ref);
+  const scale = area > 120 ? Math.max(0.50, Math.pow(100 / area, 0.18)) : 1.0;
+  const scaledM2Ref = Math.round(m2Ref * scale);
+  const estimatedVal = listing.valor_mercado_estimado && listing.valor_mercado_estimado <= Math.round(area * scaledM2Ref * 1.15)
+    ? listing.valor_mercado_estimado
+    : Math.round(area * scaledM2Ref);
+  const flipExit = Math.round(estimatedVal * 0.90);
   const estimatedRepair = Math.round(area * 350);
   const itbi = Math.round(preco * 0.03);
   const registry = Math.round(preco * 0.02);
   const holding = Math.round(estimatedVal * 0.015);
   const totalCost = preco + itbi + registry + estimatedRepair + holding + (listing.valor_condominio || 0) + (listing.valor_iptu || 0);
-  const netProfit = estimatedVal > totalCost ? Math.round(estimatedVal - totalCost) : 0;
+  const netProfit = flipExit > totalCost ? Math.round(flipExit - totalCost) : 0;
   const calculatedRoi = totalCost > 0 ? Number(((netProfit / totalCost) * 100).toFixed(2)) : 0;
   const m2Anunciado = Math.round(preco / (area || 1));
   const diff = estimatedVal - preco;
   const descontoPct = (estimatedVal > 0 && diff > 0) ? Math.round((diff / estimatedVal) * 100) : 0;
+  const oportunidadeAbaixoMercado = netProfit > 0 && calculatedRoi >= 15;
 
   // Métricas específicas de Locação Residencial (Aluguel, IPTU, Condomínio e Taxas Reais)
   const rent = preco;
@@ -1532,6 +1557,10 @@ export function convertPortalListingToAuctionProperty(
     bedrooms: listing.quartos,
     parkingSpaces: listing.vagas,
 
+    // Geocodificação
+    lat: (listing as any).lat || undefined,
+    lng: (listing as any).lng || undefined,
+
     // Propriedades de Mídia e Imagens (compatibilidade dupla para renderização total)
     imageUrl: listing.imagem_url,
     imagemUrl: listing.imagem_url,
@@ -1555,19 +1584,19 @@ export function convertPortalListingToAuctionProperty(
     dataPublicacaoIso: listing.data_publicacao_iso,
     diasPublicado: listing.dias_publicado,
     textoPublicacao: listing.texto_publicacao,
-    oportunidadeAbaixoMercado: isRental ? rentDiffPct <= -10 : estimatedVal > totalCost,
+    oportunidadeAbaixoMercado: isRental ? rentDiffPct <= -10 : oportunidadeAbaixoMercado,
     descontoMercadoPct: isRental ? (rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0) : descontoPct,
     valorMercadoEstimado: estimatedVal,
-    m2ReferenciaBairro: m2Ref,
+    m2ReferenciaBairro: scaledM2Ref,
     m2Anunciado,
 
     // Rentabilidade e ROI Pré-calculados
     calculatedProfit: isRental ? rentalProfit : netProfit,
     calculatedRoi: isRental ? rentalRoi : calculatedRoi,
 
-    // Preço de saída estritamente atrelado à avaliação de mercado
-    vendaBaixaPrice: estimatedVal,
-    vendaMediaPrice: estimatedVal,
+    // Preço de saída estritamente atrelado ao Flip Rápido (vendaBaixaPrice) da calculadora
+    vendaBaixaPrice: flipExit,
+    vendaMediaPrice: flipExit,
     isSobAnalise: false
   };
 }

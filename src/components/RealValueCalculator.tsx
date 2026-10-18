@@ -455,7 +455,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     }
     if (prefillData.address) {
       const parsed = parseAddressComponents(locationAddress(prefillData));
-      const cleanSt = parsed.street;
+      const cleanSt = (parsed.street || '').split(/\s*,\s*|\s+[-–—]\s+/)[0].trim();
       setSelectedStreet(cleanSt);
       setStreetInput(cleanSt);
       // Block/unit disambiguates addresses shared by multiple buildings.
@@ -3103,12 +3103,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 const maxBid = Math.max(0, Math.floor(((exit / (1 + TARGET_ROI)) - fixed) / (1 + pct) / 1000) * 1000);
                 const ok = auctionBid > 0 && auctionBid <= maxBid;
                 return (
-                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 px-1 -mt-0.5" title={`Maior lance que mantém ROI de ${TARGET_ROI * 100}% vendendo pelo Flip sugerido (${formatBRL(exit)}), já com leiloeiro, ITBI, cartório, reforma, jurídico e débitos.`}>
-                    <span>Valor máximo sugerido p/ arrematação (ROI ≥ {TARGET_ROI * 100}%):</span>
+                  <div className="flex items-center justify-between text-xs sm:text-[13px] font-mono px-1 py-1" title={`Maior lance que mantém ROI de ${TARGET_ROI * 100}% vendendo pelo Flip sugerido (${formatBRL(exit)}), já com leiloeiro, ITBI, cartório, reforma, jurídico e débitos.`}>
+                    <span className="text-slate-300 font-semibold text-xs sm:text-[13px]">Valor máximo sugerido p/ arrematação (ROI ≥ {TARGET_ROI * 100}%):</span>
                     <button
                       type="button"
                       onClick={() => maxBid > 0 && handleArremateChange(maxBid.toLocaleString('pt-BR'))}
-                      className={`font-bold cursor-pointer hover:underline ${maxBid <= 0 ? 'text-rose-400' : ok ? 'text-emerald-400/80' : 'text-amber-400/80'}`}
+                      className="text-white font-bold underline cursor-pointer text-xs sm:text-[13px] hover:text-slate-200"
                     >
                       {maxBid > 0 ? formatBRL(maxBid) : 'Inviável'}
                     </button>
@@ -3471,8 +3471,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </button>
                   </div>
                   {!isJuizDeFora && (
-                  <span className="text-[9.5px] bg-slate-800/80 text-amber-300 border border-slate-700/60 px-2 py-0.5 rounded font-mono font-bold hidden sm:inline" title="Custo total efetivo de arrematação por m² (lance + todas as custas ÷ área privativa)">
-                    Custo do Arrematante: R$ {arremateEffectiveSqm.toLocaleString('pt-BR')}/m²
+                  <span className="text-[9.5px] bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded font-mono hidden sm:inline" title="Custo total efetivo de arrematação por m² (lance + todas as custas ÷ área privativa)">
+                    <span className="text-slate-400">Custo do Arrematante: </span>
+                    <strong className="text-amber-400 font-bold">R$ {arremateEffectiveSqm.toLocaleString('pt-BR')}/m²</strong>
                   </span>
                   )}
                 </div>

@@ -350,9 +350,202 @@ var init_quarantine = __esm({
 });
 
 // src/utils/geoCoords.ts
-var RIO_DE_JANEIRO_BAIRROS, NITEROI_BAIRROS, JUIZ_DE_FORA_BAIRROS;
+function normalizeGeoString(str) {
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function getPropertyCoordinates(prop) {
+  if (!prop) return null;
+  const pLat = Number(prop.lat ?? prop.latitude ?? prop.coords?.[0]);
+  const pLng = Number(prop.lng ?? prop.longitude ?? prop.lon ?? prop.coords?.[1]);
+  if (Number.isFinite(pLat) && Number.isFinite(pLng) && pLat !== 0 && pLng !== 0 && pLat >= -34 && pLat <= 6 && pLng >= -74 && pLng <= -32) {
+    return [pLat, pLng];
+  }
+  const location2 = prop.mapLocation;
+  if (location2 && location2.status === "located") {
+    const lat = Number(location2.lat);
+    const lng = Number(location2.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0 && lat >= -34 && lat <= 6 && lng >= -74 && lng <= -32) {
+      return [lat, lng];
+    }
+  }
+  const normNeigh = normalizeGeoString(prop.neighborhood);
+  const normCity = normalizeGeoString(prop.city);
+  function matchBairroCatalog(neigh, catalog) {
+    if (!neigh) return null;
+    if (catalog[neigh]) return catalog[neigh];
+    const sortedKeys = Object.keys(catalog).sort((a, b) => b.length - a.length);
+    for (const bName of sortedKeys) {
+      if (neigh === bName) return catalog[bName];
+      const escaped = bName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const reg = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i");
+      if (reg.test(neigh)) {
+        return catalog[bName];
+      }
+    }
+    return null;
+  }
+  function addBairroJitter(coords, id) {
+    if (!id) return coords;
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = (hash << 5) - hash + id.charCodeAt(i);
+      hash |= 0;
+    }
+    const angle = Math.abs(hash) % 360 * Math.PI / 180;
+    const dist = 25e-5 + Math.abs(hash >> 8) % 400 / 1e6;
+    return [
+      Number((coords[0] + Math.cos(angle) * dist).toFixed(6)),
+      Number((coords[1] + Math.sin(angle) * dist).toFixed(6))
+    ];
+  }
+  if (normNeigh) {
+    if (normCity.includes("rio de janeiro") || (prop.state || "").toUpperCase() === "RJ") {
+      const matchRj = matchBairroCatalog(normNeigh, RIO_DE_JANEIRO_BAIRROS);
+      if (matchRj) return addBairroJitter(matchRj, prop.id);
+      const matchNit = matchBairroCatalog(normNeigh, NITEROI_BAIRROS);
+      if (matchNit) return addBairroJitter(matchNit, prop.id);
+      const matchNi = matchBairroCatalog(normNeigh, NOVA_IGUACU_BAIRROS);
+      if (matchNi) return addBairroJitter(matchNi, prop.id);
+      const matchDc = matchBairroCatalog(normNeigh, DUQUE_DE_CAXIAS_BAIRROS);
+      if (matchDc) return addBairroJitter(matchDc, prop.id);
+      const matchBr = matchBairroCatalog(normNeigh, BELFORD_ROXO_BAIRROS);
+      if (matchBr) return addBairroJitter(matchBr, prop.id);
+      const matchIta = matchBairroCatalog(normNeigh, ITABORAI_BAIRROS);
+      if (matchIta) return addBairroJitter(matchIta, prop.id);
+    }
+    if (normCity.includes("niteroi")) {
+      const matchNit = matchBairroCatalog(normNeigh, NITEROI_BAIRROS);
+      if (matchNit) return addBairroJitter(matchNit, prop.id);
+    }
+    if (normCity.includes("juiz de fora") || (prop.state || "").toUpperCase() === "MG") {
+      const matchJf = matchBairroCatalog(normNeigh, JUIZ_DE_FORA_BAIRROS);
+      if (matchJf) return addBairroJitter(matchJf, prop.id);
+    }
+    if (normCity.includes("sao paulo") || (prop.state || "").toUpperCase() === "SP") {
+      const matchSp = matchBairroCatalog(normNeigh, SAO_PAULO_BAIRROS);
+      if (matchSp) return addBairroJitter(matchSp, prop.id);
+    }
+    const fRj = matchBairroCatalog(normNeigh, RIO_DE_JANEIRO_BAIRROS);
+    if (fRj) return addBairroJitter(fRj, prop.id);
+    const fNit = matchBairroCatalog(normNeigh, NITEROI_BAIRROS);
+    if (fNit) return addBairroJitter(fNit, prop.id);
+    const fJf = matchBairroCatalog(normNeigh, JUIZ_DE_FORA_BAIRROS);
+    if (fJf) return addBairroJitter(fJf, prop.id);
+  }
+  if (normCity && CITY_COORDS[normCity]) {
+    return addBairroJitter(CITY_COORDS[normCity], prop.id);
+  }
+  return null;
+}
+var CITY_COORDS, RIO_DE_JANEIRO_BAIRROS, NITEROI_BAIRROS, NOVA_IGUACU_BAIRROS, ITABORAI_BAIRROS, BELFORD_ROXO_BAIRROS, DUQUE_DE_CAXIAS_BAIRROS, JUIZ_DE_FORA_BAIRROS, SAO_PAULO_BAIRROS;
 var init_geoCoords = __esm({
   "src/utils/geoCoords.ts"() {
+    CITY_COORDS = {
+      // RJ
+      "rio de janeiro": [-22.9068, -43.1729],
+      "niteroi": [-22.8859, -43.1153],
+      "sao goncalo": [-22.8268, -43.0537],
+      "duque de caxias": [-22.7856, -43.3115],
+      "nova iguacu": [-22.7565, -43.4607],
+      "belford roxo": [-22.7636, -43.3995],
+      "sao joao de meriti": [-22.8042, -43.3728],
+      "nilopolis": [-22.8064, -43.4144],
+      "mesquita": [-22.7831, -43.4283],
+      "queimados": [-22.7153, -43.555],
+      "itaborai": [-22.7444, -42.8594],
+      "marica": [-22.9194, -42.8186],
+      "itaguai": [-22.8683, -43.7758],
+      "seropedica": [-22.7447, -43.7083],
+      "japeri": [-22.6444, -43.6631],
+      "paracambi": [-22.6089, -43.7125],
+      "mangaratiba": [-22.9597, -44.0408],
+      "angra dos reis": [-23.0067, -44.3181],
+      "paraty": [-23.2178, -44.7131],
+      "petropolis": [-22.505, -43.1789],
+      "teresopolis": [-22.4125, -42.9664],
+      "nova friburgo": [-22.2889, -42.5344],
+      "cabo frio": [-22.8797, -42.0189],
+      "armacao dos buzios": [-22.7469, -41.8817],
+      "buzios": [-22.7469, -41.8817],
+      "arraial do cabo": [-22.9661, -42.0278],
+      "saquarema": [-22.9208, -42.5103],
+      "araruama": [-22.8733, -42.3431],
+      "sao pedro da aldeia": [-22.8417, -42.1039],
+      "iguaba grande": [-22.8417, -42.1867],
+      "rio das ostras": [-22.5269, -41.945],
+      "macae": [-22.3768, -41.7869],
+      "campos dos goytacazes": [-21.7622, -41.3283],
+      "volta redonda": [-22.5231, -44.1042],
+      "barra mansa": [-22.5442, -44.1714],
+      "resende": [-22.4697, -44.4469],
+      "barra do pirai": [-22.4708, -43.8256],
+      "valenca": [-22.2458, -43.7031],
+      "tres rios": [-22.1167, -43.2089],
+      "paraiba do sul": [-22.1611, -43.2928],
+      "cachoeiras de macacu": [-22.4631, -42.6531],
+      "rio bonito": [-22.7058, -42.6289],
+      "casimiro de abreu": [-22.4819, -42.2044],
+      "tangua": [-22.7308, -42.7156],
+      "itaperuna": [-21.2056, -41.8875],
+      "mage": [-22.6531, -43.0408],
+      "guapimirim": [-22.5367, -42.9819],
+      // SP
+      "sao paulo": [-23.5505, -46.6333],
+      "campinas": [-22.9099, -47.0626],
+      "santos": [-23.9608, -46.3336],
+      "praia grande": [-24.0058, -46.4028],
+      "sao vicente": [-23.9631, -46.3919],
+      "guaruja": [-23.9931, -46.2564],
+      "santo andre": [-23.6639, -46.5383],
+      "sao bernardo do campo": [-23.6944, -46.5653],
+      "sao caetano do sul": [-23.6228, -46.5544],
+      "diadema": [-23.6864, -46.6228],
+      "osasco": [-23.5325, -46.7917],
+      "guarulhos": [-23.4542, -46.5333],
+      "barueri": [-23.5111, -46.8761],
+      "santana de parnaiba": [-23.4442, -46.9189],
+      "cotia": [-23.6039, -46.9189],
+      "sorocaba": [-23.5017, -47.4581],
+      "jundiai": [-23.1858, -46.8978],
+      "ribeirao preto": [-21.1704, -47.8103],
+      "sao jose dos campos": [-23.2237, -45.9009],
+      "taubate": [-23.0264, -45.5553],
+      "piracicaba": [-22.7253, -47.6492],
+      "bauru": [-22.3147, -49.0606],
+      "sao jose do rio preto": [-20.8114, -49.3758],
+      "franca": [-20.5386, -47.4008],
+      "limeira": [-22.5647, -47.4017],
+      "sumare": [-22.8219, -47.2667],
+      "americana": [-22.7394, -47.3314],
+      "hortolandia": [-22.8583, -47.22],
+      "indaiatuba": [-23.0903, -47.2181],
+      "valinhos": [-22.9706, -46.9958],
+      "vinhedo": [-23.0297, -46.9831],
+      "suzano": [-23.5425, -46.3108],
+      "mogi das cruzes": [-23.5206, -46.1856],
+      "araraquara": [-21.7944, -48.1758],
+      "marilia": [-22.2139, -49.9458],
+      "jaboticabal": [-21.2556, -48.3208],
+      "votuporanga": [-20.4228, -49.9728],
+      "presidente prudente": [-22.1256, -51.3889],
+      "aracatuba": [-21.2089, -50.4406],
+      "santa barbara d'oeste": [-22.7547, -47.4144],
+      // MG
+      "belo horizonte": [-19.9167, -43.9345],
+      "uberlandia": [-18.9186, -48.2772],
+      "uberaba": [-19.7472, -47.9392],
+      "juiz de fora": [-21.7642, -43.3503],
+      "contagem": [-19.9386, -44.0536],
+      "betim": [-19.9678, -44.1983],
+      "ribeirao das neves": [-19.7672, -44.0869],
+      "governador valadares": [-18.8511, -41.9494],
+      "ipatinga": [-19.4681, -42.5367],
+      "montes claros": [-16.7281, -43.8617],
+      "pocos de caldas": [-21.7878, -46.5681],
+      "divinopolis": [-20.1439, -44.8889],
+      "esmeraldas": [-19.7622, -44.3139]
+    };
     RIO_DE_JANEIRO_BAIRROS = {
       // Zona Sul
       "copacabana": [-22.9698, -43.1864],
@@ -545,6 +738,51 @@ var init_geoCoords = __esm({
       "badu": [-22.922, -43.054],
       "mataruna": [-22.918, -43.058]
     };
+    NOVA_IGUACU_BAIRROS = {
+      "centro": [-22.7565, -43.4607],
+      "cabucu": [-22.784, -43.513],
+      "ponto chic": [-22.748, -43.486],
+      "campo alegre": [-22.775, -43.542],
+      "ipiranga": [-22.772, -43.528],
+      "lagoinha": [-22.768, -43.518],
+      "jardim palmares": [-22.779, -43.535],
+      "marapicu": [-22.812, -43.568],
+      "palhada": [-22.761, -43.502],
+      "austin": [-22.723, -43.518],
+      "comendador soares": [-22.738, -43.485],
+      "posse": [-22.742, -43.442],
+      "rancho novo": [-22.759, -43.447],
+      "ceramica": [-22.751, -43.435]
+    };
+    ITABORAI_BAIRROS = {
+      "centro": [-22.7444, -42.8594],
+      "venda das pedras": [-22.731, -42.842],
+      "caluge": [-22.758, -42.848],
+      "novo horizonte (manilha)": [-22.738, -42.932],
+      "manilha": [-22.738, -42.932],
+      "outeiro das pedras": [-22.749, -42.868],
+      "itambi": [-22.741, -42.981],
+      "morada do sol i (itambi)": [-22.741, -42.981],
+      "areal": [-22.752, -42.875]
+    };
+    BELFORD_ROXO_BAIRROS = {
+      "centro": [-22.7636, -43.3995],
+      "sao vicente": [-22.748, -43.385],
+      "bom pastor": [-22.739, -43.376],
+      "areia branca": [-22.752, -43.412],
+      "vila dagmar": [-22.761, -43.388],
+      "shangri-la": [-22.729, -43.402]
+    };
+    DUQUE_DE_CAXIAS_BAIRROS = {
+      "centro": [-22.7856, -43.3115],
+      "jardim gramacho": [-22.769, -43.262],
+      "jardim vinte e cinco de agosto": [-22.788, -43.308],
+      "parque duque": [-22.795, -43.298],
+      "parque paulista": [-22.698, -43.268],
+      "vila centenario": [-22.775, -43.302],
+      "olavo bilac": [-22.778, -43.325],
+      "saracuruna": [-22.682, -43.264]
+    };
     JUIZ_DE_FORA_BAIRROS = {
       "centro": [-21.761, -43.3486],
       "sao mateus": [-21.7705, -43.3545],
@@ -570,6 +808,39 @@ var init_geoCoords = __esm({
       "industrial": [-21.705, -43.415],
       "monte castelo": [-21.722, -43.378],
       "fabrica": [-21.749, -43.352]
+    };
+    SAO_PAULO_BAIRROS = {
+      "centro": [-23.5505, -46.6333],
+      "se": [-23.5505, -46.6333],
+      "bela vista": [-23.559, -46.648],
+      "consolacao": [-23.551, -46.656],
+      "jardim paulista": [-23.568, -46.662],
+      "jardins": [-23.568, -46.662],
+      "itaim bibi": [-23.584, -46.678],
+      "moema": [-23.602, -46.662],
+      "vila mariana": [-23.589, -46.639],
+      "pinheiros": [-23.561, -46.692],
+      "perdizes": [-23.535, -46.673],
+      "santana": [-23.503, -46.627],
+      "tatuape": [-23.541, -46.577],
+      "mooca": [-23.555, -46.598],
+      "butanta": [-23.571, -46.711],
+      "morumbi": [-23.601, -46.716],
+      "santo amaro": [-23.652, -46.705],
+      "lapa": [-23.522, -46.704],
+      "vila madalena": [-23.549, -46.692],
+      "vila olimpia": [-23.595, -46.684],
+      "brooklin": [-23.618, -46.69],
+      "campo belo": [-23.626, -46.671],
+      "saude": [-23.616, -46.639],
+      "ipiranga": [-23.593, -46.608],
+      "higienopolis": [-23.543, -46.656],
+      "liberdade": [-23.557, -46.635],
+      "cambuci": [-23.568, -46.621],
+      "aclimacao": [-23.572, -46.631],
+      "barra funda": [-23.526, -46.661],
+      "pompeia": [-23.532, -46.684],
+      "vila leopoldina": [-23.526, -46.732]
     };
   }
 });
@@ -1502,16 +1773,6 @@ function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
       displayPrefix: "Im\xF3vel Comercial"
     };
   }
-  const isCasaInTitleOrUrl = urlLower.includes("casa-") || urlLower.includes("sobrado") || urlLower.includes("casa-a-venda") || housePattern.test(titleLower);
-  if (isCasaInTitleOrUrl || housePattern.test(descLower) && !titleLower.includes("apartamento") && !titleLower.includes("apto")) {
-    if (!titleLower.includes("casa de festas") && !titleLower.includes("casa de show")) {
-      return {
-        propertyType: "Casa",
-        subtype: "Casa",
-        displayPrefix: "Casa"
-      };
-    }
-  }
   if (titleLower.includes("cobertura") || urlLower.includes("cobertura") || descLower.includes("cobertura duplex") || descLower.includes("cobertura linear")) {
     return {
       propertyType: "Apartamento",
@@ -1519,12 +1780,30 @@ function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
       displayPrefix: "Cobertura"
     };
   }
-  if (/\b(kitnet|studio|loft|flat|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|conjugado)\b/i.test(urlLower)) {
+  if (/\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(urlLower) || /\b(apart-?hotel|flat)\b/i.test(descLower)) {
     return {
       propertyType: "Apartamento",
       subtype: "Kitnet / Studio",
       displayPrefix: "Kitnet / Studio"
     };
+  }
+  const isAptoExplicit = urlLower.includes("apartamento") || urlLower.includes("apto") || /\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio)\b/i.test(titleLower);
+  if (isAptoExplicit) {
+    return {
+      propertyType: "Apartamento",
+      subtype: "Apartamento",
+      displayPrefix: "Apartamento"
+    };
+  }
+  const isCasaInTitleOrUrl = urlLower.includes("casa-") || urlLower.includes("sobrado") || urlLower.includes("casa-a-venda") || housePattern.test(titleLower);
+  if (isCasaInTitleOrUrl || housePattern.test(descLower) && !titleLower.includes("apartamento") && !titleLower.includes("apto") && !urlLower.includes("apartamento")) {
+    if (!titleLower.includes("casa de festas") && !titleLower.includes("casa de show")) {
+      return {
+        propertyType: "Casa",
+        subtype: "Casa",
+        displayPrefix: "Casa"
+      };
+    }
   }
   return {
     propertyType: "Apartamento",
@@ -1539,7 +1818,7 @@ function toCanonicalPropertyType(rawType = "", title = "", desc = "") {
 var housePattern;
 var init_propertyTypes = __esm({
   "src/utils/propertyTypes.ts"() {
-    housePattern = /\b(casa|sobrado|moradia|residencia|vila|condom[ií]nio\s+fechado|chal[eé]|bangal[oô]|casa-duplex|casa-triplex|casa-padrao)\b/i;
+    housePattern = /\b(casa|sobrado|vila|condom[ií]nio\s+fechado|chal[eé]|bangal[oô]|casa-duplex|casa-triplex|casa-padrao)\b/i;
   }
 });
 
@@ -1802,6 +2081,11 @@ function parseAddressComponents(rawAddress) {
     if (!complement) {
       const trailingUnit = remaining.match(new RegExp(`^${UNIT_WORD}\\.?\\s*[A-Za-z0-9/-]*`, "i"));
       if (trailingUnit) complement = trailingUnit[0].trim();
+    }
+  } else {
+    const parts = text.split(/\s*,\s*|\s+[-–—]\s+/);
+    if (parts.length > 1) {
+      street = parts[0].trim();
     }
   }
   street = street.replace(/[,;]\s*$/, "").replace(/\s+/g, " ").trim().replace(/^r\.\s*/i, "Rua ").replace(/^av\.\s*/i, "Avenida ").replace(/^est\.\s*/i, "Estrada ").replace(/^tr\.\s*/i, "Travessa ").replace(/^pca\.\s*/i, "Pra\xE7a ");
@@ -4227,7 +4511,7 @@ function canonicalStreet(value) {
     dom: "dom"
   };
   const cleaned = sanitizeStreetName(value);
-  let s = String(cleaned).replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16))).replace(/_/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  let s = String(cleaned).replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16))).replace(/_/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/z/g, "s").replace(/ph/g, "f").trim();
   s = s.split(",")[0].replace(/\s+n[ºo°.]?\s*\d+.*$/i, "").replace(/\s+(?:apto|apt|ap|bloco|bl|casa|lote|qd|quadra|sala|loja)\b.*$/i, "");
   s = s.replace(/^(?:rua|r|avenida|avn|av|estrada|etr|estr|est|travessa|trv|trav|praca|prc|pca|alameda|alm|al|rodovia|rod|largo|lrg|vila|vl|beco|servidao|passagem|psg|boulevard|blvd|via)\b\.?\s*/i, "");
   const tokens = s.replace(/[^a-z0-9]/g, " ").split(/\s+/).filter((t) => t && !["de", "da", "do", "das", "dos", "e"].includes(t)).map((t) => titles[t] || t);
@@ -6965,6 +7249,27 @@ function getNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions, pr
   neighborhoodPortalM2Cache.set(cacheKey, result);
   return result;
 }
+var itbiNeighIndexMap = /* @__PURE__ */ new WeakMap();
+function getNeighTxsFast(itbiTransactions, cityNorm, neighNorm) {
+  let index = itbiNeighIndexMap.get(itbiTransactions);
+  if (!index) {
+    index = /* @__PURE__ */ new Map();
+    for (const tx of itbiTransactions) {
+      const c = normalizeText(tx.city || "rio de janeiro");
+      const n = normalizeText(tx.neighborhood || "");
+      if (!n) continue;
+      const key = `${c}|${n}`;
+      let arr = index.get(key);
+      if (!arr) {
+        arr = [];
+        index.set(key, arr);
+      }
+      arr.push(tx);
+    }
+    itbiNeighIndexMap.set(itbiTransactions, index);
+  }
+  return index.get(`${cityNorm}|${neighNorm}`) || [];
+}
 function computeNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions, propertyType, sizeSqm) {
   const uf = (state || "RJ").toUpperCase().trim();
   const rawCity = city || (uf === "MG" ? "Juiz de Fora" : uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
@@ -6972,84 +7277,93 @@ function computeNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions
   const neighNorm = normalizeText(neighborhood || "");
   if (Array.isArray(itbiTransactions) && itbiTransactions.length > 0 && neighNorm) {
     const cityNorm = normalizeText(rawCity);
-    const hasExactType = propertyType && itbiTransactions.some(
-      (t) => normalizeText(t.neighborhood || "") === neighNorm && t.propertyType === propertyType
-    );
-    const candidateTxs = hasExactType ? itbiTransactions.filter((t) => t.propertyType === propertyType) : itbiTransactions;
-    const m2List = [];
-    for (const tx of candidateTxs) {
-      if ((!tx.city || normalizeText(tx.city) === cityNorm) && normalizeText(tx.neighborhood || "") === neighNorm) {
+    const neighTxs = getNeighTxsFast(itbiTransactions, cityNorm, neighNorm);
+    if (neighTxs.length > 0) {
+      const targetType = propertyType ? propertyType.toLowerCase() : "";
+      const exactTxs = targetType ? neighTxs.filter((t) => (t.propertyType || "").toLowerCase() === targetType) : [];
+      const hasExactType = exactTxs.length >= 3;
+      const candidateTxs = hasExactType ? exactTxs : neighTxs;
+      const m2List = [];
+      for (const tx of candidateTxs) {
         const val = tx.unitValueSqm || (tx.transactionValue && tx.sizeSqm ? tx.transactionValue / tx.sizeSqm : 0);
         if (val >= 400 && val <= 8e4) {
           m2List.push({ val, size: tx.sizeSqm || 60 });
         }
       }
-    }
-    if (m2List.length >= 3) {
-      const rawVals = m2List.map((m) => m.val);
-      const mean = rawVals.reduce((a, b) => a + b, 0) / rawVals.length;
-      const std = Math.sqrt(rawVals.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / rawVals.length);
-      const valid = m2List.filter((m) => std === 0 || Math.abs(m.val - mean) <= 2.2 * std);
-      const validVals = valid.length > 0 ? valid.map((m) => m.val) : rawVals;
-      let saneada = validVals.reduce((a, b) => a + b, 0) / validVals.length;
-      if (sizeSqm && sizeSqm > 0 && valid.length > 0) {
-        const avgArea = valid.reduce((a, m) => a + m.size, 0) / valid.length;
-        if (sizeSqm > 1.5 * avgArea) {
-          saneada = saneada * Math.pow(avgArea / sizeSqm, 0.2);
+      if (m2List.length >= 3) {
+        const rawVals = m2List.map((m) => m.val);
+        const mean = rawVals.reduce((a, b) => a + b, 0) / rawVals.length;
+        const std = Math.sqrt(rawVals.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / rawVals.length);
+        const valid = m2List.filter((m) => std === 0 || Math.abs(m.val - mean) <= 2.2 * std);
+        const validVals = valid.length > 0 ? valid.map((m) => m.val) : rawVals;
+        let saneada = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+        if (!hasExactType && propertyType && /casa|sobrado/i.test(propertyType)) {
+          saneada = saneada * 0.58;
         }
+        if (sizeSqm && sizeSqm > 0 && valid.length > 0) {
+          const avgArea = valid.reduce((a, m) => a + m.size, 0) / valid.length;
+          if (sizeSqm > 1.2 * avgArea) {
+            saneada = saneada * Math.pow(avgArea / sizeSqm, 0.18);
+          }
+        }
+        return Math.round(saneada);
       }
-      return Math.round(saneada);
     }
   }
   const ratesForCity = NEIGHBORHOOD_PORTAL_RATES[cityKey];
+  let benchmarkBase = 0;
   if (ratesForCity && ratesForCity[neighNorm]) {
-    return ratesForCity[neighNorm];
-  }
-  if (ratesForCity) {
+    benchmarkBase = ratesForCity[neighNorm];
+  } else if (ratesForCity) {
     for (const [nKey, val] of Object.entries(ratesForCity)) {
       if (neighNorm.includes(nKey) || nKey.includes(neighNorm)) {
-        return val;
+        benchmarkBase = val;
+        break;
       }
     }
   }
-  if (uf === "RJ" && cityKey.includes("RIO DE JANEIRO")) {
-    if (/copacabana|ipanema|leblon|botafogo|flamengo|laranjeiras|catete|gloria|urca|leme|gavea|jardim botanico|humaita|lagoa|sao conrado|cosme velho/i.test(neighNorm)) {
-      return 13500;
+  if (!benchmarkBase) {
+    if (uf === "RJ" && cityKey.includes("RIO DE JANEIRO")) {
+      if (/copacabana|ipanema|leblon|botafogo|flamengo|laranjeiras|catete|gloria|urca|leme|gavea|jardim botanico|humaita|lagoa|sao conrado|cosme velho/i.test(neighNorm)) {
+        benchmarkBase = 13500;
+      } else if (/barra da tijuca|recreio|joa|itapeba/i.test(neighNorm)) {
+        benchmarkBase = 10500;
+      } else if (/tijuca|maracana|vila isabel|grajau|andarai/i.test(neighNorm)) {
+        benchmarkBase = 6800;
+      } else if (/centro|lapa|santa teresa|estacio|cidade nova/i.test(neighNorm)) {
+        benchmarkBase = 5200;
+      } else if (/jacarepagua|freguesia|taquara|pechincha|anil|curicica|valqueire/i.test(neighNorm)) {
+        benchmarkBase = 5200;
+      } else if (/meier|cachambi|todos os santos|engenho novo|engenho de dentro/i.test(neighNorm)) {
+        benchmarkBase = 4600;
+      } else if (/pavuna|madureira|iraja|penha|ramos|olaria|bonsucesso|cascadura|campinho|piedade|pilares|rocha miranda|bento ribeiro|marechal hermes|coelho neto|acari|costa barros|guadalupe|anchieta/i.test(neighNorm)) {
+        benchmarkBase = 3500;
+      } else if (/bangu|campo grande|santa cruz|realengo|senador camara|santissimo|paciencia|cosmos/i.test(neighNorm)) {
+        benchmarkBase = 2900;
+      } else {
+        benchmarkBase = 3600;
+      }
+    } else if (uf === "RJ" && cityKey.includes("NITEROI")) {
+      if (/icarai|camboinhas|charitas|sao francisco|itacoatiara/i.test(neighNorm)) benchmarkBase = 9500;
+      else if (/santa rosa|inga|piratininga|itaipu/i.test(neighNorm)) benchmarkBase = 6800;
+      else benchmarkBase = 4200;
+    } else if (uf === "MG") {
+      if (/bom pastor|cascatinha|estrela sul|sao mateus/i.test(neighNorm)) benchmarkBase = 6e3;
+      else if (/centro|granbery|paineiras|santa helena/i.test(neighNorm)) benchmarkBase = 4800;
+      else benchmarkBase = 3400;
+    } else {
+      benchmarkBase = 3600;
     }
-    if (/barra da tijuca|recreio|joa|itapeba/i.test(neighNorm)) {
-      return 10500;
-    }
-    if (/tijuca|maracana|vila isabel|grajau|andarai/i.test(neighNorm)) {
-      return 6800;
-    }
-    if (/centro|lapa|santa teresa|estacio|cidade nova/i.test(neighNorm)) {
-      return 5200;
-    }
-    if (/jacarepagua|freguesia|taquara|pechincha|anil|curicica|valqueire/i.test(neighNorm)) {
-      return 5200;
-    }
-    if (/meier|cachambi|todos os santos|engenho novo|engenho de dentro/i.test(neighNorm)) {
-      return 4600;
-    }
-    if (/pavuna|madureira|iraja|penha|ramos|olaria|bonsucesso|cascadura|campinho|piedade|pilares|rocha miranda|bento ribeiro|marechal hermes|coelho neto|acari|costa barros|guadalupe|anchieta/i.test(neighNorm)) {
-      return 3500;
-    }
-    if (/bangu|campo grande|santa cruz|realengo|senador camara|santissimo|paciencia|cosmos/i.test(neighNorm)) {
-      return 2900;
-    }
-    return 3600;
   }
-  if (uf === "RJ" && cityKey.includes("NITEROI")) {
-    if (/icarai|camboinhas|charitas|sao francisco|itacoatiara/i.test(neighNorm)) return 9500;
-    if (/santa rosa|inga|piratininga|itaipu/i.test(neighNorm)) return 6800;
-    return 4200;
+  let finalRate = benchmarkBase;
+  if (propertyType && /casa|sobrado/i.test(propertyType)) {
+    finalRate = Math.round(finalRate * 0.58);
   }
-  if (uf === "MG") {
-    if (/bom pastor|cascatinha|estrela sul|sao mateus/i.test(neighNorm)) return 6e3;
-    if (/centro|granbery|paineiras|santa helena/i.test(neighNorm)) return 4800;
-    return 3400;
+  if (sizeSqm && sizeSqm > 150) {
+    const scale = Math.max(0.65, Math.pow(100 / sizeSqm, 0.15));
+    finalRate = Math.round(finalRate * scale);
   }
-  return 5500;
+  return finalRate || 3600;
 }
 function normalizeText(text) {
   if (!text) return "";
@@ -7263,8 +7577,18 @@ async function searchMoradaVirtual(street, city, state, neighborhood) {
           } else if (itemStreetPart.includes(normName) || normName.includes(itemStreetPart)) {
             score = 65;
           }
-          if (normNeigh && (itemTextNorm.includes(normNeigh) || itemUrl.includes(`/${normNeigh.replace(/\s+/g, "-")}/`))) {
-            score += 50;
+          const urlParts = itemUrl.split("/").filter(Boolean);
+          const resultNeighFromUrl = urlParts.length >= 4 ? normalizeText2(urlParts[2].replace(/-/g, " ")) : "";
+          const textParts = item.texto.split(",").map((p) => normalizeText2(p.trim()));
+          const resultNeighFromText = textParts.length >= 2 ? textParts[1] : "";
+          const candidateNeigh = resultNeighFromUrl || resultNeighFromText;
+          if (normNeigh) {
+            const isNeighMatch = itemTextNorm.includes(normNeigh) || itemUrl.includes(`/${normNeigh.replace(/\s+/g, "-")}/`) || candidateNeigh && (candidateNeigh === normNeigh || candidateNeigh.includes(normNeigh) || normNeigh.includes(candidateNeigh));
+            if (isNeighMatch) {
+              score += 100;
+            } else if (candidateNeigh && candidateNeigh !== normCity && candidateNeigh !== normState && candidateNeigh.length >= 3) {
+              continue;
+            }
           }
           if (score > 0) {
             scored.push({ item, score });
@@ -7400,7 +7724,21 @@ function getMoradaVirtualBenchmark(street, city, state, propertyType, neighborho
   if (!street || !city) return null;
   let entry = neighborhood ? moradaCache[getMoradaCacheKey(street, city, state || "RJ", neighborhood)] : null;
   if (!entry || entry.notFound || !entry.cards || entry.cards.length === 0) {
-    entry = moradaCache[getMoradaCacheKey(street, city, state || "RJ")];
+    const generalEntry = moradaCache[getMoradaCacheKey(street, city, state || "RJ")];
+    if (generalEntry && !generalEntry.notFound && generalEntry.cards && generalEntry.cards.length > 0) {
+      if (neighborhood) {
+        const normN = normalizeText2(neighborhood);
+        const entryNorm = normalizeText2(`${generalEntry.canonicalTitle} ${generalEntry.url} ${generalEntry.leadText || ""}`);
+        const urlParts = (generalEntry.url || "").split("/").filter(Boolean);
+        const entryNeighFromUrl = urlParts.length >= 4 ? normalizeText2(urlParts[2].replace(/-/g, " ")) : "";
+        if (entryNeighFromUrl && entryNeighFromUrl !== normN && !entryNeighFromUrl.includes(normN) && !normN.includes(entryNeighFromUrl)) {
+        } else {
+          entry = generalEntry;
+        }
+      } else {
+        entry = generalEntry;
+      }
+    }
   }
   if (!entry || entry.notFound || !entry.cards || entry.cards.length === 0) {
     return null;
@@ -8084,22 +8422,19 @@ function detectNeighborhoodFromCardAndUrl(href, cardText, targetNeigh, city) {
   const normUrl = (href || "").toLowerCase().replace(/[^a-z0-9]/g, "-");
   const normText = (cardText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const normCity = normalizeSlug2(city || "").replace(/-/g, " ");
-  const cityCandidates = normCity ? NEIGHBORHOOD_CATALOG.byCity[normCity] || [] : [];
-  const candidateLists = cityCandidates.length > 0 ? [cityCandidates, NEIGHBORHOOD_CATALOG.all] : [NEIGHBORHOOD_CATALOG.all];
-  for (const candidateList of candidateLists) {
-    for (const n of candidateList) {
-      if (n.length < 3) continue;
-      const regex = new RegExp(`(?:^|[^a-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`, "i");
-      if (regex.test(normText)) {
-        return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-      }
+  const cityCandidates = normCity ? NEIGHBORHOOD_CATALOG.byCity[normCity] || [] : NEIGHBORHOOD_CATALOG.all;
+  if (targetNeigh) {
+    const targetSlug = normalizeSlug2(targetNeigh);
+    const targetNorm = targetNeigh.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (normUrl.includes("-" + targetSlug + "-") || normUrl.includes("/" + targetSlug + "-") || normUrl.includes("-" + targetSlug + "/") || normUrl.includes("/" + targetSlug + "/") || normUrl.endsWith("-" + targetSlug) || new RegExp(`\\b${targetNorm.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`).test(normText)) {
+      return targetNeigh;
     }
-    for (const n of candidateList) {
-      if (n.length < 3) continue;
-      const slug = n.replace(/\s+/g, "-");
-      if (normUrl.includes("-" + slug + "-") || normUrl.includes("/" + slug + "-") || normUrl.includes("-" + slug + "/") || normUrl.endsWith("-" + slug)) {
-        return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-      }
+  }
+  for (const n of cityCandidates) {
+    if (n.length < 3) continue;
+    const slug = n.replace(/\s+/g, "-");
+    if (normUrl.includes("-" + slug + "-") || normUrl.includes("/" + slug + "-") || normUrl.includes("-" + slug + "/") || normUrl.includes("/" + slug + "/") || normUrl.endsWith("-" + slug)) {
+      return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
     }
   }
   const textMatches = [
@@ -8112,14 +8447,11 @@ function detectNeighborhoodFromCardAndUrl(href, cardText, targetNeigh, city) {
     if (m && m[1]) {
       const candidate = m[1].trim();
       const candNorm = candidate.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-      if (["rio de janeiro", "rj", "brasil", "zona norte", "zona sul", "zona oeste", "centro", "mg"].includes(candNorm)) continue;
-      for (const n of NEIGHBORHOOD_CATALOG.all) {
-        if (candNorm === n || candNorm.includes(n)) {
+      if (["rio de janeiro", "rj", "brasil", "zona norte", "zona sul", "zona oeste", "centro metropolitano", "centro empresarial", "mg"].includes(candNorm)) continue;
+      for (const n of cityCandidates) {
+        if (candNorm === n || new RegExp(`^${n.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}$`).test(candNorm)) {
           return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
         }
-      }
-      if (candidate.length >= 3 && candidate.length <= 35) {
-        return candidate;
       }
     }
   }
@@ -8175,9 +8507,14 @@ function sanitizePropertyArea(text, rawArea, propertyType = "Apartamento", price
     if (lotMatch) return parseInt(lotMatch[1], 10);
     return rawArea || 300;
   }
-  const usableMatch = text.match(/(?:área\s*(?:útil|privativa|constru[íi]da)|privativ[ao]|útil|constru[íi]da)[:\s]*(\d+)\s*m[²2]?/i) || text.match(/(\d+)\s*m[²2]?\s*(?:útil|util|privativ[ao]|priv|úteis|constru[íi]da|constr)/i);
-  if (usableMatch) {
-    const val = parseInt(usableMatch[1] || usableMatch[2], 10);
+  const postfixMatch = text.match(/(\d+)\s*m[²2]?\s*(?:útil|util|privativ[ao]|priv|úteis|constru[íi]da|constr)/i);
+  if (postfixMatch) {
+    const val = parseInt(postfixMatch[1], 10);
+    if (val >= 15 && val <= 800) return val;
+  }
+  const prefixMatch = text.match(/(?:área\s+(?:útil|privativa|constru[íi]da|privada))[:\s]*(\d+)\s*m[²2]?/i);
+  if (prefixMatch) {
+    const val = parseInt(prefixMatch[1], 10);
     if (val >= 15 && val <= 800) return val;
   }
   const roomBuiltMatch = text.match(/(?:quarto|dormit[óo]rio|suite|qto)s?[^,\d]*,\s*(\d+)\s*m[²2]/i) || text.match(/,\s*(\d+)\s*m[²2]\s*(?:em\s+|com\s+)/i);
@@ -8907,10 +9244,10 @@ async function scrapeImovelweb(city, state, neighborhood, browserInstance) {
         const priceMatch = text.match(/R\$\s*([\d.]+)/);
         const price = priceMatch ? parseInt(priceMatch[1].replace(/\./g, ""), 10) : 0;
         if (!price || price < 8e4) return;
-        const utilMatch = text.match(/(\d+)\s*m[²2]?\s*(?:útil|util|privativ[ao]|priv|constr|constru[íi]da)/i) || text.match(/(?:área\s*(?:útil|privativa|constru[íi]da)|útil|privativa)[:\s]*(\d+)\s*m[²2]?/i);
+        const utilMatch = text.match(/(\d+)\s*m[²2]?\s*(?:útil|util|privativ[ao]|priv|constr|constru[íi]da)/i) || text.match(/(?:área\s+(?:útil|privativa|constru[íi]da|privada))[:\s]*(\d+)\s*m[²2]?/i);
         const totMatch = text.match(/(\d+)\s*m[²2]?\s*(?:tot|total|terreno|lote)/i) || text.match(/(?:área\s*(?:total|do\s*terreno)|terreno)[:\s]*(\d+)\s*m[²2]?/i);
         const sizeMatch = text.match(/(\d+)\s*m[²2]/i);
-        const usefulArea = utilMatch ? parseInt(utilMatch[1] || utilMatch[2], 10) : 0;
+        const usefulArea = utilMatch ? parseInt(utilMatch[1], 10) : 0;
         const totalArea = totMatch ? parseInt(totMatch[1] || totMatch[2], 10) : 0;
         const anyArea = sizeMatch ? parseInt(sizeMatch[1], 10) : 65;
         const bedMatch = text.match(/(\d+)\s*quarto/i);
@@ -8953,8 +9290,8 @@ async function scrapeImovelweb(city, state, neighborhood, browserInstance) {
       if (!isListingActiveAndValid(item.cardText || "", item.href || "")) continue;
       const typo = detectTypologyFromUrlAndText(item.href || "", item.rawTitle || "", item.cardText || "");
       if (typo.propertyType === "Terreno") continue;
-      const initialArea = item.usefulArea || item.anyArea;
-      const sanitizedArea = sanitizePropertyArea(item.cardText || "", initialArea, typo.propertyType, item.price, item.href);
+      const initialArea = item.usefulArea > 0 ? item.usefulArea : item.anyArea > 0 ? item.anyArea : 65;
+      const sanitizedArea = item.usefulArea > 0 ? item.usefulArea : sanitizePropertyArea(item.cardText || "", initialArea, typo.propertyType, item.price, item.href);
       const relDate = parseRelativePublicationDate(item.pubText);
       const m2Val = Math.round(item.price / (sanitizedArea || 1));
       const detectedNeigh = detectNeighborhoodFromCardAndUrl(item.href || "", item.cardText || "", neighborhood, city);
@@ -9032,21 +9369,30 @@ function enrichListingsWithMarketBenchmark(listings, neighborhoodM2Benchmark) {
     }
   }
   return listings.map((item) => {
-    const valorMercadoEstimado = Math.round(item.area_m2 * refM2);
+    let itemM2 = refM2;
+    if (item.tipo_imovel && /casa|sobrado/i.test(item.tipo_imovel)) {
+      itemM2 = Math.round(itemM2 * 0.58);
+    }
+    if (item.area_m2 > 120) {
+      const scale = Math.max(0.5, Math.pow(100 / item.area_m2, 0.18));
+      itemM2 = Math.round(itemM2 * scale);
+    }
+    const valorMercadoEstimado = Math.round(item.area_m2 * itemM2);
+    const flipExit = Math.round(valorMercadoEstimado * 0.9);
     const diff = valorMercadoEstimado - item.preco_anunciado;
     const descontoMercadoPct = valorMercadoEstimado > 0 ? Math.round(diff / valorMercadoEstimado * 100) : 0;
-    const oportunidadeAbaixoMercado = descontoMercadoPct >= 15;
     const preco = item.preco_anunciado;
     const itbi = Math.round(preco * 0.03);
     const registry = Math.round(preco * 0.02);
     const repair = Math.round(item.area_m2 * 350);
     const holding = Math.round(valorMercadoEstimado * 0.015);
     const totalCost = preco + itbi + registry + repair + holding + (item.valor_condominio || 0) + (item.valor_iptu || 0);
-    const calculatedProfit = valorMercadoEstimado > totalCost ? Math.round(valorMercadoEstimado - totalCost) : 0;
+    const calculatedProfit = flipExit > totalCost ? Math.round(flipExit - totalCost) : 0;
     const calculatedRoi = totalCost > 0 ? Number((calculatedProfit / totalCost * 100).toFixed(2)) : 0;
+    const oportunidadeAbaixoMercado = calculatedProfit > 0 && calculatedRoi >= 15;
     return {
       ...item,
-      m2_referencia_bairro: refM2,
+      m2_referencia_bairro: itemM2,
       valor_mercado_estimado: valorMercadoEstimado,
       desconto_mercado_pct: descontoMercadoPct,
       oportunidade_abaixo_mercado: oportunidadeAbaixoMercado,
@@ -9061,17 +9407,21 @@ function convertPortalListingToAuctionProperty(listing, userId = "admin-marcus")
   const preco = listing.preco_anunciado;
   const area = listing.area_m2 || 50;
   const m2Ref = listing.m2_referencia_bairro || 3600;
-  const estimatedVal = listing.valor_mercado_estimado || Math.round(area * m2Ref);
+  const scale = area > 120 ? Math.max(0.5, Math.pow(100 / area, 0.18)) : 1;
+  const scaledM2Ref = Math.round(m2Ref * scale);
+  const estimatedVal = listing.valor_mercado_estimado && listing.valor_mercado_estimado <= Math.round(area * scaledM2Ref * 1.15) ? listing.valor_mercado_estimado : Math.round(area * scaledM2Ref);
+  const flipExit = Math.round(estimatedVal * 0.9);
   const estimatedRepair = Math.round(area * 350);
   const itbi = Math.round(preco * 0.03);
   const registry = Math.round(preco * 0.02);
   const holding = Math.round(estimatedVal * 0.015);
   const totalCost = preco + itbi + registry + estimatedRepair + holding + (listing.valor_condominio || 0) + (listing.valor_iptu || 0);
-  const netProfit = estimatedVal > totalCost ? Math.round(estimatedVal - totalCost) : 0;
+  const netProfit = flipExit > totalCost ? Math.round(flipExit - totalCost) : 0;
   const calculatedRoi = totalCost > 0 ? Number((netProfit / totalCost * 100).toFixed(2)) : 0;
   const m2Anunciado = Math.round(preco / (area || 1));
   const diff = estimatedVal - preco;
   const descontoPct = estimatedVal > 0 && diff > 0 ? Math.round(diff / estimatedVal * 100) : 0;
+  const oportunidadeAbaixoMercado = netProfit > 0 && calculatedRoi >= 15;
   const rent = preco;
   const condo = listing.valor_condominio || 0;
   const iptu = listing.valor_iptu || 0;
@@ -9110,6 +9460,9 @@ function convertPortalListingToAuctionProperty(listing, userId = "admin-marcus")
     userId,
     bedrooms: listing.quartos,
     parkingSpaces: listing.vagas,
+    // Geocodificação
+    lat: listing.lat || void 0,
+    lng: listing.lng || void 0,
     // Propriedades de Mídia e Imagens (compatibilidade dupla para renderização total)
     imageUrl: listing.imagem_url,
     imagemUrl: listing.imagem_url,
@@ -9132,17 +9485,17 @@ function convertPortalListingToAuctionProperty(listing, userId = "admin-marcus")
     dataPublicacaoIso: listing.data_publicacao_iso,
     diasPublicado: listing.dias_publicado,
     textoPublicacao: listing.texto_publicacao,
-    oportunidadeAbaixoMercado: isRental ? rentDiffPct <= -10 : estimatedVal > totalCost,
+    oportunidadeAbaixoMercado: isRental ? rentDiffPct <= -10 : oportunidadeAbaixoMercado,
     descontoMercadoPct: isRental ? rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0 : descontoPct,
     valorMercadoEstimado: estimatedVal,
-    m2ReferenciaBairro: m2Ref,
+    m2ReferenciaBairro: scaledM2Ref,
     m2Anunciado,
     // Rentabilidade e ROI Pré-calculados
     calculatedProfit: isRental ? rentalProfit : netProfit,
     calculatedRoi: isRental ? rentalRoi : calculatedRoi,
-    // Preço de saída estritamente atrelado à avaliação de mercado
-    vendaBaixaPrice: estimatedVal,
-    vendaMediaPrice: estimatedVal,
+    // Preço de saída estritamente atrelado ao Flip Rápido (vendaBaixaPrice) da calculadora
+    vendaBaixaPrice: flipExit,
+    vendaMediaPrice: flipExit,
     isSobAnalise: false
   };
 }
@@ -9713,6 +10066,87 @@ function getCachedStreetCoords(state, city, neighborhood, street) {
   if (hit1 && Number.isFinite(hit1.lat) && Number.isFinite(hit1.lng)) return hit1;
   const hit2 = cityStreetCoordsIndex.get(`${stateKey}_${c}_${s}`) || cityStreetCoordsIndex.get(`${stateKey}_${c}_${sFull}`) || cityStreetCoordsIndex.get(`${stateKey}_${c}_${streetKey}`);
   if (hit2 && Number.isFinite(hit2.lat) && Number.isFinite(hit2.lng)) return hit2;
+  return null;
+}
+function cleanStreetKey(s) {
+  if (!s) return "";
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/z/g, "s").replace(/ph/g, "f").replace(/^(?:rua|r\.|avenida|av\.|estrada|est\.|travessa|tr\.|alameda|al\.|praca|pca\.)\s+/i, "").split(",")[0].replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+}
+var itbiStreetCoordsIndex = /* @__PURE__ */ new Map();
+function buildItbiStreetCoordsIndex(txs) {
+  itbiStreetCoordsIndex.clear();
+  for (const t of txs) {
+    const lat = Number(t.transactionLocationLat || t.lat);
+    const lng = Number(t.transactionLocationLng || t.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const st = (t.state || "RJ").toUpperCase();
+    const ct = (t.city || "Rio de Janeiro").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const k = cleanStreetKey(t.street);
+    if (!k) continue;
+    const mapKey = `${st}|${ct}|${k}`;
+    let list = itbiStreetCoordsIndex.get(mapKey);
+    if (!list) {
+      list = [];
+      itbiStreetCoordsIndex.set(mapKey, list);
+    }
+    list.push({
+      lat,
+      lng,
+      neighborhood: (t.neighborhood || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+    });
+  }
+}
+function projectStreetCoordinates(state, city, neighborhood, rawAddress) {
+  if (!rawAddress) return null;
+  const st = (state || "RJ").toUpperCase();
+  const ct = (city || "Rio de Janeiro").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const k = cleanStreetKey(rawAddress);
+  const neigh = (neighborhood || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  if (!k) return null;
+  let list = itbiStreetCoordsIndex.get(`${st}|${ct}|${k}`);
+  if (!list) {
+    const pTokens = k.split(" ").filter((t) => t.length > 2);
+    if (pTokens.length >= 2) {
+      for (const [key, candidates] of itbiStreetCoordsIndex.entries()) {
+        if (!key.startsWith(`${st}|${ct}|`)) continue;
+        const candKey = key.slice(`${st}|${ct}|`.length);
+        const candTokens = candKey.split(" ").filter((t) => t.length > 2);
+        const matchCount = pTokens.filter((tok) => candTokens.includes(tok)).length;
+        if (matchCount >= Math.min(2, pTokens.length) && Math.abs(pTokens.length - candTokens.length) <= 2) {
+          list = candidates;
+          break;
+        }
+      }
+    }
+  }
+  if (list && list.length > 0) {
+    const inNeigh = list.filter((item) => item.neighborhood === neigh || neigh.includes(item.neighborhood) || item.neighborhood.includes(neigh));
+    const pool = inNeigh.length > 0 ? inNeigh : list;
+    const lats = pool.map((item) => item.lat).sort((a, b) => a - b);
+    const lngs = pool.map((item) => item.lng).sort((a, b) => a - b);
+    return {
+      lat: lats[Math.floor(lats.length / 2)],
+      lng: lngs[Math.floor(lngs.length / 2)],
+      sampleCount: pool.length,
+      inNeigh: inNeigh.length > 0
+    };
+  }
+  const streetHit = getCachedStreetCoords(state, city, neighborhood, rawAddress);
+  if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+    return { lat: streetHit.lat, lng: streetHit.lng, sampleCount: 1, inNeigh: true };
+  }
+  const normNeigh = (neighborhood || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const rjCoords = RIO_DE_JANEIRO_BAIRROS[normNeigh];
+  if (rjCoords && Number.isFinite(rjCoords.lat) && Number.isFinite(rjCoords.lng)) {
+    const hash = (rawAddress + normNeigh).split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0);
+    const jitterLat = (Math.abs(hash) % 100 - 50) * 5e-6;
+    const jitterLng = (Math.abs(hash >> 3) % 100 - 50) * 5e-6;
+    return { lat: rjCoords.lat + jitterLat, lng: rjCoords.lng + jitterLng, sampleCount: 1, inNeigh: true };
+  }
+  const est = getPropertyCoordinates({ address: rawAddress, neighborhood, city, state });
+  if (est && Number.isFinite(est[0]) && Number.isFinite(est[1])) {
+    return { lat: est[0], lng: est[1], sampleCount: 1, inNeigh: true };
+  }
   return null;
 }
 var factionFeatures = [];
@@ -10389,6 +10823,9 @@ function loadStore() {
             }
           }
         });
+        if (storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+          buildItbiStreetCoordsIndex(storeData.itbiTransactions);
+        }
         const beforePortals = storeData.auctions.length;
         storeData.auctions = storeData.auctions.filter((a) => {
           if (a.portalName === "Chaves na M\xE3o") return false;
@@ -10421,100 +10858,121 @@ function loadStore() {
         });
         let recalibratedPortals = 0;
         storeData.auctions.forEach((a) => {
-          if (a.origin === "portal" && a.neighborhood) {
-            const realM2 = getNeighborhoodPortalM2(a.city || "Rio de Janeiro", a.state || "RJ", a.neighborhood, storeData.itbiTransactions, a.propertyType, a.sizeSqm);
-            if (realM2 && realM2 > 1e3) {
+          if (a.origin === "portal") {
+            if (!a.lat || !a.lng) {
+              const proj = projectStreetCoordinates(a.state, a.city, a.neighborhood, a.street || a.address);
+              if (proj && Number.isFinite(proj.lat) && Number.isFinite(proj.lng)) {
+                a.lat = proj.lat;
+                a.lng = proj.lng;
+                a.status_geocodificacao = a.status_geocodificacao || "INTERPOLACAO_RUA";
+              }
+            }
+            if (a.neighborhood) {
               const size = a.sizeSqm || 60;
-              a.m2_referencia_bairro = realM2;
-              a.m2ReferenciaBairro = realM2;
-              const preco = a.precoAnunciado || a.auctionPrice || a.firstAuctionValue || 0;
-              a.m2Anunciado = Math.round(preco / (size || 1));
-              if (!a.estimatedValue || a.estimatedValue <= 0 || a.estimatedValue === Math.round(size * 5833)) {
-                a.estimatedValue = Math.round(size * realM2);
+              let effectiveArea = size;
+              if ((a.propertyType === "Apartamento" || !a.propertyType) && size > 120) {
+                effectiveArea = 120 + (size - 120) * 0.4;
+              } else if (/casa|sobrado/i.test(a.propertyType || "") && size > 150) {
+                effectiveArea = 150 + (size - 150) * 0.5;
               }
-              a.valorMercadoEstimado = a.estimatedValue;
-              if (!a.vendaBaixaPrice || a.vendaBaixaPrice <= 0 || a.vendaBaixaPrice === Math.round(size * 5833)) {
-                a.vendaBaixaPrice = Math.round(a.estimatedValue * 0.9);
-                a.vendaMediaPrice = a.vendaBaixaPrice;
-              }
-              const streetName = a.street || (a.address ? a.address.split(",")[0].trim() : void 0);
-              const morada = getMoradaVirtualBenchmark(streetName || a.address, a.city, a.state, a.propertyType, a.neighborhood);
-              if (morada && morada.m2 > 0) {
-                a.moradaM2 = morada.m2;
-                a.moradaVirtualM2 = morada.m2;
-                a.streetPortalAvgSqm = morada.m2;
-                a.m2MercadoPortal = morada.m2;
-                a.portalSampleCount = morada.sampleCount;
-                a.portalStreetUrl = morada.streetUrl;
-                a.fontePortal = "Morada Virtual";
-              }
-              if (a.transactionType === "aluguel") {
-                const rent = a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0;
-                const condo = a.valorCondominio || 0;
-                const iptu = a.valorIptu || 0;
-                const taxas = a.taxasServico || a.outrasTaxas || 0;
-                const totalTaxas = condo + iptu + taxas;
-                const totalPackage = a.totalRentalPackage || rent + totalTaxas;
-                a.taxasServico = taxas;
-                a.outrasTaxas = taxas;
-                a.totalTaxas = totalTaxas;
-                a.totalRentalPackage = totalPackage;
-                a.pacoteMoradiaTotal = totalPackage;
-                const mediaCalculadora = Math.round(a.estimatedValue * 55e-4);
-                a.mediaLocacaoCalculadora = mediaCalculadora;
-                const rentDiffPct = mediaCalculadora > 0 ? Math.round((rent - mediaCalculadora) / mediaCalculadora * 100) : 0;
-                a.aluguelDiferencaPct = rentDiffPct;
-                a.vereditoLocacao = rentDiffPct <= -10 ? "barato" : rentDiffPct >= 10 ? "caro" : "justo";
-                a.oportunidadeAbaixoMercado = rentDiffPct <= -10;
-                a.descontoMercadoPct = rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0;
-                a.calculatedProfit = Math.max(0, mediaCalculadora - rent) * 12;
-                a.calculatedRoi = a.estimatedValue > 0 ? Number((rent * 12 / a.estimatedValue * 100).toFixed(2)) : 0;
-              } else {
-                const itbi = a.itbiCost ?? Math.round(preco * 0.03);
-                const registry = a.notaryCost ?? Math.round(preco * 0.02);
-                const repair = a.estimatedRepair !== void 0 ? a.estimatedRepair : Math.round(preco * 0.05);
-                const totalCost = preco + itbi + registry + repair + (a.pendingDebts || 0) + (a.valorCondominio || 0) + (a.valorIptu || 0);
-                const flipExit = a.vendaBaixaPrice || a.estimatedValue || 0;
-                if (flipExit > totalCost) {
-                  a.calculatedProfit = Math.round(flipExit - totalCost);
-                  a.calculatedRoi = totalCost > 0 ? Number((a.calculatedProfit / totalCost * 100).toFixed(2)) : 0;
-                  a.oportunidadeAbaixoMercado = true;
-                } else {
-                  a.calculatedProfit = 0;
-                  a.calculatedRoi = 0;
-                  a.oportunidadeAbaixoMercado = false;
+              const realM2 = getNeighborhoodPortalM2(a.city || "Rio de Janeiro", a.state || "RJ", a.neighborhood, storeData.itbiTransactions, a.propertyType, size);
+              if (realM2 && realM2 > 1e3) {
+                a.m2_referencia_bairro = realM2;
+                a.m2ReferenciaBairro = realM2;
+                const preco = a.precoAnunciado || a.auctionPrice || a.firstAuctionValue || 0;
+                a.m2Anunciado = Math.round(preco / (size || 1));
+                const expectedEst = Math.round(effectiveArea * realM2);
+                const isValuationInflated = !a.estimatedValue || a.estimatedValue <= 0 || a.estimatedValue === Math.round(size * 5833) || a.estimatedValue > expectedEst * 1.15 || size > 120 && a.estimatedValue > expectedEst || a.propertyType === "Casa" && a.estimatedValue > size * 9e3 && realM2 < 8e3;
+                if (isValuationInflated) {
+                  a.estimatedValue = expectedEst;
+                  a.vendaBaixaPrice = Math.round(expectedEst * 0.9);
+                  a.vendaMediaPrice = a.vendaBaixaPrice;
+                  recalibratedPortals++;
+                } else if (!a.vendaBaixaPrice || a.vendaBaixaPrice <= 0 || a.vendaBaixaPrice === Math.round(size * 5833)) {
+                  a.vendaBaixaPrice = Math.round(a.estimatedValue * 0.9);
+                  a.vendaMediaPrice = a.vendaBaixaPrice;
                 }
-                const diff = a.estimatedValue - preco;
-                a.descontoMercadoPct = a.estimatedValue > 0 && diff > 0 ? Math.round(diff / a.estimatedValue * 100) : 0;
+                a.valorMercadoEstimado = a.estimatedValue;
+                const streetName = a.street || (a.address ? a.address.split(",")[0].trim() : void 0);
+                const morada = getMoradaVirtualBenchmark(streetName || a.address, a.city, a.state, a.propertyType, a.neighborhood);
+                if (morada && morada.m2 > 0) {
+                  a.moradaM2 = morada.m2;
+                  a.moradaVirtualM2 = morada.m2;
+                  a.streetPortalAvgSqm = morada.m2;
+                  a.m2MercadoPortal = morada.m2;
+                  a.portalSampleCount = morada.sampleCount;
+                  a.portalStreetUrl = morada.streetUrl;
+                  a.fontePortal = "Morada Virtual";
+                }
+                if (a.transactionType === "aluguel") {
+                  const rent = a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0;
+                  const condo = a.valorCondominio || 0;
+                  const iptu = a.valorIptu || 0;
+                  const taxas = a.taxasServico || a.outrasTaxas || 0;
+                  const totalTaxas = condo + iptu + taxas;
+                  const totalPackage = a.totalRentalPackage || rent + totalTaxas;
+                  a.taxasServico = taxas;
+                  a.outrasTaxas = taxas;
+                  a.totalTaxas = totalTaxas;
+                  a.totalRentalPackage = totalPackage;
+                  a.pacoteMoradiaTotal = totalPackage;
+                  const mediaCalculadora = Math.round(a.valorMercadoEstimado * 55e-4);
+                  a.mediaLocacaoCalculadora = mediaCalculadora;
+                  const rentDiffPct = mediaCalculadora > 0 ? Math.round((rent - mediaCalculadora) / mediaCalculadora * 100) : 0;
+                  a.aluguelDiferencaPct = rentDiffPct;
+                  a.vereditoLocacao = rentDiffPct <= -10 ? "barato" : rentDiffPct >= 10 ? "caro" : "justo";
+                  a.oportunidadeAbaixoMercado = rentDiffPct <= -10;
+                  a.descontoMercadoPct = rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0;
+                  a.calculatedProfit = Math.max(0, mediaCalculadora - rent) * 12;
+                  a.calculatedRoi = a.valorMercadoEstimado > 0 ? Number((rent * 12 / a.valorMercadoEstimado * 100).toFixed(2)) : 0;
+                } else {
+                  const itbi = a.itbiCost ?? Math.round(preco * 0.03);
+                  const registry = a.notaryCost ?? Math.round(preco * 0.02);
+                  const repair = a.estimatedRepair !== void 0 ? a.estimatedRepair : Math.round(preco * 0.05);
+                  const totalCost = preco + itbi + registry + repair + (a.pendingDebts || 0) + (a.valorCondominio || 0) + (a.valorIptu || 0);
+                  const flipExit = a.vendaBaixaPrice || a.estimatedValue || 0;
+                  if (flipExit > totalCost) {
+                    a.calculatedProfit = Math.round(flipExit - totalCost);
+                    a.calculatedRoi = totalCost > 0 ? Number((a.calculatedProfit / totalCost * 100).toFixed(2)) : 0;
+                    a.oportunidadeAbaixoMercado = true;
+                  } else {
+                    a.calculatedProfit = 0;
+                    a.calculatedRoi = 0;
+                    a.oportunidadeAbaixoMercado = false;
+                  }
+                  const diff = a.estimatedValue - preco;
+                  a.descontoMercadoPct = a.estimatedValue > 0 && diff > 0 ? Math.round(diff / a.estimatedValue * 100) : 0;
+                }
+                if (a.id === "auc-imovelweb-3032287414" || a.address && /sao miguel|são miguel/i.test(a.address) && a.neighborhood === "Tijuca" && a.propertyType === "Casa") {
+                  a.m2ReferenciaBairro = 3787;
+                  a.m2_referencia_bairro = 3787;
+                  a.estimatedValue = 1560600;
+                  a.valorMercadoEstimado = 1560600;
+                  a.vendaBaixaPrice = 1404600;
+                  a.vendaMediaPrice = 1404600;
+                  a.itbiCost = 19500;
+                  a.notaryCost = 9820;
+                  a.estimatedRepair = 32500;
+                  a.pendingDebts = 0;
+                  a.custoCarregamentoEstimado = 0;
+                  a.calculatedProfit = 551911;
+                  a.calculatedRoi = 72.02;
+                  a.moradaM2 = 5200;
+                  a.moradaVirtualM2 = 5200;
+                  a.streetPortalAvgSqm = 5200;
+                  a.m2MercadoPortal = 5200;
+                  a.portalSampleCount = 823;
+                  a.portalStreetUrl = "https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
+                  a.fontePortal = "Morada Virtual";
+                }
+                recalibratedPortals++;
               }
-              if (a.id === "auc-imovelweb-3032287414" || a.address && /sao miguel|são miguel/i.test(a.address) && a.neighborhood === "Tijuca" && a.propertyType === "Casa") {
-                a.m2ReferenciaBairro = 3787;
-                a.m2_referencia_bairro = 3787;
-                a.estimatedValue = 1560600;
-                a.valorMercadoEstimado = 1560600;
-                a.vendaBaixaPrice = 1404600;
-                a.vendaMediaPrice = 1404600;
-                a.itbiCost = 19500;
-                a.notaryCost = 9820;
-                a.estimatedRepair = 32500;
-                a.pendingDebts = 0;
-                a.custoCarregamentoEstimado = 0;
-                a.calculatedProfit = 551911;
-                a.calculatedRoi = 72.02;
-                a.moradaM2 = 5200;
-                a.moradaVirtualM2 = 5200;
-                a.streetPortalAvgSqm = 5200;
-                a.m2MercadoPortal = 5200;
-                a.portalSampleCount = 823;
-                a.portalStreetUrl = "https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
-                a.fontePortal = "Morada Virtual";
-              }
-              recalibratedPortals++;
             }
           }
         });
         if (storeData.auctions.length !== beforePortals || recalibratedPortals > 0) {
           console.log(`[Store] Portais atualizados: ${beforePortals - storeData.auctions.length} removidos (Chaves na M\xE3o / Terrenos), ${recalibratedPortals} recalibrados com m\xB2 oficial pericial.`);
+          saveStore(storeData);
         }
         if (storeData.auctions.length !== initialCount) {
           console.log(`[Store] Purge de seguran\xE7a: ${initialCount - storeData.auctions.length} leil\xF5es inv\xE1lidos/mock/fora das comarcas foram eliminados da base.`);
@@ -10651,7 +11109,7 @@ function loadStore() {
 }
 var auctionCatalogResponseCache = null;
 var AUCTION_RESPONSE_CACHE_PATH = import_path4.default.join(process.cwd(), ".cache", "auction-catalog-response-v5.json.gz");
-var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v10-lifecycle";
+var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v11-portal-coords";
 var persistedCatalogInvalidated = false;
 function auctionResponseCacheSignature() {
   try {
@@ -11651,8 +12109,30 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       neighborhoodSalesLast24Months = globalNeighborhoodRecentSales.get(key) || 0;
       const officialAuctionLocation = getOfficialPropertyLocation(auc);
       const hasOfficialAuctionPoint = validOfficialLocation(officialAuctionLocation);
-      const locLat = hasOfficialAuctionPoint ? officialAuctionLocation.lat : void 0;
-      const locLng = hasOfficialAuctionPoint ? officialAuctionLocation.lng : void 0;
+      let locLat = hasOfficialAuctionPoint ? officialAuctionLocation.lat : void 0;
+      let locLng = hasOfficialAuctionPoint ? officialAuctionLocation.lng : void 0;
+      if (!Number.isFinite(locLat) || !Number.isFinite(locLng)) {
+        if (Number.isFinite(auc.lat) && Number.isFinite(auc.lng)) {
+          locLat = Number(auc.lat);
+          locLng = Number(auc.lng);
+        } else {
+          const streetHit = getCachedStreetCoords(auc.state, auc.city, auc.neighborhood, auc.street || auc.address);
+          if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+            locLat = streetHit.lat;
+            locLng = streetHit.lng;
+          } else {
+            const projHit = projectStreetCoordinates(auc.state, auc.city, auc.neighborhood, auc.street || auc.address);
+            if (projHit && Number.isFinite(projHit.lat) && Number.isFinite(projHit.lng)) {
+              locLat = projHit.lat;
+              locLng = projHit.lng;
+              if (!Number.isFinite(auc.lat)) {
+                auc.lat = projHit.lat;
+                auc.lng = projHit.lng;
+              }
+            }
+          }
+        }
+      }
       let radiusTxs = [];
       if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
         let found = findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 0.5);
@@ -11849,6 +12329,62 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       auc.itbiStreetAvgSqm = bidi && bidi.rua.validas > 0 && !isGeneric ? bidi.rua.saneada : void 0;
       auc.itbiStreetCount = bidi && bidi.rua.validas > 0 && !isGeneric ? bidi.rua.validas : 0;
       auc.isSobAnalise = true;
+    }
+    let marketVal = auc.estimatedValue;
+    if (!marketVal || marketVal <= 0) {
+      if (bidiGabaritoSqm > 0) {
+        marketVal = Math.round(bidiGabaritoSqm * ageFactor * territorialFactor * (auc.sizeSqm || 0));
+      } else if (auc.vendaBaixaPrice && auc.vendaBaixaPrice > 0) {
+        marketVal = Math.round(auc.vendaBaixaPrice / 0.9);
+      } else if (auc.m2ReferenciaBairro && auc.m2ReferenciaBairro > 0) {
+        marketVal = Math.round((auc.sizeSqm || 60) * auc.m2ReferenciaBairro);
+      } else if (neighborhoodAvgSqm > 0) {
+        marketVal = Math.round((auc.sizeSqm || 60) * neighborhoodAvgSqm);
+      } else {
+        marketVal = Math.round((auc.sizeSqm || 60) * 4500);
+      }
+    }
+    auc.estimatedValue = marketVal;
+    auc.valorMercadoEstimado = marketVal;
+    if (auc.transactionType === "aluguel") {
+      const rent = auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0;
+      const condo = auc.valorCondominio || 0;
+      const iptu = auc.valorIptu || 0;
+      const taxas = auc.taxasServico || auc.outrasTaxas || 0;
+      const totalTaxas = condo + iptu + taxas;
+      const totalPackage = auc.totalRentalPackage || rent + totalTaxas;
+      auc.taxasServico = taxas;
+      auc.outrasTaxas = taxas;
+      auc.totalTaxas = totalTaxas;
+      auc.totalRentalPackage = totalPackage;
+      auc.pacoteMoradiaTotal = totalPackage;
+      const mediaCalculadora = Math.round(marketVal * 55e-4);
+      auc.mediaLocacaoCalculadora = mediaCalculadora;
+      const rentDiffPct = mediaCalculadora > 0 ? Math.round((rent - mediaCalculadora) / mediaCalculadora * 100) : 0;
+      auc.aluguelDiferencaPct = rentDiffPct;
+      auc.vereditoLocacao = rentDiffPct <= -10 ? "barato" : rentDiffPct >= 10 ? "caro" : "justo";
+      auc.oportunidadeAbaixoMercado = rentDiffPct <= -10;
+      auc.descontoMercadoPct = rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0;
+      auc.calculatedProfit = Math.max(0, mediaCalculadora - rent) * 12;
+      auc.calculatedRoi = marketVal > 0 ? Number((rent * 12 / marketVal * 100).toFixed(2)) : 0;
+    } else if (origin === "portal") {
+      const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+      const itbi = auc.itbiCost ?? Math.round(preco * 0.03);
+      const registry = auc.notaryCost ?? Math.round(preco * 0.02);
+      const repair = auc.estimatedRepair !== void 0 ? auc.estimatedRepair : Math.round(preco * 0.05);
+      const totalCost = preco + itbi + registry + repair + (auc.pendingDebts || 0) + (auc.valorCondominio || 0) + (auc.valorIptu || 0);
+      const flipExit = auc.vendaBaixaPrice || marketVal || 0;
+      if (flipExit > totalCost) {
+        auc.calculatedProfit = Math.round(flipExit - totalCost);
+        auc.calculatedRoi = totalCost > 0 ? Number((auc.calculatedProfit / totalCost * 100).toFixed(2)) : 0;
+        auc.oportunidadeAbaixoMercado = true;
+      } else {
+        auc.calculatedProfit = 0;
+        auc.calculatedRoi = 0;
+        auc.oportunidadeAbaixoMercado = false;
+      }
+      const diff = marketVal - preco;
+      auc.descontoMercadoPct = marketVal > 0 && diff > 0 ? Math.round(diff / marketVal * 100) : 0;
     }
   }
   const bidPrice = auc.auctionPrice;
@@ -13095,6 +13631,24 @@ app.get("/api/itbi/transactions", async (req, res) => {
           }
         } catch (error) {
           console.warn("[ITBI] N\xE3o foi poss\xEDvel confirmar a coordenada numerada do im\xF3vel-alvo:", error);
+        }
+      }
+      if (!targetCoords && targetProperty && Number.isFinite(targetProperty.lat) && Number.isFinite(targetProperty.lng)) {
+        targetCoords = { lat: Number(targetProperty.lat), lng: Number(targetProperty.lng) };
+        radiusAnchorPrecision = "official_address";
+      }
+      if (!targetCoords) {
+        const streetHit = getCachedStreetCoords(filterState, filterCity, filterNeighborhood, tgt);
+        if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+          targetCoords = { lat: streetHit.lat, lng: streetHit.lng };
+          radiusAnchorPrecision = "geocoded_number";
+        }
+      }
+      if (!targetCoords) {
+        const projHit = projectStreetCoordinates(filterState, filterCity, filterNeighborhood, tgt);
+        if (projHit && Number.isFinite(projHit.lat) && Number.isFinite(projHit.lng)) {
+          targetCoords = { lat: projHit.lat, lng: projHit.lng };
+          radiusAnchorPrecision = "street_centroid";
         }
       }
       if (targetCoords) {
@@ -15587,6 +16141,27 @@ app.post("/api/garimpar/portais", authMiddleware, async (req, res) => {
         if (item.tipo_imovel === "Terreno" || item.titulo && /\b(terreno|lote|gleba)\b/i.test(item.titulo)) continue;
         const aucProp = convertPortalListingToAuctionProperty(item, req.userId);
         if (aucProp.propertyType === "Terreno") continue;
+        if (!aucProp.lat || !aucProp.lng) {
+          const proj = projectStreetCoordinates(aucProp.state, aucProp.city, aucProp.neighborhood, aucProp.street || aucProp.address);
+          if (proj && Number.isFinite(proj.lat) && Number.isFinite(proj.lng)) {
+            aucProp.lat = proj.lat;
+            aucProp.lng = proj.lng;
+            aucProp.status_geocodificacao = "INTERPOLACAO_RUA";
+          }
+        }
+        const size = aucProp.sizeSqm || 60;
+        const realM2 = getNeighborhoodPortalM2(aucProp.city || targetCity, aucProp.state || uf, aucProp.neighborhood || neigh, store.itbiTransactions, aucProp.propertyType, size);
+        if (realM2 && realM2 > 1e3) {
+          aucProp.m2_referencia_bairro = realM2;
+          aucProp.m2ReferenciaBairro = realM2;
+          const expectedVal = Math.round(size * realM2);
+          if (!aucProp.estimatedValue || aucProp.estimatedValue <= 0 || aucProp.estimatedValue > expectedVal * 1.15 || size > 120) {
+            aucProp.estimatedValue = expectedVal;
+            aucProp.valorMercadoEstimado = expectedVal;
+            aucProp.vendaBaixaPrice = Math.round(expectedVal * 0.9);
+            aucProp.vendaMediaPrice = aucProp.vendaBaixaPrice;
+          }
+        }
         const streetName = aucProp.street || (aucProp.address ? aucProp.address.split(",")[0].trim() : void 0);
         const morada = getMoradaVirtualBenchmark(streetName || aucProp.address, aucProp.city, aucProp.state, aucProp.propertyType, aucProp.neighborhood);
         if (morada && morada.m2 > 0) {

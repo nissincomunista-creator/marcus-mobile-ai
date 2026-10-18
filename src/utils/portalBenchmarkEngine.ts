@@ -328,6 +328,29 @@ export function getNeighborhoodPortalM2(
   return result;
 }
 
+const itbiNeighIndexMap = new WeakMap<object, Map<string, Array<{ propertyType?: string; unitValueSqm?: number; transactionValue?: number; sizeSqm?: number }>>>();
+
+function getNeighTxsFast(itbiTransactions: any[], cityNorm: string, neighNorm: string) {
+  let index = itbiNeighIndexMap.get(itbiTransactions);
+  if (!index) {
+    index = new Map();
+    for (const tx of itbiTransactions) {
+      const c = normalizeText(tx.city || 'rio de janeiro');
+      const n = normalizeText(tx.neighborhood || '');
+      if (!n) continue;
+      const key = `${c}|${n}`;
+      let arr = index.get(key);
+      if (!arr) {
+        arr = [];
+        index.set(key, arr);
+      }
+      arr.push(tx);
+    }
+    itbiNeighIndexMap.set(itbiTransactions, index);
+  }
+  return index.get(`${cityNorm}|${neighNorm}`) || [];
+}
+
 function computeNeighborhoodPortalM2(
   city: string,
   state: string,
@@ -351,106 +374,106 @@ function computeNeighborhoodPortalM2(
   // 1. Cálculo dinâmico oficial com isolamento de tipologia e homogeneização NBR 14.653
   if (Array.isArray(itbiTransactions) && itbiTransactions.length > 0 && neighNorm) {
     const cityNorm = normalizeText(rawCity);
-    const hasExactType = propertyType && itbiTransactions.some(t => 
-      normalizeText(t.neighborhood || '') === neighNorm && t.propertyType === propertyType
-    );
-    const candidateTxs = hasExactType
-      ? itbiTransactions.filter(t => t.propertyType === propertyType)
-      : itbiTransactions;
+    const neighTxs = getNeighTxsFast(itbiTransactions, cityNorm, neighNorm);
+    if (neighTxs.length > 0) {
+      const targetType = propertyType ? propertyType.toLowerCase() : '';
+      const exactTxs = targetType ? neighTxs.filter(t => (t.propertyType || '').toLowerCase() === targetType) : [];
+      const hasExactType = exactTxs.length >= 3;
+      const candidateTxs = hasExactType ? exactTxs : neighTxs;
 
-    const m2List: Array<{ val: number; size: number }> = [];
-    for (const tx of candidateTxs) {
-      if ((!tx.city || normalizeText(tx.city) === cityNorm) && normalizeText(tx.neighborhood || '') === neighNorm) {
+      const m2List: Array<{ val: number; size: number }> = [];
+      for (const tx of candidateTxs) {
         const val = tx.unitValueSqm || (tx.transactionValue && tx.sizeSqm ? tx.transactionValue / tx.sizeSqm : 0);
         if (val >= 400 && val <= 80000) {
           m2List.push({ val, size: tx.sizeSqm || 60 });
         }
       }
-    }
-    if (m2List.length >= 3) {
-      const rawVals = m2List.map(m => m.val);
-      const mean = rawVals.reduce((a, b) => a + b, 0) / rawVals.length;
-      const std = Math.sqrt(rawVals.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / rawVals.length);
-      const valid = m2List.filter(m => std === 0 || Math.abs(m.val - mean) <= 2.2 * std);
-      const validVals = valid.length > 0 ? valid.map(m => m.val) : rawVals;
-      let saneada = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+      if (m2List.length >= 3) {
+        const rawVals = m2List.map(m => m.val);
+        const mean = rawVals.reduce((a, b) => a + b, 0) / rawVals.length;
+        const std = Math.sqrt(rawVals.reduce((a, v) => a + Math.pow(v - mean, 2), 0) / rawVals.length);
+        const valid = m2List.filter(m => std === 0 || Math.abs(m.val - mean) <= 2.2 * std);
+        const validVals = valid.length > 0 ? valid.map(m => m.val) : rawVals;
+        let saneada = validVals.reduce((a, b) => a + b, 0) / validVals.length;
 
-      // Curva de escala pericial NBR 14.653 se área for elevada
-      if (sizeSqm && sizeSqm > 0 && valid.length > 0) {
-        const avgArea = valid.reduce((a, m) => a + m.size, 0) / valid.length;
-        if (sizeSqm > 1.5 * avgArea) {
-          saneada = saneada * Math.pow(avgArea / sizeSqm, 0.20);
+        // Ponderação cruzada (NBR 14.653-2): Quando não houver transações de Casa no bairro,
+        // a referência de apartamentos é convertida para Casa (fator médio 0.58)
+        if (!hasExactType && propertyType && /casa|sobrado/i.test(propertyType)) {
+          saneada = saneada * 0.58;
         }
+
+        // Curva de escala pericial NBR 14.653 se área for elevada
+        if (sizeSqm && sizeSqm > 0 && valid.length > 0) {
+          const avgArea = valid.reduce((a, m) => a + m.size, 0) / valid.length;
+          if (sizeSqm > 1.2 * avgArea) {
+            saneada = saneada * Math.pow(avgArea / sizeSqm, 0.18);
+          }
+        }
+        return Math.round(saneada);
       }
-      return Math.round(saneada);
     }
   }
 
   // 2. Consulta direta na tabela oficial de 200+ bairros
   const ratesForCity = NEIGHBORHOOD_PORTAL_RATES[cityKey];
+  let benchmarkBase = 0;
   if (ratesForCity && ratesForCity[neighNorm]) {
-    return ratesForCity[neighNorm];
-  }
-
-  // 3. Busca por correspondência parcial
-  if (ratesForCity) {
+    benchmarkBase = ratesForCity[neighNorm];
+  } else if (ratesForCity) {
+    // 3. Busca por correspondência parcial
     for (const [nKey, val] of Object.entries(ratesForCity)) {
       if (neighNorm.includes(nKey) || nKey.includes(neighNorm)) {
-        return val;
+        benchmarkBase = val;
+        break;
       }
     }
   }
 
   // 4. Fallback pericial por Zona Geográfica (NUNCA usar 7500 genérico!)
-  if (uf === 'RJ' && cityKey.includes('RIO DE JANEIRO')) {
-    // Zona Sul (Leblon, Ipanema, Copacabana, Botafogo, etc.)
-    if (/copacabana|ipanema|leblon|botafogo|flamengo|laranjeiras|catete|gloria|urca|leme|gavea|jardim botanico|humaita|lagoa|sao conrado|cosme velho/i.test(neighNorm)) {
-      return 13500;
+  if (!benchmarkBase) {
+    if (uf === 'RJ' && cityKey.includes('RIO DE JANEIRO')) {
+      if (/copacabana|ipanema|leblon|botafogo|flamengo|laranjeiras|catete|gloria|urca|leme|gavea|jardim botanico|humaita|lagoa|sao conrado|cosme velho/i.test(neighNorm)) {
+        benchmarkBase = 13500;
+      } else if (/barra da tijuca|recreio|joa|itapeba/i.test(neighNorm)) {
+        benchmarkBase = 10500;
+      } else if (/tijuca|maracana|vila isabel|grajau|andarai/i.test(neighNorm)) {
+        benchmarkBase = 6800;
+      } else if (/centro|lapa|santa teresa|estacio|cidade nova/i.test(neighNorm)) {
+        benchmarkBase = 5200;
+      } else if (/jacarepagua|freguesia|taquara|pechincha|anil|curicica|valqueire/i.test(neighNorm)) {
+        benchmarkBase = 5200;
+      } else if (/meier|cachambi|todos os santos|engenho novo|engenho de dentro/i.test(neighNorm)) {
+        benchmarkBase = 4600;
+      } else if (/pavuna|madureira|iraja|penha|ramos|olaria|bonsucesso|cascadura|campinho|piedade|pilares|rocha miranda|bento ribeiro|marechal hermes|coelho neto|acari|costa barros|guadalupe|anchieta/i.test(neighNorm)) {
+        benchmarkBase = 3500;
+      } else if (/bangu|campo grande|santa cruz|realengo|senador camara|santissimo|paciencia|cosmos/i.test(neighNorm)) {
+        benchmarkBase = 2900;
+      } else {
+        benchmarkBase = 3600;
+      }
+    } else if (uf === 'RJ' && cityKey.includes('NITEROI')) {
+      if (/icarai|camboinhas|charitas|sao francisco|itacoatiara/i.test(neighNorm)) benchmarkBase = 9500;
+      else if (/santa rosa|inga|piratininga|itaipu/i.test(neighNorm)) benchmarkBase = 6800;
+      else benchmarkBase = 4200;
+    } else if (uf === 'MG') {
+      if (/bom pastor|cascatinha|estrela sul|sao mateus/i.test(neighNorm)) benchmarkBase = 6000;
+      else if (/centro|granbery|paineiras|santa helena/i.test(neighNorm)) benchmarkBase = 4800;
+      else benchmarkBase = 3400;
+    } else {
+      benchmarkBase = 3600;
     }
-    // Barra & Recreio
-    if (/barra da tijuca|recreio|joa|itapeba/i.test(neighNorm)) {
-      return 10500;
-    }
-    // Grande Tijuca (Tijuca, Maracanã, Grajaú, Vila Isabel)
-    if (/tijuca|maracana|vila isabel|grajau|andarai/i.test(neighNorm)) {
-      return 6800;
-    }
-    // Centro & Adjacências
-    if (/centro|lapa|santa teresa|estacio|cidade nova/i.test(neighNorm)) {
-      return 5200;
-    }
-    // Jacarepaguá / Taquara / Freguesia
-    if (/jacarepagua|freguesia|taquara|pechincha|anil|curicica|valqueire/i.test(neighNorm)) {
-      return 5200;
-    }
-    // Méier / Cachambi / Engenho Novo
-    if (/meier|cachambi|todos os santos|engenho novo|engenho de dentro/i.test(neighNorm)) {
-      return 4600;
-    }
-    // Zona Norte Geral (Pavuna, Madureira, Irajá, Penha, etc.)
-    if (/pavuna|madureira|iraja|penha|ramos|olaria|bonsucesso|cascadura|campinho|piedade|pilares|rocha miranda|bento ribeiro|marechal hermes|coelho neto|acari|costa barros|guadalupe|anchieta/i.test(neighNorm)) {
-      return 3500;
-    }
-    // Zona Oeste Geral (Bangu, Campo Grande, Santa Cruz, Realengo)
-    if (/bangu|campo grande|santa cruz|realengo|senador camara|santissimo|paciencia|cosmos/i.test(neighNorm)) {
-      return 2900;
-    }
-    return 3600;
   }
 
-  if (uf === 'RJ' && cityKey.includes('NITEROI')) {
-    if (/icarai|camboinhas|charitas|sao francisco|itacoatiara/i.test(neighNorm)) return 9500;
-    if (/santa rosa|inga|piratininga|itaipu/i.test(neighNorm)) return 6800;
-    return 4200;
+  // Ponderação de tipologia e escala para taxas tabulares/zona:
+  let finalRate = benchmarkBase;
+  if (propertyType && /casa|sobrado/i.test(propertyType)) {
+    finalRate = Math.round(finalRate * 0.58);
   }
-
-  if (uf === 'MG') {
-    if (/bom pastor|cascatinha|estrela sul|sao mateus/i.test(neighNorm)) return 6000;
-    if (/centro|granbery|paineiras|santa helena/i.test(neighNorm)) return 4800;
-    return 3400;
+  if (sizeSqm && sizeSqm > 150) {
+    const scale = Math.max(0.65, Math.pow(100 / sizeSqm, 0.15));
+    finalRate = Math.round(finalRate * scale);
   }
-
-  return 5500;
+  return finalRate || 3600;
 }
 
 function normalizeText(text: string): string {

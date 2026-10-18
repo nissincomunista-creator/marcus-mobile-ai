@@ -1,6 +1,6 @@
 import type { PropertyType } from '../types';
 
-export const housePattern = /\b(casa|sobrado|moradia|residencia|vila|condom[ií]nio\s+fechado|chal[eé]|bangal[oô]|casa-duplex|casa-triplex|casa-padrao)\b/i;
+export const housePattern = /\b(casa|sobrado|vila|condom[ií]nio\s+fechado|chal[eé]|bangal[oô]|casa-duplex|casa-triplex|casa-padrao)\b/i;
 
 export interface TypologyClassification {
   propertyType: PropertyType;
@@ -88,14 +88,46 @@ export function detectTypologyFromUrlAndText(
     };
   }
 
-  // 3. CASAS
+  // 3. COBERTURA (Prioridade alta antes de Casa e Apto)
+  if (titleLower.includes('cobertura') || urlLower.includes('cobertura') || descLower.includes('cobertura duplex') || descLower.includes('cobertura linear')) {
+    return {
+      propertyType: 'Apartamento',
+      subtype: 'Cobertura',
+      displayPrefix: 'Cobertura'
+    };
+  }
+
+  // 4. KITNET / STUDIO / LOFT / FLAT / APART-HOTEL (Prioridade antes de Casa)
+  if (/\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(urlLower) || /\b(apart-?hotel|flat)\b/i.test(descLower)) {
+    return {
+      propertyType: 'Apartamento',
+      subtype: 'Kitnet / Studio',
+      displayPrefix: 'Kitnet / Studio'
+    };
+  }
+
+  // 5. APARTAMENTO EXPLÍCITO (Se o título ou URL contém apartamento/apto, NUNCA converter em Casa)
+  const isAptoExplicit = 
+    urlLower.includes('apartamento') ||
+    urlLower.includes('apto') ||
+    /\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio)\b/i.test(titleLower);
+
+  if (isAptoExplicit) {
+    return {
+      propertyType: 'Apartamento',
+      subtype: 'Apartamento',
+      displayPrefix: 'Apartamento'
+    };
+  }
+
+  // 6. CASAS (Apenas com menção explícita no título, URL ou início da descrição sem menção a apartamento)
   const isCasaInTitleOrUrl = 
     urlLower.includes('casa-') ||
     urlLower.includes('sobrado') ||
     urlLower.includes('casa-a-venda') ||
     housePattern.test(titleLower);
 
-  if (isCasaInTitleOrUrl || (housePattern.test(descLower) && !titleLower.includes('apartamento') && !titleLower.includes('apto'))) {
+  if (isCasaInTitleOrUrl || (housePattern.test(descLower) && !titleLower.includes('apartamento') && !titleLower.includes('apto') && !urlLower.includes('apartamento'))) {
     if (!titleLower.includes('casa de festas') && !titleLower.includes('casa de show')) {
       return {
         propertyType: 'Casa',
@@ -105,25 +137,7 @@ export function detectTypologyFromUrlAndText(
     }
   }
 
-  // 4. COBERTURA
-  if (titleLower.includes('cobertura') || urlLower.includes('cobertura') || descLower.includes('cobertura duplex') || descLower.includes('cobertura linear')) {
-    return {
-      propertyType: 'Apartamento',
-      subtype: 'Cobertura',
-      displayPrefix: 'Cobertura'
-    };
-  }
-
-  // 5. KITNET / STUDIO / LOFT
-  if (/\b(kitnet|studio|loft|flat|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|conjugado)\b/i.test(urlLower)) {
-    return {
-      propertyType: 'Apartamento',
-      subtype: 'Kitnet / Studio',
-      displayPrefix: 'Kitnet / Studio'
-    };
-  }
-
-  // 6. DEFAULT RESIDENCIAL: APARTAMENTO
+  // 7. DEFAULT RESIDENCIAL: APARTAMENTO
   return {
     propertyType: 'Apartamento',
     subtype: 'Apartamento',

@@ -22,6 +22,8 @@ export function canonicalStreet(value?: string | null): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/z/g, 's')
+    .replace(/ph/g, 'f')
     .trim();
 
   // 3. Extrai até a vírgula e remove numeração / complementos prediais

@@ -704,7 +704,7 @@ export default function Dashboard({
           label: 'Venda Direta Online',
           type: 'venda_direta_online',
           icon: '🤝',
-          className: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-xs'
+          className: 'bg-slate-900/60 text-emerald-400 border-slate-800 shadow-xs'
         };
       }
       if (modality === 'VENDA_ONLINE') {
@@ -712,7 +712,7 @@ export default function Dashboard({
           label: 'Venda Online',
           type: 'venda_online',
           icon: '⏱️',
-          className: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/60 shadow-xs'
+          className: 'bg-slate-900/60 text-cyan-400 border-slate-800 shadow-xs'
         };
       }
       if (modality === 'LICITACAO_ABERTA') {
@@ -720,7 +720,7 @@ export default function Dashboard({
           label: 'Licitação Aberta',
           type: 'licitacao_aberta',
           icon: '📢',
-          className: 'bg-amber-950/90 text-amber-300 border-amber-500/60 shadow-xs'
+          className: 'bg-slate-900/60 text-amber-400 border-slate-800 shadow-xs'
         };
       }
       if (modality === 'LEILAO_SFI') {
@@ -728,7 +728,7 @@ export default function Dashboard({
           label: 'Leilão SFI Online',
           type: 'leilao_sfi',
           icon: '⚖️',
-          className: 'bg-indigo-950/90 text-indigo-300 border-indigo-500/60 shadow-xs'
+          className: 'bg-slate-900/60 text-indigo-400 border-slate-800 shadow-xs'
         };
       }
     }
@@ -758,7 +758,7 @@ export default function Dashboard({
         label: modeLower.includes('online') ? 'Venda Direta Online' : 'Venda Direta',
         type: 'venda_direta_online',
         icon: '🤝',
-        className: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-xs'
+        className: 'bg-slate-900/60 text-emerald-400 border-slate-800 shadow-xs'
       };
     }
 
@@ -767,7 +767,7 @@ export default function Dashboard({
         label: 'Venda Online',
         type: 'venda_online',
         icon: '⏱️',
-        className: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/60 shadow-xs'
+        className: 'bg-slate-900/60 text-cyan-400 border-slate-800 shadow-xs'
       };
     }
     
@@ -776,7 +776,7 @@ export default function Dashboard({
         label: 'Licitação Aberta',
         type: 'licitacao_aberta',
         icon: '📢',
-        className: 'bg-amber-950/90 text-amber-300 border-amber-500/60 shadow-xs'
+        className: 'bg-slate-900/60 text-amber-400 border-slate-800 shadow-xs'
       };
     }
 
@@ -785,7 +785,7 @@ export default function Dashboard({
         label: 'Leilão SFI Online',
         type: 'leilao_sfi',
         icon: '⚖️',
-        className: 'bg-indigo-950/90 text-indigo-300 border-indigo-500/60 shadow-xs'
+        className: 'bg-slate-900/60 text-indigo-400 border-slate-800 shadow-xs'
       };
     }
 
@@ -794,7 +794,7 @@ export default function Dashboard({
         label: 'Leilão Judicial Online',
         type: 'judicial_online',
         icon: '⚖️',
-        className: 'bg-purple-950/90 text-purple-300 border-purple-500/60 shadow-xs'
+        className: 'bg-slate-900/60 text-purple-400 border-slate-800 shadow-xs'
       };
     }
 
@@ -802,7 +802,7 @@ export default function Dashboard({
       label: mode || 'Leilão Online',
       type: 'leilao_online',
       icon: '🌐',
-      className: 'bg-blue-950/90 text-blue-300 border-blue-500/60 shadow-xs'
+      className: 'bg-slate-900/60 text-blue-400 border-slate-800 shadow-xs'
     };
   }, []);
 
@@ -2849,31 +2849,41 @@ export default function Dashboard({
                                   </div>
                                   <div className="text-[11px] text-slate-300 font-mono whitespace-normal break-words mt-0.5" style={{ overflowWrap: 'anywhere' }}>
                                     O imóvel vale: <strong className="text-white font-bold">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500)))}</strong>
-                                    <span className="mx-1 text-slate-500">•</span>
-                                    Média Calculadora: <strong className="text-amber-300 font-bold">{formatBRL(auc.mediaLocacaoCalculadora || Math.round((auc.valorMercadoEstimado || 0) * 0.0055))}/mês</strong>
                                   </div>
                                 </div>
                               </div>
-                            ) : auc.origin === 'portal' && (auc.oportunidadeAbaixoMercado || (auc.descontoMercadoPct && auc.descontoMercadoPct >= 15)) ? (
-                              <div className="w-full py-2 px-0 mb-2 border-b border-slate-800/80 flex items-start gap-2 bg-transparent text-slate-200">
-                                <span className="text-base shrink-0 select-none">🔥</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-black uppercase tracking-wide text-rose-400 whitespace-normal break-words overflow-visible">
-                                    Alerta: Abaixo do Valor de Mercado (-{auc.descontoMercadoPct}%)
-                                  </div>
-                                  <div className="text-[11px] text-slate-300 font-mono whitespace-normal break-words mt-0.5" style={{ overflowWrap: 'anywhere' }}>
-                                    Valor Estimado: <strong className="text-emerald-400 font-bold">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 3600)))}</strong>
-                                    <span className="mx-1 text-slate-500">•</span>
-                                    Preço Anunciado: <strong className="text-white font-bold">{formatBRL(auc.precoAnunciado || auc.auctionPrice)}</strong>
+                            ) : auc.origin === 'portal' && (() => {
+                              const valEst = (auc.estimatedValue && auc.estimatedValue > 0) ? auc.estimatedValue : (flipPrice > 0 ? Math.round(flipPrice / 0.90) : (auc.valorMercadoEstimado || 0));
+                              const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+                              const diff = valEst - preco;
+                              const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : 0;
+                              return pct >= 15 || (auc.oportunidadeAbaixoMercado && pct > 0);
+                            })() ? (() => {
+                              const valEst = (auc.estimatedValue && auc.estimatedValue > 0) ? auc.estimatedValue : (flipPrice > 0 ? Math.round(flipPrice / 0.90) : (auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 3600))));
+                              const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+                              const diff = valEst - preco;
+                              const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : (auc.descontoMercadoPct || 0);
+                              return (
+                                <div className="w-full py-2 px-0 mb-2 border-b border-slate-800/80 flex items-start gap-2 bg-transparent text-slate-200">
+                                  <span className="text-base shrink-0 select-none">🔥</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-black uppercase tracking-wide text-rose-400 whitespace-normal break-words overflow-visible">
+                                      Alerta: Abaixo do Valor de Mercado (-{pct}%)
+                                    </div>
+                                    <div className="text-[11px] text-slate-300 font-mono whitespace-normal break-words mt-0.5" style={{ overflowWrap: 'anywhere' }}>
+                                      Valor Estimado: <strong className="text-emerald-400 font-bold">{formatBRL(valEst)}</strong>
+                                      <span className="mx-1 text-slate-500">•</span>
+                                      Preço Anunciado: <strong className="text-white font-bold">{formatBRL(preco)}</strong>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ) : null}
+                              );
+                            })() : null}
 
                             {/* Badges de Status dos Cards (apenas leilões, em portais já está no título) */}
                             {auc.origin !== 'portal' && (
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-800 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-700">
+                                <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-900/60 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-800">
                                   {auc.propertyType} • {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
                                   {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
                                 </span>
@@ -2886,10 +2896,10 @@ export default function Dashboard({
                                     </span>
                                   );
                                 })()}
-                                <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
-                                  auc.riskLevel === 'Baixo' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50' :
-                                  auc.riskLevel === 'Médio' ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' :
-                                  'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-600/50'
+                                <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border bg-slate-900/60 border-slate-800 ${
+                                  auc.riskLevel === 'Baixo' ? 'text-emerald-400' :
+                                  auc.riskLevel === 'Médio' ? 'text-amber-400' :
+                                  'text-rose-400'
                                 }`}>
                                   Risco {auc.riskLevel || 'Baixo'}
                                 </span>
@@ -2914,7 +2924,7 @@ export default function Dashboard({
                               </div>
                               {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
                                 <div className="mt-1">
-                                  <span className="text-[10.5px] bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1 shadow-xs" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
+                                  <span className="text-[11px] text-amber-400 font-mono font-bold inline-flex items-center gap-1" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
                                     <span>⚠️</span>
                                     <span>{cleanDivergentNotice(auc.divergentNeighborhoodNotice)}</span>
                                   </span>
@@ -2926,11 +2936,6 @@ export default function Dashboard({
                             {auc.origin === 'portal' ? (
                               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
                                 <span>Publicação: <strong className="text-slate-200">{formatPublicationDateDisplay(auc)}</strong></span>
-                                {auc.auctionLink && (
-                                  <a href={auc.auctionLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 font-bold underline inline-flex items-center gap-1">
-                                    <span>Ver Anúncio Original ↗</span>
-                                  </a>
-                                )}
                               </div>
                             ) : (
                               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
@@ -3060,19 +3065,19 @@ export default function Dashboard({
                                 </span>
                               </div>
 
-                              {/* Pacote Moradia Total (Aluguel + Condomínio + IPTU + Taxas) */}
-                              <div className="flex flex-col justify-center bg-emerald-950/40 p-2 rounded-lg border border-emerald-700/50">
-                                <span className="text-[9px] text-emerald-400 block uppercase font-black tracking-wider">
-                                  Pacote Moradia Total
+                              {/* Custo Total (Aluguel + Condomínio + IPTU + Taxas) */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-emerald-400 block uppercase font-bold tracking-wider">
+                                  Custo Total
                                 </span>
-                                <span className="text-xs sm:text-sm font-black text-emerald-400 font-mono mt-0.5">
+                                <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono mt-0.5">
                                   {formatBRL(
                                     auc.totalRentalPackage ||
                                     ((auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0) +
                                      (auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0))))
                                   )}/mês
                                 </span>
-                                <span className="text-[8.5px] text-emerald-300/80 font-mono font-medium">
+                                <span className="text-[8.5px] text-slate-500 font-mono">
                                   Aluguel + Todas Taxas
                                 </span>
                               </div>
@@ -3094,7 +3099,52 @@ export default function Dashboard({
                                 </span>
                               </div>
 
-                              {/* M² Ref. Bairro (Benchmark Calculadora ITBI) */}
+                              {/* Custo Total Est. (Trocado de lugar com M² Ref. Bairro) */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Custo Total Est.
+                                </span>
+                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                                  {formatBRL(totalCost)}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  ITBI (3%) + RGI (2%) + Ref. (5%)
+                                </span>
+                              </div>
+
+                              {/* Preço Sugerido Flip */}
+                              <div className="flex flex-col justify-center min-w-0">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider leading-tight">
+                                  {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
+                                </span>
+                                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">
+                                  {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
+                                </span>
+                                {(() => {
+                                  const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+                                  const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
+                                  const diffPct = valEst > 0 ? Math.round(((valEst - preco) / valEst) * 100) : 0;
+                                  if (diffPct > 0) {
+                                    return (
+                                      <span className="text-[8.5px] font-mono text-slate-500 font-normal">
+                                        Deságio Flip: -{diffPct}%
+                                      </span>
+                                    );
+                                  } else if (diffPct < 0) {
+                                    return (
+                                      <span className="text-[8.5px] font-mono text-slate-500 font-normal">
+                                        Acima do Flip: +{Math.abs(diffPct)}%
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                            </div>
+
+                            {/* Linha 2: Viabilidade de Compra & Venda (Flip Rápido) */}
+                            <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                              {/* M² Ref. Bairro (Trocado de lugar com Custo Total) */}
                               <div className="flex flex-col justify-center">
                                 <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
                                   M² Ref. Bairro
@@ -3114,67 +3164,7 @@ export default function Dashboard({
                                 </span>
                               </div>
 
-                              {/* Preço Sugerido Flip */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
-                                </span>
-                                <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono mt-0.5">
-                                  {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
-                                </span>
-                                {(() => {
-                                  const preco = auc.precoAnunciado || auc.auctionPrice || 0;
-                                  const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
-                                  const diffPct = valEst > 0 ? Math.round(((valEst - preco) / valEst) * 100) : 0;
-                                  if (diffPct > 0) {
-                                    return (
-                                      <span className="text-[9px] font-mono text-emerald-400 font-bold">
-                                        Deságio Flip: -{diffPct}%
-                                      </span>
-                                    );
-                                  } else if (diffPct < 0) {
-                                    return (
-                                      <span className="text-[9px] font-mono text-rose-400 font-bold">
-                                        Acima do Flip: +{Math.abs(diffPct)}%
-                                      </span>
-                                    );
-                                  }
-                                  return null;
-                                })()}
-                              </div>
-                            </div>
-
-                            {/* Linha 2: Viabilidade de Compra & Venda (Flip Rápido) */}
-                            <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Custo Total Est.
-                                </span>
-                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
-                                  {formatBRL(totalCost)}
-                                </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  ITBI (3%) + RGI (2%) + Ref. (5%)
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Lucro Estimado
-                                </span>
-                                <span className={`text-xs sm:text-sm font-bold font-mono mt-0.5 ${
-                                  lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
-                                  lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
-                                }`}>
-                                  {lucroReal !== undefined ? (
-                                    lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`
-                                  ) : 'Sob análise'}
-                                </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  {lucroReal !== undefined && lucroReal > 0 ? 'Margem Líquida Flip' : 'Sem Margem Flip'}
-                                </span>
-                              </div>
-
+                              {/* ROI Projetado (Trocado de lugar com Lucro Estimado) */}
                               <div className="flex flex-col justify-center">
                                 <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
                                   ROI Projetado
@@ -3191,14 +3181,32 @@ export default function Dashboard({
                                   Retorno sobre Custo
                                 </span>
                               </div>
+
+                              {/* Lucro Estimado (Trocado de lugar com ROI Projetado) */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Lucro Estimado
+                                </span>
+                                <span className={`text-xs sm:text-sm font-bold font-mono mt-0.5 ${
+                                  lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
+                                  lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
+                                }`}>
+                                  {lucroReal !== undefined ? (
+                                    lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`
+                                  ) : 'Sob análise'}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  {lucroReal !== undefined && lucroReal > 0 ? 'Margem Líquida Flip' : 'Sem Margem Flip'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         ) : (
                           <>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
                           
                           {/* Lance Mínimo */}
-                          <div className="flex flex-col justify-center">
+                          <div className="flex flex-col justify-center min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
                                 Lance Mínimo
@@ -3213,26 +3221,29 @@ export default function Dashboard({
                                 </span>
                               ) : null}
                             </div>
-                            <span className="text-xs sm:text-sm font-normal text-white font-mono mt-0.5">
+                            <span className="text-xs sm:text-sm font-normal text-white font-mono mt-0.5 truncate">
                               {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}
                             </span>
                             {auc.firstAuctionPrice && auc.secondAuctionPrice && (
-                              <span className="text-[9px] text-slate-400 font-mono">
+                              <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
                                 1º: {formatBRL(auc.firstAuctionPrice)} | 2º: {formatBRL(auc.secondAuctionPrice)}
                               </span>
                             )}
                           </div>
 
                           {/* Custo Total Est. com Tooltip */}
-                          <div className="relative group/cost flex flex-col justify-center cursor-help whitespace-nowrap">
+                          <div className="relative group/cost flex flex-col justify-center cursor-help min-w-0">
                             <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider whitespace-nowrap">
-                                Custo Total
+                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
+                                Custo Total Est.
                               </span>
-                              <Info className="w-2.5 h-2.5 text-slate-500" />
+                              <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
                             </div>
-                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 whitespace-nowrap">
+                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 truncate">
                               {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
+                            </span>
+                            <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
+                              ITBI (3%) + RGI (2%) + Ref. (5%)
                             </span>
                             {/* Tooltip */}
                             <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
@@ -3247,34 +3258,39 @@ export default function Dashboard({
                             </div>
                           </div>
 
-                          {/* Lucro Estimado Real com valor neutro limpo */}
-                          <div className="flex flex-col justify-center whitespace-nowrap">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider whitespace-nowrap">
+                          {/* Lucro Estimado Real com cor idêntica ao Flip House */}
+                          <div className="flex flex-col justify-center min-w-0">
+                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
                               Lucro Real Est.
                             </span>
-                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 whitespace-nowrap">
-                              {lucroReal !== undefined ? formatBRL(lucroReal) : 'Sob análise'}
+                            <span className={`text-xs sm:text-sm font-bold font-mono mt-0.5 truncate ${
+                              lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
+                              lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
+                            }`}>
+                              {lucroReal !== undefined ? (
+                                lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`
+                              ) : 'Sob análise'}
                             </span>
                             {spreadSqm > 0 && (
-                              <span className="text-[9.5px] font-mono text-emerald-400 font-bold mt-0.5 whitespace-nowrap" title="Spread líquido de saída por m² privativo">
+                              <span className="text-[8.5px] font-mono text-slate-500 font-normal mt-0.5 leading-tight" title="Spread líquido de saída por m² privativo">
                                 Spread: {formatBRL(spreadSqm)}/m²
                               </span>
                             )}
                           </div>
 
                           {/* Gabarito ITBI com Tooltip Pericial NBR 14.653 */}
-                          <div className="relative group/itbi flex flex-col justify-center cursor-help">
+                          <div className="relative group/itbi flex flex-col justify-center cursor-help min-w-0">
                             <div className="flex items-center justify-between">
                               <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider flex items-center space-x-0.5 truncate">
                                 <span>Gabarito ITBI</span>
                               </span>
-                              <Info className="w-2.5 h-2.5 text-slate-500" />
+                              <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
                             </div>
-                            <span className="text-[11px] sm:text-xs xl:text-sm font-black text-slate-200 font-mono mt-0.5 whitespace-nowrap">
+                            <span className="text-[11px] sm:text-xs xl:text-sm font-black text-slate-200 font-mono mt-0.5 truncate">
                               {auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem amostras'}
                             </span>
                             {auc.isAreaHomogeneizada && (
-                              <span className="text-[9px] font-mono text-indigo-400 font-bold mt-0.5" title="Homogeneizado por Curva de Escala Inversa da ABNT NBR 14.653">
+                              <span className="text-[8.5px] font-mono text-slate-500 font-normal mt-0.5 leading-tight" title="Homogeneizado por Curva de Escala Inversa da ABNT NBR 14.653">
                                 Escala NBR: {auc.fatorEscala ? auc.fatorEscala.toFixed(3) : '1.000'}
                               </span>
                             )}
@@ -3306,30 +3322,41 @@ export default function Dashboard({
 
                         </div>
 
-                        {/* Grid Financeiro: Linha 2 (ROI, Avaliação Edital, Liquidez, Flip Rápido 60d) - NÚMEROS NEUTROS */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                        {/* Grid Financeiro: Linha 2 (Avaliação Edital, ROI Projetado, Liquidez, Preço Sugerido Flip) */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
                           
-                          {/* ROI Projetado */}
-                          <div className="flex flex-col justify-center whitespace-nowrap">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider whitespace-nowrap">
-                              ROI Projetado
-                            </span>
-                            <span className="text-xs sm:text-sm font-black font-mono text-slate-200 mt-0.5 whitespace-nowrap">
-                              {roi !== undefined ? `${roi}%` : 'Sob análise'}
-                            </span>
-                          </div>
-
-                          {/* Avaliação do Edital */}
-                          <div className="flex flex-col justify-center">
+                          {/* Coluna 1: Avaliação do Edital (Trocado de lugar com ROI Projetado) */}
+                          <div className="flex flex-col justify-center min-w-0">
                             <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
                               Avaliação Edital
                             </span>
-                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 truncate">
                               {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
+                            </span>
+                            <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
+                              Laudo do Leilão
                             </span>
                           </div>
 
-                          {/* Liquidez com Tooltip */}
+                          {/* Coluna 2: ROI Projetado (Trocado de lugar com Avaliação Edital) */}
+                          <div className="flex flex-col justify-center min-w-0">
+                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
+                              ROI Projetado
+                            </span>
+                            <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 truncate ${
+                              roi !== undefined && roi > 0 ? 'text-amber-400' :
+                              roi !== undefined && roi < 0 ? 'text-rose-400' : 'text-slate-400'
+                            }`}>
+                              {roi !== undefined ? (
+                                roi > 0 ? `+${roi}%` : `${roi}%`
+                              ) : 'Sob análise'}
+                            </span>
+                            <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
+                              Retorno sobre Custo
+                            </span>
+                          </div>
+
+                          {/* Coluna 3: Liquidez com Tooltip */}
                           {(() => {
                             const streetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
                             const hasStreetData = streetCount > 0;
@@ -3342,10 +3369,10 @@ export default function Dashboard({
                             const finalLiquidity = !hasStreetData ? 0 : Math.min(auc.liquidityScore ?? 0, effectiveCeiling);
 
                             return (
-                              <div className="relative group/liq flex flex-col justify-center cursor-help">
+                              <div className="relative group/liq flex flex-col justify-center cursor-help min-w-0">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Liquidez</span>
-                                  <Info className="w-2.5 h-2.5 text-slate-500" />
+                                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">Liquidez</span>
+                                  <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
                                 </div>
                                 <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${finalLiquidity === 0 ? 'text-slate-400' : 'text-slate-200'}`}>
                                   {finalLiquidity}/10
@@ -3374,24 +3401,43 @@ export default function Dashboard({
                                         ⚠️ Amostragem Frágil: Poucas transações na via ({auc.itbiStreetCount || 0} na rua, {auc.itbiBuildingCount || 0} no prédio). Liquidez travada no teto máximo de 5.0/10.
                                       </span>
                                     ) : null}
-                                    Giro factual estritamente apurado pela densidade de escrituras públicas (ITBI) registradas no condomínio/prédio, na rua, no raio geodésico do entorno e no bairro. Apartamentos exigem transações no condomínio para pontuação máxima (sem vendas no prédio, a liquidez fica calibrada em no máximo 5-6). Casas e comerciais avaliam diretamente a densidade da rua e entorno.
+                                    Giro factual estritamente apurado pela densidade de escrituras públicas (ITBI) registradas no condomínio/prédio, na rua, no raio geodésico do entorno e no bairro.
                                   </p>
                                 </div>
                               </div>
                             );
                           })()}
 
-                          {/* Flip Rápido (60d) com Tooltip */}
-                          <div className="relative group/flip flex flex-col justify-center cursor-help whitespace-nowrap">
+                          {/* Coluna 4: Preço Sugerido Flip com Deságio Flip */}
+                          <div className="relative group/flip flex flex-col justify-center cursor-help min-w-0">
                             <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate whitespace-nowrap">
-                                Flip Rápido (60d)
+                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider leading-tight">
+                                {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
                               </span>
-                              <Info className="w-2.5 h-2.5 text-slate-500" />
+                              <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
                             </div>
-                            <span className="text-[11px] sm:text-xs xl:text-sm font-black text-slate-200 font-mono mt-0.5 whitespace-nowrap">
-                              {flipPrice > 0 ? formatBRL(flipPrice) : 'Amostragem Insuficiente (Análise Manual)'}
+                            <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5 truncate">
+                              {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
                             </span>
+                            {(() => {
+                              const preco = auc.auctionPrice || 0;
+                              const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
+                              const diffPct = (valEst > 0 && preco > 0) ? Math.round(((valEst - preco) / valEst) * 100) : 0;
+                              if (diffPct > 0) {
+                                return (
+                                  <span className="text-[8.5px] font-mono text-slate-500 font-normal block leading-tight">
+                                    Deságio Flip: -{diffPct}%
+                                  </span>
+                                );
+                              } else if (diffPct < 0) {
+                                return (
+                                  <span className="text-[8.5px] font-mono text-slate-500 font-normal block leading-tight">
+                                    Acima do Flip: +{Math.abs(diffPct)}%
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
 
                             {/* Tooltip de Flip Rápido */}
                             <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/flip:opacity-100 transition-opacity z-50 text-left">
@@ -3416,11 +3462,11 @@ export default function Dashboard({
                           </div>
                         )}
 
-                        {/* MÓDULO 2: Benchmark de Mercado dos Portais na Rua - APENAS na aba Flip House */}
-                        {mode === 'portais' && auc.origin === 'portal' && (() => {
+                        {/* MÓDULO 2: Benchmark de Mercado dos Portais na Rua (Morada Virtual) */}
+                        {(() => {
                           const isRioDeJaneiroCity = (auc.state || 'RJ').toUpperCase() === 'RJ' && 
                             (auc.city || 'Rio de Janeiro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('rio');
-                          
+                          const isRental = auc.transactionType === 'aluguel';
                           const moradaSqm = (auc as any).moradaM2 || (auc as any).moradaVirtualM2;
                           const rawPortalSqm = moradaSqm && moradaSqm > 0
                             ? moradaSqm
@@ -3428,28 +3474,40 @@ export default function Dashboard({
                               ? auc.m2MercadoPortal
                               : (auc.streetPortalAvgSqm && auc.streetPortalAvgSqm > 0 ? auc.streetPortalAvgSqm : 0));
 
-                          // Filtro Visual de Sanidade: Descartar m² < R$ 1.500/m² no RJ para evitar dados de aluguel/locação
-                          const hasValidSalePortal = rawPortalSqm > 0 && (!isRioDeJaneiroCity || rawPortalSqm >= 1500);
+                          // Para locação, calcular m² médio de locação da via (~0,55% do m² venal da via ou média calculadora)
+                          const displayPortalSqm = isRental
+                            ? (rawPortalSqm > 0 ? Math.round(rawPortalSqm * 0.0055) : (auc.mediaLocacaoCalculadora && auc.sizeSqm ? Math.round(auc.mediaLocacaoCalculadora / auc.sizeSqm) : 0))
+                            : rawPortalSqm;
+
+                          // Filtro Visual de Sanidade: Descartar m² < R$ 1.500/m² no RJ para venda
+                          const hasValidPortal = isRental
+                            ? displayPortalSqm > 0
+                            : (rawPortalSqm > 0 && (!isRioDeJaneiroCity || rawPortalSqm >= 1500));
+
+                          // Em leilões, só exibe o banner se a rua foi de fato encontrada no Morada Virtual com dados válidos
+                          if (auc.origin !== 'portal' && !hasValidPortal) return null;
 
                           return (
                             <div className="border-t border-slate-800/80 pt-2.5 flex items-center justify-between text-xs">
                               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 w-full justify-between">
-                                {hasValidSalePortal ? (
+                                {hasValidPortal ? (
                                   <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[10px] font-bold uppercase font-mono text-slate-400">Portais Imobiliários - Metro Quadrado Rua:</span>
+                                    <span className="text-[10px] font-bold uppercase font-mono text-slate-400">
+                                      {isRental ? 'Portais Imobiliários - Metro Quadrado Locação Rua:' : 'Portais Imobiliários - Metro Quadrado Rua:'}
+                                    </span>
                                     <span className="font-mono font-bold text-slate-100 text-[12px]">
-                                      {formatBRL(rawPortalSqm)}/m²
+                                      {formatBRL(displayPortalSqm)}/m²{isRental ? ' de locação' : ''}
                                     </span>
                                     {auc.portalSampleCount ? (
-                                      <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-800/50 px-1.5 py-0.5 rounded">
+                                      <span className="text-[10px] font-mono text-slate-400 font-normal">
                                         ({auc.portalSampleCount.toLocaleString('pt-BR')} anúncios na via · Morada Virtual)
                                       </span>
                                     ) : (
-                                      <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-800/50 px-1.5 py-0.5 rounded">
+                                      <span className="text-[10px] font-mono text-slate-400 font-normal">
                                         (Morada Virtual)
                                       </span>
                                     )}
-                                    {auc.portalTypologyAvgPrice ? (
+                                    {!isRental && auc.portalTypologyAvgPrice ? (
                                       <span className="text-[10px] text-slate-400 hidden md:inline">
                                         · Preço médio anúncios: <strong className="text-slate-200 font-mono">{formatBRL(auc.portalTypologyAvgPrice)}</strong>
                                       </span>
@@ -3482,35 +3540,71 @@ export default function Dashboard({
                           );
                         })()}
 
-                        {/* METADADOS E AVISOS DO IMÓVEL NO FINAL DO CARD (RESTAURADOS INTEGRALMENTE) */}
-                        <div className="flex flex-wrap gap-2 pt-2.5 border-t border-slate-800/80 items-center">
-                          
-                          {/* Ocupação, Financiamento e Parcelamento (Apenas para leilões) */}
-                          {auc.origin !== 'portal' && (
-                            <>
-                              <span className={`text-[11px] font-black flex items-center space-x-1 px-2.5 py-0.5 rounded-full border ${
-                                auc.occupied 
-                                  ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' 
-                                  : 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50'
-                              }`}>
-                                <span>● {auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
+                        {/* METADADOS E AVISOS DO IMÓVEL (Ocupação, Financiamento, Parcelamento, Comunidade, Potencial IA) */}
+                        {(auc.origin !== 'portal' || auc.isCommunityRisk || auc.nearbyCommunityName || auc.aiAppreciationScore) && (
+                          <div className="flex flex-wrap gap-2 pt-2.5 border-t border-slate-800/80 items-center">
+                            
+                            {/* Ocupação, Financiamento e Parcelamento (Apenas para leilões) */}
+                            {auc.origin !== 'portal' && (
+                              <>
+                                <span className={`text-[11px] font-black flex items-center space-x-1 px-2.5 py-0.5 rounded-full border ${
+                                  auc.occupied 
+                                    ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' 
+                                    : 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50'
+                                }`}>
+                                  <span>● {auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
+                                </span>
+
+                                {auc.allowsFinancing && (
+                                  <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
+                                    ✓ Financiamento
+                                  </span>
+                                )}
+
+                                {auc.allowsInstallments && (
+                                  <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
+                                    ✓ Parcelamento
+                                  </span>
+                                )}
+                              </>
+                            )}
+
+                            {/* Alerta de Comunidade / Risco Perimetral */}
+                            {(() => {
+                              const communityName = auc.isCommunityRisk ? auc.communityName : auc.nearbyCommunityName;
+                              const faction = auc.isCommunityRisk ? auc.factionName : auc.nearbyFactionName;
+                              const distance = auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM;
+                              if (!communityName) return null;
+                              const isCritical = !!auc.isCommunityRisk;
+                              return (
+                                <span
+                                  className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
+                                    isCritical
+                                      ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
+                                      : 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                                  }`}
+                                  title={isCritical ? 'Faixa crítica abaixo de 200m: reduz valor de venda e liquidez.' : 'Entre 200m e 500m: informativo.'}
+                                >
+                                  <AlertTriangle className={`w-3 h-3 shrink-0 ${isCritical ? 'text-rose-400' : 'text-amber-400'}`} />
+                                  <span>
+                                    {isCritical ? 'ÁREA CRÍTICA' : 'PRÓX. COMUNIDADE'}: {communityName}{faction ? ` (${faction})` : ''} • {distance === 0 ? 'dentro' : `~${distance || 0}m`}
+                                  </span>
+                                </span>
+                              );
+                            })()}
+
+                            {/* Potencial IA */}
+                            {auc.aiAppreciationScore && (
+                              <span className="text-[11px] bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
+                                ★ Potencial IA: {auc.aiAppreciationScore}/10
                               </span>
+                            )}
 
-                              {auc.allowsFinancing && (
-                                <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                                  ✓ Financiamento
-                                </span>
-                              )}
+                          </div>
+                        )}
 
-                              {auc.allowsInstallments && (
-                                <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                                  ✓ Parcelamento
-                                </span>
-                              )}
-                            </>
-                          )}
-
-                          {/* Ver no Mapa (Verde vibrante em destaque) */}
+                        {/* LINHA EXCLUSIVA DO ITBI COM "VER NO MAPA" NA FRENTE (SEPARADO POR UMA LINHA, IGUAL AO FLIP HOUSE) */}
+                        <div className="border-t border-slate-800/80 pt-2 flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -3524,40 +3618,16 @@ export default function Dashboard({
                             <span>Ver no Mapa</span>
                           </button>
 
-                          {/* Alerta de Comunidade / Risco Perimetral (Aviso com cor semântica) */}
-                          {(() => {
-                            const communityName = auc.isCommunityRisk ? auc.communityName : auc.nearbyCommunityName;
-                            const faction = auc.isCommunityRisk ? auc.factionName : auc.nearbyFactionName;
-                            const distance = auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM;
-                            if (!communityName) return null;
-                            const isCritical = !!auc.isCommunityRisk;
-                            return (
-                              <span
-                                className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
-                                  isCritical
-                                    ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
-                                    : 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                                }`}
-                                title={isCritical ? 'Faixa crítica abaixo de 200m: reduz valor de venda e liquidez.' : 'Entre 200m e 500m: informativo.'}
-                              >
-                                <AlertTriangle className={`w-3 h-3 shrink-0 ${isCritical ? 'text-rose-400' : 'text-amber-400'}`} />
-                                <span>
-                                  {isCritical ? 'ÁREA CRÍTICA' : 'PRÓX. COMUNIDADE'}: {communityName}{faction ? ` (${faction})` : ''} • {distance === 0 ? 'dentro' : `~${distance || 0}m`}
-                                </span>
-                              </span>
-                            );
-                          })()}
-
                           {/* ITBI Rua vs Entorno */}
                           {auc.itbiIsDerivedSqm ? (
                             <span className="text-[11px] bg-slate-950 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-full font-mono" title="ITBI Homogeneizado NBR 14.653 Juiz de Fora">
-                              🏛️ ITBI JF: <strong className="text-emerald-400">{auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg ? `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²` : 'Sem dados'}</strong>
+                              🏛️ ITBI JF: <strong className="text-slate-200">{auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg ? `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²` : 'Sem dados'}</strong>
                               {auc.estimatedValue ? <span className="text-slate-300"> ({formatBRL(auc.estimatedValue)})</span> : null}
                               {auc.itbiCompraEVendaCount ? <span className="text-slate-400"> • {auc.itbiCompraEVendaCount} tx</span> : null}
                             </span>
                           ) : auc.itbiIsAbsolutePricing ? (
                             <span className="text-[11px] bg-slate-950 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-full font-mono" title="Média oficial de ITBI Juiz de Fora (Compra e Venda)">
-                              🏛️ ITBI JF: <strong className="text-emerald-400">{auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem dados'}</strong>
+                              🏛️ ITBI JF: <strong className="text-slate-200">{auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem dados'}</strong>
                               {auc.itbiCompraEVendaCount ? <span className="text-slate-400"> ({auc.itbiCompraEVendaCount} tx Compra e Venda)</span> : null}
                             </span>
                           ) : (
@@ -3565,14 +3635,6 @@ export default function Dashboard({
                               🏛️ ITBI RUA: <strong className="text-slate-200">{(auc.itbiStreetCount && auc.itbiStreetCount > 0 && auc.itbiStreetAvgSqm) ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²` : 'Sem dados'}</strong> | ENTORNO: <strong className="text-slate-200">{auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiUnitValueAvg)}/m²` : '-'}</strong>
                             </span>
                           )}
-
-                          {/* Potencial IA */}
-                          {auc.aiAppreciationScore && (
-                            <span className="text-[11px] bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                              ★ Potencial IA: {auc.aiAppreciationScore}/10
-                            </span>
-                          )}
-
                         </div>
 
                       </div>

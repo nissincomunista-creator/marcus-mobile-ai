@@ -62,6 +62,14 @@ export function parseAddressComponents(rawAddress: string | null | undefined): A
       const trailingUnit = remaining.match(new RegExp(`^${UNIT_WORD}\\.?\\s*[A-Za-z0-9/-]*`, 'i'));
       if (trailingUnit) complement = trailingUnit[0].trim();
     }
+  } else {
+    // When there is NO building number, text might still contain comma-separated neighborhood or city,
+    // e.g. "Avenida Rainha Elisabeth da Bélgica, Ipanema, Rio de Jane"
+    // Extract strictly the first segment representing the public street!
+    const parts = text.split(/\s*,\s*|\s+[-–—]\s+/);
+    if (parts.length > 1) {
+      street = parts[0].trim();
+    }
   }
 
   street = street

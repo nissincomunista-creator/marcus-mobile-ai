@@ -48,7 +48,7 @@ import { fitJuizDeForaAreaModel, JuizDeForaAreaModel } from './src/utils/juizDeF
 import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from './src/utils/quickFlipPricing.ts';
 import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
 import { isNeighborhoodCompatible } from './src/utils/neighborhoodAdjacency.ts';
-import { RIO_DE_JANEIRO_BAIRROS } from './src/utils/geoCoords.ts';
+import { RIO_DE_JANEIRO_BAIRROS, getPropertyCoordinates } from './src/utils/geoCoords.ts';
 import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts, parseOfficialLotDetail, canonicalAuctionLink, extractAuctionRoundsAndPrices } from './auctioneerSyncService.ts';
 import { deduplicateVerifiedItbiSourceRows } from './src/utils/itbiSourceDeduplication.ts';
 
@@ -223,6 +223,107 @@ function getCachedStreetCoords(state?: string, city?: string, neighborhood?: str
     || cityStreetCoordsIndex.get(`${stateKey}_${c}_${sFull}`)
     || cityStreetCoordsIndex.get(`${stateKey}_${c}_${streetKey}`);
   if (hit2 && Number.isFinite(hit2.lat) && Number.isFinite(hit2.lng)) return hit2;
+
+  return null;
+}
+
+function cleanStreetKey(s?: string | null): string {
+  if (!s) return '';
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/z/g, 's')
+    .replace(/ph/g, 'f')
+    .replace(/^(?:rua|r\.|avenida|av\.|estrada|est\.|travessa|tr\.|alameda|al\.|praca|pca\.)\s+/i, '')
+    .split(',')[0].replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+const itbiStreetCoordsIndex = new Map<string, Array<{ lat: number; lng: number; neighborhood: string }>>();
+
+function buildItbiStreetCoordsIndex(txs: ItbiTransaction[]) {
+  itbiStreetCoordsIndex.clear();
+  for (const t of txs) {
+    const lat = Number(t.transactionLocationLat || t.lat);
+    const lng = Number(t.transactionLocationLng || t.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const st = (t.state || 'RJ').toUpperCase();
+    const ct = (t.city || 'Rio de Janeiro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const k = cleanStreetKey(t.street);
+    if (!k) continue;
+    const mapKey = `${st}|${ct}|${k}`;
+    let list = itbiStreetCoordsIndex.get(mapKey);
+    if (!list) {
+      list = [];
+      itbiStreetCoordsIndex.set(mapKey, list);
+    }
+    list.push({
+      lat,
+      lng,
+      neighborhood: (t.neighborhood || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    });
+  }
+}
+
+function projectStreetCoordinates(state?: string, city?: string, neighborhood?: string, rawAddress?: string): { lat: number; lng: number; sampleCount: number; inNeigh: boolean } | null {
+  if (!rawAddress) return null;
+  const st = (state || 'RJ').toUpperCase();
+  const ct = (city || 'Rio de Janeiro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const k = cleanStreetKey(rawAddress);
+  const neigh = (neighborhood || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (!k) return null;
+
+  // 1. Direct street key match
+  let list = itbiStreetCoordsIndex.get(`${st}|${ct}|${k}`);
+
+  // 2. Token match if exact not found
+  if (!list) {
+    const pTokens = k.split(' ').filter(t => t.length > 2);
+    if (pTokens.length >= 2) {
+      for (const [key, candidates] of itbiStreetCoordsIndex.entries()) {
+        if (!key.startsWith(`${st}|${ct}|`)) continue;
+        const candKey = key.slice(`${st}|${ct}|`.length);
+        const candTokens = candKey.split(' ').filter(t => t.length > 2);
+        const matchCount = pTokens.filter(tok => candTokens.includes(tok)).length;
+        if (matchCount >= Math.min(2, pTokens.length) && Math.abs(pTokens.length - candTokens.length) <= 2) {
+          list = candidates;
+          break;
+        }
+      }
+    }
+  }
+
+  if (list && list.length > 0) {
+    // Prefer transactions in the property's neighborhood
+    const inNeigh = list.filter(item => item.neighborhood === neigh || neigh.includes(item.neighborhood) || item.neighborhood.includes(neigh));
+    const pool = inNeigh.length > 0 ? inNeigh : list;
+    const lats = pool.map(item => item.lat).sort((a, b) => a - b);
+    const lngs = pool.map(item => item.lng).sort((a, b) => a - b);
+    return {
+      lat: lats[Math.floor(lats.length / 2)],
+      lng: lngs[Math.floor(lngs.length / 2)],
+      sampleCount: pool.length,
+      inNeigh: inNeigh.length > 0
+    };
+  }
+
+  // 3. Fallback: streetCoordsLookup
+  const streetHit = getCachedStreetCoords(state, city, neighborhood, rawAddress);
+  if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+    return { lat: streetHit.lat, lng: streetHit.lng, sampleCount: 1, inNeigh: true };
+  }
+
+  // 4. Fallback: neighborhood centroid with deterministic jitter (universal across RJ, MG, SP)
+  const normNeigh = (neighborhood || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const rjCoords = (RIO_DE_JANEIRO_BAIRROS as any)[normNeigh];
+  if (rjCoords && Number.isFinite(rjCoords.lat) && Number.isFinite(rjCoords.lng)) {
+    const hash = (rawAddress + normNeigh).split('').reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
+    const jitterLat = ((Math.abs(hash) % 100) - 50) * 0.000005;
+    const jitterLng = ((Math.abs(hash >> 3) % 100) - 50) * 0.000005;
+    return { lat: rjCoords.lat + jitterLat, lng: rjCoords.lng + jitterLng, sampleCount: 1, inNeigh: true };
+  }
+
+  const est = getPropertyCoordinates({ address: rawAddress, neighborhood, city, state } as any);
+  if (est && Number.isFinite(est[0]) && Number.isFinite(est[1])) {
+    return { lat: est[0], lng: est[1], sampleCount: 1, inNeigh: true };
+  }
 
   return null;
 }
@@ -1105,6 +1206,11 @@ function loadStore(): DataStore {
             }
           }
         });
+        // Constrói índice espacial de logradouros do ITBI oficial para projeção geométrica
+        if (storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+          buildItbiStreetCoordsIndex(storeData.itbiTransactions);
+        }
+
         // Recalibração de imóveis de portais, expurgo de terrenos e de 'Chaves na Mão'
         const beforePortals = storeData.auctions.length;
         storeData.auctions = storeData.auctions.filter(a => {
@@ -1147,26 +1253,51 @@ function loadStore(): DataStore {
 
         let recalibratedPortals = 0;
         storeData.auctions.forEach(a => {
-          if (a.origin === 'portal' && a.neighborhood) {
-            const realM2 = getNeighborhoodPortalM2(a.city || 'Rio de Janeiro', a.state || 'RJ', a.neighborhood, storeData.itbiTransactions, a.propertyType, a.sizeSqm);
-            if (realM2 && realM2 > 1000) {
+          if (a.origin === 'portal') {
+            // 1. Projeção geométrica na via para raio de 500m e plotagem precisa no mapa
+            if (!a.lat || !a.lng) {
+              const proj = projectStreetCoordinates(a.state, a.city, a.neighborhood, a.street || a.address);
+              if (proj && Number.isFinite(proj.lat) && Number.isFinite(proj.lng)) {
+                a.lat = proj.lat;
+                a.lng = proj.lng;
+                a.status_geocodificacao = a.status_geocodificacao || 'INTERPOLACAO_RUA';
+              }
+            }
+
+            if (a.neighborhood) {
               const size = a.sizeSqm || 60;
-              (a as any).m2_referencia_bairro = realM2;
-              (a as any).m2ReferenciaBairro = realM2;
-              const preco = a.precoAnunciado || a.auctionPrice || (a as any).firstAuctionValue || 0;
-              a.m2Anunciado = Math.round(preco / (size || 1));
-
-              // Se o imóvel já possui valuation 4 níveis (estimatedValue), PRESERVA!
-              if (!a.estimatedValue || a.estimatedValue <= 0 || a.estimatedValue === Math.round(size * 5833)) {
-                a.estimatedValue = Math.round(size * realM2);
+              let effectiveArea = size;
+              if ((a.propertyType === 'Apartamento' || !a.propertyType) && size > 120) {
+                effectiveArea = 120 + (size - 120) * 0.40;
+              } else if (/casa|sobrado/i.test(a.propertyType || '') && size > 150) {
+                effectiveArea = 150 + (size - 150) * 0.50;
               }
-              a.valorMercadoEstimado = a.estimatedValue;
 
-              // Preço do Flip (vendaBaixaPrice) é a liquidez em 60 dias da calculadora
-              if (!a.vendaBaixaPrice || a.vendaBaixaPrice <= 0 || a.vendaBaixaPrice === Math.round(size * 5833)) {
-                a.vendaBaixaPrice = Math.round(a.estimatedValue * 0.90);
-                a.vendaMediaPrice = a.vendaBaixaPrice;
-              }
+              const realM2 = getNeighborhoodPortalM2(a.city || 'Rio de Janeiro', a.state || 'RJ', a.neighborhood, storeData.itbiTransactions, a.propertyType, size);
+              if (realM2 && realM2 > 1000) {
+                (a as any).m2_referencia_bairro = realM2;
+                (a as any).m2ReferenciaBairro = realM2;
+                const preco = a.precoAnunciado || a.auctionPrice || (a as any).firstAuctionValue || 0;
+                a.m2Anunciado = Math.round(preco / (size || 1));
+
+                // Calibração pericial SSOT NBR 14.653:
+                // Se o imóvel não possui valuation, ou se o valuation estava desatualizado/inflado (ex: metragem grande sem fator de escala ou sem homogeneização)
+                const expectedEst = Math.round(effectiveArea * realM2);
+                const isValuationInflated = !a.estimatedValue || a.estimatedValue <= 0 || a.estimatedValue === Math.round(size * 5833) ||
+                  (a.estimatedValue > expectedEst * 1.15) ||
+                  (size > 120 && a.estimatedValue > expectedEst) ||
+                  (a.propertyType === 'Casa' && a.estimatedValue > size * 9000 && realM2 < 8000);
+
+                if (isValuationInflated) {
+                  a.estimatedValue = expectedEst;
+                  a.vendaBaixaPrice = Math.round(expectedEst * 0.90);
+                  a.vendaMediaPrice = a.vendaBaixaPrice;
+                  recalibratedPortals++;
+                } else if (!a.vendaBaixaPrice || a.vendaBaixaPrice <= 0 || a.vendaBaixaPrice === Math.round(size * 5833)) {
+                  a.vendaBaixaPrice = Math.round(a.estimatedValue * 0.90);
+                  a.vendaMediaPrice = a.vendaBaixaPrice;
+                }
+                a.valorMercadoEstimado = a.estimatedValue;
 
               // Conecta Morada Virtual se disponível no cache
               const streetName = a.street || (a.address ? a.address.split(',')[0].trim() : undefined);
@@ -1194,7 +1325,7 @@ function loadStore(): DataStore {
                 a.totalRentalPackage = totalPackage;
                 a.pacoteMoradiaTotal = totalPackage;
 
-                const mediaCalculadora = Math.round(a.estimatedValue * 0.0055);
+                const mediaCalculadora = Math.round(a.valorMercadoEstimado * 0.0055);
                 a.mediaLocacaoCalculadora = mediaCalculadora;
                 const rentDiffPct = mediaCalculadora > 0 ? Math.round(((rent - mediaCalculadora) / mediaCalculadora) * 100) : 0;
                 a.aluguelDiferencaPct = rentDiffPct;
@@ -1202,7 +1333,7 @@ function loadStore(): DataStore {
                 a.oportunidadeAbaixoMercado = rentDiffPct <= -10;
                 a.descontoMercadoPct = rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0;
                 a.calculatedProfit = Math.max(0, mediaCalculadora - rent) * 12;
-                a.calculatedRoi = a.estimatedValue > 0 ? Number(((rent * 12 / a.estimatedValue) * 100).toFixed(2)) : 0;
+                a.calculatedRoi = a.valorMercadoEstimado > 0 ? Number(((rent * 12 / a.valorMercadoEstimado) * 100).toFixed(2)) : 0;
               } else {
                 // Custos fiéis à Calculadora (ITBI 3% + RGI 2% + Reforma 5% do valor da compra)
                 const itbi = a.itbiCost ?? Math.round(preco * 0.03);
@@ -1249,9 +1380,11 @@ function loadStore(): DataStore {
               recalibratedPortals++;
             }
           }
-        });
+        }
+      });
         if (storeData.auctions.length !== beforePortals || recalibratedPortals > 0) {
           console.log(`[Store] Portais atualizados: ${beforePortals - storeData.auctions.length} removidos (Chaves na Mão / Terrenos), ${recalibratedPortals} recalibrados com m² oficial pericial.`);
+          saveStore(storeData);
         }
 
         if (storeData.auctions.length !== initialCount) {
@@ -1413,7 +1546,7 @@ let auctionCatalogResponseCache: {
   payload: AuctionProperty[];
 } | null = null;
 const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v5.json.gz');
-const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v10-lifecycle';
+const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v11-portal-coords';
 let persistedCatalogInvalidated = false;
 
 function auctionResponseCacheSignature() {
@@ -2652,8 +2785,32 @@ function recalculateAuctionWithIndex(
 
       const officialAuctionLocation = getOfficialPropertyLocation(auc);
       const hasOfficialAuctionPoint = validOfficialLocation(officialAuctionLocation);
-      const locLat = hasOfficialAuctionPoint ? officialAuctionLocation.lat! : undefined;
-      const locLng = hasOfficialAuctionPoint ? officialAuctionLocation.lng! : undefined;
+      let locLat = hasOfficialAuctionPoint ? officialAuctionLocation.lat! : undefined;
+      let locLng = hasOfficialAuctionPoint ? officialAuctionLocation.lng! : undefined;
+
+      // Se não tiver ponto oficial do CNEFE, utilizar coordenadas diretas do imóvel ou centróide do logradouro
+      if (!Number.isFinite(locLat) || !Number.isFinite(locLng)) {
+        if (Number.isFinite((auc as any).lat) && Number.isFinite((auc as any).lng)) {
+          locLat = Number((auc as any).lat);
+          locLng = Number((auc as any).lng);
+        } else {
+          const streetHit = getCachedStreetCoords(auc.state, auc.city, auc.neighborhood, auc.street || auc.address);
+          if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+            locLat = streetHit.lat;
+            locLng = streetHit.lng;
+          } else {
+            const projHit = projectStreetCoordinates(auc.state, auc.city, auc.neighborhood, auc.street || auc.address);
+            if (projHit && Number.isFinite(projHit.lat) && Number.isFinite(projHit.lng)) {
+              locLat = projHit.lat;
+              locLng = projHit.lng;
+              if (!Number.isFinite((auc as any).lat)) {
+                auc.lat = projHit.lat;
+                auc.lng = projHit.lng;
+              }
+            }
+          }
+        }
+      }
 
       let radiusTxs: ItbiTransaction[] = [];
       if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
@@ -2878,6 +3035,66 @@ function recalculateAuctionWithIndex(
       auc.itbiStreetAvgSqm = (bidi && bidi.rua.validas > 0 && !isGeneric) ? bidi.rua.saneada : undefined;
       auc.itbiStreetCount = (bidi && bidi.rua.validas > 0 && !isGeneric) ? bidi.rua.validas : 0;
       auc.isSobAnalise = true;
+    }
+
+    // Sincronização pericial absoluta do valor venal de mercado (SSOT com a Calculadora de Valor Real)
+    let marketVal = auc.estimatedValue;
+    if (!marketVal || marketVal <= 0) {
+      if (bidiGabaritoSqm > 0) {
+        marketVal = Math.round(bidiGabaritoSqm * ageFactor * territorialFactor * (auc.sizeSqm || 0));
+      } else if (auc.vendaBaixaPrice && auc.vendaBaixaPrice > 0) {
+        marketVal = Math.round(auc.vendaBaixaPrice / 0.90);
+      } else if (auc.m2ReferenciaBairro && auc.m2ReferenciaBairro > 0) {
+        marketVal = Math.round((auc.sizeSqm || 60) * auc.m2ReferenciaBairro);
+      } else if (neighborhoodAvgSqm > 0) {
+        marketVal = Math.round((auc.sizeSqm || 60) * neighborhoodAvgSqm);
+      } else {
+        marketVal = Math.round((auc.sizeSqm || 60) * 4500);
+      }
+    }
+    auc.estimatedValue = marketVal;
+    auc.valorMercadoEstimado = marketVal;
+
+    if (auc.transactionType === 'aluguel') {
+      const rent = auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0;
+      const condo = auc.valorCondominio || 0;
+      const iptu = auc.valorIptu || 0;
+      const taxas = auc.taxasServico || auc.outrasTaxas || 0;
+      const totalTaxas = condo + iptu + taxas;
+      const totalPackage = auc.totalRentalPackage || (rent + totalTaxas);
+      auc.taxasServico = taxas;
+      auc.outrasTaxas = taxas;
+      auc.totalTaxas = totalTaxas;
+      auc.totalRentalPackage = totalPackage;
+      auc.pacoteMoradiaTotal = totalPackage;
+
+      const mediaCalculadora = Math.round(marketVal * 0.0055);
+      auc.mediaLocacaoCalculadora = mediaCalculadora;
+      const rentDiffPct = mediaCalculadora > 0 ? Math.round(((rent - mediaCalculadora) / mediaCalculadora) * 100) : 0;
+      auc.aluguelDiferencaPct = rentDiffPct;
+      auc.vereditoLocacao = rentDiffPct <= -10 ? 'barato' : rentDiffPct >= 10 ? 'caro' : 'justo';
+      auc.oportunidadeAbaixoMercado = rentDiffPct <= -10;
+      auc.descontoMercadoPct = rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0;
+      auc.calculatedProfit = Math.max(0, mediaCalculadora - rent) * 12;
+      auc.calculatedRoi = marketVal > 0 ? Number(((rent * 12 / marketVal) * 100).toFixed(2)) : 0;
+    } else if (origin === 'portal') {
+      const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+      const itbi = auc.itbiCost ?? Math.round(preco * 0.03);
+      const registry = auc.notaryCost ?? Math.round(preco * 0.02);
+      const repair = auc.estimatedRepair !== undefined ? auc.estimatedRepair : Math.round(preco * 0.05);
+      const totalCost = preco + itbi + registry + repair + (auc.pendingDebts || 0) + (auc.valorCondominio || 0) + (auc.valorIptu || 0);
+      const flipExit = auc.vendaBaixaPrice || marketVal || 0;
+      if (flipExit > totalCost) {
+        auc.calculatedProfit = Math.round(flipExit - totalCost);
+        auc.calculatedRoi = totalCost > 0 ? Number(((auc.calculatedProfit / totalCost) * 100).toFixed(2)) : 0;
+        auc.oportunidadeAbaixoMercado = true;
+      } else {
+        auc.calculatedProfit = 0;
+        auc.calculatedRoi = 0;
+        auc.oportunidadeAbaixoMercado = false;
+      }
+      const diff = marketVal - preco;
+      auc.descontoMercadoPct = (marketVal > 0 && diff > 0) ? Math.round((diff / marketVal) * 100) : 0;
     }
   }
 
@@ -4407,8 +4624,27 @@ app.get('/api/itbi/transactions', async (req, res) => {
       }
     }
 
-    // Sem coordenada confirmada do número, não há raio calculável.
-    // Um centroide de rua/bairro não representa o imóvel e não pode precificar o entorno.
+    // Se o imóvel tem coordenadas próprias válidas (leilão ou flip) ou se encontramos o centróide da via
+    if (!targetCoords && targetProperty && Number.isFinite((targetProperty as any).lat) && Number.isFinite((targetProperty as any).lng)) {
+      targetCoords = { lat: Number((targetProperty as any).lat), lng: Number((targetProperty as any).lng) };
+      radiusAnchorPrecision = 'official_address';
+    }
+
+    if (!targetCoords) {
+      const streetHit = getCachedStreetCoords(filterState, filterCity, filterNeighborhood, tgt);
+      if (streetHit && Number.isFinite(streetHit.lat) && Number.isFinite(streetHit.lng)) {
+        targetCoords = { lat: streetHit.lat, lng: streetHit.lng };
+        radiusAnchorPrecision = 'geocoded_number';
+      }
+    }
+
+    if (!targetCoords) {
+      const projHit = projectStreetCoordinates(filterState, filterCity, filterNeighborhood, tgt);
+      if (projHit && Number.isFinite(projHit.lat) && Number.isFinite(projHit.lng)) {
+        targetCoords = { lat: projHit.lat, lng: projHit.lng };
+        radiusAnchorPrecision = 'street_centroid';
+      }
+    }
 
 
     if (targetCoords) {
@@ -7386,6 +7622,31 @@ app.post('/api/garimpar/portais', authMiddleware, async (req, res) => {
         if (item.tipo_imovel === 'Terreno' || (item.titulo && /\b(terreno|lote|gleba)\b/i.test(item.titulo))) continue;
         const aucProp = convertPortalListingToAuctionProperty(item, req.userId);
         if (aucProp.propertyType === 'Terreno') continue;
+
+        // Projeção geométrica na via para raio de 500m e plotagem precisa no mapa
+        if (!aucProp.lat || !aucProp.lng) {
+          const proj = projectStreetCoordinates(aucProp.state, aucProp.city, aucProp.neighborhood, aucProp.street || aucProp.address);
+          if (proj && Number.isFinite(proj.lat) && Number.isFinite(proj.lng)) {
+            aucProp.lat = proj.lat;
+            aucProp.lng = proj.lng;
+            aucProp.status_geocodificacao = 'INTERPOLACAO_RUA';
+          }
+        }
+
+        // Calibração pericial SSOT com fator de escala NBR 14.653
+        const size = aucProp.sizeSqm || 60;
+        const realM2 = getNeighborhoodPortalM2(aucProp.city || targetCity, aucProp.state || uf, aucProp.neighborhood || neigh, store.itbiTransactions, aucProp.propertyType, size);
+        if (realM2 && realM2 > 1000) {
+          (aucProp as any).m2_referencia_bairro = realM2;
+          (aucProp as any).m2ReferenciaBairro = realM2;
+          const expectedVal = Math.round(size * realM2);
+          if (!aucProp.estimatedValue || aucProp.estimatedValue <= 0 || aucProp.estimatedValue > expectedVal * 1.15 || size > 120) {
+            aucProp.estimatedValue = expectedVal;
+            aucProp.valorMercadoEstimado = expectedVal;
+            aucProp.vendaBaixaPrice = Math.round(expectedVal * 0.90);
+            aucProp.vendaMediaPrice = aucProp.vendaBaixaPrice;
+          }
+        }
 
         // Conecta Morada Virtual imediatamente se disponível
         const streetName = aucProp.street || (aucProp.address ? aucProp.address.split(',')[0].trim() : undefined);

@@ -836,16 +836,16 @@ export default function App() {
                 alt="Marcus Assessoria Imobiliária" 
                 className="w-9 h-9 rounded-xl object-cover border border-emerald-500/40 shadow-md ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform" 
               />
-              <div>
-                <h1 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
-                  <span>MARCUS</span>
-                  <span className="text-[10px] text-emerald-400 font-bold font-mono tracking-normal bg-emerald-500/10 px-2 py-0.2 rounded-full border border-emerald-500/30">
+              <div className="flex flex-col justify-center">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-base sm:text-lg font-black text-white tracking-wider">MARCUS</span>
+                  <span className="text-[11px] text-slate-300 font-bold tracking-wide uppercase underline underline-offset-4 decoration-slate-400">
                     INTELIGÊNCIA EM LEILÕES
                   </span>
-                </h1>
-                <p className="text-[10px] text-slate-400 font-medium">
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium tracking-tight -mt-0.5">
                   Assessoria Pericial & Flip Imobiliário
-                </p>
+                </div>
               </div>
             </div>
 

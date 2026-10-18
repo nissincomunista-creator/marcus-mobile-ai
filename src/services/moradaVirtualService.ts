@@ -211,9 +211,25 @@ async function searchMoradaVirtual(street: string, city: string, state: string, 
             score = 65;
           }
 
-          // Se fornecido bairro, prioriza expressivamente o trecho daquele bairro
-          if (normNeigh && (itemTextNorm.includes(normNeigh) || itemUrl.includes(`/${normNeigh.replace(/\s+/g, '-')}/`))) {
-            score += 50;
+          // Extrai o bairro do resultado do Morada (url: /uf/cidade/bairro/rua ou texto: Rua X, Bairro, Cidade)
+          const urlParts = itemUrl.split('/').filter(Boolean);
+          const resultNeighFromUrl = urlParts.length >= 4 ? normalizeText(urlParts[2].replace(/-/g, ' ')) : '';
+          const textParts = item.texto.split(',').map(p => normalizeText(p.trim()));
+          const resultNeighFromText = textParts.length >= 2 ? textParts[1] : '';
+          const candidateNeigh = resultNeighFromUrl || resultNeighFromText;
+
+          // Se fornecido bairro, certifica correspondência estrita para evitar vias homônimas em outros bairros
+          if (normNeigh) {
+            const isNeighMatch = itemTextNorm.includes(normNeigh) || 
+                                 itemUrl.includes(`/${normNeigh.replace(/\s+/g, '-')}/`) ||
+                                 (candidateNeigh && (candidateNeigh === normNeigh || candidateNeigh.includes(normNeigh) || normNeigh.includes(candidateNeigh)));
+            
+            if (isNeighMatch) {
+              score += 100;
+            } else if (candidateNeigh && candidateNeigh !== normCity && candidateNeigh !== normState && candidateNeigh.length >= 3) {
+              // A via retornada pertence comprovadamente a outro bairro da cidade (rua homônima). Rejeita!
+              continue;
+            }
           }
 
           if (score > 0) {
@@ -399,9 +415,25 @@ export function getMoradaVirtualBenchmark(
 
   // 1. Tenta chave específica com bairro
   let entry = neighborhood ? moradaCache[getMoradaCacheKey(street, city, state || 'RJ', neighborhood)] : null;
-  // 2. Fallback para chave geral da via
+  // 2. Fallback para chave geral da via SOMENTE se a via não apontar explicitamente para outro bairro
   if (!entry || entry.notFound || !entry.cards || entry.cards.length === 0) {
-    entry = moradaCache[getMoradaCacheKey(street, city, state || 'RJ')];
+    const generalEntry = moradaCache[getMoradaCacheKey(street, city, state || 'RJ')];
+    if (generalEntry && !generalEntry.notFound && generalEntry.cards && generalEntry.cards.length > 0) {
+      if (neighborhood) {
+        const normN = normalizeText(neighborhood);
+        const entryNorm = normalizeText(`${generalEntry.canonicalTitle} ${generalEntry.url} ${generalEntry.leadText || ''}`);
+        const urlParts = (generalEntry.url || '').split('/').filter(Boolean);
+        const entryNeighFromUrl = urlParts.length >= 4 ? normalizeText(urlParts[2].replace(/-/g, ' ')) : '';
+        // Se a chave geral tem um bairro explícito e é diferente do pesquisado, descarta para evitar via homônima
+        if (entryNeighFromUrl && entryNeighFromUrl !== normN && !entryNeighFromUrl.includes(normN) && !normN.includes(entryNeighFromUrl)) {
+          // Divergente: não utiliza dados de outro bairro
+        } else {
+          entry = generalEntry;
+        }
+      } else {
+        entry = generalEntry;
+      }
+    }
   }
   if (!entry || entry.notFound || !entry.cards || entry.cards.length === 0) {
     return null;

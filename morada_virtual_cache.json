@@ -3311,5 +3311,431 @@
       }
     ],
     "updatedAt": "2026-10-18T17:02:36.949Z"
+  },
+  "rj_rio de janeiro_lagoa_epitacio pessoa": {
+    "street": "Avenida Epitácio Pessoa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/lagoa/avenida-epitacio-pessoa",
+    "canonicalTitle": "Avenida Epitacio PessoaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 15.972.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 16170,
+        "sampleCount": 2079,
+        "avgPrice": 2175000,
+        "rawMeta": "~131 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 10588,
+        "sampleCount": 109,
+        "avgPrice": 2990000,
+        "rawMeta": "~306 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 18293,
+        "sampleCount": 9,
+        "avgPrice": 790000,
+        "rawMeta": "~41 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T18:36:03.265Z"
+  },
+  "rj_niteroi_icarai_miguelote viana": {
+    "street": "Rua MIGUELOTE VIANA,CMTE",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "/rj/niteroi/icarai/rua-comandante-miguelote-viana",
+    "canonicalTitle": "Rua Comandante Miguelote VianaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7911,
+        "sampleCount": 5548,
+        "avgPrice": 860000,
+        "rawMeta": "~110 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4539,
+        "sampleCount": 236,
+        "avgPrice": 1200000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 11400,
+        "sampleCount": 429,
+        "avgPrice": 400000,
+        "rawMeta": "~33 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T19:05:06.405Z"
+  },
+  "rj_niteroi_icarai_comandante miguelote viana": {
+    "street": "Rua Comandante Miguelote Viana, Niterói - RJ",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "/rj/niteroi/icarai/rua-comandante-miguelote-viana",
+    "canonicalTitle": "Rua Comandante Miguelote VianaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7911,
+        "sampleCount": 5548,
+        "avgPrice": 860000,
+        "rawMeta": "~110 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4539,
+        "sampleCount": 236,
+        "avgPrice": 1200000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 11400,
+        "sampleCount": 429,
+        "avgPrice": 400000,
+        "rawMeta": "~33 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T19:05:06.840Z"
+  },
+  "rj_rio de janeiro_tijuca_silva guimaraes": {
+    "street": "Rua Silva Guimarães, Rio de Janeiro - RJ",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-silva-guimaraes",
+    "canonicalTitle": "Rua Silva GuimaraesQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 6.533.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6667,
+        "sampleCount": 6379,
+        "avgPrice": 700000,
+        "rawMeta": "~100 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 5200,
+        "sampleCount": 823,
+        "avgPrice": 960000,
+        "rawMeta": "~200 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 7600,
+        "sampleCount": 757,
+        "avgPrice": 299999,
+        "rawMeta": "~32 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T19:15:47.224Z"
+  },
+  "rj_rio de janeiro_ipanema_gomes carneiro": {
+    "street": "Rua Gomes Carneiro, Rio de Janeiro - RJ",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ipanema/rua-gomes-carneiro",
+    "canonicalTitle": "Rua Gomes CarneiroQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 21.636.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 21667,
+        "sampleCount": 3406,
+        "avgPrice": 2500000,
+        "rawMeta": "~118 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 14286,
+        "sampleCount": 13,
+        "avgPrice": 3000000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 20714,
+        "sampleCount": 507,
+        "avgPrice": 700000,
+        "rawMeta": "~34 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T19:18:57.747Z"
+  },
+  "mg_juiz de fora_cascatinha_presidente itamar franco - cascatinha juiz de fora - mg brasil": {
+    "street": "Avenida Presidente Itamar Franco - Cascatinha Juiz de Fora - Mg Brasil, Juiz de Fora - MG",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/cascatinha/avenida-presidente-itamar-franco",
+    "canonicalTitle": "Avenida Presidente Itamar FrancoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.267.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7568,
+        "sampleCount": 17,
+        "avgPrice": 585000,
+        "rawMeta": "~106 m² · em geral 1 quarto"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3265,
+        "sampleCount": 6,
+        "avgPrice": 1250000,
+        "rawMeta": "~420 m² · em geral 5 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4722,
+        "sampleCount": 6,
+        "avgPrice": 227500,
+        "rawMeta": "~36 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T19:21:03.302Z"
+  },
+  "mg_juiz de fora_cascatinha_presidente itamar franco": {
+    "street": "Rua Presidente Itamar Franco",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/cascatinha/avenida-presidente-itamar-franco",
+    "canonicalTitle": "Avenida Presidente Itamar FrancoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.267.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7568,
+        "sampleCount": 17,
+        "avgPrice": 585000,
+        "rawMeta": "~106 m² · em geral 1 quarto"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3265,
+        "sampleCount": 6,
+        "avgPrice": 1250000,
+        "rawMeta": "~420 m² · em geral 5 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4722,
+        "sampleCount": 6,
+        "avgPrice": 227500,
+        "rawMeta": "~36 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T19:21:03.800Z"
+  },
+  "rj_rio de janeiro_barra da tijuca_afonso de taunay": {
+    "street": "Avenida Afonso de Taunay",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/barra-da-tijuca/avenida-afonso-de-taunay",
+    "canonicalTitle": "Avenida Afonso de TaunayQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 12.376.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 13284,
+        "sampleCount": 12333,
+        "avgPrice": 1980000,
+        "rawMeta": "~142 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 8741,
+        "sampleCount": 3101,
+        "avgPrice": 4500000,
+        "rawMeta": "~530 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 8605,
+        "sampleCount": 1783,
+        "avgPrice": 450000,
+        "rawMeta": "~52 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T19:21:30.532Z"
+  },
+  "rj_rio de janeiro_braz de pina_maues": {
+    "street": "Rua Maués",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-18T20:40:54.201Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ipanema_rainha elizabeth da belgica": {
+    "street": "Avenida Rainha Elizabeth da Bélgica, Ipanema, Rio de Janeiro - RJ",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ipanema/avenida-rainha-elizabeth",
+    "canonicalTitle": "Avenida Rainha ElizabethQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 21.636.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 21667,
+        "sampleCount": 3406,
+        "avgPrice": 2500000,
+        "rawMeta": "~118 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 14286,
+        "sampleCount": 13,
+        "avgPrice": 3000000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 20714,
+        "sampleCount": 507,
+        "avgPrice": 700000,
+        "rawMeta": "~34 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T20:45:13.861Z"
+  },
+  "rj_rio de janeiro_ipanema_rainha elizabeth": {
+    "street": "Avenida Rainha Elizabeth",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ipanema/avenida-rainha-elizabeth",
+    "canonicalTitle": "Avenida Rainha ElizabethQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 21.636.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 21667,
+        "sampleCount": 3406,
+        "avgPrice": 2500000,
+        "rawMeta": "~118 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 14286,
+        "sampleCount": 13,
+        "avgPrice": 3000000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 20714,
+        "sampleCount": 507,
+        "avgPrice": 700000,
+        "rawMeta": "~34 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T20:45:11.964Z"
+  },
+  "rj_rio de janeiro_ipanema_rainha elisabeth da belgica": {
+    "street": "Avenida Rainha Elisabeth da Bélgica, Ipanema, Rio de Janeiro - RJ",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ipanema/avenida-rainha-elizabeth",
+    "canonicalTitle": "Avenida Rainha ElizabethQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 21.636.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 21667,
+        "sampleCount": 3406,
+        "avgPrice": 2500000,
+        "rawMeta": "~118 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 14286,
+        "sampleCount": 13,
+        "avgPrice": 3000000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 20714,
+        "sampleCount": 507,
+        "avgPrice": 700000,
+        "rawMeta": "~34 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T20:47:50.486Z"
+  },
+  "rj_rio de janeiro_ipanema_francisco otaviano": {
+    "street": "RUA FRANCISCO OTAVIANO, Ipanema, Rio de Janeiro - RJ",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ipanema/rua-francisco-otaviano",
+    "canonicalTitle": "Rua Francisco OtavianoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 21.636.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 21667,
+        "sampleCount": 3406,
+        "avgPrice": 2500000,
+        "rawMeta": "~118 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 14286,
+        "sampleCount": 13,
+        "avgPrice": 3000000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 20714,
+        "sampleCount": 507,
+        "avgPrice": 700000,
+        "rawMeta": "~34 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T20:55:27.316Z"
+  },
+  "rj_rio de janeiro_taquara_marechal miguel salazar mendes de moraes": {
+    "street": "Estrada Marechal Miguel Salazar Mendes de Moraes",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/taquara/estrada-marechal-miguel-salazar-mendes-de-moraes",
+    "canonicalTitle": "Estrada Marechal Miguel Salazar Mendes de MoraesQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.978.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4568,
+        "sampleCount": 1786,
+        "avgPrice": 300000,
+        "rawMeta": "~61 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3098,
+        "sampleCount": 1879,
+        "avgPrice": 649900,
+        "rawMeta": "~210 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 3749,
+        "sampleCount": 161,
+        "avgPrice": 890000,
+        "rawMeta": "~258 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T23:10:01.213Z"
   }
 }

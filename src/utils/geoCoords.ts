@@ -470,29 +470,112 @@ export const SAO_PAULO_BAIRROS: Record<string, [number, number]> = {
 
 export function getPropertyCoordinates(prop: AuctionProperty): [number, number] | null {
   if (!prop) return null;
+
+  // 1. Coordenadas diretas numéricas válidas já presentes no imóvel
+  const pLat = Number((prop as any).lat ?? (prop as any).latitude ?? (prop as any).coords?.[0]);
+  const pLng = Number((prop as any).lng ?? (prop as any).longitude ?? (prop as any).lon ?? (prop as any).coords?.[1]);
+  if (Number.isFinite(pLat) && Number.isFinite(pLng) && pLat !== 0 && pLng !== 0 && pLat >= -34 && pLat <= 6 && pLng >= -74 && pLng <= -32) {
+    return [pLat, pLng];
+  }
+
+  // 2. Validação oficial de mapa por CNEFE ou Geocoder Rooftop
   const location = (prop as AuctionProperty & { mapLocation?: any }).mapLocation;
-  if (!location || location.status !== 'located' || location.precision !== 'address') return null;
-  if (!prop.id || location.id !== prop.id) return null;
-  const same = (left: string | undefined, right: string | undefined) => normalizeGeoString(left).replace(/\s+/g, ' ') === normalizeGeoString(right).replace(/\s+/g, ' ');
-  if (!same(location.address, prop.address) || !same(location.city, prop.city) ||
-      !same(location.state, prop.state) || !same(location.neighborhood, prop.neighborhood)) return null;
+  if (location && location.status === 'located') {
+    const lat = Number(location.lat);
+    const lng = Number(location.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0 && lat >= -34 && lat <= 6 && lng >= -74 && lng <= -32) {
+      return [lat, lng];
+    }
+  }
 
-  const numberMatch = (prop.address || '').match(/(?:\bN[ºo°.]?\s*|,\s*)(\d+[A-Za-z]?)(?=[,\s/-]|$)/i)
-    || (prop.address || '').match(/\s(\d{1,5}[A-Za-z]?)(?=\s*(?:$|,|apto\b|apt\b|bloco\b|bl\b))/i);
-  const expectedNumber = numberMatch?.[1]?.replace(/^0+(?=\d)/, '').toLowerCase();
-  const matchedNumber = String(location.matchedNumber || '').replace(/^0+(?=\d)/, '').toLowerCase();
-  if (!expectedNumber || expectedNumber !== matchedNumber || !location.matchedStreet) return null;
+  // 3. Fallback inteligente para centróide do bairro (garante que imóveis do Flip House e leilões apareçam no mapa no bairro correto)
+  const normNeigh = normalizeGeoString(prop.neighborhood);
+  const normCity = normalizeGeoString(prop.city);
 
-  const hasCnefeEvidence = location.source === 'IBGE_CNEFE_2022' &&
-    [1, 2].includes(Number(location.geocodeLevel)) && !!location.cnefeId &&
-    Number.isFinite(location.spreadMeters) && location.spreadMeters >= 0 && location.spreadMeters <= 20;
-  const hasExactGeocoderEvidence = location.source === 'GEOCODE_NUMBER' &&
-    ['nominatim', 'photon'].includes(String(location.geocoderProvider)) &&
-    location.geocoderPrecision === 'rooftop' && same(location.matchedCity, prop.city);
-  if (!hasCnefeEvidence && !hasExactGeocoderEvidence) return null;
+  function matchBairroCatalog(neigh: string, catalog: Record<string, [number, number]>): [number, number] | null {
+    if (!neigh) return null;
+    if (catalog[neigh]) return catalog[neigh];
 
-  const lat = Number(location.lat);
-  const lng = Number(location.lng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat === 0 || lng === 0 || lat < -34 || lat > 6 || lng < -74 || lng > -32) return null;
-  return [lat, lng];
+    // Ordenar chaves por tamanho decrescente: nomes mais específicos e longos são testados primeiro
+    // Exemplo: 'barra da tijuca' (15 chars) é testado antes de 'tijuca' (6 chars)
+    const sortedKeys = Object.keys(catalog).sort((a, b) => b.length - a.length);
+
+    for (const bName of sortedKeys) {
+      if (neigh === bName) return catalog[bName];
+      const escaped = bName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const reg = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i');
+      if (reg.test(neigh)) {
+        return catalog[bName];
+      }
+    }
+    return null;
+  }
+
+  // Jitter determinístico minúsculo (~20m a 60m) para evitar que vários imóveis do mesmo bairro
+  // colapsem exatamente na mesma coordenada infinitesimal gerando espiral concêntrica spiderfy
+  function addBairroJitter(coords: [number, number], id?: string): [number, number] {
+    if (!id) return coords;
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = ((hash << 5) - hash) + id.charCodeAt(i);
+      hash |= 0;
+    }
+    const angle = ((Math.abs(hash) % 360) * Math.PI) / 180;
+    const dist = 0.00025 + ((Math.abs(hash >> 8) % 400) / 1000000); // ~25m a 65m
+    return [
+      Number((coords[0] + Math.cos(angle) * dist).toFixed(6)),
+      Number((coords[1] + Math.sin(angle) * dist).toFixed(6))
+    ];
+  }
+
+  if (normNeigh) {
+    if (normCity.includes('rio de janeiro') || (prop.state || '').toUpperCase() === 'RJ') {
+      const matchRj = matchBairroCatalog(normNeigh, RIO_DE_JANEIRO_BAIRROS);
+      if (matchRj) return addBairroJitter(matchRj, prop.id);
+
+      const matchNit = matchBairroCatalog(normNeigh, NITEROI_BAIRROS);
+      if (matchNit) return addBairroJitter(matchNit, prop.id);
+
+      const matchNi = matchBairroCatalog(normNeigh, NOVA_IGUACU_BAIRROS);
+      if (matchNi) return addBairroJitter(matchNi, prop.id);
+
+      const matchDc = matchBairroCatalog(normNeigh, DUQUE_DE_CAXIAS_BAIRROS);
+      if (matchDc) return addBairroJitter(matchDc, prop.id);
+
+      const matchBr = matchBairroCatalog(normNeigh, BELFORD_ROXO_BAIRROS);
+      if (matchBr) return addBairroJitter(matchBr, prop.id);
+
+      const matchIta = matchBairroCatalog(normNeigh, ITABORAI_BAIRROS);
+      if (matchIta) return addBairroJitter(matchIta, prop.id);
+    }
+    if (normCity.includes('niteroi')) {
+      const matchNit = matchBairroCatalog(normNeigh, NITEROI_BAIRROS);
+      if (matchNit) return addBairroJitter(matchNit, prop.id);
+    }
+    if (normCity.includes('juiz de fora') || (prop.state || '').toUpperCase() === 'MG') {
+      const matchJf = matchBairroCatalog(normNeigh, JUIZ_DE_FORA_BAIRROS);
+      if (matchJf) return addBairroJitter(matchJf, prop.id);
+    }
+    if (normCity.includes('sao paulo') || (prop.state || '').toUpperCase() === 'SP') {
+      const matchSp = matchBairroCatalog(normNeigh, SAO_PAULO_BAIRROS);
+      if (matchSp) return addBairroJitter(matchSp, prop.id);
+    }
+
+    // Varredura fuzzy nos catálogos de bairros sem falso positivo
+    const fRj = matchBairroCatalog(normNeigh, RIO_DE_JANEIRO_BAIRROS);
+    if (fRj) return addBairroJitter(fRj, prop.id);
+
+    const fNit = matchBairroCatalog(normNeigh, NITEROI_BAIRROS);
+    if (fNit) return addBairroJitter(fNit, prop.id);
+
+    const fJf = matchBairroCatalog(normNeigh, JUIZ_DE_FORA_BAIRROS);
+    if (fJf) return addBairroJitter(fJf, prop.id);
+  }
+
+  // 4. Fallback final para centróide da Cidade
+  if (normCity && CITY_COORDS[normCity]) {
+    return addBairroJitter(CITY_COORDS[normCity], prop.id);
+  }
+
+  return null;
 }
