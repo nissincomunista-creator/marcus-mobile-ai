@@ -40,6 +40,7 @@ import RealValueCalculator from './RealValueCalculator.tsx';
 import PropertyMap from './PropertyMap.tsx';
 import SidebarMapWidget from './SidebarMapWidget.tsx';
 import PropertyThumbnail from './PropertyThumbnail.tsx';
+import AdvancedFiltersModal from './AdvancedFiltersModal.tsx';
 import LightboxModal from './LightboxModal.tsx';
 import { getAvailableZonesForCity, isNeighborhoodInZone } from '../utils/cityZones.ts';
 import { cleanDivergentNotice } from '../utils/auctionLocation.ts';
@@ -60,6 +61,7 @@ export function calculateSpreadSqm(auc: AuctionProperty): number {
 }
 
 interface DashboardProps {
+  mode?: 'auctions' | 'portais';
   auctions: AuctionProperty[];
   selectedAuctionId: string | null;
   onSelectAuction: (id: string) => void;
@@ -87,7 +89,7 @@ interface DashboardProps {
   onViewMap: () => void;
   onGarimparJudiciais: (city?: string) => void;
   onGarimparCaixa: (city?: string) => void;
-  onGarimparPortais: (city?: string) => void;
+  onGarimparPortais: (city?: string, portals?: string[], neighborhoods?: string[], transactionType?: 'aluguel' | 'venda', isSilent?: boolean) => void;
   selectedOriginFilter: 'todos' | 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal';
   setSelectedOriginFilter: (val: 'todos' | 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal') => void;
   onOpenLinkModal: () => void;
@@ -100,6 +102,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
+  mode = 'auctions',
   auctions,
   selectedAuctionId,
   onSelectAuction,
@@ -153,6 +156,61 @@ export default function Dashboard({
   const [itbiConfidenceFilter, setItbiConfidenceFilter] = useState<'all' | 'verified'>('all');
   const [prestigeFilter, setPrestigeFilter] = useState<'all' | 'nobre' | 'prime'>('all');
   const [capitalBudget, setCapitalBudget] = useState<string>('');
+  // Collapsible accordions state for sidebar
+  const [isModalitiesOpen, setIsModalitiesOpen] = useState(true);
+  const [isLocationOpen, setIsLocationOpen] = useState(true);
+  const [isNeighborhoodsOpen, setIsNeighborhoodsOpen] = useState(false);
+  const [isPortalsOpen, setIsPortalsOpen] = useState(true);
+
+  // Advanced Filters Modal state (Estilo QuintoAndar)
+  const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
+  const [advancedContextTab, setAdvancedContextTab] = useState<'comprar' | 'alugar' | 'novo'>('comprar');
+  const [advancedSearchQuery, setAdvancedSearchQuery] = useState('');
+  const [bedroomsFilter, setBedroomsFilter] = useState<number | null>(null);
+  const [parkingFilter, setParkingFilter] = useState<number | null>(null);
+  const [bathroomsFilter, setBathroomsFilter] = useState<number | null>(null);
+  const [minAreaInput, setMinAreaInput] = useState<string>('');
+  const [maxAreaInput, setMaxAreaInput] = useState<string>('');
+  const [minDiscountFilter, setMinDiscountFilter] = useState<number>(0);
+  const [onlyFinancing, setOnlyFinancing] = useState<boolean>(false);
+  const [onlyInstallments, setOnlyInstallments] = useState<boolean>(false);
+  const [onlyVacant, setOnlyVacant] = useState<boolean>(false);
+
+  // Gerenciador de Presets de Busca (localStorage)
+  interface SearchPreset {
+    id: string;
+    name: string;
+    state: string;
+    city: string;
+    neighborhoods: string[];
+    type?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    roi?: number;
+    searchQuery?: string;
+    minArea?: string;
+    maxArea?: string;
+    minDiscount?: number;
+    onlyFinancing?: boolean;
+    onlyInstallments?: boolean;
+    onlyVacant?: boolean;
+    timestamp: string;
+  }
+  const [savedPresets, setSavedPresets] = useState<SearchPreset[]>(() => {
+    try {
+      const raw = localStorage.getItem('saved_search_presets');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+  const [presetNameInput, setPresetNameInput] = useState('');
+  const [lastUpdatedTime, setLastUpdatedTime] = useState<string>(() => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  });
+
   const [caixaSubModes, setCaixaSubModes] = useState<{
     vendaDireta: boolean;
     vendaOnline: boolean;
@@ -165,6 +223,210 @@ export default function Dashboard({
     leilaoSfi: true
   });
 
+  // Filtro de Portais Imobiliários (Apenas 4 portais oficiais)
+  const ALL_PORTALS = useMemo(() => ['Zap Imóveis', 'Viva Real', 'QuintoAndar', 'Imovelweb'] as const, []);
+  const [selectedPortals, setSelectedPortals] = useState<string[]>([
+    'Zap Imóveis',
+    'Viva Real',
+    'QuintoAndar',
+    'Imovelweb'
+  ]);
+
+  const portalCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'Zap Imóveis': 0,
+      'Viva Real': 0,
+      'QuintoAndar': 0,
+      'Imovelweb': 0
+    };
+    for (const a of auctions) {
+      if (a.origin === 'portal') {
+        const pName = a.portalName;
+        if (pName && counts[pName] !== undefined) {
+          counts[pName]++;
+        }
+      }
+    }
+    return counts;
+  }, [auctions]);
+
+  const totalPortalCount = useMemo(() => {
+    return Object.values(portalCounts).reduce((acc, c) => acc + c, 0);
+  }, [portalCounts]);
+
+  const handleTogglePortal = (portalName: string) => {
+    setSelectedPortals(prev => {
+      if (prev.includes(portalName)) {
+        return prev.filter(p => p !== portalName);
+      } else {
+        return [...prev, portalName];
+      }
+    });
+  };
+
+  const handleToggleAllPortals = () => {
+    if (selectedPortals.length === ALL_PORTALS.length) {
+      setSelectedPortals([]);
+    } else {
+      setSelectedPortals([...ALL_PORTALS]);
+    }
+  };
+
+  const handleSelectAllPortals = () => setSelectedPortals([...ALL_PORTALS]);
+  const handleClearPortals = () => setSelectedPortals([]);
+
+  const activeAdvancedFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedTypeFilter) count++;
+    if (advancedSearchQuery.trim()) count++;
+    if (bedroomsFilter !== null && bedroomsFilter > 0) count++;
+    if (parkingFilter !== null && parkingFilter > 0) count++;
+    if (bathroomsFilter !== null && bathroomsFilter > 0) count++;
+    if (minAreaInput && Number(minAreaInput) > 0) count++;
+    if (maxAreaInput && Number(maxAreaInput) > 0) count++;
+    if (minDiscountFilter > 0) count++;
+    if (minPriceInput && Number(minPriceInput) > 0) count++;
+    if (maxPriceInput && Number(maxPriceInput) > 0) count++;
+    if (onlyHighReturn) count++;
+    if (minRoiFilter > 0) count++;
+    if (onlyAnalysisAboveEdital) count++;
+    if (itbiConfidenceFilter !== 'all') count++;
+    if (prestigeFilter !== 'all') count++;
+    if (capitalBudget && Number(capitalBudget) > 0) count++;
+    if (onlyFinancing) count++;
+    if (onlyInstallments) count++;
+    if (onlyVacant) count++;
+    return count;
+  }, [
+    selectedTypeFilter,
+    advancedSearchQuery,
+    bedroomsFilter,
+    parkingFilter,
+    bathroomsFilter,
+    minAreaInput,
+    maxAreaInput,
+    minDiscountFilter,
+    minPriceInput,
+    maxPriceInput,
+    onlyHighReturn,
+    minRoiFilter,
+    onlyAnalysisAboveEdital,
+    itbiConfidenceFilter,
+    prestigeFilter,
+    capitalBudget,
+    onlyFinancing,
+    onlyInstallments,
+    onlyVacant
+  ]);
+
+  const handleClearAdvancedFilters = useCallback(() => {
+    setSelectedTypeFilter('');
+    setAdvancedSearchQuery('');
+    setBedroomsFilter(null);
+    setParkingFilter(null);
+    setBathroomsFilter(null);
+    setMinAreaInput('');
+    setMaxAreaInput('');
+    setMinDiscountFilter(0);
+    setMinPriceInput('');
+    setMaxPriceInput('');
+    if (setMaxPriceFilter) setMaxPriceFilter('');
+    setOnlyHighReturn(false);
+    setMinRoiFilter(0);
+    setOnlyAnalysisAboveEdital(false);
+    setItbiConfidenceFilter('all');
+    setPrestigeFilter('all');
+    setCapitalBudget('');
+    setOnlyFinancing(false);
+    setOnlyInstallments(false);
+    setOnlyVacant(false);
+  }, [setMaxPriceFilter, setSelectedTypeFilter]);
+
+  // Handlers para o Gerenciador de Presets de Busca
+  const handleSaveCurrentPreset = useCallback((name?: string) => {
+    const presetName = name?.trim() || presetNameInput.trim() || `Busca ${selectedCityFilter || 'Geral'} (${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})`;
+    const newPreset: SearchPreset = {
+      id: `preset_${Date.now()}`,
+      name: presetName,
+      state: selectedStateFilter,
+      city: selectedCityFilter,
+      neighborhoods: [...selectedNeighborhoods],
+      type: selectedTypeFilter,
+      minPrice: minPriceInput,
+      maxPrice: maxPriceInput,
+      roi: minRoiFilter,
+      searchQuery: advancedSearchQuery,
+      minArea: minAreaInput,
+      maxArea: maxAreaInput,
+      minDiscount: minDiscountFilter,
+      onlyFinancing,
+      onlyInstallments,
+      onlyVacant,
+      timestamp: new Date().toISOString()
+    };
+    const updated = [newPreset, ...savedPresets];
+    setSavedPresets(updated);
+    try {
+      localStorage.setItem('saved_search_presets', JSON.stringify(updated));
+    } catch (e) {}
+    setPresetNameInput('');
+    setSaveToastVisible(true);
+    setTimeout(() => setSaveToastVisible(false), 3000);
+  }, [
+    presetNameInput,
+    selectedCityFilter,
+    selectedStateFilter,
+    selectedNeighborhoods,
+    selectedTypeFilter,
+    minPriceInput,
+    maxPriceInput,
+    minRoiFilter,
+    advancedSearchQuery,
+    minAreaInput,
+    maxAreaInput,
+    minDiscountFilter,
+    onlyFinancing,
+    onlyInstallments,
+    onlyVacant,
+    savedPresets
+  ]);
+
+  const handleLoadPreset = useCallback((preset: SearchPreset) => {
+    if (preset.state !== undefined) setSelectedStateFilter(preset.state);
+    if (preset.city !== undefined) setSelectedCityFilter(preset.city);
+    if (preset.neighborhoods) {
+      setSelectedNeighborhoods(preset.neighborhoods);
+      setSelectedNeighborhoodFilter(preset.neighborhoods.length === 1 ? preset.neighborhoods[0] : '');
+    }
+    if (preset.type !== undefined) setSelectedTypeFilter(preset.type);
+    if (preset.minPrice !== undefined) setMinPriceInput(preset.minPrice);
+    if (preset.maxPrice !== undefined) {
+      setMaxPriceInput(preset.maxPrice);
+      if (setMaxPriceFilter) setMaxPriceFilter(preset.maxPrice);
+    }
+    if (preset.roi !== undefined) setMinRoiFilter(preset.roi);
+    if (preset.searchQuery !== undefined) setAdvancedSearchQuery(preset.searchQuery);
+    if (preset.minArea !== undefined) setMinAreaInput(preset.minArea);
+    if (preset.maxArea !== undefined) setMaxAreaInput(preset.maxArea);
+    if (preset.minDiscount !== undefined) setMinDiscountFilter(preset.minDiscount);
+    if (preset.onlyFinancing !== undefined) setOnlyFinancing(!!preset.onlyFinancing);
+    if (preset.onlyInstallments !== undefined) setOnlyInstallments(!!preset.onlyInstallments);
+    if (preset.onlyVacant !== undefined) setOnlyVacant(!!preset.onlyVacant);
+    setIsPresetModalOpen(false);
+    setSaveToastVisible(true);
+    setTimeout(() => setSaveToastVisible(false), 2000);
+  }, [setMaxPriceFilter, setSelectedCityFilter, setSelectedNeighborhoodFilter, setSelectedStateFilter, setSelectedTypeFilter]);
+
+  const handleDeletePreset = useCallback((id: string) => {
+    setSavedPresets(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      try {
+        localStorage.setItem('saved_search_presets', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
   // Feed state
   const [temporalSortMode, setTemporalSortMode] = useState<'neutral' | 'urgent' | 'newest'>('neutral');
   const [strategyFilters, setStrategyFilters] = useState<{
@@ -172,11 +434,25 @@ export default function Dashboard({
     roi: boolean;
     profit: boolean;
     spread: boolean;
+    discount: boolean;
+    lowestSqm: boolean;
+    under250k: boolean;
+    superCheap: boolean;
+    lowestRent: boolean;
+    lowestRentSqm: boolean;
+    bestRentDiscount: boolean;
   }>({
     liquidity: false,
     roi: false,
     profit: false,
-    spread: false
+    spread: false,
+    discount: false,
+    lowestSqm: false,
+    under250k: false,
+    superCheap: false,
+    lowestRent: false,
+    lowestRentSqm: false,
+    bestRentDiscount: false,
   });
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [selectedLightboxProperty, setSelectedLightboxProperty] = useState<AuctionProperty | null>(null);
@@ -272,6 +548,16 @@ export default function Dashboard({
   const normalizeText = (str: string) => str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase() : '';
 
   const checkOriginMatch = useCallback((a: AuctionProperty) => {
+    if (advancedContextTab === 'alugar') {
+      return a.transactionType === 'aluguel' || (a as any).tipoTransacao === 'aluguel' || (a as any).purpose === 'rent';
+    }
+    if (mode === 'portais') {
+      return a.origin === 'portal';
+    }
+    if (mode === 'auctions' && a.origin === 'portal') {
+      return false;
+    }
+
     if (selectedAuctioneerFilter) {
       const q = selectedAuctioneerFilter.toLowerCase();
       const qClean = q.replace(/[^a-z0-9]/g, '');
@@ -286,7 +572,7 @@ export default function Dashboard({
 
     const origin = a.origin || (a.id.startsWith('auc-caixa') ? 'caixa' : 'judicial');
     if (selectedOriginFilter === 'todos') {
-      return true;
+      return origin !== 'portal';
     }
     if (selectedOriginFilter === 'caixa' || selectedOriginFilter === 'caixa_radar') {
       return origin === 'caixa' || origin === 'caixa_radar';
@@ -301,7 +587,7 @@ export default function Dashboard({
       return origin === 'portal';
     }
     return true;
-  }, [selectedAuctioneerFilter, selectedOriginFilter]);
+  }, [mode, advancedContextTab, selectedAuctioneerFilter, selectedOriginFilter]);
 
   // Unique states from ITBI database (RJ, MG, SP etc)
   const uniqueStates = useMemo(() => Object.keys(VALID_ITBI_CITIES_BY_STATE).sort(), []);
@@ -324,6 +610,11 @@ export default function Dashboard({
   // Extract unique neighborhoods from auctions matching origin, state and city
   const uniqueNeighborhoodsWithCount = useMemo(() => {
     let list = auctions.filter(checkOriginMatch);
+    if (advancedContextTab === 'alugar') {
+      list = list.filter(a => a.transactionType === 'aluguel' || (a as any).tipoTransacao === 'aluguel' || (a as any).purpose === 'rent');
+    } else {
+      list = list.filter(a => a.transactionType !== 'aluguel' && (a as any).tipoTransacao !== 'aluguel' && (a as any).purpose !== 'rent');
+    }
     if (selectedStateFilter) {
       list = list.filter(a => (a.state || 'RJ').toUpperCase() === selectedStateFilter.toUpperCase());
     }
@@ -342,7 +633,7 @@ export default function Dashboard({
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [auctions, checkOriginMatch, selectedStateFilter, selectedCityFilter]);
+  }, [auctions, checkOriginMatch, advancedContextTab, selectedStateFilter, selectedCityFilter]);
 
   // Filtered neighborhoods based on sidebar search
   const visibleNeighborhoods = useMemo(() => {
@@ -523,6 +814,9 @@ export default function Dashboard({
     const nowIso = new Date().toISOString();
     const todayEnd = Date.parse(nowIso.slice(0, 10) + 'T23:59:59-03:00');
     result = result.filter(a => {
+      // Imóveis de Portais (Flip House) são anúncios ativos e NÃO devem ser expurgados por data de leilão
+      if (a.origin === 'portal') return true;
+
       if (a.availability?.state === 'closed' || a.availability?.state === 'removed' || a.sourceClosed === true) return false;
       if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return false;
       if (a.ingestionStatus === 'expirado_por_data' || a.ingestionStatus === 'finalizado') return false;
@@ -539,6 +833,20 @@ export default function Dashboard({
       }
       return true;
     });
+
+    // Filtro de Finalidade da Busca: Venda (Comprar) vs Locação (Alugar para Morar)
+    if (advancedContextTab === 'alugar') {
+      result = result.filter(a => a.transactionType === 'aluguel' || (a as any).tipoTransacao === 'aluguel' || (a as any).purpose === 'rent');
+      if (strategyFilters.superCheap) {
+        const cheap = result.filter(a => a.vereditoLocacao === 'barato' || (a.aluguelDiferencaPct !== undefined && a.aluguelDiferencaPct < 0));
+        if (cheap.length > 0) result = cheap;
+      }
+    } else {
+      result = result.filter(a => a.transactionType !== 'aluguel' && (a as any).tipoTransacao !== 'aluguel' && (a as any).purpose !== 'rent');
+      if (strategyFilters.under250k && mode === 'portais') {
+        result = result.filter(a => (a.auctionPrice || a.precoAnunciado || 0) <= 250000);
+      }
+    }
 
     if (selectedStateFilter) {
       result = result.filter(a => (a.state || 'RJ').toUpperCase() === selectedStateFilter.toUpperCase());
@@ -565,14 +873,55 @@ export default function Dashboard({
       result = result.filter(a => a.propertyType === selectedTypeFilter);
     }
 
+    // Busca textual por logradouro, bairro, condomínio ou título
+    if (advancedSearchQuery && advancedSearchQuery.trim()) {
+      const q = normalizeText(advancedSearchQuery);
+      result = result.filter(a => {
+        const hay = normalizeText(`${a.title || ''} ${a.address || ''} ${a.neighborhood || ''} ${a.description || ''} ${(a as any).condominio || ''}`);
+        return hay.includes(q);
+      });
+    }
+
+    // Filtros de Quartos, Vagas e Banheiros
+    if (bedroomsFilter !== null && bedroomsFilter > 0) {
+      result = result.filter(a => (a.bedrooms || 0) >= bedroomsFilter);
+    }
+    if (parkingFilter !== null && parkingFilter > 0) {
+      result = result.filter(a => ((a.parkingSpaces || (a as any).parkingSpots || 0)) >= parkingFilter);
+    }
+    if (bathroomsFilter !== null && bathroomsFilter > 0) {
+      result = result.filter(a => (a.bathrooms || 0) >= bathroomsFilter);
+    }
+
+    // Faixa de Metragem Privativa (m²)
+    const minA = Number(minAreaInput);
+    if (!isNaN(minA) && minA > 0) {
+      result = result.filter(a => (Number(a.sizeSqm) || 0) >= minA);
+    }
+    const maxA = Number(maxAreaInput);
+    if (!isNaN(maxA) && maxA > 0) {
+      result = result.filter(a => (Number(a.sizeSqm) || 0) <= maxA);
+    }
+
+    // Desconto Mínimo (% sobre o mercado ITBI)
+    if (minDiscountFilter > 0) {
+      result = result.filter(a => (a.descontoMercadoPct || 0) >= minDiscountFilter);
+    }
+
     // Min / Max price filters
     const minP = Number(minPriceInput);
     if (!isNaN(minP) && minP > 0) {
-      result = result.filter(a => a.auctionPrice >= minP);
+      result = result.filter(a => {
+        const p = advancedContextTab === 'alugar' ? (a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0) : (a.auctionPrice || a.precoAnunciado || 0);
+        return p >= minP;
+      });
     }
     const maxP = Number(maxPriceInput || maxPriceFilter);
     if (!isNaN(maxP) && maxP > 0) {
-      result = result.filter(a => a.auctionPrice <= maxP);
+      result = result.filter(a => {
+        const p = advancedContextTab === 'alugar' ? (a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0) : (a.auctionPrice || a.precoAnunciado || 0);
+        return p <= maxP;
+      });
     }
 
     // Caixa sub-modes filter (Separação canônica estrita - Sem colisões de substring)
@@ -587,6 +936,26 @@ export default function Dashboard({
         if (modality === 'LEILAO_SFI') return caixaSubModes.leilaoSfi;
         return true;
       });
+    }
+
+    // Filtro de Portais Imobiliários selecionados
+    if (selectedOriginFilter === 'portal' || selectedPortals.length < ALL_PORTALS.length) {
+      result = result.filter(a => {
+        if (a.origin !== 'portal') return true;
+        if (!a.portalName) return true;
+        return selectedPortals.includes(a.portalName);
+      });
+    }
+
+    // Condições de Aquisição & Ocupação (Financiamento, Parcelamento, Desocupado)
+    if (onlyFinancing) {
+      result = result.filter(a => a.allowsFinancing === true);
+    }
+    if (onlyInstallments) {
+      result = result.filter(a => a.allowsInstallments === true);
+    }
+    if (onlyVacant) {
+      result = result.filter(a => a.occupied === false);
     }
 
     // Yield / Profit filters
@@ -641,6 +1010,7 @@ export default function Dashboard({
 
     // 1. Quarentena de Imóveis Inauditáveis / Sob Análise / Sem Preço de Flip / Liquidez 0
     const isQuarantineAuction = (a: AuctionProperty) => {
+      if (a.origin === 'portal') return false;
       const q = qualityByAuction.get(a);
       const effectiveLiq = Math.min(a.liquidityScore ?? 0, q?.liquidityCeiling ?? 10);
       const flipPrice = Number(a.vendaBaixaPrice) || 0;
@@ -690,6 +1060,23 @@ export default function Dashboard({
     };
 
     const getAucLucroReal = (a: AuctionProperty): number => {
+      if (a.origin === 'portal') {
+        const precoCompra = a.precoAnunciado || a.auctionPrice || 0;
+        const itbi = Math.round(precoCompra * 0.03);
+        const rgi = Math.round(precoCompra * 0.02);
+        const reforma = Math.round(precoCompra * 0.05);
+        const dividas = (a.pendingDebts || 0) + (a.valorCondominio || 0) + (a.valorIptu || 0);
+        const totalCost = precoCompra + itbi + rgi + reforma + dividas;
+        const m2Ref = a.m2ReferenciaBairro || 3600;
+        const valMercado = a.valorMercadoEstimado || a.estimatedValue || Math.round((a.sizeSqm || 1) * m2Ref);
+        if (a.transactionType === 'aluguel') {
+          const rent = a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0;
+          const rentRef = a.mediaLocacaoCalculadora || Math.round(valMercado * 0.0055);
+          return Math.max(0, rentRef - rent) * 12;
+        }
+        const flipExit = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || valMercado;
+        return flipExit - totalCost;
+      }
       const flipPrice = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0;
       if (flipPrice <= 0) return (Number(a.calculatedProfit) || 0);
       const costs = auctionCosts(a);
@@ -698,6 +1085,23 @@ export default function Dashboard({
     };
 
     const getAucRoi = (a: AuctionProperty): number => {
+      if (a.origin === 'portal') {
+        const precoCompra = a.precoAnunciado || a.auctionPrice || 0;
+        const itbi = Math.round(precoCompra * 0.03);
+        const rgi = Math.round(precoCompra * 0.02);
+        const reforma = Math.round(precoCompra * 0.05);
+        const dividas = (a.pendingDebts || 0) + (a.valorCondominio || 0) + (a.valorIptu || 0);
+        const totalCost = precoCompra + itbi + rgi + reforma + dividas;
+        const m2Ref = a.m2ReferenciaBairro || 3600;
+        const valMercado = a.valorMercadoEstimado || a.estimatedValue || Math.round((a.sizeSqm || 1) * m2Ref);
+        if (a.transactionType === 'aluguel') {
+          const rent = a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0;
+          return valMercado > 0 ? Number(((rent * 12 / valMercado) * 100).toFixed(2)) : 0;
+        }
+        const flipExit = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || valMercado;
+        const diff = flipExit - totalCost;
+        return totalCost > 0 ? Number(((diff / totalCost) * 100).toFixed(2)) : 0;
+      }
       const flipPrice = Number(a.vendaBaixaPrice) || Number(a.vendaMediaPrice) || 0;
       if (flipPrice <= 0) return (Number(a.calculatedRoi) || 0);
       const costs = auctionCosts(a);
@@ -752,6 +1156,106 @@ export default function Dashboard({
 
     // 4. Ordenação dos Imóveis Elegíveis
     eligibleAuctions.sort((a, b) => {
+      // 1. ORDENAÇÃO DE LOCAÇÃO RESIDENCIAL (Alugar para Morar)
+      if (advancedContextTab === 'alugar' || a.transactionType === 'aluguel' || b.transactionType === 'aluguel') {
+        if (temporalSortMode === 'urgent') {
+          const daysA = a.diasPublicado !== undefined ? a.diasPublicado : 0;
+          const daysB = b.diasPublicado !== undefined ? b.diasPublicado : 0;
+          if (daysB !== daysA) return daysB - daysA;
+        } else if (temporalSortMode === 'newest') {
+          const daysA = a.diasPublicado !== undefined ? a.diasPublicado : 0;
+          const daysB = b.diasPublicado !== undefined ? b.diasPublicado : 0;
+          if (daysA !== daysB) return daysA - daysB;
+        }
+
+        if (strategyFilters.lowestRent) {
+          const rentA = a.monthlyRent || a.aluguelMensal || a.auctionPrice || 0;
+          const rentB = b.monthlyRent || b.aluguelMensal || b.auctionPrice || 0;
+          if (rentA !== rentB) return rentA - rentB;
+        }
+
+        if (strategyFilters.lowestRentSqm) {
+          const sqmA = (a.monthlyRent || a.aluguelMensal || a.auctionPrice || 0) / (a.sizeSqm || 1);
+          const sqmB = (b.monthlyRent || b.aluguelMensal || b.auctionPrice || 0) / (b.sizeSqm || 1);
+          if (sqmA !== sqmB) return sqmA - sqmB;
+        }
+
+        if (strategyFilters.bestRentDiscount) {
+          const saveA = (a.mediaLocacaoCalculadora || 0) - (a.monthlyRent || a.aluguelMensal || a.auctionPrice || 0);
+          const saveB = (b.mediaLocacaoCalculadora || 0) - (b.monthlyRent || b.aluguelMensal || b.auctionPrice || 0);
+          if (saveB !== saveA) return saveB - saveA;
+        }
+
+        // Padrão / Super Barato: Ordena pelo menor percentual vs calculadora (mais barato que a média primeiro, ex: -40%, -25%)
+        const diffA = a.aluguelDiferencaPct !== undefined ? a.aluguelDiferencaPct : 0;
+        const diffB = b.aluguelDiferencaPct !== undefined ? b.aluguelDiferencaPct : 0;
+        if (diffA !== diffB) return diffA - diffB;
+
+        const rentA = a.monthlyRent || a.aluguelMensal || a.auctionPrice || 0;
+        const rentB = b.monthlyRent || b.aluguelMensal || b.auctionPrice || 0;
+        return rentA - rentB;
+      }
+
+      // 2. ORDENAÇÃO DE FLIP HOUSE (Portais de Venda Direta Particular)
+      if (selectedOriginFilter === 'portal' || mode === 'portais' || a.origin === 'portal' || b.origin === 'portal') {
+        // 1. Critérios temporais se ativos
+        if (temporalSortMode === 'urgent') {
+          const daysA = a.diasPublicado !== undefined ? a.diasPublicado : 0;
+          const daysB = b.diasPublicado !== undefined ? b.diasPublicado : 0;
+          if (daysB !== daysA) return daysB - daysA;
+        } else if (temporalSortMode === 'newest') {
+          const daysA = a.diasPublicado !== undefined ? a.diasPublicado : 0;
+          const daysB = b.diasPublicado !== undefined ? b.diasPublicado : 0;
+          if (daysA !== daysB) return daysA - daysB;
+        }
+
+        const activeSortKey = sortBy || 'roi';
+
+        // 2. Estratégia Maior Desconto sobre mercado ITBI
+        if (strategyFilters.discount) {
+          const descA = a.descontoMercadoPct !== undefined ? a.descontoMercadoPct : 0;
+          const descB = b.descontoMercadoPct !== undefined ? b.descontoMercadoPct : 0;
+          if (descB !== descA) return descB - descA;
+        }
+
+        // 3. Estratégia Menor Preço por m²
+        if (strategyFilters.lowestSqm) {
+          const sqmA = (a.auctionPrice || a.precoAnunciado || 0) / (a.sizeSqm || 1);
+          const sqmB = (b.auctionPrice || b.precoAnunciado || 0) / (b.sizeSqm || 1);
+          if (sqmA !== sqmB) return sqmA - sqmB;
+        }
+
+        // 4. Se ordenação por Lucro ou estratégia de lucro estiver ativa
+        if (strategyFilters.profit || activeSortKey === 'profit') {
+          const profA = a.calculatedProfit !== undefined ? a.calculatedProfit : getAucLucroReal(a);
+          const profB = b.calculatedProfit !== undefined ? b.calculatedProfit : getAucLucroReal(b);
+          if (profB !== profA) return profB - profA;
+        }
+
+        // 5. Se ordenação por Spread ou estratégia de spread estiver ativa
+        if (strategyFilters.spread || activeSortKey === 'spread') {
+          const spA = calculateSpreadSqm(a);
+          const spB = calculateSpreadSqm(b);
+          if (spB !== spA) return spB - spA;
+        }
+
+        // 6. CRITÉRIO PADRÃO MANDATÓRIO: Maior ROI decrescente
+        const roiA = a.calculatedRoi !== undefined ? a.calculatedRoi : getAucRoi(a);
+        const roiB = b.calculatedRoi !== undefined ? b.calculatedRoi : getAucRoi(b);
+        if (roiB !== roiA) return roiB - roiA;
+
+        // 7. Desempate primário mandatório: Maior Lucro Líquido Real decrescente
+        const profA = a.calculatedProfit !== undefined ? a.calculatedProfit : getAucLucroReal(a);
+        const profB = b.calculatedProfit !== undefined ? b.calculatedProfit : getAucLucroReal(b);
+        if (profB !== profA) return profB - profA;
+
+        // 8. Desempate secundário: Maior desconto sobre o mercado ITBI
+        const descA = a.descontoMercadoPct !== undefined ? a.descontoMercadoPct : 0;
+        const descB = b.descontoMercadoPct !== undefined ? b.descontoMercadoPct : 0;
+        if (descB !== descA) return descB - descA;
+
+        return (b.auctionPrice || 0) - (a.auctionPrice || 0);
+      }
       // 1. Se filtros de estratégia estiverem ativos, ordena pelo Score ponderado composto decrescente (maior score no topo)
       if (totalWeight > 0) {
         const scoreA = strategyScoreMap.get(a) ?? 0;
@@ -832,6 +1336,8 @@ export default function Dashboard({
   }, [
     auctions,
     checkOriginMatch,
+    mode,
+    advancedContextTab,
     selectedStateFilter,
     selectedCityFilter,
     selectedZoneFilter,
@@ -842,7 +1348,18 @@ export default function Dashboard({
     maxPriceInput,
     maxPriceFilter,
     selectedOriginFilter,
+    selectedPortals,
     caixaSubModes,
+    advancedSearchQuery,
+    bedroomsFilter,
+    parkingFilter,
+    bathroomsFilter,
+    minAreaInput,
+    maxAreaInput,
+    minDiscountFilter,
+    onlyFinancing,
+    onlyInstallments,
+    onlyVacant,
     onlyHighReturn,
     minRoiFilter,
     onlyAnalysisAboveEdital,
@@ -854,6 +1371,48 @@ export default function Dashboard({
     sortBy,
     getSaleModeBadge
   ]);
+
+  // Atualização automática imediata ao alternar entre Comprar e Alugar
+  const prevContextTabRef = useRef<'comprar' | 'alugar' | 'novo'>(advancedContextTab);
+  useEffect(() => {
+    setVisibleCount(24);
+    setMinPriceInput('');
+    setMaxPriceInput('');
+    setStrategyFilters(prev => ({
+      ...prev,
+      superCheap: false,
+      lowestRent: false,
+      lowestRentSqm: false,
+      bestRentDiscount: false,
+      under250k: false,
+      highSpread: false
+    }));
+    if (prevContextTabRef.current !== advancedContextTab) {
+      prevContextTabRef.current = advancedContextTab;
+      if (advancedContextTab === 'alugar') {
+        if (selectedOriginFilter !== 'portal') {
+          setSelectedOriginFilter('portal');
+        }
+        onGarimparPortais(
+          selectedCityFilter || undefined,
+          selectedPortals,
+          selectedNeighborhoods,
+          'aluguel',
+          true
+        );
+      } else {
+        if (mode === 'portais' || selectedOriginFilter === 'portal') {
+          onGarimparPortais(
+            selectedCityFilter || undefined,
+            selectedPortals,
+            selectedNeighborhoods,
+            'venda',
+            true
+          );
+        }
+      }
+    }
+  }, [advancedContextTab, mode, onGarimparPortais, selectedCityFilter, selectedPortals, selectedNeighborhoods, selectedOriginFilter, setSelectedOriginFilter]);
 
   // Infinite scroll listener
   useEffect(() => {
@@ -874,6 +1433,13 @@ export default function Dashboard({
     setCitySearchInput('');
     setSelectedStateFilter('');
     setSelectedTypeFilter('');
+    setAdvancedSearchQuery('');
+    setBedroomsFilter(null);
+    setParkingFilter(null);
+    setBathroomsFilter(null);
+    setMinAreaInput('');
+    setMaxAreaInput('');
+    setMinDiscountFilter(0);
     setMinPriceInput('');
     setMaxPriceInput('');
     if (setMaxPriceFilter) setMaxPriceFilter('');
@@ -884,12 +1450,22 @@ export default function Dashboard({
     setItbiConfidenceFilter('all');
     setPrestigeFilter('all');
     setCapitalBudget('');
+    setOnlyFinancing(false);
+    setOnlyInstallments(false);
+    setOnlyVacant(false);
     setTemporalSortMode('neutral');
     setStrategyFilters({
       liquidity: false,
       roi: false,
       profit: false,
-      spread: false
+      spread: false,
+      discount: false,
+      lowestSqm: false,
+      under250k: false,
+      superCheap: false,
+      lowestRent: false,
+      lowestRentSqm: false,
+      bestRentDiscount: false,
     });
     setSelectedAuctioneerFilter('');
   };
@@ -914,6 +1490,7 @@ export default function Dashboard({
   // Auto portal data lookup
   const refreshCardPortalData = useCallback(async (auc: AuctionProperty) => {
     if (portalSearchIds.has(auc.id)) return;
+    if ((auc as any).moradaM2 || (auc as any).moradaVirtualM2 || auc.origin === 'portal') return;
     setPortalSearchIds(prev => new Set(prev).add(auc.id));
     try {
       const response = await fetch('/api/portais/search-similar', {
@@ -969,17 +1546,53 @@ export default function Dashboard({
   }, [onUpdateProperty, portalSearchIds]);
 
   useEffect(() => {
-    if (autoPortalSearchIds.current.size >= 2) return;
+    if (autoPortalSearchIds.current.size >= 4) return;
     const pending = filteredAndSortedAuctions
       .slice(0, Math.min(visibleCount, 8))
-      .filter(auc => !auc.portalDataVerifiedAt && !autoPortalSearchIds.current.has(auc.id))
-      .slice(0, 2 - autoPortalSearchIds.current.size);
+      .filter(auc => !auc.portalDataVerifiedAt && !autoPortalSearchIds.current.has(auc.id) && !(auc as any).moradaM2 && !(auc as any).moradaVirtualM2 && auc.origin !== 'portal')
+      .slice(0, 2);
 
     pending.forEach(auc => {
       autoPortalSearchIds.current.add(auc.id);
       void refreshCardPortalData(auc);
     });
-  }, [filteredAndSortedAuctions, visibleCount, refreshCardPortalData]);
+
+    // Auto-fetch Morada Virtual para imóveis de Portais (garante m² idêntico ao da calculadora)
+    const pendingPortalMorada = filteredAndSortedAuctions
+      .slice(0, Math.min(visibleCount, 12))
+      .filter(auc => auc.origin === 'portal' && !(auc as any).moradaM2 && !(auc as any).moradaVirtualM2 && auc.address && !autoPortalSearchIds.current.has(`morada-${auc.id}`))
+      .slice(0, 3);
+
+    pendingPortalMorada.forEach(auc => {
+      autoPortalSearchIds.current.add(`morada-${auc.id}`);
+      const rawStreet = (auc.address || '').split(',')[0].trim();
+      if (!rawStreet) return;
+      const qs = new URLSearchParams({
+        street: rawStreet,
+        city: auc.city || 'Rio de Janeiro',
+        state: auc.state || 'RJ',
+        neighborhood: auc.neighborhood || '',
+        propertyType: auc.propertyType || ''
+      });
+      fetch('/api/morada/benchmark?' + qs.toString())
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d?.benchmark?.m2 > 0) {
+            onUpdateProperty({
+              id: auc.id,
+              moradaM2: d.benchmark.m2,
+              moradaVirtualM2: d.benchmark.m2,
+              streetPortalAvgSqm: d.benchmark.m2,
+              m2MercadoPortal: d.benchmark.m2,
+              portalSampleCount: d.benchmark.sampleCount,
+              portalStreetUrl: d.benchmark.streetUrl,
+              fontePortal: 'Morada Virtual'
+            });
+          }
+        })
+        .catch(() => {});
+    });
+  }, [filteredAndSortedAuctions, visibleCount, refreshCardPortalData, onUpdateProperty]);
 
   const formatBRL = (val?: number) => {
     if (val === undefined || isNaN(val)) return 'R$ -';
@@ -1038,6 +1651,37 @@ export default function Dashboard({
     }
   };
 
+  const locationScopeText = useMemo(() => {
+    if (selectedNeighborhoods.length > 0) {
+      if (selectedNeighborhoods.length <= 2) {
+        return `${selectedNeighborhoods.join(', ')} (${selectedCityFilter || 'RJ'})`;
+      }
+      return `${selectedNeighborhoods[0]}, ${selectedNeighborhoods[1]} (+${selectedNeighborhoods.length - 2} bairros em ${selectedCityFilter || 'RJ'})`;
+    }
+    if (selectedNeighborhoodFilter) {
+      return `${selectedNeighborhoodFilter} (${selectedCityFilter || 'RJ'})`;
+    }
+    if (selectedCityFilter) {
+      return `${selectedCityFilter} - ${selectedStateFilter || 'RJ'}`;
+    }
+    if (selectedStateFilter) {
+      return `Estado do ${selectedStateFilter}`;
+    }
+    return 'todas as praças monitoradas';
+  }, [selectedNeighborhoods, selectedNeighborhoodFilter, selectedCityFilter, selectedStateFilter]);
+
+  const handleSyncNow = useCallback(() => {
+    const d = new Date();
+    setLastUpdatedTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+    if (mode === 'portais') {
+      onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda');
+    } else if (onSyncCaixaAuto) {
+      onSyncCaixaAuto();
+    } else if (onSyncJudiciaisAuto) {
+      onSyncJudiciaisAuto();
+    }
+  }, [mode, onGarimparPortais, onSyncCaixaAuto, onSyncJudiciaisAuto, selectedCityFilter, selectedPortals, selectedNeighborhoods, advancedContextTab]);
+
   return (
     <div id="dashboard-tab" className="space-y-4">
       {/* Toast de Busca Salva */}
@@ -1094,573 +1738,710 @@ export default function Dashboard({
               }}
             />
 
-            {/* 1. SELETOR VERTICAL DE MODALIDADE */}
-            <div className="space-y-2">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                Modalidade de Aquisição
-              </label>
-              
-              <div className="space-y-1.5">
-                {[
-                  { id: 'todos', label: 'Todos os Imóveis', icon: Layers, desc: 'Caixa + Judiciais + Extrajudiciais', color: 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300' },
-                  { id: 'caixa', label: 'Imóveis Caixa', icon: Building2, desc: 'Venda Direta / Licitação / SFI', color: 'border-blue-500/50 bg-blue-950/40 text-blue-300' },
-                  { id: 'judicial', label: 'Leilões Judiciais', icon: Gavel, desc: 'Varas Cíveis e Trabalhistas', color: 'border-indigo-500/50 bg-indigo-950/40 text-indigo-300' },
-                  { id: 'extrajudicial', label: 'Leilões Extrajudiciais', icon: FileText, desc: 'Alienação Fiduciária & Bancos', color: 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300' },
-                  { id: 'portal', label: 'Portais (Flip Rápido)', icon: Sparkles, desc: 'Descontos no Zap & QuintoAndar', color: 'border-amber-500/50 bg-amber-950/40 text-amber-300' }
-                ].map(item => {
-                  const isSelected = selectedOriginFilter === item.id;
-                  const Icon = item.icon;
-                  return (
+            {/* BOTÃO DESTACADO: FILTROS AVANÇADOS (ESTILO QUINTOANDAR - LOGO ABAIXO DO MAPA) */}
+            <div className="pt-0.5">
+              <button
+                type="button"
+                onClick={() => setIsAdvancedModalOpen(true)}
+                className="w-full py-3 px-3.5 bg-gradient-to-r from-slate-800 via-slate-800 to-slate-850 hover:from-slate-750 hover:to-slate-800 text-white font-extrabold text-xs rounded-2xl border border-slate-700/80 shadow-lg transition-all flex items-center justify-between cursor-pointer group"
+              >
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                  </div>
+                  <span>⚙️ Filtros Avançados</span>
+                </div>
+                {activeAdvancedFiltersCount > 0 ? (
+                  <span className="text-[10.5px] bg-indigo-600 text-white font-black px-2 py-0.5 rounded-full font-mono shadow-xs border border-indigo-400/40">
+                    {activeAdvancedFiltersCount} {activeAdvancedFiltersCount === 1 ? 'ativo' : 'ativos'}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 group-hover:text-slate-200 transition-colors flex items-center gap-1 font-mono">
+                    <span>Configurar</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* 1. SELETOR DE MODALIDADE (GARIMPAR LEILÕES) OU BANNER + PORTAIS (FLIP HOUSE) */}
+            {mode === 'portais' ? (
+              <div className="space-y-3">
+                {/* Seletor de Finalidade: Comprar vs Alugar */}
+                <div className="bg-slate-950 p-1.5 rounded-xl border border-slate-800 space-y-1">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-mono uppercase text-slate-400 font-bold">
+                      Finalidade da Busca:
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-400 font-bold">
+                      {advancedContextTab === 'alugar' ? 'Locação Residencial' : 'Venda / Flip'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
                     <button
-                      key={item.id}
+                      type="button"
                       onClick={() => {
-                        setSelectedOriginFilter(item.id as any);
-                        setSelectedNeighborhoodFilter('');
-                        setSelectedNeighborhoods([]);
+                        setAdvancedContextTab('comprar');
+                        setVisibleCount(24);
                       }}
-                      className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? `${item.color} ring-1 ring-white/30 shadow-md font-bold`
-                          : 'bg-slate-950/60 hover:bg-slate-800/60 border-slate-800 text-slate-300'
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        advancedContextTab !== 'alugar'
+                          ? 'bg-amber-600 text-white shadow-xs ring-1 ring-amber-400/30'
+                          : 'text-slate-400 hover:text-white bg-slate-900/60'
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5">
-                        <Icon className="w-4 h-4 shrink-0" />
-                        <div>
-                          <div className="text-xs font-bold">{item.label}</div>
-                          <div className="text-[10px] text-slate-400 font-normal">{item.desc}</div>
-                        </div>
-                      </div>
-                      {isSelected && <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-xs shrink-0" />}
+                      <span>🏢 Comprar</span>
                     </button>
-                  );
-                })}
-              </div>
-
-              {/* Sub-opções específicas quando Caixa estiver selecionada */}
-              {selectedOriginFilter === 'caixa' && (
-                <div className="p-2.5 bg-slate-950 border border-blue-900/40 rounded-xl space-y-2 mt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-blue-400 block uppercase font-mono">
-                      Sub-modalidades Caixa ({caixaModalityCounts.total})
-                    </span>
-                    <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                      <button
-                        type="button"
-                        onClick={() => setCaixaSubModes({ vendaDireta: true, vendaOnline: true, licitacao: true, leilaoSfi: true })}
-                        className="text-indigo-400 hover:text-white transition-colors cursor-pointer"
-                        title="Marcar todas as modalidades Caixa"
-                      >
-                        Todas
-                      </button>
-                      <span className="text-slate-600">•</span>
-                      <button
-                        type="button"
-                        onClick={() => setCaixaSubModes({ vendaDireta: false, vendaOnline: false, licitacao: false, leilaoSfi: false })}
-                        className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                        title="Desmarcar todas"
-                      >
-                        Nenhuma
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 text-xs">
-                    {/* 1. Venda Direta Online */}
-                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={caixaSubModes.vendaDireta}
-                          onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaDireta: e.target.checked }))}
-                          className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 cursor-pointer"
-                        />
-                        <span className="flex items-center gap-1">
-                          <span>🤝</span>
-                          <span className="font-semibold text-slate-200">Venda Direta Online</span>
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                        caixaModalityCounts.vendaDireta > 0 ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/40' : 'bg-black/30 text-slate-600'
-                      }`}>
-                        {caixaModalityCounts.vendaDireta}
-                      </span>
-                    </label>
-
-                    {/* 2. Venda Online (Disputa cronômetro) */}
-                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={caixaSubModes.vendaOnline}
-                          onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaOnline: e.target.checked }))}
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 cursor-pointer"
-                        />
-                        <span className="flex items-center gap-1">
-                          <span>⏱️</span>
-                          <span className="font-semibold text-slate-200">Venda Online</span>
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                        caixaModalityCounts.vendaOnline > 0 ? 'bg-cyan-950/80 text-cyan-300 font-bold border border-cyan-800/40' : 'bg-black/30 text-slate-600'
-                      }`}>
-                        {caixaModalityCounts.vendaOnline}
-                      </span>
-                    </label>
-
-                    {/* 3. Licitação Aberta */}
-                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={caixaSubModes.licitacao}
-                          onChange={e => setCaixaSubModes(prev => ({ ...prev, licitacao: e.target.checked }))}
-                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                        />
-                        <span className="flex items-center gap-1">
-                          <span>📢</span>
-                          <span className="font-semibold text-slate-200">Licitação Aberta</span>
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                        caixaModalityCounts.licitacao > 0 ? 'bg-amber-950/80 text-amber-300 font-bold border border-amber-800/40' : 'bg-black/30 text-slate-600'
-                      }`}>
-                        {caixaModalityCounts.licitacao}
-                      </span>
-                    </label>
-
-                    {/* 4. Leilão SFI */}
-                    <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={caixaSubModes.leilaoSfi}
-                          onChange={e => setCaixaSubModes(prev => ({ ...prev, leilaoSfi: e.target.checked }))}
-                          className="rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-0 cursor-pointer"
-                        />
-                        <span className="flex items-center gap-1">
-                          <span>⚖️</span>
-                          <span className="font-semibold text-slate-200">Leilão SFI (1º/2º)</span>
-                        </span>
-                      </div>
-                      <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                        caixaModalityCounts.leilaoSfi > 0 ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-800/40' : 'bg-black/30 text-slate-600'
-                      }`}>
-                        {caixaModalityCounts.leilaoSfi}
-                      </span>
-                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdvancedContextTab('alugar');
+                        setSelectedOriginFilter('portal');
+                        setVisibleCount(24);
+                      }}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        advancedContextTab === 'alugar'
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs ring-1 ring-emerald-400/30'
+                          : 'text-slate-400 hover:text-white bg-slate-900/60'
+                      }`}
+                    >
+                      <span>🔑 Alugar</span>
+                    </button>
                   </div>
                 </div>
-              )}
 
-              {/* Sub-opções específicas quando Extrajudicial estiver selecionada */}
-              {selectedOriginFilter === 'extrajudicial' && (
-                <div className="p-2.5 bg-slate-950 border border-emerald-900/40 rounded-xl space-y-2 mt-2">
+                {/* Banner Flip House / Locação */}
+                <div className={`p-3 bg-gradient-to-br border rounded-2xl space-y-2.5 shadow-lg ${
+                  advancedContextTab === 'alugar'
+                    ? 'from-emerald-950/70 via-slate-900 to-teal-950/40 border-emerald-600/50'
+                    : 'from-amber-950/70 via-slate-900 to-orange-950/40 border-amber-600/50'
+                }`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase font-mono flex items-center gap-1">
-                      <span>🏛️</span>
-                      <span>Portais Extrajudiciais</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{advancedContextTab === 'alugar' ? '🔑' : '🔥'}</span>
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-wide text-white">
+                          {advancedContextTab === 'alugar' ? 'Locação & Moradia' : 'Flip House'}
+                        </h3>
+                        <p className="text-[10px] text-slate-400">
+                          {advancedContextTab === 'alugar' ? 'Imóveis para alugar e morar via app' : 'Venda Particular abaixo do mercado'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold ${
+                      advancedContextTab === 'alugar'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    }`}>
+                      {filteredAndSortedAuctions.length} ofertas
                     </span>
-                    {selectedAuctioneerFilter && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedAuctioneerFilter('')}
-                        className="text-[10px] text-indigo-400 hover:text-white cursor-pointer"
-                      >
-                        Ver todos
-                      </button>
-                    )}
                   </div>
-                  <div className="max-h-64 overflow-y-auto space-y-1.5 text-xs pr-1">
-                    {activeExtrajudicialAuctioneers.map(item => {
-                      const isSelected = selectedAuctioneerFilter === item.name;
+
+                  <p className="text-[11px] text-slate-400 leading-tight">
+                    {advancedContextTab === 'alugar'
+                      ? 'Comparação direta entre o aluguel pedido e a média calculada da região (~0,55% a.m.), indicando se o valor está Barato, Justo ou Caro.'
+                      : 'Varredura de anúncios de venda direta nos 4 portais oficiais (Zap Imóveis, Viva Real, QuintoAndar e Imovelweb) com desconto real sobre a média do bairro.'}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda')}
+                    disabled={isMining}
+                    className={`w-full py-2 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
+                      advancedContextTab === 'alugar'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                    <span>{isMining ? 'Extraindo...' : (advancedContextTab === 'alugar' ? 'Buscar Imóveis para Alugar' : 'Buscar Ofertas com Desconto')}</span>
+                  </button>
+                </div>
+
+                {/* Bloco Colapsável: Portais Imobiliários (4 portais oficiais) */}
+                <div className="space-y-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsPortalsOpen(prev => !prev)}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
+                  >
+                    <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Portais Imobiliários ({selectedPortals.length}/4)</span>
+                    </span>
+                    {isPortalsOpen ? (
+                      <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                  </button>
+
+                  {isPortalsOpen && (
+                    <div className="space-y-1.5 p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 mt-1">
+                      <div className="flex items-center justify-between text-[10px] pb-1 border-b border-slate-800/60">
+                        <span className="text-slate-400 font-mono">Seleção de Portais:</span>
+                        <div className="space-x-2">
+                          <button
+                            type="button"
+                            onClick={handleSelectAllPortals}
+                            className="text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer"
+                          >
+                            Todos
+                          </button>
+                          <span className="text-slate-600">•</span>
+                          <button
+                            type="button"
+                            onClick={handleClearPortals}
+                            className="text-slate-500 hover:text-slate-300 cursor-pointer"
+                          >
+                            Nenhum
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Opção Todos os Portais */}
+                      <label className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px] border-b border-slate-800/40 pb-1 mb-1">
+                        <div className="flex items-center space-x-2 truncate pr-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedPortals.length === ALL_PORTALS.length}
+                            onChange={handleToggleAllPortals}
+                            className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                          />
+                          <span className={`truncate ${selectedPortals.length === ALL_PORTALS.length ? 'text-white font-bold' : 'text-slate-300'}`}>
+                            Todos os 4 Portais
+                          </span>
+                        </div>
+                        <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
+                          {totalPortalCount}
+                        </span>
+                      </label>
+
+                      {ALL_PORTALS.map((portal) => {
+                        const isChecked = selectedPortals.includes(portal);
+                        const count = portalCounts[portal] || 0;
+                        return (
+                          <label
+                            key={portal}
+                            className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px]"
+                          >
+                            <div className="flex items-center space-x-2 truncate pr-2">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleTogglePortal(portal)}
+                                className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                              />
+                              <span className={`truncate ${isChecked ? 'text-white font-bold' : 'text-slate-300'}`}>
+                                {portal}
+                              </span>
+                            </div>
+                            <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
+                              {count}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Bloco Colapsável: Modalidades de Leilão */}
+                <button
+                  type="button"
+                  onClick={() => setIsModalitiesOpen(prev => !prev)}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
+                >
+                  <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
+                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Modalidades de Leilão</span>
+                  </span>
+                  {isModalitiesOpen ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </button>
+                
+                {isModalitiesOpen && (
+                  <div className="space-y-1.5 mt-1.5">
+                    {[
+                      { id: 'todos', label: 'Todos os Leilões', icon: Layers, desc: 'Caixa + Judiciais + Extrajudiciais', color: 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300' },
+                      { id: 'caixa', label: 'Imóveis Caixa', icon: Building2, desc: 'Venda Direta / Licitação / SFI', color: 'border-blue-500/50 bg-blue-950/40 text-blue-300' },
+                      { id: 'judicial', label: 'Leilões Judiciais', icon: Gavel, desc: 'Varas Cíveis e Trabalhistas', color: 'border-indigo-500/50 bg-indigo-950/40 text-indigo-300' },
+                      { id: 'extrajudicial', label: 'Leilões Extrajudiciais', icon: FileText, desc: 'Alienação Fiduciária & Bancos', color: 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300' }
+                    ].map(item => {
+                      const isSelected = selectedOriginFilter === item.id;
+                      const Icon = item.icon;
                       return (
                         <button
-                          key={item.name}
-                          type="button"
-                          onClick={() => setSelectedAuctioneerFilter(prev => prev === item.name ? '' : item.name)}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-xl border font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedOriginFilter(item.id as any);
+                            setSelectedNeighborhoodFilter('');
+                            setSelectedNeighborhoods([]);
+                          }}
+                          className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                             isSelected
-                              ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30 ring-2 ring-purple-400/50'
-                              : item.count > 0
-                                ? 'bg-slate-900 text-slate-200 hover:bg-slate-850 border-slate-800'
-                                : 'bg-slate-950/40 text-slate-500 hover:bg-slate-900/30 border-slate-900/60'
+                              ? `${item.color} ring-1 ring-white/30 shadow-md font-bold`
+                              : 'bg-slate-950/60 hover:bg-slate-800/60 border-slate-800 text-slate-300'
                           }`}
                         >
-                          <span className="flex items-center gap-1.5 truncate mr-1">
-                            <span>🏛️</span>
-                            <span className="truncate">{item.name}</span>
-                          </span>
-                          <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full shrink-0 ${
-                            item.count > 0 ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/40' : 'bg-black/30 text-slate-600'
-                          }`}>
-                            {item.count}
-                          </span>
+                          <div className="flex items-center space-x-2.5">
+                            <Icon className="w-4 h-4 shrink-0" />
+                            <div>
+                              <div className="text-xs font-bold">{item.label}</div>
+                              <div className="text-[10px] text-slate-400 font-normal">{item.desc}</div>
+                            </div>
+                          </div>
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-xs shrink-0" />}
                         </button>
                       );
                     })}
+
+                    {selectedOriginFilter === 'caixa' && (
+                      <div className="p-2.5 bg-slate-950 border border-blue-900/40 rounded-xl space-y-2 mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-blue-400 block uppercase font-mono">
+                            Sub-modalidades Caixa ({caixaModalityCounts.total})
+                          </span>
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                            <button
+                              type="button"
+                              onClick={() => setCaixaSubModes({ vendaDireta: true, vendaOnline: true, licitacao: true, leilaoSfi: true })}
+                              className="text-indigo-400 hover:text-white transition-colors cursor-pointer"
+                              title="Marcar todas as modalidades Caixa"
+                            >
+                              Todas
+                            </button>
+                            <span className="text-slate-600">•</span>
+                            <button
+                              type="button"
+                              onClick={() => setCaixaSubModes({ vendaDireta: false, vendaOnline: false, licitacao: false, leilaoSfi: false })}
+                              className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                              title="Desmarcar todas"
+                            >
+                              Nenhuma
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 text-xs">
+                          {/* 1. Venda Direta Online */}
+                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={caixaSubModes.vendaDireta}
+                                onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaDireta: e.target.checked }))}
+                                className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 cursor-pointer"
+                              />
+                              <span className="flex items-center gap-1">
+                                <span>🤝</span>
+                                <span className="font-semibold text-slate-200">Venda Direta Online</span>
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                              caixaModalityCounts.vendaDireta > 0 ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/40' : 'bg-black/30 text-slate-600'
+                            }`}>
+                              {caixaModalityCounts.vendaDireta}
+                            </span>
+                          </label>
+
+                          {/* 2. Venda Online */}
+                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={caixaSubModes.vendaOnline}
+                                onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaOnline: e.target.checked }))}
+                                className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 cursor-pointer"
+                              />
+                              <span className="flex items-center gap-1">
+                                <span>⏱️</span>
+                                <span className="font-semibold text-slate-200">Venda Online</span>
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                              caixaModalityCounts.vendaOnline > 0 ? 'bg-cyan-950/80 text-cyan-300 font-bold border border-cyan-800/40' : 'bg-black/30 text-slate-600'
+                            }`}>
+                              {caixaModalityCounts.vendaOnline}
+                            </span>
+                          </label>
+
+                          {/* 3. Licitação Aberta */}
+                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={caixaSubModes.licitacao}
+                                onChange={e => setCaixaSubModes(prev => ({ ...prev, licitacao: e.target.checked }))}
+                                className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                              />
+                              <span className="flex items-center gap-1">
+                                <span>📢</span>
+                                <span className="font-semibold text-slate-200">Licitação Aberta</span>
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                              caixaModalityCounts.licitacao > 0 ? 'bg-amber-950/80 text-amber-300 font-bold border border-amber-800/40' : 'bg-black/30 text-slate-600'
+                            }`}>
+                              {caixaModalityCounts.licitacao}
+                            </span>
+                          </label>
+
+                          {/* 4. Leilão SFI */}
+                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={caixaSubModes.leilaoSfi}
+                                onChange={e => setCaixaSubModes(prev => ({ ...prev, leilaoSfi: e.target.checked }))}
+                                className="rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-0 cursor-pointer"
+                              />
+                              <span className="flex items-center gap-1">
+                                <span>⚖️</span>
+                                <span className="font-semibold text-slate-200">Leilão SFI (1º/2º)</span>
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                              caixaModalityCounts.leilaoSfi > 0 ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-800/40' : 'bg-black/30 text-slate-600'
+                            }`}>
+                              {caixaModalityCounts.leilaoSfi}
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sub-opções específicas quando Extrajudicial estiver selecionada */}
+                    {selectedOriginFilter === 'extrajudicial' && (
+                      <div className="p-2.5 bg-slate-950 border border-emerald-900/40 rounded-xl space-y-2 mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase font-mono flex items-center gap-1">
+                            <span>🏛️</span>
+                            <span>Leiloeiros Extrajudiciais</span>
+                          </span>
+                          {selectedAuctioneerFilter && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAuctioneerFilter('')}
+                              className="text-[10px] text-indigo-400 hover:text-white cursor-pointer"
+                            >
+                              Ver todos
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-56 overflow-y-auto space-y-1.5 text-xs pr-1">
+                          {activeExtrajudicialAuctioneers.map(item => {
+                            const isSelected = selectedAuctioneerFilter === item.name;
+                            return (
+                              <button
+                                key={item.name}
+                                type="button"
+                                onClick={() => setSelectedAuctioneerFilter(prev => prev === item.name ? '' : item.name)}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-xl border font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30 ring-2 ring-purple-400/50'
+                                    : item.count > 0
+                                      ? 'bg-slate-900 text-slate-200 hover:bg-slate-850 border-slate-800'
+                                      : 'bg-slate-950/40 text-slate-500 hover:bg-slate-900/30 border-slate-900/60'
+                                }`}
+                              >
+                                <span className="flex items-center gap-1.5 truncate mr-1">
+                                  <span>🏛️</span>
+                                  <span className="truncate">{item.name}</span>
+                                </span>
+                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full shrink-0 ${
+                                  item.count > 0 ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/40' : 'bg-black/30 text-slate-600'
+                                }`}>
+                                  {item.count}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* 2. FILTRO CASCATA DE LOCALIZAÇÃO (Estado -> Cidade -> Bairros) */}
-            <div className="space-y-3 pt-2 border-t border-slate-800/80">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                Localização Geográfica
-              </label>
-
-              {/* Estado (UF) */}
-              <div>
-                <span className="text-[10px] text-slate-400 block mb-1">Estado (UF)</span>
-                <select
-                  value={selectedStateFilter}
-                  onChange={(e) => {
-                    setSelectedStateFilter(e.target.value);
-                    setSelectedCityFilter('');
-                    setCitySearchInput('');
-                    setSelectedNeighborhoods([]);
-                    setSelectedNeighborhoodFilter('');
-                  }}
-                  className="w-full text-xs font-bold border border-slate-700 rounded-xl p-2.5 bg-slate-950 text-slate-100 hover:bg-slate-900 focus:border-indigo-500 outline-none transition-colors cursor-pointer"
-                >
-                  <option value="">Todos os Estados (RJ, MG)</option>
-                  {uniqueStates.map(uf => {
-                    const stateObj = BRAZIL_STATES.find(s => s.value === uf);
-                    return (
-                      <option key={uf} value={uf}>
-                        {uf} {stateObj ? `- ${stateObj.label}` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
+                )}
               </div>
+            )}
 
-              {/* Cidade com Autocomplete Typeahead */}
-              <div className="relative">
-                <span className="text-[10px] text-slate-400 block mb-1">Cidade</span>
-                {selectedCityFilter ? (
-                  <div className="flex items-center justify-between bg-indigo-950/60 border border-indigo-600/50 px-3 py-2 rounded-xl text-xs text-indigo-200 font-bold">
-                    <span className="truncate">{selectedCityFilter}</span>
-                    <button
-                      onClick={() => {
+            {/* 2. FILTRO DE LOCALIZAÇÃO GEOGRÁFICA (ESTADO -> CIDADE -> BAIRROS COLAPSÁVEL) */}
+            <div className="space-y-3 pt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => setIsLocationOpen(prev => !prev)}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
+              >
+                <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
+                  <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Localização Geográfica</span>
+                </span>
+                {isLocationOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </button>
+
+              {isLocationOpen && (
+                <div className="space-y-3 p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 mt-1">
+                  {/* Estado (UF) */}
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Estado (UF)</span>
+                    <select
+                      value={selectedStateFilter}
+                      onChange={(e) => {
+                        setSelectedStateFilter(e.target.value);
                         setSelectedCityFilter('');
                         setCitySearchInput('');
                         setSelectedNeighborhoods([]);
                         setSelectedNeighborhoodFilter('');
                       }}
-                      className="p-1 hover:text-white rounded-md text-indigo-400 transition-colors"
-                      title="Remover cidade selecionada"
+                      className="w-full text-xs font-bold border border-slate-700 rounded-xl p-2.5 bg-slate-900 text-slate-100 hover:bg-slate-850 focus:border-indigo-500 outline-none transition-colors cursor-pointer"
                     >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                      <option value="">Todos os Estados (RJ, MG)</option>
+                      {uniqueStates.map(uf => {
+                        const stateObj = BRAZIL_STATES.find(s => s.value === uf);
+                        return (
+                          <option key={uf} value={uf}>
+                            {uf} {stateObj ? `- ${stateObj.label}` : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
-                ) : (
-                  <div>
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                      <input
-                        type="text"
-                        placeholder="Buscar cidade..."
-                        value={citySearchInput}
-                        onChange={e => {
-                          setCitySearchInput(e.target.value);
-                          setIsCityDropdownOpen(true);
-                        }}
-                        onFocus={() => setIsCityDropdownOpen(true)}
-                        className="w-full text-xs border border-slate-700 rounded-xl pl-8 pr-3 py-2 bg-slate-950 text-slate-100 placeholder-slate-500 focus:border-indigo-500 outline-none"
-                      />
-                    </div>
 
-                    {isCityDropdownOpen && filteredCitiesTypeahead.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-750 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto p-1">
-                        {filteredCitiesTypeahead.map(city => (
-                          <button
-                            key={city}
-                            onClick={() => {
-                              setSelectedCityFilter(city);
-                              setCitySearchInput('');
-                              setIsCityDropdownOpen(false);
-                              setSelectedNeighborhoods([]);
-                              setSelectedNeighborhoodFilter('');
-                              // Auto sync state
-                              for (const [st, cities] of Object.entries(VALID_ITBI_CITIES_BY_STATE)) {
-                                if (cities.includes(city)) {
-                                  setSelectedStateFilter(st);
-                                  break;
-                                }
-                              }
+                  {/* Cidade com Autocomplete Typeahead */}
+                  <div className="relative">
+                    <span className="text-[10px] text-slate-400 block mb-1">Cidade</span>
+                    {selectedCityFilter ? (
+                      <div className="flex items-center justify-between bg-indigo-950/60 border border-indigo-600/50 px-3 py-2 rounded-xl text-xs text-indigo-200 font-bold">
+                        <span className="truncate">{selectedCityFilter}</span>
+                        <button
+                          onClick={() => {
+                            setSelectedCityFilter('');
+                            setCitySearchInput('');
+                            setSelectedNeighborhoods([]);
+                            setSelectedNeighborhoodFilter('');
+                          }}
+                          className="p-1 hover:text-white rounded-md text-indigo-400 transition-colors"
+                          title="Remover cidade selecionada"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                          <input
+                            type="text"
+                            placeholder="Buscar cidade..."
+                            value={citySearchInput}
+                            onChange={e => {
+                              setCitySearchInput(e.target.value);
+                              setIsCityDropdownOpen(true);
                             }}
-                            className="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors cursor-pointer truncate"
-                          >
-                            {city}
-                          </button>
-                        ))}
+                            onFocus={() => setIsCityDropdownOpen(true)}
+                            className="w-full text-xs border border-slate-700 rounded-xl pl-8 pr-3 py-2 bg-slate-900 text-slate-100 placeholder-slate-500 focus:border-indigo-500 outline-none"
+                          />
+                        </div>
+
+                        {isCityDropdownOpen && filteredCitiesTypeahead.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-750 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto p-1">
+                            {filteredCitiesTypeahead.map(city => (
+                              <button
+                                key={city}
+                                onClick={() => {
+                                  setSelectedCityFilter(city);
+                                  setCitySearchInput('');
+                                  setIsCityDropdownOpen(false);
+                                  setSelectedNeighborhoods([]);
+                                  setSelectedNeighborhoodFilter('');
+                                  for (const [st, cities] of Object.entries(VALID_ITBI_CITIES_BY_STATE)) {
+                                    if (cities.includes(city)) {
+                                      setSelectedStateFilter(st);
+                                      break;
+                                    }
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors cursor-pointer truncate"
+                              >
+                                {city}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Bairros Multi-select com Checkboxes e Busca Interna */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400 font-bold uppercase font-mono">Bairros</span>
-                  <div className="space-x-2">
+                  {/* Bairros Acordeão Colapsável */}
+                  <div className="space-y-1.5 pt-1">
                     <button
-                      onClick={handleSelectAllNeighborhoods}
-                      className="text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer"
+                      type="button"
+                      onClick={() => setIsNeighborhoodsOpen(prev => !prev)}
+                      className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
                     >
-                      Todos
+                      <span className="font-bold text-slate-300">
+                        Bairros {selectedNeighborhoods.length > 0 ? `(${selectedNeighborhoods.length} selecionados)` : '(Todos)'}
+                      </span>
+                      {isNeighborhoodsOpen ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                      )}
                     </button>
-                    <span className="text-slate-600">•</span>
-                    <button
-                      onClick={handleClearNeighborhoods}
-                      className="text-slate-500 hover:text-slate-300 cursor-pointer"
-                    >
-                      Nenhum
-                    </button>
-                  </div>
-                </div>
 
-                {/* Input de busca rápida no bairro */}
-                <input
-                  type="text"
-                  placeholder="Filtrar bairro..."
-                  value={neighborhoodSearch}
-                  onChange={e => setNeighborhoodSearch(e.target.value)}
-                  className="w-full text-[11px] border border-slate-750 rounded-lg px-2.5 py-1.5 bg-slate-950 text-slate-200 placeholder-slate-500 focus:border-indigo-500 outline-none"
-                />
-
-                {/* Lista de Checkboxes */}
-                <div className="max-h-40 overflow-y-auto space-y-1 pr-1 bg-slate-950/80 p-2 rounded-xl border border-slate-800 text-xs">
-                  {visibleNeighborhoods.length === 0 ? (
-                    <div className="text-center py-3 text-[11px] text-slate-500">
-                      Nenhum bairro com lotes ativos.
-                    </div>
-                  ) : (
-                    visibleNeighborhoods.map(({ name, count }) => {
-                      const isChecked = selectedNeighborhoods.includes(name);
-                      return (
-                        <label
-                          key={name}
-                          className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px]"
-                        >
-                          <div className="flex items-center space-x-2 truncate pr-2">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleToggleNeighborhood(name)}
-                              className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
-                            />
-                            <span className={`truncate ${isChecked ? 'text-white font-bold' : 'text-slate-300'}`}>
-                              {name}
-                            </span>
+                    {isNeighborhoodsOpen && (
+                      <div className="space-y-2 p-2 bg-slate-950 rounded-xl border border-slate-800/80 mt-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-slate-400 font-mono">Seleção:</span>
+                          <div className="space-x-2">
+                            <button
+                              type="button"
+                              onClick={handleSelectAllNeighborhoods}
+                              className="text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer"
+                            >
+                              Todos
+                            </button>
+                            <span className="text-slate-600">•</span>
+                            <button
+                              type="button"
+                              onClick={handleClearNeighborhoods}
+                              className="text-slate-500 hover:text-slate-300 cursor-pointer"
+                            >
+                              Nenhum
+                            </button>
                           </div>
-                          <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
-                            {count}
-                          </span>
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
+                        </div>
 
-            {/* 3. TIPO DE IMÓVEL */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                Tipo de Imóvel
-              </label>
-              <select
-                value={selectedTypeFilter}
-                onChange={e => setSelectedTypeFilter(e.target.value)}
-                className="w-full text-xs font-semibold border border-slate-700 rounded-xl p-2.5 bg-slate-950 text-slate-100 hover:bg-slate-900 focus:border-indigo-500 outline-none transition-colors cursor-pointer"
-              >
-                <option value="">Todos os Tipos de Imóvel</option>
-                <option value="Apartamento">Apartamento</option>
-                <option value="Casa">Casa</option>
-                <option value="Terreno">Terreno / Lote</option>
-                <option value="Comercial">Comercial</option>
-                <option value="Industrial">Industrial</option>
-                <option value="Rural">Rural</option>
-              </select>
-            </div>
+                        <input
+                          type="text"
+                          placeholder="Filtrar bairro..."
+                          value={neighborhoodSearch}
+                          onChange={e => setNeighborhoodSearch(e.target.value)}
+                          className="w-full text-[11px] border border-slate-750 rounded-lg px-2.5 py-1.5 bg-slate-900 text-slate-200 placeholder-slate-500 focus:border-indigo-500 outline-none"
+                        />
 
-            {/* 4. FAIXA DE PREÇO / LANCE MÍNIMO E MÁXIMO */}
-            <div className="space-y-2 pt-2 border-t border-slate-800/80">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                Faixa de Preço (R$)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-[9.5px] text-slate-500 block mb-0.5">Lance Mínimo</span>
-                  <input
-                    type="number"
-                    placeholder="R$ 0"
-                    value={minPriceInput}
-                    onChange={e => setMinPriceInput(e.target.value)}
-                    className="w-full text-xs border border-slate-750 rounded-xl p-2 bg-slate-950 text-white font-mono outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <span className="text-[9.5px] text-slate-500 block mb-0.5">Lance Máximo</span>
-                  <input
-                    type="number"
-                    placeholder="Sem limite"
-                    value={maxPriceInput}
-                    onChange={e => {
-                      setMaxPriceInput(e.target.value);
-                      if (setMaxPriceFilter) setMaxPriceFilter(e.target.value);
-                    }}
-                    className="w-full text-xs border border-slate-750 rounded-xl p-2 bg-slate-950 text-white font-mono outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 5. PAINEL RENDIMENTO & LUCRO */}
-            <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                Rendimento & Lucro
-              </label>
-
-              {/* Botão Rápido Alto Retorno */}
-              <button
-                onClick={() => setOnlyHighReturn(prev => !prev)}
-                className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-                  onlyHighReturn
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-900/30'
-                    : 'bg-slate-950 text-slate-300 hover:text-white hover:bg-slate-850 border-slate-750'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Alto Retorno (ROI ≥ 40% & Score ≥ 7)</span>
-                </div>
-                {onlyHighReturn && <Check className="w-3.5 h-3.5" />}
-              </button>
-
-              {/* Slider de ROI Mínimo */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-slate-400 font-medium">ROI Mínimo:</span>
-                  <span className="font-mono text-indigo-400 font-bold">{minRoiFilter}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={minRoiFilter}
-                  onChange={e => setMinRoiFilter(Number(e.target.value))}
-                  className="w-full accent-indigo-500 cursor-pointer"
-                />
-              </div>
-
-              {/* Checkbox Análise > Edital */}
-              <label className="flex items-center space-x-2 text-xs text-slate-300 hover:text-white cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={onlyAnalysisAboveEdital}
-                  onChange={e => setOnlyAnalysisAboveEdital(e.target.checked)}
-                  className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
-                />
-                <span>Análise Real &gt; Avaliação do Edital</span>
-              </label>
-
-              {/* Confiança ITBI */}
-              <div className="pt-1">
-                <span className="text-[10px] text-slate-400 block mb-1">Certeza do Gabarito ITBI</span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    onClick={() => setItbiConfidenceFilter('all')}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
-                      itbiConfidenceFilter === 'all'
-                        ? 'bg-slate-750 text-white border-slate-600'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    Todos os Lotes
-                  </button>
-                  <button
-                    onClick={() => setItbiConfidenceFilter('verified')}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
-                      itbiConfidenceFilter === 'verified'
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    ★ Alta Certeza (Rua)
-                  </button>
-                </div>
-              </div>
-
-              {/* Padrão de Mercado (M² Flip) */}
-              <div className="pt-2 border-t border-slate-800/80">
-                <span className="text-[10px] text-slate-400 block mb-1">Padrão de Mercado (M² Flip)</span>
-                <div className="grid grid-cols-3 gap-1">
-                  <button
-                    onClick={() => setPrestigeFilter('all')}
-                    className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
-                      prestigeFilter === 'all'
-                        ? 'bg-slate-750 text-white border-slate-600'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    onClick={() => setPrestigeFilter('nobre')}
-                    className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
-                      prestigeFilter === 'nobre'
-                        ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/60 shadow-xs'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                    title="Consolidado / Nobre: preco_m2_flip >= 4500"
-                  >
-                    Nobre (≥ 4.5k)
-                  </button>
-                  <button
-                    onClick={() => setPrestigeFilter('prime')}
-                    className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer text-center ${
-                      prestigeFilter === 'prime'
-                        ? 'bg-purple-600/30 text-purple-300 border-purple-500/60 shadow-xs'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                    title="Alto Padrão / Prime: preco_m2_flip >= 8000"
-                  >
-                    Prime (≥ 8k)
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 6. ALOCAÇÃO DE CAPITAL (Orçamento Numérico) */}
-            <div className="space-y-2 pt-2 border-t border-slate-800/80">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center justify-between">
-                <span>Alocação por Capital</span>
-                <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-              </label>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-500">Seu orçamento disponível (R$):</span>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs text-slate-500 font-mono">R$</span>
-                  <input
-                    type="number"
-                    placeholder="Ex: 200000"
-                    value={capitalBudget}
-                    onChange={e => setCapitalBudget(e.target.value)}
-                    className="w-full text-xs font-mono font-bold border border-slate-750 rounded-xl pl-9 pr-3 py-2 bg-slate-950 text-emerald-400 placeholder-slate-600 outline-none focus:border-emerald-500"
-                  />
-                </div>
-                {capitalBudget && Number(capitalBudget) > 0 && (
-                  <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-[10px] text-emerald-300 font-mono">
-                    Filtrando lotes que cabem em {formatBRL(Number(capitalBudget))} (à vista ou com 5% de entrada).
+                        <div className="max-h-40 overflow-y-auto space-y-1 pr-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800 text-xs">
+                          {visibleNeighborhoods.length === 0 ? (
+                            <div className="text-center py-3 text-[11px] text-slate-500">
+                              Nenhum bairro com lotes ativos.
+                            </div>
+                          ) : (
+                            visibleNeighborhoods.map(({ name, count }) => {
+                              const isChecked = selectedNeighborhoods.includes(name);
+                              return (
+                                <label
+                                  key={name}
+                                  className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px]"
+                                >
+                                  <div className="flex items-center space-x-2 truncate pr-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => handleToggleNeighborhood(name)}
+                                      className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
+                                    />
+                                    <span className={`truncate ${isChecked ? 'text-white font-bold' : 'text-slate-300'}`}>
+                                      {name}
+                                    </span>
+                                  </div>
+                                  <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
+                                    {count}
+                                  </span>
+                                </label>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+
+            {/* 3. CONDIÇÕES & OCUPAÇÃO (FINANCIAMENTO, PARCELAMENTO, DESOCUPADO) - Apenas Leilões */}
+            {mode !== 'portais' && (
+              <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                  Condições & Ocupação
+                </label>
+                <div className="space-y-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setOnlyFinancing(prev => !prev)}
+                    className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                      onlyFinancing
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/40 ring-1 ring-emerald-400/40'
+                        : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🏦</span>
+                      <span>Aceita Financiamento</span>
+                    </span>
+                    {onlyFinancing && <Check className="w-3.5 h-3.5 text-white" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setOnlyInstallments(prev => !prev)}
+                    className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                      onlyInstallments
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-950/40 ring-1 ring-blue-400/40'
+                        : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>💳</span>
+                      <span>Aceita Parcelamento</span>
+                    </span>
+                    {onlyInstallments && <Check className="w-3.5 h-3.5 text-white" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setOnlyVacant(prev => !prev)}
+                    className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                      onlyVacant
+                        ? 'bg-teal-600 text-white border-teal-500 shadow-md shadow-teal-950/40 ring-1 ring-teal-400/40'
+                        : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🔑</span>
+                      <span>Imóvel Desocupado</span>
+                    </span>
+                    {onlyVacant && <Check className="w-3.5 h-3.5 text-white" />}
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* 5. RODAPÉ DA SIDEBAR: GERENCIADOR DE PRESETS DE BUSCA */}
+            <div className="pt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => setIsPresetModalOpen(true)}
+                className="w-full py-2.5 px-3.5 bg-slate-950 hover:bg-slate-850 text-slate-200 hover:text-white rounded-xl border border-slate-800 hover:border-slate-700 font-bold text-xs transition-all flex items-center justify-between cursor-pointer group shadow-sm"
+                title="Abrir gerenciador de presets de busca salvos"
+              >
+                <div className="flex items-center space-x-2.5">
+                  <Bookmark className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span>💾 Presets de Busca</span>
+                </div>
+                <span className="text-[10px] font-mono bg-slate-900 border border-slate-750 px-2 py-0.5 rounded-full text-slate-400 group-hover:text-amber-300">
+                  {savedPresets.length} {savedPresets.length === 1 ? 'salvo' : 'salvos'}
+                </span>
+              </button>
             </div>
 
           </div>
@@ -1672,162 +2453,302 @@ export default function Dashboard({
         <main className="flex-1 min-w-0 space-y-4">
           
           {/* Top Bar do Feed: Oportunidades, Ordenação, Temporal Toggle e Salvar Busca */}
-          <div className="bg-slate-900 border border-slate-800/90 rounded-2xl p-4 shadow-xl space-y-3.5">
+          <div className="bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 shadow-xl space-y-2.5">
             
-            {/* Linha 1: Contador à esquerda, Controles Temporais e Salvar Busca à direita */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            {/* Linha 1: Contador e Contexto à esquerda, Controles Temporais e Salvar Busca à direita */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
               
-              {/* Esquerda: Contador Dinâmico */}
+              {/* Esquerda: Contador Dinâmico e Auditoria ITBI / Calculadora */}
               <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
+                <div className={`p-2 rounded-xl border shrink-0 ${
+                  advancedContextTab === 'alugar'
+                    ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30'
+                    : 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30'
+                }`}>
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
                     <h2 className="text-base sm:text-lg font-black text-white font-display">
-                      {filteredAndSortedAuctions.length} {filteredAndSortedAuctions.length === 1 ? 'Oportunidade Encontrada' : 'Oportunidades Encontradas'}
+                      {filteredAndSortedAuctions.length} {advancedContextTab === 'alugar' ? (filteredAndSortedAuctions.length === 1 ? 'Imóvel para Alugar' : 'Imóveis para Alugar') : (filteredAndSortedAuctions.length === 1 ? 'Oportunidade Encontrada' : 'Oportunidades Encontradas')}
                     </h2>
                   </div>
-                  <p className="text-[11px] text-slate-400">
-                    {selectedStateFilter ? `Filtrando em ${selectedStateFilter}` : 'Varredura nacional ativa'} • Auditado via ITBI Municipal
+                  <p className="text-xs text-slate-400">
+                    {advancedContextTab === 'alugar' ? (
+                      <>Varredura de locação residencial em <strong className="text-slate-200 font-bold">{locationScopeText}</strong> • <span className="text-emerald-300 font-semibold">Avaliado via Calculadora de Valor Real</span></>
+                    ) : (
+                      <>Varredura ativa em <strong className="text-slate-200 font-bold">{locationScopeText}</strong> • <span className="text-indigo-300 font-semibold">Auditado via ITBI Municipal</span></>
+                    )}
                   </p>
                 </div>
               </div>
 
-              {/* Direita: Toggle Temporal e Salvar Busca */}
-              <div className="flex flex-wrap items-center gap-2">
-                
-                {/* Toggle Temporal: Padrão, Data de Encerramento, Inclusão Recente */}
-                <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setTemporalSortMode('neutral')}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                      temporalSortMode === 'neutral'
-                        ? 'bg-slate-800 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                    title="Critério neutro por relevância"
-                  >
-                    Padrão
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTemporalSortMode('urgent')}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center space-x-1 ${
-                      temporalSortMode === 'urgent'
-                        ? 'bg-rose-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                    title="Próximas praças e encerramentos iminentes"
-                  >
-                    <Flame className="w-3 h-3 text-amber-300" />
-                    <span>Data de Encerramento</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTemporalSortMode('newest')}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center space-x-1 ${
-                      temporalSortMode === 'newest'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                    title="Lotes recém adicionados e garimpados"
-                  >
-                    <Sparkles className="w-3 h-3 text-cyan-300" />
-                    <span>Inclusão Recente</span>
-                  </button>
-                </div>
-
-                {/* Botão Salvar Busca */}
+              {/* Direita: Toggle Temporal (Padrão, Mais Antigos, Inclusão Mais Recente) */}
+              <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs self-start lg:self-auto">
                 <button
                   type="button"
-                  onClick={handleSaveSearch}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-750 text-slate-200 hover:text-white rounded-xl border border-slate-700 font-bold text-xs transition-all flex items-center space-x-1 cursor-pointer"
-                  title="Salvar esta configuração de filtros para acessos futuros"
+                  onClick={() => {
+                    setTemporalSortMode('neutral');
+                    setSortBy('roi');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    temporalSortMode === 'neutral'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title={advancedContextTab === 'alugar' ? "Ordenar por Custo Benefício / Mais Barato que a Calculadora" : "Ordenar por Padrão (Maior ROI decrescente com desempate por Lucro Líquido Real)"}
                 >
-                  <Bookmark className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden sm:inline">Salvar busca</span>
+                  <span>{advancedContextTab === 'alugar' ? '📊 Padrão (Mais Barato)' : '📈 Padrão (Maior ROI)'}</span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => setTemporalSortMode('urgent')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    temporalSortMode === 'urgent'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title={mode === 'portais' || advancedContextTab === 'alugar' ? "Anúncios publicados há mais tempo primeiro (maior margem para negociar)" : "Próximas praças e encerramentos iminentes"}
+                >
+                  <Flame className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{mode === 'portais' || advancedContextTab === 'alugar' ? 'Mais Antigos' : 'Próximas Praças'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTemporalSortMode('newest')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    temporalSortMode === 'newest'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Anúncios e oportunidades recém adicionados ao sistema"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                  <span>Inclusão Mais Recente</span>
+                </button>
               </div>
             </div>
 
-            {/* Linha 2: 4 Botões de Estratégia (Multi-seleção Independente dos 4 Filtros) */}
-            <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-800/80 w-full">
-              <span className="text-[11px] font-mono uppercase text-slate-400 font-bold mr-1">ESTRATÉGIA:</span>
+            {/* Linha 2: Estratégias organizadas à esquerda + Mapa no canto direito na mesma linha */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-2 border-t border-slate-800/80 w-full">
               
-              <button
-                type="button"
-                onClick={() => setStrategyFilters(prev => ({ ...prev, liquidity: !prev.liquidity }))}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                  strategyFilters.liquidity
-                    ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-400/40'
-                    : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                }`}
-              >
-                <span>💧 Maior Liquidez</span>
-                {strategyFilters.liquidity && <Check className="w-3 h-3 text-white" />}
-              </button>
+              {/* Esquerda: 4 Botões de Estratégia organizados e alinhados por modalidade */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-mono uppercase text-slate-400 font-bold mr-1">ESTRATÉGIA:</span>
+                
+                {/* 1. ESTRATÉGIAS PARA LOCAÇÃO RESIDENCIAL */}
+                {advancedContextTab === 'alugar' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, superCheap: !prev.superCheap }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.superCheap
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Imóveis onde o aluguel pedido está significativamente abaixo do valor real apurado pela calculadora"
+                    >
+                      <span>🟢 Super Barato</span>
+                      {strategyFilters.superCheap && <Check className="w-3 h-3 text-white" />}
+                    </button>
 
-              <button
-                type="button"
-                onClick={() => setStrategyFilters(prev => ({ ...prev, roi: !prev.roi }))}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                  strategyFilters.roi
-                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
-                    : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                }`}
-              >
-                <span>📈 Maior ROI</span>
-                {strategyFilters.roi && <Check className="w-3 h-3 text-white" />}
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, lowestRent: !prev.lowestRent }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.lowestRent
+                          ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Ordenar pelo menor valor absoluto de aluguel por mês"
+                    >
+                      <span>📉 Menor Aluguel</span>
+                      {strategyFilters.lowestRent && <Check className="w-3 h-3 text-white" />}
+                    </button>
 
-              <button
-                type="button"
-                onClick={() => setStrategyFilters(prev => ({ ...prev, profit: !prev.profit }))}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                  strategyFilters.profit
-                    ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-400/40'
-                    : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                }`}
-              >
-                <span>💰 Maior Lucro Real</span>
-                {strategyFilters.profit && <Check className="w-3 h-3 text-white" />}
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, lowestRentSqm: !prev.lowestRentSqm }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.lowestRentSqm
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Ordenar pelo menor valor de aluguel por metro quadrado (R$/m² mês)"
+                    >
+                      <span>📐 Menor R$/m² Mês</span>
+                      {strategyFilters.lowestRentSqm && <Check className="w-3 h-3 text-white" />}
+                    </button>
 
-              <button
-                type="button"
-                onClick={() => setStrategyFilters(prev => ({ ...prev, spread: !prev.spread }))}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                  strategyFilters.spread
-                    ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
-                    : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                }`}
-              >
-                <span>📐 Maior Spread por m²</span>
-                {strategyFilters.spread && <Check className="w-3 h-3 text-white" />}
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, bestRentDiscount: !prev.bestRentDiscount }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.bestRentDiscount
+                          ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Maior economia financeira mensal em relação à média apurada"
+                    >
+                      <span>⭐ Maior Economia</span>
+                      {strategyFilters.bestRentDiscount && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                  </>
+                ) : mode === 'portais' ? (
+                  /* 2. ESTRATÉGIAS PARA FLIP HOUSE (Portais de Compra e Venda Particular) */
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, discount: !prev.discount }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.discount
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Imóveis com maior deságio em relação ao valor de mercado do ITBI municipal"
+                    >
+                      <span>🏷️ Maior Desconto</span>
+                      {strategyFilters.discount && <Check className="w-3 h-3 text-white" />}
+                    </button>
 
-              {(strategyFilters.liquidity || strategyFilters.roi || strategyFilters.profit || strategyFilters.spread) && (
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, profit: !prev.profit }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.profit
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Maior projeção de lucro líquido após reforma e revenda rápida (Flip)"
+                    >
+                      <span>💰 Maior Lucro Flip</span>
+                      {strategyFilters.profit && <Check className="w-3 h-3 text-white" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, lowestSqm: !prev.lowestSqm }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.lowestSqm
+                          ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Menor preço pedido por metro quadrado útil"
+                    >
+                      <span>📉 Menor Preço/m²</span>
+                      {strategyFilters.lowestSqm && <Check className="w-3 h-3 text-white" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, under250k: !prev.under250k }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.under250k
+                          ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                      title="Filtrar imóveis com preço total de até R$ 250.000 (Giro Rápido Popular)"
+                    >
+                      <span>⚡ Até R$ 250k</span>
+                      {strategyFilters.under250k && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                  </>
+                ) : (
+                  /* 3. ESTRATÉGIAS PARA LEILÕES JUDICIAIS E CAIXA (Garimpo) */
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, liquidity: !prev.liquidity }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.liquidity
+                          ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                    >
+                      <span>💧 Maior Liquidez</span>
+                      {strategyFilters.liquidity && <Check className="w-3 h-3 text-white" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, roi: !prev.roi }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.roi
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                    >
+                      <span>📈 Maior ROI</span>
+                      {strategyFilters.roi && <Check className="w-3 h-3 text-white" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, profit: !prev.profit }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.profit
+                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                    >
+                      <span>💰 Maior Lucro Real</span>
+                      {strategyFilters.profit && <Check className="w-3 h-3 text-white" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStrategyFilters(prev => ({ ...prev, spread: !prev.spread }))}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                        strategyFilters.spread
+                          ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
+                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
+                      }`}
+                    >
+                      <span>📐 Maior Spread por m²</span>
+                      {strategyFilters.spread && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                  </>
+                )}
+
+                {(strategyFilters.liquidity || strategyFilters.roi || strategyFilters.profit || strategyFilters.spread || strategyFilters.discount || strategyFilters.lowestSqm || strategyFilters.under250k || strategyFilters.superCheap || strategyFilters.lowestRent || strategyFilters.lowestRentSqm || strategyFilters.bestRentDiscount) && (
+                  <button
+                    type="button"
+                    onClick={() => setStrategyFilters({
+                      liquidity: false,
+                      roi: false,
+                      profit: false,
+                      spread: false,
+                      discount: false,
+                      lowestSqm: false,
+                      under250k: false,
+                      superCheap: false,
+                      lowestRent: false,
+                      lowestRentSqm: false,
+                      bestRentDiscount: false,
+                    })}
+                    className="text-[11px] text-slate-400 hover:text-rose-400 font-bold cursor-pointer transition-colors ml-1"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+
+              {/* Direita: Botão Mapa no canto direito exatamente na mesma linha da estratégia */}
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <button
                   type="button"
-                  onClick={() => setStrategyFilters({ liquidity: false, roi: false, profit: false, spread: false })}
-                  className="text-[11px] text-slate-400 hover:text-rose-400 font-bold cursor-pointer transition-colors mr-2"
+                  onClick={() => setIsGeneralMapModalOpen(true)}
+                  className="text-xs text-emerald-300 hover:text-white font-bold px-3.5 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 transition-all cursor-pointer border border-emerald-500/40 shadow-xs flex items-center gap-1.5"
+                  title="Abrir todos os imóveis filtrados no Mapa Georreferenciado"
                 >
-                  Limpar Estratégias
+                  <MapIcon className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Mapa ({filteredAndSortedAuctions.length})</span>
                 </button>
-              )}
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setIsGeneralMapModalOpen(true)}
-                className="text-xs text-emerald-300 hover:text-white font-bold px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 transition-all cursor-pointer border border-emerald-500/40 shadow-sm flex items-center gap-1.5 ml-auto"
-                title="Abrir todos os imóveis filtrados no Mapa Georreferenciado"
-              >
-                <MapIcon className="w-3.5 h-3.5 text-emerald-400" />
-                <span>🗺️ Mapa ({filteredAndSortedAuctions.length})</span>
-              </button>
             </div>
           </div>
 
@@ -1879,14 +2800,51 @@ export default function Dashboard({
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <AnimatePresence mode="popLayout">
                 {filteredAndSortedAuctions.slice(0, visibleCount).map((auc, idx) => {
+                  const isPortal = auc.origin === 'portal';
                   const costs = auctionCosts(auc);
-                  const totalCost = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo + costs.custoCarregamento;
+                  let totalCost: number;
+                  let lucroReal: number | undefined;
+                  let roi: number | undefined;
+                  const flipPrice = Number(auc.vendaBaixaPrice) || Number(auc.vendaMediaPrice) || 0;
+
+                  if (isPortal) {
+                    const precoCompra = auc.precoAnunciado || auc.auctionPrice || 0;
+                    const itbi = auc.itbiCost ?? Math.round(precoCompra * 0.03);
+                    const rgi = auc.notaryCost ?? Math.round(precoCompra * 0.02);
+                    const reforma = auc.estimatedRepair !== undefined ? auc.estimatedRepair : Math.round(precoCompra * 0.05);
+                    const dividas = (auc.pendingDebts || 0) + (auc.valorCondominio || 0) + (auc.valorIptu || 0);
+                    // Custo total de aquisição fiel à Calculadora (Sem taxa de leilão, reforma a 5%)
+                    totalCost = precoCompra + itbi + rgi + reforma + dividas;
+
+                    if (auc.transactionType === 'aluguel') {
+                      const rent = auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0;
+                      const valMercado = auc.valorMercadoEstimado || auc.estimatedValue || Math.round((auc.sizeSqm || 1) * (auc.m2ReferenciaBairro || 3600));
+                      const rentRef = auc.mediaLocacaoCalculadora || Math.round(valMercado * 0.0055);
+                      lucroReal = Math.max(0, rentRef - rent) * 12;
+                      roi = valMercado > 0 ? Number(((rent * 12 / valMercado) * 100).toFixed(2)) : 0;
+                    } else {
+                      // Flip House: Lucro e ROI baseados no Preço de Saída Flip (vendaBaixaPrice) da Calculadora
+                      const flipExit = flipPrice > 0 ? flipPrice : (auc.vendaBaixaPrice || auc.valorMercadoEstimado || auc.estimatedValue || 0);
+                      if (flipExit > 0) {
+                        lucroReal = Math.round(flipExit - totalCost);
+                        roi = totalCost > 0 ? Number(((lucroReal / totalCost) * 100).toFixed(2)) : 0;
+                      } else if (auc.calculatedProfit !== undefined) {
+                        lucroReal = Number(auc.calculatedProfit);
+                        roi = auc.calculatedRoi !== undefined ? Number(auc.calculatedRoi) : (totalCost > 0 ? Number(((lucroReal / totalCost) * 100).toFixed(2)) : 0);
+                      } else {
+                        lucroReal = undefined;
+                        roi = undefined;
+                      }
+                    }
+                  } else {
+                    totalCost = costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo + costs.custoCarregamento;
+                    lucroReal = flipPrice > 0 ? Math.round(flipPrice - totalCost) : (auc.calculatedProfit !== undefined ? Number(auc.calculatedProfit) : undefined);
+                    roi = (lucroReal !== undefined && totalCost > 0) ? Number(((lucroReal / totalCost) * 100).toFixed(2)) : (auc.calculatedRoi !== undefined ? Number(auc.calculatedRoi) : undefined);
+                  }
+
                   const isSelected = selectedAuctionId === auc.id;
                   const quality = assessDataQuality(auc);
                   const spreadSqm = calculateSpreadSqm(auc);
-                  const flipPrice = Number(auc.vendaBaixaPrice) || Number(auc.vendaMediaPrice) || 0;
-                  const lucroReal = flipPrice > 0 ? Math.round(flipPrice - totalCost) : (auc.calculatedProfit !== undefined ? Number(auc.calculatedProfit) : undefined);
-                  const roi = (lucroReal !== undefined && totalCost > 0) ? Number(((lucroReal / totalCost) * 100).toFixed(2)) : (auc.calculatedRoi !== undefined ? Number(auc.calculatedRoi) : undefined);
 
                   return (
                     <motion.div
@@ -1904,44 +2862,141 @@ export default function Dashboard({
                           : 'border-slate-800 hover:border-slate-700'
                       }`}
                     >
+                      {/* Top cover photo padronizado (Portais e Leilões Judiciais/Extrajudiciais/Caixa) */}
+                      <div className="relative w-full h-44 sm:h-52 bg-slate-950 overflow-hidden border-b border-slate-800 rounded-t-2xl group/img">
+                        <PropertyThumbnail
+                          property={auc}
+                          size="cover"
+                          className="!w-full !h-full !rounded-none !border-0"
+                          onClick={() => setSelectedLightboxProperty(auc)}
+                        />
+                        <div className="absolute top-2.5 left-2.5 flex items-center gap-2 pointer-events-none">
+                          {auc.origin === 'portal' ? (
+                            <span className="bg-slate-900/90 backdrop-blur-md text-amber-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg border border-amber-600/40 shadow-md font-mono flex items-center gap-1.5">
+                              <span>🏷️</span>
+                              <span>{auc.portalName || 'Portal'}</span>
+                            </span>
+                          ) : (
+                            <span className="bg-slate-900/90 backdrop-blur-md text-indigo-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg border border-indigo-600/40 shadow-md font-mono flex items-center gap-1.5">
+                              <span>🏛️</span>
+                              <span>{auc.origin === 'judicial' ? 'Leilão Judicial' : auc.origin === 'caixa' ? 'Imóveis Caixa' : (auc.auctioneerName || auc.leiloeiro || 'Leilão Extrajudicial')}</span>
+                            </span>
+                          )}
+                        </div>
+                        {auc.auctionLink && (
+                          <a
+                            href={auc.auctionLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute bottom-2.5 right-2.5 bg-indigo-600/90 hover:bg-indigo-600 text-white text-[11px] font-bold px-3 py-1 rounded-lg backdrop-blur-sm border border-indigo-400/50 shadow-md transition-all flex items-center gap-1 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{auc.origin === 'portal' ? 'Ver Anúncio Original ↗' : 'Ver Lote do Leilão ↗'}</span>
+                          </a>
+                        )}
+                      </div>
+
                       <div className="p-5 sm:p-6 space-y-4">
                         
-                        {/* Header do Card com Badges, Título e Thumbnail Clicável */}
+                        {/* Header do Card com Badges, Título e Alerta */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0 space-y-2">
                             
-                            {/* Badges de Status dos Cards (Limpos e Diretos) */}
+                            {/* Alerta Visual de Imóvel para Locação (Comparado à Calculadora de Valor Real) ou Venda Abaixo do Mercado */}
+                            {auc.transactionType === 'aluguel' ? (
+                              <div className={`w-full py-2 px-0 mb-2 border-b border-slate-800/80 flex items-start gap-2 bg-transparent ${
+                                auc.vereditoLocacao === 'barato' ? 'text-emerald-300' :
+                                auc.vereditoLocacao === 'caro' ? 'text-rose-300' : 'text-cyan-300'
+                              }`}>
+                                <span className="text-base shrink-0 select-none">
+                                  {auc.vereditoLocacao === 'barato' ? '🔥' : auc.vereditoLocacao === 'caro' ? '⚠️' : '⚖️'}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className={`text-xs font-black uppercase tracking-wide whitespace-normal break-words ${
+                                    auc.vereditoLocacao === 'barato' ? 'text-emerald-400' :
+                                    auc.vereditoLocacao === 'caro' ? 'text-rose-400' : 'text-cyan-400'
+                                  }`}>
+                                    {auc.vereditoLocacao === 'barato' ? `Alerta: Aluguel Barato para Morar (${Math.abs(auc.aluguelDiferencaPct || 0)}% abaixo da média)` :
+                                     auc.vereditoLocacao === 'caro' ? `Alerta: Aluguel Acima da Média (+${auc.aluguelDiferencaPct || 0}% acima da calculadora)` :
+                                     'Preço Justo de Locação (Na média da Calculadora)'}
+                                  </div>
+                                  <div className="text-[11px] text-slate-300 font-mono whitespace-normal break-words mt-0.5" style={{ overflowWrap: 'anywhere' }}>
+                                    O imóvel vale: <strong className="text-white font-bold">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500)))}</strong>
+                                    <span className="mx-1 text-slate-500">•</span>
+                                    Média Calculadora: <strong className="text-amber-300 font-bold">{formatBRL(auc.mediaLocacaoCalculadora || Math.round((auc.valorMercadoEstimado || 0) * 0.0055))}/mês</strong>
+                                    <span className="mx-1 text-slate-500">•</span>
+                                    Aluguel: <strong className="text-white font-bold">{formatBRL(auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice)}/mês</strong>
+                                    <span className="mx-1 text-slate-500">•</span>
+                                    Taxas (Cond+IPTU): <strong className="text-amber-300 font-bold">{formatBRL(auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0)))}/mês</strong>
+                                    <span className="mx-1 text-slate-500">•</span>
+                                    Pacote Total: <strong className="text-emerald-400 font-bold">{formatBRL(auc.totalRentalPackage || ((auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0) + (auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0)))))}/mês</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : auc.origin === 'portal' && (auc.oportunidadeAbaixoMercado || (auc.descontoMercadoPct && auc.descontoMercadoPct >= 15)) ? (
+                              <div className="w-full py-2 px-0 mb-2 border-b border-slate-800/80 flex items-start gap-2 bg-transparent text-slate-200">
+                                <span className="text-base shrink-0 select-none">🔥</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-black uppercase tracking-wide text-rose-400 whitespace-normal break-words overflow-visible">
+                                    Alerta: Abaixo do Valor de Mercado (-{auc.descontoMercadoPct}%)
+                                  </div>
+                                  <div className="text-[11px] text-slate-300 font-mono whitespace-normal break-words mt-0.5" style={{ overflowWrap: 'anywhere' }}>
+                                    Valor Estimado: <strong className="text-emerald-400 font-bold">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 3600)))}</strong>
+                                    <span className="mx-1 text-slate-500">•</span>
+                                    Preço Anunciado: <strong className="text-white font-bold">{formatBRL(auc.precoAnunciado || auc.auctionPrice)}</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {/* Badges de Status dos Cards */}
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-800 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-700">
                                 {auc.propertyType} • {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
                                 {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
                               </span>
 
-                              {/* Badge de Modalidade */}
-                              {(() => {
-                                const badge = getSaleModeBadge(auc);
-                                return (
-                                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${badge.className}`}>
-                                    <span>{badge.icon}</span>
-                                    <span>{badge.label}</span>
-                                  </span>
-                                );
-                              })()}
+                              {/* Portais vs Leilões: Badges dedicados */}
+                              {auc.transactionType === 'aluguel' ? (
+                                <span className="bg-emerald-950/80 text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-600/40 flex items-center gap-1">
+                                  <span>🔑</span>
+                                  <span>Locação Residencial (Para Morar)</span>
+                                </span>
+                              ) : auc.origin === 'portal' ? (
+                                <span className="bg-amber-950/80 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-600/40 flex items-center gap-1">
+                                  <span>🤝</span>
+                                  <span>Venda Direta Particular</span>
+                                </span>
+                              ) : (
+                                <>
+                                  {/* Badge de Modalidade */}
+                                  {(() => {
+                                    const badge = getSaleModeBadge(auc);
+                                    return (
+                                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${badge.className}`}>
+                                        <span>{badge.icon}</span>
+                                        <span>{badge.label}</span>
+                                      </span>
+                                    );
+                                  })()}
 
-                              {/* Risco (Aviso com alto contraste e cores vivas) */}
-                              <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
-                                auc.riskLevel === 'Baixo' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50' :
-                                auc.riskLevel === 'Médio' ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' :
-                                'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-600/50'
-                              }`}>
-                                Risco {auc.riskLevel || 'Baixo'}
-                              </span>
+                                  {/* Risco (Apenas para leilões) */}
+                                  <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                                    auc.riskLevel === 'Baixo' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50' :
+                                    auc.riskLevel === 'Médio' ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' :
+                                    'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-600/50'
+                                  }`}>
+                                    Risco {auc.riskLevel || 'Baixo'}
+                                  </span>
+                                </>
+                              )}
                             </div>
 
                             {/* Título e Endereço */}
                             <div>
                               <h3 
-                                className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug hover:text-indigo-300 transition-colors cursor-pointer"
+                                className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug hover:text-indigo-300 transition-colors cursor-pointer break-words"
+                                style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                                 onClick={() => setSimulatingAuction(auc)}
                                 title={auc.title}
                               >
@@ -1949,7 +3004,7 @@ export default function Dashboard({
                               </h3>
                               <div className="flex items-center text-xs text-slate-400 space-x-1.5 mt-1">
                                 <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                <span className="truncate" title={`${auc.address} (${auc.neighborhood} - ${auc.city}/${auc.state || 'RJ'})`}>
+                                <span className="truncate break-words" style={{ overflowWrap: 'anywhere' }} title={`${auc.address} (${auc.neighborhood} - ${auc.city}/${auc.state || 'RJ'})`}>
                                   {auc.address} ({auc.neighborhood} - {auc.city}/{auc.state || 'RJ'})
                                 </span>
                               </div>
@@ -1963,36 +3018,281 @@ export default function Dashboard({
                               )}
                             </div>
 
-                            {/* Informações complementares de praça */}
-                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
-                              <span>Portal: <strong className={
-                                (auc.leiloeiro === 'Portal Zuk' || (auc.auctionLink && auc.auctionLink.includes('portalzuk')))
-                                  ? "text-purple-300 font-bold"
-                                  : "text-slate-200"
-                              }>
-                                {getAuctionPortalDisplayName(auc)}
-                              </strong></span>
-                              <span>1ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.firstAuctionDate || auc.auctionDate)}</strong></span>
-                              {auc.secondAuctionDate && (
-                                <span>2ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.secondAuctionDate)}</strong></span>
-                              )}
-                            </div>
+                            {/* Informações complementares de publicação */}
+                            {auc.origin === 'portal' ? (
+                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
+                                <span>Portal: <strong className="text-amber-300 font-bold">{auc.portalName || 'Portal'}</strong></span>
+                                <span>Publicação: <strong className="text-slate-200">{auc.textoPublicacao || (auc.diasPublicado !== undefined ? `Publicado há ${auc.diasPublicado} dias` : 'Recém-publicado')}</strong></span>
+                                {auc.auctionLink && (
+                                  <a href={auc.auctionLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 font-bold underline inline-flex items-center gap-1">
+                                    <span>Ver Anúncio Original ↗</span>
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
+                                <span>Origem: <strong className={
+                                  (auc.leiloeiro === 'Portal Zuk' || (auc.auctionLink && auc.auctionLink.includes('portalzuk')))
+                                    ? "text-purple-300 font-bold"
+                                    : "text-slate-200"
+                                }>
+                                  {getAuctionPortalDisplayName(auc)}
+                                </strong></span>
+                                <span>1ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.firstAuctionDate || auc.auctionDate)}</strong></span>
+                                {auc.secondAuctionDate && (
+                                  <span>2ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.secondAuctionDate)}</strong></span>
+                                )}
+                              </div>
+                            )}
 
-                          </div>
-
-                          {/* Thumbnail com clique para Lightbox Modal */}
-                          <div className="shrink-0">
-                            <PropertyThumbnail
-                              property={auc}
-                              size="lg"
-                              className="rounded-xl shadow-md"
-                              onClick={() => setSelectedLightboxProperty(auc)}
-                            />
                           </div>
                         </div>
 
-                        {/* Grid Financeiro: Linha 1 (Lance, Custo Total, Lucro Estimado, Gabarito ITBI) - NÚMEROS NEUTROS */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                        {/* Grid Financeiro: Locação vs Flip House (Portais) vs Leilões */}
+                        {auc.transactionType === 'aluguel' ? (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                              {/* Aluguel Pedido */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Aluguel Pedido
+                                </span>
+                                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">
+                                  {formatBRL(auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice)}/mês
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  {auc.portalName || 'Portal'}
+                                </span>
+                              </div>
+
+                              {/* Aluguel / m² Anunciado */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Aluguel / m²
+                                </span>
+                                <span className="text-xs sm:text-sm font-normal text-amber-300 font-mono mt-0.5">
+                                  {formatBRL(Math.round((auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice) / (auc.sizeSqm || 1)))}/m²
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  Área: {auc.sizeSqm}m²
+                                </span>
+                              </div>
+
+                              {/* Média da Calculadora */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Média Calculadora
+                                </span>
+                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                                  {formatBRL(auc.mediaLocacaoCalculadora || Math.round((auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500))) * 0.0055))}/mês
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  0.55% de {formatBRL(auc.valorMercadoEstimado)}
+                                </span>
+                              </div>
+
+                              {/* Veredito Pericial */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Veredito Calculadora
+                                </span>
+                                <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
+                                  auc.vereditoLocacao === 'barato' ? 'text-emerald-400' :
+                                  auc.vereditoLocacao === 'caro' ? 'text-rose-400' : 'text-cyan-400'
+                                }`}>
+                                  {auc.vereditoLocacao === 'barato' ? `BARATO (-${Math.abs(auc.aluguelDiferencaPct || 0)}%)` :
+                                   auc.vereditoLocacao === 'caro' ? `CARO (+${auc.aluguelDiferencaPct || 0}%)` : 'PREÇO JUSTO'}
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  {auc.vereditoLocacao === 'barato' ? 'Ótimo p/ Morar' : auc.vereditoLocacao === 'caro' ? 'Acima do Mercado' : 'Alinhado à Região'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Linha 2: Pacote Completo de Moradia e Taxas */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                              {/* Condomínio */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Condomínio
+                                </span>
+                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                                  {auc.valorCondominio ? `${formatBRL(auc.valorCondominio)}/mês` : 'Incluso / Sem taxa'}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  {auc.valorCondominio ? 'Taxa ordinária' : 'Sem cobrança'}
+                                </span>
+                              </div>
+
+                              {/* IPTU Mensal */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  IPTU Mensal
+                                </span>
+                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                                  {auc.valorIptu ? `${formatBRL(auc.valorIptu)}/mês` : 'Isento'}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  {auc.valorIptu ? 'Cota mensal' : 'Isento pela prefeitura'}
+                                </span>
+                              </div>
+
+                              {/* Total de Taxas (Condomínio + IPTU + Serviços) */}
+                              <div className="flex flex-col justify-center">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                    Total de Taxas
+                                  </span>
+                                  {auc.taxasServico ? (
+                                    <span className="text-[8px] bg-slate-800 text-amber-300/90 px-1 py-0.2 rounded font-mono" title={`Inclui taxas de serviço e seguro do portal: ${formatBRL(auc.taxasServico)}/mês`}>
+                                      +{formatBRL(auc.taxasServico)} serv.
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <span className="text-xs sm:text-sm font-bold text-amber-300 font-mono mt-0.5">
+                                  {formatBRL(auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0)))}/mês
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  Cond. + IPTU{auc.taxasServico ? ' + Taxas' : ''}
+                                </span>
+                              </div>
+
+                              {/* Pacote Moradia Total (Aluguel + Condomínio + IPTU + Taxas) */}
+                              <div className="flex flex-col justify-center bg-emerald-950/40 p-2 rounded-lg border border-emerald-700/50">
+                                <span className="text-[9px] text-emerald-400 block uppercase font-black tracking-wider">
+                                  Pacote Moradia Total
+                                </span>
+                                <span className="text-xs sm:text-sm font-black text-emerald-400 font-mono mt-0.5">
+                                  {formatBRL(
+                                    auc.totalRentalPackage ||
+                                    ((auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0) +
+                                     (auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0))))
+                                  )}/mês
+                                </span>
+                                <span className="text-[8.5px] text-emerald-300/80 font-mono font-medium">
+                                  Aluguel + Todas Taxas
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : auc.origin === 'portal' ? (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                              {/* Preço Anunciado */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Preço Anunciado
+                                </span>
+                                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">
+                                  {formatBRL(auc.precoAnunciado || auc.auctionPrice)}
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  {auc.portalName || 'Portal'} · Área: {auc.sizeSqm}m²
+                                </span>
+                              </div>
+
+                              {/* M² Ref. Bairro (Benchmark Calculadora ITBI) */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  M² Ref. Bairro
+                                </span>
+                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                                  {(() => {
+                                    const itbiStat = itbiStats?.find(s => 
+                                      normalizeText(s.neighborhood) === normalizeText(auc.neighborhood) && 
+                                      (!auc.propertyType || s.propertyType === auc.propertyType)
+                                    ) || itbiStats?.find(s => normalizeText(s.neighborhood) === normalizeText(auc.neighborhood));
+                                    const m2Val = itbiStat?.avgSqm || auc.itbiNeighborhoodAvgSqm || auc.itbiUnitValueAvg || auc.m2ReferenciaBairro || 0;
+                                    return formatBRL(m2Val);
+                                  })()}/m²
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  Benchmark Calculadora
+                                </span>
+                              </div>
+
+                              {/* Preço Sugerido Flip */}
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
+                                </span>
+                                <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono mt-0.5">
+                                  {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
+                                </span>
+                                {(() => {
+                                  const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+                                  const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
+                                  const diffPct = valEst > 0 ? Math.round(((valEst - preco) / valEst) * 100) : 0;
+                                  if (diffPct > 0) {
+                                    return (
+                                      <span className="text-[9px] font-mono text-emerald-400 font-bold">
+                                        Deságio Flip: -{diffPct}%
+                                      </span>
+                                    );
+                                  } else if (diffPct < 0) {
+                                    return (
+                                      <span className="text-[9px] font-mono text-rose-400 font-bold">
+                                        Acima do Flip: +{Math.abs(diffPct)}%
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                            </div>
+
+                            {/* Linha 2: Viabilidade de Compra & Venda (Flip Rápido) */}
+                            <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Custo Total Est.
+                                </span>
+                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                                  {formatBRL(totalCost)}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  ITBI (3%) + RGI (2%) + Ref. (5%)
+                                </span>
+                              </div>
+
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  Lucro Estimado
+                                </span>
+                                <span className={`text-xs sm:text-sm font-bold font-mono mt-0.5 ${
+                                  lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
+                                  lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
+                                }`}>
+                                  {lucroReal !== undefined ? (
+                                    lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`
+                                  ) : 'Sob análise'}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  {lucroReal !== undefined && lucroReal > 0 ? 'Margem Líquida Flip' : 'Sem Margem Flip'}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-col justify-center">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
+                                  ROI Projetado
+                                </span>
+                                <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
+                                  roi !== undefined && roi > 0 ? 'text-amber-400' :
+                                  roi !== undefined && roi < 0 ? 'text-rose-400' : 'text-slate-400'
+                                }`}>
+                                  {roi !== undefined ? (
+                                    roi > 0 ? `+${roi}%` : `${roi}%`
+                                  ) : 'Sob análise'}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono">
+                                  Retorno sobre Custo
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
                           
                           {/* Lance Mínimo */}
                           <div className="flex flex-col justify-center">
@@ -2202,6 +3502,8 @@ export default function Dashboard({
                           </div>
 
                         </div>
+                        </>
+                        )}
 
                         {/* Calibragem Rua vs Raio (se disponível) */}
                         {auc.streetRadiusCalibrated && auc.itbiSurroundingAvgSqm && auc.itbiStreetAvgSqm && (
@@ -2211,14 +3513,17 @@ export default function Dashboard({
                           </div>
                         )}
 
-                        {/* MÓDULO 2: Benchmark de Mercado dos Portais na Rua (ZAP Imóveis / QuintoAndar) - Apenas Informativo */}
-                        {(() => {
+                        {/* MÓDULO 2: Benchmark de Mercado dos Portais na Rua - APENAS na aba Flip House */}
+                        {mode === 'portais' && auc.origin === 'portal' && (() => {
                           const isRioDeJaneiroCity = (auc.state || 'RJ').toUpperCase() === 'RJ' && 
                             (auc.city || 'Rio de Janeiro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('rio');
                           
-                          const rawPortalSqm = (!auc.isBairroPortalFallback && auc.m2MercadoPortal && auc.m2MercadoPortal > 0)
-                            ? auc.m2MercadoPortal
-                            : (auc.streetPortalAvgSqm && auc.streetPortalAvgSqm > 0 ? auc.streetPortalAvgSqm : 0);
+                          const moradaSqm = (auc as any).moradaM2 || (auc as any).moradaVirtualM2;
+                          const rawPortalSqm = moradaSqm && moradaSqm > 0
+                            ? moradaSqm
+                            : ((!auc.isBairroPortalFallback && auc.m2MercadoPortal && auc.m2MercadoPortal > 0)
+                              ? auc.m2MercadoPortal
+                              : (auc.streetPortalAvgSqm && auc.streetPortalAvgSqm > 0 ? auc.streetPortalAvgSqm : 0));
 
                           // Filtro Visual de Sanidade: Descartar m² < R$ 1.500/m² no RJ para evitar dados de aluguel/locação
                           const hasValidSalePortal = rawPortalSqm > 0 && (!isRioDeJaneiroCity || rawPortalSqm >= 1500);
@@ -2234,9 +3539,13 @@ export default function Dashboard({
                                     </span>
                                     {auc.portalSampleCount ? (
                                       <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-800/50 px-1.5 py-0.5 rounded">
-                                        ({auc.portalSampleCount.toLocaleString('pt-BR')} anúncios na via)
+                                        ({auc.portalSampleCount.toLocaleString('pt-BR')} anúncios na via · Morada Virtual)
                                       </span>
-                                    ) : null}
+                                    ) : (
+                                      <span className="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-800/50 px-1.5 py-0.5 rounded">
+                                        (Morada Virtual)
+                                      </span>
+                                    )}
                                     {auc.portalTypologyAvgPrice ? (
                                       <span className="text-[10px] text-slate-400 hidden md:inline">
                                         · Preço médio anúncios: <strong className="text-slate-200 font-mono">{formatBRL(auc.portalTypologyAvgPrice)}</strong>
@@ -2247,7 +3556,7 @@ export default function Dashboard({
                                   <div className="flex items-center space-x-1.5">
                                     <span className="text-[10px] font-bold uppercase font-mono text-slate-400">Portais Imobiliários:</span>
                                     <span className="font-mono font-semibold text-slate-400 text-[11px]">
-                                      Sem anúncios de venda na rua
+                                      Rua não encontrada no Morada Virtual
                                     </span>
                                   </div>
                                 )}
@@ -2367,10 +3676,16 @@ export default function Dashboard({
                       <div className="bg-slate-950/60 border-t border-slate-800/90 px-5 py-3.5 flex items-center justify-between">
                         <button
                           onClick={() => setSimulatingAuction(auc)}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 shadow-sm cursor-pointer active:scale-95"
+                          className={`px-4 py-2 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 shadow-sm cursor-pointer active:scale-95 ${
+                            auc.transactionType === 'aluguel'
+                              ? 'bg-emerald-600 hover:bg-emerald-500'
+                              : auc.origin === 'portal'
+                              ? 'bg-amber-600 hover:bg-amber-500'
+                              : 'bg-indigo-600 hover:bg-indigo-500'
+                          }`}
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Simular Viabilidade & Jurídico</span>
+                          <span>{auc.transactionType === 'aluguel' ? 'Simular Locação (Calculadora)' : auc.origin === 'portal' ? 'Simular Viabilidade (Flip)' : 'Simular Viabilidade & Jurídico'}</span>
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
 
@@ -2381,9 +3696,9 @@ export default function Dashboard({
                               target="_blank"
                               rel="noopener noreferrer"
                               className="px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700 flex items-center gap-1"
-                              title="Acessar edital/anúncio original"
+                              title={auc.transactionType === 'aluguel' ? "Acessar anúncio de locação no portal" : auc.origin === 'portal' ? "Acessar anúncio original no portal" : "Acessar edital/anúncio original"}
                             >
-                              <span>Acessar Leilão</span>
+                              <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio de Locação' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
@@ -2604,6 +3919,163 @@ export default function Dashboard({
             </div>
           </div>
         )}
+      
+        {/* MODAL: FILTROS AVANÇADOS (ESTILO QUINTOANDAR) */}
+        <AdvancedFiltersModal
+          isOpen={isAdvancedModalOpen}
+          onClose={() => setIsAdvancedModalOpen(false)}
+          mode={mode}
+          contextTab={advancedContextTab}
+          setContextTab={setAdvancedContextTab}
+          searchQuery={advancedSearchQuery}
+          setSearchQuery={setAdvancedSearchQuery}
+          selectedType={selectedTypeFilter}
+          setSelectedType={setSelectedTypeFilter}
+          bedrooms={bedroomsFilter}
+          setBedrooms={setBedroomsFilter}
+          parkingSpaces={parkingFilter}
+          setParkingSpaces={setParkingFilter}
+          bathrooms={bathroomsFilter}
+          setBathrooms={setBathroomsFilter}
+          minPrice={minPriceInput}
+          setMinPrice={setMinPriceInput}
+          maxPrice={maxPriceInput}
+          setMaxPrice={setMaxPriceInput}
+          minArea={minAreaInput}
+          setMinArea={setMinAreaInput}
+          maxArea={maxAreaInput}
+          setMaxArea={setMaxAreaInput}
+          minDiscount={minDiscountFilter}
+          setMinDiscount={setMinDiscountFilter}
+          onlyHighReturn={onlyHighReturn}
+          setOnlyHighReturn={setOnlyHighReturn}
+          minRoi={minRoiFilter}
+          setMinRoi={setMinRoiFilter}
+          onlyAnalysisAboveEdital={onlyAnalysisAboveEdital}
+          setOnlyAnalysisAboveEdital={setOnlyAnalysisAboveEdital}
+          itbiConfidence={itbiConfidenceFilter}
+          setItbiConfidence={setItbiConfidenceFilter}
+          prestigeFilter={prestigeFilter}
+          setPrestigeFilter={setPrestigeFilter}
+          capitalBudget={capitalBudget}
+          setCapitalBudget={setCapitalBudget}
+          onlyFinancing={onlyFinancing}
+          setOnlyFinancing={setOnlyFinancing}
+          onlyInstallments={onlyInstallments}
+          setOnlyInstallments={setOnlyInstallments}
+          onlyVacant={onlyVacant}
+          setOnlyVacant={setOnlyVacant}
+          matchingCount={filteredAndSortedAuctions.length}
+          onResetFilters={handleClearAdvancedFilters}
+        />
+
+        {/* MODAL: GERENCIADOR DE PRESETS DE BUSCA */}
+        <AnimatePresence>
+          {isPresetModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="w-full max-w-lg bg-slate-900 border border-slate-750 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+              >
+                <div className="flex items-center justify-between p-4 border-b border-slate-800">
+                  <div className="flex items-center space-x-2">
+                    <Bookmark className="w-4 h-4 text-amber-400" />
+                    <h3 className="font-extrabold text-white text-sm">Presets de Busca Salvos</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPresetModalOpen(false)}
+                    className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto">
+                  {/* Salvar busca atual */}
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                    <label className="text-xs font-bold text-slate-300 block">
+                      Salvar Configuração Atual
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder={`Ex: Minha busca em ${selectedCityFilter || 'RJ'}`}
+                        value={presetNameInput}
+                        onChange={e => setPresetNameInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleSaveCurrentPreset();
+                        }}
+                        className="flex-1 text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-900 text-slate-100 placeholder-slate-500 focus:border-indigo-500 outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSaveCurrentPreset()}
+                        className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                      >
+                        <Bookmark className="w-3.5 h-3.5" />
+                        <span>Salvar</span>
+                      </button>
+                    </div>
+                    <div className="text-[10.5px] text-slate-400 font-mono">
+                      Filtros atuais: {selectedCityFilter || 'Todas Cidades'}, {selectedNeighborhoods.length > 0 ? `${selectedNeighborhoods.length} bairros` : 'todos bairros'}, {selectedTypeFilter || 'todos tipos'}.
+                    </div>
+                  </div>
+
+                  {/* Lista de presets salvos */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">
+                      Buscas Salvas ({savedPresets.length})
+                    </div>
+
+                    {savedPresets.length === 0 ? (
+                      <div className="text-center py-6 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-dashed border-slate-800">
+                        Nenhuma busca salva ainda. Digite um nome acima para salvar sua primeira busca.
+                      </div>
+                    ) : (
+                      savedPresets.map(preset => (
+                        <div
+                          key={preset.id}
+                          className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold text-slate-200 truncate">{preset.name}</div>
+                            <div className="text-[10.5px] text-slate-400 truncate mt-0.5 font-mono">
+                              {preset.city ? `${preset.city} (${preset.state || 'RJ'})` : 'Todas cidades'}
+                              {preset.neighborhoods && preset.neighborhoods.length > 0 ? ` • ${preset.neighborhoods.slice(0, 2).join(', ')}${preset.neighborhoods.length > 2 ? ` (+${preset.neighborhoods.length - 2})` : ''}` : ''}
+                              {preset.type ? ` • ${preset.type}` : ''}
+                              {preset.roi ? ` • ROI ≥${preset.roi}%` : ''}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleLoadPreset(preset)}
+                              className="px-2.5 py-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Carregar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePreset(preset.id)}
+                              className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
+                              title="Excluir busca salva"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </AnimatePresence>
     </div>
   );

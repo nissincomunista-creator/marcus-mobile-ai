@@ -63,6 +63,8 @@ export interface FourTierValuation {
   calibrated: boolean;
   calibrationKind?: 'few_local_samples' | 'radius_neighborhood';
   components: ItbiWeightedComponent[];
+  isSurroundingOutlier?: boolean;
+  isOutlierBrakeApplied?: boolean;
 }
 
 /** Fixed ITBI hierarchy: building 40%, street 35%, selected radius 15%, neighborhood 10%.
@@ -96,13 +98,24 @@ export function computeFourTierValuation(input: {
   // Solid local hierarchy (SSOT - NBR 14.653):
   // 1. Condomínio/Prédio com >= 2 vendas: O prédio é a referência direta e soberana.
   // 2. Condomínio com 1 venda e Rua com >= 5: Pondera prédio + rua sem contaminação externa.
-  // 3. Mesma Rua com >= 5 vendas (e sem vendas no prédio): A rua é a referência direta e soberana,
-  //    impedindo que distorções radiais do entorno ou média ampla do bairro poluam a realidade fática da via.
+  // 3. Mesma Rua com >= 4 vendas (e sem vendas no prédio): A rua é a referência direta e soberana.
   const bldgCount = input.building?.count || 0;
   const streetCount = input.street?.count || 0;
+  const neighborhoodValue = input.neighborhood?.value || 0;
+  const streetValue = input.street?.value || 0;
+  const surroundingCount = input.surrounding?.count || 0;
+  const surroundingValue = input.surrounding?.value || 0;
+
+  // FREIO E BLOQUEIO DE OUTLIER NO RAIO (Ruas do Entorno):
+  // Quando o raio tiver poucas amostras (< 3 tx) e o valor ficar fora da curva (> 35% de desvio
+  // em relação à rua ou bairro), ativa o freio para impedir contaminação do valor patrimonial.
+  const refBenchmarkVal = streetValue > 0 ? streetValue : neighborhoodValue;
+  const isSurroundingOutlier = surroundingCount > 0 && surroundingCount < 3 && refBenchmarkVal > 0 &&
+    (surroundingValue > refBenchmarkVal * 1.35 || surroundingValue < refBenchmarkVal * 0.65);
+
   const hasSolidBuilding = bldgCount >= 2;
-  const hasBuildingAndSolidStreet = bldgCount >= 1 && streetCount >= 5;
-  const hasSolidStreet = streetCount >= 5 && bldgCount === 0;
+  const hasBuildingAndSolidStreet = bldgCount >= 1 && streetCount >= 4;
+  const hasSolidStreet = streetCount >= 4 && bldgCount === 0;
 
   let activeTiers: ItbiWeightedComponent[];
   if (hasSolidBuilding) {
@@ -113,6 +126,9 @@ export function computeFourTierValuation(input: {
     activeTiers = tiers.filter(tier => tier.id === 'street');
   } else if (calibratedWithoutLocal) {
     activeTiers = tiers.filter(tier => tier.id === 'surrounding' || tier.id === 'neighborhood');
+  } else if (isSurroundingOutlier && (streetCount >= 2 || (input.neighborhood?.count || 0) >= 5)) {
+    // Freio ativado: descarta o entorno discrepante com poucas amostras e faz a média ponderada sobre os dados confiáveis (Prédio, Rua e Bairro)
+    activeTiers = tiers.filter(tier => tier.id !== 'surrounding');
   } else {
     activeTiers = tiers;
   }
@@ -122,10 +138,8 @@ export function computeFourTierValuation(input: {
   let finalValue = priceable ? Math.round(weightedSum / activeWeight) : 0;
 
   // Calibração Conservadora: quando a amostragem local é frágil (< 3 transações)
-  // e o valor é calibrado pelo entorno, o valor resultante NUNCA pode inflacionar
-  // acima do teto da mediana/média do bairro * 1.05
+  // ou quando o entorno foi bloqueado, o valor NUNCA pode inflacionar acima do teto seguro
   const isFragileSampling = localSampleCount < 3 || calibratedWithoutLocal;
-  const neighborhoodValue = input.neighborhood?.value || 0;
   if (isFragileSampling && finalValue > 0 && neighborhoodValue > 0) {
     const neighborhoodCeiling = Math.round(neighborhoodValue * 1.05);
     if (finalValue > neighborhoodCeiling) {
@@ -133,7 +147,15 @@ export function computeFourTierValuation(input: {
     }
   }
 
+  // Trava de segurança da via: se a Mesma Rua tem amostragem confiável (>= 3 vendas),
+  // o valor ponderado final não pode descolar mais de 10% da média da própria rua
+  if (streetCount >= 3 && streetValue > 0 && finalValue > Math.round(streetValue * 1.10)) {
+    finalValue = Math.round(streetValue * 1.10);
+  }
+
   const calibrated = priceable && (localSampleCount < 7);
+
+  const isOutlierBrakeApplied = isSurroundingOutlier && (streetCount >= 2 || (input.neighborhood?.count || 0) >= 5);
 
   return {
     value: finalValue,
@@ -142,6 +164,8 @@ export function computeFourTierValuation(input: {
     priceable,
     calibrated,
     calibrationKind: calibratedWithoutLocal ? 'radius_neighborhood' : calibrated ? 'few_local_samples' : undefined,
-    components: activeTiers
+    components: activeTiers,
+    isSurroundingOutlier,
+    isOutlierBrakeApplied
   };
 }

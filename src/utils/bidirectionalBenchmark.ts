@@ -400,12 +400,38 @@ export function computeBidirectionalBenchmarks(
   const bSaneada = (isBLargeArea || !isBCenarioA) ? Math.round(bSaneadaRaw * bFator) : bSaneadaRaw;
   const bExpurgados = bVals.length - bValid.length;
 
-  const effectiveRadiusKm = normalizeRadiusKm(radiusKm);
-  const raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm)
+  let effectiveRadiusKm = normalizeRadiusKm(radiusKm);
+  let raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm)
     .filter(isVoluntaryMarketSale)
     .filter(t => !targetPropType || t.propertyType === targetPropType);
+
+  // REGRA PERICIAL DO USUÁRIO: AUTO-AJUSTE / FREIO DE RAIO (0.5 km -> 1.0 km)
+  // Quando o raio de 0.5 km tiver menos que a quantidade mínima (< 3 transações) e o valor ficar fora da curva
+  // (> 35% de desvio do bairro ou da rua), auto-expande para 1.0 km se houver amostragem convergente.
+  let isRadiusAutoAdjusted = false;
+  if (effectiveRadiusKm <= 0.5 && raioTxs.length < 3 && bSaneada > 0) {
+    const rawR500Vals = raioTxs.map(t => getTxVal(t)).filter(isValValid);
+    const r500Prelim = rawR500Vals.length > 0 ? rawR500Vals.reduce((a, b) => a + b, 0) / rawR500Vals.length : 0;
+    const isOutlier500 = r500Prelim > 0 && (r500Prelim > bSaneada * 1.35 || r500Prelim < bSaneada * 0.65);
+
+    if (isOutlier500 || raioTxs.length === 0) {
+      const raio1kmTxs = selectRadiusTransactions(radiusTransactions || typeTxs, 1.0)
+        .filter(isVoluntaryMarketSale)
+        .filter(t => !targetPropType || t.propertyType === targetPropType);
+      const rawR1000Vals = raio1kmTxs.map(t => getTxVal(t)).filter(isValValid);
+      const r1000Prelim = rawR1000Vals.length > 0 ? rawR1000Vals.reduce((a, b) => a + b, 0) / rawR1000Vals.length : 0;
+      const is1kmConsistent = r1000Prelim > 0 && Math.abs(r1000Prelim - bSaneada) / bSaneada <= 0.35;
+
+      if (raio1kmTxs.length >= 3 && is1kmConsistent) {
+        effectiveRadiusKm = 1.0;
+        raioTxs = raio1kmTxs;
+        isRadiusAutoAdjusted = true;
+      }
+    }
+  }
+
   const hasVerifiedRadius = raioTxs.length > 0;
-  const radiusLabel = `3. Ruas do Entorno (${effectiveRadiusKm} km) - ${raioTxs.length} tx`;
+  const radiusLabel = `3. Ruas do Entorno (${effectiveRadiusKm} km${isRadiusAutoAdjusted ? ' - Auto-ajustado' : ''}) - ${raioTxs.length} tx`;
   const fallbackLevel: '0.5km' | '1.0km' | '2.0km' | 'bairro' =
     effectiveRadiusKm <= 0.5 ? '0.5km' : effectiveRadiusKm <= 1 ? '1.0km' : '2.0km';
 
@@ -433,7 +459,18 @@ export function computeBidirectionalBenchmarks(
   const raioFator = isRaioLargeArea
     ? Math.pow(raioAreaMedia / size, 0.20)
     : (!isRaioCenarioA && hasVerifiedRadius ? Math.pow(raioAreaMedia / size, 0.15) : 1.0);
-  const raioSaneada = (isRaioLargeArea || (!isRaioCenarioA && hasVerifiedRadius)) ? Math.round(raioSaneadaRaw * raioFator) : raioSaneadaRaw;
+  let raioSaneada = (isRaioLargeArea || (!isRaioCenarioA && hasVerifiedRadius)) ? Math.round(raioSaneadaRaw * raioFator) : raioSaneadaRaw;
+
+  // FREIO / BLOQUEIO DE OUTLIER NO RAIO (Ruas do Entorno):
+  // Se o raio ainda tiver poucas amostras (< 3 tx) e desviar mais de 35% do bairro, aplica o freio pericial
+  if (raioValid.length > 0 && raioValid.length < 3 && bSaneada > 0) {
+    if (raioSaneada > bSaneada * 1.35) {
+      raioSaneada = Math.round(bSaneada * 1.05);
+    } else if (raioSaneada < bSaneada * 0.65) {
+      raioSaneada = Math.round(bSaneada * 0.95);
+    }
+  }
+
   const raioExpurgados = raioVals.length - raioValid.length;
 
   // 3 & 4. Comparáveis da Mesma Via Pública (Isolamento de Rua Limpa vs Prédio)

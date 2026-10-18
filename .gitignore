@@ -12,3 +12,7 @@ work/
 !.env.example
 __pycache__/
 *.pyc
+EXPORT_COMPLETO_SISTEMA/
+scratch/
+*.bak*
+*.applied

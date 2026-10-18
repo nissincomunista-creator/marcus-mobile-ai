@@ -103,7 +103,7 @@ export interface PrefilledCalculatorData {
   parkingSpaces?: number;
   auctionPrice?: number;
   purchasePrice?: number;
-  acquisitionRule?: 'leilao' | 'caixa';
+  acquisitionRule?: 'leilao' | 'caixa' | 'flip';
   estimatedRepair?: number;
   pendingDebts?: number;
   otherCosts?: number;
@@ -127,6 +127,14 @@ export interface PrefilledCalculatorData {
   communityDistanceM?: number;
   ageDepreciationPct?: number;
   buildingAge?: number;
+  transactionType?: 'venda' | 'aluguel';
+  monthlyRent?: number;
+  valorCondominio?: number;
+  valorIptu?: number;
+  taxasServico?: number;
+  totalTaxas?: number;
+  totalRentalPackage?: number;
+  pacoteMoradiaTotal?: number;
 }
 
 function normalizeString(str: string): string {
@@ -379,7 +387,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [txSizeFilter, setTxSizeFilter] = useState<'similar' | 'all'>(DEFAULT_BENCHMARK_SIZE_MODE);
 
   // Acquisition Mode & Costs State (Leilão Judicial vs Leilão Extrajudicial vs Venda Direta Caixa)
-  const [acquisitionMode, setAcquisitionMode] = useState<'judicial' | 'extrajudicial' | 'caixa'>('judicial');
+  const [acquisitionMode, setAcquisitionMode] = useState<'judicial' | 'extrajudicial' | 'caixa' | 'flip'>('judicial');
   const [paymentMethod, setPaymentMethod] = useState<'a_vista' | 'financiado'>('a_vista');
   const [arrematePrice, setArrematePrice] = useState<number>(0);
   const [arremateInputStr, setArremateInputStr] = useState<string>('');
@@ -418,13 +426,15 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   }, [itbiStats, selectedState, selectedCity]);
 
   const prefillInitializedRef = useRef<boolean>(false);
+  const lastPrefillIdRef = useRef<string | null>(null);
   const hasAutoExecutedAnalysisRef = useRef<boolean>(false);
   const autoSyncedFlipPropertyRef = useRef<string | null>(null);
 
-  // Sync prefillData when provided from external property cards (Run ONCE on initialization)
+  // Sync prefillData when provided from external property cards
   useEffect(() => {
-    if (!prefillData || prefillInitializedRef.current) return;
+    if (!prefillData || (lastPrefillIdRef.current === prefillData.id && prefillInitializedRef.current)) return;
     prefillInitializedRef.current = true;
+    lastPrefillIdRef.current = prefillData.id || null;
 
     if (prefillData.state) setSelectedState(prefillData.state);
     if (prefillData.city) setSelectedCity(prefillData.city);
@@ -456,14 +466,20 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       setArrematePrice(prefillData.purchasePrice);
       setArremateInputStr(prefillData.purchasePrice.toLocaleString('pt-BR'));
     }
-    // Acquisition mode: Caixa properties default to 'caixa' (Venda Direta) or 'extrajudicial' if Licitação Aberta / SFI / Leilão
-    const isCaixa = prefillData.acquisitionRule === 'caixa' || 
+    // Acquisition mode: Flip / Portais vs Caixa vs Leilões
+    const isPortalOrFlip = prefillData.origin === 'portal' || 
+                           Boolean(prefillData.portalName) || 
+                           prefillData.acquisitionRule === 'flip';
+    const isCaixa = !isPortalOrFlip && (
+                    prefillData.acquisitionRule === 'caixa' || 
                     prefillData.auctionLink?.includes('caixa.gov.br') || 
-                    (prefillData.id && prefillData.id.includes('caixa'));
+                    (prefillData.id && prefillData.id.includes('caixa')));
     const modalityText = `${prefillData.saleMode || ''} ${prefillData.title || ''} ${prefillData.description || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const isCaixaWithAuctioneer = isCaixa && /licitacao\s*aberta|sfi|leilao/.test(modalityText);
 
-    if (isCaixaWithAuctioneer) {
+    if (isPortalOrFlip) {
+      setAcquisitionMode('flip');
+    } else if (isCaixaWithAuctioneer) {
       setAcquisitionMode('extrajudicial');
     } else if (isCaixa) {
       setAcquisitionMode('caixa');
@@ -471,8 +487,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       setAcquisitionMode(prefillData.acquisitionRule === 'caixa' ? 'caixa' : 'judicial');
     }
 
-    // Custas de Desocupação / Judiciais: Para imóveis Caixa SEMPRE R$ 6.000 (padrão honorários e imissão de posse)
-    if (isCaixa) {
+    // Custas de Desocupação / Judiciais: Zero para Flip; R$ 6.000 para Caixa
+    if (isPortalOrFlip) {
+      setLegalCostInput(0);
+    } else if (isCaixa) {
       setLegalCostInput(6000);
     } else if (prefillData.otherCosts) {
       setLegalCostInput(prefillData.otherCosts);
@@ -487,17 +505,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     // Condomínio em Atraso: Regra expressa da Caixa: arrematante responde por até 10% do valor de avaliação
     const evalVal = prefillData.evaluationPrice || prefillData.estimatedValue || (purchaseVal * 1.5);
     const isHouse = normalizeString(prefillData.propertyType || '').includes('casa');
-    const condoVal = isHouse ? 0 : isCaixa 
+    const condoVal = (isHouse || isPortalOrFlip) ? 0 : isCaixa 
       ? (prefillData.pendingDebts !== undefined && prefillData.pendingDebts > 0 ? prefillData.pendingDebts : Math.round(evalVal * 0.10))
       : (prefillData.pendingDebts || 0);
     const costs = auctionCosts(prefillData);
-    setAuctioneerFeeInput(costs.auctioneer);
+    setAuctioneerFeeInput(isPortalOrFlip ? 0 : costs.auctioneer);
     setItbiFeeInput(costs.itbi);
     setRegistryFeeInput(costs.registry);
-    setLegalCostInput(costs.legal);
+    setLegalCostInput(isPortalOrFlip ? 0 : costs.legal);
     setReformCostInput(costs.repair);
-    setIptuDebtInput(costs.iptu);
-    setCondoDebtInput(costs.condo);
+    setIptuDebtInput(isPortalOrFlip ? 0 : costs.iptu);
+    setCondoDebtInput(isPortalOrFlip ? 0 : costs.condo);
 
     // Matrícula: ONLY if actually present in description/title, never invent dummy text!
     const descToScan = (prefillData.description || '') + ' ' + (prefillData.title || '');
@@ -534,6 +552,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       setLeiloeiroInput('Caixa Econômica Federal');
     } else {
       setLeiloeiroInput('');
+    }
+
+    // Taxas mensais do anúncio (Condomínio, IPTU e Serviços)
+    if (prefillData.valorCondominio !== undefined && prefillData.valorCondominio > 0) {
+      setMonthlyCondoInput(prefillData.valorCondominio);
+    }
+    if (prefillData.valorIptu !== undefined && prefillData.valorIptu > 0) {
+      setMonthlyIptuInput(prefillData.valorIptu);
+    }
+    if (prefillData.taxasServico !== undefined && prefillData.taxasServico > 0) {
+      setMonthlyExtraInput(prefillData.taxasServico);
     }
 
     // Auto-análise do Edital ao abrir o simulador
@@ -989,7 +1018,20 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     const params = new URLSearchParams({ state: selectedState, city: selectedCity, neighborhood: selectedNeighborhood });
     void fetchCalculatorJson(`/api/itbi/streets?${params}`, controller.signal).then(data => {
       if (!Array.isArray(data)) throw new Error('Lista de ruas inválida');
-      if (!controller.signal.aborted) setStreetsList(data);
+      if (!controller.signal.aborted) {
+        setStreetsList(data);
+        // Ajusta automaticamente selectedStreet e streetInput para a grafia canônica do ITBI do bairro
+        if (selectedStreet) {
+          const matched = findBestStreetMatch(selectedStreet, data);
+          if (matched) {
+            const canonName = typeof matched === 'string' ? matched : matched?.street;
+            if (canonName && canonName !== selectedStreet) {
+              setSelectedStreet(canonName);
+              setStreetInput(canonName);
+            }
+          }
+        }
+      }
     }).catch(error => {
       if (!controller.signal.aborted) {
         console.error('Error fetching streets:', error);
@@ -1084,15 +1126,30 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // The selected circle does not depend on the bairro having its own transactions.
   const nearbyStreetData = useMemo(() => {
-    const txs = selectRadiusTransactions(radiusTransactions, radiusKm).filter(isVoluntaryMarketSale);
-    const label = `Ruas do Entorno (${radiusKm} km)`;
+    let effectiveRadius = radiusKm;
+    let txs = selectRadiusTransactions(radiusTransactions, effectiveRadius).filter(isVoluntaryMarketSale);
+    let isAutoAdjusted = false;
+
+    // Regra Pericial: quando o raio de 0.5 km tiver menos que a amostragem mínima (< 3 transações),
+    // expande automaticamente para 1.0 km se houver dados consistentes no raio ampliado
+    if (radiusKm <= 0.5 && txs.length < 3) {
+      const txs1km = selectRadiusTransactions(radiusTransactions, 1.0).filter(isVoluntaryMarketSale);
+      if (txs1km.length >= 3) {
+        effectiveRadius = 1.0;
+        txs = txs1km;
+        isAutoAdjusted = true;
+      }
+    }
+
+    const label = `Ruas do Entorno (${effectiveRadius.toFixed(1)} km${isAutoAdjusted ? ' - Auto-ajustado' : ''})`;
     return {
       txs,
-      effectiveRadiusKm: radiusKm,
+      effectiveRadiusKm: effectiveRadius,
+      isAutoAdjusted,
       radiusLabel: `${label} — ${txs.length} transações geolocalizadas`,
       item3Label: `3. ${label} — ${txs.length} tx`,
       card3Title: `3. ${label}`,
-      fallbackLevel: (radiusKm <= 0.5 ? '0.5km' : radiusKm <= 1 ? '1.0km' : '2.0km') as '0.5km' | '1.0km' | '2.0km'
+      fallbackLevel: (effectiveRadius <= 0.5 ? '0.5km' : effectiveRadius <= 1 ? '1.0km' : '2.0km') as '0.5km' | '1.0km' | '2.0km'
     };
   }, [radiusTransactions, radiusKm]);
 
@@ -1316,17 +1373,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     // The radius control must always use the strict geodesic subset first.
     // The bidirectional benchmark is intentionally broader for valuation
     // calibration, but must not make the 500m/1km/2km UI appear unchanged.
-    if (selectedStreet && nearbyStreetTxs.length > 0) {
-      const strictRadiusStats = calculateRobustStats(
-        nearbyStreetTxs,
-        sizeSqm,
-        txSizeFilter,
-        nearbyStreetData.radiusLabel
-      );
-      if (strictRadiusStats) return strictRadiusStats;
-    }
-
-    if (bidiBenchmark && bidiBenchmark.raio.total > 0) {
+    if (bidiBenchmark && bidiBenchmark.raio.total > 0 && bidiBenchmark.raio.validas > 0) {
       return {
         avgSqm: bidiBenchmark.raio.saneada,
         medianSqm: bidiBenchmark.raio.saneada,
@@ -1345,6 +1392,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         minSimilarSize: bidiBenchmark.minSimilarSize,
         maxSimilarSize: bidiBenchmark.maxSimilarSize
       };
+    }
+
+    if (selectedStreet && nearbyStreetTxs.length > 0) {
+      const strictRadiusStats = calculateRobustStats(
+        nearbyStreetTxs,
+        sizeSqm,
+        txSizeFilter,
+        nearbyStreetData.radiusLabel
+      );
+      if (strictRadiusStats) return strictRadiusStats;
     }
 
     return null;
@@ -1674,17 +1731,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const auctionBid = arrematePrice > 0 ? arrematePrice : (Number(prefillData?.auctionPrice) || Number(prefillData?.purchasePrice) || 0);
   const modalityTextCalc = `${prefillData?.saleMode || ''} ${prefillData?.title || ''} ${prefillData?.description || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const isCaixaWithAuctioneerCalc = (prefillData?.origin === 'caixa' || prefillData?.id?.includes('caixa')) && /licitacao\s*aberta|sfi|leilao/.test(modalityTextCalc);
-  const isAuction = acquisitionMode === 'judicial' || acquisitionMode === 'extrajudicial' || isCaixaWithAuctioneerCalc;
+  const isAuction = (acquisitionMode === 'judicial' || acquisitionMode === 'extrajudicial' || isCaixaWithAuctioneerCalc) && acquisitionMode !== 'flip';
   const defaultAuctioneerFee = isAuction && auctionBid > 0 ? Math.round(auctionBid * 0.05) : 0; // 5% leilao, 0 venda direta caixa
   const defaultItbiFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3%
-  const defaultRegistryFee = auctionBid > 0 ? Math.round(auctionBid * 0.03) : 0; // 3% Cartório / RGI
+  const defaultRegistryFee = auctionBid > 0 ? Math.round(auctionBid * 0.02) : 0; // 2% Cartório / RGI
 
-  const auctioneerFee = typeof auctioneerFeeInput === 'number' ? auctioneerFeeInput : (auctioneerFeeInput === '' ? 0 : defaultAuctioneerFee);
+  const auctioneerFee = acquisitionMode === 'flip' ? 0 : (typeof auctioneerFeeInput === 'number' ? auctioneerFeeInput : (auctioneerFeeInput === '' ? 0 : defaultAuctioneerFee));
   const itbiFee = typeof itbiFeeInput === 'number' ? itbiFeeInput : (itbiFeeInput === '' ? 0 : defaultItbiFee);
   const registryFee = typeof registryFeeInput === 'number' ? registryFeeInput : (registryFeeInput === '' ? 0 : defaultRegistryFee);
 
   // Downpayment Rates: Caixa 5%, Judicial 25% (CPC 895), Extrajudicial 30%
-  const downpaymentRate = acquisitionMode === 'caixa' ? 0.05 : acquisitionMode === 'judicial' ? 0.25 : 0.30;
+  const downpaymentRate = acquisitionMode === 'caixa' ? 0.05 : acquisitionMode === 'flip' ? 0.20 : acquisitionMode === 'judicial' ? 0.25 : 0.30;
   const downpaymentRatePct = Math.round(downpaymentRate * 100);
   const downpaymentVal = Math.round(auctionBid * downpaymentRate);
   const financedBalance = Math.max(0, auctionBid - downpaymentVal);
@@ -1722,7 +1779,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       neighborhood: bidiBenchmark
         ? { value: bidiBenchmark.bairro.saneada, count: bidiBenchmark.bairro.validas }
         : { value: neighborhoodStats?.avgSqm || 0, count: neighborhoodStats?.count || 0 },
-      radiusKm
+      radiusKm: bidiBenchmark?.raio?.effectiveRadiusKm || nearbyStreetData.effectiveRadiusKm || radiusKm
     });
     let itbiCompositeSqm = weighted.value;
 
@@ -1740,9 +1797,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       localSampleCount: weighted.localSampleCount,
       priceable: weighted.priceable,
       calibrated: weighted.calibrated,
-      calibrationKind: weighted.calibrationKind
+      calibrationKind: weighted.calibrationKind,
+      isSurroundingOutlier: weighted.isSurroundingOutlier,
+      isOutlierBrakeApplied: weighted.isOutlierBrakeApplied
     };
-  }, [bidiBenchmark, exactBuildingStats, exactStreetStats, nearbyStats, neighborhoodStats, propertyType, prefillData?.propertyType, sizeSqm, radiusKm]);
+  }, [bidiBenchmark, exactBuildingStats, exactStreetStats, nearbyStats, neighborhoodStats, propertyType, prefillData?.propertyType, sizeSqm, radiusKm, nearbyStreetData.effectiveRadiusKm]);
 
   // Detecção 100% AUTOMÁTICA do Ano de Construção / Habite-se / Registro na Matrícula & Edital
   const buildingAgeData = useMemo(() => {
@@ -2087,12 +2146,34 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     setCustomSalePrice(activeFlipExitPrice || 0);
   }, [activeFlipExitPrice]);
 
+  // Item 5: média de anúncios da rua pelo Morada Virtual (fonte prioritária)
+  const [moradaBench, setMoradaBench] = useState<{ m2: number; sampleCount: number; typology: string; streetUrl: string } | null>(null);
+  useEffect(() => {
+    setMoradaBench(null);
+    if (!selectedStreet || !selectedCity) return;
+    const ctrl = new AbortController();
+    const qs = new URLSearchParams({ 
+      street: selectedStreet, 
+      city: selectedCity, 
+      state: selectedState || 'RJ', 
+      neighborhood: selectedNeighborhood || '',
+      propertyType: propertyType || '' 
+    });
+    fetch('/api/morada/benchmark?' + qs.toString(), { signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.benchmark?.m2 > 0) setMoradaBench(d.benchmark); })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [selectedStreet, selectedCity, selectedState, selectedNeighborhood, propertyType]);
+
   // Market Tiers for 1-to-1 Comparison with Auction Acquisition
   const marketTiers = useMemo(() => {
     let portalSqm: number | null = null;
-    let portalSamplesLabel = 'Sem anúncios registrados nesta via';
-    
-    if (portalStreetStats && portalStreetStats.avgSqm > 0 && portalStreetStats.count > 0) {
+    let portalSamplesLabel = 'Rua não encontrada no Morada Virtual';
+    if (moradaBench && moradaBench.m2 > 0) {
+      portalSqm = moradaBench.m2;
+      portalSamplesLabel = `✓ Morada Virtual (${moradaBench.sampleCount} anúncios · ${moradaBench.typology})`;
+    } else if (portalStreetStats && portalStreetStats.avgSqm > 0 && portalStreetStats.count > 0) {
       portalSqm = portalStreetStats.avgSqm;
       portalSamplesLabel = `✓ Anúncios na Rua (${portalStreetStats.count} imóveis)`;
     } else if (portalResults?.close?.avgSqm && portalResults.close.avgSqm > 0 && (portalResults.close.matches?.length || 0) > 0) {
@@ -2166,7 +2247,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       },
       {
         id: 'portals_street',
-        label: '5. Anúncios nos Portais na Rua (Zap / QuintoAndar)',
+        label: '5. Média de Anúncios na Rua (Morada Virtual)',
         icon: Globe,
         color: 'cyan',
         sqm: portalSqm,
@@ -2201,6 +2282,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       };
     });
   }, [
+    moradaBench,
     exactBuildingStats,
     exactStreetStats,
     nearbyStats,
@@ -2975,16 +3057,26 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
                 <div className="flex items-center space-x-2 text-white">
                   <Coins className="w-4 h-4 text-white" />
-                  <span className="text-xs font-black uppercase tracking-wider font-mono text-white">1. LANCE & CUSTOS DE ARREMATAÇÃO</span>
+                  <span className="text-xs font-black uppercase tracking-wider font-mono text-white">
+                    {acquisitionMode === 'flip' ? '1. PREÇO DE AQUISIÇÃO & CUSTOS DE COMPRA' : '1. LANCE & CUSTOS DE ARREMATAÇÃO'}
+                  </span>
                 </div>
                 <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold border ${
                   acquisitionMode === 'judicial' 
                     ? 'bg-indigo-950/60 text-indigo-300 border-indigo-800/60' 
                     : acquisitionMode === 'extrajudicial'
                     ? 'bg-purple-950/60 text-purple-300 border-purple-800/60'
+                    : acquisitionMode === 'flip'
+                    ? 'bg-amber-950/60 text-amber-300 border-amber-600/60'
                     : 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
                 }`}>
-                  {acquisitionMode === 'judicial' ? 'Leilão Judicial (25%)' : acquisitionMode === 'extrajudicial' ? 'Leilão Extrajudicial (30%)' : 'Venda Direta Caixa (5%)'}
+                  {acquisitionMode === 'judicial' 
+                    ? 'Leilão Judicial (25%)' 
+                    : acquisitionMode === 'extrajudicial' 
+                    ? 'Leilão Extrajudicial (30%)' 
+                    : acquisitionMode === 'flip'
+                    ? 'Compra Direta / Flip (20%)'
+                    : 'Venda Direta Caixa (5%)'}
                 </span>
               </div>
 
@@ -3007,12 +3099,42 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 </div>
               </div>
 
+              {/* Valor máximo sugerido: maior lance que ainda garante ROI-alvo vendendo pelo Flip sugerido */}
+              {(() => {
+                const TARGET_ROI = 0.30;
+                const exit = Number(suggestedQuickSaleTotal) || 0;
+                if (exit <= 0) return null;
+                // Taxas proporcionais ao lance (só quando o usuário não digitou valor fixo)
+                const pct = (typeof auctioneerFeeInput === 'number' || auctioneerFeeInput === '' ? 0 : (isAuction ? 0.05 : 0))
+                  + (typeof itbiFeeInput === 'number' || itbiFeeInput === '' ? 0 : 0.03)
+                  + (typeof registryFeeInput === 'number' || registryFeeInput === '' ? 0 : 0.03);
+                const fixed = (typeof auctioneerFeeInput === 'number' ? auctioneerFeeInput : 0)
+                  + (typeof itbiFeeInput === 'number' ? itbiFeeInput : 0)
+                  + (typeof registryFeeInput === 'number' ? registryFeeInput : 0)
+                  + (Number(reformCostInput) || 0) + (Number(legalCostInput) || 0)
+                  + (Number(iptuDebtInput) || 0) + (Number(condoDebtInput) || 0);
+                const maxBid = Math.max(0, Math.floor(((exit / (1 + TARGET_ROI)) - fixed) / (1 + pct) / 1000) * 1000);
+                const ok = auctionBid > 0 && auctionBid <= maxBid;
+                return (
+                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 px-1 -mt-0.5" title={`Maior lance que mantém ROI de ${TARGET_ROI * 100}% vendendo pelo Flip sugerido (${formatBRL(exit)}), já com leiloeiro, ITBI, cartório, reforma, jurídico e débitos.`}>
+                    <span>Valor máximo sugerido p/ arrematação (ROI ≥ {TARGET_ROI * 100}%):</span>
+                    <button
+                      type="button"
+                      onClick={() => maxBid > 0 && handleArremateChange(maxBid.toLocaleString('pt-BR'))}
+                      className={`font-bold cursor-pointer hover:underline ${maxBid <= 0 ? 'text-rose-400' : ok ? 'text-emerald-400/80' : 'text-amber-400/80'}`}
+                    >
+                      {maxBid > 0 ? formatBRL(maxBid) : 'Inviável'}
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* Acquisition Mode Selector Toggle (Directly below Bid Input - Judicial, Extrajudicial, Caixa) */}
               <div className="space-y-1.5">
                 <label className="block text-[9px] text-slate-400 uppercase font-mono font-bold tracking-wider">
                   Regra de Aquisição:
                 </label>
-                <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
                   <button
                     type="button"
                     onClick={() => setAcquisitionMode('judicial')}
@@ -3023,7 +3145,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     }`}
                   >
                     <Scale className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[9.5px] truncate">1. Judicial (25%)</span>
+                    <span className="text-[9px] sm:text-[9.5px] truncate">1. Judicial (25%)</span>
                   </button>
 
                   <button
@@ -3036,7 +3158,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     }`}
                   >
                     <Coins className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[9.5px] truncate">2. Extrajudicial (30%)</span>
+                    <span className="text-[9px] sm:text-[9.5px] truncate">2. Extrajudicial (30%)</span>
                   </button>
 
                   <button
@@ -3049,7 +3171,26 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     }`}
                   >
                     <Building2 className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[9.5px] truncate">3. Caixa (5%)</span>
+                    <span className="text-[9px] sm:text-[9.5px] truncate">3. Caixa (5%)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAcquisitionMode('flip');
+                      setAuctioneerFeeInput(0);
+                      setIptuDebtInput(0);
+                      setCondoDebtInput(0);
+                      setLegalCostInput(0);
+                    }}
+                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                      acquisitionMode === 'flip'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow font-black ring-1 ring-amber-400/50'
+                        : 'text-slate-400 hover:text-amber-300'
+                    }`}
+                  >
+                    <span className="text-xs">🔥</span>
+                    <span className="text-[9px] sm:text-[9.5px] truncate">4. Flip Particular (20%)</span>
                   </button>
                 </div>
               </div>
@@ -3117,7 +3258,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </>
                 )}
 
-                {/* Leiloeiro (5% Oficial) */}
+                {/* Leiloeiro (5% Oficial) - NÃO se aplica para Flip particular */}
+                {acquisitionMode !== 'flip' && (
                 <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -3155,6 +3297,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     />
                   </div>
                 </div>
+                )}
 
                 {/* ITBI */}
                 <div className="flex justify-between items-center text-slate-200 text-xs py-1 border-b border-slate-850">
@@ -3415,6 +3558,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         {tier.sqm && tier.sqm > 0 && (
                           <div className="flex justify-between items-center pt-1 border-t border-slate-850/80 text-xs font-mono">
                             <span className="text-[9.5px] font-mono text-slate-400">{tier.samples}</span>
+                            {sizeSqm > 0 && totalArremateAcquisitionCost > 0 && (
+                              <span className={`text-[11px] font-black font-mono ${tier.grossProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`} title="Lucro bruto vendendo pelo m² deste nível, descontado o custo total de entrada">
+                                Lucro {tier.grossProfit >= 0 ? '+' : ''}{formatBRL(tier.grossProfit)} ({tier.roi}%)
+                              </span>
+                            )}
                             <span className="text-[9px] text-slate-400 text-right">
                               {(() => {
                                 const component = itbiWeightedStats.components.find(item => item.id === tier.id);
@@ -4408,8 +4556,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   }`}>
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-300 font-bold flex items-center gap-1.5 flex-wrap">
-                        <Compass className="w-3.5 h-3.5 text-violet-400" />
-                        {nearbyStreetData.card3Title || (bidiBenchmark?.raio?.effectiveRadiusKm ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km)` : `3. Ruas do Entorno (~${radiusKm}km)`)}
+                        {bidiBenchmark?.raio?.effectiveRadiusKm 
+                          ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km${(bidiBenchmark.raio.effectiveRadiusKm !== radiusKm || bidiBenchmark.raio.radiusLabel?.includes('Auto-ajustado') || nearbyStreetData.isAutoAdjusted) ? ' - Auto-ajustado' : ''})` 
+                          : nearbyStreetData.card3Title}
                         {isLoadingTransactions ? (
                           <span className="text-[9px] bg-violet-950/80 text-violet-300 px-1.5 py-0.2 rounded border border-violet-800/60 font-mono font-bold flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" /> Atualizando raio
@@ -4608,7 +4757,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 {/* CARD 3: Ruas do Entorno */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <span className="text-[9px] text-violet-300 font-mono uppercase block font-bold">
-                    {nearbyStreetData.card3Title || (bidiBenchmark?.raio?.effectiveRadiusKm ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km)` : `3. Ruas do Entorno (~${radiusKm}km)`)}
+                    {bidiBenchmark?.raio?.effectiveRadiusKm
+                      ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km${(bidiBenchmark.raio.effectiveRadiusKm !== radiusKm || bidiBenchmark.raio.radiusLabel?.includes('Auto-ajustado') || nearbyStreetData.isAutoAdjusted) ? ' - Auto-ajustado' : ''})`
+                      : nearbyStreetData.card3Title}
                   </span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {(bidiBenchmark?.raio?.saneada || nearbyStats?.avgSqm || 0) > 0 ? (
@@ -4631,8 +4782,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       {bidiBenchmark?.raio?.validas ?? nearbyStats?.count ?? 0} transações {isJuizDeFora ? 'de Compra e Venda' : 'apuradas'}
                     </span>
                     <span className="text-[9px] text-violet-300/80 font-mono">
-                      {nearbyStreetData.item3Label || bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.radiusLabel}
+                      {bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.item3Label || nearbyStreetData.radiusLabel}
                     </span>
+                    {itbiWeightedStats?.isOutlierBrakeApplied && (
+                      <div className="mt-1 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[9.5px] text-amber-300 font-mono flex items-center gap-1.5">
+                        <span>🛡️</span>
+                        <span className="font-semibold">Freio Ativado: Amostra isolada com desvio severo bloqueada; ponderação segura sobre Rua e Bairro</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -5096,9 +5253,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                             {isLoadingTransactions ? 'Carregando transações do ITBI...' : `Nenhuma transação individual encontrada no raio estrito de ${radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`}.`}
                           </td>
                         </tr>
-                      ) : (
-                        nearbyStreetTxs
-                          .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
+                      ) : (() => {
+                        const filtered = nearbyStreetTxs.filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))));
+                        const displayList = (filtered.length > 0 || isJuizDeFora) ? filtered : nearbyStreetTxs;
+                        return displayList
                           .slice(0, 50)
                           .map((tx) => {
                             const distMeters = tx.distanceMeters || (typeof tx.distanceKm === 'number' ? Math.round(tx.distanceKm * 1000) : null);
@@ -5154,8 +5312,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                 )}
                               </tr>
                             );
-                          })
-                      )}
+                          });
+                      })()}
                     </tbody>
                   </table>
                 </div>

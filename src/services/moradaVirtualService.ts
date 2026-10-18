@@ -140,11 +140,12 @@ function resolveStreetAliases(cleanName: string, city: string): string[] {
   return Array.from(new Set(aliases));
 }
 
-export function getMoradaCacheKey(street: string, city: string, state: string): string {
+export function getMoradaCacheKey(street: string, city: string, state: string, neighborhood?: string): string {
   const normS = normalizeText(cleanStreetName(street));
   const normC = normalizeText(city || '');
   const normUf = normalizeText(state || '').substring(0, 2);
-  return `${normUf}_${normC}_${normS}`;
+  const normN = neighborhood ? normalizeText(neighborhood) : '';
+  return normN ? `${normUf}_${normC}_${normN}_${normS}` : `${normUf}_${normC}_${normS}`;
 }
 
 interface MoradaSearchResultItem {
@@ -156,21 +157,24 @@ interface MoradaSearchResultItem {
 /**
  * Realiza a busca na API do Morada Virtual com tolerância e pontuação inteligente
  */
-async function searchMoradaVirtual(street: string, city: string, state: string): Promise<MoradaSearchResultItem | null> {
+async function searchMoradaVirtual(street: string, city: string, state: string, neighborhood?: string): Promise<MoradaSearchResultItem | null> {
   const cleanBase = cleanStreetName(street);
   if (!cleanBase || cleanBase.length < 2) return null;
 
   const candidateNames = resolveStreetAliases(cleanBase, city);
   const normCity = normalizeText(city);
   const normState = normalizeText(state);
+  const normNeigh = neighborhood ? normalizeText(neighborhood) : '';
 
   for (const name of candidateNames) {
     const normName = normalizeText(name);
     const queries = [
+      normNeigh ? `${name} ${neighborhood} ${city}` : null,
+      normNeigh ? `${street} ${neighborhood} ${city}` : null,
       `${name} ${city}`,
       name,
       `${street} ${city}`
-    ];
+    ].filter(Boolean) as string[];
 
     for (const q of queries) {
       try {
@@ -205,6 +209,11 @@ async function searchMoradaVirtual(street: string, city: string, state: string):
             score = 80;
           } else if (itemStreetPart.includes(normName) || normName.includes(itemStreetPart)) {
             score = 65;
+          }
+
+          // Se fornecido bairro, prioriza expressivamente o trecho daquele bairro
+          if (normNeigh && (itemTextNorm.includes(normNeigh) || itemUrl.includes(`/${normNeigh.replace(/\s+/g, '-')}/`))) {
+            score += 50;
           }
 
           if (score > 0) {
@@ -273,6 +282,22 @@ async function scrapeMoradaPage(pathUrl: string): Promise<{ cards: MoradaVirtual
       }
     });
 
+    // Se a página não tiver cartões separados por tipologia, aproveita o bloco de preço FipeZap / Morada
+    if (cards.length === 0) {
+      const rawFipe = $('.mvm-fipe-big').text().trim();
+      const m2Match = rawFipe.replace(/\./g, '').match(/(\d+)/);
+      const m2 = m2Match ? parseInt(m2Match[1], 10) : 0;
+      if (m2 > 0) {
+        cards.push({
+          tipo: 'RESIDENCIAL',
+          m2,
+          sampleCount: 1,
+          avgPrice: m2 * 60,
+          rawMeta: $('.mvm-fipe-scope').text().trim() || 'FipeZap / Morada Virtual'
+        });
+      }
+    }
+
     return { cards, leadText, canonicalTitle };
   } catch (err: any) {
     console.error(`[Morada Virtual] Falha no scrape de ${pathUrl}: ${err?.message}`);
@@ -283,13 +308,18 @@ async function scrapeMoradaPage(pathUrl: string): Promise<{ cards: MoradaVirtual
 /**
  * Consulta a via na internet (ou cache) e armazena os dados
  */
-export async function fetchAndCacheMoradaVirtual(street: string, city: string, state: string): Promise<MoradaVirtualStreetData | null> {
-  const cacheKey = getMoradaCacheKey(street, city, state);
+export async function fetchAndCacheMoradaVirtual(
+  street: string,
+  city: string,
+  state: string,
+  neighborhood?: string
+): Promise<MoradaVirtualStreetData | null> {
+  const cacheKey = getMoradaCacheKey(street, city, state, neighborhood);
   if (moradaCache[cacheKey]) {
     return moradaCache[cacheKey].notFound ? null : moradaCache[cacheKey];
   }
 
-  const match = await searchMoradaVirtual(street, city, state);
+  const match = await searchMoradaVirtual(street, city, state, neighborhood);
   if (!match) {
     // Marca como notFound para não ficar refazendo busca inútil no loop
     moradaCache[cacheKey] = {
@@ -362,12 +392,17 @@ export function getMoradaVirtualBenchmark(
   street?: string,
   city?: string,
   state?: string,
-  propertyType?: string
+  propertyType?: string,
+  neighborhood?: string
 ): MoradaVirtualBenchmark | null {
   if (!street || !city) return null;
 
-  const cacheKey = getMoradaCacheKey(street, city, state || 'RJ');
-  const entry = moradaCache[cacheKey];
+  // 1. Tenta chave específica com bairro
+  let entry = neighborhood ? moradaCache[getMoradaCacheKey(street, city, state || 'RJ', neighborhood)] : null;
+  // 2. Fallback para chave geral da via
+  if (!entry || entry.notFound || !entry.cards || entry.cards.length === 0) {
+    entry = moradaCache[getMoradaCacheKey(street, city, state || 'RJ')];
+  }
   if (!entry || entry.notFound || !entry.cards || entry.cards.length === 0) {
     return null;
   }

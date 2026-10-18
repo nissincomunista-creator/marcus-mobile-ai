@@ -25,9 +25,19 @@ export default function PropertyThumbnail({
 
   // Candidate photo URLs in priority order
   const candidateUrls: string[] = [];
-  if (property.imageUrl) {
-    candidateUrls.push(property.imageUrl);
-  }
+  const addCandidate = (url?: string) => {
+    if (!url || candidateUrls.includes(url)) return;
+    candidateUrls.push(url);
+    // If it's a Zap/VivaReal or portal image, add image-proxy as seamless fallback
+    if (url.includes('zapimoveis') || url.includes('vivareal') || url.includes('resizedimgs')) {
+      const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`;
+      if (!candidateUrls.includes(proxyUrl)) candidateUrls.push(proxyUrl);
+    }
+  };
+
+  if (property.imageUrl) addCandidate(property.imageUrl);
+  if ((property as any).imagemUrl) addCandidate((property as any).imagemUrl);
+
   if (caixaNum) {
     const primary = `https://venda-imoveis.caixa.gov.br/fotos/F${caixaNum}21.jpg`;
     if (!candidateUrls.includes(primary)) candidateUrls.push(primary);
@@ -67,6 +77,7 @@ export default function PropertyThumbnail({
             src={currentUrl}
             alt={property.title || 'Foto do imóvel'}
             loading="lazy"
+            referrerPolicy="no-referrer"
             onLoad={() => setIsLoaded(true)}
             onError={handleImageError}
             className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${

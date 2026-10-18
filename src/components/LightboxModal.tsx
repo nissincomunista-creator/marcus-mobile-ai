@@ -128,6 +128,7 @@ export default function LightboxModal({
               <img
                 src={activePhoto}
                 alt={property.title}
+                referrerPolicy="no-referrer"
                 className="max-w-full max-h-full object-contain select-none"
               />
             ) : (
@@ -177,7 +178,7 @@ export default function LightboxModal({
                     photoIndex === idx ? 'border-indigo-500 scale-105 shadow-md' : 'border-slate-800 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={url} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={url} alt={`Thumb ${idx + 1}`} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

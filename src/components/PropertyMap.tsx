@@ -145,8 +145,8 @@ export default function PropertyMap({
       mapRef.current = map;
       setMapReady(true);
 
-      const tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+      const tileRoad = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ', maxZoom: 20
       });
       tileRoad.addTo(map);
       activeTileLayerRef.current = tileRoad;
@@ -235,11 +235,13 @@ export default function PropertyMap({
     let layer: any;
     if (mapMode === 'satellite') {
       layer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri'
+        attribution: 'Tiles &copy; Esri',
+        maxNativeZoom: 19,
+        maxZoom: 20
       });
     } else {
-      layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+      layer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ', maxZoom: 20
       });
     }
 

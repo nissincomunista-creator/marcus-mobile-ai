@@ -110,6 +110,34 @@ export interface AuctionProperty {
   portalTypologyAvgPrice?: number; // Preço médio pedido nos anúncios da rua
   portalLeadText?: string; // Resumo analítico de mercado da rua
 
+  // Módulo Flip / Oportunidades em Portais
+  portalName?: 'Zap Imóveis' | 'Viva Real' | 'QuintoAndar' | 'Chaves na Mão' | 'Imovelweb' | string;
+  imagemUrl?: string;
+  precoAnunciado?: number;
+  valorCondominio?: number;
+  valorIptu?: number;
+  dataPublicacaoIso?: string;
+  diasPublicado?: number;
+  textoPublicacao?: string;
+  oportunidadeAbaixoMercado?: boolean;
+  descontoMercadoPct?: number;
+  valorMercadoEstimado?: number;
+  m2ReferenciaBairro?: number;
+  m2Anunciado?: number;
+
+  // Módulo Locação / Aluguel para Moradia
+  transactionType?: 'venda' | 'aluguel';
+  monthlyRent?: number;
+  aluguelMensal?: number;
+  mediaLocacaoCalculadora?: number;
+  aluguelDiferencaPct?: number;
+  vereditoLocacao?: 'barato' | 'caro' | 'justo';
+  taxasServico?: number;
+  outrasTaxas?: number;
+  totalTaxas?: number;
+  totalRentalPackage?: number;
+  pacoteMoradiaTotal?: number;
+
   // Módulo 1: Aliases de Matrícula e RGI
   matricula_numero?: string;
   cartorio_rgi?: string;
@@ -212,6 +240,7 @@ export interface AuctionProperty {
   finalDecisionVerdict?: 'revenda' | 'locacao' | 'skip';
   bedrooms?: number;
   parkingSpaces?: number;
+  bathrooms?: number;
   lat?: number;
   lng?: number;
   evaluationPrice?: number;
