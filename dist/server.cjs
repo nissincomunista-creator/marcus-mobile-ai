@@ -574,6 +574,31 @@ var init_geoCoords = __esm({
   }
 });
 
+// src/utils/locationSanitizers.ts
+function normalizeLocationLabel(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+function isUsableNeighborhoodLabel(value) {
+  const normalized = normalizeLocationLabel(value);
+  const compact = normalized.replace(/\s/g, "");
+  if (compact.length < 2 || /^\d+$/.test(compact)) return false;
+  return !(/* @__PURE__ */ new Set([
+    "ns",
+    "sn",
+    "na",
+    "nao",
+    "naoinformado",
+    "sembairro",
+    "bairro",
+    "desconhecido",
+    "ignorado",
+    "undefined",
+    "null",
+    "none",
+    "-"
+  ])).has(compact);
+}
+
 // auctionPipeline/location.ts
 function configureNeighborhoods(rows) {
   extra = {};
@@ -1091,6 +1116,427 @@ var init_cityZones = __esm({
     };
   }
 });
+
+// src/utils/cityZones.ts
+function normalizeString(str) {
+  if (!str) return "";
+  return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+var CITY_ZONES = {
+  "rio de janeiro": [
+    {
+      name: "Zona Sul",
+      neighborhoods: [
+        "copacabana",
+        "ipanema",
+        "leblon",
+        "botafogo",
+        "flamengo",
+        "laranjeiras",
+        "catete",
+        "gloria",
+        "urca",
+        "leme",
+        "gavea",
+        "jardim botanico",
+        "humaita",
+        "lagoa",
+        "sao conrado",
+        "cosme velho",
+        "rodrigo de freitas",
+        "vidigal",
+        "rocinha"
+      ]
+    },
+    {
+      name: "Zona Norte",
+      neighborhoods: [
+        "tijuca",
+        "maracana",
+        "vila isabel",
+        "grajau",
+        "meier",
+        "cachambi",
+        "del castilho",
+        "engenho novo",
+        "engenho de dentro",
+        "todos os santos",
+        "madureira",
+        "ilha do governador",
+        "penha",
+        "penha circular",
+        "ramos",
+        "olaria",
+        "bonsucesso",
+        "pavuna",
+        "iraja",
+        "rocha miranda",
+        "bento ribeiro",
+        "marechal hermes",
+        "cascadura",
+        "campinho",
+        "piedade",
+        "pilares",
+        "abolicao",
+        "encantado",
+        "agua santa",
+        "riachuelo",
+        "sampaio",
+        "sao cristovao",
+        "mangueira",
+        "benfica",
+        "caju",
+        "higienopolis",
+        "maria da graca",
+        "inhauma",
+        "engenho da rainha",
+        "tomas coelho",
+        "vicente de carvalho",
+        "vila da penha",
+        "vista alegre",
+        "braz de pina",
+        "cordovil",
+        "parada de lucas",
+        "vigario geral",
+        "jardim america",
+        "coelho neto",
+        "acari",
+        "barros filho",
+        "costa barros",
+        "honorio gurgel",
+        "oswaldo cruz",
+        "turia\xE7u",
+        "vila kosmos",
+        "anchieta",
+        "parque anchieta",
+        "guadalupe",
+        "ricardo de albuquerque",
+        "portuguesa",
+        "monero",
+        "jardim guanabara",
+        "cacuia",
+        "taua",
+        "bancarios",
+        "freguesia (ilha)",
+        "pitangueiras",
+        "zumbi",
+        "ribeira",
+        "galeao",
+        "cidade universitaria"
+      ]
+    },
+    {
+      name: "Zona Oeste",
+      neighborhoods: [
+        "barra da tijuca",
+        "recreio dos bandeirantes",
+        "recreio",
+        "jacarepagua",
+        "taquara",
+        "freguesia (jacarepagua)",
+        "freguesia jacarepagua",
+        "pechincha",
+        "anil",
+        "curicica",
+        "camorim",
+        "vargem grande",
+        "vargem pequena",
+        "campo grande",
+        "bangu",
+        "realengo",
+        "santa cruz",
+        "senador camara",
+        "senador vasconcelos",
+        "santissimo",
+        "paciencia",
+        "cosmos",
+        "inhoaiba",
+        "guaratiba",
+        "barra de guaratiba",
+        "pedra de guaratiba",
+        "ilha de guaratiba",
+        "deodoro",
+        "magalhaes bastos",
+        "vila militar",
+        "jardim sulacap",
+        "vila valqueire",
+        "praca seca",
+        "tanque",
+        "gardenia azul",
+        "cidade de deus",
+        "itaguai",
+        "padre miguel",
+        "gericino",
+        "jabour"
+      ]
+    },
+    {
+      name: "Centro",
+      neighborhoods: [
+        "centro",
+        "lapa",
+        "santa teresa",
+        "santo cristo",
+        "gamboa",
+        "saude",
+        "estacio",
+        "cidade nova",
+        "praca da bandeira",
+        "catumbi",
+        "rio comprido"
+      ]
+    }
+  ],
+  "niteroi": [
+    {
+      name: "Praias da Ba\xEDa (Zona Sul)",
+      neighborhoods: [
+        "icarai",
+        "santa rosa",
+        "inga",
+        "boa viagem",
+        "sao domingos",
+        "gragoata",
+        "charitas",
+        "jurujuba",
+        "sao francisco",
+        "centro",
+        "ponta d areia",
+        "fatima",
+        "sao lourenco",
+        "morro do estado"
+      ]
+    },
+    {
+      name: "Regi\xE3o Oce\xE2nica",
+      neighborhoods: [
+        "piratininga",
+        "camboinhas",
+        "itaipu",
+        "itacoatiara",
+        "engenho do mato",
+        "maravista",
+        "cafuba",
+        "santo antonio",
+        "serra grande",
+        "jacare"
+      ]
+    },
+    {
+      name: "Regi\xE3o Norte",
+      neighborhoods: [
+        "fonseca",
+        "barreto",
+        "santana",
+        "engenhoca",
+        "tenente jardim",
+        "ilha da conceicao",
+        "cubango",
+        "vicoso jardim",
+        "caramujo",
+        "baldeador",
+        "santa barbara"
+      ]
+    },
+    {
+      name: "Pendotiba & Regi\xE3o Leste",
+      neighborhoods: [
+        "pendotiba",
+        "badu",
+        "cantagalo",
+        "ititioca",
+        "maceio",
+        "sape",
+        "matapaca",
+        "vila progresso",
+        "largo da batalha",
+        "maria paula",
+        "rio do ouro",
+        "varzea das mocas",
+        "muriqui"
+      ]
+    }
+  ],
+  "sao paulo": [
+    {
+      name: "Zona Sul",
+      neighborhoods: [
+        "moema",
+        "vila mariana",
+        "santo amaro",
+        "campo belo",
+        "brooklin",
+        "itaim bibi",
+        "morumbi",
+        "vila andrade",
+        "saude",
+        "jabaquara",
+        "ipiranga",
+        "cursino",
+        "sacoma",
+        "cidade ademar",
+        "campo limpo",
+        "capao redondo",
+        "socorro",
+        "grajau",
+        "interlagos",
+        "pedreira",
+        "cidade dutra",
+        "jardim sao luis",
+        "jardim angela",
+        "parelheiros"
+      ]
+    },
+    {
+      name: "Zona Oeste",
+      neighborhoods: [
+        "pinheiros",
+        "perdizes",
+        "vila madalena",
+        "lapa",
+        "barra funda",
+        "butanta",
+        "jaguare",
+        "rio pequeno",
+        "raposo tavares",
+        "vila leopoldina",
+        "alto de pinheiros",
+        "jaguara",
+        "morro doce",
+        "vila sonia"
+      ]
+    },
+    {
+      name: "Zona Norte",
+      neighborhoods: [
+        "santana",
+        "tucuruvi",
+        "mandaqui",
+        "casa verde",
+        "limao",
+        "freguesia do o",
+        "brasilandia",
+        "jacana",
+        "tremembe",
+        "vila maria",
+        "vila guilherme",
+        "vila medeiros",
+        "cachoeirinha",
+        "pirituba",
+        "jaragua",
+        "anhanguera",
+        "perus"
+      ]
+    },
+    {
+      name: "Zona Leste",
+      neighborhoods: [
+        "tatuape",
+        "mooca",
+        "analia franco",
+        "belem",
+        "bras",
+        "penha",
+        "vila prudente",
+        "carrao",
+        "vila formosa",
+        "agua rasa",
+        "aricanduva",
+        "itaquera",
+        "sao mateus",
+        "sao miguel paulista",
+        "guaianases",
+        "cidade tiradentes",
+        "itaim paulista",
+        "vila matilde",
+        "arthur alvim",
+        "ponte rasa",
+        "ermelino matarazzo",
+        "sapopemba",
+        "iguatemi",
+        "sao rafael",
+        "parque do carmo",
+        "jose bonifacio",
+        "lajeado",
+        "vila curuca"
+      ]
+    },
+    {
+      name: "Zona Central",
+      neighborhoods: [
+        "centro",
+        "bela vista",
+        "consolacao",
+        "republica",
+        "se",
+        "santa cecilia",
+        "bom retiro",
+        "liberdade",
+        "cambuci",
+        "pari"
+      ]
+    }
+  ],
+  "juiz de fora": [
+    {
+      name: "Zona Central",
+      neighborhoods: ["centro", "granbery", "morro da gloria", "santa helena", "paineiras", "sao mateus"]
+    },
+    {
+      name: "Zona Sul",
+      neighborhoods: ["cascatinha", "estrela sul", "santa luzia", "teixeiras", "sagrado coracao", "dom bosco"]
+    },
+    {
+      name: "Zona Norte",
+      neighborhoods: ["benfica", "barreira do triunfo", "fontesville", "francisco bernardino", "industrial", "santa cruz"]
+    },
+    {
+      name: "Zona Oeste / Cidade Alta",
+      neighborhoods: ["sao pedro", "marilandia", "aeroporto", "santos dumont", "novo horizonte"]
+    },
+    {
+      name: "Zona Leste / Sudeste",
+      neighborhoods: ["manoel honorio", "bairu", "progresso", "santa terezinha", "costa carvalho", "vila ideal", "pocinhos"]
+    }
+  ],
+  "belo horizonte": [
+    {
+      name: "Centro-Sul",
+      neighborhoods: ["savassi", "lourdes", "funcionarios", "sion", "ancheta", "serra", "cruzeiro", "santo agostinho", "centro"]
+    },
+    {
+      name: "Zona Sul / Oeste",
+      neighborhoods: ["buritis", "belvedere", "gutierrez", "prado", "grajau", "estrela dalva", "palmeiras"]
+    },
+    {
+      name: "Zona Norte / Pampulha",
+      neighborhoods: ["pampulha", "ouro preto", "castelo", "itapoa", "planalto", "santa amelia", "sao luiz", "sao judas tadeu"]
+    },
+    {
+      name: "Zona Leste / Nordeste",
+      neighborhoods: ["santa efigenia", "floresta", "santa tereza", "sagrada familia", "horto", "cidade nova", "silveira", "renascenca"]
+    },
+    {
+      name: "Barreiro / Noroeste",
+      neighborhoods: ["barreiro", "padre eustaquio", "caicara", "carlos prates", "monsenhor messias"]
+    }
+  ]
+};
+function getZoneForNeighborhood(cityName, neighborhoodName) {
+  if (!cityName || !neighborhoodName) return null;
+  const normCity = normalizeString(cityName);
+  const normNeigh = normalizeString(neighborhoodName);
+  const configs = CITY_ZONES[normCity];
+  if (!configs) return null;
+  for (const zone of configs) {
+    for (const n of zone.neighborhoods) {
+      if (normNeigh === n || normNeigh.includes(n) || n.includes(normNeigh)) {
+        return zone.name;
+      }
+    }
+  }
+  return null;
+}
 
 // src/utils/auctionGeography.ts
 function sourceAuctionLocation(text, state) {
@@ -1812,6 +2258,11 @@ function formatCleanAddress(addr) {
   let cleaned = unsquishText(addr).replace(/\s+/g, " ").replace(/\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(Rio\s+de\s+Janeiro|Niterói|São\s+Gonçalo|Duque\s+de\s+Caxias|Nova\s+Iguaçu|Juiz\s+de\s+Fora|Belo\s+Horizonte|São\s+Paulo)\b/gi, "$1, $2").trim();
   return cleaned;
 }
+function formatPreciseAuctionAddress(addr) {
+  const parsed = parseAddressComponents(addr);
+  if (!parsed.street || !parsed.number) return formatCleanAddress(addr);
+  return formatCleanAddress([parsed.street, `n\xBA ${parsed.number}`, parsed.complement].filter(Boolean).join(", "));
+}
 function extractAddress(text, fallback) {
   const cleanInput = unsquishText(text || "");
   const lines = cleanInput.split(/\r?\n|\s{2,}/).map((line) => line.trim()).filter(Boolean);
@@ -1820,7 +2271,7 @@ function extractAddress(text, fallback) {
   );
   if (labeledLine) {
     const labeledAddress = labeledLine.replace(/^.*?\bendere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?\s*:?\s*/i, "").split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+/g, " ").trim();
-    if (labeledAddress.length >= 8) return formatCleanAddress(labeledAddress.slice(0, 180));
+    if (labeledAddress.length >= 8) return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
   }
   const addressCandidates = lines.map((line, index) => {
     if (!/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
@@ -1835,11 +2286,11 @@ function extractAddress(text, fallback) {
   if (addressLine) {
     const extracted = addressLine.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,180}/i)?.[0] || addressLine;
     const cleanExtracted = extracted.split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+(?:bairro|cidade|estado)\s*[:\-].*$/i, "").trim();
-    return formatCleanAddress(cleanExtracted);
+    return formatPreciseAuctionAddress(cleanExtracted);
   }
   const normalized = cleanInput.replace(/\s+/g, " ").trim();
   const addressMatch = normalized.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
-  return addressMatch ? formatCleanAddress(addressMatch[0].replace(/\s{2,}/g, " ").trim()) : formatCleanAddress(fallback);
+  return addressMatch ? formatPreciseAuctionAddress(addressMatch[0].replace(/\s{2,}/g, " ").trim()) : formatPreciseAuctionAddress(fallback);
 }
 function extractDeclaredCity(text, state) {
   return sourceAuctionLocation(text, state)?.city || "";
@@ -2036,7 +2487,8 @@ function isConfiguredAuctionLink(link) {
   }
 }
 function hasAuditableAddress(address) {
-  return /\b(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(address || "") && /\d/.test(address || "");
+  const parsed = parseAddressComponents(address);
+  return !!parsed.street && !!parsed.number && /^(?:rua|avenida|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(parsed.street);
 }
 async function extractOfficialDocumentText(page, documentUrl) {
   try {
@@ -10037,6 +10489,7 @@ function loadStore() {
         storeData.users[0].role = "admin";
       }
       if (storeData.auctions) {
+        let restoredCaixa = 0;
         storeData.auctions.forEach((a) => {
           if (a.origin === "caixa_radar") a.origin = "caixa";
         });
@@ -10051,6 +10504,19 @@ function loadStore() {
             if (normMode) a.saleMode = normMode;
             a.modalidadeCaixa = normalizeCaixaModality(a.saleMode || mMatch?.[1] || desc || a.title);
             normalizedCaixaCount++;
+          }
+          const isCaixa = a.origin === "caixa" || a.id && a.id.startsWith("auc-caixa-");
+          if (isCaixa && a.ingestionStatus === "expirado_por_data") {
+            a.ingestionStatus = "ativo";
+            a.precisa_revisao = false;
+            a.availability = {
+              state: "active",
+              status: "ativo",
+              url: a.auctionLink || "",
+              checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+              reason: "Im\xF3vel Caixa em modalidade cont\xEDnua"
+            };
+            restoredCaixa++;
           }
         });
         if (normalizedCaixaCount > 0) {
@@ -11520,6 +11986,28 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     auc.portalStreetUrl = moradaMatch.streetUrl;
     auc.fontePortal = "Morada Virtual";
   }
+  const portalBench = calculatePortalBenchmark({
+    street: auc.address,
+    neighborhood: auc.neighborhood,
+    city: auc.city,
+    state: auc.state,
+    propertyType: auc.propertyType,
+    sizeSqm: auc.sizeSqm,
+    streetPortalAvgSqm: auc.streetPortalAvgSqm,
+    itbiStreetAvgSqm: itbiStreetAvgSqm || auc.itbiStreetAvgSqm,
+    itbiStreetCount: itbiStreetCount || auc.itbiStreetCount,
+    itbiUnitValueAvg: auc.itbiUnitValueAvg,
+    itbiSurroundingAvgSqm: auc.itbiSurroundingAvgSqm
+  });
+  const isRJ = (auc.state || "").toUpperCase() === "RJ" || String(auc.city || "").toLowerCase().includes("rio de janeiro");
+  auc.m2MercadoPortal = portalBench.m2MercadoPortal;
+  auc.valorSugeridoPortal = portalBench.valorSugeridoPortal;
+  auc.fontePortal = portalBench.fontePortal;
+  auc.dataColetaPortal = portalBench.dataColetaPortal;
+  auc.isBairroPortalFallback = portalBench.isBairroPortalFallback;
+  auc.portalAreaBracket = portalBench.portalAreaBracket;
+  auc.streetPortalAvgSqm = !portalBench.isBairroPortalFallback && portalBench.m2MercadoPortal >= (isRJ ? 1500 : 500) ? portalBench.m2MercadoPortal : void 0;
+  auc.portalDataVerifiedAt = portalBench.dataColetaPortal;
   const ageFactor = ageDepreciationPct > 0 ? 1 - ageDepreciationPct / 100 : 1;
   const territorialFactor = commRisk.isRisk ? 0.85 : 1;
   if (isJfAbsolute && jfGabaritoTotal > 0) {

@@ -1,4 +1,5 @@
 import fs from 'node:fs';import {RIO_DE_JANEIRO_BAIRROS,NITEROI_BAIRROS,JUIZ_DE_FORA_BAIRROS} from '../src/utils/geoCoords.ts';
+import {isUsableNeighborhoodLabel} from '../src/utils/locationSanitizers.ts';
 export const normalize=(s:string)=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const catalogs:Record<string,string[]>={'rio de janeiro':Object.keys(RIO_DE_JANEIRO_BAIRROS),'niteroi':Object.keys(NITEROI_BAIRROS),'juiz de fora':Object.keys(JUIZ_DE_FORA_BAIRROS)};
 let extra:Record<string,string[]>={};export function configureNeighborhoods(rows:Array<{city?:string;neighborhood:string}>){extra={};for(const r of rows)if(r.city&&r.neighborhood){const k=normalize(r.city),value=normalize(r.neighborhood);if(!value||value===k||/^\d+$/.test(value)||/^(?:lote|quadra|bairro|zona rural|nao informado|sem bairro|desconhecido)$/.test(value))continue;extra[k]||=[];if(!extra[k].includes(r.neighborhood))extra[k].push(r.neighborhood);}}

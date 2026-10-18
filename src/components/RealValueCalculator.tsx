@@ -226,7 +226,7 @@ function findBestStreetMatch(target: string | null | undefined, candidateList: a
   return name ? candidateList.find(c => (typeof c === 'string' ? c : c?.street) === name) || null : null;
 }
 
-function parseAddressComponents(rawAddress: string | null | undefined): {
+function parseLegacyAddressComponents(rawAddress: string | null | undefined): {
   street: string;
   number: string;
   complement: string;
@@ -421,7 +421,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         (stat.state || 'SP').toUpperCase() === selectedState.toUpperCase() &&
         (stat.city || 'São Paulo').toLowerCase() === selectedCity.toLowerCase()
       )
-      .map(stat => stat.neighborhood);
+      .map(stat => stat.neighborhood)
+      .filter(isUsableNeighborhoodLabel);
     return Array.from(new Set(list)).sort();
   }, [itbiStats, selectedState, selectedCity]);
 
@@ -1089,6 +1090,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         } else if (!controller.signal.aborted) {
           setJfAreaModel(null);
         }
+        if (isJuizDeFora) {
+          const modelRes = await fetch(`/api/itbi/jf-area-model?propertyType=${encodeURIComponent(propertyType || 'Apartamento')}`, { signal: controller.signal });
+          if (modelRes.ok && !controller.signal.aborted) {
+            setJfAreaModel(await modelRes.json());
+          }
+        } else if (!controller.signal.aborted) {
+          setJfAreaModel(null);
+        }
       } catch (e) {
         if (!controller.signal.aborted) {
           console.error('Error fetching transactions:', e);
@@ -1523,6 +1532,25 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       rawUncappedAvgSqm: stats.avgSqm
     };
   }, [bidiBenchmark, exactBuildingTxs, sizeSqm, txSizeFilter, streetNumber]);
+
+  const jfBuildingPurchaseSales = useMemo(
+    () => sameNumberBuildingTxs.filter(tx => tx.isCompraEVenda === true),
+    [sameNumberBuildingTxs]
+  );
+  const jfStreetPurchaseSales = useMemo(
+    () => exactStreetTxs.filter(tx => tx.isCompraEVenda === true),
+    [exactStreetTxs]
+  );
+  const getJfVerifiedArea = (tx: ItbiTransaction) => isJuizDeFora ? getVerifiedJuizDeForaArea(tx) : undefined;
+  const getJfSourceUnitPrice = (tx: ItbiTransaction) => {
+    const officialArea = getJfVerifiedArea(tx);
+    if (!officialArea) return undefined;
+    const sourceUnitPrice = Number(tx.unitValueSqm);
+    const perSqm = tx.sourceVerified === true && sourceUnitPrice > 0
+      ? sourceUnitPrice
+      : getTxIntegralValue(tx) / officialArea;
+    return Number.isFinite(perSqm) && perSqm > 0 ? Math.round(perSqm) : undefined;
+  };
 
   // Combined stats for dynamic calculations
   const calculatedStats = useMemo(() => {
@@ -5158,7 +5186,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                 </>
                               )}
                             </tr>
-                          ))
+                          );})
                       )}
                     </tbody>
                   </table>
@@ -5247,7 +5275,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300">
-                      {nearbyStreetTxs.length === 0 ? (
+                      {(isJuizDeFora ? !nearbyStreetTxs.some(tx => tx.isCompraEVenda === true) : nearbyStreetTxs.length === 0) ? (
                         <tr>
                           <td colSpan={isJuizDeFora ? 8 : 6} className="py-8 text-center text-slate-500 italic">
                             {isLoadingTransactions ? 'Carregando transações do ITBI...' : `Nenhuma transação individual encontrada no raio estrito de ${radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`}.`}
@@ -5260,6 +5288,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           .slice(0, 50)
                           .map((tx) => {
                             const distMeters = tx.distanceMeters || (typeof tx.distanceKm === 'number' ? Math.round(tx.distanceKm * 1000) : null);
+                            const usedInPrice = bidiBenchmark?.raio.transactionIds?.includes(tx.id) === true;
+                            const verifiedArea = getJfVerifiedArea(tx);
+                            const verifiedUnitPrice = getJfSourceUnitPrice(tx);
                             return (
                               <tr 
                                 key={tx.id} 
@@ -5276,9 +5307,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                               >
                                 <td className="py-2.5 font-mono text-slate-450">{tx.date}</td>
                                 <td className="py-2.5 font-medium text-slate-300 group-hover:text-indigo-400 transition-colors truncate max-w-[150px] block">
-                                  {tx.street || 'Não informado'} {tx.number ? `(${tx.number})` : ''}
+                                  {tx.street || ''} {tx.number ? `(${tx.number})` : ''}{isJuizDeFora && distMeters !== null ? ` · ${distMeters}m` : ''}
                                 </td>
-                                <td className="py-2.5 text-center">
+                                {!isJuizDeFora && <td className="py-2.5 text-center">
                                   <span className="px-1.5 py-0.5 rounded bg-violet-950/70 text-violet-300 font-mono text-[10px] font-bold border border-violet-800/40">
                                     {distMeters !== null ? `${distMeters}m` : 'no raio'}
                                   </span>

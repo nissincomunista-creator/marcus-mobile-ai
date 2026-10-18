@@ -1013,6 +1013,7 @@ function loadStore(): DataStore {
 
       // Normalize any old 'caixa_radar' to 'caixa'
       if (storeData.auctions) {
+        let restoredCaixa = 0;
         storeData.auctions.forEach(a => {
           if ((a as any).origin === 'caixa_radar') a.origin = 'caixa';
         });
@@ -1030,6 +1031,19 @@ function loadStore(): DataStore {
             if (normMode) a.saleMode = normMode;
             a.modalidadeCaixa = normalizeCaixaModality(a.saleMode || mMatch?.[1] || desc || a.title);
             normalizedCaixaCount++;
+          }
+          const isCaixa = a.origin === 'caixa' || (a.id && a.id.startsWith('auc-caixa-'));
+          if (isCaixa && a.ingestionStatus === 'expirado_por_data') {
+            a.ingestionStatus = 'ativo';
+            a.precisa_revisao = false;
+            a.availability = {
+              state: 'active',
+              status: 'ativo',
+              url: a.auctionLink || '',
+              checkedAt: new Date().toISOString(),
+              reason: 'Imóvel Caixa em modalidade contínua'
+            };
+            restoredCaixa++;
           }
         });
         if (normalizedCaixaCount > 0) {
@@ -2818,6 +2832,31 @@ function recalculateAuctionWithIndex(
     auc.fontePortal = 'Morada Virtual';
   }
 
+  // Módulo 2: Benchmark de Mercado dos Portais Imobiliários (ZAP Imóveis / QuintoAndar)
+  const portalBench = calculatePortalBenchmark({
+    street: auc.address,
+    neighborhood: auc.neighborhood,
+    city: auc.city,
+    state: auc.state,
+    propertyType: auc.propertyType,
+    sizeSqm: auc.sizeSqm,
+    streetPortalAvgSqm: auc.streetPortalAvgSqm,
+    itbiStreetAvgSqm: itbiStreetAvgSqm || auc.itbiStreetAvgSqm,
+    itbiStreetCount: itbiStreetCount || auc.itbiStreetCount,
+    itbiUnitValueAvg: auc.itbiUnitValueAvg,
+    itbiSurroundingAvgSqm: auc.itbiSurroundingAvgSqm
+  });
+
+  const isRJ = (auc.state || '').toUpperCase() === 'RJ' || String(auc.city || '').toLowerCase().includes('rio de janeiro');
+  auc.m2MercadoPortal = portalBench.m2MercadoPortal;
+  auc.valorSugeridoPortal = portalBench.valorSugeridoPortal;
+  auc.fontePortal = portalBench.fontePortal;
+  auc.dataColetaPortal = portalBench.dataColetaPortal;
+  auc.isBairroPortalFallback = portalBench.isBairroPortalFallback;
+  auc.portalAreaBracket = portalBench.portalAreaBracket;
+  auc.streetPortalAvgSqm = (!portalBench.isBairroPortalFallback && portalBench.m2MercadoPortal >= (isRJ ? 1500 : 500)) ? portalBench.m2MercadoPortal : undefined;
+  auc.portalDataVerifiedAt = portalBench.dataColetaPortal;
+
   const ageFactor = ageDepreciationPct > 0 ? (1 - ageDepreciationPct / 100) : 1.0;
   const territorialFactor = commRisk.isRisk ? 0.85 : 1.0;
   if (isJfAbsolute && jfGabaritoTotal > 0) {
@@ -4420,7 +4459,10 @@ app.get('/api/itbi/transactions', async (req, res) => {
             onStreet = neighTxs;
           }
         }
+      } catch (error) {
+        console.warn('[ITBI] Não foi possível confirmar a coordenada numerada do imóvel-alvo:', error);
       }
+    }
 
       if (onStreet.length > 0) {
         targetCoords = {
@@ -4477,7 +4519,9 @@ app.get('/api/itbi/transactions', async (req, res) => {
   }
 
   // Sort by date descending
-  txs = [...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  txs = deduplicateVerifiedItbiSourceRows([...txs]).transactions
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  radiusTransactions = deduplicateVerifiedItbiSourceRows(radiusTransactions).transactions;
   
   if (req.query.includeRadius === 'true') {
     return res.json({ transactions: txs, radiusTransactions, radiusAnchorPrecision });
