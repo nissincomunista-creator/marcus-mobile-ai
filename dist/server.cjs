@@ -5832,7 +5832,7 @@ function selectRadiusTransactions(rows, radiusKm) {
     if (tx.transactionLocationPrecision !== "exact_number") return false;
     if (tx.distanceKm == null || tx.distanceKm === "") return false;
     const anchor = tx.distanceAnchorPrecision;
-    if (anchor && anchor !== "official_address" && anchor !== "geocoded_number" && anchor !== "street_centroid") return false;
+    if (anchor && anchor !== "official_address" && anchor !== "geocoded_number") return false;
     const distance2 = Number(tx.distanceKm);
     return Number.isFinite(distance2) && distance2 >= 0 && distance2 <= limit;
   });
@@ -13062,28 +13062,6 @@ app.get("/api/itbi/transactions", async (req, res) => {
           }
         } catch (error) {
           console.warn("[ITBI] N\xE3o foi poss\xEDvel confirmar a coordenada numerada do im\xF3vel-alvo:", error);
-        }
-      }
-      if (!targetCoords) {
-        const allStreetTxs = store.itbiTransactions.filter((tx) => (tx.state || "").toUpperCase() === filterState && cleanNeighborhood(tx.city) === cleanNeighborhood(filterCity) && isTxLocationSane(tx.transactionLocationLat, tx.transactionLocationLng, tx.state, tx.city, tx.neighborhood) && tx.street && streetAxesMatch(tx.street, tgt));
-        let onStreet = allStreetTxs;
-        if (filterNeighborhood) {
-          const onStreetNeigh = allStreetTxs.filter((tx) => cleanNeighborhood(tx.neighborhood) === cleanNeighborhood(filterNeighborhood));
-          if (onStreetNeigh.length > 0) {
-            onStreet = onStreetNeigh;
-          } else {
-            const neighTxs = store.itbiTransactions.filter((tx) => (tx.state || "").toUpperCase() === filterState && cleanNeighborhood(tx.city) === cleanNeighborhood(filterCity) && isTxLocationSane(tx.transactionLocationLat, tx.transactionLocationLng, tx.state, tx.city, tx.neighborhood) && cleanNeighborhood(tx.neighborhood) === cleanNeighborhood(filterNeighborhood));
-            if (neighTxs.length > 0) {
-              onStreet = neighTxs;
-            }
-          }
-        }
-        if (onStreet.length > 0) {
-          targetCoords = {
-            lat: onStreet.reduce((s, t) => s + t.transactionLocationLat, 0) / onStreet.length,
-            lng: onStreet.reduce((s, t) => s + t.transactionLocationLng, 0) / onStreet.length
-          };
-          radiusAnchorPrecision = "street_centroid";
         }
       }
       if (targetCoords) {

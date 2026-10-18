@@ -1136,34 +1136,25 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     });
   }, [rawTransactions, selectedStreet]);
 
-  // The selected circle does not depend on the bairro having its own transactions.
+  // Item 3 is the exact circle selected by the analyst. It never expands to
+  // another radius and never substitutes a bairro aggregate.
   const nearbyStreetData = useMemo(() => {
-    let effectiveRadius = radiusKm;
-    let txs = selectRadiusTransactions(radiusTransactions, effectiveRadius).filter(isVoluntaryMarketSale);
-    let isAutoAdjusted = false;
-
-    // Regra Pericial: quando o raio de 0.5 km tiver menos que a amostragem mínima (< 3 transações),
-    // expande automaticamente para 1.0 km se houver dados consistentes no raio ampliado
-    if (radiusKm <= 0.5 && txs.length < 3) {
-      const txs1km = selectRadiusTransactions(radiusTransactions, 1.0).filter(isVoluntaryMarketSale);
-      if (txs1km.length >= 3) {
-        effectiveRadius = 1.0;
-        txs = txs1km;
-        isAutoAdjusted = true;
-      }
-    }
-
-    const label = `Ruas do Entorno (${effectiveRadius.toFixed(1)} km${isAutoAdjusted ? ' - Auto-ajustado' : ''})`;
+    const targetStreetKey = canonicalStreet(selectedStreet);
+    const txs = selectRadiusTransactions(radiusTransactions, radiusKm)
+      .filter(isVoluntaryMarketSale)
+      .filter(tx => !targetStreetKey || canonicalStreet(tx.street) !== targetStreetKey);
+    const label = `Ruas do Entorno (${radiusKm.toFixed(1)} km)`;
     return {
       txs,
-      effectiveRadiusKm: effectiveRadius,
-      isAutoAdjusted,
+      effectiveRadiusKm: radiusKm,
+      isAutoAdjusted: false,
       radiusLabel: `${label} — ${txs.length} transações geolocalizadas`,
       item3Label: `3. ${label} — ${txs.length} tx`,
       card3Title: `3. ${label}`,
-      fallbackLevel: (effectiveRadius <= 0.5 ? '0.5km' : effectiveRadius <= 1 ? '1.0km' : '2.0km') as '0.5km' | '1.0km' | '2.0km'
+      fallbackLevel: (radiusKm <= 0.5 ? '0.5km' : radiusKm <= 1 ? '1.0km' : '2.0km') as '0.5km' | '1.0km' | '2.0km'
     };
-  }, [radiusTransactions, radiusKm]);
+  }, [radiusTransactions, radiusKm, selectedStreet]);
+
 
   const nearbyStreetTxs = nearbyStreetData.txs;
 
@@ -1380,44 +1371,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     return null;
   }, [bidiBenchmark, rawTransactions, sizeSqm, txSizeFilter, selectedNeighborhood, itbiStats, propertyType, isJuizDeFora]);
 
-  // 2. Aggregate stats from verified surrounding transactions inside the selected radius
+  // 2. Estatística do entorno: apenas linhas geolocalizadas no círculo selecionado.
   const nearbyStats = useMemo(() => {
-    // The radius control must always use the strict geodesic subset first.
-    // The bidirectional benchmark is intentionally broader for valuation
-    // calibration, but must not make the 500m/1km/2km UI appear unchanged.
-    if (bidiBenchmark && bidiBenchmark.raio.total > 0 && bidiBenchmark.raio.validas > 0) {
-      return {
-        avgSqm: bidiBenchmark.raio.saneada,
-        medianSqm: bidiBenchmark.raio.saneada,
-        source: bidiBenchmark.raio.radiusLabel || `Média do Entorno (${bidiBenchmark.raio.effectiveRadiusKm?.toFixed(1) || radiusKm.toFixed(1)}km)`,
-        count: bidiBenchmark.raio.validas,
-        minSqm: bidiBenchmark.raio.corteMin || Math.round(bidiBenchmark.raio.saneada * 0.75),
-        maxSqm: bidiBenchmark.raio.corteMax || Math.round(bidiBenchmark.raio.saneada * 1.25),
-        rawAvgSqm: bidiBenchmark.raio.prelim || bidiBenchmark.raio.saneada,
-        rawCount: bidiBenchmark.raio.total,
-        outliersCount: bidiBenchmark.raio.expurgadas,
-        similarAvgSqm: bidiBenchmark.raio.saneada,
-        similarCount: bidiBenchmark.raio.validas,
-        allAreasAvgSqm: bidiBenchmark.raio.saneada,
-        allAreasCount: bidiBenchmark.raio.total,
-        isSimilarActive: txSizeFilter === 'similar',
-        minSimilarSize: bidiBenchmark.minSimilarSize,
-        maxSimilarSize: bidiBenchmark.maxSimilarSize
-      };
-    }
+    if (nearbyStreetTxs.length === 0) return null;
+    return calculateRobustStats(
+      nearbyStreetTxs,
+      sizeSqm,
+      txSizeFilter,
+      nearbyStreetData.radiusLabel
+    );
+  }, [nearbyStreetData.radiusLabel, nearbyStreetTxs, sizeSqm, txSizeFilter]);
 
-    if (selectedStreet && nearbyStreetTxs.length > 0) {
-      const strictRadiusStats = calculateRobustStats(
-        nearbyStreetTxs,
-        sizeSqm,
-        txSizeFilter,
-        nearbyStreetData.radiusLabel
-      );
-      if (strictRadiusStats) return strictRadiusStats;
-    }
-
-    return null;
-  }, [bidiBenchmark, nearbyStreetData.radiusLabel, nearbyStreetTxs, selectedStreet, sizeSqm, txSizeFilter, radiusKm]);
 
   // 3b. Rua Limpa (Exclui compulsoriamente o número predial do próprio condomínio)
   const cleanStreetTxs = useMemo(() => {
@@ -2199,33 +2163,25 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
   // Market Tiers for 1-to-1 Comparison with Auction Acquisition
   const marketTiers = useMemo(() => {
-    let portalSqm: number | null = null;
-    let portalSamplesLabel = 'Rua não encontrada no Morada Virtual';
-    if (moradaBench && moradaBench.m2 > 0) {
-      portalSqm = moradaBench.m2;
-      portalSamplesLabel = `✓ Morada Virtual (${moradaBench.sampleCount} anúncios · ${moradaBench.typology})`;
-    } else if (portalStreetStats && portalStreetStats.avgSqm > 0 && portalStreetStats.count > 0) {
-      portalSqm = portalStreetStats.avgSqm;
-      portalSamplesLabel = `✓ Anúncios na Rua (${portalStreetStats.count} imóveis)`;
-    } else if (portalResults?.close?.avgSqm && portalResults.close.avgSqm > 0 && (portalResults.close.matches?.length || 0) > 0) {
-      portalSqm = portalResults.close.avgSqm;
-      portalSamplesLabel = `✓ Pesquisa nos Portais (${portalResults.close.matches?.length || 0} anúncios)`;
-    }
+    const portalSqm = moradaBench && moradaBench.m2 > 0 ? moradaBench.m2 : null;
+    const portalSamplesLabel = portalSqm
+      ? `✓ Morada Virtual (${moradaBench!.sampleCount} anúncios · ${moradaBench!.typology})`
+      : 'Sem média confirmada na Morada Virtual';
 
     const streetSqm = (exactStreetStats && exactStreetStats.count > 0 && exactStreetStats.avgSqm > 0) ? exactStreetStats.avgSqm : null;
     const buildingSqm = (exactBuildingStats && exactBuildingStats.count > 0 && exactBuildingStats.avgSqm > 0) ? exactBuildingStats.avgSqm : null;
     const surroundingSqm = (nearbyStats && nearbyStats.count > 0 && nearbyStats.avgSqm > 0)
       ? nearbyStats.avgSqm
-      : (bidiBenchmark && bidiBenchmark.raio.validas > 0 ? bidiBenchmark.raio.saneada : 0);
+      : 0;
     const neighborhoodSqm = bidiBenchmark ? bidiBenchmark.bairro.saneada : (neighborhoodStats?.avgSqm || 0);
 
     const buildingCount = (exactBuildingStats && exactBuildingStats.count > 0) ? exactBuildingStats.count : 0;
     const streetCount = (exactStreetStats && exactStreetStats.count > 0) ? exactStreetStats.count : 0;
     const surroundingCount = (nearbyStats && nearbyStats.count > 0)
       ? nearbyStats.count
-      : (bidiBenchmark && bidiBenchmark.raio.validas > 0 ? bidiBenchmark.raio.validas : 0);
+      : 0;
     const neighborhoodCount = bidiBenchmark ? bidiBenchmark.bairro.validas : (neighborhoodStats?.count || 0);
-    const portalStreetCount = portalStreetStats ? portalStreetStats.count : 0;
+    const portalStreetCount = moradaBench?.sampleCount || 0;
 
     const tiers = [
       {
@@ -2254,7 +2210,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       },
       {
         id: 'surrounding',
-        label: nearbyStreetData.item3Label || bidiBenchmark?.raio?.radiusLabel || `3. Ruas do Entorno (${nearbyStreetData.effectiveRadiusKm.toFixed(1)} km) - ${surroundingCount} tx`,
+        label: nearbyStreetData.item3Label,
         icon: Compass,
         color: 'violet',
         sqm: surroundingSqm,
@@ -4587,24 +4543,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   }`}>
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-slate-300 font-bold flex items-center gap-1.5 flex-wrap">
-                        {bidiBenchmark?.raio?.effectiveRadiusKm 
-                          ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km${(bidiBenchmark.raio.effectiveRadiusKm !== radiusKm || bidiBenchmark.raio.radiusLabel?.includes('Auto-ajustado') || nearbyStreetData.isAutoAdjusted) ? ' - Auto-ajustado' : ''})` 
-                          : nearbyStreetData.card3Title}
+                        {nearbyStreetData.card3Title}
                         {isLoadingTransactions ? (
                           <span className="text-[9px] bg-violet-950/80 text-violet-300 px-1.5 py-0.2 rounded border border-violet-800/60 font-mono font-bold flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" /> Atualizando raio
                           </span>
                         ) : (
-                          <span className={`text-[9.5px] px-2 py-0.5 rounded border font-mono font-bold ${
-                            (bidiBenchmark?.raio?.fallbackLevel === '1.0km' || bidiBenchmark?.raio?.fallbackLevel === '2.0km')
-                              ? 'bg-amber-950/80 text-amber-300 border-amber-800/60'
-                              : bidiBenchmark?.raio?.fallbackLevel === 'bairro'
-                              ? 'bg-indigo-950/80 text-indigo-300 border-indigo-800/60'
-                              : 'bg-violet-950/80 text-violet-300 border-violet-800/60'
-                          }`}>
+                          <span className="text-[9.5px] px-2 py-0.5 rounded border font-mono font-bold bg-violet-950/80 text-violet-300 border-violet-800/60">
                             {rawTransactions.some(tx => tx.distanceAnchorPrecision === 'street_axis')
                               ? nearbyStreetData.radiusLabel
-                              : bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.radiusLabel}
+                              : nearbyStreetData.radiusLabel}
                           </span>
                         )}
                       </span>
@@ -4612,7 +4560,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         {isLoadingTransactions ? (
                           <span className="text-violet-300/90 font-mono text-[10.5px]">Consultando ruas do raio selecionado...</span>
                         ) : (
-                          `R$ ${(nearbyStats?.avgSqm || bidiBenchmark?.raio?.saneada || 0).toLocaleString('pt-BR')}/m² ${sizeSqm > 0 ? `(${formatBRL((nearbyStats?.avgSqm || bidiBenchmark?.raio?.saneada || 0) * sizeSqm)})` : ''} • ${nearbyStats?.count || bidiBenchmark?.raio?.validas || 0} tx${isJuizDeFora ? ' Compra e Venda' : ' válidas'}${(nearbyStats?.outliersCount || 0) > 0 ? ` • ${nearbyStats.outliersCount} expurgada(s)` : ''}`
+                          `R$ ${(nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m² ${sizeSqm > 0 ? `(${formatBRL((nearbyStats?.avgSqm || 0) * sizeSqm)})` : ''} • ${nearbyStats?.count || 0} tx${isJuizDeFora ? ' Compra e Venda' : ' válidas'}${(nearbyStats?.outliersCount || 0) > 0 ? ` • ${nearbyStats.outliersCount} expurgada(s)` : ''}`
                         )}
                       </span>
                     </div>
@@ -4623,7 +4571,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                             ? 'bg-slate-800'
                             : 'bg-gradient-to-r from-violet-600 to-violet-400'
                         }`}
-                        style={{ width: `${selectedStreet && nearbyStreetTxs.length === 0 && !isLoadingTransactions ? 0 : Math.min(100, Math.max(15, (((nearbyStats?.avgSqm || bidiBenchmark?.raio?.saneada || 0)) / (Math.max(averageAskingValue / (sizeSqm || 1), 10000))) * 100))}%` }}
+                        style={{ width: `${selectedStreet && nearbyStreetTxs.length === 0 && !isLoadingTransactions ? 0 : Math.min(100, Math.max(15, (((nearbyStats?.avgSqm || 0)) / (Math.max(averageAskingValue / (sizeSqm || 1), 10000))) * 100))}%` }}
                       />
                     </div>
                   </div>
@@ -4651,31 +4599,35 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </div>
                   </div>
 
-                  {/* Tier 5: Real Estate Portals Asking Price - Street */}
-                  {!isJuizDeFora && (() => {
+                  {/* Tier 5: preço pedido da Morada Virtual para a via. */}
+                  {(() => {
                     const portalTier = marketTiers.find(t => t.id === 'portals_street');
-                    const tierSqm = (portalTier && portalTier.sqm && portalTier.sqm > 0) ? portalTier.sqm : Math.round(averageAskingValue / (sizeSqm || 1));
-                    const tierLabel = portalTier?.samples || 'Preço Pedido';
+                    const tierSqm = portalTier?.sqm || 0;
+                    const tierLabel = portalTier?.samples || 'Sem média confirmada';
                     return (
                       <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 space-y-1.5">
-                        <div className="flex justify-between items-center text-[11px]">
+                        <div className="flex justify-between items-center gap-2 text-[11px]">
                           <span className="text-slate-300 font-bold flex items-center gap-1.5">
                             <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                            5. Anúncios de Venda nos Portais na Rua (Zap / QuintoAndar)
+                            5. Média de Anúncios na Rua (Morada Virtual)
                           </span>
-                          <span className="font-bold text-cyan-400">
-                            R$ {tierSqm.toLocaleString('pt-BR')}/m² ({tierLabel})
+                          <span className="font-bold text-cyan-400 text-right">
+                            {tierSqm > 0 ? `R$ ${tierSqm.toLocaleString('pt-BR')}/m²` : 'Sem média'}
                           </span>
                         </div>
+                        <p className="text-[9px] text-slate-500 font-mono">{tierLabel}</p>
+                        {moradaBench?.streetUrl && (
+                          <a href={moradaBench.streetUrl} target="_blank" rel="noreferrer" className="text-[9px] text-cyan-400 hover:text-cyan-300 font-mono inline-flex items-center gap-1">
+                            Abrir fonte Morada Virtual <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
                         <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">
-                          <div 
-                            className="bg-gradient-to-r from-cyan-600 to-cyan-400 h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min(100, Math.max(15, (tierSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100))}%` }}
-                          />
+                          <div className="bg-gradient-to-r from-cyan-600 to-cyan-400 h-full rounded-full transition-all duration-500" style={{ width: `${tierSqm > 0 ? Math.min(100, Math.max(15, (tierSqm / (Math.max(averageAskingValue / (sizeSqm || 1), 12000))) * 100)) : 0}%` }} />
                         </div>
                       </div>
                     );
                   })()}
+
                 </div>
               </div>
 
@@ -4788,19 +4740,17 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 {/* CARD 3: Ruas do Entorno */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
                   <span className="text-[9px] text-violet-300 font-mono uppercase block font-bold">
-                    {bidiBenchmark?.raio?.effectiveRadiusKm
-                      ? `3. Ruas do Entorno (${bidiBenchmark.raio.effectiveRadiusKm.toFixed(1)} km${(bidiBenchmark.raio.effectiveRadiusKm !== radiusKm || bidiBenchmark.raio.radiusLabel?.includes('Auto-ajustado') || nearbyStreetData.isAutoAdjusted) ? ' - Auto-ajustado' : ''})`
-                      : nearbyStreetData.card3Title}
+                    {nearbyStreetData.card3Title}
                   </span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    {(bidiBenchmark?.raio?.saneada || nearbyStats?.avgSqm || 0) > 0 ? (
+                    {(nearbyStats?.avgSqm || 0) > 0 ? (
                       <>
                         <span className="text-base font-black text-violet-400 font-mono">
-                          R$ {(bidiBenchmark?.raio?.saneada || nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
+                          R$ {(nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
                         </span>
                         {sizeSqm > 0 && (
                           <span className="text-[11px] font-bold text-slate-300 font-mono">
-                            • ({formatBRL(sizeSqm * (bidiBenchmark?.raio?.saneada || nearbyStats?.avgSqm || 0))})
+                            • ({formatBRL(sizeSqm * (nearbyStats?.avgSqm || 0))})
                           </span>
                         )}
                       </>
@@ -4810,10 +4760,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] text-slate-400">
-                      {bidiBenchmark?.raio?.validas ?? nearbyStats?.count ?? 0} transações {isJuizDeFora ? 'de Compra e Venda' : 'apuradas'}
+                      {nearbyStats?.count || 0} transações {isJuizDeFora ? 'de Compra e Venda' : 'apuradas'}
                     </span>
                     <span className="text-[9px] text-violet-300/80 font-mono">
-                      {bidiBenchmark?.raio?.radiusLabel || nearbyStreetData.item3Label || nearbyStreetData.radiusLabel}
+                      {nearbyStreetData.item3Label || nearbyStreetData.radiusLabel}
                     </span>
                     {itbiWeightedStats?.isOutlierBrakeApplied && (
                       <div className="mt-1 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[9.5px] text-amber-300 font-mono flex items-center gap-1.5">

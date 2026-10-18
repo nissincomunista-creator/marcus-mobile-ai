@@ -4407,43 +4407,9 @@ app.get('/api/itbi/transactions', async (req, res) => {
       }
     }
 
-    // Fallback: sem coordenada exata do número, ancora o raio no centroide da
-    // própria rua (média das transações ITBI geolocalizadas na via), priorizando
-    // estritamente o trecho no bairro-alvo para evitar desvios em grandes avenidas.
-    if (!targetCoords) {
-      const allStreetTxs = store.itbiTransactions.filter(tx =>
-        (tx.state || '').toUpperCase() === filterState &&
-        cleanNeighborhood(tx.city) === cleanNeighborhood(filterCity) &&
-        isTxLocationSane(tx.transactionLocationLat, tx.transactionLocationLng, tx.state, tx.city, tx.neighborhood) &&
-        tx.street && streetAxesMatch(tx.street, tgt));
+    // Sem coordenada confirmada do número, não há raio calculável.
+    // Um centroide de rua/bairro não representa o imóvel e não pode precificar o entorno.
 
-      let onStreet = allStreetTxs;
-      if (filterNeighborhood) {
-        const onStreetNeigh = allStreetTxs.filter(tx => cleanNeighborhood(tx.neighborhood) === cleanNeighborhood(filterNeighborhood));
-        if (onStreetNeigh.length > 0) {
-          onStreet = onStreetNeigh;
-        } else {
-          // Se a avenida não tem transações numeradas com coordenada neste bairro específico,
-          // usa o centroide das transações do próprio bairro para não derivar para bairros distantes
-          const neighTxs = store.itbiTransactions.filter(tx =>
-            (tx.state || '').toUpperCase() === filterState &&
-            cleanNeighborhood(tx.city) === cleanNeighborhood(filterCity) &&
-            isTxLocationSane(tx.transactionLocationLat, tx.transactionLocationLng, tx.state, tx.city, tx.neighborhood) &&
-            cleanNeighborhood(tx.neighborhood) === cleanNeighborhood(filterNeighborhood));
-          if (neighTxs.length > 0) {
-            onStreet = neighTxs;
-          }
-        }
-      }
-
-      if (onStreet.length > 0) {
-        targetCoords = {
-          lat: onStreet.reduce((s, t) => s + t.transactionLocationLat!, 0) / onStreet.length,
-          lng: onStreet.reduce((s, t) => s + t.transactionLocationLng!, 0) / onStreet.length
-        };
-        radiusAnchorPrecision = 'street_centroid';
-      }
-    }
 
     if (targetCoords) {
       const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(String(propertyType || ''));

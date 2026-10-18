@@ -11,7 +11,7 @@ export function selectRadiusTransactions(rows: ItbiTransaction[], radiusKm: numb
     if (tx.transactionLocationPrecision !== 'exact_number') return false;
     if (tx.distanceKm == null || tx.distanceKm === ('' as any)) return false;
     const anchor = tx.distanceAnchorPrecision as string | undefined;
-    if (anchor && anchor !== 'official_address' && anchor !== 'geocoded_number' && anchor !== 'street_centroid') return false;
+    if (anchor && anchor !== 'official_address' && anchor !== 'geocoded_number') return false;
     const distance = Number(tx.distanceKm);
     return Number.isFinite(distance) && distance >= 0 && distance <= limit;
   });
