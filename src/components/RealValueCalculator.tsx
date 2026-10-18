@@ -5186,7 +5186,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                 </>
                               )}
                             </tr>
-                          );})
+                          ))
                       )}
                     </tbody>
                   </table>
@@ -5309,11 +5309,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                 <td className="py-2.5 font-medium text-slate-300 group-hover:text-indigo-400 transition-colors truncate max-w-[150px] block">
                                   {tx.street || ''} {tx.number ? `(${tx.number})` : ''}{isJuizDeFora && distMeters !== null ? ` · ${distMeters}m` : ''}
                                 </td>
-                                {!isJuizDeFora && <td className="py-2.5 text-center">
-                                  <span className="px-1.5 py-0.5 rounded bg-violet-950/70 text-violet-300 font-mono text-[10px] font-bold border border-violet-800/40">
-                                    {distMeters !== null ? `${distMeters}m` : 'no raio'}
-                                  </span>
-                                </td>
+                                {!isJuizDeFora && (
+                                  <td className="py-2.5 text-center">
+                                    <span className="px-1.5 py-0.5 rounded bg-violet-950/70 text-violet-300 font-mono text-[10px] font-bold border border-violet-800/40">
+                                      {distMeters !== null ? `${distMeters}m` : 'no raio'}
+                                    </span>
+                                  </td>
+                                )}
                                 {isJuizDeFora ? (
                                   <>
                                     <td className="py-2.5 text-center">
