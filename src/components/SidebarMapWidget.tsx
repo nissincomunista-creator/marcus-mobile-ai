@@ -96,9 +96,9 @@ export default function SidebarMapWidget({
     // Initial Tile Layer
     const tileUrl = mapMode === 'satellite'
       ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 
-    const tileLayer = L.tileLayer(tileUrl, { subdomains: 'abcd', maxNativeZoom: mapMode === 'satellite' ? 19 : 20, maxZoom: 20 });
+    const tileLayer = L.tileLayer(tileUrl, { maxNativeZoom: 19, maxZoom: 20 });
     tileLayer.addTo(map);
     tileLayerRef.current = tileLayer;
     mapInstanceRef.current = map;
@@ -149,9 +149,9 @@ export default function SidebarMapWidget({
 
     const tileUrl = mapMode === 'satellite'
       ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 
-    const newLayer = L.tileLayer(tileUrl, { subdomains: 'abcd', maxNativeZoom: mapMode === 'satellite' ? 19 : 20, maxZoom: 20 });
+    const newLayer = L.tileLayer(tileUrl, { maxNativeZoom: 19, maxZoom: 20 });
     newLayer.addTo(map);
     tileLayerRef.current = newLayer;
   }, [mapMode]);

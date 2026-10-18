@@ -9,6 +9,13 @@ export interface ParsedPublicationDate {
   texto_publicacao: string;
 }
 
+function formatBrlDate(date: Date): string {
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
 export function parseRelativePublicationDate(
   rawInput: string | number | Date | null | undefined,
   referenceDate: Date = new Date()
@@ -17,11 +24,13 @@ export function parseRelativePublicationDate(
   const ONE_HOUR_MS = 60 * 60 * 1000;
   const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
-  // Fallback padrão se não houver entrada
+  // Fallback padrão com data exata de hoje
+  const todayDate = new Date(now);
+  const todayFormatted = formatBrlDate(todayDate);
   const defaultFallback: ParsedPublicationDate = {
-    data_publicacao_iso: new Date(now).toISOString(),
+    data_publicacao_iso: todayDate.toISOString(),
     dias_publicado: 0,
-    texto_publicacao: 'Recém-publicado'
+    texto_publicacao: `Publicado em ${todayFormatted} (Hoje)`
   };
 
   if (!rawInput) return defaultFallback;
@@ -31,10 +40,13 @@ export function parseRelativePublicationDate(
     const timestamp = rawInput > 1e11 ? rawInput : rawInput * 1000;
     const diffMs = Math.max(0, now - timestamp);
     const dias = Math.floor(diffMs / ONE_DAY_MS);
+    const dateObj = new Date(timestamp);
+    const dateFormatted = formatBrlDate(dateObj);
+    const rel = dias === 0 ? '(Hoje)' : dias === 1 ? '(Ontem)' : `(há ${dias} dias)`;
     return {
-      data_publicacao_iso: new Date(timestamp).toISOString(),
+      data_publicacao_iso: dateObj.toISOString(),
       dias_publicado: dias,
-      texto_publicacao: dias === 0 ? 'Publicado hoje' : dias === 1 ? 'Publicado há 1 dia' : `Publicado há ${dias} dias`
+      texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
     };
   }
 
@@ -42,10 +54,12 @@ export function parseRelativePublicationDate(
   if (rawInput instanceof Date) {
     const diffMs = Math.max(0, now - rawInput.getTime());
     const dias = Math.floor(diffMs / ONE_DAY_MS);
+    const dateFormatted = formatBrlDate(rawInput);
+    const rel = dias === 0 ? '(Hoje)' : dias === 1 ? '(Ontem)' : `(há ${dias} dias)`;
     return {
       data_publicacao_iso: rawInput.toISOString(),
       dias_publicado: dias,
-      texto_publicacao: dias === 0 ? 'Publicado hoje' : dias === 1 ? 'Publicado há 1 dia' : `Publicado há ${dias} dias`
+      texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
     };
   }
 
@@ -58,16 +72,19 @@ export function parseRelativePublicationDate(
     if (!isNaN(parsedTime)) {
       const diffMs = Math.max(0, now - parsedTime);
       const dias = Math.floor(diffMs / ONE_DAY_MS);
+      const dateObj = new Date(parsedTime);
+      const dateFormatted = formatBrlDate(dateObj);
+      const rel = dias === 0 ? '(Hoje)' : dias === 1 ? '(Ontem)' : `(há ${dias} dias)`;
       return {
-        data_publicacao_iso: new Date(parsedTime).toISOString(),
+        data_publicacao_iso: dateObj.toISOString(),
         dias_publicado: dias,
-        texto_publicacao: dias === 0 ? 'Publicado hoje' : dias === 1 ? 'Publicado há 1 dia' : `Publicado há ${dias} dias`
+        texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
       };
     }
   }
 
-  // 4. Caso seja formato brasileiro DD/MM/AAAA ou DD/MM/AAAA HH:mm
-  const brMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+  // 4. Caso contenha formato brasileiro DD/MM/AAAA ou DD/MM/AAAA HH:mm
+  const brMatch = str.match(/(?:publicado\s*(?:em\s*)?)?(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/i);
   if (brMatch) {
     const day = parseInt(brMatch[1], 10);
     const month = parseInt(brMatch[2], 10) - 1;
@@ -78,10 +95,12 @@ export function parseRelativePublicationDate(
     if (!isNaN(dateObj.getTime())) {
       const diffMs = Math.max(0, now - dateObj.getTime());
       const dias = Math.floor(diffMs / ONE_DAY_MS);
+      const dateFormatted = formatBrlDate(dateObj);
+      const rel = dias === 0 ? '(Hoje)' : dias === 1 ? '(Ontem)' : `(há ${dias} dias)`;
       return {
         data_publicacao_iso: dateObj.toISOString(),
         dias_publicado: dias,
-        texto_publicacao: dias === 0 ? 'Publicado hoje' : dias === 1 ? 'Publicado há 1 dia' : `Publicado há ${dias} dias`
+        texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
       };
     }
   }
@@ -152,27 +171,28 @@ export function parseRelativePublicationDate(
     }
   }
 
-  const calculatedIso = new Date(now - (calculatedDays * ONE_DAY_MS)).toISOString();
-  let label = '';
+  const calculatedDate = new Date(now - (calculatedDays * ONE_DAY_MS));
+  const calculatedFormatted = formatBrlDate(calculatedDate);
+  let relLabel = '';
   if (calculatedDays === 0) {
-    label = 'Publicado há poucas horas';
+    relLabel = '(Hoje)';
   } else if (calculatedDays === 1) {
-    label = 'Publicado há 1 dia';
+    relLabel = '(Ontem)';
   } else if (calculatedDays < 7) {
-    label = `Publicado há ${calculatedDays} dias`;
+    relLabel = `(há ${calculatedDays} dias)`;
   } else if (calculatedDays < 30) {
     const weeks = Math.round(calculatedDays / 7);
-    label = `Publicado há ${calculatedDays} dias (${weeks} sem)`;
+    relLabel = `(há ${calculatedDays} dias / ${weeks} sem)`;
   } else if (calculatedDays < 365) {
     const months = Math.round(calculatedDays / 30);
-    label = `Publicado há ${calculatedDays} dias (${months} ${months === 1 ? 'mês' : 'meses'})`;
+    relLabel = `(há ${calculatedDays} dias / ${months} ${months === 1 ? 'mês' : 'meses'})`;
   } else {
-    label = `Publicado há mais de 1 ano (${calculatedDays} dias)`;
+    relLabel = `(há ${calculatedDays} dias / >1 ano)`;
   }
 
   return {
-    data_publicacao_iso: calculatedIso,
+    data_publicacao_iso: calculatedDate.toISOString(),
     dias_publicado: calculatedDays,
-    texto_publicacao: `${label}${atualizadoStr}`
+    texto_publicacao: `Publicado em ${calculatedFormatted} ${relLabel}${atualizadoStr}`
   };
 }

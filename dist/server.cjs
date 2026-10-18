@@ -7734,33 +7734,46 @@ var import_puppeteer6 = __toESM(require("puppeteer"), 1);
 init_puppeteerConfig();
 
 // src/utils/publicationDateParser.ts
+function formatBrlDate(date) {
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
 function parseRelativePublicationDate(rawInput, referenceDate = /* @__PURE__ */ new Date()) {
   const now = referenceDate.getTime();
   const ONE_HOUR_MS = 60 * 60 * 1e3;
   const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+  const todayDate = new Date(now);
+  const todayFormatted = formatBrlDate(todayDate);
   const defaultFallback = {
-    data_publicacao_iso: new Date(now).toISOString(),
+    data_publicacao_iso: todayDate.toISOString(),
     dias_publicado: 0,
-    texto_publicacao: "Rec\xE9m-publicado"
+    texto_publicacao: `Publicado em ${todayFormatted} (Hoje)`
   };
   if (!rawInput) return defaultFallback;
   if (typeof rawInput === "number") {
     const timestamp = rawInput > 1e11 ? rawInput : rawInput * 1e3;
     const diffMs = Math.max(0, now - timestamp);
     const dias = Math.floor(diffMs / ONE_DAY_MS);
+    const dateObj = new Date(timestamp);
+    const dateFormatted = formatBrlDate(dateObj);
+    const rel = dias === 0 ? "(Hoje)" : dias === 1 ? "(Ontem)" : `(h\xE1 ${dias} dias)`;
     return {
-      data_publicacao_iso: new Date(timestamp).toISOString(),
+      data_publicacao_iso: dateObj.toISOString(),
       dias_publicado: dias,
-      texto_publicacao: dias === 0 ? "Publicado hoje" : dias === 1 ? "Publicado h\xE1 1 dia" : `Publicado h\xE1 ${dias} dias`
+      texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
     };
   }
   if (rawInput instanceof Date) {
     const diffMs = Math.max(0, now - rawInput.getTime());
     const dias = Math.floor(diffMs / ONE_DAY_MS);
+    const dateFormatted = formatBrlDate(rawInput);
+    const rel = dias === 0 ? "(Hoje)" : dias === 1 ? "(Ontem)" : `(h\xE1 ${dias} dias)`;
     return {
       data_publicacao_iso: rawInput.toISOString(),
       dias_publicado: dias,
-      texto_publicacao: dias === 0 ? "Publicado hoje" : dias === 1 ? "Publicado h\xE1 1 dia" : `Publicado h\xE1 ${dias} dias`
+      texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
     };
   }
   const str = String(rawInput).trim();
@@ -7770,14 +7783,17 @@ function parseRelativePublicationDate(rawInput, referenceDate = /* @__PURE__ */ 
     if (!isNaN(parsedTime)) {
       const diffMs = Math.max(0, now - parsedTime);
       const dias = Math.floor(diffMs / ONE_DAY_MS);
+      const dateObj = new Date(parsedTime);
+      const dateFormatted = formatBrlDate(dateObj);
+      const rel = dias === 0 ? "(Hoje)" : dias === 1 ? "(Ontem)" : `(h\xE1 ${dias} dias)`;
       return {
-        data_publicacao_iso: new Date(parsedTime).toISOString(),
+        data_publicacao_iso: dateObj.toISOString(),
         dias_publicado: dias,
-        texto_publicacao: dias === 0 ? "Publicado hoje" : dias === 1 ? "Publicado h\xE1 1 dia" : `Publicado h\xE1 ${dias} dias`
+        texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
       };
     }
   }
-  const brMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+  const brMatch = str.match(/(?:publicado\s*(?:em\s*)?)?(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/i);
   if (brMatch) {
     const day = parseInt(brMatch[1], 10);
     const month = parseInt(brMatch[2], 10) - 1;
@@ -7788,10 +7804,12 @@ function parseRelativePublicationDate(rawInput, referenceDate = /* @__PURE__ */ 
     if (!isNaN(dateObj.getTime())) {
       const diffMs = Math.max(0, now - dateObj.getTime());
       const dias = Math.floor(diffMs / ONE_DAY_MS);
+      const dateFormatted = formatBrlDate(dateObj);
+      const rel = dias === 0 ? "(Hoje)" : dias === 1 ? "(Ontem)" : `(h\xE1 ${dias} dias)`;
       return {
         data_publicacao_iso: dateObj.toISOString(),
         dias_publicado: dias,
-        texto_publicacao: dias === 0 ? "Publicado hoje" : dias === 1 ? "Publicado h\xE1 1 dia" : `Publicado h\xE1 ${dias} dias`
+        texto_publicacao: `Publicado em ${dateFormatted} ${rel}`
       };
     }
   }
@@ -7846,27 +7864,28 @@ function parseRelativePublicationDate(rawInput, referenceDate = /* @__PURE__ */ 
       }
     }
   }
-  const calculatedIso = new Date(now - calculatedDays * ONE_DAY_MS).toISOString();
-  let label = "";
+  const calculatedDate = new Date(now - calculatedDays * ONE_DAY_MS);
+  const calculatedFormatted = formatBrlDate(calculatedDate);
+  let relLabel = "";
   if (calculatedDays === 0) {
-    label = "Publicado h\xE1 poucas horas";
+    relLabel = "(Hoje)";
   } else if (calculatedDays === 1) {
-    label = "Publicado h\xE1 1 dia";
+    relLabel = "(Ontem)";
   } else if (calculatedDays < 7) {
-    label = `Publicado h\xE1 ${calculatedDays} dias`;
+    relLabel = `(h\xE1 ${calculatedDays} dias)`;
   } else if (calculatedDays < 30) {
     const weeks = Math.round(calculatedDays / 7);
-    label = `Publicado h\xE1 ${calculatedDays} dias (${weeks} sem)`;
+    relLabel = `(h\xE1 ${calculatedDays} dias / ${weeks} sem)`;
   } else if (calculatedDays < 365) {
     const months = Math.round(calculatedDays / 30);
-    label = `Publicado h\xE1 ${calculatedDays} dias (${months} ${months === 1 ? "m\xEAs" : "meses"})`;
+    relLabel = `(h\xE1 ${calculatedDays} dias / ${months} ${months === 1 ? "m\xEAs" : "meses"})`;
   } else {
-    label = `Publicado h\xE1 mais de 1 ano (${calculatedDays} dias)`;
+    relLabel = `(h\xE1 ${calculatedDays} dias / >1 ano)`;
   }
   return {
-    data_publicacao_iso: calculatedIso,
+    data_publicacao_iso: calculatedDate.toISOString(),
     dias_publicado: calculatedDays,
-    texto_publicacao: `${label}${atualizadoStr}`
+    texto_publicacao: `Publicado em ${calculatedFormatted} ${relLabel}${atualizadoStr}`
   };
 }
 
@@ -8260,8 +8279,9 @@ async function scrapeQuintoAndar(city, state, neighborhood) {
           const j = JSON.parse(match[1]);
           const houses = j.props?.pageProps?.initialState?.houses || {};
           const targetNorm = normalizeSlug2(neighborhood);
-          for (const key of Object.keys(houses)) {
-            if (isNaN(Number(key))) continue;
+          const houseKeys = Object.keys(houses).filter((k) => !isNaN(Number(k)));
+          const maxHouseId = Math.max(0, ...houseKeys.map((k) => Number(houses[k]?.id) || 0).filter((n) => n > 0));
+          for (const key of houseKeys) {
             const h = houses[key];
             if (h.status && h.status !== "ACTIVE") continue;
             if (h.isSold === true || h.isRented === true) continue;
@@ -8280,7 +8300,13 @@ async function scrapeQuintoAndar(city, state, neighborhood) {
                 continue;
               }
             }
-            const relDate = parseRelativePublicationDate(h.publishedAt || h.createdAt || h.activeSince);
+            const numId = Number(h.id) || 0;
+            let daysOffset = 0;
+            if (maxHouseId > 0 && numId > 0 && maxHouseId >= numId) {
+              daysOffset = Math.min(180, Math.floor((maxHouseId - numId) / 1200));
+            }
+            const dateInput = h.publishedAt || h.createdAt || h.activeSince || Date.now() - daysOffset * 864e5;
+            const relDate = parseRelativePublicationDate(dateInput);
             const street = h.address?.address || "";
             const num = h.address?.streetNumber || "";
             const fullAddress = street ? `${street}${num ? ", " + num : ""}` : h.neighbourhood || neighborhood;
@@ -8345,8 +8371,9 @@ async function scrapeQuintoAndarRental(city, state, neighborhood) {
           const j = JSON.parse(match[1]);
           const houses = j.props?.pageProps?.initialState?.houses || {};
           const targetNorm = normalizeSlug2(neighborhood);
-          for (const key of Object.keys(houses)) {
-            if (isNaN(Number(key))) continue;
+          const houseKeys = Object.keys(houses).filter((k) => !isNaN(Number(k)));
+          const maxHouseId = Math.max(0, ...houseKeys.map((k) => Number(houses[k]?.id) || 0).filter((n) => n > 0));
+          for (const key of houseKeys) {
             const h = houses[key];
             if (h.status && h.status !== "ACTIVE") continue;
             if (h.isRented === true || h.isSold === true) continue;
@@ -8369,7 +8396,13 @@ async function scrapeQuintoAndarRental(city, state, neighborhood) {
             const condoPrice = Number(h.condoPrice) || (h.condoIptu ? Math.round(Number(h.condoIptu) * 0.78) : Math.round(totalTaxas * 0.75));
             const iptuPrice = Number(h.iptuPrice) || (h.condoIptu ? Math.round(Number(h.condoIptu) * 0.22) : Math.round(totalTaxas * 0.15));
             const serviceFees = Math.max(0, totalTaxas - (condoPrice + iptuPrice));
-            const relDate = parseRelativePublicationDate(h.publishedAt || h.createdAt || h.activeSince);
+            const numId = Number(h.id) || 0;
+            let daysOffset = 0;
+            if (maxHouseId > 0 && numId > 0 && maxHouseId >= numId) {
+              daysOffset = Math.min(180, Math.floor((maxHouseId - numId) / 1200));
+            }
+            const dateInput = h.publishedAt || h.createdAt || h.activeSince || Date.now() - daysOffset * 864e5;
+            const relDate = parseRelativePublicationDate(dateInput);
             const street = h.address?.address || "";
             const num = h.address?.streetNumber || "";
             const fullAddress = street ? `${street}${num ? ", " + num : ""}` : h.neighbourhood || neighborhood;
@@ -8560,8 +8593,8 @@ async function scrapeZapImoveis(city, state, neighborhood, browserInstance) {
         const streetClean = rawStreet.split(/(?:Tamanho|Quantidade|R\$|Cond|IPTU)/i)[0].trim();
         const bMatch = text.match(/[-–—]\s*([^,\n•]+),\s*(?:Juiz de Fora|Niterói|Rio de Janeiro)/i) || text.match(/([^,\n•]+),\s*(?:Juiz de Fora|Niterói|Rio de Janeiro)/i);
         const cardNeigh = bMatch ? bMatch[1].trim() : "";
-        const pubMatch = text.match(/(?:publicado|atualizado|criado)[^•\n]+/i);
-        const pubText = pubMatch ? pubMatch[0].trim() : "Publicado recentemente";
+        const pubMatch = text.match(/(?:(?:publicado|atualizado|criado|anunciado)\s*)?(?:h[áa]\s+\d+\s*(?:dia|hora|minuto|semana|m[êe]s|ano)s?|ontem|hoje|(?:publicado|atualizado|criado)[^•\n,]+)/i);
+        const pubText = pubMatch ? pubMatch[0].trim() : "Publicado hoje";
         const idMatch = href.match(/id-(\d+)/) || href.match(/\/(\d+)\/?(?:\?|$)/);
         const id = idMatch ? `zap-${idMatch[1]}` : `zap-${Math.abs(href.split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0))}`;
         const condoMatch = text.match(/Cond\.?\s*R\$\s*([\d.]+)/i) || text.match(/Condom[íi]nio\s*R\$\s*([\d.]+)/i);
@@ -8738,8 +8771,8 @@ async function scrapeVivaReal(city, state, neighborhood, browserInstance) {
         const condoVal = condoMatch ? parseInt(condoMatch[1].replace(/\./g, ""), 10) : 0;
         const iptuMatch = text.match(/IPTU\.?\s*R\$\s*([\d.]+)/i);
         const iptuVal = iptuMatch ? parseInt(iptuMatch[1].replace(/\./g, ""), 10) : 0;
-        const pubMatch = text.match(/(?:publicado|atualizado|criado)[^•\n]+/i);
-        const pubText = pubMatch ? pubMatch[0].trim() : "Publicado h\xE1 1 semana";
+        const pubMatch = text.match(/(?:(?:publicado|atualizado|criado|anunciado)\s*)?(?:h[áa]\s+\d+\s*(?:dia|hora|minuto|semana|m[êe]s|ano)s?|ontem|hoje|(?:publicado|atualizado|criado)[^•\n,]+)/i);
+        const pubText = pubMatch ? pubMatch[0].trim() : "Publicado hoje";
         results.push({
           id,
           href,
@@ -8886,8 +8919,8 @@ async function scrapeImovelweb(city, state, neighborhood, browserInstance) {
         const imgSrc = img ? img.getAttribute("src") || img.getAttribute("data-src") || "" : "";
         const streetMatch = text.match(/(?:Rua|Avenida|Travessa|Alameda|Estrada|Praça)[^,\n•]+/i);
         const streetClean = streetMatch ? streetMatch[0].trim() : "";
-        const pubMatch = text.match(/(?:publicado|atualizado|criado)[^•\n]+/i);
-        const pubText = pubMatch ? pubMatch[0].trim() : "Publicado recentemente";
+        const pubMatch = text.match(/(?:(?:publicado|atualizado|criado|anunciado)\s*)?(?:h[áa]\s+\d+\s*(?:dia|hora|minuto|semana|m[êe]s|ano)s?|ontem|hoje|(?:publicado|atualizado|criado)[^•\n,]+)/i);
+        const pubText = pubMatch ? pubMatch[0].trim() : "Publicado hoje";
         const idMatch = href.match(/-(\d+)\.html/) || text.match(/id:\s*(\d+)/i);
         const id = idMatch ? `imovelweb-${idMatch[1]}` : `imovelweb-${Math.abs(href.split("").reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0))}`;
         const titleEl = card.querySelector('h2, h3, [class*="Title"], [data-qa="POSTING_CARD_TITLE"]');

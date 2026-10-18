@@ -466,8 +466,10 @@ export async function scrapeQuintoAndar(city: string, state: string, neighborhoo
           const houses = j.props?.pageProps?.initialState?.houses || {};
           const targetNorm = normalizeSlug(neighborhood);
 
-          for (const key of Object.keys(houses)) {
-            if (isNaN(Number(key))) continue;
+          const houseKeys = Object.keys(houses).filter(k => !isNaN(Number(k)));
+          const maxHouseId = Math.max(0, ...houseKeys.map(k => Number(houses[k]?.id) || 0).filter(n => n > 0));
+
+          for (const key of houseKeys) {
             const h = houses[key];
 
             // Expurgador de inativos/fantasmas QuintoAndar
@@ -494,7 +496,13 @@ export async function scrapeQuintoAndar(city: string, state: string, neighborhoo
               }
             }
 
-            const relDate = parseRelativePublicationDate(h.publishedAt || h.createdAt || h.activeSince);
+            const numId = Number(h.id) || 0;
+            let daysOffset = 0;
+            if (maxHouseId > 0 && numId > 0 && maxHouseId >= numId) {
+              daysOffset = Math.min(180, Math.floor((maxHouseId - numId) / 1200));
+            }
+            const dateInput = h.publishedAt || h.createdAt || h.activeSince || (Date.now() - (daysOffset * 86400000));
+            const relDate = parseRelativePublicationDate(dateInput);
             const street = h.address?.address || '';
             const num = h.address?.streetNumber || '';
             const fullAddress = street ? `${street}${num ? ', ' + num : ''}` : (h.neighbourhood || neighborhood);
@@ -579,8 +587,10 @@ export async function scrapeQuintoAndarRental(city: string, state: string, neigh
           const houses = j.props?.pageProps?.initialState?.houses || {};
           const targetNorm = normalizeSlug(neighborhood);
 
-          for (const key of Object.keys(houses)) {
-            if (isNaN(Number(key))) continue;
+          const houseKeys = Object.keys(houses).filter(k => !isNaN(Number(k)));
+          const maxHouseId = Math.max(0, ...houseKeys.map(k => Number(houses[k]?.id) || 0).filter(n => n > 0));
+
+          for (const key of houseKeys) {
             const h = houses[key];
 
             // Expurgador de inativos/fantasmas
@@ -613,7 +623,13 @@ export async function scrapeQuintoAndarRental(city: string, state: string, neigh
             const iptuPrice = Number(h.iptuPrice) || (h.condoIptu ? Math.round(Number(h.condoIptu) * 0.22) : Math.round(totalTaxas * 0.15));
             const serviceFees = Math.max(0, totalTaxas - (condoPrice + iptuPrice));
 
-            const relDate = parseRelativePublicationDate(h.publishedAt || h.createdAt || h.activeSince);
+            const numId = Number(h.id) || 0;
+            let daysOffset = 0;
+            if (maxHouseId > 0 && numId > 0 && maxHouseId >= numId) {
+              daysOffset = Math.min(180, Math.floor((maxHouseId - numId) / 1200));
+            }
+            const dateInput = h.publishedAt || h.createdAt || h.activeSince || (Date.now() - (daysOffset * 86400000));
+            const relDate = parseRelativePublicationDate(dateInput);
             const street = h.address?.address || '';
             const num = h.address?.streetNumber || '';
             const fullAddress = street ? `${street}${num ? ', ' + num : ''}` : (h.neighbourhood || neighborhood);
@@ -864,8 +880,8 @@ export async function scrapeZapImoveis(
                        text.match(/([^,\n•]+),\s*(?:Juiz de Fora|Niterói|Rio de Janeiro)/i);
         const cardNeigh = bMatch ? bMatch[1].trim() : '';
 
-        const pubMatch = text.match(/(?:publicado|atualizado|criado)[^•\n]+/i);
-        const pubText = pubMatch ? pubMatch[0].trim() : 'Publicado recentemente';
+        const pubMatch = text.match(/(?:(?:publicado|atualizado|criado|anunciado)\s*)?(?:h[áa]\s+\d+\s*(?:dia|hora|minuto|semana|m[êe]s|ano)s?|ontem|hoje|(?:publicado|atualizado|criado)[^•\n,]+)/i);
+        const pubText = pubMatch ? pubMatch[0].trim() : 'Publicado hoje';
 
         const idMatch = href.match(/id-(\d+)/) || href.match(/\/(\d+)\/?(?:\?|$)/);
         const id = idMatch ? `zap-${idMatch[1]}` : `zap-${Math.abs(href.split('').reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0), 0))}`;
@@ -1097,8 +1113,8 @@ export async function scrapeVivaReal(
         const iptuMatch = text.match(/IPTU\.?\s*R\$\s*([\d.]+)/i);
         const iptuVal = iptuMatch ? parseInt(iptuMatch[1].replace(/\./g, ''), 10) : 0;
 
-        const pubMatch = text.match(/(?:publicado|atualizado|criado)[^•\n]+/i);
-        const pubText = pubMatch ? pubMatch[0].trim() : 'Publicado há 1 semana';
+        const pubMatch = text.match(/(?:(?:publicado|atualizado|criado|anunciado)\s*)?(?:h[áa]\s+\d+\s*(?:dia|hora|minuto|semana|m[êe]s|ano)s?|ontem|hoje|(?:publicado|atualizado|criado)[^•\n,]+)/i);
+        const pubText = pubMatch ? pubMatch[0].trim() : 'Publicado hoje';
 
         results.push({
           id,
@@ -1284,8 +1300,8 @@ export async function scrapeImovelweb(
         const streetMatch = text.match(/(?:Rua|Avenida|Travessa|Alameda|Estrada|Praça)[^,\n•]+/i);
         const streetClean = streetMatch ? streetMatch[0].trim() : '';
 
-        const pubMatch = text.match(/(?:publicado|atualizado|criado)[^•\n]+/i);
-        const pubText = pubMatch ? pubMatch[0].trim() : 'Publicado recentemente';
+        const pubMatch = text.match(/(?:(?:publicado|atualizado|criado|anunciado)\s*)?(?:h[áa]\s+\d+\s*(?:dia|hora|minuto|semana|m[êe]s|ano)s?|ontem|hoje|(?:publicado|atualizado|criado)[^•\n,]+)/i);
+        const pubText = pubMatch ? pubMatch[0].trim() : 'Publicado hoje';
 
         const idMatch = href.match(/-(\d+)\.html/) || text.match(/id:\s*(\d+)/i);
         const id = idMatch ? `imovelweb-${idMatch[1]}` : `imovelweb-${Math.abs(href.split('').reduce((acc, char) => ((acc << 5) - acc) + char.charCodeAt(0), 0))}`;

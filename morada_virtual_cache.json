@@ -3286,5 +3286,30 @@
       }
     ],
     "updatedAt": "2026-10-18T16:05:32.029Z"
+  },
+  "mg_juiz de fora_juiz de fora_irineu marinho": {
+    "street": "Rua Irineu Marinho",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/bom-pastor/rua-irineu-marinho",
+    "canonicalTitle": "Rua Irineu MarinhoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 3.962.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7150,
+        "sampleCount": 30,
+        "avgPrice": 1900000,
+        "rawMeta": "~248 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2609,
+        "sampleCount": 26,
+        "avgPrice": 894500,
+        "rawMeta": "~354 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-18T17:02:36.949Z"
   }
 }

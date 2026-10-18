@@ -145,8 +145,10 @@ export default function PropertyMap({
       mapRef.current = map;
       setMapReady(true);
 
-      const tileRoad = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ', maxZoom: 20
+      const tileRoad = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxNativeZoom: 19,
+        maxZoom: 20
       });
       tileRoad.addTo(map);
       activeTileLayerRef.current = tileRoad;
@@ -240,8 +242,10 @@ export default function PropertyMap({
         maxZoom: 20
       });
     } else {
-      layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ', maxZoom: 20
+      layer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxNativeZoom: 19,
+        maxZoom: 20
       });
     }
 

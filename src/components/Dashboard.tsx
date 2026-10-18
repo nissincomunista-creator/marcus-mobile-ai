@@ -1530,6 +1530,40 @@ export default function Dashboard({
     return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString('pt-BR');
   };
 
+  const formatPublicationDateDisplay = (auc: AuctionProperty): string => {
+    if (auc.textoPublicacao && auc.textoPublicacao.includes('/')) {
+      return auc.textoPublicacao;
+    }
+    const iso = auc.dataPublicacaoIso || (auc.auctionDate ? `${auc.auctionDate}T12:00:00` : null);
+    let dateFormatted = '';
+    if (iso) {
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        dateFormatted = `${day}/${month}/${year}`;
+      }
+    }
+
+    const days = auc.diasPublicado;
+    if (days !== undefined && days !== null) {
+      if (days === 0) {
+        return dateFormatted ? `Publicado em ${dateFormatted} (Hoje)` : 'Publicado hoje';
+      } else if (days === 1) {
+        return dateFormatted ? `Publicado em ${dateFormatted} (Ontem)` : 'Publicado há 1 dia';
+      } else {
+        return dateFormatted ? `Publicado em ${dateFormatted} (há ${days} dias)` : `Publicado há ${days} dias`;
+      }
+    }
+
+    if (dateFormatted) {
+      return `Publicado em ${dateFormatted}`;
+    }
+
+    return auc.textoPublicacao || 'Publicado recentemente';
+  };
+
   const getAuctionPortalDisplayName = (auc: AuctionProperty) => {
     if (auc.origin === 'caixa' || (auc.id && auc.id.startsWith('auc-caixa-')) || (auc.auctionLink && auc.auctionLink.includes('caixa.gov.br'))) {
       return 'Imóveis Caixa';
@@ -1733,54 +1767,6 @@ export default function Dashboard({
                       <span>🔑 Alugar</span>
                     </button>
                   </div>
-                </div>
-
-                {/* Banner Flip House / Locação */}
-                <div className={`p-3 bg-gradient-to-br border rounded-2xl space-y-2.5 shadow-lg ${
-                  advancedContextTab === 'alugar'
-                    ? 'from-emerald-950/70 via-slate-900 to-teal-950/40 border-emerald-600/50'
-                    : 'from-amber-950/70 via-slate-900 to-orange-950/40 border-amber-600/50'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{advancedContextTab === 'alugar' ? '🔑' : '🔥'}</span>
-                      <div>
-                        <h3 className="text-xs font-black uppercase tracking-wide text-white">
-                          {advancedContextTab === 'alugar' ? 'Locação & Moradia' : 'Flip House'}
-                        </h3>
-                        <p className="text-[10px] text-slate-400">
-                          {advancedContextTab === 'alugar' ? 'Imóveis para alugar e morar via app' : 'Venda Particular abaixo do mercado'}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold ${
-                      advancedContextTab === 'alugar'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                        : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    }`}>
-                      {filteredAndSortedAuctions.length} ofertas
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-400 leading-tight">
-                    {advancedContextTab === 'alugar'
-                      ? 'Comparação direta entre o aluguel pedido e a média calculada da região (~0,55% a.m.), indicando se o valor está Barato, Justo ou Caro.'
-                      : 'Varredura de anúncios de venda direta nos 4 portais oficiais (Zap Imóveis, Viva Real, QuintoAndar e Imovelweb) com desconto real sobre a média do bairro.'}
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() => onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda')}
-                    disabled={isMining}
-                    className={`w-full py-2 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
-                      advancedContextTab === 'alugar'
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500'
-                        : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-white" />
-                    <span>{isMining ? 'Extraindo...' : (advancedContextTab === 'alugar' ? 'Buscar Imóveis para Alugar' : 'Buscar Ofertas com Desconto')}</span>
-                  </button>
                 </div>
               </div>
             ) : (
@@ -2290,6 +2276,20 @@ export default function Dashboard({
                         </label>
                       );
                     })}
+
+                    <button
+                      type="button"
+                      onClick={() => onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda')}
+                      disabled={isMining}
+                      className={`w-full mt-2 py-2 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
+                        advancedContextTab === 'alugar'
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-white" />
+                      <span>{isMining ? 'Extraindo...' : (advancedContextTab === 'alugar' ? 'Buscar Imóveis para Alugar' : 'Buscar Ofertas com Desconto')}</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -2823,7 +2823,7 @@ export default function Dashboard({
                         )}
                       </div>
 
-                      <div className="p-5 sm:p-6 space-y-4">
+                      <div className="p-3.5 sm:p-4 space-y-2.5">
                         
                         {/* Header do Card com Badges, Título e Alerta */}
                         <div className="flex items-start justify-between gap-3">
@@ -2851,12 +2851,6 @@ export default function Dashboard({
                                     O imóvel vale: <strong className="text-white font-bold">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500)))}</strong>
                                     <span className="mx-1 text-slate-500">•</span>
                                     Média Calculadora: <strong className="text-amber-300 font-bold">{formatBRL(auc.mediaLocacaoCalculadora || Math.round((auc.valorMercadoEstimado || 0) * 0.0055))}/mês</strong>
-                                    <span className="mx-1 text-slate-500">•</span>
-                                    Aluguel: <strong className="text-white font-bold">{formatBRL(auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice)}/mês</strong>
-                                    <span className="mx-1 text-slate-500">•</span>
-                                    Taxas (Cond+IPTU): <strong className="text-amber-300 font-bold">{formatBRL(auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0)))}/mês</strong>
-                                    <span className="mx-1 text-slate-500">•</span>
-                                    Pacote Total: <strong className="text-emerald-400 font-bold">{formatBRL(auc.totalRentalPackage || ((auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0) + (auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0)))))}/mês</strong>
                                   </div>
                                 </div>
                               </div>
@@ -2876,48 +2870,31 @@ export default function Dashboard({
                               </div>
                             ) : null}
 
-                            {/* Badges de Status dos Cards */}
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-800 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-700">
-                                {auc.propertyType} • {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
-                                {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
-                              </span>
-
-                              {/* Portais vs Leilões: Badges dedicados */}
-                              {auc.transactionType === 'aluguel' ? (
-                                <span className="bg-emerald-950/80 text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-600/40 flex items-center gap-1">
-                                  <span>🔑</span>
-                                  <span>Locação Residencial (Para Morar)</span>
+                            {/* Badges de Status dos Cards (apenas leilões, em portais já está no título) */}
+                            {auc.origin !== 'portal' && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-800 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-700">
+                                  {auc.propertyType} • {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
+                                  {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
                                 </span>
-                              ) : auc.origin === 'portal' ? (
-                                <span className="bg-amber-950/80 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-600/40 flex items-center gap-1">
-                                  <span>🤝</span>
-                                  <span>Venda Direta Particular</span>
+                                {(() => {
+                                  const badge = getSaleModeBadge(auc);
+                                  return (
+                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${badge.className}`}>
+                                      <span>{badge.icon}</span>
+                                      <span>{badge.label}</span>
+                                    </span>
+                                  );
+                                })()}
+                                <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                                  auc.riskLevel === 'Baixo' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50' :
+                                  auc.riskLevel === 'Médio' ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' :
+                                  'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-600/50'
+                                }`}>
+                                  Risco {auc.riskLevel || 'Baixo'}
                                 </span>
-                              ) : (
-                                <>
-                                  {/* Badge de Modalidade */}
-                                  {(() => {
-                                    const badge = getSaleModeBadge(auc);
-                                    return (
-                                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${badge.className}`}>
-                                        <span>{badge.icon}</span>
-                                        <span>{badge.label}</span>
-                                      </span>
-                                    );
-                                  })()}
-
-                                  {/* Risco (Apenas para leilões) */}
-                                  <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
-                                    auc.riskLevel === 'Baixo' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50' :
-                                    auc.riskLevel === 'Médio' ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' :
-                                    'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-600/50'
-                                  }`}>
-                                    Risco {auc.riskLevel || 'Baixo'}
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                              </div>
+                            )}
 
                             {/* Título e Endereço */}
                             <div>
@@ -2948,8 +2925,7 @@ export default function Dashboard({
                             {/* Informações complementares de publicação */}
                             {auc.origin === 'portal' ? (
                               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
-                                <span>Portal: <strong className="text-amber-300 font-bold">{auc.portalName || 'Portal'}</strong></span>
-                                <span>Publicação: <strong className="text-slate-200">{auc.textoPublicacao || (auc.diasPublicado !== undefined ? `Publicado há ${auc.diasPublicado} dias` : 'Recém-publicado')}</strong></span>
+                                <span>Publicação: <strong className="text-slate-200">{formatPublicationDateDisplay(auc)}</strong></span>
                                 {auc.auctionLink && (
                                   <a href={auc.auctionLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 font-bold underline inline-flex items-center gap-1">
                                     <span>Ver Anúncio Original ↗</span>
@@ -3509,27 +3485,29 @@ export default function Dashboard({
                         {/* METADADOS E AVISOS DO IMÓVEL NO FINAL DO CARD (RESTAURADOS INTEGRALMENTE) */}
                         <div className="flex flex-wrap gap-2 pt-2.5 border-t border-slate-800/80 items-center">
                           
-                          {/* Ocupação (Aviso com cor viva e nítida) */}
-                          <span className={`text-[11px] font-black flex items-center space-x-1 px-2.5 py-0.5 rounded-full border ${
-                            auc.occupied 
-                              ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' 
-                              : 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50'
-                          }`}>
-                            <span>● {auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
-                          </span>
+                          {/* Ocupação, Financiamento e Parcelamento (Apenas para leilões) */}
+                          {auc.origin !== 'portal' && (
+                            <>
+                              <span className={`text-[11px] font-black flex items-center space-x-1 px-2.5 py-0.5 rounded-full border ${
+                                auc.occupied 
+                                  ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' 
+                                  : 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50'
+                              }`}>
+                                <span>● {auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
+                              </span>
 
-                          {/* Financiamento */}
-                          {auc.allowsFinancing && (
-                            <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                              ✓ Financiamento
-                            </span>
-                          )}
+                              {auc.allowsFinancing && (
+                                <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
+                                  ✓ Financiamento
+                                </span>
+                              )}
 
-                          {/* Parcelamento */}
-                          {auc.allowsInstallments && (
-                            <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                              ✓ Parcelamento
-                            </span>
+                              {auc.allowsInstallments && (
+                                <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
+                                  ✓ Parcelamento
+                                </span>
+                              )}
+                            </>
                           )}
 
                           {/* Ver no Mapa (Verde vibrante em destaque) */}
