@@ -2809,5 +2809,482 @@
       }
     ],
     "updatedAt": "2026-10-18T15:23:00.489Z"
+  },
+  "rj_rio de janeiro_barra da tijuca_floriano": {
+    "street": "Praça Floriano",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/barra-da-tijuca/rua-general-floriano-fontoura",
+    "canonicalTitle": "Rua General Floriano FontouraQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 12.376.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 13284,
+        "sampleCount": 12333,
+        "avgPrice": 1980000,
+        "rawMeta": "~142 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 8741,
+        "sampleCount": 3101,
+        "avgPrice": 4500000,
+        "rawMeta": "~530 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 8605,
+        "sampleCount": 1783,
+        "avgPrice": 450000,
+        "rawMeta": "~52 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T15:49:06.006Z"
+  },
+  "rj_rio de janeiro_copacabana_maestro francisco braga": {
+    "street": "Rua Maestro Francisco Braga",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/copacabana/rua-maestro-francisco-braga",
+    "canonicalTitle": "Rua Maestro Francisco BragaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 11.462.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 11471,
+        "sampleCount": 8828,
+        "avgPrice": 1420000,
+        "rawMeta": "~120 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 10431,
+        "sampleCount": 114,
+        "avgPrice": 2130000,
+        "rawMeta": "~266 m² · em geral 8 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 9500,
+        "sampleCount": 1190,
+        "avgPrice": 380000,
+        "rawMeta": "~39 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T15:49:21.417Z"
+  },
+  "rj_rio de janeiro_ipanema_visconde de piraja": {
+    "street": "Rua Visconde de Pirajá",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ipanema/rua-visconde-de-piraja",
+    "canonicalTitle": "Rua Visconde de PirajaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 21.636.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 21667,
+        "sampleCount": 3406,
+        "avgPrice": 2500000,
+        "rawMeta": "~118 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 14286,
+        "sampleCount": 13,
+        "avgPrice": 3000000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 20714,
+        "sampleCount": 507,
+        "avgPrice": 700000,
+        "rawMeta": "~34 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T15:49:28.028Z"
+  },
+  "rj_rio de janeiro_copacabana_nossa senhora de copacabana": {
+    "street": "Avenida Nossa Senhora de Copacabana",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/avenida-nossa-senhora-de-copacabana",
+    "canonicalTitle": "Avenida Nossa Senhora de CopacabanaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T15:49:28.081Z"
+  },
+  "mg_juiz de fora_sao mateus_guacui": {
+    "street": "Rua Guaçuí",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-guacui",
+    "canonicalTitle": "Rua GuacuiQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.879.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5622,
+        "sampleCount": 105,
+        "avgPrice": 779000,
+        "rawMeta": "~153 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3920,
+        "sampleCount": 32,
+        "avgPrice": 765000,
+        "rawMeta": "~250 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 9286,
+        "sampleCount": 26,
+        "avgPrice": 990000,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:00:18.213Z"
+  },
+  "mg_juiz de fora_centro_mister moore": {
+    "street": "Rua Mister Moore",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/centro/rua-mister-moore",
+    "canonicalTitle": "Rua Mister MooreQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.104.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5500,
+        "sampleCount": 150,
+        "avgPrice": 799000,
+        "rawMeta": "~192 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3750,
+        "sampleCount": 21,
+        "avgPrice": 1200000,
+        "rawMeta": "~358 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6104,
+        "sampleCount": 75,
+        "avgPrice": 383000,
+        "rawMeta": "~50 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:00:18.334Z"
+  },
+  "mg_juiz de fora_cascatinha_ladeira alexandre leonel": {
+    "street": "Ladeira Alexandre Leonel",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/cascatinha/ladeira-alexandre-leonel",
+    "canonicalTitle": "Ladeira Alexandre LeonelQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.267.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7568,
+        "sampleCount": 17,
+        "avgPrice": 585000,
+        "rawMeta": "~106 m² · em geral 1 quarto"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3265,
+        "sampleCount": 6,
+        "avgPrice": 1250000,
+        "rawMeta": "~420 m² · em geral 5 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4722,
+        "sampleCount": 6,
+        "avgPrice": 227500,
+        "rawMeta": "~36 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:00:18.685Z"
+  },
+  "mg_juiz de fora_centro_barao do rio branco": {
+    "street": "Avenida Barão do Rio Branco",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/centro/avenida-barao-do-rio-branco",
+    "canonicalTitle": "Avenida Barao do Rio BrancoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.104.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5500,
+        "sampleCount": 150,
+        "avgPrice": 799000,
+        "rawMeta": "~192 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3750,
+        "sampleCount": 21,
+        "avgPrice": 1200000,
+        "rawMeta": "~358 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6104,
+        "sampleCount": 75,
+        "avgPrice": 383000,
+        "rawMeta": "~50 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:00:30.761Z"
+  },
+  "mg_juiz de fora_granbery_doutor pedro de aquino ramos": {
+    "street": "Rua Doutor Pedro de Aquino Ramos",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/granbery/rua-doutor-pedro-de-aquino-ramos",
+    "canonicalTitle": "Rua Doutor Pedro de Aquino RamosQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.574.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6267,
+        "sampleCount": 24,
+        "avgPrice": 1444500,
+        "rawMeta": "~275 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4074,
+        "sampleCount": 6,
+        "avgPrice": 1250000,
+        "rawMeta": "~280 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:00:35.032Z"
+  },
+  "mg_juiz de fora_santa helena_aimee brant horta": {
+    "street": "Travessa Aimee Brant Horta",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/jardim-gloria/travessa-aimee-brant-horta",
+    "canonicalTitle": "Travessa Aimee Brant HortaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 3.924.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8753,
+        "sampleCount": 11,
+        "avgPrice": 1429000,
+        "rawMeta": "~161 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2534,
+        "sampleCount": 15,
+        "avgPrice": 690000,
+        "rawMeta": "~337 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:00:37.465Z"
+  },
+  "mg_juiz de fora_bom pastor_renato dias": {
+    "street": "Rua Renato Dias",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/bom-pastor/rua-renato-dias",
+    "canonicalTitle": "Rua Renato DiasQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 3.962.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7150,
+        "sampleCount": 30,
+        "avgPrice": 1900000,
+        "rawMeta": "~248 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2609,
+        "sampleCount": 26,
+        "avgPrice": 894500,
+        "rawMeta": "~354 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:02:27.243Z"
+  },
+  "mg_juiz de fora_bom pastor_irineu marinho": {
+    "street": "Rua Irineu Marinho",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/bom-pastor/rua-irineu-marinho",
+    "canonicalTitle": "Rua Irineu MarinhoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 3.962.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7150,
+        "sampleCount": 30,
+        "avgPrice": 1900000,
+        "rawMeta": "~248 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2609,
+        "sampleCount": 26,
+        "avgPrice": 894500,
+        "rawMeta": "~354 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:02:27.284Z"
+  },
+  "mg_juiz de fora_centro_santo antonio": {
+    "street": "Rua Santo Antônio",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/centro/rua-santo-antonio",
+    "canonicalTitle": "Rua Santo AntônioQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.104.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5500,
+        "sampleCount": 150,
+        "avgPrice": 799000,
+        "rawMeta": "~192 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3750,
+        "sampleCount": 21,
+        "avgPrice": 1200000,
+        "rawMeta": "~358 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6104,
+        "sampleCount": 75,
+        "avgPrice": 383000,
+        "rawMeta": "~50 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:05:22.394Z"
+  },
+  "mg_juiz de fora_centro_marechal floriano peixoto": {
+    "street": "Rua Marechal Floriano Peixoto",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/centro/rua-marechal-floriano-peixoto",
+    "canonicalTitle": "Rua Marechal Floriano PeixotoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.104.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5500,
+        "sampleCount": 150,
+        "avgPrice": 799000,
+        "rawMeta": "~192 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3750,
+        "sampleCount": 21,
+        "avgPrice": 1200000,
+        "rawMeta": "~358 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6104,
+        "sampleCount": 75,
+        "avgPrice": 383000,
+        "rawMeta": "~50 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:05:22.635Z"
+  },
+  "mg_juiz de fora_centro_marechal deodoro": {
+    "street": "Rua Marechal Deodoro",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/centro/rua-marechal-deodoro",
+    "canonicalTitle": "Rua Marechal DeodoroQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.104.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5500,
+        "sampleCount": 150,
+        "avgPrice": 799000,
+        "rawMeta": "~192 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3750,
+        "sampleCount": 21,
+        "avgPrice": 1200000,
+        "rawMeta": "~358 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6104,
+        "sampleCount": 75,
+        "avgPrice": 383000,
+        "rawMeta": "~50 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:05:22.744Z"
+  },
+  "mg_juiz de fora_centro_joao carrico": {
+    "street": "Rua João Carriço",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/paineiras/rua-joao-carrico",
+    "canonicalTitle": "Rua João CarricoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 1 quarto, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 3.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7800,
+        "sampleCount": 4,
+        "avgPrice": 216904,
+        "rawMeta": "~37 m² · em geral 1 quarto"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 1875,
+        "sampleCount": 3,
+        "avgPrice": 850000,
+        "rawMeta": "~400 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-18T16:05:32.029Z"
   }
 }

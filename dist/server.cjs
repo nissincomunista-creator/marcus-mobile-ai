@@ -1767,6 +1767,55 @@ var init_documentTextService = __esm({
   }
 });
 
+// src/utils/addressComponents.ts
+function parseAddressComponents(rawAddress) {
+  if (!rawAddress) return { street: "", number: "", complement: "" };
+  let text = String(rawAddress).trim().replace(/^\s*(?:endere[cç]o(?:\s+do\s+im[oó]vel)?|logradouro|localiza[cç][aã]o)\s*[:\-]?\s*/i, "").replace(/\s*\([^)]*\)/g, " ").replace(/\s+/g, " ").replace(/cep:?\s*\d{5}-?\d{3}/gi, "").replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, "").trim();
+  const streetStart = text.search(STREET_START);
+  if (streetStart >= 0) text = text.slice(streetStart);
+  text = text.replace(/\s*(?:,|[-–])\s*(?:bairro|cidade|munic[ií]pio|cep)\s*[:\-]?.*$/i, "").trim();
+  const legalCutoffs = [
+    /,\s*(?:constitu[ií]d[oa]|formad[oa]|inscrit[oa]|matriculado|objeto|lote\s+n?[ºo°]?\s*\d+|quadra\s+[a-z0-9]+|pa\s*n?[ºo°]?\s*\d+|pal\s*n?[ºo°]?\s*\d+|do\s+bairro\b|designad[oa]|sublote).*$/i,
+    /\b(?:constitu[ií]d[oa]|formad[oa])\s+pelo\s+lote.*$/i,
+    /\b(?:matr[íi]cula|inscri[cç][aã]o\s+imobili[aá]ria)\s*:?.*$/i
+  ];
+  for (const cutoff of legalCutoffs) text = text.replace(cutoff, "").trim();
+  const multiStreetMatch = text.match(/(?:rua\s*\d{1,2}|casa\s*\d+|bloco\s*\w+),\s*((?:avenida|av\.|rua|r\.|estrada|est\.|travessa|trv\.|alameda|pra[cç]a)\s+[^,]+),\s*(.*)/i);
+  if (multiStreetMatch) text = `${multiStreetMatch[1]}, ${multiStreetMatch[2]}`;
+  const numberPattern = new RegExp(`\\b(?:n[\xBAo\xB0.]?|num(?:ero)?\\.?|nro\\.?)\\s*${NUMBER}(?:\\s*[-\u2013/]\\s*${UNIT_WORD})?`, "i");
+  const commaNumberPattern = new RegExp(`,\\s*${NUMBER}(?:\\s*[-\u2013/]\\s*${UNIT_WORD})?`, "i");
+  let numberMatch = text.match(numberPattern) || text.match(commaNumberPattern);
+  if (!numberMatch) {
+    const looseNumberPattern = new RegExp(`\\s+${NUMBER}(?:\\s*[-\u2013/]\\s*${UNIT_WORD})?(?=\\s*(?:,|;|$))`, "i");
+    const looseMatch = text.match(looseNumberPattern);
+    const streetName = looseMatch ? text.slice(0, looseMatch.index).replace(/^(?:rua|r\.?|avenida|av\.?|estrada|est\.?|travessa|trv\.?|alameda|al\.?|rodovia|rod\.?|pra[cç]a|largo)\s*/i, "").trim() : "";
+    if (looseMatch && /[A-Za-zÀ-ÿ]{3}/.test(streetName)) numberMatch = looseMatch;
+  }
+  let number = "";
+  let complement = "";
+  let street = text;
+  if (numberMatch) {
+    number = String(numberMatch[1] || "").replace(/\./g, "");
+    complement = String(numberMatch[2] || "").trim();
+    street = text.slice(0, numberMatch.index);
+    const remaining = text.slice((numberMatch.index || 0) + numberMatch[0].length).replace(/^[,;:\s\-–]+/, "");
+    if (!complement) {
+      const trailingUnit = remaining.match(new RegExp(`^${UNIT_WORD}\\.?\\s*[A-Za-z0-9/-]*`, "i"));
+      if (trailingUnit) complement = trailingUnit[0].trim();
+    }
+  }
+  street = street.replace(/[,;]\s*$/, "").replace(/\s+/g, " ").trim().replace(/^r\.\s*/i, "Rua ").replace(/^av\.\s*/i, "Avenida ").replace(/^est\.\s*/i, "Estrada ").replace(/^tr\.\s*/i, "Travessa ").replace(/^pca\.\s*/i, "Pra\xE7a ");
+  return { street, number, complement };
+}
+var STREET_START, UNIT_WORD, NUMBER;
+var init_addressComponents = __esm({
+  "src/utils/addressComponents.ts"() {
+    STREET_START = /\b(?:rua|r\.?|avenida|av\.?|estrada|est\.?|travessa|trv\.?|alameda|al\.?|rodovia|rod\.?|pra[cç]a|largo)\s+/i;
+    UNIT_WORD = "(fundos|fds|casa|apto|apartamento|bloco|bl|sobrado|unidade|sala)";
+    NUMBER = "(\\d{1,6}(?:\\.\\d{3})?(?:[A-Za-z])?)";
+  }
+});
+
 // auctioneerSyncService.ts
 function normalizeStr(str) {
   if (!str) return "";
@@ -3364,6 +3413,7 @@ var init_auctioneerSyncService = __esm({
     init_puppeteerConfig();
     import_genai2 = require("@google/genai");
     init_documentTextService();
+    init_addressComponents();
     documentOcrPausedUntil = 0;
     AUCTIONEER_PORTALS = [
       { id: "freitas", name: "Freitas Leiloeiro", domain: "freitasleiloeiro.com.br", baseUrl: "https://www.freitasleiloeiro.com.br", genericScrape: true, enabled: true },
@@ -7898,9 +7948,141 @@ function getRjZone(neighborhood) {
   }
   return RJ_ZONE_MAP[norm] || "zona-norte";
 }
-var SORTED_RJ_BAIRROS = Object.keys(RIO_DE_JANEIRO_BAIRROS).sort((a, b) => b.length - a.length);
+function buildSortedNeighborhoods() {
+  const byCity = {};
+  const allSet = /* @__PURE__ */ new Set();
+  for (const [cityKey, zones] of Object.entries(CITY_ZONES)) {
+    const bSet = /* @__PURE__ */ new Set();
+    for (const z of zones) {
+      if (Array.isArray(z.neighborhoods)) {
+        for (const b of z.neighborhoods) {
+          const norm = b.toLowerCase().trim();
+          if (norm.length >= 3) {
+            bSet.add(norm);
+            allSet.add(norm);
+          }
+        }
+      }
+    }
+    byCity[cityKey] = Array.from(bSet).sort((a, b) => b.length - a.length);
+  }
+  const rjSet = /* @__PURE__ */ new Set([...byCity["rio de janeiro"] || [], ...Object.keys(RIO_DE_JANEIRO_BAIRROS)]);
+  byCity["rio de janeiro"] = Array.from(rjSet).sort((a, b) => b.length - a.length);
+  for (const b of rjSet) allSet.add(b);
+  const extraNiteroi = [
+    "icarai",
+    "santa rosa",
+    "inga",
+    "sao francisco",
+    "charitas",
+    "jurujuba",
+    "centro",
+    "piratininga",
+    "camboinhas",
+    "itaipu",
+    "itacoatiara",
+    "fonseca",
+    "barreto",
+    "engenhoca",
+    "santana",
+    "sao domingos",
+    "boa viagem",
+    "gragoata",
+    "ponta d areia",
+    "fatima",
+    "pe pequeno",
+    "vital brazil",
+    "cubango",
+    "santa barbara",
+    "caramujo",
+    "baldeador",
+    "maria paula",
+    "pendotiba",
+    "badu",
+    "matapaca",
+    "sape",
+    "largo da batalha",
+    "maceio",
+    "cafuba",
+    "serra grande",
+    "santo antonio",
+    "maravista",
+    "engenho do mato"
+  ];
+  const niteroiSet = /* @__PURE__ */ new Set([...byCity["niteroi"] || [], ...extraNiteroi]);
+  byCity["niteroi"] = Array.from(niteroiSet).sort((a, b) => b.length - a.length);
+  for (const b of niteroiSet) allSet.add(b);
+  const extraJF = [
+    "centro",
+    "sao mateus",
+    "cascatinha",
+    "granbery",
+    "bom pastor",
+    "alto dos passos",
+    "santa helena",
+    "sao pedro",
+    "passos",
+    "paineiras",
+    "morro da gloria",
+    "manoel honorio",
+    "bairu",
+    "santa luzia",
+    "benfica",
+    "santa terezinha",
+    "jardim gloria",
+    "estrela sul",
+    "aeroporto",
+    "salvaterra",
+    "alphaville",
+    "marilandia",
+    "santos dumont",
+    "novo horizonte",
+    "progresso",
+    "costa carvalho",
+    "teixeiras",
+    "dom bosco",
+    "sagrado coracao",
+    "fontesville",
+    "francisco bernardino",
+    "industrial",
+    "santa cruz",
+    "sao dimas",
+    "poco rico",
+    "grama",
+    "fabrica",
+    "borboleta"
+  ];
+  const jfSet = /* @__PURE__ */ new Set([...byCity["juiz de fora"] || [], ...extraJF]);
+  byCity["juiz de fora"] = Array.from(jfSet).sort((a, b) => b.length - a.length);
+  for (const b of jfSet) allSet.add(b);
+  return {
+    byCity,
+    all: Array.from(allSet).sort((a, b) => b.length - a.length)
+  };
+}
+var NEIGHBORHOOD_CATALOG = buildSortedNeighborhoods();
 function detectNeighborhoodFromCardAndUrl(href, cardText, targetNeigh, city) {
   const normUrl = (href || "").toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const normText = (cardText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normCity = normalizeSlug2(city || "").replace(/-/g, " ");
+  const cityCandidates = normCity ? NEIGHBORHOOD_CATALOG.byCity[normCity] || [] : [];
+  const candidateLists = cityCandidates.length > 0 ? [cityCandidates, NEIGHBORHOOD_CATALOG.all] : [NEIGHBORHOOD_CATALOG.all];
+  for (const candidateList of candidateLists) {
+    for (const n of candidateList) {
+      if (n.length < 3) continue;
+      const regex = new RegExp(`(?:^|[^a-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:$|[^a-z0-9])`, "i");
+      if (regex.test(normText)) {
+        return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      }
+    }
+    for (const n of candidateList) {
+      if (n.length < 3) continue;
+      const slug = n.replace(/\s+/g, "-");
+      if (normUrl.includes("-" + slug + "-") || normUrl.includes("/" + slug + "-") || normUrl.includes("-" + slug + "/") || normUrl.endsWith("-" + slug)) {
+        return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      }
+    }
+  }
   const textMatches = [
     cardText.match(/[-–—]\s*([A-Za-zÀ-ÿ\s]+?)\s*,\s*(?:Rio de Janeiro|Niterói|Juiz de Fora)/i),
     cardText.match(/,\s*([A-Za-zÀ-ÿ\s]+?)\s*[-–—]\s*(?:Rio de Janeiro|RJ|Niterói|Juiz de Fora|MG)/i),
@@ -7912,7 +8094,7 @@ function detectNeighborhoodFromCardAndUrl(href, cardText, targetNeigh, city) {
       const candidate = m[1].trim();
       const candNorm = candidate.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
       if (["rio de janeiro", "rj", "brasil", "zona norte", "zona sul", "zona oeste", "centro", "mg"].includes(candNorm)) continue;
-      for (const n of SORTED_RJ_BAIRROS) {
+      for (const n of NEIGHBORHOOD_CATALOG.all) {
         if (candNorm === n || candNorm.includes(n)) {
           return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
         }
@@ -7920,12 +8102,6 @@ function detectNeighborhoodFromCardAndUrl(href, cardText, targetNeigh, city) {
       if (candidate.length >= 3 && candidate.length <= 35) {
         return candidate;
       }
-    }
-  }
-  for (const n of SORTED_RJ_BAIRROS) {
-    const slug = n.replace(/\s+/g, "-");
-    if (normUrl.includes("-" + slug + "-") || normUrl.includes("/" + slug + "-") || normUrl.includes("-" + slug + "/")) {
-      return n.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
     }
   }
   return targetNeigh || city || "";
@@ -8297,7 +8473,7 @@ async function scrapeZapImoveis(city, state, neighborhood, browserInstance) {
   const hasNeighborhood = Boolean(neighborhood && neighborhood.trim() && neighborhood.toLowerCase() !== "todas" && neighborhood.toLowerCase() !== "todos");
   const neighSlug = hasNeighborhood ? resolveZapNeighborhoodSlug(city, state, neighborhood) : "";
   const zoneSlug = isRjCapital && hasNeighborhood ? `${getRjZone(neighborhood)}+` : "";
-  const primaryUrl = hasNeighborhood ? isRjCapital ? `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${zoneSlug}${neighSlug}/` : `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}++${neighSlug}/` : `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}/`;
+  const primaryUrl = hasNeighborhood ? isRjCapital ? `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${zoneSlug}${neighSlug}/` : `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${neighSlug}/` : `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}/`;
   console.log(`[Scraper Zap Im\xF3veis] Consultando VENDA em ${neighborhood || "Geral (" + city + ")"}, ${city} - ${state.toUpperCase()}`);
   const listings = [];
   let ownBrowser = false;
@@ -9334,6 +9510,64 @@ function isNeighborhoodCompatible(targetNeighborhood, candidateNeighborhood, cit
 // server.ts
 init_geoCoords();
 init_auctioneerSyncService();
+
+// src/utils/itbiSourceDeduplication.ts
+function normalize5(value) {
+  return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function stableFacts(tx) {
+  return [
+    tx.date,
+    Number(tx.transactionValue || 0).toFixed(2),
+    Number(tx.normalizedTotalValue || 0).toFixed(2),
+    normalize5(tx.street),
+    normalize5(tx.number),
+    normalize5(tx.naturezaOperacao),
+    Number(tx.percentualTransmitido || 0).toFixed(4)
+  ].join("|");
+}
+function nonEmpty(preferred, fallback) {
+  return preferred === void 0 || preferred === null || preferred === "" ? fallback : preferred;
+}
+function deduplicateVerifiedItbiSourceRows(rows) {
+  const output = [];
+  const bySourceAndFacts = /* @__PURE__ */ new Map();
+  const sourceFacts = /* @__PURE__ */ new Map();
+  let duplicatesRemoved = 0;
+  let conflictingSourceRows = 0;
+  for (const tx of rows) {
+    const file2 = String(tx.sourceFile || "").trim();
+    const row = Number(tx.sourceRow);
+    if (tx.sourceVerified !== true || !file2 || !Number.isInteger(row) || row < 2) {
+      output.push(tx);
+      continue;
+    }
+    const sourceKey = `${normalize5(file2)}|${row}`;
+    const facts = stableFacts(tx);
+    const priorFacts = sourceFacts.get(sourceKey) || /* @__PURE__ */ new Set();
+    if (priorFacts.has(facts)) {
+      const priorIndex = bySourceAndFacts.get(`${sourceKey}|${facts}`);
+      if (priorIndex !== void 0) {
+        const prior = output[priorIndex];
+        output[priorIndex] = {
+          ...prior,
+          ...Object.fromEntries(Object.keys(tx).filter((key) => key !== "id").map((key) => [key, nonEmpty(tx[key], prior[key])]))
+        };
+        duplicatesRemoved++;
+        continue;
+      }
+    } else if (priorFacts.size > 0) {
+      conflictingSourceRows++;
+    }
+    priorFacts.add(facts);
+    sourceFacts.set(sourceKey, priorFacts);
+    bySourceAndFacts.set(`${sourceKey}|${facts}`, output.length);
+    output.push(tx);
+  }
+  return { transactions: output, duplicatesRemoved, conflictingSourceRows };
+}
+
+// server.ts
 import_dotenv.default.config();
 process.on("unhandledRejection", (reason, promise) => {
   console.error("[Process] Ignorando Unhandled Rejection para manter o servidor online:", reason);
@@ -14846,11 +15080,26 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
   return totalImported;
 }
 app.post("/api/garimpar/caixa", authMiddleware, async (req, res) => {
-  const stateParam = req.body.state || req.query.state || "RJ";
+  let stateParam = req.body.state || req.query.state;
+  const cityParam = req.body.city || req.query.city;
+  if (!stateParam) {
+    if (cityParam && /juiz\s+de\s+fora/i.test(cityParam)) {
+      stateParam = "MG";
+    } else if (cityParam && /niter/i.test(cityParam)) {
+      stateParam = "RJ";
+    } else {
+      stateParam = "RJ";
+    }
+  } else if (cityParam && /juiz\s+de\s+fora/i.test(cityParam)) {
+    stateParam = "MG";
+  } else if (cityParam && /niter/i.test(cityParam)) {
+    stateParam = "RJ";
+  }
   const uf = String(stateParam).toUpperCase().trim();
+  const targetStates = uf === "MG" ? ["MG"] : cityParam && /niter/i.test(cityParam) ? ["RJ"] : uf ? [uf] : ["RJ", "MG"];
   if (listedSyncRunning || caixaDirectRunning) return res.status(409).json({ error: "J\xE1 existe uma sincroniza\xE7\xE3o da Caixa em andamento." });
   try {
-    const totalImported = await runCaixaSyncExclusive([uf], req.userId);
+    const totalImported = await runCaixaSyncExclusive(targetStates, req.userId);
     res.json({
       success: true,
       count: totalImported,
@@ -15269,9 +15518,22 @@ N\xE3o inclua nenhuma outra marca\xE7\xE3o al\xE9m do JSON puro dentro do bloco 
   });
 });
 app.post("/api/garimpar/portais", authMiddleware, async (req, res) => {
-  const stateParam = req.body.state || req.query.state || "RJ";
-  const uf = String(stateParam).toUpperCase().trim();
+  let stateParam = req.body.state || req.query.state;
   const reqCity = req.body.city;
+  if (!stateParam) {
+    if (reqCity && /juiz\s+de\s+fora/i.test(reqCity)) {
+      stateParam = "MG";
+    } else if (reqCity && /niter/i.test(reqCity)) {
+      stateParam = "RJ";
+    } else {
+      stateParam = "RJ";
+    }
+  } else if (reqCity && /juiz\s+de\s+fora/i.test(reqCity)) {
+    stateParam = "MG";
+  } else if (reqCity && /niter/i.test(reqCity)) {
+    stateParam = "RJ";
+  }
+  const uf = String(stateParam).toUpperCase().trim();
   const reqNeighborhood = req.body.neighborhood;
   const reqNeighborhoods = req.body.neighborhoods;
   const requestedPortals = Array.isArray(req.body.portals) && req.body.portals.length > 0 ? req.body.portals : void 0;

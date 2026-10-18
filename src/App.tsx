@@ -463,10 +463,14 @@ export default function App() {
   const handleGarimparJudiciais = async (city?: string) => {
     setIsMining(true);
     try {
+      const targetCity = city || selectedCityFilter;
+      const targetState = targetCity && /juiz\s+de\s+fora/i.test(targetCity)
+        ? 'MG'
+        : (targetCity && /niter/i.test(targetCity) ? 'RJ' : (selectedStateFilter || undefined));
       const response = await authFetch('/api/garimpar/judiciais', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: selectedStateFilter, city })
+        body: JSON.stringify({ state: targetState, city: targetCity })
       });
 
       if (!response.ok) {
@@ -488,10 +492,14 @@ export default function App() {
   const handleGarimparCaixa = async (city?: string) => {
     setIsMining(true);
     try {
+      const targetCity = city || selectedCityFilter;
+      const targetState = targetCity && /juiz\s+de\s+fora/i.test(targetCity)
+        ? 'MG'
+        : (targetCity && /niter/i.test(targetCity) ? 'RJ' : (selectedStateFilter || undefined));
       const response = await authFetch('/api/garimpar/caixa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: selectedStateFilter, city })
+        body: JSON.stringify({ state: targetState, city: targetCity })
       });
 
       if (!response.ok) {
@@ -519,12 +527,16 @@ export default function App() {
   ) => {
     setIsMining(true);
     try {
+      const targetCity = city || selectedCityFilter;
+      const targetState = targetCity && /juiz\s+de\s+fora/i.test(targetCity)
+        ? 'MG'
+        : (targetCity && /niter/i.test(targetCity) ? 'RJ' : (selectedStateFilter || 'RJ'));
       const response = await authFetch('/api/garimpar/portais', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          state: selectedStateFilter || 'RJ', 
-          city: city || selectedCityFilter, 
+          state: targetState, 
+          city: targetCity, 
           portals,
           neighborhoods: neighborhoods && neighborhoods.length > 0 ? neighborhoods : (selectedNeighborhoodFilter ? [selectedNeighborhoodFilter] : undefined),
           transactionType: transactionType || 'venda'

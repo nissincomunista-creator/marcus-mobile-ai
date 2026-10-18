@@ -160,7 +160,7 @@ export default function Dashboard({
   const [isModalitiesOpen, setIsModalitiesOpen] = useState(true);
   const [isLocationOpen, setIsLocationOpen] = useState(true);
   const [isNeighborhoodsOpen, setIsNeighborhoodsOpen] = useState(false);
-  const [isPortalsOpen, setIsPortalsOpen] = useState(true);
+  const [isPortalsOpen, setIsPortalsOpen] = useState(false);
 
   // Advanced Filters Modal state (Estilo QuintoAndar)
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
@@ -1372,8 +1372,7 @@ export default function Dashboard({
     getSaleModeBadge
   ]);
 
-  // Atualização automática imediata ao alternar entre Comprar e Alugar
-  const prevContextTabRef = useRef<'comprar' | 'alugar' | 'novo'>(advancedContextTab);
+  // Alternância entre Comprar e Alugar: reseta paginação e filtros sem disparar extrações de rede automáticas
   useEffect(() => {
     setVisibleCount(24);
     setMinPriceInput('');
@@ -1387,32 +1386,7 @@ export default function Dashboard({
       under250k: false,
       highSpread: false
     }));
-    if (prevContextTabRef.current !== advancedContextTab) {
-      prevContextTabRef.current = advancedContextTab;
-      if (advancedContextTab === 'alugar') {
-        if (selectedOriginFilter !== 'portal') {
-          setSelectedOriginFilter('portal');
-        }
-        onGarimparPortais(
-          selectedCityFilter || undefined,
-          selectedPortals,
-          selectedNeighborhoods,
-          'aluguel',
-          true
-        );
-      } else {
-        if (mode === 'portais' || selectedOriginFilter === 'portal') {
-          onGarimparPortais(
-            selectedCityFilter || undefined,
-            selectedPortals,
-            selectedNeighborhoods,
-            'venda',
-            true
-          );
-        }
-      }
-    }
-  }, [advancedContextTab, mode, onGarimparPortais, selectedCityFilter, selectedPortals, selectedNeighborhoods, selectedOriginFilter, setSelectedOriginFilter]);
+  }, [advancedContextTab]);
 
   // Infinite scroll listener
   useEffect(() => {
@@ -1544,55 +1518,6 @@ export default function Dashboard({
       });
     }
   }, [onUpdateProperty, portalSearchIds]);
-
-  useEffect(() => {
-    if (autoPortalSearchIds.current.size >= 4) return;
-    const pending = filteredAndSortedAuctions
-      .slice(0, Math.min(visibleCount, 8))
-      .filter(auc => !auc.portalDataVerifiedAt && !autoPortalSearchIds.current.has(auc.id) && !(auc as any).moradaM2 && !(auc as any).moradaVirtualM2 && auc.origin !== 'portal')
-      .slice(0, 2);
-
-    pending.forEach(auc => {
-      autoPortalSearchIds.current.add(auc.id);
-      void refreshCardPortalData(auc);
-    });
-
-    // Auto-fetch Morada Virtual para imóveis de Portais (garante m² idêntico ao da calculadora)
-    const pendingPortalMorada = filteredAndSortedAuctions
-      .slice(0, Math.min(visibleCount, 12))
-      .filter(auc => auc.origin === 'portal' && !(auc as any).moradaM2 && !(auc as any).moradaVirtualM2 && auc.address && !autoPortalSearchIds.current.has(`morada-${auc.id}`))
-      .slice(0, 3);
-
-    pendingPortalMorada.forEach(auc => {
-      autoPortalSearchIds.current.add(`morada-${auc.id}`);
-      const rawStreet = (auc.address || '').split(',')[0].trim();
-      if (!rawStreet) return;
-      const qs = new URLSearchParams({
-        street: rawStreet,
-        city: auc.city || 'Rio de Janeiro',
-        state: auc.state || 'RJ',
-        neighborhood: auc.neighborhood || '',
-        propertyType: auc.propertyType || ''
-      });
-      fetch('/api/morada/benchmark?' + qs.toString())
-        .then(r => r.ok ? r.json() : null)
-        .then(d => {
-          if (d?.benchmark?.m2 > 0) {
-            onUpdateProperty({
-              id: auc.id,
-              moradaM2: d.benchmark.m2,
-              moradaVirtualM2: d.benchmark.m2,
-              streetPortalAvgSqm: d.benchmark.m2,
-              m2MercadoPortal: d.benchmark.m2,
-              portalSampleCount: d.benchmark.sampleCount,
-              portalStreetUrl: d.benchmark.streetUrl,
-              fontePortal: 'Morada Virtual'
-            });
-          }
-        })
-        .catch(() => {});
-    });
-  }, [filteredAndSortedAuctions, visibleCount, refreshCardPortalData, onUpdateProperty]);
 
   const formatBRL = (val?: number) => {
     if (val === undefined || isNaN(val)) return 'R$ -';
@@ -1856,94 +1781,6 @@ export default function Dashboard({
                     <Sparkles className="w-3.5 h-3.5 text-white" />
                     <span>{isMining ? 'Extraindo...' : (advancedContextTab === 'alugar' ? 'Buscar Imóveis para Alugar' : 'Buscar Ofertas com Desconto')}</span>
                   </button>
-                </div>
-
-                {/* Bloco Colapsável: Portais Imobiliários (4 portais oficiais) */}
-                <div className="space-y-1.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsPortalsOpen(prev => !prev)}
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
-                  >
-                    <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Portais Imobiliários ({selectedPortals.length}/4)</span>
-                    </span>
-                    {isPortalsOpen ? (
-                      <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                    )}
-                  </button>
-
-                  {isPortalsOpen && (
-                    <div className="space-y-1.5 p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 mt-1">
-                      <div className="flex items-center justify-between text-[10px] pb-1 border-b border-slate-800/60">
-                        <span className="text-slate-400 font-mono">Seleção de Portais:</span>
-                        <div className="space-x-2">
-                          <button
-                            type="button"
-                            onClick={handleSelectAllPortals}
-                            className="text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer"
-                          >
-                            Todos
-                          </button>
-                          <span className="text-slate-600">•</span>
-                          <button
-                            type="button"
-                            onClick={handleClearPortals}
-                            className="text-slate-500 hover:text-slate-300 cursor-pointer"
-                          >
-                            Nenhum
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Opção Todos os Portais */}
-                      <label className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px] border-b border-slate-800/40 pb-1 mb-1">
-                        <div className="flex items-center space-x-2 truncate pr-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedPortals.length === ALL_PORTALS.length}
-                            onChange={handleToggleAllPortals}
-                            className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                          />
-                          <span className={`truncate ${selectedPortals.length === ALL_PORTALS.length ? 'text-white font-bold' : 'text-slate-300'}`}>
-                            Todos os 4 Portais
-                          </span>
-                        </div>
-                        <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
-                          {totalPortalCount}
-                        </span>
-                      </label>
-
-                      {ALL_PORTALS.map((portal) => {
-                        const isChecked = selectedPortals.includes(portal);
-                        const count = portalCounts[portal] || 0;
-                        return (
-                          <label
-                            key={portal}
-                            className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px]"
-                          >
-                            <div className="flex items-center space-x-2 truncate pr-2">
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => handleTogglePortal(portal)}
-                                className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                              />
-                              <span className={`truncate ${isChecked ? 'text-white font-bold' : 'text-slate-300'}`}>
-                                {portal}
-                              </span>
-                            </div>
-                            <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
-                              {count}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
@@ -2367,6 +2204,96 @@ export default function Dashboard({
                 </div>
               )}
             </div>
+
+            {/* Bloco Colapsável: Portais Imobiliários (4 portais oficiais) - Exibido logo abaixo de Localização Geográfica */}
+            {mode === 'portais' && (
+              <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                <button
+                  type="button"
+                  onClick={() => setIsPortalsOpen(prev => !prev)}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
+                >
+                  <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Portais Imobiliários ({selectedPortals.length}/4)</span>
+                  </span>
+                  {isPortalsOpen ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </button>
+
+                {isPortalsOpen && (
+                  <div className="space-y-1.5 p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 mt-1">
+                    <div className="flex items-center justify-between text-[10px] pb-1 border-b border-slate-800/60">
+                      <span className="text-slate-400 font-mono">Seleção de Portais:</span>
+                      <div className="space-x-2">
+                        <button
+                          type="button"
+                          onClick={handleSelectAllPortals}
+                          className="text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer"
+                        >
+                          Todos
+                        </button>
+                        <span className="text-slate-600">•</span>
+                        <button
+                          type="button"
+                          onClick={handleClearPortals}
+                          className="text-slate-500 hover:text-slate-300 cursor-pointer"
+                        >
+                          Nenhum
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Opção Todos os Portais */}
+                    <label className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px] border-b border-slate-800/40 pb-1 mb-1">
+                      <div className="flex items-center space-x-2 truncate pr-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedPortals.length === ALL_PORTALS.length}
+                          onChange={handleToggleAllPortals}
+                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span className={`truncate ${selectedPortals.length === ALL_PORTALS.length ? 'text-white font-bold' : 'text-slate-300'}`}>
+                          Todos os 4 Portais
+                        </span>
+                      </div>
+                      <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
+                        {totalPortalCount}
+                      </span>
+                    </label>
+
+                    {ALL_PORTALS.map((portal) => {
+                      const isChecked = selectedPortals.includes(portal);
+                      const count = portalCounts[portal] || 0;
+                      return (
+                        <label
+                          key={portal}
+                          className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px]"
+                        >
+                          <div className="flex items-center space-x-2 truncate pr-2">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleTogglePortal(portal)}
+                              className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
+                            />
+                            <span className={`truncate ${isChecked ? 'text-white font-bold' : 'text-slate-300'}`}>
+                              {portal}
+                            </span>
+                          </div>
+                          <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
+                            {count}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 3. CONDIÇÕES & OCUPAÇÃO (FINANCIAMENTO, PARCELAMENTO, DESOCUPADO) - Apenas Leilões */}
             {mode !== 'portais' && (

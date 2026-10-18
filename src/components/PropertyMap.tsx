@@ -145,7 +145,7 @@ export default function PropertyMap({
       mapRef.current = map;
       setMapReady(true);
 
-      const tileRoad = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      const tileRoad = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ', maxZoom: 20
       });
       tileRoad.addTo(map);
@@ -240,7 +240,7 @@ export default function PropertyMap({
         maxZoom: 20
       });
     } else {
-      layer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ', maxZoom: 20
       });
     }

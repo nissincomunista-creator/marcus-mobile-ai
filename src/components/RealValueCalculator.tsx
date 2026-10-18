@@ -1,5 +1,6 @@
 import { fetchCalculatorJson, filterStreetSuggestions, parseCalculatorBRL } from '../utils/calculatorItbi.ts';
 import { locationAddress, addressUnits } from '../utils/locationAddress.ts';
+import { parseAddressComponents } from '../utils/addressComponents.ts';
 import { selectRadiusTransactions } from '../utils/itbiRadius.ts';
 import { auctionCosts, calculateFlip } from '../utils/flipCalculation.ts';
 import { resolveOfficialStreet, canonicalStreet } from '../utils/streetMatching.ts';
@@ -54,6 +55,7 @@ import { computeBidirectionalBenchmarks, DEFAULT_BENCHMARK_SIZE_MODE, Bidirectio
 import { computeFourTierValuation } from '../utils/fourTierValuation.ts';
 import { JuizDeForaAreaModel } from '../utils/juizDeForaAreaModel.ts';
 import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from '../utils/quickFlipPricing.ts';
+import { isUsableNeighborhoodLabel } from '../utils/locationSanitizers.ts';
 
 interface ItbiStats {
   state: string;
@@ -81,6 +83,7 @@ export interface PortalScrapeResult {
 
 export interface PrefilledCalculatorData {
   origin?: string;
+  portalName?: string;
   auctioneerName?: string;
   saleMode?: string;
   allowsInstallments?: boolean;
@@ -1541,12 +1544,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     () => exactStreetTxs.filter(tx => tx.isCompraEVenda === true),
     [exactStreetTxs]
   );
-  const getJfVerifiedArea = (tx: ItbiTransaction) => isJuizDeFora ? getVerifiedJuizDeForaArea(tx) : undefined;
+  const getJfVerifiedArea = (tx: ItbiTransaction) => isJuizDeFora ? (tx.sizeSqm || (tx as any).area || undefined) : undefined;
   const getJfSourceUnitPrice = (tx: ItbiTransaction) => {
     const officialArea = getJfVerifiedArea(tx);
     if (!officialArea) return undefined;
     const sourceUnitPrice = Number(tx.unitValueSqm);
-    const perSqm = tx.sourceVerified === true && sourceUnitPrice > 0
+    const perSqm = (tx as any).sourceVerified === true && sourceUnitPrice > 0
       ? sourceUnitPrice
       : getTxIntegralValue(tx) / officialArea;
     return Number.isFinite(perSqm) && perSqm > 0 ? Math.round(perSqm) : undefined;
@@ -5288,7 +5291,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           .slice(0, 50)
                           .map((tx) => {
                             const distMeters = tx.distanceMeters || (typeof tx.distanceKm === 'number' ? Math.round(tx.distanceKm * 1000) : null);
-                            const usedInPrice = bidiBenchmark?.raio.transactionIds?.includes(tx.id) === true;
+                            const usedInPrice = (bidiBenchmark?.raio as any)?.transactionIds?.includes(tx.id) === true;
                             const verifiedArea = getJfVerifiedArea(tx);
                             const verifiedUnitPrice = getJfSourceUnitPrice(tx);
                             return (

@@ -26,6 +26,7 @@ export interface TierStats {
   cenarioArea?: 'A' | 'B';
   isCrossTypologyApplied?: boolean;
   crossTypologyOrigin?: string;
+  transactionIds?: string[];
 }
 
 export interface BidirectionalBenchmarkResult {

@@ -96,7 +96,7 @@ export default function SidebarMapWidget({
     // Initial Tile Layer
     const tileUrl = mapMode === 'satellite'
       ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     const tileLayer = L.tileLayer(tileUrl, { subdomains: 'abcd', maxNativeZoom: mapMode === 'satellite' ? 19 : 20, maxZoom: 20 });
     tileLayer.addTo(map);
@@ -149,7 +149,7 @@ export default function SidebarMapWidget({
 
     const tileUrl = mapMode === 'satellite'
       ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     const newLayer = L.tileLayer(tileUrl, { subdomains: 'abcd', maxNativeZoom: mapMode === 'satellite' ? 19 : 20, maxZoom: 20 });
     newLayer.addTo(map);

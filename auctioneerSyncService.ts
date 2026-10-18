@@ -17,6 +17,7 @@ import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import { GoogleGenAI } from '@google/genai';
 import { PDFParse } from 'pdf-parse';
 import { readRegistryPdf, extractStructuredMatriculaFields } from './documentTextService.ts';
+import { parseAddressComponents } from './src/utils/addressComponents.ts';
 
 let documentOcrPausedUntil = 0;
 import { AuctionProperty, PropertyType } from './src/types.ts';

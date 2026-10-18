@@ -50,6 +50,7 @@ import { getZoneForNeighborhood } from './src/utils/cityZones.ts';
 import { isNeighborhoodCompatible } from './src/utils/neighborhoodAdjacency.ts';
 import { RIO_DE_JANEIRO_BAIRROS } from './src/utils/geoCoords.ts';
 import { syncAuctioneersPipeline, syncPriorityOfficialAuctioneers, AUCTIONEER_PORTALS, enrichLotDetails, auditAndRepairAuctions, deduplicateAuctions, reconcileAuctionDrafts, parseOfficialLotDetail, canonicalAuctionLink, extractAuctionRoundsAndPrices } from './auctioneerSyncService.ts';
+import { deduplicateVerifiedItbiSourceRows } from './src/utils/itbiSourceDeduplication.ts';
 
 dotenv.config();
 
@@ -6810,11 +6811,26 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
 
 // POST /api/garimpar/caixa
 app.post('/api/garimpar/caixa', authMiddleware, async (req, res) => {
-  const stateParam = req.body.state || req.query.state || 'RJ';
+  let stateParam = req.body.state || req.query.state;
+  const cityParam = req.body.city || req.query.city;
+  if (!stateParam) {
+    if (cityParam && /juiz\s+de\s+fora/i.test(cityParam)) {
+      stateParam = 'MG';
+    } else if (cityParam && /niter/i.test(cityParam)) {
+      stateParam = 'RJ';
+    } else {
+      stateParam = 'RJ';
+    }
+  } else if (cityParam && /juiz\s+de\s+fora/i.test(cityParam)) {
+    stateParam = 'MG';
+  } else if (cityParam && /niter/i.test(cityParam)) {
+    stateParam = 'RJ';
+  }
   const uf = String(stateParam).toUpperCase().trim();
+  const targetStates = uf === 'MG' ? ['MG'] : (cityParam && /niter/i.test(cityParam) ? ['RJ'] : (uf ? [uf] : ['RJ', 'MG']));
   if(listedSyncRunning||caixaDirectRunning)return res.status(409).json({error:'Já existe uma sincronização da Caixa em andamento.'});
   try {
-    const totalImported = await runCaixaSyncExclusive([uf], req.userId);
+    const totalImported = await runCaixaSyncExclusive(targetStates, req.userId);
     res.json({
       success: true,
       count: totalImported,
@@ -7334,9 +7350,22 @@ Não inclua nenhuma outra marcação além do JSON puro dentro do bloco de códi
 
 // POST /api/garimpar/portais (Real-time Zap/QuintoAndar search via Gemini with Search Grounding for House Flip)
 app.post('/api/garimpar/portais', authMiddleware, async (req, res) => {
-  const stateParam = req.body.state || req.query.state || 'RJ';
-  const uf = String(stateParam).toUpperCase().trim();
+  let stateParam = req.body.state || req.query.state;
   const reqCity = req.body.city;
+  if (!stateParam) {
+    if (reqCity && /juiz\s+de\s+fora/i.test(reqCity)) {
+      stateParam = 'MG';
+    } else if (reqCity && /niter/i.test(reqCity)) {
+      stateParam = 'RJ';
+    } else {
+      stateParam = 'RJ';
+    }
+  } else if (reqCity && /juiz\s+de\s+fora/i.test(reqCity)) {
+    stateParam = 'MG';
+  } else if (reqCity && /niter/i.test(reqCity)) {
+    stateParam = 'RJ';
+  }
+  const uf = String(stateParam).toUpperCase().trim();
   const reqNeighborhood = req.body.neighborhood;
   const reqNeighborhoods = req.body.neighborhoods;
   const requestedPortals = Array.isArray(req.body.portals) && req.body.portals.length > 0

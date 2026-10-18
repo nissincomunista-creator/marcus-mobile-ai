@@ -109,6 +109,10 @@ export interface AuctionProperty {
   portalStreetUrl?: string; // URL da análise da rua (ex: Morada Virtual)
   portalTypologyAvgPrice?: number; // Preço médio pedido nos anúncios da rua
   portalLeadText?: string; // Resumo analítico de mercado da rua
+  street?: string;
+  moradaM2?: number;
+  moradaVirtualM2?: number;
+  itbiNeighborhoodAvgSqm?: number;
 
   // Módulo Flip / Oportunidades em Portais
   portalName?: 'Zap Imóveis' | 'Viva Real' | 'QuintoAndar' | 'Chaves na Mão' | 'Imovelweb' | string;
@@ -333,6 +337,20 @@ export interface ItbiTransaction {
   areaInferenceMethod?: string;
   areaModelSampleCount?: number;
   areaModelConfidence?: 'high' | 'medium' | 'low';
+  sourceVerified?: boolean;
+  sourceFile?: string;
+  sourceRow?: number;
+  sourceParserNeighborhood?: string;
+  sourceParserComplement?: string;
+  sourceParserSizeSqm?: number;
+  sourceParserUnitValueSqm?: number;
+  sizeSourceVerified?: boolean;
+  sizeSourceFile?: string;
+  sizeSourceRow?: number;
+  addressSourceVerified?: boolean;
+  addressSourceFile?: string;
+  addressSourceRow?: number;
+  area?: number;
 }
 
 export interface NeighborhoodStats {

@@ -126,7 +126,65 @@ function getRjZone(neighborhood: string): string {
   return RJ_ZONE_MAP[norm] || 'zona-norte';
 }
 
-const SORTED_RJ_BAIRROS = Object.keys(RIO_DE_JANEIRO_BAIRROS).sort((a, b) => b.length - a.length);
+// Mapeamento abrangente de Bairros por Cidade (ordenados por comprimento decrescente para evitar falso-positivo)
+function buildSortedNeighborhoods(): { byCity: Record<string, string[]>; all: string[] } {
+  const byCity: Record<string, string[]> = {};
+  const allSet = new Set<string>();
+
+  for (const [cityKey, zones] of Object.entries(CITY_ZONES)) {
+    const bSet = new Set<string>();
+    for (const z of zones) {
+      if (Array.isArray(z.neighborhoods)) {
+        for (const b of z.neighborhoods) {
+          const norm = b.toLowerCase().trim();
+          if (norm.length >= 3) {
+            bSet.add(norm);
+            allSet.add(norm);
+          }
+        }
+      }
+    }
+    byCity[cityKey] = Array.from(bSet).sort((a, b) => b.length - a.length);
+  }
+
+  // Complementa Rio de Janeiro com os 109 bairros oficiais de geoCoords
+  const rjSet = new Set<string>([...(byCity['rio de janeiro'] || []), ...Object.keys(RIO_DE_JANEIRO_BAIRROS)]);
+  byCity['rio de janeiro'] = Array.from(rjSet).sort((a, b) => b.length - a.length);
+  for (const b of rjSet) allSet.add(b);
+
+  // Garante bairros de Niterói e Juiz de Fora
+  const extraNiteroi = [
+    'icarai', 'santa rosa', 'inga', 'sao francisco', 'charitas', 'jurujuba', 'centro',
+    'piratininga', 'camboinhas', 'itaipu', 'itacoatiara', 'fonseca', 'barreto', 'engenhoca',
+    'santana', 'sao domingos', 'boa viagem', 'gragoata', 'ponta d areia', 'fatima', 'pe pequeno',
+    'vital brazil', 'cubango', 'santa barbara', 'caramujo', 'baldeador', 'maria paula',
+    'pendotiba', 'badu', 'matapaca', 'sape', 'largo da batalha', 'maceio', 'cafuba',
+    'serra grande', 'santo antonio', 'maravista', 'engenho do mato'
+  ];
+  const niteroiSet = new Set<string>([...(byCity['niteroi'] || []), ...extraNiteroi]);
+  byCity['niteroi'] = Array.from(niteroiSet).sort((a, b) => b.length - a.length);
+  for (const b of niteroiSet) allSet.add(b);
+
+  const extraJF = [
+    'centro', 'sao mateus', 'cascatinha', 'granbery', 'bom pastor', 'alto dos passos',
+    'santa helena', 'sao pedro', 'passos', 'paineiras', 'morro da gloria', 'manoel honorio',
+    'bairu', 'santa luzia', 'benfica', 'santa terezinha', 'jardim gloria', 'estrela sul',
+    'aeroporto', 'salvaterra', 'alphaville', 'marilandia', 'santos dumont', 'novo horizonte',
+    'progresso', 'costa carvalho', 'teixeiras', 'dom bosco', 'sagrado coracao', 'fontesville',
+    'francisco bernardino', 'industrial', 'santa cruz', 'sao dimas', 'poco rico', 'grama',
+    'fabrica', 'borboleta'
+  ];
+  const jfSet = new Set<string>([...(byCity['juiz de fora'] || []), ...extraJF]);
+  byCity['juiz de fora'] = Array.from(jfSet).sort((a, b) => b.length - a.length);
+  for (const b of jfSet) allSet.add(b);
+
+  return {
+    byCity,
+    all: Array.from(allSet).sort((a, b) => b.length - a.length)
+  };
+}
+
+const NEIGHBORHOOD_CATALOG = buildSortedNeighborhoods();
 
 export function detectNeighborhoodFromCardAndUrl(
   href: string,
@@ -135,10 +193,40 @@ export function detectNeighborhoodFromCardAndUrl(
   city?: string
 ): string {
   const normUrl = (href || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const normText = (cardText || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  // 1. Extração por regex no texto do card (padrão de endereço dos portais)
-  // Ex: "Rua Araújo Leitão, 545 - Engenho Novo, Rio de Janeiro - RJ"
-  // Ex: "Engenho Novo, Rio de Janeiro - RJ"
+  const normCity = normalizeSlug(city || '').replace(/-/g, ' ');
+  const cityCandidates = normCity ? (NEIGHBORHOOD_CATALOG.byCity[normCity] || []) : [];
+  const candidateLists = cityCandidates.length > 0
+    ? [cityCandidates, NEIGHBORHOOD_CATALOG.all]
+    : [NEIGHBORHOOD_CATALOG.all];
+
+  for (const candidateList of candidateLists) {
+    // 1. Extração direta no texto do card por limites de palavra (whole word)
+    for (const n of candidateList) {
+      if (n.length < 3) continue;
+      const regex = new RegExp(`(?:^|[^a-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^a-z0-9])`, 'i');
+      if (regex.test(normText)) {
+        return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+    }
+
+    // 2. Extração pelo slug da URL contra a lista oficial de bairros
+    for (const n of candidateList) {
+      if (n.length < 3) continue;
+      const slug = n.replace(/\s+/g, '-');
+      if (
+        normUrl.includes('-' + slug + '-') ||
+        normUrl.includes('/' + slug + '-') ||
+        normUrl.includes('-' + slug + '/') ||
+        normUrl.endsWith('-' + slug)
+      ) {
+        return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+    }
+  }
+
+  // 3. Extração por regex no padrão de endereço dos portais ("Rua X - Bairro, Cidade")
   const textMatches = [
     cardText.match(/[-–—]\s*([A-Za-zÀ-ÿ\s]+?)\s*,\s*(?:Rio de Janeiro|Niterói|Juiz de Fora)/i),
     cardText.match(/,\s*([A-Za-zÀ-ÿ\s]+?)\s*[-–—]\s*(?:Rio de Janeiro|RJ|Niterói|Juiz de Fora|MG)/i),
@@ -151,7 +239,7 @@ export function detectNeighborhoodFromCardAndUrl(
       const candidate = m[1].trim();
       const candNorm = candidate.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
       if (['rio de janeiro', 'rj', 'brasil', 'zona norte', 'zona sul', 'zona oeste', 'centro', 'mg'].includes(candNorm)) continue;
-      for (const n of SORTED_RJ_BAIRROS) {
+      for (const n of NEIGHBORHOOD_CATALOG.all) {
         if (candNorm === n || candNorm.includes(n)) {
           return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
@@ -162,15 +250,7 @@ export function detectNeighborhoodFromCardAndUrl(
     }
   }
 
-  // 2. Extração pelo slug da URL contra a lista oficial de bairros
-  for (const n of SORTED_RJ_BAIRROS) {
-    const slug = n.replace(/\s+/g, '-');
-    if (normUrl.includes('-' + slug + '-') || normUrl.includes('/' + slug + '-') || normUrl.includes('-' + slug + '/')) {
-      return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    }
-  }
-
-  // 3. Fallback seguro: se targetNeigh foi fornecido, usa targetNeigh, senão cidade
+  // 4. Fallback seguro: se targetNeigh foi fornecido, usa targetNeigh, senão cidade
   return targetNeigh || city || '';
 }
 
@@ -666,7 +746,7 @@ export async function scrapeZapImoveis(
   const primaryUrl = hasNeighborhood
     ? (isRjCapital
         ? `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${zoneSlug}${neighSlug}/`
-        : `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}++${neighSlug}/`)
+        : `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}+${neighSlug}/`)
     : `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}/`;
 
   console.log(`[Scraper Zap Imóveis] Consultando VENDA em ${neighborhood || 'Geral (' + city + ')'}, ${city} - ${state.toUpperCase()}`);
@@ -878,7 +958,7 @@ export async function scrapeZapImoveis(
         valor_condominio: item.condoVal || 0,
         valor_iptu: item.iptuVal || 0,
         area_m2: sanitizedArea,
-        quartos: typo.propertyType === 'Terreno' || typo.propertyType === 'Comercial' ? 0 : item.bedrooms,
+        quartos: (typo.propertyType as string) === 'Terreno' || typo.propertyType === 'Comercial' ? 0 : item.bedrooms,
         vagas: item.parking,
         data_publicacao_iso: relDate.data_publicacao_iso,
         dias_publicado: relDate.dias_publicado,
@@ -1099,7 +1179,7 @@ export async function scrapeVivaReal(
         valor_condominio: item.condoVal,
         valor_iptu: item.iptuVal,
         area_m2: sanitizedArea,
-        quartos: typo.propertyType === 'Terreno' || typo.propertyType === 'Comercial' ? 0 : item.bedrooms,
+        quartos: (typo.propertyType as string) === 'Terreno' || typo.propertyType === 'Comercial' ? 0 : item.bedrooms,
         vagas: item.hasGarage ? 1 : 0,
         data_publicacao_iso: relDate.data_publicacao_iso,
         dias_publicado: relDate.dias_publicado,
@@ -1300,7 +1380,7 @@ export async function scrapeImovelweb(
         valor_condominio: item.condoVal || 0,
         valor_iptu: item.iptuVal || 0,
         area_m2: sanitizedArea,
-        quartos: typo.propertyType === 'Terreno' || typo.propertyType === 'Comercial' ? 0 : item.bedrooms,
+        quartos: (typo.propertyType as string) === 'Terreno' || typo.propertyType === 'Comercial' ? 0 : item.bedrooms,
         vagas: 1,
         data_publicacao_iso: relDate.data_publicacao_iso,
         dias_publicado: relDate.dias_publicado,
