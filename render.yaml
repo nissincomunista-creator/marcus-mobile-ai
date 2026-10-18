@@ -1,5 +1,15 @@
 services:
   - type: web
-    name: marcus-assessoria
-    env: docker
+    name: marcus-mobile-ai
+    env: node
     plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.cjs
+    healthCheckPath: /api/network/host-info
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: "true"
+      - key: RENDER
+        value: "true"
