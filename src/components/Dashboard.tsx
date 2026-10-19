@@ -17,6 +17,7 @@ import {
   Bookmark,
   Gavel,
   ArrowUpDown,
+  ArrowUp,
   Gem,
   Gauge,
   X,
@@ -463,6 +464,7 @@ export default function Dashboard({
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
   const [saveToastVisible, setSaveToastVisible] = useState(false);
   const [visibleCount, setVisibleCount] = useState(16);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Dynamic Extrajudicial Auctioneers derivation
   const activeExtrajudicialAuctioneers = useMemo(() => {
@@ -1187,8 +1189,40 @@ export default function Dashboard({
         }
 
         if (strategyFilters.bestRentDiscount) {
-          const saveA = (a.mediaLocacaoCalculadora || 0) - (a.monthlyRent || a.aluguelMensal || a.auctionPrice || 0);
-          const saveB = (b.mediaLocacaoCalculadora || 0) - (b.monthlyRent || b.aluguelMensal || b.auctionPrice || 0);
+          // 1. Veredito de locação da Calculadora: imóveis com veredito "barato" têm prioridade máxima
+          const getVereditoScore = (x: AuctionProperty) => {
+            if (x.vereditoLocacao === 'barato' || (x.aluguelDiferencaPct !== undefined && x.aluguelDiferencaPct <= -10)) return 3;
+            if (x.vereditoLocacao === 'justo' || (x.aluguelDiferencaPct !== undefined && x.aluguelDiferencaPct < 10)) return 2;
+            return 1;
+          };
+          const scoreA = getVereditoScore(a);
+          const scoreB = getVereditoScore(b);
+          if (scoreB !== scoreA) return scoreB - scoreA;
+
+          // 2. Maior percentual de desconto sobre o valor de locação justo que o imóvel realmente vale
+          // Quanto maior o deságio do aluguel pedido em relação à média pericial da Calculadora
+          const getRentDiscountPct = (x: AuctionProperty) => {
+            if (x.descontoMercadoPct && x.descontoMercadoPct > 0) return x.descontoMercadoPct;
+            if (x.aluguelDiferencaPct !== undefined && x.aluguelDiferencaPct < 0) return Math.abs(x.aluguelDiferencaPct);
+            const rent = x.monthlyRent || x.aluguelMensal || x.auctionPrice || 0;
+            const refRent = x.mediaLocacaoCalculadora || Math.round((x.valorMercadoEstimado || (x.sizeSqm * (x.m2ReferenciaBairro || 3600))) * 0.0055);
+            if (refRent > 0 && rent < refRent) {
+              return Math.round(((refRent - rent) / refRent) * 100);
+            }
+            return 0;
+          };
+          const discA = getRentDiscountPct(a);
+          const discB = getRentDiscountPct(b);
+          if (discB !== discA) return discB - discA;
+
+          // 3. Desempate: Maior economia financeira líquida em R$/mês
+          const getMonthlySavings = (x: AuctionProperty) => {
+            const rent = x.monthlyRent || x.aluguelMensal || x.auctionPrice || 0;
+            const refRent = x.mediaLocacaoCalculadora || Math.round((x.valorMercadoEstimado || (x.sizeSqm * (x.m2ReferenciaBairro || 3600))) * 0.0055);
+            return Math.max(0, refRent - rent);
+          };
+          const saveA = getMonthlySavings(a);
+          const saveB = getMonthlySavings(b);
           if (saveB !== saveA) return saveB - saveA;
         }
 
@@ -1394,16 +1428,26 @@ export default function Dashboard({
     }));
   }, [advancedContextTab]);
 
-  // Infinite scroll listener
+  // Infinite scroll listener + Monitoramento para o botão Voltar ao Topo
   useEffect(() => {
     function handleScroll() {
-      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 150) {
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      setShowScrollTop(scrollY > 350);
+
+      if (window.innerHeight + scrollY >= document.documentElement.offsetHeight - 150) {
         setVisibleCount(prev => Math.min(prev + 12, filteredAndSortedAuctions.length));
       }
     }
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [filteredAndSortedAuctions.length]);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   // Clear all filters handler
   const handleClearAllFilters = () => {
@@ -2521,12 +2565,12 @@ export default function Dashboard({
                       onClick={() => setStrategyFilters(prev => ({ ...prev, bestRentDiscount: !prev.bestRentDiscount }))}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
                         strategyFilters.bestRentDiscount
-                          ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
                           : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
                       }`}
-                      title="Maior economia financeira mensal em relação à média apurada"
+                      title="Ordenar imóveis pelo maior desconto percentual do aluguel pedido em relação ao valor real que o imóvel vale (com base no veredito da Calculadora)"
                     >
-                      <span>⭐ Maior Economia</span>
+                      <span>🏷️ Maior Desconto no Aluguel</span>
                       {strategyFilters.bestRentDiscount && <Check className="w-3 h-3 text-white" />}
                     </button>
                   </>
@@ -4071,6 +4115,25 @@ export default function Dashboard({
             </div>
           )}
         </AnimatePresence>
+      </AnimatePresence>
+
+      {/* Botão Flutuante Voltar ao Topo */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.7, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.7, y: 20 }}
+            transition={{ duration: 0.2 }}
+            type="button"
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-40 p-3 sm:p-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xl shadow-emerald-950/80 border border-emerald-400/40 cursor-pointer flex items-center justify-center group backdrop-blur-md transition-all hover:scale-110 active:scale-95 ring-2 ring-emerald-400/20"
+            aria-label="Voltar ao início da página"
+            title="Voltar ao topo da página"
+          >
+            <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:-translate-y-1" />
+          </motion.button>
+        )}
       </AnimatePresence>
     </div>
   );
