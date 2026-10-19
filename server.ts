@@ -1017,69 +1017,59 @@ function loadStore(): DataStore {
   };
 
   const GZ_STORE_PATH = path.join(process.cwd(), 'data_store.json.gz');
-  const shouldUnpackGz = fs.existsSync(GZ_STORE_PATH) && (
-    !fs.existsSync(STORE_PATH) || 
-    fs.statSync(STORE_PATH).size < 1000000 // If json is smaller than 1MB, it's missing the 51MB dataset
-  );
+  let parsed: any = null;
 
-  if (shouldUnpackGz) {
+  // 1. Tenta carregar data_store.json existente se for válido (> 1MB)
+  if (fs.existsSync(STORE_PATH) && fs.statSync(STORE_PATH).size >= 1000000) {
     try {
-      console.log('[Store] Descomprimindo base de dados oficial data_store.json.gz...');
-      const compressed = fs.readFileSync(GZ_STORE_PATH);
-      const decompressed = zlib.gunzipSync(compressed);
-      fs.writeFileSync(STORE_PATH, decompressed);
-      console.log('[Store] Base de dados descompactada com sucesso (103k+ ITBI e leilões Caixa)!');
-    } catch (gzErr) {
-      console.error('[Store] Falha ao descompactar data_store.json.gz:', gzErr);
+      console.log('[Store] Carregando base existente de data_store.json...');
+      const content = fs.readFileSync(STORE_PATH, 'utf-8');
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.warn('[Store] Falha ao carregar data_store.json existente, tentando gzip:', err);
     }
   }
 
-  if (fs.existsSync(STORE_PATH)) {
+  // 2. Se não carregou do JSON e o .gz existe, carrega diretamente do .gz em bloco isolado de baixo consumo de RAM
+  if (!parsed && fs.existsSync(GZ_STORE_PATH)) {
     try {
-      const data = fs.readFileSync(STORE_PATH, 'utf-8');
-      const parsed = JSON.parse(data);
-      storeData.auctions = parsed.auctions || storeData.auctions;
-      storeData.itbiTransactions = parsed.itbiTransactions || storeData.itbiTransactions;
-      storeData.users = parsed.users || [];
-      storeData.sessions = parsed.sessions || [];
-      storeData.accessCodes = parsed.accessCodes || [];
-      storeData.savedAnalyses = parsed.savedAnalyses || [];
-      storeData.arrematacoes = parsed.arrematacoes || [];
-      storeData.itbiStats = parsed.itbiStats || [];
-      storeData.calibrationVersion = parsed.calibrationVersion;
-      storeData.jfCalibrationVersion = parsed.jfCalibrationVersion;
-      
-      // If ITBI transactions are still empty but GZ exists, force unpack
-      if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && fs.existsSync(GZ_STORE_PATH)) {
-        try {
-          const compressed = fs.readFileSync(GZ_STORE_PATH);
-          const decompressed = zlib.gunzipSync(compressed);
-          const gzParsed = JSON.parse(decompressed.toString('utf-8'));
-          storeData.itbiTransactions = gzParsed.itbiTransactions || [];
-          if ((!storeData.auctions || storeData.auctions.length < 1000) && gzParsed.auctions) {
-            console.log(`[Store] Restaurando ${gzParsed.auctions.length} leilões do .gz com Niterói, Juiz de Fora, Santos Dumont...`);
-            storeData.auctions = gzParsed.auctions;
-          }
-          fs.writeFileSync(STORE_PATH, decompressed);
-          console.log('[Store] Base recuperada do data_store.json.gz:', storeData.itbiTransactions.length, 'ITBI');
-        } catch (e2) {
-          console.error('[Store] Erro ao forçar descompactação do .gz:', e2);
-        }
-      }
+      console.log('[Store] Carregando base ultra-otimizada de data_store.json.gz (modo low-memory)...');
+      let compressed: Buffer | null = fs.readFileSync(GZ_STORE_PATH);
+      let decompressed: Buffer | null = zlib.gunzipSync(compressed);
+      compressed = null; // Libera imediatamente 9MB
 
-      // If auctions have less than 1000 items but GZ exists, unpack all 4,477 auctions from GZ to restore Niterói, Juiz de Fora, Santos Dumont!
-      if ((!storeData.auctions || storeData.auctions.length < 1000) && fs.existsSync(GZ_STORE_PATH)) {
-        try {
-          const compressed = fs.readFileSync(GZ_STORE_PATH);
-          const gzParsed = JSON.parse(zlib.gunzipSync(compressed).toString('utf-8'));
-          if (gzParsed.auctions && gzParsed.auctions.length > (storeData.auctions?.length || 0)) {
-            console.log(`[Store] Restaurando base completa de ${gzParsed.auctions.length} leilões do .gz (incluindo Niterói, Juiz de Fora, Santos Dumont)...`);
-            storeData.auctions = gzParsed.auctions;
-          }
-        } catch (eGz) {
-          console.error('[Store] Erro ao recuperar leilões do .gz:', eGz);
-        }
+      // Tenta gravar em disco sem bloquear caso seja sistema com escrita permitida
+      try {
+        fs.writeFileSync(STORE_PATH, decompressed);
+      } catch (_) {}
+
+      let jsonStr: string | null = decompressed.toString('utf-8');
+      decompressed = null; // Libera imediatamente buffer C++ de 94MB
+      parsed = JSON.parse(jsonStr);
+      jsonStr = null; // Libera imediatamente string V8 de 94MB
+
+      if (global.gc) {
+        try { global.gc(); } catch (_) {}
       }
+      console.log(`[Store] Base descompactada e carregada com sucesso (${parsed.auctions?.length || 0} leilões, ${parsed.itbiTransactions?.length || 0} ITBI)!`);
+    } catch (gzErr) {
+      console.error('[Store] Falha ao carregar data_store.json.gz:', gzErr);
+    }
+  }
+
+  if (parsed) {
+    storeData.auctions = parsed.auctions || storeData.auctions;
+    storeData.itbiTransactions = parsed.itbiTransactions || storeData.itbiTransactions;
+    storeData.users = parsed.users || [];
+    storeData.sessions = parsed.sessions || [];
+    storeData.accessCodes = parsed.accessCodes || [];
+    storeData.savedAnalyses = parsed.savedAnalyses || [];
+    storeData.arrematacoes = parsed.arrematacoes || [];
+    storeData.itbiStats = parsed.itbiStats || [];
+    storeData.calibrationVersion = parsed.calibrationVersion;
+    storeData.jfCalibrationVersion = parsed.jfCalibrationVersion;
+    parsed = null;
+  }
 
       const jfMigrationPath = path.join(process.cwd(), 'jf_itbi_migration.json');
       if (fs.existsSync(jfMigrationPath)) {
@@ -1384,12 +1374,16 @@ function loadStore(): DataStore {
       });
         if (storeData.auctions.length !== beforePortals || recalibratedPortals > 0) {
           console.log(`[Store] Portais atualizados: ${beforePortals - storeData.auctions.length} removidos (Chaves na Mão / Terrenos), ${recalibratedPortals} recalibrados com m² oficial pericial.`);
-          saveStore(storeData);
+          if (!process.env.RENDER) {
+            saveStore(storeData);
+          }
         }
 
         if (storeData.auctions.length !== initialCount) {
           console.log(`[Store] Purge de segurança: ${initialCount - storeData.auctions.length} leilões inválidos/mock/fora das comarcas foram eliminados da base.`);
-          saveStore(storeData);
+          if (!process.env.RENDER) {
+            saveStore(storeData);
+          }
         }
       }
 
@@ -1487,12 +1481,6 @@ function loadStore(): DataStore {
       } else {
         console.log(`[Store] Leilões prontos e calibrados (${storeData.auctions?.length || 0} registros). Inicialização instantânea!`);
       }
-    } catch (e) {
-      console.error('Error reading data_store.json, resetting to initials', e);
-    }
-  } else {
-    // saveStore omitido na inicializacao
-  }
 
 
 
@@ -1639,6 +1627,10 @@ let activeAsyncStoreSave: Promise<void> | null = null;
 let deferredStoreSave: DataStore | null = null;
 
 function saveStore(targetStore: DataStore) {
+  if (process.env.RENDER || process.env.NODE_ENV === 'production') {
+    void saveStoreAsync(targetStore);
+    return;
+  }
   if (activeAsyncStoreSave) {
     deferredStoreSave = targetStore;
     auctionCatalogResponseCache = null;
@@ -7960,11 +7952,25 @@ async function start() {
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
-    // Automatic synchronization is requested once by the app when it opens.
-    // No boot-time or recurring collection may interrupt an active session.
+  const primaryPort = PORT;
+  app.listen(primaryPort, '0.0.0.0', () => {
+    console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${primaryPort}`);
   });
+
+  // Listener secundário defensivo para Render / proxies de porta reversa (10000 / 3000)
+  const secondaryPort = primaryPort === 10000 ? 3000 : (primaryPort === 3000 ? 10000 : null);
+  if (secondaryPort) {
+    try {
+      const secServer = app.listen(secondaryPort, '0.0.0.0', () => {
+        console.log(`[Server] Listener secundário ativo em http://localhost:${secondaryPort}`);
+      });
+      secServer.on('error', (err: any) => {
+        if (err.code !== 'EADDRINUSE') {
+          console.warn(`[Server] Aviso listener secundário na porta ${secondaryPort}:`, err.message);
+        }
+      });
+    } catch (_) {}
+  }
 }
 
 start();

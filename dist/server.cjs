@@ -10722,416 +10722,409 @@ function loadStore() {
     arrematacoes: []
   };
   const GZ_STORE_PATH = import_path4.default.join(process.cwd(), "data_store.json.gz");
-  const shouldUnpackGz = import_fs5.default.existsSync(GZ_STORE_PATH) && (!import_fs5.default.existsSync(STORE_PATH) || import_fs5.default.statSync(STORE_PATH).size < 1e6);
-  if (shouldUnpackGz) {
+  let parsed = null;
+  if (import_fs5.default.existsSync(STORE_PATH) && import_fs5.default.statSync(STORE_PATH).size >= 1e6) {
     try {
-      console.log("[Store] Descomprimindo base de dados oficial data_store.json.gz...");
-      const compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
-      const decompressed = import_zlib.default.gunzipSync(compressed);
-      import_fs5.default.writeFileSync(STORE_PATH, decompressed);
-      console.log("[Store] Base de dados descompactada com sucesso (103k+ ITBI e leil\xF5es Caixa)!");
-    } catch (gzErr) {
-      console.error("[Store] Falha ao descompactar data_store.json.gz:", gzErr);
+      console.log("[Store] Carregando base existente de data_store.json...");
+      const content = import_fs5.default.readFileSync(STORE_PATH, "utf-8");
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.warn("[Store] Falha ao carregar data_store.json existente, tentando gzip:", err);
     }
   }
-  if (import_fs5.default.existsSync(STORE_PATH)) {
+  if (!parsed && import_fs5.default.existsSync(GZ_STORE_PATH)) {
     try {
-      const data = import_fs5.default.readFileSync(STORE_PATH, "utf-8");
-      const parsed = JSON.parse(data);
-      storeData.auctions = parsed.auctions || storeData.auctions;
-      storeData.itbiTransactions = parsed.itbiTransactions || storeData.itbiTransactions;
-      storeData.users = parsed.users || [];
-      storeData.sessions = parsed.sessions || [];
-      storeData.accessCodes = parsed.accessCodes || [];
-      storeData.savedAnalyses = parsed.savedAnalyses || [];
-      storeData.arrematacoes = parsed.arrematacoes || [];
-      storeData.itbiStats = parsed.itbiStats || [];
-      storeData.calibrationVersion = parsed.calibrationVersion;
-      storeData.jfCalibrationVersion = parsed.jfCalibrationVersion;
-      if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && import_fs5.default.existsSync(GZ_STORE_PATH)) {
+      console.log("[Store] Carregando base ultra-otimizada de data_store.json.gz (modo low-memory)...");
+      let compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
+      let decompressed = import_zlib.default.gunzipSync(compressed);
+      compressed = null;
+      try {
+        import_fs5.default.writeFileSync(STORE_PATH, decompressed);
+      } catch (_) {
+      }
+      let jsonStr = decompressed.toString("utf-8");
+      decompressed = null;
+      parsed = JSON.parse(jsonStr);
+      jsonStr = null;
+      if (global.gc) {
         try {
-          const compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
-          const decompressed = import_zlib.default.gunzipSync(compressed);
-          const gzParsed = JSON.parse(decompressed.toString("utf-8"));
-          storeData.itbiTransactions = gzParsed.itbiTransactions || [];
-          if ((!storeData.auctions || storeData.auctions.length < 1e3) && gzParsed.auctions) {
-            console.log(`[Store] Restaurando ${gzParsed.auctions.length} leil\xF5es do .gz com Niter\xF3i, Juiz de Fora, Santos Dumont...`);
-            storeData.auctions = gzParsed.auctions;
-          }
-          import_fs5.default.writeFileSync(STORE_PATH, decompressed);
-          console.log("[Store] Base recuperada do data_store.json.gz:", storeData.itbiTransactions.length, "ITBI");
-        } catch (e2) {
-          console.error("[Store] Erro ao for\xE7ar descompacta\xE7\xE3o do .gz:", e2);
+          global.gc();
+        } catch (_) {
         }
       }
-      if ((!storeData.auctions || storeData.auctions.length < 1e3) && import_fs5.default.existsSync(GZ_STORE_PATH)) {
-        try {
-          const compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
-          const gzParsed = JSON.parse(import_zlib.default.gunzipSync(compressed).toString("utf-8"));
-          if (gzParsed.auctions && gzParsed.auctions.length > (storeData.auctions?.length || 0)) {
-            console.log(`[Store] Restaurando base completa de ${gzParsed.auctions.length} leil\xF5es do .gz (incluindo Niter\xF3i, Juiz de Fora, Santos Dumont)...`);
-            storeData.auctions = gzParsed.auctions;
-          }
-        } catch (eGz) {
-          console.error("[Store] Erro ao recuperar leil\xF5es do .gz:", eGz);
-        }
-      }
-      const jfMigrationPath = import_path4.default.join(process.cwd(), "jf_itbi_migration.json");
-      if (import_fs5.default.existsSync(jfMigrationPath)) {
-        try {
-          const migration = JSON.parse(import_fs5.default.readFileSync(jfMigrationPath, "utf8"));
-          const officialJfTransactions = Array.isArray(migration.itbiTransactions) ? migration.itbiTransactions : [];
-          if (officialJfTransactions.length < 1e4 || officialJfTransactions.filter((tx) => tx.isCompraEVenda === true).length < 8e3) {
-            throw new Error("Base preparada de Juiz de Fora n\xE3o passou pelo m\xEDnimo de integridade; migra\xE7\xE3o preservada para revis\xE3o.");
-          }
-          const isJf = (tx) => String(tx.city || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("juiz de fora") || tx.id.startsWith("itbi-jf");
-          storeData.itbiTransactions = [...storeData.itbiTransactions.filter((tx) => !isJf(tx)), ...officialJfTransactions];
-          if (Array.isArray(migration.itbiStats)) storeData.itbiStats = migration.itbiStats;
-          storeData.calibrationVersion = void 0;
-          saveStore(storeData);
-          import_fs5.default.writeFileSync(GZ_STORE_PATH, import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData), "utf8")));
-          import_fs5.default.renameSync(jfMigrationPath, `${jfMigrationPath}.applied`);
-          console.log(`[Store] Migra\xE7\xE3o ITBI JF preparada carregada: ${officialJfTransactions.length} registros, ${officialJfTransactions.filter((tx) => tx.isCompraEVenda === true).length} compras e vendas; \xE1reas artificiais removidas.`);
-        } catch (error) {
-          console.error("[Store] Migra\xE7\xE3o ITBI JF n\xE3o foi aplicada; base atual preservada e arquivo mantido:", error);
-        }
-      }
-      if (storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
-        storeData.itbiTransactions = hydrateItbiAddressPoints(storeData.itbiTransactions);
-        configureNeighborhoods(storeData.itbiTransactions);
-      }
-      if (storeData.users.length > 0 && !storeData.users[0].role) {
-        storeData.users[0].role = "admin";
-      }
-      if (storeData.auctions) {
-        let restoredCaixa = 0;
-        storeData.auctions.forEach((a) => {
-          if (a.origin === "caixa_radar") a.origin = "caixa";
-        });
-        let normalizedCaixaCount = 0;
-        storeData.auctions.forEach((a) => {
-          const isCaixa = a.origin === "caixa" || a.origin === "caixa_radar" || a.id && a.id.startsWith("auc-caixa-");
-          if (isCaixa) {
-            const desc = a.description || "";
-            const mMatch = desc.match(/Modalidade:\s*([^.]+)/i);
-            const currentMode = a.saleMode === "Venda Online Caixa" ? "" : a.saleMode;
-            const normMode = normalizeCaixaSaleMode(mMatch?.[1] || currentMode, desc);
-            if (normMode) a.saleMode = normMode;
-            a.modalidadeCaixa = normalizeCaixaModality(a.saleMode || mMatch?.[1] || desc || a.title);
-            normalizedCaixaCount++;
-          }
-          if (isCaixa && a.ingestionStatus === "expirado_por_data") {
-            a.ingestionStatus = "ativo";
-            a.precisa_revisao = false;
-            a.availability = {
-              state: "active",
-              status: "ativo",
-              url: a.auctionLink || "",
-              checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
-              reason: "Im\xF3vel Caixa em modalidade cont\xEDnua"
-            };
-            restoredCaixa++;
-          }
-        });
-        if (normalizedCaixaCount > 0) {
-          console.log(`[Store] Normalizadas ${normalizedCaixaCount} modalidades can\xF4nicas Caixa com sucesso.`);
-        }
-        const copacabanaLot = storeData.auctions.find((a) => a.id === "auc-caixa-1444423286326" || a.address && /princesa\s*isabel/i.test(a.address) && /412/i.test(a.address));
-        if (copacabanaLot) {
-          copacabanaLot.vendaBaixaPrice = 682244;
-          copacabanaLot.vendaMediaPrice = 682244;
-          copacabanaLot.estimatedValue = 758049;
-          copacabanaLot.pendingCondoCost = 0;
-          copacabanaLot.pendingDebts = 0;
-          copacabanaLot.custoCarregamentoEstimado = 11371;
-          copacabanaLot.calculatedProfit = 88846;
-          copacabanaLot.calculatedRoi = 14.97;
-        }
-        const initialCount = storeData.auctions.length;
-        const nonPropTerms = ["ferramenta", "torno mec", "sucata", "trator", "veiculo", "ve\xEDculo", "motocicleta", "caminhao", "caminh\xE3o", "automovel", "autom\xF3vel", "pe\xE7as automotivas", "armario em aco", "arm\xE1rio em a\xE7o", "inversor solar"];
-        storeData.auctions.forEach((a) => {
-          const t = (a.title || "").toLowerCase();
-          const realEstate = /apartamento|casa|terreno|gleba|loja|sala|cobertura|galp[aã]o|pr[eé]dio|im[oó]ve(?:l|is)|posto|comercial/.test(t);
-          const actual = declaredAuctionLocation(a);
-          const reason = !isAllowedTargetCity(a.city, a.state) ? "fora_das_cidades_configuradas" : actual && (normalize2(actual.city) !== normalize2(a.city) || actual.state !== a.state) ? "localidade_divergente_do_detalhe" : /^(auc-port-|auc-jud-|auc-ext-)/.test(a.id || "") ? "registro_legado_sem_evidencia" : !realEstate && nonPropTerms.some((term) => t.includes(term)) ? "lote_nao_imobiliario" : isExpiredAuction(a) ? "leilao_encerrado_ou_expirado" : "";
-          if (reason) {
-            if (reason === "leilao_encerrado_ou_expirado" && !["closed", "removed"].includes(a.availability?.state || "")) {
-              a.ingestionStatus = "expirado_por_data";
-              a.availability = {
-                state: "closed",
-                status: "expirado_por_data",
-                url: a.auctionLink || "",
-                checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
-                reason: "Todas as rodadas do leil\xE3o j\xE1 transcorreram"
-              };
-            } else if (reason !== "leilao_encerrado_ou_expirado") {
-              a.ingestionStatus = "quarentena_extracao";
-              quarantine(a, [reason]);
-            }
-          }
-        });
-        storeData.auctions.forEach((a) => {
-          const canon = getCanonicalTargetCity(a.city, a.state);
-          if (canon) {
-            a.city = canon.city;
-            a.state = canon.state;
-          }
-          if (a.description) {
-            const cnjMatch = a.description.match(/\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/);
-            if (cnjMatch && (!a.processNumber || a.processNumber.includes("Edital_Caixa"))) {
-              a.processNumber = `Processo n\xBA ${cnjMatch[1]}`;
-            }
-          }
-        });
-        if (storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
-          buildItbiStreetCoordsIndex(storeData.itbiTransactions);
-        }
-        const beforePortals = storeData.auctions.length;
-        storeData.auctions = storeData.auctions.filter((a) => {
-          if (a.portalName === "Chaves na M\xE3o") return false;
-          if (a.origin === "portal" && (a.propertyType === "Terreno" || a.title && /\b(terreno|lote|gleba)\b/i.test(a.title))) {
-            return false;
-          }
-          if (a.id && /rent-.*-21\d\d/.test(a.id) || a.auctionLink && /-\d{4}\/?$/.test(a.auctionLink) || a.auctionLink && a.auctionLink.includes("rio de janeiro-21") || a.auctionLink && a.auctionLink.includes("/21dd/") || a.id && /-(21\d\d)$/.test(a.id)) {
-            return false;
-          }
-          return true;
-        });
-        storeData.auctions.forEach((a) => {
-          if (a.id === "auc-imovelweb-3046698366") {
-            a.title = "Galp\xE3o Comercial com 469m\xB2 em PAVUNA";
-            a.sizeSqm = 469;
-            a.propertyType = "Comercial";
-          } else if (a.id === "auc-imovelweb-3023710564") {
-            a.title = "Casa com 8 quartos, 450m\xB2 em PAVUNA";
-            a.sizeSqm = 450;
-            a.propertyType = "Casa";
-          } else if (a.id === "auc-vivareal-2886847681") {
-            a.title = "Im\xF3vel Comercial com 800m\xB2 em PAVUNA";
-            a.sizeSqm = 800;
-            a.propertyType = "Comercial";
-          } else if (a.id === "auc-imovelweb-3018687295" || a.id === "auc-imovelweb-3019950824") {
-            a.title = "Casa com 2 quartos, 82m\xB2 em PAVUNA";
-            a.sizeSqm = 82;
-            a.propertyType = "Casa";
-          }
-        });
-        let recalibratedPortals = 0;
-        storeData.auctions.forEach((a) => {
-          if (a.origin === "portal") {
-            if (!a.lat || !a.lng) {
-              const proj = projectStreetCoordinates(a.state, a.city, a.neighborhood, a.street || a.address);
-              if (proj && Number.isFinite(proj.lat) && Number.isFinite(proj.lng)) {
-                a.lat = proj.lat;
-                a.lng = proj.lng;
-                a.status_geocodificacao = a.status_geocodificacao || "INTERPOLACAO_RUA";
-              }
-            }
-            if (a.neighborhood) {
-              const size = a.sizeSqm || 60;
-              let effectiveArea = size;
-              if ((a.propertyType === "Apartamento" || !a.propertyType) && size > 120) {
-                effectiveArea = 120 + (size - 120) * 0.4;
-              } else if (/casa|sobrado/i.test(a.propertyType || "") && size > 150) {
-                effectiveArea = 150 + (size - 150) * 0.5;
-              }
-              const realM2 = getNeighborhoodPortalM2(a.city || "Rio de Janeiro", a.state || "RJ", a.neighborhood, storeData.itbiTransactions, a.propertyType, size);
-              if (realM2 && realM2 > 1e3) {
-                a.m2_referencia_bairro = realM2;
-                a.m2ReferenciaBairro = realM2;
-                const preco = a.precoAnunciado || a.auctionPrice || a.firstAuctionValue || 0;
-                a.m2Anunciado = Math.round(preco / (size || 1));
-                const expectedEst = Math.round(effectiveArea * realM2);
-                const isValuationInflated = !a.estimatedValue || a.estimatedValue <= 0 || a.estimatedValue === Math.round(size * 5833) || a.estimatedValue > expectedEst * 1.15 || size > 120 && a.estimatedValue > expectedEst || a.propertyType === "Casa" && a.estimatedValue > size * 9e3 && realM2 < 8e3;
-                if (isValuationInflated) {
-                  a.estimatedValue = expectedEst;
-                  a.vendaBaixaPrice = Math.round(expectedEst * 0.9);
-                  a.vendaMediaPrice = a.vendaBaixaPrice;
-                  recalibratedPortals++;
-                } else if (!a.vendaBaixaPrice || a.vendaBaixaPrice <= 0 || a.vendaBaixaPrice === Math.round(size * 5833)) {
-                  a.vendaBaixaPrice = Math.round(a.estimatedValue * 0.9);
-                  a.vendaMediaPrice = a.vendaBaixaPrice;
-                }
-                a.valorMercadoEstimado = a.estimatedValue;
-                const streetName = a.street || (a.address ? a.address.split(",")[0].trim() : void 0);
-                const morada = getMoradaVirtualBenchmark(streetName || a.address, a.city, a.state, a.propertyType, a.neighborhood);
-                if (morada && morada.m2 > 0) {
-                  a.moradaM2 = morada.m2;
-                  a.moradaVirtualM2 = morada.m2;
-                  a.streetPortalAvgSqm = morada.m2;
-                  a.m2MercadoPortal = morada.m2;
-                  a.portalSampleCount = morada.sampleCount;
-                  a.portalStreetUrl = morada.streetUrl;
-                  a.fontePortal = "Morada Virtual";
-                }
-                if (a.transactionType === "aluguel") {
-                  const rent = a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0;
-                  const condo = a.valorCondominio || 0;
-                  const iptu = a.valorIptu || 0;
-                  const taxas = a.taxasServico || a.outrasTaxas || 0;
-                  const totalTaxas = condo + iptu + taxas;
-                  const totalPackage = a.totalRentalPackage || rent + totalTaxas;
-                  a.taxasServico = taxas;
-                  a.outrasTaxas = taxas;
-                  a.totalTaxas = totalTaxas;
-                  a.totalRentalPackage = totalPackage;
-                  a.pacoteMoradiaTotal = totalPackage;
-                  const mediaCalculadora = Math.round(a.valorMercadoEstimado * 55e-4);
-                  a.mediaLocacaoCalculadora = mediaCalculadora;
-                  const rentDiffPct = mediaCalculadora > 0 ? Math.round((rent - mediaCalculadora) / mediaCalculadora * 100) : 0;
-                  a.aluguelDiferencaPct = rentDiffPct;
-                  a.vereditoLocacao = rentDiffPct <= -10 ? "barato" : rentDiffPct >= 10 ? "caro" : "justo";
-                  a.oportunidadeAbaixoMercado = rentDiffPct <= -10;
-                  a.descontoMercadoPct = rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0;
-                  a.calculatedProfit = Math.max(0, mediaCalculadora - rent) * 12;
-                  a.calculatedRoi = a.valorMercadoEstimado > 0 ? Number((rent * 12 / a.valorMercadoEstimado * 100).toFixed(2)) : 0;
-                } else {
-                  const itbi = a.itbiCost ?? Math.round(preco * 0.03);
-                  const registry = a.notaryCost ?? Math.round(preco * 0.02);
-                  const repair = a.estimatedRepair !== void 0 ? a.estimatedRepair : Math.round(preco * 0.05);
-                  const totalCost = preco + itbi + registry + repair + (a.pendingDebts || 0) + (a.valorCondominio || 0) + (a.valorIptu || 0);
-                  const flipExit = a.vendaBaixaPrice || a.estimatedValue || 0;
-                  if (flipExit > totalCost) {
-                    a.calculatedProfit = Math.round(flipExit - totalCost);
-                    a.calculatedRoi = totalCost > 0 ? Number((a.calculatedProfit / totalCost * 100).toFixed(2)) : 0;
-                    a.oportunidadeAbaixoMercado = true;
-                  } else {
-                    a.calculatedProfit = 0;
-                    a.calculatedRoi = 0;
-                    a.oportunidadeAbaixoMercado = false;
-                  }
-                  const diff = a.estimatedValue - preco;
-                  a.descontoMercadoPct = a.estimatedValue > 0 && diff > 0 ? Math.round(diff / a.estimatedValue * 100) : 0;
-                }
-                if (a.id === "auc-imovelweb-3032287414" || a.address && /sao miguel|são miguel/i.test(a.address) && a.neighborhood === "Tijuca" && a.propertyType === "Casa") {
-                  a.m2ReferenciaBairro = 3787;
-                  a.m2_referencia_bairro = 3787;
-                  a.estimatedValue = 1560600;
-                  a.valorMercadoEstimado = 1560600;
-                  a.vendaBaixaPrice = 1404600;
-                  a.vendaMediaPrice = 1404600;
-                  a.itbiCost = 19500;
-                  a.notaryCost = 9820;
-                  a.estimatedRepair = 32500;
-                  a.pendingDebts = 0;
-                  a.custoCarregamentoEstimado = 0;
-                  a.calculatedProfit = 551911;
-                  a.calculatedRoi = 72.02;
-                  a.moradaM2 = 5200;
-                  a.moradaVirtualM2 = 5200;
-                  a.streetPortalAvgSqm = 5200;
-                  a.m2MercadoPortal = 5200;
-                  a.portalSampleCount = 823;
-                  a.portalStreetUrl = "https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
-                  a.fontePortal = "Morada Virtual";
-                }
-                recalibratedPortals++;
-              }
-            }
-          }
-        });
-        if (storeData.auctions.length !== beforePortals || recalibratedPortals > 0) {
-          console.log(`[Store] Portais atualizados: ${beforePortals - storeData.auctions.length} removidos (Chaves na M\xE3o / Terrenos), ${recalibratedPortals} recalibrados com m\xB2 oficial pericial.`);
-          saveStore(storeData);
-        }
-        if (storeData.auctions.length !== initialCount) {
-          console.log(`[Store] Purge de seguran\xE7a: ${initialCount - storeData.auctions.length} leil\xF5es inv\xE1lidos/mock/fora das comarcas foram eliminados da base.`);
-          saveStore(storeData);
-        }
-      }
-      const PERIPHERAL_BAIRROS_SET = /* @__PURE__ */ new Set(["COSMOS", "GUARATIBA", "SANTA CRUZ", "CAMPO GRANDE", "INHOAIBA"]);
-      storeData.itbiTransactions = storeData.itbiTransactions.filter((t) => !/-sim-/.test(t.id)).filter((t) => {
-        const bUpper = String(t.neighborhood || "").toUpperCase().trim();
-        if (PERIPHERAL_BAIRROS_SET.has(bUpper) && Number(t.unitValueSqm) > 7e3) {
-          return false;
-        }
-        return true;
-      });
-      const STORE_CALIBRATION_VERSION = "v20_caixa_modality_separation";
-      const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
-      const isMemoryConstrainedRender = process.env.RENDER === "true";
-      if (needsRecalibration && isMemoryConstrainedRender) {
-        const jfCalibrationVersion = "jf_v30_four_tier_per_sqm";
-        if (storeData.jfCalibrationVersion !== jfCalibrationVersion && storeData.auctions?.length && storeData.itbiTransactions?.length) {
-          console.log("[Store] Corrigindo os valores ITBI de Juiz de Fora em lote seletivo para n\xE3o manter gabaritos com unidade incorreta.");
-          const indexes = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
-          const isJuizDeForaAuction = (auction) => normalizeString2(auction.city || "").includes("juiz de fora");
-          let recalculatedJfAuctions = 0;
-          storeData.auctions = storeData.auctions.map((auction) => {
-            if (!isJuizDeForaAuction(auction)) return auction;
-            recalculatedJfAuctions++;
-            return recalculateAuctionWithIndex(
-              auction,
-              indexes.avgSqmMap,
-              indexes.streetAvgSqmMap,
-              indexes.volMap,
-              indexes.neighCityMap,
-              indexes.cityAvgSqmMap,
-              indexes.stateAvgSqmMap,
-              indexes.cityStreetToNeighMap,
-              indexes.streetNumberNeighMap,
-              indexes.neighMap,
-              indexes.jfCityMap,
-              indexes.jfAreaModelByType
-            );
-          });
-          storeData.jfCalibrationVersion = jfCalibrationVersion;
-          void saveStoreAsync(storeData).then(() => {
-            console.log(`[Store] Recalibrados e persistidos ${recalculatedJfAuctions} im\xF3veis de Juiz de Fora.`);
-          }).catch((error) => console.error("[Store] Falha ao persistir recalibra\xE7\xE3o de Juiz de Fora:", error));
-        }
-        console.log("[Store] Recalibra\xE7\xE3o integral das demais cidades segue adiada no Render Free para limitar mem\xF3ria; Juiz de Fora recebeu a corre\xE7\xE3o espec\xEDfica.");
-      } else if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
-        console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com corre\xE7\xE3o de rodadas ativas e saneamento de \xE1rea condominial (v22)...`);
-        const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-        storeData.auctions.forEach((a) => {
-          if ((a.propertyType === "Apartamento" || a.propertyType === "Comercial") && a.sizeSqm > 800) {
-            if (a.description) {
-              const audit = auditOfficialArea({
-                text: a.description,
-                title: a.title || "",
-                propertyType: a.propertyType,
-                url: a.auctionLink || "",
-                extractedValue: a.sizeSqm
-              });
-              if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
-                a.sizeSqm = Math.round(audit.selected.value * 100) / 100;
-                a.areaAudit = audit;
-              }
-            }
-          }
-          if (!(a.auctionPrice > 0) && a.priceVerified !== false) {
-            const rounds = extractAuctionRoundsAndPrices((a.description || "") + " " + (a.title || ""), today);
-            if (rounds.activePrice > 0) {
-              a.auctionPrice = rounds.activePrice;
-              a.priceVerified = true;
-              if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
-              if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
-              if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
-              if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
-            }
-          }
-        });
-        const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
-        storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType));
-        storeData.calibrationVersion = STORE_CALIBRATION_VERSION;
-        storeData.jfCalibrationVersion = "jf_v30_four_tier_per_sqm";
-        saveStore(storeData);
-        try {
-          const compressed = import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData)));
-          import_fs5.default.writeFileSync(GZ_STORE_PATH, compressed);
-          console.log("[Store] data_store.json.gz atualizado com rodadas ativas e saneamento de \xE1rea condominial (v22)!");
-        } catch (gzErr) {
-          console.error("[Store] Erro ao salvar data_store.json.gz:", gzErr);
-        }
-        console.log("[Store] Todos os leil\xF5es calibrados e recalculados com sucesso!");
-      } else {
-        console.log(`[Store] Leil\xF5es prontos e calibrados (${storeData.auctions?.length || 0} registros). Inicializa\xE7\xE3o instant\xE2nea!`);
-      }
-    } catch (e) {
-      console.error("Error reading data_store.json, resetting to initials", e);
+      console.log(`[Store] Base descompactada e carregada com sucesso (${parsed.auctions?.length || 0} leil\xF5es, ${parsed.itbiTransactions?.length || 0} ITBI)!`);
+    } catch (gzErr) {
+      console.error("[Store] Falha ao carregar data_store.json.gz:", gzErr);
     }
+  }
+  if (parsed) {
+    storeData.auctions = parsed.auctions || storeData.auctions;
+    storeData.itbiTransactions = parsed.itbiTransactions || storeData.itbiTransactions;
+    storeData.users = parsed.users || [];
+    storeData.sessions = parsed.sessions || [];
+    storeData.accessCodes = parsed.accessCodes || [];
+    storeData.savedAnalyses = parsed.savedAnalyses || [];
+    storeData.arrematacoes = parsed.arrematacoes || [];
+    storeData.itbiStats = parsed.itbiStats || [];
+    storeData.calibrationVersion = parsed.calibrationVersion;
+    storeData.jfCalibrationVersion = parsed.jfCalibrationVersion;
+    parsed = null;
+  }
+  const jfMigrationPath = import_path4.default.join(process.cwd(), "jf_itbi_migration.json");
+  if (import_fs5.default.existsSync(jfMigrationPath)) {
+    try {
+      const migration = JSON.parse(import_fs5.default.readFileSync(jfMigrationPath, "utf8"));
+      const officialJfTransactions = Array.isArray(migration.itbiTransactions) ? migration.itbiTransactions : [];
+      if (officialJfTransactions.length < 1e4 || officialJfTransactions.filter((tx) => tx.isCompraEVenda === true).length < 8e3) {
+        throw new Error("Base preparada de Juiz de Fora n\xE3o passou pelo m\xEDnimo de integridade; migra\xE7\xE3o preservada para revis\xE3o.");
+      }
+      const isJf = (tx) => String(tx.city || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("juiz de fora") || tx.id.startsWith("itbi-jf");
+      storeData.itbiTransactions = [...storeData.itbiTransactions.filter((tx) => !isJf(tx)), ...officialJfTransactions];
+      if (Array.isArray(migration.itbiStats)) storeData.itbiStats = migration.itbiStats;
+      storeData.calibrationVersion = void 0;
+      saveStore(storeData);
+      import_fs5.default.writeFileSync(GZ_STORE_PATH, import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData), "utf8")));
+      import_fs5.default.renameSync(jfMigrationPath, `${jfMigrationPath}.applied`);
+      console.log(`[Store] Migra\xE7\xE3o ITBI JF preparada carregada: ${officialJfTransactions.length} registros, ${officialJfTransactions.filter((tx) => tx.isCompraEVenda === true).length} compras e vendas; \xE1reas artificiais removidas.`);
+    } catch (error) {
+      console.error("[Store] Migra\xE7\xE3o ITBI JF n\xE3o foi aplicada; base atual preservada e arquivo mantido:", error);
+    }
+  }
+  if (storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+    storeData.itbiTransactions = hydrateItbiAddressPoints(storeData.itbiTransactions);
+    configureNeighborhoods(storeData.itbiTransactions);
+  }
+  if (storeData.users.length > 0 && !storeData.users[0].role) {
+    storeData.users[0].role = "admin";
+  }
+  if (storeData.auctions) {
+    let restoredCaixa = 0;
+    storeData.auctions.forEach((a) => {
+      if (a.origin === "caixa_radar") a.origin = "caixa";
+    });
+    let normalizedCaixaCount = 0;
+    storeData.auctions.forEach((a) => {
+      const isCaixa = a.origin === "caixa" || a.origin === "caixa_radar" || a.id && a.id.startsWith("auc-caixa-");
+      if (isCaixa) {
+        const desc = a.description || "";
+        const mMatch = desc.match(/Modalidade:\s*([^.]+)/i);
+        const currentMode = a.saleMode === "Venda Online Caixa" ? "" : a.saleMode;
+        const normMode = normalizeCaixaSaleMode(mMatch?.[1] || currentMode, desc);
+        if (normMode) a.saleMode = normMode;
+        a.modalidadeCaixa = normalizeCaixaModality(a.saleMode || mMatch?.[1] || desc || a.title);
+        normalizedCaixaCount++;
+      }
+      if (isCaixa && a.ingestionStatus === "expirado_por_data") {
+        a.ingestionStatus = "ativo";
+        a.precisa_revisao = false;
+        a.availability = {
+          state: "active",
+          status: "ativo",
+          url: a.auctionLink || "",
+          checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          reason: "Im\xF3vel Caixa em modalidade cont\xEDnua"
+        };
+        restoredCaixa++;
+      }
+    });
+    if (normalizedCaixaCount > 0) {
+      console.log(`[Store] Normalizadas ${normalizedCaixaCount} modalidades can\xF4nicas Caixa com sucesso.`);
+    }
+    const copacabanaLot = storeData.auctions.find((a) => a.id === "auc-caixa-1444423286326" || a.address && /princesa\s*isabel/i.test(a.address) && /412/i.test(a.address));
+    if (copacabanaLot) {
+      copacabanaLot.vendaBaixaPrice = 682244;
+      copacabanaLot.vendaMediaPrice = 682244;
+      copacabanaLot.estimatedValue = 758049;
+      copacabanaLot.pendingCondoCost = 0;
+      copacabanaLot.pendingDebts = 0;
+      copacabanaLot.custoCarregamentoEstimado = 11371;
+      copacabanaLot.calculatedProfit = 88846;
+      copacabanaLot.calculatedRoi = 14.97;
+    }
+    const initialCount = storeData.auctions.length;
+    const nonPropTerms = ["ferramenta", "torno mec", "sucata", "trator", "veiculo", "ve\xEDculo", "motocicleta", "caminhao", "caminh\xE3o", "automovel", "autom\xF3vel", "pe\xE7as automotivas", "armario em aco", "arm\xE1rio em a\xE7o", "inversor solar"];
+    storeData.auctions.forEach((a) => {
+      const t = (a.title || "").toLowerCase();
+      const realEstate = /apartamento|casa|terreno|gleba|loja|sala|cobertura|galp[aã]o|pr[eé]dio|im[oó]ve(?:l|is)|posto|comercial/.test(t);
+      const actual = declaredAuctionLocation(a);
+      const reason = !isAllowedTargetCity(a.city, a.state) ? "fora_das_cidades_configuradas" : actual && (normalize2(actual.city) !== normalize2(a.city) || actual.state !== a.state) ? "localidade_divergente_do_detalhe" : /^(auc-port-|auc-jud-|auc-ext-)/.test(a.id || "") ? "registro_legado_sem_evidencia" : !realEstate && nonPropTerms.some((term) => t.includes(term)) ? "lote_nao_imobiliario" : isExpiredAuction(a) ? "leilao_encerrado_ou_expirado" : "";
+      if (reason) {
+        if (reason === "leilao_encerrado_ou_expirado" && !["closed", "removed"].includes(a.availability?.state || "")) {
+          a.ingestionStatus = "expirado_por_data";
+          a.availability = {
+            state: "closed",
+            status: "expirado_por_data",
+            url: a.auctionLink || "",
+            checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+            reason: "Todas as rodadas do leil\xE3o j\xE1 transcorreram"
+          };
+        } else if (reason !== "leilao_encerrado_ou_expirado") {
+          a.ingestionStatus = "quarentena_extracao";
+          quarantine(a, [reason]);
+        }
+      }
+    });
+    storeData.auctions.forEach((a) => {
+      const canon = getCanonicalTargetCity(a.city, a.state);
+      if (canon) {
+        a.city = canon.city;
+        a.state = canon.state;
+      }
+      if (a.description) {
+        const cnjMatch = a.description.match(/\b(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\b/);
+        if (cnjMatch && (!a.processNumber || a.processNumber.includes("Edital_Caixa"))) {
+          a.processNumber = `Processo n\xBA ${cnjMatch[1]}`;
+        }
+      }
+    });
+    if (storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+      buildItbiStreetCoordsIndex(storeData.itbiTransactions);
+    }
+    const beforePortals = storeData.auctions.length;
+    storeData.auctions = storeData.auctions.filter((a) => {
+      if (a.portalName === "Chaves na M\xE3o") return false;
+      if (a.origin === "portal" && (a.propertyType === "Terreno" || a.title && /\b(terreno|lote|gleba)\b/i.test(a.title))) {
+        return false;
+      }
+      if (a.id && /rent-.*-21\d\d/.test(a.id) || a.auctionLink && /-\d{4}\/?$/.test(a.auctionLink) || a.auctionLink && a.auctionLink.includes("rio de janeiro-21") || a.auctionLink && a.auctionLink.includes("/21dd/") || a.id && /-(21\d\d)$/.test(a.id)) {
+        return false;
+      }
+      return true;
+    });
+    storeData.auctions.forEach((a) => {
+      if (a.id === "auc-imovelweb-3046698366") {
+        a.title = "Galp\xE3o Comercial com 469m\xB2 em PAVUNA";
+        a.sizeSqm = 469;
+        a.propertyType = "Comercial";
+      } else if (a.id === "auc-imovelweb-3023710564") {
+        a.title = "Casa com 8 quartos, 450m\xB2 em PAVUNA";
+        a.sizeSqm = 450;
+        a.propertyType = "Casa";
+      } else if (a.id === "auc-vivareal-2886847681") {
+        a.title = "Im\xF3vel Comercial com 800m\xB2 em PAVUNA";
+        a.sizeSqm = 800;
+        a.propertyType = "Comercial";
+      } else if (a.id === "auc-imovelweb-3018687295" || a.id === "auc-imovelweb-3019950824") {
+        a.title = "Casa com 2 quartos, 82m\xB2 em PAVUNA";
+        a.sizeSqm = 82;
+        a.propertyType = "Casa";
+      }
+    });
+    let recalibratedPortals = 0;
+    storeData.auctions.forEach((a) => {
+      if (a.origin === "portal") {
+        if (!a.lat || !a.lng) {
+          const proj = projectStreetCoordinates(a.state, a.city, a.neighborhood, a.street || a.address);
+          if (proj && Number.isFinite(proj.lat) && Number.isFinite(proj.lng)) {
+            a.lat = proj.lat;
+            a.lng = proj.lng;
+            a.status_geocodificacao = a.status_geocodificacao || "INTERPOLACAO_RUA";
+          }
+        }
+        if (a.neighborhood) {
+          const size = a.sizeSqm || 60;
+          let effectiveArea = size;
+          if ((a.propertyType === "Apartamento" || !a.propertyType) && size > 120) {
+            effectiveArea = 120 + (size - 120) * 0.4;
+          } else if (/casa|sobrado/i.test(a.propertyType || "") && size > 150) {
+            effectiveArea = 150 + (size - 150) * 0.5;
+          }
+          const realM2 = getNeighborhoodPortalM2(a.city || "Rio de Janeiro", a.state || "RJ", a.neighborhood, storeData.itbiTransactions, a.propertyType, size);
+          if (realM2 && realM2 > 1e3) {
+            a.m2_referencia_bairro = realM2;
+            a.m2ReferenciaBairro = realM2;
+            const preco = a.precoAnunciado || a.auctionPrice || a.firstAuctionValue || 0;
+            a.m2Anunciado = Math.round(preco / (size || 1));
+            const expectedEst = Math.round(effectiveArea * realM2);
+            const isValuationInflated = !a.estimatedValue || a.estimatedValue <= 0 || a.estimatedValue === Math.round(size * 5833) || a.estimatedValue > expectedEst * 1.15 || size > 120 && a.estimatedValue > expectedEst || a.propertyType === "Casa" && a.estimatedValue > size * 9e3 && realM2 < 8e3;
+            if (isValuationInflated) {
+              a.estimatedValue = expectedEst;
+              a.vendaBaixaPrice = Math.round(expectedEst * 0.9);
+              a.vendaMediaPrice = a.vendaBaixaPrice;
+              recalibratedPortals++;
+            } else if (!a.vendaBaixaPrice || a.vendaBaixaPrice <= 0 || a.vendaBaixaPrice === Math.round(size * 5833)) {
+              a.vendaBaixaPrice = Math.round(a.estimatedValue * 0.9);
+              a.vendaMediaPrice = a.vendaBaixaPrice;
+            }
+            a.valorMercadoEstimado = a.estimatedValue;
+            const streetName = a.street || (a.address ? a.address.split(",")[0].trim() : void 0);
+            const morada = getMoradaVirtualBenchmark(streetName || a.address, a.city, a.state, a.propertyType, a.neighborhood);
+            if (morada && morada.m2 > 0) {
+              a.moradaM2 = morada.m2;
+              a.moradaVirtualM2 = morada.m2;
+              a.streetPortalAvgSqm = morada.m2;
+              a.m2MercadoPortal = morada.m2;
+              a.portalSampleCount = morada.sampleCount;
+              a.portalStreetUrl = morada.streetUrl;
+              a.fontePortal = "Morada Virtual";
+            }
+            if (a.transactionType === "aluguel") {
+              const rent = a.monthlyRent || a.precoAnunciado || a.auctionPrice || 0;
+              const condo = a.valorCondominio || 0;
+              const iptu = a.valorIptu || 0;
+              const taxas = a.taxasServico || a.outrasTaxas || 0;
+              const totalTaxas = condo + iptu + taxas;
+              const totalPackage = a.totalRentalPackage || rent + totalTaxas;
+              a.taxasServico = taxas;
+              a.outrasTaxas = taxas;
+              a.totalTaxas = totalTaxas;
+              a.totalRentalPackage = totalPackage;
+              a.pacoteMoradiaTotal = totalPackage;
+              const mediaCalculadora = Math.round(a.valorMercadoEstimado * 55e-4);
+              a.mediaLocacaoCalculadora = mediaCalculadora;
+              const rentDiffPct = mediaCalculadora > 0 ? Math.round((rent - mediaCalculadora) / mediaCalculadora * 100) : 0;
+              a.aluguelDiferencaPct = rentDiffPct;
+              a.vereditoLocacao = rentDiffPct <= -10 ? "barato" : rentDiffPct >= 10 ? "caro" : "justo";
+              a.oportunidadeAbaixoMercado = rentDiffPct <= -10;
+              a.descontoMercadoPct = rentDiffPct <= -10 ? Math.abs(rentDiffPct) : 0;
+              a.calculatedProfit = Math.max(0, mediaCalculadora - rent) * 12;
+              a.calculatedRoi = a.valorMercadoEstimado > 0 ? Number((rent * 12 / a.valorMercadoEstimado * 100).toFixed(2)) : 0;
+            } else {
+              const itbi = a.itbiCost ?? Math.round(preco * 0.03);
+              const registry = a.notaryCost ?? Math.round(preco * 0.02);
+              const repair = a.estimatedRepair !== void 0 ? a.estimatedRepair : Math.round(preco * 0.05);
+              const totalCost = preco + itbi + registry + repair + (a.pendingDebts || 0) + (a.valorCondominio || 0) + (a.valorIptu || 0);
+              const flipExit = a.vendaBaixaPrice || a.estimatedValue || 0;
+              if (flipExit > totalCost) {
+                a.calculatedProfit = Math.round(flipExit - totalCost);
+                a.calculatedRoi = totalCost > 0 ? Number((a.calculatedProfit / totalCost * 100).toFixed(2)) : 0;
+                a.oportunidadeAbaixoMercado = true;
+              } else {
+                a.calculatedProfit = 0;
+                a.calculatedRoi = 0;
+                a.oportunidadeAbaixoMercado = false;
+              }
+              const diff = a.estimatedValue - preco;
+              a.descontoMercadoPct = a.estimatedValue > 0 && diff > 0 ? Math.round(diff / a.estimatedValue * 100) : 0;
+            }
+            if (a.id === "auc-imovelweb-3032287414" || a.address && /sao miguel|são miguel/i.test(a.address) && a.neighborhood === "Tijuca" && a.propertyType === "Casa") {
+              a.m2ReferenciaBairro = 3787;
+              a.m2_referencia_bairro = 3787;
+              a.estimatedValue = 1560600;
+              a.valorMercadoEstimado = 1560600;
+              a.vendaBaixaPrice = 1404600;
+              a.vendaMediaPrice = 1404600;
+              a.itbiCost = 19500;
+              a.notaryCost = 9820;
+              a.estimatedRepair = 32500;
+              a.pendingDebts = 0;
+              a.custoCarregamentoEstimado = 0;
+              a.calculatedProfit = 551911;
+              a.calculatedRoi = 72.02;
+              a.moradaM2 = 5200;
+              a.moradaVirtualM2 = 5200;
+              a.streetPortalAvgSqm = 5200;
+              a.m2MercadoPortal = 5200;
+              a.portalSampleCount = 823;
+              a.portalStreetUrl = "https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
+              a.fontePortal = "Morada Virtual";
+            }
+            recalibratedPortals++;
+          }
+        }
+      }
+    });
+    if (storeData.auctions.length !== beforePortals || recalibratedPortals > 0) {
+      console.log(`[Store] Portais atualizados: ${beforePortals - storeData.auctions.length} removidos (Chaves na M\xE3o / Terrenos), ${recalibratedPortals} recalibrados com m\xB2 oficial pericial.`);
+      if (!process.env.RENDER) {
+        saveStore(storeData);
+      }
+    }
+    if (storeData.auctions.length !== initialCount) {
+      console.log(`[Store] Purge de seguran\xE7a: ${initialCount - storeData.auctions.length} leil\xF5es inv\xE1lidos/mock/fora das comarcas foram eliminados da base.`);
+      if (!process.env.RENDER) {
+        saveStore(storeData);
+      }
+    }
+  }
+  const PERIPHERAL_BAIRROS_SET = /* @__PURE__ */ new Set(["COSMOS", "GUARATIBA", "SANTA CRUZ", "CAMPO GRANDE", "INHOAIBA"]);
+  storeData.itbiTransactions = storeData.itbiTransactions.filter((t) => !/-sim-/.test(t.id)).filter((t) => {
+    const bUpper = String(t.neighborhood || "").toUpperCase().trim();
+    if (PERIPHERAL_BAIRROS_SET.has(bUpper) && Number(t.unitValueSqm) > 7e3) {
+      return false;
+    }
+    return true;
+  });
+  const STORE_CALIBRATION_VERSION = "v20_caixa_modality_separation";
+  const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
+  const isMemoryConstrainedRender = process.env.RENDER === "true";
+  if (needsRecalibration && isMemoryConstrainedRender) {
+    const jfCalibrationVersion = "jf_v30_four_tier_per_sqm";
+    if (storeData.jfCalibrationVersion !== jfCalibrationVersion && storeData.auctions?.length && storeData.itbiTransactions?.length) {
+      console.log("[Store] Corrigindo os valores ITBI de Juiz de Fora em lote seletivo para n\xE3o manter gabaritos com unidade incorreta.");
+      const indexes = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
+      const isJuizDeForaAuction = (auction) => normalizeString2(auction.city || "").includes("juiz de fora");
+      let recalculatedJfAuctions = 0;
+      storeData.auctions = storeData.auctions.map((auction) => {
+        if (!isJuizDeForaAuction(auction)) return auction;
+        recalculatedJfAuctions++;
+        return recalculateAuctionWithIndex(
+          auction,
+          indexes.avgSqmMap,
+          indexes.streetAvgSqmMap,
+          indexes.volMap,
+          indexes.neighCityMap,
+          indexes.cityAvgSqmMap,
+          indexes.stateAvgSqmMap,
+          indexes.cityStreetToNeighMap,
+          indexes.streetNumberNeighMap,
+          indexes.neighMap,
+          indexes.jfCityMap,
+          indexes.jfAreaModelByType
+        );
+      });
+      storeData.jfCalibrationVersion = jfCalibrationVersion;
+      void saveStoreAsync(storeData).then(() => {
+        console.log(`[Store] Recalibrados e persistidos ${recalculatedJfAuctions} im\xF3veis de Juiz de Fora.`);
+      }).catch((error) => console.error("[Store] Falha ao persistir recalibra\xE7\xE3o de Juiz de Fora:", error));
+    }
+    console.log("[Store] Recalibra\xE7\xE3o integral das demais cidades segue adiada no Render Free para limitar mem\xF3ria; Juiz de Fora recebeu a corre\xE7\xE3o espec\xEDfica.");
+  } else if (needsRecalibration && storeData.auctions && storeData.auctions.length > 0 && storeData.itbiTransactions && storeData.itbiTransactions.length > 0) {
+    console.log(`[Store] Calibrando ${storeData.auctions.length} leil\xF5es com corre\xE7\xE3o de rodadas ativas e saneamento de \xE1rea condominial (v22)...`);
+    const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    storeData.auctions.forEach((a) => {
+      if ((a.propertyType === "Apartamento" || a.propertyType === "Comercial") && a.sizeSqm > 800) {
+        if (a.description) {
+          const audit = auditOfficialArea({
+            text: a.description,
+            title: a.title || "",
+            propertyType: a.propertyType,
+            url: a.auctionLink || "",
+            extractedValue: a.sizeSqm
+          });
+          if (audit.selected && audit.selected.value > 0 && audit.selected.value <= 800) {
+            a.sizeSqm = Math.round(audit.selected.value * 100) / 100;
+            a.areaAudit = audit;
+          }
+        }
+      }
+      if (!(a.auctionPrice > 0) && a.priceVerified !== false) {
+        const rounds = extractAuctionRoundsAndPrices((a.description || "") + " " + (a.title || ""), today);
+        if (rounds.activePrice > 0) {
+          a.auctionPrice = rounds.activePrice;
+          a.priceVerified = true;
+          if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
+          if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
+          if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
+          if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
+        }
+      }
+    });
+    const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
+    storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType));
+    storeData.calibrationVersion = STORE_CALIBRATION_VERSION;
+    storeData.jfCalibrationVersion = "jf_v30_four_tier_per_sqm";
+    saveStore(storeData);
+    try {
+      const compressed = import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData)));
+      import_fs5.default.writeFileSync(GZ_STORE_PATH, compressed);
+      console.log("[Store] data_store.json.gz atualizado com rodadas ativas e saneamento de \xE1rea condominial (v22)!");
+    } catch (gzErr) {
+      console.error("[Store] Erro ao salvar data_store.json.gz:", gzErr);
+    }
+    console.log("[Store] Todos os leil\xF5es calibrados e recalculados com sucesso!");
   } else {
+    console.log(`[Store] Leil\xF5es prontos e calibrados (${storeData.auctions?.length || 0} registros). Inicializa\xE7\xE3o instant\xE2nea!`);
   }
   if (storeData.users.length > 0) {
     const firstUserId = storeData.users[0].id;
@@ -11249,6 +11242,10 @@ function sendAuctionResponse(req, res, payload) {
 var activeAsyncStoreSave = null;
 var deferredStoreSave = null;
 function saveStore(targetStore) {
+  if (process.env.RENDER || process.env.NODE_ENV === "production") {
+    void saveStoreAsync(targetStore);
+    return;
+  }
   if (activeAsyncStoreSave) {
     deferredStoreSave = targetStore;
     auctionCatalogResponseCache = null;
@@ -16504,9 +16501,24 @@ async function start() {
     });
     app.use(vite.middlewares);
   }
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${PORT}`);
+  const primaryPort = PORT;
+  app.listen(primaryPort, "0.0.0.0", () => {
+    console.log(`[Server] Marcus Assessoria & Garimpo iniciado com sucesso em http://localhost:${primaryPort}`);
   });
+  const secondaryPort = primaryPort === 1e4 ? 3e3 : primaryPort === 3e3 ? 1e4 : null;
+  if (secondaryPort) {
+    try {
+      const secServer = app.listen(secondaryPort, "0.0.0.0", () => {
+        console.log(`[Server] Listener secund\xE1rio ativo em http://localhost:${secondaryPort}`);
+      });
+      secServer.on("error", (err) => {
+        if (err.code !== "EADDRINUSE") {
+          console.warn(`[Server] Aviso listener secund\xE1rio na porta ${secondaryPort}:`, err.message);
+        }
+      });
+    } catch (_) {
+    }
+  }
 }
 start();
 // Annotate the CommonJS export names for ESM import in node:

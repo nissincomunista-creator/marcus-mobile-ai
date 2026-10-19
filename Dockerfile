@@ -16,6 +16,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 COPY package.json ./
 RUN npm install --omit=dev --legacy-peer-deps --no-audit --no-fund --no-package-lock --ignore-scripts
 COPY . .
-EXPOSE 3000
 EXPOSE 10000
-CMD ["node", "--max-old-space-size=450", "dist/server.cjs"]
+EXPOSE 3000
+CMD ["node", "--expose-gc", "--max-old-space-size=450", "dist/server.cjs"]
+
