@@ -20,5 +20,9 @@ export function correctDeclaredAuctionLocation<T extends {title?:string;address?
 
 export function cleanDivergentNotice(text?: string): string {
   if (!text) return '';
-  return text.replace(/\s*\((?:Edital|Caixa)\s+listou\s*(?:undefined)?\)/gi, '').trim();
+  const trimmed = text.trim();
+  if (/^Bairro Real:\s*[^()]+$/i.test(trimmed)) return '';
+  const cleaned = trimmed.replace(/\s*\((?:Edital|Caixa)\s+listou\s*(?:undefined)?\)/gi, '').trim();
+  if (/^Bairro Real:\s*[^()]+$/i.test(cleaned)) return '';
+  return cleaned;
 }

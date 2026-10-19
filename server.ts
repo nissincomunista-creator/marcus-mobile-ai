@@ -2384,12 +2384,12 @@ function recalculateAuctionWithIndex(
   // 2. Rua Noronha Torrezão (Niterói):
   //    Nº >= 340 pertence oficialmente ao bairro CUBANGO (Caixa lista Santa Rosa)
   const sourceLabel = (auc.origin === 'caixa' || auc.origin === 'caixa_radar') ? 'Caixa' : 'Edital';
-  const formatDivergentNotice = (realNeigh: string, origNeigh?: string): string => {
+  const formatDivergentNotice = (realNeigh: string, origNeigh?: string): string | undefined => {
     const cleanOrig = origNeigh?.trim();
     if (cleanOrig && cleanOrig.toLowerCase() !== realNeigh.toLowerCase()) {
       return `Bairro Real: ${realNeigh} (${sourceLabel} listou ${cleanOrig})`;
     }
-    return `Bairro Real: ${realNeigh}`;
+    return undefined;
   };
 
   if (rawStreet) {

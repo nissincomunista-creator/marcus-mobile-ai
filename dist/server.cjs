@@ -11878,7 +11878,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     if (cleanOrig && cleanOrig.toLowerCase() !== realNeigh.toLowerCase()) {
       return `Bairro Real: ${realNeigh} (${sourceLabel} listou ${cleanOrig})`;
     }
-    return `Bairro Real: ${realNeigh}`;
+    return void 0;
   };
   if (rawStreet) {
     const normSt2 = normalizeString2(rawStreet);
