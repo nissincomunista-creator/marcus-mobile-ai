@@ -10723,7 +10723,7 @@ function loadStore() {
   };
   const GZ_STORE_PATH = import_path4.default.join(process.cwd(), "data_store.json.gz");
   let parsed = null;
-  if (import_fs5.default.existsSync(STORE_PATH) && import_fs5.default.statSync(STORE_PATH).size >= 1e6) {
+  if (!process.env.RENDER && import_fs5.default.existsSync(STORE_PATH) && import_fs5.default.statSync(STORE_PATH).size >= 1e6) {
     try {
       console.log("[Store] Carregando base existente de data_store.json...");
       const content = import_fs5.default.readFileSync(STORE_PATH, "utf-8");
@@ -10734,14 +10734,10 @@ function loadStore() {
   }
   if (!parsed && import_fs5.default.existsSync(GZ_STORE_PATH)) {
     try {
-      console.log("[Store] Carregando base ultra-otimizada de data_store.json.gz (modo low-memory)...");
+      console.log("[Store] Carregando cat\xE1logo ultra-otimizado de data_store.json.gz...");
       let compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
       let decompressed = import_zlib.default.gunzipSync(compressed);
       compressed = null;
-      try {
-        import_fs5.default.writeFileSync(STORE_PATH, decompressed);
-      } catch (_) {
-      }
       let jsonStr = decompressed.toString("utf-8");
       decompressed = null;
       parsed = JSON.parse(jsonStr);
@@ -10752,14 +10748,14 @@ function loadStore() {
         } catch (_) {
         }
       }
-      console.log(`[Store] Base descompactada e carregada com sucesso (${parsed.auctions?.length || 0} leil\xF5es, ${parsed.itbiTransactions?.length || 0} ITBI)!`);
+      console.log(`[Store] Cat\xE1logo de leil\xF5es carregado com sucesso (${parsed.auctions?.length || 0} leil\xF5es)!`);
     } catch (gzErr) {
       console.error("[Store] Falha ao carregar data_store.json.gz:", gzErr);
     }
   }
   if (parsed) {
     storeData.auctions = parsed.auctions || storeData.auctions;
-    storeData.itbiTransactions = parsed.itbiTransactions || storeData.itbiTransactions;
+    storeData.itbiTransactions = parsed.itbiTransactions || [];
     storeData.users = parsed.users || [];
     storeData.sessions = parsed.sessions || [];
     storeData.accessCodes = parsed.accessCodes || [];
@@ -11159,6 +11155,41 @@ function loadStore() {
     }
   });
   return storeData;
+}
+var itbiLoadingPromise = null;
+function ensureItbiLoaded() {
+  if (typeof store !== "undefined" && store && store.itbiTransactions && store.itbiTransactions.length > 0) {
+    return Promise.resolve();
+  }
+  if (itbiLoadingPromise) return itbiLoadingPromise;
+  itbiLoadingPromise = (async () => {
+    const GZ_ITBI_PATH = import_path4.default.join(process.cwd(), "itbi_store.json.gz");
+    if (import_fs5.default.existsSync(GZ_ITBI_PATH)) {
+      try {
+        console.log("[Store] Carregando transa\xE7\xF5es municipais ITBI de itbi_store.json.gz...");
+        const compressed = import_fs5.default.readFileSync(GZ_ITBI_PATH);
+        let decompressed = import_zlib.default.gunzipSync(compressed);
+        const jsonStr = decompressed.toString("utf-8");
+        decompressed = null;
+        const itbi = JSON.parse(jsonStr);
+        if (typeof store !== "undefined" && store) {
+          store.itbiTransactions = itbi;
+          configureNeighborhoods(store.itbiTransactions);
+          buildItbiStreetCoordsIndex(store.itbiTransactions);
+        }
+        console.log(`[Store] ${itbi.length} transa\xE7\xF5es ITBI carregadas com sucesso!`);
+        if (global.gc) {
+          try {
+            global.gc();
+          } catch (_) {
+          }
+        }
+      } catch (err) {
+        console.error("[Store] Falha ao carregar itbi_store.json.gz:", err);
+      }
+    }
+  })();
+  return itbiLoadingPromise;
 }
 var auctionCatalogResponseCache = null;
 var AUCTION_RESPONSE_CACHE_PATH = import_path4.default.join(process.cwd(), ".cache", "auction-catalog-response-v7.json.gz");
@@ -13510,6 +13541,10 @@ app.get("/api/geocode", async (req, res) => {
     return res.json(geo);
   }
   return res.status(404).json({ error: "Endere\xE7o n\xE3o localizado no mapa." });
+});
+app.use("/api/itbi", async (_req, _res, next) => {
+  await ensureItbiLoaded();
+  next();
 });
 app.get("/api/itbi", (req, res) => {
   const stats = getItbiStats(store.itbiTransactions);
@@ -16519,6 +16554,9 @@ async function start() {
     } catch (_) {
     }
   }
+  setImmediate(() => {
+    void ensureItbiLoaded();
+  });
 }
 start();
 // Annotate the CommonJS export names for ESM import in node:

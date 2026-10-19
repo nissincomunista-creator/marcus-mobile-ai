@@ -1019,8 +1019,8 @@ function loadStore(): DataStore {
   const GZ_STORE_PATH = path.join(process.cwd(), 'data_store.json.gz');
   let parsed: any = null;
 
-  // 1. Tenta carregar data_store.json existente se for válido (> 1MB)
-  if (fs.existsSync(STORE_PATH) && fs.statSync(STORE_PATH).size >= 1000000) {
+  // 1. Em ambiente local (desenvolvimento), se data_store.json existir e for válido (> 1MB), pode usar
+  if (!process.env.RENDER && fs.existsSync(STORE_PATH) && fs.statSync(STORE_PATH).size >= 1000000) {
     try {
       console.log('[Store] Carregando base existente de data_store.json...');
       const content = fs.readFileSync(STORE_PATH, 'utf-8');
@@ -1030,28 +1030,23 @@ function loadStore(): DataStore {
     }
   }
 
-  // 2. Se não carregou do JSON e o .gz existe, carrega diretamente do .gz em bloco isolado de baixo consumo de RAM
+  // 2. Se não carregou do JSON e o .gz existe, carrega diretamente de data_store.json.gz (modo ultra-leve)
   if (!parsed && fs.existsSync(GZ_STORE_PATH)) {
     try {
-      console.log('[Store] Carregando base ultra-otimizada de data_store.json.gz (modo low-memory)...');
+      console.log('[Store] Carregando catálogo ultra-otimizado de data_store.json.gz...');
       let compressed: Buffer | null = fs.readFileSync(GZ_STORE_PATH);
       let decompressed: Buffer | null = zlib.gunzipSync(compressed);
-      compressed = null; // Libera imediatamente 9MB
-
-      // Tenta gravar em disco sem bloquear caso seja sistema com escrita permitida
-      try {
-        fs.writeFileSync(STORE_PATH, decompressed);
-      } catch (_) {}
+      compressed = null; // Libera imediatamente 4MB
 
       let jsonStr: string | null = decompressed.toString('utf-8');
-      decompressed = null; // Libera imediatamente buffer C++ de 94MB
+      decompressed = null; // Libera imediatamente 40MB
       parsed = JSON.parse(jsonStr);
-      jsonStr = null; // Libera imediatamente string V8 de 94MB
+      jsonStr = null;
 
       if (global.gc) {
         try { global.gc(); } catch (_) {}
       }
-      console.log(`[Store] Base descompactada e carregada com sucesso (${parsed.auctions?.length || 0} leilões, ${parsed.itbiTransactions?.length || 0} ITBI)!`);
+      console.log(`[Store] Catálogo de leilões carregado com sucesso (${parsed.auctions?.length || 0} leilões)!`);
     } catch (gzErr) {
       console.error('[Store] Falha ao carregar data_store.json.gz:', gzErr);
     }
@@ -1059,7 +1054,7 @@ function loadStore(): DataStore {
 
   if (parsed) {
     storeData.auctions = parsed.auctions || storeData.auctions;
-    storeData.itbiTransactions = parsed.itbiTransactions || storeData.itbiTransactions;
+    storeData.itbiTransactions = parsed.itbiTransactions || [];
     storeData.users = parsed.users || [];
     storeData.sessions = parsed.sessions || [];
     storeData.accessCodes = parsed.accessCodes || [];
@@ -1523,6 +1518,41 @@ function loadStore(): DataStore {
   });
   
   return storeData;
+}
+
+let itbiLoadingPromise: Promise<void> | null = null;
+
+function ensureItbiLoaded(): Promise<void> {
+  if (typeof store !== 'undefined' && store && store.itbiTransactions && store.itbiTransactions.length > 0) {
+    return Promise.resolve();
+  }
+  if (itbiLoadingPromise) return itbiLoadingPromise;
+
+  itbiLoadingPromise = (async () => {
+    const GZ_ITBI_PATH = path.join(process.cwd(), 'itbi_store.json.gz');
+    if (fs.existsSync(GZ_ITBI_PATH)) {
+      try {
+        console.log('[Store] Carregando transações municipais ITBI de itbi_store.json.gz...');
+        const compressed = fs.readFileSync(GZ_ITBI_PATH);
+        let decompressed: Buffer | null = zlib.gunzipSync(compressed);
+        const jsonStr = decompressed.toString('utf-8');
+        decompressed = null;
+        const itbi = JSON.parse(jsonStr);
+        if (typeof store !== 'undefined' && store) {
+          store.itbiTransactions = itbi;
+          configureNeighborhoods(store.itbiTransactions);
+          buildItbiStreetCoordsIndex(store.itbiTransactions);
+        }
+        console.log(`[Store] ${itbi.length} transações ITBI carregadas com sucesso!`);
+        if (global.gc) {
+          try { global.gc(); } catch (_) {}
+        }
+      } catch (err) {
+        console.error('[Store] Falha ao carregar itbi_store.json.gz:', err);
+      }
+    }
+  })();
+  return itbiLoadingPromise;
 }
 
 let auctionCatalogResponseCache: {
@@ -4382,6 +4412,12 @@ app.get('/api/geocode', async (req, res) => {
     return res.json(geo);
   }
   return res.status(404).json({ error: 'Endereço não localizado no mapa.' });
+});
+
+// Middleware para garantir que a base ITBI esteja pronta nas rotas /api/itbi
+app.use('/api/itbi', async (_req, _res, next) => {
+  await ensureItbiLoaded();
+  next();
 });
 
 // GET /api/itbi
@@ -7971,6 +8007,11 @@ async function start() {
       });
     } catch (_) {}
   }
+
+  // Carrega transações municipais ITBI em segundo plano sem impactar a subida da porta nem o health check do Render
+  setImmediate(() => {
+    void ensureItbiLoaded();
+  });
 }
 
 start();
