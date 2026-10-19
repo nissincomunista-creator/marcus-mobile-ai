@@ -1545,8 +1545,8 @@ let auctionCatalogResponseCache: {
   signature: string;
   payload: AuctionProperty[];
 } | null = null;
-const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v5.json.gz');
-const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v11-portal-coords';
+const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v7.json.gz');
+const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v13-deep-clean-sync';
 let persistedCatalogInvalidated = false;
 
 function auctionResponseCacheSignature() {
@@ -7588,13 +7588,13 @@ app.post('/api/garimpar/portais', authMiddleware, async (req, res) => {
     // Bairros prioritários e representativos da cidade ativa
     const cityLower = targetCity.toLowerCase();
     if (cityLower.includes('niter')) {
-      targetNeighborhoods = ['Icaraí', 'Santa Rosa', 'Ingá', 'Centro'];
+      targetNeighborhoods = ['Icaraí', 'Santa Rosa', 'Ingá', 'São Francisco', 'Charitas', 'Piratininga', 'Centro'];
     } else if (cityLower.includes('juiz de fora') || uf === 'MG') {
       // Ampla cobertura dos principais polos imobiliários de Juiz de Fora
-      targetNeighborhoods = ['Centro', 'São Mateus', 'Cascatinha', 'Granbery', 'Bom Pastor', 'Alto dos Passos', 'Santa Helena', 'São Pedro'];
+      targetNeighborhoods = ['Centro', 'São Mateus', 'Cascatinha', 'Granbery', 'Bom Pastor', 'Alto dos Passos', 'Santa Helena', 'São Pedro', 'Paineiras', 'Morro da Glória'];
     } else {
       // Rio de Janeiro capital
-      targetNeighborhoods = ['Tijuca', 'Copacabana', 'Botafogo', 'Barra da Tijuca', 'Ipanema', 'Flamengo'];
+      targetNeighborhoods = ['Barra da Tijuca', 'Recreio dos Bandeirantes', 'Copacabana', 'Ipanema', 'Leblon', 'Botafogo', 'Flamengo', 'Tijuca', 'Taquara', 'Freguesia (Jacarepaguá)', 'Centro'];
     }
   }
 
@@ -7633,19 +7633,29 @@ app.post('/api/garimpar/portais', authMiddleware, async (req, res) => {
           }
         }
 
-        // Calibração pericial SSOT com fator de escala NBR 14.653
+        // Calibração pericial SSOT com fator de escala NBR 14.653 do bairro REAL do imóvel
         const size = aucProp.sizeSqm || 60;
-        const realM2 = getNeighborhoodPortalM2(aucProp.city || targetCity, aucProp.state || uf, aucProp.neighborhood || neigh, store.itbiTransactions, aucProp.propertyType, size);
+        const targetNeigh = aucProp.neighborhood || neigh;
+        const realM2 = getNeighborhoodPortalM2(aucProp.city || targetCity, aucProp.state || uf, targetNeigh, store.itbiTransactions, aucProp.propertyType, size);
         if (realM2 && realM2 > 1000) {
           (aucProp as any).m2_referencia_bairro = realM2;
           (aucProp as any).m2ReferenciaBairro = realM2;
           const expectedVal = Math.round(size * realM2);
-          if (!aucProp.estimatedValue || aucProp.estimatedValue <= 0 || aucProp.estimatedValue > expectedVal * 1.15 || size > 120) {
-            aucProp.estimatedValue = expectedVal;
-            aucProp.valorMercadoEstimado = expectedVal;
-            aucProp.vendaBaixaPrice = Math.round(expectedVal * 0.90);
-            aucProp.vendaMediaPrice = aucProp.vendaBaixaPrice;
-          }
+          aucProp.estimatedValue = expectedVal;
+          aucProp.valorMercadoEstimado = expectedVal;
+          aucProp.vendaBaixaPrice = Math.round(expectedVal * 0.90);
+          aucProp.vendaMediaPrice = aucProp.vendaBaixaPrice;
+
+          // Atualiza métricas de ROI e desconto com base no bairro real
+          const itbi = Math.round((aucProp.auctionPrice || 0) * 0.03);
+          const registry = Math.round((aucProp.auctionPrice || 0) * 0.02);
+          const totalCost = (aucProp.auctionPrice || 0) + itbi + registry + (aucProp.estimatedRepair || 0) + (aucProp.pendingDebts || 0) + Math.round(expectedVal * 0.015);
+          const netProfit = Math.max(0, aucProp.vendaBaixaPrice - totalCost);
+          aucProp.calculatedProfit = netProfit;
+          aucProp.calculatedRoi = totalCost > 0 ? Number(((netProfit / totalCost) * 100).toFixed(2)) : 0;
+          const diff = expectedVal - (aucProp.auctionPrice || 0);
+          aucProp.descontoMercadoPct = (expectedVal > 0 && diff > 0) ? Math.round((diff / expectedVal) * 100) : 0;
+          aucProp.oportunidadeAbaixoMercado = netProfit > 0 && (aucProp.calculatedRoi || 0) >= 15;
         }
 
         // Conecta Morada Virtual imediatamente se disponível

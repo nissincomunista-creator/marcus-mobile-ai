@@ -200,23 +200,9 @@ export function detectNeighborhoodFromCardAndUrl(
   const normCity = normalizeSlug(city || '').replace(/-/g, ' ');
   const cityCandidates = normCity ? (NEIGHBORHOOD_CATALOG.byCity[normCity] || []) : NEIGHBORHOOD_CATALOG.all;
 
-  // 1. Prioridade absoluta: se targetNeigh foi fornecido e a busca/anúncio o referencia
-  if (targetNeigh) {
-    const targetSlug = normalizeSlug(targetNeigh);
-    const targetNorm = targetNeigh.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    if (
-      normUrl.includes('-' + targetSlug + '-') ||
-      normUrl.includes('/' + targetSlug + '-') ||
-      normUrl.includes('-' + targetSlug + '/') ||
-      normUrl.includes('/' + targetSlug + '/') ||
-      normUrl.endsWith('-' + targetSlug) ||
-      new RegExp(`\\b${targetNorm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`).test(normText)
-    ) {
-      return targetNeigh;
-    }
-  }
-
-  // 2. Extração pelo slug canônico da URL contra os bairros oficiais da cidade
+  // 1. PRIORIDADE ABSOLUTA: Extração pelo slug canônico da URL contra os bairros oficiais da cidade
+  // A URL é gerada cadastralmente pelo portal e NUNCA contém jargões de marketing (ex: "a 10 min da Barra")
+  // cityCandidates está ordenado por comprimento decrescente (ex: "recreio dos bandeirantes" antes de "recreio", "barra da tijuca" antes de "barra")
   for (const n of cityCandidates) {
     if (n.length < 3) continue;
     const slug = n.replace(/\s+/g, '-');
@@ -231,7 +217,7 @@ export function detectNeighborhoodFromCardAndUrl(
     }
   }
 
-  // 3. Extração por regex estrita no endereço do card ("Rua X - Bairro, Cidade")
+  // 2. Extração por regex estrita no endereço do card ("Rua X - Bairro, Cidade")
   const textMatches = [
     cardText.match(/[-–—]\s*([A-Za-zÀ-ÿ\s]+?)\s*,\s*(?:Rio de Janeiro|Niterói|Juiz de Fora)/i),
     cardText.match(/,\s*([A-Za-zÀ-ÿ\s]+?)\s*[-–—]\s*(?:Rio de Janeiro|RJ|Niterói|Juiz de Fora|MG)/i),
@@ -245,7 +231,6 @@ export function detectNeighborhoodFromCardAndUrl(
       const candNorm = candidate.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
       if (['rio de janeiro', 'rj', 'brasil', 'zona norte', 'zona sul', 'zona oeste', 'centro metropolitano', 'centro empresarial', 'mg'].includes(candNorm)) continue;
       
-      // Procura correspondência exata ou por limite de palavra estrito (\b) para não confundir "centro" em "centro médico"
       for (const n of cityCandidates) {
         if (candNorm === n || new RegExp(`^${n.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`).test(candNorm)) {
           return n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -254,8 +239,85 @@ export function detectNeighborhoodFromCardAndUrl(
     }
   }
 
-  // 4. Fallback seguro: se targetNeigh foi fornecido, usa targetNeigh, senão cidade
+  // 3. Validação do targetNeigh se fornecido, assegurando que NÃO seja mera menção de proximidade ("a 5 min da Barra")
+  if (targetNeigh) {
+    const targetNorm = targetNeigh.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    // Rejeita menções de proximidade no texto
+    const proximityRegex = new RegExp(`(?:pr[oó]xim[oa]|perto|minutos|min|acesso|sentido|linha|transporte)\\s+(?:a|ao|de|da|do)?\\s*${targetNorm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`, 'i');
+    if (!proximityRegex.test(normText) && new RegExp(`\\b${targetNorm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`).test(normText)) {
+      return targetNeigh;
+    }
+  }
+
+  // 4. Fallback seguro
   return targetNeigh || city || '';
+}
+
+export function sanitizeStreetAndAddress(
+  rawStreet: string,
+  neighborhood: string,
+  city: string,
+  state: string,
+  cityCandidates: string[] = []
+): { streetClean: string; fullAddress: string } {
+  const normNeigh = normalizeSlug(neighborhood || '').replace(/-/g, ' ');
+  let street = (rawStreet || '').trim();
+
+  const safeState = (!state || state === 'undefined' || state === 'null') ? 'RJ' : state.toUpperCase().trim();
+  let safeCity = (!city || city === 'undefined' || city === 'null')
+    ? (safeState === 'MG' ? 'Juiz de Fora' : 'Rio de Janeiro')
+    : city.trim();
+
+  // 1. Remove lixo de scraping e dados financeiros
+  street = street.split(/(?:Tamanho|Quantidade|R\$|Cond|IPTU|Quartos|Vagas|Banheiros)/i)[0].trim();
+  street = street.replace(/[-–—,]\s*(?:Rio de Janeiro|Niterói|Juiz de Fora|RJ|MG)\s*$/i, '').trim();
+  street = street.replace(/\s+/g, ' ').trim();
+
+  // Remove pontuações residuais no início ou fim
+  street = street.replace(/^[,.\s–—-]+|[,.\s–—-]+$/g, '').trim();
+
+  // Se a rua for só "Rua", "Avenida", "Av", "Travessa", "Alameda", "Estrada", "Praça", etc. sem nome próprio
+  if (/^(?:rua|avenida|av|av\.|travessa|alameda|estrada|praca|praça|rodovia|alam|r|r\.)\s*$/i.test(street) || street.length < 3) {
+    street = '';
+  }
+
+  const normStreet = normalizeSlug(street).replace(/-/g, ' ');
+
+  // 2. Se a string de "rua" é na verdade o próprio bairro (ex: "Praça Seca" pego pelo regex de Praça, ou "Barra da Tijuca")
+  if (!street || normStreet === normNeigh || normStreet === 'praca seca' || normStreet === 'taquara') {
+    street = '';
+  }
+
+  // 3. Se a string de "rua" coincide com qualquer bairro oficial da cidade
+  if (street && cityCandidates.some(c => c.length >= 3 && (c === normStreet || normStreet === `bairro ${c}`))) {
+    street = '';
+  }
+
+  // 4. Se a rua termina com o bairro (ex: "Rua Barão de São Marcelino, Alto dos Passos")
+  if (street && neighborhood) {
+    const neighPattern = new RegExp(`[,\\s-–—]+(?:bairro\\s+)?${neighborhood.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\s*$`, 'i');
+    street = street.replace(neighPattern, '').trim();
+    // Remove contaminação de outros bairros anexados no final
+    for (const c of cityCandidates) {
+      if (c.length >= 4 && normStreet.endsWith(' ' + c)) {
+        const cPat = new RegExp(`[,\\s-–—]+${c.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\s*$`, 'i');
+        street = street.replace(cPat, '').trim();
+      }
+    }
+  }
+
+  // Limpeza final de pontuação
+  street = street.replace(/^[,.\s–—-]+|[,.\s–—-]+$/g, '').trim();
+  if (/^(?:rua|avenida|av|av\.|travessa|alameda|estrada|praca|praça|rodovia|alam|r|r\.)\s*$/i.test(street) || street.length < 3) {
+    street = '';
+  }
+
+  const streetClean = street;
+  const fullAddress = streetClean
+    ? `${streetClean}, ${neighborhood}, ${safeCity} - ${safeState}`
+    : `${neighborhood}, ${safeCity} - ${safeState}`;
+
+  return { streetClean, fullAddress };
 }
 
 const COMMON_HEADERS = {
@@ -436,11 +498,20 @@ export function isListingActiveAndValid(text: string, href: string): boolean {
     t.includes('imóvel vendido') ||
     t.includes('já foi vendido') ||
     t.includes('desativado') ||
-    t.includes('este imóvel foi desativado')
+    t.includes('este imóvel foi desativado') ||
+    /\b(vendido|alugado|arrematado|desativado|indispon[íi]vel)\b/i.test(t) ||
+    t.includes('vendido') ||
+    t.includes('alugado')
   ) {
     return false;
   }
-  if (href.includes('/imovel-indisponivel') || href.includes('/404') || href.includes('indisponivel')) {
+  if (
+    href.includes('/imovel-indisponivel') ||
+    href.includes('/404') ||
+    href.includes('indisponivel') ||
+    href.includes('vendido') ||
+    href.includes('alugado')
+  ) {
     return false;
   }
   return true;
@@ -818,11 +889,13 @@ export async function scrapeZapImoveis(
       await new Promise(r => setTimeout(r, 3000));
     }
 
-    // Scroll suave para forçar o carregamento de cards e fotos dinâmicas (lazy loading)
-    await page.evaluate(() => {
-      window.scrollBy(0, 1000);
-    });
-    await new Promise(r => setTimeout(r, 1200));
+    // Scroll progressivo com profundidade para carregar muito mais unidades e fotos (lazy loading)
+    for (let scrollStep = 1; scrollStep <= 3; scrollStep++) {
+      await page.evaluate((step) => {
+        window.scrollBy(0, step * 1000);
+      }, scrollStep);
+      await new Promise(r => setTimeout(r, 900));
+    }
 
     const rawListings = await page.evaluate((targetCity, targetNeigh) => {
       const results: any[] = [];
@@ -949,7 +1022,9 @@ export async function scrapeZapImoveis(
         }
       }
 
-      const endClean = item.streetClean ? `${item.streetClean}, ${finalNeigh}` : finalNeigh;
+      const normCity = normalizeSlug(city || '').replace(/-/g, ' ');
+      const cityCandidates = normCity ? (NEIGHBORHOOD_CATALOG.byCity[normCity] || []) : NEIGHBORHOOD_CATALOG.all;
+      const { streetClean, fullAddress } = sanitizeStreetAndAddress(item.streetClean, finalNeigh, city, state, cityCandidates);
 
       let displayTitle = '';
       if (typo.subtype === 'Sala Comercial') {
@@ -978,7 +1053,8 @@ export async function scrapeZapImoveis(
         imagem_url: item.img,
         cidade: city,
         bairro: finalNeigh,
-        endereco: `${endClean}, ${city} - ${state.toUpperCase()}`,
+        endereco: fullAddress,
+        street: streetClean || undefined,
         preco_anunciado: item.price,
         valor_condominio: item.condoVal || 0,
         valor_iptu: item.iptuVal || 0,
@@ -1064,11 +1140,13 @@ export async function scrapeVivaReal(
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await new Promise(r => setTimeout(r, 3000));
 
-    // Scroll para carregar cards lazy
-    await page.evaluate(() => {
-      window.scrollBy(0, 1000);
-    });
-    await new Promise(r => setTimeout(r, 1000));
+    // Scroll progressivo com profundidade para carregar muito mais unidades e fotos (lazy loading)
+    for (let scrollStep = 1; scrollStep <= 3; scrollStep++) {
+      await page.evaluate((step) => {
+        window.scrollBy(0, step * 1000);
+      }, scrollStep);
+      await new Promise(r => setTimeout(r, 900));
+    }
 
     const rawListings = await page.evaluate((targetCity, targetNeigh) => {
       const results: any[] = [];
@@ -1170,7 +1248,9 @@ export async function scrapeVivaReal(
         }
       }
 
-      const endClean = item.streetClean ? `${item.streetClean}, ${finalNeigh}` : finalNeigh;
+      const normCity = normalizeSlug(city || '').replace(/-/g, ' ');
+      const cityCandidates = normCity ? (NEIGHBORHOOD_CATALOG.byCity[normCity] || []) : NEIGHBORHOOD_CATALOG.all;
+      const { streetClean, fullAddress } = sanitizeStreetAndAddress(item.streetClean, finalNeigh, city, state, cityCandidates);
 
       let displayTitle = '';
       if (typo.subtype === 'Sala Comercial') {
@@ -1199,7 +1279,8 @@ export async function scrapeVivaReal(
         imagem_url: item.imgSrc,
         cidade: city,
         bairro: finalNeigh,
-        endereco: `${endClean}, ${city} - ${state.toUpperCase()}`,
+        endereco: fullAddress,
+        street: streetClean || undefined,
         preco_anunciado: item.price,
         valor_condominio: item.condoVal,
         valor_iptu: item.iptuVal,
@@ -1371,7 +1452,9 @@ export async function scrapeImovelweb(
         }
       }
 
-      const endClean = item.streetClean ? `${item.streetClean}, ${finalNeigh}` : finalNeigh;
+      const normCity = normalizeSlug(city || '').replace(/-/g, ' ');
+      const cityCandidates = normCity ? (NEIGHBORHOOD_CATALOG.byCity[normCity] || []) : NEIGHBORHOOD_CATALOG.all;
+      const { streetClean, fullAddress } = sanitizeStreetAndAddress(item.streetClean, finalNeigh, city, state, cityCandidates);
 
       let displayTitle = '';
       if (typo.subtype === 'Sala Comercial') {
@@ -1400,7 +1483,8 @@ export async function scrapeImovelweb(
         imagem_url: item.imgSrc,
         cidade: city,
         bairro: finalNeigh,
-        endereco: `${endClean}, ${city} - ${state.toUpperCase()}`,
+        endereco: fullAddress,
+        street: streetClean || undefined,
         preco_anunciado: item.price,
         valor_condominio: item.condoVal || 0,
         valor_iptu: item.iptuVal || 0,
@@ -1527,12 +1611,26 @@ export function convertPortalListingToAuctionProperty(
   const rentalProfit = Math.max(0, mediaLocacaoCalculadora - rent) * 12;
   const rentalRoi = estimatedVal > 0 ? Number(((rent * 12 / estimatedVal) * 100).toFixed(2)) : 0;
 
+  const rawState = listing.endereco.includes(' - ') ? listing.endereco.split(' - ')[1].slice(0, 2).toUpperCase() : 'RJ';
+  const inferredState = (rawState === 'MG' || rawState === 'RJ' || rawState === 'SP') ? rawState : 'RJ';
+  const inferredCity = (listing.cidade && listing.cidade !== 'undefined' && listing.cidade !== 'null')
+    ? listing.cidade
+    : (inferredState === 'MG' ? 'Juiz de Fora' : 'Rio de Janeiro');
+  let cleanAddress = (listing.endereco || '').replace(/,\s*undefined\s*-/g, `, ${inferredCity} -`);
+  cleanAddress = cleanAddress.replace(/^(?:Rua|Avenida|Av|Av\.|Travessa|Alameda|Estrada|Praça)\s*,\s*/i, '');
+
+  let cleanStreet = (listing as any).street || (cleanAddress ? cleanAddress.split(',')[0].trim() : undefined);
+  if (cleanStreet && /^(?:rua|avenida|av|av\.|travessa|alameda|estrada|praca|praça|rodovia|alam|r|r\.)\s*$/i.test(cleanStreet)) {
+    cleanStreet = undefined;
+  }
+
   return {
     id: `auc-${listing.id}`,
     title: listing.titulo,
-    address: listing.endereco,
+    address: cleanAddress,
+    street: cleanStreet,
     neighborhood: listing.bairro,
-    city: listing.cidade,
+    city: inferredCity,
     propertyType: listing.tipo_imovel || 'Apartamento',
     priceVerified: true,
     sizeVerified: true,
@@ -1549,7 +1647,7 @@ export function convertPortalListingToAuctionProperty(
       : `${listing.subtipo || listing.tipo_imovel || 'Imóvel'} anunciado no portal ${listing.portal}. ${listing.texto_publicacao}. Metragem de ${area}m²${listing.quartos > 0 ? ` com ${listing.quartos} quartos` : ''}${listing.vagas > 0 ? ` e ${listing.vagas} vagas` : ''}. Valor anunciado: R$ ${listing.preco_anunciado.toLocaleString('pt-BR')}.`,
     status: 'Pendente',
     occupied: false,
-    state: listing.endereco.includes(' - ') ? listing.endereco.split(' - ')[1].slice(0, 2) : 'RJ',
+    state: inferredState,
     origin: 'portal',
     allowsFinancing: true,
     allowsInstallments: false,

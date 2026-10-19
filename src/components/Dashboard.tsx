@@ -814,8 +814,14 @@ export default function Dashboard({
     const nowIso = new Date().toISOString();
     const todayEnd = Date.parse(nowIso.slice(0, 10) + 'T23:59:59-03:00');
     result = result.filter(a => {
-      // Imóveis de Portais (Flip House) são anúncios ativos e NÃO devem ser expurgados por data de leilão
-      if (a.origin === 'portal') return true;
+      // Imóveis de Portais (Flip House) são anúncios ativos e NÃO devem ser expurgados por data de leilão,
+      // mas devem ser filtrados se já tiverem sido vendidos, alugados ou encerrados
+      if (a.origin === 'portal') {
+        if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return false;
+        if (a.title && /\b(vendido|alugado|indispon[íi]vel)\b/i.test(a.title)) return false;
+        if (a.description && /\b(imóvel vendido|já foi vendido|anúncio pausado)\b/i.test(a.description)) return false;
+        return true;
+      }
 
       if (a.availability?.state === 'closed' || a.availability?.state === 'removed' || a.sourceClosed === true) return false;
       if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return false;
@@ -2918,8 +2924,30 @@ export default function Dashboard({
                               </h3>
                               <div className="flex items-center text-xs text-slate-400 space-x-1.5 mt-1">
                                 <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                <span className="truncate break-words" style={{ overflowWrap: 'anywhere' }} title={`${auc.address} (${auc.neighborhood} - ${auc.city}/${auc.state || 'RJ'})`}>
-                                  {auc.address} ({auc.neighborhood} - {auc.city}/{auc.state || 'RJ'})
+                                <span 
+                                  className="truncate break-words" 
+                                  style={{ overflowWrap: 'anywhere' }} 
+                                  title={(() => {
+                                    let addr = (auc.address || '').trim();
+                                    addr = addr.replace(/,\s*undefined\s*-/g, `, ${auc.city || 'Rio de Janeiro'} -`);
+                                    addr = addr.replace(/^(?:Rua|Avenida|Av|Travessa|Alameda|Estrada|Praça)\s*,\s*/i, '');
+                                    if (!addr) return `${auc.neighborhood || ''}, ${auc.city || ''} - ${auc.state || 'RJ'}`.replace(/^, /, '');
+                                    if (addr.includes(' - ') || (auc.city && addr.toLowerCase().includes((auc.city || '').toLowerCase()))) return addr;
+                                    const hasNeigh = auc.neighborhood && addr.toLowerCase().includes(auc.neighborhood.toLowerCase());
+                                    if (hasNeigh) return `${addr}, ${auc.city || ''} - ${auc.state || 'RJ'}`;
+                                    return `${addr} (${auc.neighborhood || ''} - ${auc.city || ''}/${auc.state || 'RJ'})`;
+                                  })()}
+                                >
+                                  {(() => {
+                                    let addr = (auc.address || '').trim();
+                                    addr = addr.replace(/,\s*undefined\s*-/g, `, ${auc.city || 'Rio de Janeiro'} -`);
+                                    addr = addr.replace(/^(?:Rua|Avenida|Av|Travessa|Alameda|Estrada|Praça)\s*,\s*/i, '');
+                                    if (!addr) return `${auc.neighborhood || ''}, ${auc.city || ''} - ${auc.state || 'RJ'}`.replace(/^, /, '');
+                                    if (addr.includes(' - ') || (auc.city && addr.toLowerCase().includes((auc.city || '').toLowerCase()))) return addr;
+                                    const hasNeigh = auc.neighborhood && addr.toLowerCase().includes(auc.neighborhood.toLowerCase());
+                                    if (hasNeigh) return `${addr}, ${auc.city || ''} - ${auc.state || 'RJ'}`;
+                                    return `${addr} (${auc.neighborhood || ''} - ${auc.city || ''}/${auc.state || 'RJ'})`;
+                                  })()}
                                 </span>
                               </div>
                               {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
