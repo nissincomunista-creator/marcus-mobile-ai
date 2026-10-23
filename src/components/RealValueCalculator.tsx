@@ -5,7 +5,7 @@ import { selectRadiusTransactions } from '../utils/itbiRadius.ts';
 import { auctionCosts, calculateFlip } from '../utils/flipCalculation.ts';
 import { resolveOfficialStreet, canonicalStreet } from '../utils/streetMatching.ts';
 import { sanitizeStreetName, parseCleanAddress } from '../utils/addressParser.ts';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { auditRegistryText } from '../utils/registryAudit.ts';
 import { 
   Calculator, 
@@ -56,6 +56,7 @@ import { computeFourTierValuation } from '../utils/fourTierValuation.ts';
 import { JuizDeForaAreaModel } from '../utils/juizDeForaAreaModel.ts';
 import { buildingAgeDepreciationPercent, calculateQuickFlipAbsoluteTotal, calculateQuickFlipTotal } from '../utils/quickFlipPricing.ts';
 import { isUsableNeighborhoodLabel } from '../utils/locationSanitizers.ts';
+import { normalizePropertyType } from '../utils/propertyTypes.ts';
 
 interface ItbiStats {
   state: string;
@@ -388,6 +389,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Sample and Area Size Filter Mode (Similar ±33% vs All)
   const [manualBuildingYear, setManualBuildingYear] = useState<number | null>(null);
   const [txSizeFilter, setTxSizeFilter] = useState<'similar' | 'all'>(DEFAULT_BENCHMARK_SIZE_MODE);
+  // Filtro de Tipologia nas Amostras ('current' = estritamente a tipologia selecionada, ex: Casa; 'all' = todas da rua)
+  const [txTypeFilter, setTxTypeFilter] = useState<'current' | 'all'>('current');
 
   // Acquisition Mode & Costs State (Leilão Judicial vs Leilão Extrajudicial vs Venda Direta Caixa)
   const [acquisitionMode, setAcquisitionMode] = useState<'judicial' | 'extrajudicial' | 'caixa' | 'flip'>('judicial');
@@ -1393,6 +1396,31 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       return cleanNumber(tx.number) !== targetNum;
     });
   }, [exactStreetTxs, streetNumber]);
+
+  // Validador de tipologia estrita (NBR 14.653-2)
+  const isTxTypologyMatch = useCallback((tx: ItbiTransaction, targetType: string): boolean => {
+    const normTarget = normalizePropertyType(targetType);
+    const normTx = normalizePropertyType(tx.propertyType || '', '', tx.description || '');
+    return normTx === normTarget;
+  }, []);
+
+  // Transações da mesma rua para visualização (respeitando txTypeFilter e txSizeFilter)
+  const displayedStreetTxs = useMemo(() => {
+    return cleanStreetTxs
+      .filter(tx => {
+        if (isJuizDeFora) {
+          if (tx.isCompraEVenda !== true) return false;
+        } else if (txSizeFilter === 'similar') {
+          const minS = Math.max(15, Math.round(sizeSqm * 0.67));
+          const maxS = Math.round(sizeSqm * 1.33);
+          if (sizeSqm > 0 && (tx.sizeSqm < minS || tx.sizeSqm > maxS)) return false;
+        }
+        if (txTypeFilter === 'current') {
+          if (!isTxTypologyMatch(tx, propertyType)) return false;
+        }
+        return true;
+      });
+  }, [cleanStreetTxs, isJuizDeFora, txSizeFilter, sizeSqm, txTypeFilter, propertyType, isTxTypologyMatch]);
 
   // 3. Aggregate stats from matching transactions (Exact Street Stats) with Raio ±25% Outlier Defense
   const exactStreetStats = useMemo(() => {
@@ -3446,29 +3474,46 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <span className="text-xs font-black uppercase tracking-wider font-mono text-white">2. COMPARATIVO 1-A-1 (LUCRO & ROI)</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Toggle Tipologia */}
                     <button
                       type="button"
-                      onClick={() => setTxSizeFilter('similar')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                        txSizeFilter === 'similar'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-400 hover:text-white'
+                      onClick={() => setTxTypeFilter(prev => prev === 'all' ? 'current' : 'all')}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                        txTypeFilter === 'current'
+                          ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300 font-semibold shadow-xs ring-1 ring-emerald-500/30'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
                       }`}
+                      title={txTypeFilter === 'current' ? `Filtrando por apenas ${propertyType || 'Tipologia'}s. Clique para alternar para todas as tipologias.` : 'Mostrando todas as tipologias negociadas na rua. Clique para filtrar pela tipologia atual.'}
                     >
-                      Áreas Similares (±33%)
+                      <span>{propertyType?.toLowerCase().includes('casa') ? '🏠' : propertyType?.toLowerCase().includes('comercial') ? '🏬' : propertyType?.toLowerCase().includes('terreno') ? '🌲' : '🏢'}</span>
+                      <span>{txTypeFilter === 'current' ? `Apenas ${propertyType || 'Tipologia'}s` : 'Todas Tipologias'}</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setTxSizeFilter('all')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                        txSizeFilter === 'all'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Todas Metragens
-                    </button>
+
+                    <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setTxSizeFilter('similar')}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                          txSizeFilter === 'similar'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Áreas Similares (±33%)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTxSizeFilter('all')}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                          txSizeFilter === 'all'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Todas Metragens
+                      </button>
+                    </div>
                   </div>
                   {!isJuizDeFora && (
                   <span className="text-[9.5px] bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded font-mono hidden sm:inline" title="Custo total efetivo de arrematação por m² (lance + todas as custas ÷ área privativa)">
@@ -4431,29 +4476,46 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Botão de Alternância de Tipologia */}
                     <button
-                      onClick={() => setTxSizeFilter('similar')}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
-                        txSizeFilter === 'similar'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-400 hover:text-slate-200'
+                      type="button"
+                      onClick={() => setTxTypeFilter(prev => prev === 'all' ? 'current' : 'all')}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 border shadow-xs ${
+                        txTypeFilter === 'current'
+                          ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/60 ring-1 ring-emerald-500/30'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-900'
                       }`}
-                      title="Calcula com base em imóveis de metragens similares (±33%)"
+                      title={txTypeFilter === 'current' ? `Filtrando amostras por apenas ${propertyType || 'Tipologia'}s. Clique para ver todas as tipologias.` : 'Mostrando todas as tipologias na via. Clique para filtrar pela tipologia atual.'}
                     >
-                      <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
+                      <span>{propertyType?.toLowerCase().includes('casa') ? '🏠' : propertyType?.toLowerCase().includes('comercial') ? '🏬' : propertyType?.toLowerCase().includes('terreno') ? '🌲' : '🏢'}</span>
+                      <span>{txTypeFilter === 'current' ? `Apenas ${propertyType || 'Tipologia'}s` : 'Todas as Tipologias'}</span>
                     </button>
-                    <button
-                      onClick={() => setTxSizeFilter('all')}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
-                        txSizeFilter === 'all'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="Calcula com base em todas as metragens do mercado"
-                    >
-                      <span>🌐 Todas as Metragens</span>
-                    </button>
+
+                    <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                      <button
+                        onClick={() => setTxSizeFilter('similar')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                          txSizeFilter === 'similar'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="Calcula com base em imóveis de metragens similares (±33%)"
+                      >
+                        <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
+                      </button>
+                      <button
+                        onClick={() => setTxSizeFilter('all')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                          txSizeFilter === 'all'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                        title="Calcula com base em todas as metragens do mercado"
+                      >
+                        <span>🌐 Todas as Metragens</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -5036,28 +5098,46 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       <p className="text-[10px] text-slate-450 mt-0.5">
                         {isJuizDeFora
                           ? `Transações oficiais de ITBI nesta via (${selectedStreet || 'todas'}).`
-                          : `Valores reais de ITBI especificamente nesta rua (${selectedStreet || 'todas'}).`}
+                          : `Valores reais de ITBI nesta via (${selectedStreet || 'todas'}) • Exibindo ${displayedStreetTxs.length} de ${cleanStreetTxs.length} amostras.`}
                       </p>
                     </div>
                   </div>
                   
-                  {/* Size Filter Toggle inside tab */}
-                  {!isJuizDeFora ? (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Botão de Filtro de Tipologia */}
                     <button
-                      onClick={() => setTxSizeFilter(prev => prev === 'all' ? 'similar' : 'all')}
+                      type="button"
+                      onClick={() => setTxTypeFilter(prev => prev === 'all' ? 'current' : 'all')}
                       className={`px-2.5 py-1 rounded-lg text-[9px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
-                        txSizeFilter === 'similar'
-                          ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300 font-semibold shadow-xs'
+                        txTypeFilter === 'current'
+                          ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300 font-semibold shadow-xs ring-1 ring-emerald-500/30'
                           : 'bg-slate-950 border-slate-850 text-slate-400 hover:bg-slate-800'
                       }`}
+                      title={txTypeFilter === 'current' ? `Filtrando apenas por ${propertyType || 'Tipologia'}s. Clique para ver todas as tipologias negociadas na rua.` : 'Mostrando todas as tipologias da via. Clique para filtrar apenas pela tipologia atual.'}
                     >
-                      <span>{txSizeFilter === 'similar' ? '🎯 Área Similar (±33%)' : '🌐 Todas as Áreas'}</span>
+                      <span>{propertyType?.toLowerCase().includes('casa') ? '🏠' : propertyType?.toLowerCase().includes('comercial') ? '🏬' : propertyType?.toLowerCase().includes('terreno') ? '🌲' : '🏢'}</span>
+                      <span>{txTypeFilter === 'current' ? `Apenas ${propertyType || 'Tipologia'}s` : 'Todas as Tipologias'}</span>
                     </button>
-                  ) : (
-                    <span className="text-[9px] bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-800/40">
-                      {cleanStreetTxs.filter(t => t.isCompraEVenda === true).length} Compra e Venda
-                    </span>
-                  )}
+
+                    {/* Size Filter Toggle inside tab */}
+                    {!isJuizDeFora ? (
+                      <button
+                        type="button"
+                        onClick={() => setTxSizeFilter(prev => prev === 'all' ? 'similar' : 'all')}
+                        className={`px-2.5 py-1 rounded-lg text-[9px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                          txSizeFilter === 'similar'
+                            ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300 font-semibold shadow-xs'
+                            : 'bg-slate-950 border-slate-850 text-slate-400 hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{txSizeFilter === 'similar' ? '🎯 Área Similar (±33%)' : '🌐 Todas as Áreas'}</span>
+                      </button>
+                    ) : (
+                      <span className="text-[9px] bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-800/40">
+                        {cleanStreetTxs.filter(t => t.isCompraEVenda === true).length} Compra e Venda
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto max-h-[350px] overflow-y-auto">
@@ -5084,17 +5164,31 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850 text-slate-300">
-                      {cleanStreetTxs.length === 0 ? (
+                      {displayedStreetTxs.length === 0 ? (
                         <tr>
-                          <td colSpan={isJuizDeFora ? 7 : 5} className="py-8 text-center text-slate-550 italic">
-                            Nenhuma transação individual encontrada nesta rua.
+                          <td colSpan={isJuizDeFora ? 7 : 5} className="py-8 text-center text-slate-450 italic space-y-2">
+                            <div>
+                              Nenhuma transação {txTypeFilter === 'current' ? `de ${propertyType || 'imóvel'}` : ''} encontrada nesta rua {txSizeFilter === 'similar' ? 'com metragem similar' : ''}.
+                            </div>
+                            {cleanStreetTxs.length > 0 && txTypeFilter === 'current' && (
+                              <button
+                                type="button"
+                                onClick={() => setTxTypeFilter('all')}
+                                className="text-xs text-indigo-400 hover:text-indigo-300 underline font-semibold cursor-pointer block mx-auto mt-2"
+                              >
+                                Ver todos os {cleanStreetTxs.length} imóveis negociados nesta via ({cleanStreetTxs.length} de outras tipologias)
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ) : (
-                        cleanStreetTxs
-                          .filter(tx => isJuizDeFora ? tx.isCompraEVenda === true : (txSizeFilter === 'all' || (tx.sizeSqm >= Math.max(15, Math.round(sizeSqm * 0.67)) && tx.sizeSqm <= Math.round(sizeSqm * 1.33))))
+                        displayedStreetTxs
                           .slice(0, 50)
-                          .map((tx) => (
+                          .map((tx) => {
+                            const isTxCasa = normalizePropertyType(tx.propertyType || '', '', tx.description || '') === 'CASA';
+                            const isTxComercial = normalizePropertyType(tx.propertyType || '', '', tx.description || '') === 'COMERCIAL';
+                            const isTxTerreno = normalizePropertyType(tx.propertyType || '', '', tx.description || '') === 'TERRENO';
+                            return (
                             <tr 
                               key={tx.id} 
                               onClick={() => {
@@ -5110,7 +5204,20 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                             >
                               <td className="py-2.5 font-mono text-slate-450">{tx.date}</td>
                               <td className="py-2.5 font-semibold text-slate-200 group-hover:text-indigo-400 transition-colors">
-                                {tx.number ? `Nº ${tx.number}` : ''}{tx.complement ? ` - ${tx.complement}` : (tx.number ? '' : tx.street || 'Não informado')}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span>{tx.number ? `Nº ${tx.number}` : ''}{tx.complement ? ` - ${tx.complement}` : (tx.number ? '' : tx.street || 'Não informado')}</span>
+                                  <span className={`text-[8.5px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                                    isTxCasa
+                                      ? 'bg-amber-950/70 text-amber-300 border border-amber-800/50'
+                                      : isTxComercial
+                                      ? 'bg-purple-950/70 text-purple-300 border border-purple-800/50'
+                                      : isTxTerreno
+                                      ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/50'
+                                      : 'bg-indigo-950/70 text-indigo-300 border border-indigo-800/50'
+                                  }`}>
+                                    {isTxCasa ? '🏠 Casa' : isTxComercial ? '🏬 Com' : isTxTerreno ? '🌲 Terr' : '🏢 Apto'}
+                                  </span>
+                                </div>
                               </td>
                               {isJuizDeFora ? (
                                 <>
@@ -5140,7 +5247,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                                 </>
                               )}
                             </tr>
-                          ))
+                          );
+                        })
                       )}
                     </tbody>
                   </table>

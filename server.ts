@@ -1394,7 +1394,7 @@ function loadStore(): DataStore {
           }
           return true;
         });
-      const STORE_CALIBRATION_VERSION = 'v20_caixa_modality_separation';
+      const STORE_CALIBRATION_VERSION = 'v24_purge_radius_outliers_parity_ssot';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -1768,6 +1768,7 @@ function addTransactionToSpatialIndex(
 ) {
   const row = tx as ItbiTransaction & { transactionLocationLat?: number; transactionLocationLng?: number; transactionLocationPrecision?: string };
   if ((row.transactionLocationPrecision !== 'exact_number' && row.transactionLocationPrecision !== 'street_centroid') || !Number.isFinite(row.transactionLocationLat) || !Number.isFinite(row.transactionLocationLng)) return;
+  if (!isTxLocationSane(row.transactionLocationLat, row.transactionLocationLng, tx.state, tx.city, tx.neighborhood)) return;
   let cityGrid = index.get(cityKey);
   if (!cityGrid) { cityGrid = new Map(); index.set(cityKey, cityGrid); }
   const cellKey = `${Math.floor(row.transactionLocationLat! / ITBI_SPATIAL_CELL_DEGREES)}|${Math.floor(row.transactionLocationLng! / ITBI_SPATIAL_CELL_DEGREES)}`;
@@ -2836,7 +2837,7 @@ function recalculateAuctionWithIndex(
 
       let radiusTxs: ItbiTransaction[] = [];
       if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
-        let found = findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 0.5);
+        let found = findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 0.5, neigh);
 
         // Alinhamento estrito SSOT com /api/itbi/transactions e Simulador:
         // Priorizar transações da tipologia exata do lote para evitar contaminação cruzada (ex: casa com aptos)
@@ -3298,13 +3299,13 @@ function getOrBuildItbiIndexes(txs: ItbiTransaction[], calibrationAuctions: Auct
 }
 
 // Wrapper for backward compatibility / single recalculations
-function recalculateAuction(auc: AuctionProperty, txs: ItbiTransaction[]): AuctionProperty {
+export function recalculateAuction(auc: AuctionProperty, txs: ItbiTransaction[]): AuctionProperty {
   const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = getOrBuildItbiIndexes(txs);
   return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType);
 }
 
 // Bulk recalculator using a single built index
-function recalculateAuctions(auctions: AuctionProperty[], txs: ItbiTransaction[]): AuctionProperty[] {
+export function recalculateAuctions(auctions: AuctionProperty[], txs: ItbiTransaction[]): AuctionProperty[] {
   const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = getOrBuildItbiIndexes(txs, auctions);
   return auctions.map(auc => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType));
 }
@@ -8014,4 +8015,6 @@ async function start() {
   });
 }
 
-start();
+if (process.env.RECALCULATE_ONLY !== 'true') {
+  start();
+}

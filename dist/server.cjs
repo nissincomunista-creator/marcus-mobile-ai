@@ -4323,6 +4323,8 @@ __export(server_exports, {
   getCanonicalTargetCity: () => getCanonicalTargetCity,
   isAllowedTargetCity: () => isAllowedTargetCity,
   normalizeCaixaModality: () => normalizeCaixaModality,
+  recalculateAuction: () => recalculateAuction,
+  recalculateAuctions: () => recalculateAuctions,
   runSecurityAuditAndFullSync: () => runSecurityAuditAndFullSync
 });
 module.exports = __toCommonJS(server_exports);
@@ -6162,7 +6164,7 @@ function computeFourTierValuation(input) {
   const surroundingCount = input.surrounding?.count || 0;
   const surroundingValue = input.surrounding?.value || 0;
   const refBenchmarkVal = streetValue > 0 ? streetValue : neighborhoodValue;
-  const isSurroundingOutlier = surroundingCount > 0 && surroundingCount < 3 && refBenchmarkVal > 0 && (surroundingValue > refBenchmarkVal * 1.35 || surroundingValue < refBenchmarkVal * 0.65);
+  const isSurroundingOutlier = surroundingCount > 0 && refBenchmarkVal > 0 && (surroundingValue > refBenchmarkVal * 1.35 || surroundingValue < refBenchmarkVal * 0.65 || surroundingCount < 3 && surroundingValue > refBenchmarkVal * 1.25);
   const hasSolidBuilding = bldgCount >= 2;
   const hasBuildingAndSolidStreet = bldgCount >= 1 && streetCount >= 4;
   const hasSolidStreet = streetCount >= 4 && bldgCount === 0;
@@ -6184,7 +6186,7 @@ function computeFourTierValuation(input) {
   const priceable = (localSampleCount >= minimumLocalSamples || calibratedWithoutLocal) && activeWeight > 0;
   const weightedSum = activeTiers.reduce((sum, tier) => sum + tier.value * tier.weight, 0);
   let finalValue = priceable ? Math.round(weightedSum / activeWeight) : 0;
-  const isFragileSampling = localSampleCount < 3 || calibratedWithoutLocal;
+  const isFragileSampling = localSampleCount < 3 || calibratedWithoutLocal || isSurroundingOutlier;
   if (isFragileSampling && finalValue > 0 && neighborhoodValue > 0) {
     const neighborhoodCeiling = Math.round(neighborhoodValue * 1.05);
     if (finalValue > neighborhoodCeiling) {
@@ -6556,10 +6558,10 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const isRaioLargeArea = hasVerifiedRadius && size > 1.5 * raioAreaMedia;
   const raioFator = isRaioLargeArea ? Math.pow(raioAreaMedia / size, 0.2) : !isRaioCenarioA && hasVerifiedRadius ? Math.pow(raioAreaMedia / size, 0.15) : 1;
   let raioSaneada = isRaioLargeArea || !isRaioCenarioA && hasVerifiedRadius ? Math.round(raioSaneadaRaw * raioFator) : raioSaneadaRaw;
-  if (raioValid.length > 0 && raioValid.length < 3 && bSaneada > 0) {
+  if (raioValid.length > 0 && bSaneada > 0) {
     if (raioSaneada > bSaneada * 1.35) {
       raioSaneada = Math.round(bSaneada * 1.05);
-    } else if (raioSaneada < bSaneada * 0.65) {
+    } else if (raioSaneada < bSaneada * 0.65 && raioValid.length < 3) {
       raioSaneada = Math.round(bSaneada * 0.95);
     }
   }
@@ -11041,7 +11043,7 @@ function loadStore() {
     }
     return true;
   });
-  const STORE_CALIBRATION_VERSION = "v20_caixa_modality_separation";
+  const STORE_CALIBRATION_VERSION = "v24_purge_radius_outliers_parity_ssot";
   const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
   const isMemoryConstrainedRender = process.env.RENDER === "true";
   if (needsRecalibration && isMemoryConstrainedRender) {
@@ -11371,6 +11373,7 @@ var ITBI_SPATIAL_CELL_DEGREES = 0.01;
 function addTransactionToSpatialIndex(index, cityKey, tx) {
   const row = tx;
   if (row.transactionLocationPrecision !== "exact_number" && row.transactionLocationPrecision !== "street_centroid" || !Number.isFinite(row.transactionLocationLat) || !Number.isFinite(row.transactionLocationLng)) return;
+  if (!isTxLocationSane(row.transactionLocationLat, row.transactionLocationLng, tx.state, tx.city, tx.neighborhood)) return;
   let cityGrid = index.get(cityKey);
   if (!cityGrid) {
     cityGrid = /* @__PURE__ */ new Map();
@@ -12223,7 +12226,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       }
       let radiusTxs = [];
       if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
-        let found = findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 0.5);
+        let found = findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 0.5, neigh);
         if (auc.propertyType) {
           const exactRadius = found.filter((t) => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase());
           if (exactRadius.length >= 5) {
@@ -16558,13 +16561,17 @@ async function start() {
     void ensureItbiLoaded();
   });
 }
-start();
+if (process.env.RECALCULATE_ONLY !== "true") {
+  start();
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ALLOWED_TARGET_CITIES,
   getCanonicalTargetCity,
   isAllowedTargetCity,
   normalizeCaixaModality,
+  recalculateAuction,
+  recalculateAuctions,
   runSecurityAuditAndFullSync
 });
 //# sourceMappingURL=server.cjs.map

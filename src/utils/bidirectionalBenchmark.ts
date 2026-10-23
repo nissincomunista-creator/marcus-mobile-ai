@@ -463,11 +463,11 @@ export function computeBidirectionalBenchmarks(
   let raioSaneada = (isRaioLargeArea || (!isRaioCenarioA && hasVerifiedRadius)) ? Math.round(raioSaneadaRaw * raioFator) : raioSaneadaRaw;
 
   // FREIO / BLOQUEIO DE OUTLIER NO RAIO (Ruas do Entorno):
-  // Se o raio ainda tiver poucas amostras (< 3 tx) e desviar mais de 35% do bairro, aplica o freio pericial
-  if (raioValid.length > 0 && raioValid.length < 3 && bSaneada > 0) {
+  // Se o raio desviar mais de 35% do bairro, aplica o freio pericial
+  if (raioValid.length > 0 && bSaneada > 0) {
     if (raioSaneada > bSaneada * 1.35) {
       raioSaneada = Math.round(bSaneada * 1.05);
-    } else if (raioSaneada < bSaneada * 0.65) {
+    } else if (raioSaneada < bSaneada * 0.65 && raioValid.length < 3) {
       raioSaneada = Math.round(bSaneada * 0.95);
     }
   }

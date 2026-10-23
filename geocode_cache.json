@@ -9265,13 +9265,14 @@
     "matchedStreet": "Rua Silva Jardim"
   },
   "rua silva jardim, centro, rio de janeiro - rj": {
-    "lat": -22.9084589,
-    "lng": -43.181863,
-    "displayName": "Rua Silva Jardim, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20060-050, Brasil",
-    "precision": "street",
+    "lat": -22.9074329,
+    "lng": -43.1818855,
+    "displayName": "Ibis Budget Rio de Janeiro Centro, 32, Rua Silva Jardim, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20060-050, Brasil",
+    "precision": "rooftop",
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
-    "matchedStreet": "Rua Silva Jardim"
+    "matchedStreet": "Rua Silva Jardim",
+    "matchedNumber": "32"
   },
   "rua silva jardim|rio de janeiro|rj": {
     "lat": -22.9084589,
@@ -19621,5 +19622,115 @@
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Rua Sargento Antônio Ernesto"
+  },
+  "rua silva jardim, 32": {
+    "lat": -22.9074329,
+    "lng": -43.1818855,
+    "displayName": "Ibis Budget Rio de Janeiro Centro, 32, Rua Silva Jardim, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20060-050, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Jardim",
+    "matchedNumber": "32"
+  },
+  "rua silva jardim, 32|rio de janeiro|rj": {
+    "lat": -22.9074329,
+    "lng": -43.1818855,
+    "displayName": "Ibis Budget Rio de Janeiro Centro, 32, Rua Silva Jardim, Saara, Castelo, Centro, Rio de Janeiro, Região Sudeste, 20060-050, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Silva Jardim",
+    "matchedNumber": "32"
+  },
+  "estrada padre roser, 600": {
+    "lat": -22.8414193,
+    "lng": -43.3179192,
+    "displayName": "Estrada Padre Roser, 600, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "600"
+  },
+  "estrada padre roser, iraja, rio de janeiro - rj": {
+    "lat": -22.8411618,
+    "lng": -43.3185554,
+    "displayName": "620, Estrada Padre Roser, Irajá, Rio de Janeiro, Região Sudeste, 21220-560, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "620"
+  },
+  "estrada padre roser, 600|rio de janeiro|rj": {
+    "lat": -22.8414193,
+    "lng": -43.3179192,
+    "displayName": "Estrada Padre Roser, 600, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "600"
+  },
+  "estrada padre roser, ira, rio de janeiro - rj": {
+    "lat": -22.8414193,
+    "lng": -43.3179192,
+    "displayName": "Estrada Padre Roser, 600, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "600"
+  },
+  "estrada padre roser, iraj, rio de janeiro - rj": {
+    "lat": -22.8414193,
+    "lng": -43.3179192,
+    "displayName": "Estrada Padre Roser, 600, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "600"
+  },
+  "estrada padre roser, ir, rio de janeiro - rj": {
+    "lat": -22.8414193,
+    "lng": -43.3179192,
+    "displayName": "Estrada Padre Roser, 600, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "600"
+  },
+  "estrada padre roser, i, rio de janeiro - rj": {
+    "lat": -22.8414193,
+    "lng": -43.3179192,
+    "displayName": "Estrada Padre Roser, 600, Irajá, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "600"
+  },
+  "estrada padre roser, 620": {
+    "lat": -22.8411618,
+    "lng": -43.3185554,
+    "displayName": "620, Estrada Padre Roser, Irajá, Rio de Janeiro, Região Sudeste, 21220-560, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "620"
+  },
+  "estrada padre roser, 620|rio de janeiro|rj": {
+    "lat": -22.8411618,
+    "lng": -43.3185554,
+    "displayName": "620, Estrada Padre Roser, Irajá, Rio de Janeiro, Região Sudeste, 21220-560, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Padre Roser",
+    "matchedNumber": "620"
   }
 }

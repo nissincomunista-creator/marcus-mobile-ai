@@ -6,11 +6,20 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #020617;
   color: #f1f5f9;
   transition: background-color 0.2s ease, color 0.2s ease;
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100vh;
 }
 
 /* Previne que inputs com fundo claro herdem a cor de texto branca do body */

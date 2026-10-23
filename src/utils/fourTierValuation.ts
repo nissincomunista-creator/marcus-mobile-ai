@@ -107,11 +107,11 @@ export function computeFourTierValuation(input: {
   const surroundingValue = input.surrounding?.value || 0;
 
   // FREIO E BLOQUEIO DE OUTLIER NO RAIO (Ruas do Entorno):
-  // Quando o raio tiver poucas amostras (< 3 tx) e o valor ficar fora da curva (> 35% de desvio
-  // em relação à rua ou bairro), ativa o freio para impedir contaminação do valor patrimonial.
+  // Quando o raio desviar mais de 35% da rua ou bairro (ou mais de 25% com poucas amostras),
+  // ativa o freio para impedir contaminação do valor patrimonial.
   const refBenchmarkVal = streetValue > 0 ? streetValue : neighborhoodValue;
-  const isSurroundingOutlier = surroundingCount > 0 && surroundingCount < 3 && refBenchmarkVal > 0 &&
-    (surroundingValue > refBenchmarkVal * 1.35 || surroundingValue < refBenchmarkVal * 0.65);
+  const isSurroundingOutlier = surroundingCount > 0 && refBenchmarkVal > 0 &&
+    (surroundingValue > refBenchmarkVal * 1.35 || surroundingValue < refBenchmarkVal * 0.65 || (surroundingCount < 3 && surroundingValue > refBenchmarkVal * 1.25));
 
   const hasSolidBuilding = bldgCount >= 2;
   const hasBuildingAndSolidStreet = bldgCount >= 1 && streetCount >= 4;
@@ -127,7 +127,7 @@ export function computeFourTierValuation(input: {
   } else if (calibratedWithoutLocal) {
     activeTiers = tiers.filter(tier => tier.id === 'surrounding' || tier.id === 'neighborhood');
   } else if (isSurroundingOutlier && (streetCount >= 2 || (input.neighborhood?.count || 0) >= 5)) {
-    // Freio ativado: descarta o entorno discrepante com poucas amostras e faz a média ponderada sobre os dados confiáveis (Prédio, Rua e Bairro)
+    // Freio ativado: descarta o entorno discrepante e faz a média ponderada sobre os dados confiáveis (Prédio, Rua e Bairro)
     activeTiers = tiers.filter(tier => tier.id !== 'surrounding');
   } else {
     activeTiers = tiers;
@@ -139,7 +139,7 @@ export function computeFourTierValuation(input: {
 
   // Calibração Conservadora: quando a amostragem local é frágil (< 3 transações)
   // ou quando o entorno foi bloqueado, o valor NUNCA pode inflacionar acima do teto seguro
-  const isFragileSampling = localSampleCount < 3 || calibratedWithoutLocal;
+  const isFragileSampling = localSampleCount < 3 || calibratedWithoutLocal || isSurroundingOutlier;
   if (isFragileSampling && finalValue > 0 && neighborhoodValue > 0) {
     const neighborhoodCeiling = Math.round(neighborhoodValue * 1.05);
     if (finalValue > neighborhoodCeiling) {
