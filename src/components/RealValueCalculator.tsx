@@ -3474,46 +3474,29 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <span className="text-xs font-black uppercase tracking-wider font-mono text-white">2. COMPARATIVO 1-A-1 (LUCRO & ROI)</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {/* Toggle Tipologia */}
+                  <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800">
                     <button
                       type="button"
-                      onClick={() => setTxTypeFilter(prev => prev === 'all' ? 'current' : 'all')}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                        txTypeFilter === 'current'
-                          ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300 font-semibold shadow-xs ring-1 ring-emerald-500/30'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                      onClick={() => setTxSizeFilter('similar')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        txSizeFilter === 'similar'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-white'
                       }`}
-                      title={txTypeFilter === 'current' ? `Filtrando por apenas ${propertyType || 'Tipologia'}s. Clique para alternar para todas as tipologias.` : 'Mostrando todas as tipologias negociadas na rua. Clique para filtrar pela tipologia atual.'}
                     >
-                      <span>{propertyType?.toLowerCase().includes('casa') ? '🏠' : propertyType?.toLowerCase().includes('comercial') ? '🏬' : propertyType?.toLowerCase().includes('terreno') ? '🌲' : '🏢'}</span>
-                      <span>{txTypeFilter === 'current' ? `Apenas ${propertyType || 'Tipologia'}s` : 'Todas Tipologias'}</span>
+                      Áreas Similares (±33%)
                     </button>
-
-                    <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800">
-                      <button
-                        type="button"
-                        onClick={() => setTxSizeFilter('similar')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                          txSizeFilter === 'similar'
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Áreas Similares (±33%)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTxSizeFilter('all')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                          txSizeFilter === 'all'
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Todas Metragens
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTxSizeFilter('all')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        txSizeFilter === 'all'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Todas Metragens
+                    </button>
                   </div>
                   {!isJuizDeFora && (
                   <span className="text-[9.5px] bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded font-mono hidden sm:inline" title="Custo total efetivo de arrematação por m² (lance + todas as custas ÷ área privativa)">
@@ -4476,46 +4459,29 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Botão de Alternância de Tipologia */}
+                  <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
                     <button
-                      type="button"
-                      onClick={() => setTxTypeFilter(prev => prev === 'all' ? 'current' : 'all')}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 border shadow-xs ${
-                        txTypeFilter === 'current'
-                          ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/60 ring-1 ring-emerald-500/30'
-                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-900'
+                      onClick={() => setTxSizeFilter('similar')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                        txSizeFilter === 'similar'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-slate-200'
                       }`}
-                      title={txTypeFilter === 'current' ? `Filtrando amostras por apenas ${propertyType || 'Tipologia'}s. Clique para ver todas as tipologias.` : 'Mostrando todas as tipologias na via. Clique para filtrar pela tipologia atual.'}
+                      title="Calcula com base em imóveis de metragens similares (±33%)"
                     >
-                      <span>{propertyType?.toLowerCase().includes('casa') ? '🏠' : propertyType?.toLowerCase().includes('comercial') ? '🏬' : propertyType?.toLowerCase().includes('terreno') ? '🌲' : '🏢'}</span>
-                      <span>{txTypeFilter === 'current' ? `Apenas ${propertyType || 'Tipologia'}s` : 'Todas as Tipologias'}</span>
+                      <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
                     </button>
-
-                    <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                      <button
-                        onClick={() => setTxSizeFilter('similar')}
-                        className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
-                          txSizeFilter === 'similar'
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                        title="Calcula com base em imóveis de metragens similares (±33%)"
-                      >
-                        <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
-                      </button>
-                      <button
-                        onClick={() => setTxSizeFilter('all')}
-                        className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
-                          txSizeFilter === 'all'
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                        title="Calcula com base em todas as metragens do mercado"
-                      >
-                        <span>🌐 Todas as Metragens</span>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setTxSizeFilter('all')}
+                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                        txSizeFilter === 'all'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                      title="Calcula com base em todas as metragens do mercado"
+                    >
+                      <span>🌐 Todas as Metragens</span>
+                    </button>
                   </div>
                 )}
               </div>

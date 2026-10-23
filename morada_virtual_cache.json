@@ -6869,5 +6869,101 @@
     "cards": [],
     "updatedAt": "2026-10-23T16:26:41.379Z",
     "notFound": true
+  },
+  "rj_rio de janeiro_praca da bandeira_barao de uba": {
+    "street": "Rua Barão de Ubá",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/praca-da-bandeira/rua-barao-de-uba",
+    "canonicalTitle": "Rua Barao de UbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 6.064.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6154,
+        "sampleCount": 346,
+        "avgPrice": 449999,
+        "rawMeta": "~76 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 5401,
+        "sampleCount": 53,
+        "avgPrice": 570000,
+        "rawMeta": "~120 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 3947,
+        "sampleCount": 72,
+        "avgPrice": 950000,
+        "rawMeta": "~227 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T17:42:56.809Z"
+  },
+  "rj_rio de janeiro_praca da bandeira_uba": {
+    "street": "uba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/praca-da-bandeira/rua-barao-de-uba",
+    "canonicalTitle": "Rua Barao de UbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 6.064.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6154,
+        "sampleCount": 346,
+        "avgPrice": 449999,
+        "rawMeta": "~76 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 5401,
+        "sampleCount": 53,
+        "avgPrice": 570000,
+        "rawMeta": "~120 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 3947,
+        "sampleCount": 72,
+        "avgPrice": 950000,
+        "rawMeta": "~227 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T17:42:56.957Z"
+  },
+  "rj_rio de janeiro_praca da bandeira_ub": {
+    "street": "ub",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/praca-da-bandeira/rua-barao-de-uba",
+    "canonicalTitle": "Rua Barao de UbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 6.064.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6154,
+        "sampleCount": 346,
+        "avgPrice": 449999,
+        "rawMeta": "~76 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 5401,
+        "sampleCount": 53,
+        "avgPrice": 570000,
+        "rawMeta": "~120 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 3947,
+        "sampleCount": 72,
+        "avgPrice": 950000,
+        "rawMeta": "~227 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T17:42:57.258Z"
   }
 }
