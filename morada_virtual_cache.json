@@ -6965,5 +6965,981 @@
       }
     ],
     "updatedAt": "2026-10-23T17:42:57.258Z"
+  },
+  "mg_juiz de fora_estrela sul - santa luzia_p": {
+    "street": "p",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:11:54.760Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_estrela sul - santa luzia_pe": {
+    "street": "pe",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/santa-luzia/rua-padre-geraldo-pelzers",
+    "canonicalTitle": "Rua Padre Geraldo PelzersQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 2 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 2.292.",
+    "cards": [
+      {
+        "tipo": "CASA",
+        "m2": 2250,
+        "sampleCount": 13,
+        "avgPrice": 340000,
+        "rawMeta": "~300 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 9428,
+        "sampleCount": 10,
+        "avgPrice": 444000,
+        "rawMeta": "~56 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:12:10.618Z"
+  },
+  "mg_juiz de fora_estrela sul - santa luzia_peta": {
+    "street": "peta",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/estrela-sul/rua-petala-misteriosa",
+    "canonicalTitle": "Rua Petala MisteriosaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5330,
+        "sampleCount": 3,
+        "avgPrice": 1590000,
+        "rawMeta": "~169 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4556,
+        "sampleCount": 4,
+        "avgPrice": 3015000,
+        "rawMeta": "~661 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:12:10.838Z"
+  },
+  "mg_juiz de fora_estrela sul - santa luzia_petala misteriosa": {
+    "street": "Rua Petala Misteriosa",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/estrela-sul/rua-petala-misteriosa",
+    "canonicalTitle": "Rua Petala MisteriosaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5330,
+        "sampleCount": 3,
+        "avgPrice": 1590000,
+        "rawMeta": "~169 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4556,
+        "sampleCount": 4,
+        "avgPrice": 3015000,
+        "rawMeta": "~661 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:12:10.908Z"
+  },
+  "mg_juiz de fora_estrela sul - santa luzia_pet": {
+    "street": "pet",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/estrela-sul/rua-petala-misteriosa",
+    "canonicalTitle": "Rua Petala MisteriosaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5330,
+        "sampleCount": 3,
+        "avgPrice": 1590000,
+        "rawMeta": "~169 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4556,
+        "sampleCount": 4,
+        "avgPrice": 3015000,
+        "rawMeta": "~661 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:12:11.013Z"
+  },
+  "mg_juiz de fora_estrela sul - santa luzia_petal": {
+    "street": "petal",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/estrela-sul/rua-petala-misteriosa",
+    "canonicalTitle": "Rua Petala MisteriosaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 4 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5330,
+        "sampleCount": 3,
+        "avgPrice": 1590000,
+        "rawMeta": "~169 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4556,
+        "sampleCount": 4,
+        "avgPrice": 3015000,
+        "rawMeta": "~661 m² · em geral 3 quartos"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:12:11.544Z"
+  },
+  "mg_juiz de fora_estrela sul - santa luzia_petaa": {
+    "street": "petaa",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/santa-luzia/avenida-santa-luzia",
+    "canonicalTitle": "Avenida Santa LuziaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 2 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 2.292.",
+    "cards": [
+      {
+        "tipo": "CASA",
+        "m2": 2250,
+        "sampleCount": 13,
+        "avgPrice": 340000,
+        "rawMeta": "~300 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 9428,
+        "sampleCount": 10,
+        "avgPrice": 444000,
+        "rawMeta": "~56 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:12:11.611Z"
+  },
+  "rj_rio de janeiro_vila isabel_e": {
+    "street": "e",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:29:36.382Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila isabel_engenheiro gama lobo": {
+    "street": "Rua Engenheiro Gama Lobo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-isabel/rua-engenheiro-gama-lobo",
+    "canonicalTitle": "Rua Engenheiro Gama LoboQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.929.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5172,
+        "sampleCount": 1677,
+        "avgPrice": 430000,
+        "rawMeta": "~80 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3947,
+        "sampleCount": 398,
+        "avgPrice": 699000,
+        "rawMeta": "~160 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4655,
+        "sampleCount": 179,
+        "avgPrice": 402200,
+        "rawMeta": "~80 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:29:45.153Z"
+  },
+  "rj_rio de janeiro_vila isabel_eng": {
+    "street": "eng",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-isabel/rua-engenheiro-gama-lobo",
+    "canonicalTitle": "Rua Engenheiro Gama LoboQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.929.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5172,
+        "sampleCount": 1677,
+        "avgPrice": 430000,
+        "rawMeta": "~80 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3947,
+        "sampleCount": 398,
+        "avgPrice": 699000,
+        "rawMeta": "~160 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4655,
+        "sampleCount": 179,
+        "avgPrice": 402200,
+        "rawMeta": "~80 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:29:45.238Z"
+  },
+  "rj_rio de janeiro_vila isabel_enge": {
+    "street": "enge",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:29:53.828Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila isabel_engen": {
+    "street": "engen",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:29:53.864Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila isabel_en": {
+    "street": "en",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:29:54.807Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cachambi_p": {
+    "street": "p",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:54:44.407Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_c_engenheiro gama lobo": {
+    "street": "Rua Engenheiro Gama Lobo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:54:51.529Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cacham_engenheiro gama lobo": {
+    "street": "Rua Engenheiro Gama Lobo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:54:54.764Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cacha_engenheiro gama lobo": {
+    "street": "Rua Engenheiro Gama Lobo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:54:54.774Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cac_engenheiro gama lobo": {
+    "street": "Rua Engenheiro Gama Lobo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:54:54.789Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cach_engenheiro gama lobo": {
+    "street": "Rua Engenheiro Gama Lobo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:54:54.821Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ca_engenheiro gama lobo": {
+    "street": "Rua Engenheiro Gama Lobo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-engenheiro-carlos-euler",
+    "canonicalTitle": "Rua Engenheiro Carlos EulerQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:54:55.742Z"
+  },
+  "rj_rio de janeiro_cachambi_padr": {
+    "street": "padr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cachambi/beco-padre-aires-de-casal-211",
+    "canonicalTitle": "Beco Padre Aires de Casal 211Quem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.706.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5424,
+        "sampleCount": 959,
+        "avgPrice": 414900,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3388,
+        "sampleCount": 223,
+        "avgPrice": 600000,
+        "rawMeta": "~180 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4525,
+        "sampleCount": 66,
+        "avgPrice": 357665,
+        "rawMeta": "~69 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:54:56.336Z"
+  },
+  "rj_rio de janeiro_cachambi_pa": {
+    "street": "pa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cachambi/rua-cachambi",
+    "canonicalTitle": "Rua CachambiQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.706.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5424,
+        "sampleCount": 959,
+        "avgPrice": 414900,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3388,
+        "sampleCount": 223,
+        "avgPrice": 600000,
+        "rawMeta": "~180 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4525,
+        "sampleCount": 66,
+        "avgPrice": 357665,
+        "rawMeta": "~69 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:54:56.967Z"
+  },
+  "rj_rio de janeiro_cachambi_i": {
+    "street": "i",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:54:57.675Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cachambi_pad": {
+    "street": "pad",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:55:04.109Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cachambi_ild": {
+    "street": "ild",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/avenida-hildebrando-de-araujo-goes",
+    "canonicalTitle": "Avenida Hildebrando de Araujo GoesQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:55:04.163Z"
+  },
+  "rj_rio de janeiro_todos os santos_r": {
+    "street": "r",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:55:05.205Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_p": {
+    "street": "p",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:55:05.504Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cachambi_il": {
+    "street": "il",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:55:13.012Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_pa": {
+    "street": "pa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pilares/rua-todos-os-santos",
+    "canonicalTitle": "Rua Todos Os SantosQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.322.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4000,
+        "sampleCount": 108,
+        "avgPrice": 262500,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2583,
+        "sampleCount": 71,
+        "avgPrice": 340000,
+        "rawMeta": "~150 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 50,
+        "avgPrice": 280000,
+        "rawMeta": "~60 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:55:09.787Z"
+  },
+  "rj_rio de janeiro_todos os santos_padre ildefonso penalba": {
+    "street": "Rua Padre Ildefonso Penalba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-padre-ildefonso-penalba",
+    "canonicalTitle": "Rua Padre Ildefonso PenalbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T18:55:09.842Z"
+  },
+  "rj_rio de janeiro_todos os santos_pad": {
+    "street": "pad",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T18:55:16.914Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_r": {
+    "street": "r",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:04.218Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_c": {
+    "street": "rua c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:05.264Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cachambi_c": {
+    "street": "c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:22.047Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_e_padre ildefonso penalba": {
+    "street": "Rua Padre Ildefonso Penalba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-padre-ildefonso-penalba",
+    "canonicalTitle": "Rua Padre Ildefonso PenalbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:23.692Z"
+  },
+  "rj_rio de janeiro_enge_padre ildefonso penalba": {
+    "street": "Rua Padre Ildefonso Penalba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-padre-ildefonso-penalba",
+    "canonicalTitle": "Rua Padre Ildefonso PenalbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:23.898Z"
+  },
+  "rj_rio de janeiro_eng_padre ildefonso penalba": {
+    "street": "Rua Padre Ildefonso Penalba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-padre-ildefonso-penalba",
+    "canonicalTitle": "Rua Padre Ildefonso PenalbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:23.942Z"
+  },
+  "rj_rio de janeiro_en_padre ildefonso penalba": {
+    "street": "Rua Padre Ildefonso Penalba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-padre-ildefonso-penalba",
+    "canonicalTitle": "Rua Padre Ildefonso PenalbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:23.983Z"
+  },
+  "rj_rio de janeiro_engen_padre ildefonso penalba": {
+    "street": "Rua Padre Ildefonso Penalba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-padre-ildefonso-penalba",
+    "canonicalTitle": "Rua Padre Ildefonso PenalbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:24.059Z"
+  },
+  "rj_rio de janeiro_engenh_padre ildefonso penalba": {
+    "street": "Rua Padre Ildefonso Penalba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-padre-ildefonso-penalba",
+    "canonicalTitle": "Rua Padre Ildefonso PenalbaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:24.150Z"
+  },
+  "rj_rio de janeiro_engenho novo_rua": {
+    "street": "rua",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/engenho-novo/rua-baronesa-do-engenho-novo",
+    "canonicalTitle": "Rua Baronesa do Engenho NovoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.300.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3463,
+        "sampleCount": 607,
+        "avgPrice": 229500,
+        "rawMeta": "~64 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2632,
+        "sampleCount": 218,
+        "avgPrice": 355000,
+        "rawMeta": "~150 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 1993,
+        "sampleCount": 38,
+        "avgPrice": 594500,
+        "rawMeta": "~515 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:24.614Z"
+  },
+  "rj_rio de janeiro_engenho novo_cap": {
+    "street": "cap",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-capitao-mario-barbedo",
+    "canonicalTitle": "Rua Capitao Mário BarbedoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:25.063Z"
+  },
+  "rj_rio de janeiro_cachambi_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cachambi/rua-capitao-rezende",
+    "canonicalTitle": "Rua Capitao RezendeQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.706.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5424,
+        "sampleCount": 959,
+        "avgPrice": 414900,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3388,
+        "sampleCount": 223,
+        "avgPrice": 600000,
+        "rawMeta": "~180 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4525,
+        "sampleCount": 66,
+        "avgPrice": 357665,
+        "rawMeta": "~69 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:26.541Z"
+  },
+  "rj_rio de janeiro_cachambi_cap": {
+    "street": "cap",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cachambi/rua-capitao-jesus",
+    "canonicalTitle": "Rua Capitao JesusQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.706.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5424,
+        "sampleCount": 959,
+        "avgPrice": 414900,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3388,
+        "sampleCount": 223,
+        "avgPrice": 600000,
+        "rawMeta": "~180 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4525,
+        "sampleCount": 66,
+        "avgPrice": 357665,
+        "rawMeta": "~69 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-23T19:00:29.884Z"
+  },
+  "rj_rio de janeiro_engenho novo_capi": {
+    "street": "capi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:31.926Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cachambi_capi": {
+    "street": "capi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:33.587Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_ca": {
+    "street": "rua ca",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:40.189Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_ru": {
+    "street": "ru",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:37.339Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cachambi_ca": {
+    "street": "ca",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-23T19:00:41.433Z",
+    "notFound": true
   }
 }

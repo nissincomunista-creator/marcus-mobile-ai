@@ -8908,14 +8908,14 @@ async function scrapeZapImoveis(city, state, neighborhood, browserInstance) {
         req.continue();
       }
     });
-    let res = await page.goto(primaryUrl, { waitUntil: "domcontentloaded", timeout: 3e4 });
+    let res = await page.goto(primaryUrl, { waitUntil: "domcontentloaded", timeout: 12e3 });
     await new Promise((r) => setTimeout(r, 3e3));
     const pageTitle = await page.title();
     const isError = res && res.status() === 404 || pageTitle.toLowerCase().includes("oops") || pageTitle.trim() === "";
     if (isError && hasNeighborhood) {
       console.log(`[Scraper Zap Im\xF3veis] Rota espec\xEDfica do bairro ${neighborhood} indispon\xEDvel. Recorrendo \xE0 busca geral de ${city}...`);
       const fallbackUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}/`;
-      res = await page.goto(fallbackUrl, { waitUntil: "domcontentloaded", timeout: 3e4 });
+      res = await page.goto(fallbackUrl, { waitUntil: "domcontentloaded", timeout: 12e3 });
       await new Promise((r) => setTimeout(r, 3e3));
     }
     for (let scrollStep = 1; scrollStep <= 3; scrollStep++) {
@@ -9111,7 +9111,7 @@ async function scrapeVivaReal(city, state, neighborhood, browserInstance) {
         req.continue();
       }
     });
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 12e3 });
     await new Promise((r) => setTimeout(r, 3e3));
     for (let scrollStep = 1; scrollStep <= 3; scrollStep++) {
       await page.evaluate((step) => {
@@ -9277,7 +9277,7 @@ async function scrapeImovelweb(city, state, neighborhood, browserInstance) {
         req.continue();
       }
     });
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 12e3 });
     await new Promise((r) => setTimeout(r, 3e3));
     const rawListings = await page.evaluate(() => {
       const results = [];
@@ -9528,6 +9528,7 @@ function convertPortalListingToAuctionProperty(listing, userId = "admin-marcus")
     // Propriedades de Mídia e Imagens (compatibilidade dupla para renderização total)
     imageUrl: listing.imagem_url,
     imagemUrl: listing.imagem_url,
+    images: listing.imagens && listing.imagens.length > 0 ? listing.imagens : listing.imagem_url ? [listing.imagem_url] : [],
     // Propriedades do Módulo Flip / Locação
     transactionType: isRental ? "aluguel" : "venda",
     monthlyRent: isRental ? rent : void 0,
@@ -16207,11 +16208,11 @@ app.post("/api/garimpar/portais", authMiddleware, async (req, res) => {
   } else {
     const cityLower = targetCity.toLowerCase();
     if (cityLower.includes("niter")) {
-      targetNeighborhoods = ["Icara\xED", "Santa Rosa", "Ing\xE1", "S\xE3o Francisco", "Charitas", "Piratininga", "Centro"];
+      targetNeighborhoods = ["Icara\xED", "Santa Rosa", "Centro"];
     } else if (cityLower.includes("juiz de fora") || uf === "MG") {
-      targetNeighborhoods = ["Centro", "S\xE3o Mateus", "Cascatinha", "Granbery", "Bom Pastor", "Alto dos Passos", "Santa Helena", "S\xE3o Pedro", "Paineiras", "Morro da Gl\xF3ria"];
+      targetNeighborhoods = ["Centro", "S\xE3o Mateus", "Cascatinha", "Granbery"];
     } else {
-      targetNeighborhoods = ["Barra da Tijuca", "Recreio dos Bandeirantes", "Copacabana", "Ipanema", "Leblon", "Botafogo", "Flamengo", "Tijuca", "Taquara", "Freguesia (Jacarepagu\xE1)", "Centro"];
+      targetNeighborhoods = ["Copacabana", "Barra da Tijuca", "Botafogo", "Tijuca"];
     }
   }
   console.log(`[API /api/garimpar/portais] Iniciando extra\xE7\xE3o multi-camadas (${transactionType.toUpperCase()}) para ${targetCity}/${uf}: ${targetNeighborhoods.join(", ")} (Portais: ${requestedPortals ? requestedPortals.join(", ") : "Todos"})`);
@@ -16277,20 +16278,56 @@ app.post("/api/garimpar/portais", authMiddleware, async (req, res) => {
       console.error(`[API /api/garimpar/portais] Erro no bairro ${neigh}:`, err.message);
     }
   }
-  const existingLinks = new Set(store.auctions.map((a) => a.auctionLink).filter(Boolean));
-  const existingIds = new Set(store.auctions.map((a) => a.id).filter(Boolean));
-  const newProperties = minedAuctions.filter((a) => !existingLinks.has(a.auctionLink) && !existingIds.has(a.id));
-  if (newProperties.length > 0) {
-    store.auctions.unshift(...newProperties);
+  let updatedCount = 0;
+  const existingMapByLink = /* @__PURE__ */ new Map();
+  const existingMapById = /* @__PURE__ */ new Map();
+  for (const a of store.auctions) {
+    if (a.auctionLink) existingMapByLink.set(a.auctionLink, a);
+    if (a.id) existingMapById.set(a.id, a);
+  }
+  const newProperties = [];
+  const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+  for (const mined of minedAuctions) {
+    const existing = mined.auctionLink && existingMapByLink.get(mined.auctionLink) || mined.id && existingMapById.get(mined.id);
+    if (existing) {
+      existing.auctionPrice = mined.auctionPrice || existing.auctionPrice;
+      existing.precoAnunciado = mined.precoAnunciado || existing.precoAnunciado;
+      existing.estimatedValue = mined.estimatedValue || existing.estimatedValue;
+      existing.valorMercadoEstimado = mined.valorMercadoEstimado || existing.valorMercadoEstimado;
+      existing.vendaBaixaPrice = mined.vendaBaixaPrice || existing.vendaBaixaPrice;
+      existing.vendaMediaPrice = mined.vendaMediaPrice || existing.vendaMediaPrice;
+      existing.calculatedProfit = mined.calculatedProfit || existing.calculatedProfit;
+      existing.calculatedRoi = mined.calculatedRoi || existing.calculatedRoi;
+      existing.descontoMercadoPct = mined.descontoMercadoPct ?? existing.descontoMercadoPct;
+      existing.diasPublicado = mined.diasPublicado ?? existing.diasPublicado;
+      if (mined.images && mined.images.length > 0) existing.images = mined.images;
+      if (mined.imageUrl && !existing.imageUrl) existing.imageUrl = mined.imageUrl;
+      if (mined.lat && mined.lng) {
+        existing.lat = mined.lat;
+        existing.lng = mined.lng;
+        existing.status_geocodificacao = mined.status_geocodificacao || existing.status_geocodificacao;
+      }
+      existing.lastSyncedAt = nowIso;
+      updatedCount++;
+    } else {
+      mined.lastSyncedAt = nowIso;
+      newProperties.push(mined);
+    }
+  }
+  if (newProperties.length > 0 || updatedCount > 0) {
+    if (newProperties.length > 0) {
+      store.auctions.unshift(...newProperties);
+    }
     catalogRevision = Date.now();
     auctionCatalogResponseCache = null;
     saveStore(store);
   }
   const portalLabel = transactionType === "aluguel" ? "Loca\xE7\xE3o Residencial" : "Flip House";
-  const message = `Sucesso! O motor de extra\xE7\xE3o capturou ${minedAuctions.length} ofertas reais de ${portalLabel} (${newProperties.length} novas oportunidades inseridas) nos portais para ${targetCity}/${uf}.`;
+  const message = `Sucesso! O motor de extra\xE7\xE3o atualizou ${updatedCount} im\xF3veis e adicionou ${newProperties.length} novas oportunidades de ${portalLabel} nos portais para ${targetCity}/${uf}.`;
   res.json({
     success: true,
     count: minedAuctions.length,
+    updatedCount,
     newCount: newProperties.length,
     message,
     mined: minedAuctions

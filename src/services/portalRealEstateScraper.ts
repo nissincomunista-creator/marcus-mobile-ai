@@ -875,7 +875,7 @@ export async function scrapeZapImoveis(
       }
     });
 
-    let res = await page.goto(primaryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    let res = await page.goto(primaryUrl, { waitUntil: 'domcontentloaded', timeout: 12000 });
     await new Promise(r => setTimeout(r, 3000));
 
     // Validação de erro 404 / página de recomendação
@@ -885,7 +885,7 @@ export async function scrapeZapImoveis(
     if (isError && hasNeighborhood) {
       console.log(`[Scraper Zap Imóveis] Rota específica do bairro ${neighborhood} indisponível. Recorrendo à busca geral de ${city}...`);
       const fallbackUrl = `https://www.zapimoveis.com.br/venda/imoveis/${ufSlug}+${citySlug}/`;
-      res = await page.goto(fallbackUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      res = await page.goto(fallbackUrl, { waitUntil: 'domcontentloaded', timeout: 12000 });
       await new Promise(r => setTimeout(r, 3000));
     }
 
@@ -1137,7 +1137,7 @@ export async function scrapeVivaReal(
       }
     });
 
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
     await new Promise(r => setTimeout(r, 3000));
 
     // Scroll progressivo com profundidade para carregar muito mais unidades e fotos (lazy loading)
@@ -1349,7 +1349,7 @@ export async function scrapeImovelweb(
       }
     });
 
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
     await new Promise(r => setTimeout(r, 3000));
 
     const rawListings = await page.evaluate(() => {
@@ -1662,6 +1662,7 @@ export function convertPortalListingToAuctionProperty(
     // Propriedades de Mídia e Imagens (compatibilidade dupla para renderização total)
     imageUrl: listing.imagem_url,
     imagemUrl: listing.imagem_url,
+    images: (listing.imagens && listing.imagens.length > 0) ? listing.imagens : (listing.imagem_url ? [listing.imagem_url] : []),
 
     // Propriedades do Módulo Flip / Locação
     transactionType: isRental ? 'aluguel' : 'venda',

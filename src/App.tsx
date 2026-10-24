@@ -855,25 +855,32 @@ export default function App() {
               onClick={async () => {
                 if (openingSyncPhase === 'ready' && !openingCatalogApplied) {
                   await applyOpeningCatalog();
+                } else if (activeTab === 'portais') {
+                  await handleGarimparPortais(
+                    selectedCityFilter || undefined,
+                    undefined,
+                    selectedNeighborhoodFilter ? [selectedNeighborhoodFilter] : undefined,
+                    'venda'
+                  );
                 } else {
                   await refreshMarketData({ silent: false });
                 }
               }}
-              disabled={isLoading || applyingOpeningCatalog}
+              disabled={isLoading || applyingOpeningCatalog || isMining}
               title="Clique para sincronizar e verificar todas as fontes agora"
-              className="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 text-[11px] font-mono text-slate-400 hover:text-slate-200 shadow-inner transition-all cursor-pointer group"
+              className="flex items-center space-x-2 px-2.5 sm:px-3 py-1 rounded-full bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 text-[10.5px] sm:text-[11px] font-mono text-slate-400 hover:text-slate-200 shadow-inner transition-all cursor-pointer group"
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${
-                isLoading || applyingOpeningCatalog
+                isLoading || applyingOpeningCatalog || isMining
                   ? 'bg-amber-400 animate-ping'
                   : 'bg-emerald-400 animate-pulse'
               }`} />
               
               <span className="flex items-center gap-1.5">
-                {isLoading || applyingOpeningCatalog ? (
+                {isLoading || applyingOpeningCatalog || isMining ? (
                   <span className="text-amber-300 flex items-center gap-1">
                     <RefreshCw className="w-3 h-3 animate-spin" />
-                    <span>Verificando fontes…</span>
+                    <span>{isMining ? 'Garimpando portais…' : 'Verificando fontes…'}</span>
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">

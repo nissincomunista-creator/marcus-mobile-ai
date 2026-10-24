@@ -161,7 +161,7 @@ export default function Dashboard({
   const [isModalitiesOpen, setIsModalitiesOpen] = useState(true);
   const [isLocationOpen, setIsLocationOpen] = useState(true);
   const [isNeighborhoodsOpen, setIsNeighborhoodsOpen] = useState(false);
-  const [isPortalsOpen, setIsPortalsOpen] = useState(false);
+  const [isPortalsOpen, setIsPortalsOpen] = useState(mode === 'portais');
 
   // Advanced Filters Modal state (Estilo QuintoAndar)
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
@@ -1818,6 +1818,27 @@ export default function Dashboard({
                     </button>
                   </div>
                 </div>
+
+                {/* BOTÃO PRINCIPAL DE EXTRAÇÃO FLIP / LOCAÇÃO NA SIDEBAR */}
+                <button
+                  type="button"
+                  onClick={() => onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda')}
+                  disabled={isMining}
+                  className={`w-full py-2.5 px-3 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
+                    isMining
+                      ? 'bg-amber-600/50 animate-pulse text-amber-200 border border-amber-500/50'
+                      : advancedContextTab === 'alugar'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-950/40 border border-emerald-400/30'
+                        : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 shadow-amber-950/40 border border-amber-400/30'
+                  }`}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isMining ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isMining
+                      ? 'Extraindo dos Portais...'
+                      : (advancedContextTab === 'alugar' ? '🚀 Garimpar Imóveis para Alugar' : '🚀 Garimpar Imóveis Flip House')}
+                  </span>
+                </button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -2458,6 +2479,32 @@ export default function Dashboard({
                     )}
                   </p>
                 </div>
+              </div>
+
+              {/* Centro/Direita: Botão de Ação Imediata para Atualizar/Extrair */}
+              <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleSyncNow}
+                  disabled={isMining}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all border shadow-sm ${
+                    isMining
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                      : mode === 'portais'
+                        ? (advancedContextTab === 'alugar'
+                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-emerald-400/30'
+                            : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white border-amber-400/30')
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 hover:border-slate-600'
+                  }`}
+                  title={mode === 'portais' ? 'Extrair novas ofertas e sincronizar preços dos portais agora' : 'Sincronizar base de dados agora'}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isMining ? 'animate-spin text-amber-300' : 'text-white'}`} />
+                  <span>
+                    {isMining
+                      ? 'Extraindo Portais…'
+                      : (mode === 'portais' ? (advancedContextTab === 'alugar' ? 'Atualizar Locação' : 'Atualizar Imóveis Flip') : 'Atualizar Base')}
+                  </span>
+                </button>
               </div>
 
               {/* Direita: Toggle Temporal (Padrão, Mais Antigos, Inclusão Mais Recente) */}

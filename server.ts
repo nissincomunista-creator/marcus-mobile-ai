@@ -7617,13 +7617,12 @@ app.post('/api/garimpar/portais', authMiddleware, async (req, res) => {
     // Bairros prioritários e representativos da cidade ativa
     const cityLower = targetCity.toLowerCase();
     if (cityLower.includes('niter')) {
-      targetNeighborhoods = ['Icaraí', 'Santa Rosa', 'Ingá', 'São Francisco', 'Charitas', 'Piratininga', 'Centro'];
+      targetNeighborhoods = ['Icaraí', 'Santa Rosa', 'Centro'];
     } else if (cityLower.includes('juiz de fora') || uf === 'MG') {
-      // Ampla cobertura dos principais polos imobiliários de Juiz de Fora
-      targetNeighborhoods = ['Centro', 'São Mateus', 'Cascatinha', 'Granbery', 'Bom Pastor', 'Alto dos Passos', 'Santa Helena', 'São Pedro', 'Paineiras', 'Morro da Glória'];
+      targetNeighborhoods = ['Centro', 'São Mateus', 'Cascatinha', 'Granbery'];
     } else {
-      // Rio de Janeiro capital
-      targetNeighborhoods = ['Barra da Tijuca', 'Recreio dos Bandeirantes', 'Copacabana', 'Ipanema', 'Leblon', 'Botafogo', 'Flamengo', 'Tijuca', 'Taquara', 'Freguesia (Jacarepaguá)', 'Centro'];
+      // Rio de Janeiro capital - Top 4 bairros de maior volume e liquidez
+      targetNeighborhoods = ['Copacabana', 'Barra da Tijuca', 'Botafogo', 'Tijuca'];
     }
   }
 
@@ -7702,24 +7701,62 @@ app.post('/api/garimpar/portais', authMiddleware, async (req, res) => {
     }
   }
 
-  // Deduplicação contra a base de dados
-  const existingLinks = new Set(store.auctions.map(a => a.auctionLink).filter(Boolean));
-  const existingIds = new Set(store.auctions.map(a => a.id).filter(Boolean));
-  const newProperties = minedAuctions.filter(a => !existingLinks.has(a.auctionLink) && !existingIds.has(a.id));
+  // Deduplicação e Atualização In-Place contra a base de dados
+  let updatedCount = 0;
+  const existingMapByLink = new Map<string, AuctionProperty>();
+  const existingMapById = new Map<string, AuctionProperty>();
+  for (const a of store.auctions) {
+    if (a.auctionLink) existingMapByLink.set(a.auctionLink, a);
+    if (a.id) existingMapById.set(a.id, a);
+  }
 
-  if (newProperties.length > 0) {
-    store.auctions.unshift(...newProperties);
+  const newProperties: AuctionProperty[] = [];
+  const nowIso = new Date().toISOString();
+
+  for (const mined of minedAuctions) {
+    const existing = (mined.auctionLink && existingMapByLink.get(mined.auctionLink)) || (mined.id && existingMapById.get(mined.id));
+    if (existing) {
+      existing.auctionPrice = mined.auctionPrice || existing.auctionPrice;
+      existing.precoAnunciado = mined.precoAnunciado || existing.precoAnunciado;
+      existing.estimatedValue = mined.estimatedValue || existing.estimatedValue;
+      existing.valorMercadoEstimado = mined.valorMercadoEstimado || existing.valorMercadoEstimado;
+      existing.vendaBaixaPrice = mined.vendaBaixaPrice || existing.vendaBaixaPrice;
+      existing.vendaMediaPrice = mined.vendaMediaPrice || existing.vendaMediaPrice;
+      existing.calculatedProfit = mined.calculatedProfit || existing.calculatedProfit;
+      existing.calculatedRoi = mined.calculatedRoi || existing.calculatedRoi;
+      existing.descontoMercadoPct = mined.descontoMercadoPct ?? existing.descontoMercadoPct;
+      existing.diasPublicado = mined.diasPublicado ?? existing.diasPublicado;
+      if (mined.images && mined.images.length > 0) existing.images = mined.images;
+      if (mined.imageUrl && !existing.imageUrl) existing.imageUrl = mined.imageUrl;
+      if (mined.lat && mined.lng) {
+        existing.lat = mined.lat;
+        existing.lng = mined.lng;
+        existing.status_geocodificacao = mined.status_geocodificacao || existing.status_geocodificacao;
+      }
+      existing.lastSyncedAt = nowIso;
+      updatedCount++;
+    } else {
+      mined.lastSyncedAt = nowIso;
+      newProperties.push(mined);
+    }
+  }
+
+  if (newProperties.length > 0 || updatedCount > 0) {
+    if (newProperties.length > 0) {
+      store.auctions.unshift(...newProperties);
+    }
     catalogRevision = Date.now();
     auctionCatalogResponseCache = null;
     saveStore(store);
   }
 
   const portalLabel = transactionType === 'aluguel' ? 'Locação Residencial' : 'Flip House';
-  const message = `Sucesso! O motor de extração capturou ${minedAuctions.length} ofertas reais de ${portalLabel} (${newProperties.length} novas oportunidades inseridas) nos portais para ${targetCity}/${uf}.`;
+  const message = `Sucesso! O motor de extração atualizou ${updatedCount} imóveis e adicionou ${newProperties.length} novas oportunidades de ${portalLabel} nos portais para ${targetCity}/${uf}.`;
 
   res.json({
     success: true,
     count: minedAuctions.length,
+    updatedCount,
     newCount: newProperties.length,
     message,
     mined: minedAuctions
