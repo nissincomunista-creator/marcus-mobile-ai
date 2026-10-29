@@ -24,6 +24,13 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  const heading=$('h1').first().text().trim();
  const visibleText=$('body').text().replace(/\s+/g,' ').trim();
  if(/verifique que voc[eê] [eé] humano|verify you are human|checking your browser/i.test(visibleText))return {...previous,...base,state:previous?.state||'unknown',reason:'Consulta bloqueada por desafio de acesso'};
+ const isOnlyCookieNotice = visibleText.length < 300 && /cookie|pol[íi]tica de privacidade|consentir/i.test(visibleText);
+ if (visibleText.length < 60 || isOnlyCookieNotice) {
+  return finish('expirado_link_invalido', 'Fonte não possui lote ativo (página em branco ou apenas cookies)');
+ }
+ if (/(?:lote|leil[aã]o)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|im[oó]vel\s+(?:j[aá]\s+)?(?:vendido|indispon[íi]vel)|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
+  return finish('finalizado', 'Lote encerrado, cancelado ou indisponível no site do leiloeiro');
+ }
  const unavailable=/^(?:(?:este|o)\s+)?(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+(?:n[aã]o\s+(?:foi\s+)?encontrad[oa]|n[aã]o\s+(?:(?:est[aá]|se encontra)\s+)?(?:mais\s+)?dispon[ií]vel\s*(?:para venda)?|indispon[ií]vel|removid[oa])[.!]?$/i;
  const unavailableLabels=[heading,...$('.alert,[class*="erro"],[class*="error"]').map((_,e)=>$(e).text().replace(/\s+/g,' ').trim()).get()];
  if(unavailableLabels.some(t=>unavailable.test(t)))return finish('expirado_link_invalido','Fonte informa anúncio indisponível ou removido');
@@ -43,6 +50,18 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
 export const isExpiredAuction = (a: any, now = new Date().toISOString()): boolean => {
   if (!a) return false;
 
+  // Imóveis de Portais (Flip House / Locação): anúncios de compra/venda direta, não expiram por data de praça
+  if (a.origin === 'portal') {
+    if (a.title && /\b(vendido|alugado|indispon[íi]vel)\b/i.test(a.title)) return true;
+    if (a.description && /\b(imóvel vendido|já foi vendido|anúncio pausado)\b/i.test(a.description)) return true;
+    return false;
+  }
+
+  // Imóveis da Caixa: ciclo de vida estritamente sincronizado com a planilha oficial da Caixa
+  if (a.origin === 'caixa' || a.origin === 'caixa_radar' || a.id?.startsWith('auc-caixa-')) {
+    return false;
+  }
+
   if (a.availability?.state === 'closed' || a.availability?.state === 'removed') return true;
   if (a.sourceAvailability?.state === 'closed' || a.sourceAvailability?.state === 'removed') return true;
   if (a.sourceClosed === true) return true;
@@ -50,18 +69,25 @@ export const isExpiredAuction = (a: any, now = new Date().toISOString()): boolea
   if (a.ingestionStatus === 'expirado_por_data' || a.ingestionStatus === 'expirado_link_invalido' || a.ingestionStatus === 'finalizado') return true;
 
   const mode = `${a.saleMode || ''} ${a.title || ''}`;
-  if (/venda direta|proposta continuada|venda online cont/i.test(mode)) {
+  const isDirectSale = /venda direta|proposta continuada|venda online cont/i.test(mode);
+
+  const rawDates = lifecycleDates(a);
+  const nowMs = Date.parse(now);
+  const parsedDates = rawDates.map(dayEnd).filter(Number.isFinite);
+
+  if (parsedDates.length > 0) {
+    if (parsedDates.every(d => d < nowMs)) {
+      return true;
+    }
     return false;
   }
 
-  const rawDates = lifecycleDates(a);
-  if (rawDates.length === 0) return false;
-
-  const nowMs = Date.parse(now);
-  const parsedDates = rawDates.map(dayEnd).filter(Number.isFinite);
-  if (parsedDates.length > 0 && parsedDates.every(d => d < nowMs)) {
+  // Leilões judiciais/extrajudiciais sem qualquer data informada e sem venda direta contínua
+  // são lotes do passado/expirados
+  if (!isDirectSale) {
     return true;
   }
+
   return false;
 };
 
@@ -70,4 +96,3 @@ export const isRetired = (a: any) =>
   a?.availability?.state === 'removed' ||
   a?.sourceClosed === true ||
   isExpiredAuction(a);
-

@@ -1177,6 +1177,19 @@ function loadStore(): DataStore {
             }
           }
         });
+        // Restaura portais indevidamente marcados como encerrados
+        storeData.auctions.forEach(a => {
+          if (a.origin === 'portal' && a.availability?.reason === 'Todas as rodadas do leilão já transcorreram') {
+            a.availability = undefined;
+            a.ingestionStatus = 'ativo';
+          }
+        });
+        // Expurgador de leilões encerrados, suspensos ou fora do ar
+        const beforeStartupPurge = storeData.auctions.length;
+        storeData.auctions = storeData.auctions.filter(a => !isRetired(a));
+        if (beforeStartupPurge !== storeData.auctions.length) {
+          console.log(`[Startup Gatekeeper] Expurgados ${beforeStartupPurge - storeData.auctions.length} lotes encerrados/expirados da base.`);
+        }
         storeData.auctions.forEach(a => {
           const canon = getCanonicalTargetCity(a.city, a.state);
           if (canon) {
@@ -6801,9 +6814,10 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
 
     console.log('[Caixa Auto-Sync] Autenticando sessão em venda-imoveis.caixa.gov.br/sistema/download-lista.asp...');
     await page.goto('https://venda-imoveis.caixa.gov.br/sistema/download-lista.asp', {
-      waitUntil: 'networkidle2',
-      timeout: 35000
+      waitUntil: 'domcontentloaded',
+      timeout: 25000
     });
+    await new Promise(r => setTimeout(r, 2000));
 
     for (const uf of targetStates) {
       try {
@@ -6811,8 +6825,12 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
         let stateProcessedSuccessfully = false;
         console.log(`[Caixa Auto-Sync] Baixando planilha oficial de ${uf} dos servidores da Caixa...`);
         const content = await page.evaluate(async (ufParam) => {
-          const res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now());
-          if (!res.ok) throw new Error('HTTP ' + res.status + ' ao baixar CSV oficial');
+          let res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now());
+          if (!res.ok) {
+            await new Promise(r => setTimeout(r, 1500));
+            res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now());
+          }
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' ao baixar CSV oficial para ' + ufParam);
           const buffer = await res.arrayBuffer();
           return new TextDecoder('windows-1252').decode(buffer);
         }, uf);

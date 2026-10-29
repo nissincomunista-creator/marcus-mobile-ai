@@ -19732,5 +19732,35 @@
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Estrada Padre Roser",
     "matchedNumber": "620"
+  },
+  "rua patagonia, 16": {
+    "lat": -22.8400269,
+    "lng": -43.2762831,
+    "displayName": "Condomínio Residencial Vivenda da Penha II, 16, Rua Patagônia, Largo da Penha, Penha, Rio de Janeiro, Região Sudeste, 21020-070, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Patagônia",
+    "matchedNumber": "16"
+  },
+  "rua patagonia, penha, rio de janeiro - rj": {
+    "lat": -22.8400269,
+    "lng": -43.2762831,
+    "displayName": "Condomínio Residencial Vivenda da Penha II, 16, Rua Patagônia, Largo da Penha, Penha, Rio de Janeiro, Região Sudeste, 21020-070, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Patagônia",
+    "matchedNumber": "16"
+  },
+  "rua patagonia, 16|rio de janeiro|rj": {
+    "lat": -22.8400269,
+    "lng": -43.2762831,
+    "displayName": "Condomínio Residencial Vivenda da Penha II, 16, Rua Patagônia, Largo da Penha, Penha, Rio de Janeiro, Região Sudeste, 21020-070, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Patagônia",
+    "matchedNumber": "16"
   }
 }

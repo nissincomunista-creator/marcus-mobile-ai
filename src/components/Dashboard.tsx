@@ -838,6 +838,9 @@ export default function Dashboard({
         if (dates.length > 0 && dates.every(d => d < todayEnd)) {
           return false;
         }
+        if (dates.length === 0 && (a.origin === 'judicial' || a.origin === 'extrajudicial')) {
+          return false;
+        }
       }
       return true;
     });

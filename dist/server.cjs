@@ -48,6 +48,13 @@ function assessAvailability(previous, url, httpStatus, html, now = (/* @__PURE__
   const heading = $("h1").first().text().trim();
   const visibleText = $("body").text().replace(/\s+/g, " ").trim();
   if (/verifique que voc[eê] [eé] humano|verify you are human|checking your browser/i.test(visibleText)) return { ...previous, ...base, state: previous?.state || "unknown", reason: "Consulta bloqueada por desafio de acesso" };
+  const isOnlyCookieNotice = visibleText.length < 300 && /cookie|pol[íi]tica de privacidade|consentir/i.test(visibleText);
+  if (visibleText.length < 60 || isOnlyCookieNotice) {
+    return finish("expirado_link_invalido", "Fonte n\xE3o possui lote ativo (p\xE1gina em branco ou apenas cookies)");
+  }
+  if (/(?:lote|leil[aã]o)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|im[oó]vel\s+(?:j[aá]\s+)?(?:vendido|indispon[íi]vel)|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
+    return finish("finalizado", "Lote encerrado, cancelado ou indispon\xEDvel no site do leiloeiro");
+  }
   const unavailable = /^(?:(?:este|o)\s+)?(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+(?:n[aã]o\s+(?:foi\s+)?encontrad[oa]|n[aã]o\s+(?:(?:est[aá]|se encontra)\s+)?(?:mais\s+)?dispon[ií]vel\s*(?:para venda)?|indispon[ií]vel|removid[oa])[.!]?$/i;
   const unavailableLabels = [heading, ...$('.alert,[class*="erro"],[class*="error"]').map((_, e) => $(e).text().replace(/\s+/g, " ").trim()).get()];
   if (unavailableLabels.some((t) => unavailable.test(t))) return finish("expirado_link_invalido", "Fonte informa an\xFAncio indispon\xEDvel ou removido");
@@ -83,20 +90,31 @@ var init_lifecycle = __esm({
     };
     isExpiredAuction = (a, now = (/* @__PURE__ */ new Date()).toISOString()) => {
       if (!a) return false;
+      if (a.origin === "portal") {
+        if (a.title && /\b(vendido|alugado|indispon[íi]vel)\b/i.test(a.title)) return true;
+        if (a.description && /\b(imóvel vendido|já foi vendido|anúncio pausado)\b/i.test(a.description)) return true;
+        return false;
+      }
+      if (a.origin === "caixa" || a.origin === "caixa_radar" || a.id?.startsWith("auc-caixa-")) {
+        return false;
+      }
       if (a.availability?.state === "closed" || a.availability?.state === "removed") return true;
       if (a.sourceAvailability?.state === "closed" || a.sourceAvailability?.state === "removed") return true;
       if (a.sourceClosed === true) return true;
       if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return true;
       if (a.ingestionStatus === "expirado_por_data" || a.ingestionStatus === "expirado_link_invalido" || a.ingestionStatus === "finalizado") return true;
       const mode = `${a.saleMode || ""} ${a.title || ""}`;
-      if (/venda direta|proposta continuada|venda online cont/i.test(mode)) {
-        return false;
-      }
+      const isDirectSale = /venda direta|proposta continuada|venda online cont/i.test(mode);
       const rawDates = lifecycleDates(a);
-      if (rawDates.length === 0) return false;
       const nowMs = Date.parse(now);
       const parsedDates = rawDates.map(dayEnd).filter(Number.isFinite);
-      if (parsedDates.length > 0 && parsedDates.every((d) => d < nowMs)) {
+      if (parsedDates.length > 0) {
+        if (parsedDates.every((d) => d < nowMs)) {
+          return true;
+        }
+        return false;
+      }
+      if (!isDirectSale) {
         return true;
       }
       return false;
@@ -1470,7 +1488,8 @@ function validateDraft(input, options = {}) {
   if (declared && (normalize2(declared.city) !== normalize2(draft.city) || declared.state !== draft.state)) reasons.push("localidade_divergente_do_detalhe");
   if (!(Number.isFinite(draft.auctionPrice) && draft.auctionPrice > 0 && draft.priceVerified === true)) reasons.push("preco_minimo_nao_confirmado");
   if (!draft.neighborhood) reasons.push("bairro_nao_confirmado");
-  if (!draft.address || !/\d/.test(draft.address)) reasons.push("endereco_incompleto");
+  const isCaixaLot = draft.origin === "caixa" || draft.origin === "caixa_radar";
+  if (!draft.address || !isCaixaLot && !/\d/.test(draft.address)) reasons.push("endereco_incompleto");
   if (!draft.sourceVerified) reasons.push("detalhe_oficial_nao_confirmado");
   if (!draft.originVerified) reasons.push("modalidade_nao_confirmada");
   if (options.persist !== false) {
@@ -10864,6 +10883,17 @@ function loadStore() {
       }
     });
     storeData.auctions.forEach((a) => {
+      if (a.origin === "portal" && a.availability?.reason === "Todas as rodadas do leil\xE3o j\xE1 transcorreram") {
+        a.availability = void 0;
+        a.ingestionStatus = "ativo";
+      }
+    });
+    const beforeStartupPurge = storeData.auctions.length;
+    storeData.auctions = storeData.auctions.filter((a) => !isRetired(a));
+    if (beforeStartupPurge !== storeData.auctions.length) {
+      console.log(`[Startup Gatekeeper] Expurgados ${beforeStartupPurge - storeData.auctions.length} lotes encerrados/expirados da base.`);
+    }
+    storeData.auctions.forEach((a) => {
       const canon = getCanonicalTargetCity(a.city, a.state);
       if (canon) {
         a.city = canon.city;
@@ -15527,17 +15557,22 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
     console.log("[Caixa Auto-Sync] Autenticando sess\xE3o em venda-imoveis.caixa.gov.br/sistema/download-lista.asp...");
     await page.goto("https://venda-imoveis.caixa.gov.br/sistema/download-lista.asp", {
-      waitUntil: "networkidle2",
-      timeout: 35e3
+      waitUntil: "domcontentloaded",
+      timeout: 25e3
     });
+    await new Promise((r) => setTimeout(r, 2e3));
     for (const uf of targetStates) {
       try {
         const importedList = [];
         let stateProcessedSuccessfully = false;
         console.log(`[Caixa Auto-Sync] Baixando planilha oficial de ${uf} dos servidores da Caixa...`);
         const content = await page.evaluate(async (ufParam) => {
-          const res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now());
-          if (!res.ok) throw new Error("HTTP " + res.status + " ao baixar CSV oficial");
+          let res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now());
+          if (!res.ok) {
+            await new Promise((r) => setTimeout(r, 1500));
+            res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now());
+          }
+          if (!res.ok) throw new Error("HTTP " + res.status + " ao baixar CSV oficial para " + ufParam);
           const buffer = await res.arrayBuffer();
           return new TextDecoder("windows-1252").decode(buffer);
         }, uf);
