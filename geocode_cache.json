@@ -19762,5 +19762,35 @@
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Rua Patagônia",
     "matchedNumber": "16"
+  },
+  "rua antonio mendes campos, 57": {
+    "lat": -22.9214653,
+    "lng": -43.1766751,
+    "displayName": "57, Rua Antônio Mendes Campos, Glória, Rio de Janeiro, Região Sudeste, 22211-140, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Antônio Mendes Campos",
+    "matchedNumber": "57"
+  },
+  "rua antonio mendes campos, gloria, rio de janeiro - rj": {
+    "lat": -22.9214653,
+    "lng": -43.1766751,
+    "displayName": "57, Rua Antônio Mendes Campos, Glória, Rio de Janeiro, Região Sudeste, 22211-140, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Antônio Mendes Campos",
+    "matchedNumber": "57"
+  },
+  "rua antonio mendes campos, 57|rio de janeiro|rj": {
+    "lat": -22.9214653,
+    "lng": -43.1766751,
+    "displayName": "57, Rua Antônio Mendes Campos, Glória, Rio de Janeiro, Região Sudeste, 22211-140, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Antônio Mendes Campos",
+    "matchedNumber": "57"
   }
 }

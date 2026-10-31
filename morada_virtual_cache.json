@@ -10127,5 +10127,673 @@
     "cards": [],
     "updatedAt": "2026-10-29T15:46:04.316Z",
     "notFound": true
+  },
+  "rj_rio de janeiro_gra_g": {
+    "street": "g",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:23:28.609Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_grajau_g": {
+    "street": "g",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:23:31.419Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_gra_gra": {
+    "street": "gra",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rocha-miranda/rua-luis-da-gra",
+    "canonicalTitle": "Rua Luís da GraQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte compacto. Pelos nossos dados, o m² de venda gira em torno de R$ 3.287.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3723,
+        "sampleCount": 80,
+        "avgPrice": 187000,
+        "rawMeta": "~48 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2178,
+        "sampleCount": 46,
+        "avgPrice": 320000,
+        "rawMeta": "~188 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 1300,
+        "sampleCount": 5,
+        "avgPrice": 1300000,
+        "rawMeta": "~800 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:23:35.957Z"
+  },
+  "rj_rio de janeiro_grajau_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/grajau/rua-grajau",
+    "canonicalTitle": "Rua GrajauQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5265,
+        "sampleCount": 1192,
+        "avgPrice": 489695,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3791,
+        "sampleCount": 348,
+        "avgPrice": 890000,
+        "rawMeta": "~250 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4194,
+        "sampleCount": 23,
+        "avgPrice": 800000,
+        "rawMeta": "~155 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:23:36.428Z"
+  },
+  "rj_rio de janeiro_grajau_gra": {
+    "street": "gra",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:23:41.177Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_gra_gr": {
+    "street": "gr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:23:42.958Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_grajau_gr": {
+    "street": "gr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:23:44.378Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_i_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/grajau/rua-grajau",
+    "canonicalTitle": "Rua GrajauQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5265,
+        "sampleCount": 1192,
+        "avgPrice": 489695,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3791,
+        "sampleCount": 348,
+        "avgPrice": 890000,
+        "rawMeta": "~250 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4194,
+        "sampleCount": 23,
+        "avgPrice": 800000,
+        "rawMeta": "~155 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:26:08.085Z"
+  },
+  "rj_rio de janeiro_il_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:26:12.857Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ilh_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:26:12.983Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ilha_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:26:13.063Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_j_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/grajau/rua-grajau",
+    "canonicalTitle": "Rua GrajauQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5265,
+        "sampleCount": 1192,
+        "avgPrice": 489695,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3791,
+        "sampleCount": 348,
+        "avgPrice": 890000,
+        "rawMeta": "~250 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4194,
+        "sampleCount": 23,
+        "avgPrice": 800000,
+        "rawMeta": "~155 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:26:15.211Z"
+  },
+  "rj_rio de janeiro_ja_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/grajau/rua-grajau",
+    "canonicalTitle": "Rua GrajauQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5265,
+        "sampleCount": 1192,
+        "avgPrice": 489695,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3791,
+        "sampleCount": 348,
+        "avgPrice": 890000,
+        "rawMeta": "~250 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4194,
+        "sampleCount": 23,
+        "avgPrice": 800000,
+        "rawMeta": "~155 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:26:17.062Z"
+  },
+  "rj_rio de janeiro_jar_grajau": {
+    "street": "Rua Grajaú",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:26:20.527Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jardim guanabara_a": {
+    "street": "a",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:26:25.250Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jardim guanabara_aureliano pimentel": {
+    "street": "Rua Aureliano Pimentel",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jardim-guanabara/rua-aureliano-pimentel",
+    "canonicalTitle": "Rua Aureliano PimentelQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.732.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6181,
+        "sampleCount": 460,
+        "avgPrice": 770000,
+        "rawMeta": "~121 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4569,
+        "sampleCount": 267,
+        "avgPrice": 1495000,
+        "rawMeta": "~343 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5662,
+        "sampleCount": 10,
+        "avgPrice": 207500,
+        "rawMeta": "~36 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:26:29.479Z"
+  },
+  "rj_rio de janeiro_jardim guanabara_aur": {
+    "street": "aur",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jardim-guanabara/rua-aureliano-pimentel",
+    "canonicalTitle": "Rua Aureliano PimentelQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.732.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6181,
+        "sampleCount": 460,
+        "avgPrice": 770000,
+        "rawMeta": "~121 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4569,
+        "sampleCount": 267,
+        "avgPrice": 1495000,
+        "rawMeta": "~343 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5662,
+        "sampleCount": 10,
+        "avgPrice": 207500,
+        "rawMeta": "~36 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:26:34.973Z"
+  },
+  "rj_rio de janeiro_jardim guanabara_aure": {
+    "street": "aure",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jardim-guanabara/rua-aureliano-pimentel",
+    "canonicalTitle": "Rua Aureliano PimentelQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 5.732.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6181,
+        "sampleCount": 460,
+        "avgPrice": 770000,
+        "rawMeta": "~121 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4569,
+        "sampleCount": 267,
+        "avgPrice": 1495000,
+        "rawMeta": "~343 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5662,
+        "sampleCount": 10,
+        "avgPrice": 207500,
+        "rawMeta": "~36 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T18:26:35.016Z"
+  },
+  "rj_rio de janeiro_jardim guanabara_au": {
+    "street": "au",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-29T18:26:40.955Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_gloria_antonio mendes campos": {
+    "street": "Rua Antonio Mendes Campos, 57,",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/gloria/rua-antonio-mendes-campos",
+    "canonicalTitle": "Rua Antônio Mendes CamposQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 11.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 11719,
+        "sampleCount": 522,
+        "avgPrice": 877500,
+        "rawMeta": "~77 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 7000,
+        "sampleCount": 52,
+        "avgPrice": 1680000,
+        "rawMeta": "~234 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 7227,
+        "sampleCount": 81,
+        "avgPrice": 1600000,
+        "rawMeta": "~243 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-29T20:27:41.710Z"
+  },
+  "rj_rio de janeiro_pilares_j": {
+    "street": "j",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:46.029Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_p_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cachambi/rua-capitao-rezende",
+    "canonicalTitle": "Rua Capitao RezendeQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.706.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5424,
+        "sampleCount": 959,
+        "avgPrice": 414900,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3388,
+        "sampleCount": 223,
+        "avgPrice": 600000,
+        "rawMeta": "~180 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4525,
+        "sampleCount": 66,
+        "avgPrice": 357665,
+        "rawMeta": "~69 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-30T14:48:51.212Z"
+  },
+  "rj_rio de janeiro_pi_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cachambi/rua-capitao-rezende",
+    "canonicalTitle": "Rua Capitao RezendeQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.706.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5424,
+        "sampleCount": 959,
+        "avgPrice": 414900,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3388,
+        "sampleCount": 223,
+        "avgPrice": 600000,
+        "rawMeta": "~180 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4525,
+        "sampleCount": 66,
+        "avgPrice": 357665,
+        "rawMeta": "~69 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-30T14:48:51.605Z"
+  },
+  "rj_rio de janeiro_pilare_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:51.969Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pilares_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:51.971Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pila_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:51.972Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pilar_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:51.972Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pil_capitao rezende": {
+    "street": "Rua Capitão Rezende",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:51.973Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pilares_jacarei": {
+    "street": "Rua Jacareí",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pilares/rua-jacarei",
+    "canonicalTitle": "Rua JacareiQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.322.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4000,
+        "sampleCount": 108,
+        "avgPrice": 262500,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2583,
+        "sampleCount": 71,
+        "avgPrice": 340000,
+        "rawMeta": "~150 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 50,
+        "avgPrice": 280000,
+        "rawMeta": "~60 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-30T14:48:53.658Z"
+  },
+  "rj_rio de janeiro_pilares_jac": {
+    "street": "jac",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:56.593Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pilares_jaca": {
+    "street": "jaca",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:48:58.441Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pilares_ja": {
+    "street": "ja",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-30T14:49:00.497Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vicente de carvalho_j": {
+    "street": "j",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-31T15:42:18.359Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vicente de carvalho_juliano de miranda": {
+    "street": "Rua Juliano de Miranda",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vicente-de-carvalho/rua-juliano-de-miranda",
+    "canonicalTitle": "Rua Juliano de MirandaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5387,
+        "sampleCount": 116,
+        "avgPrice": 349500,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2773,
+        "sampleCount": 36,
+        "avgPrice": 292519,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2375,
+        "sampleCount": 13,
+        "avgPrice": 750000,
+        "rawMeta": "~260 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-31T15:42:37.411Z"
+  },
+  "rj_rio de janeiro_vicente de carvalho_jul": {
+    "street": "jul",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vicente-de-carvalho/rua-juliano-de-miranda",
+    "canonicalTitle": "Rua Juliano de MirandaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5387,
+        "sampleCount": 116,
+        "avgPrice": 349500,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2773,
+        "sampleCount": 36,
+        "avgPrice": 292519,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2375,
+        "sampleCount": 13,
+        "avgPrice": 750000,
+        "rawMeta": "~260 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-10-31T15:42:38.204Z"
+  },
+  "rj_rio de janeiro_vicente de carvalho_ju": {
+    "street": "ju",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-10-31T15:42:40.625Z",
+    "notFound": true
   }
 }

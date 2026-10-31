@@ -258,6 +258,17 @@ export default function App() {
 
         const aucData = await aucRes.json();
         setAuctions(Array.isArray(aucData) ? aucData : []);
+        // Sincronização automática em background da Caixa a cada abertura do app
+        void authFetch('/api/garimpar/caixa-auto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ states: ['RJ', 'MG'] })
+        }).then(async (cRes) => {
+          if (cRes.ok) {
+            console.log('[Caixa Auto-Start] Base da Caixa atualizada com sucesso na abertura.');
+            await refreshMarketData({ silent: true });
+          }
+        }).catch((cErr) => console.warn('[Caixa Auto-Start] Falha silenciosa no sync Caixa da abertura:', cErr));
         void authFetch('/api/itbi').then(async itbiRes => {
           if (!itbiRes.ok) throw new Error(`HTTP ${itbiRes.status}`);
           return itbiRes.json();
@@ -863,7 +874,8 @@ export default function App() {
                     'venda'
                   );
                 } else {
-                  await refreshMarketData({ silent: false });
+                  // Atualiza a base da Caixa e recarrega os dados do mercado
+                  await handleSyncCaixaAuto();
                 }
               }}
               disabled={isLoading || applyingOpeningCatalog || isMining}
@@ -1353,6 +1365,9 @@ export default function App() {
                       onGarimparJudiciais={handleGarimparJudiciais}
                       onGarimparCaixa={handleGarimparCaixa}
                       onGarimparPortais={handleGarimparPortais}
+                      onSyncCaixaAuto={handleSyncCaixaAuto}
+                      onSyncExtrajudiciaisAuto={handleSyncExtrajudiciaisAuto}
+                      onSyncJudiciaisAuto={handleSyncJudiciaisAuto}
                       isMining={isMining}
                       itbiCount={itbiCount}
                       onUpdateProperty={handleUpdatePropertyDirectly}
@@ -1476,6 +1491,9 @@ export default function App() {
                       onGarimparJudiciais={handleGarimparJudiciais}
                       onGarimparCaixa={handleGarimparCaixa}
                       onGarimparPortais={handleGarimparPortais}
+                      onSyncCaixaAuto={handleSyncCaixaAuto}
+                      onSyncExtrajudiciaisAuto={handleSyncExtrajudiciaisAuto}
+                      onSyncJudiciaisAuto={handleSyncJudiciaisAuto}
                       isMining={isMining}
                       itbiCount={itbiCount}
                       onUpdateProperty={handleUpdatePropertyDirectly}

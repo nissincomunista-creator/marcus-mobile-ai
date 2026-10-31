@@ -2504,8 +2504,8 @@ export default function Dashboard({
                   <RefreshCw className={`w-3.5 h-3.5 ${isMining ? 'animate-spin text-amber-300' : 'text-white'}`} />
                   <span>
                     {isMining
-                      ? 'Extraindo Portais…'
-                      : (mode === 'portais' ? (advancedContextTab === 'alugar' ? 'Atualizar Locação' : 'Atualizar Imóveis Flip') : 'Atualizar Base')}
+                      ? (mode === 'portais' ? 'Extraindo Portais…' : 'Sincronizando Caixa…')
+                      : (mode === 'portais' ? (advancedContextTab === 'alugar' ? 'Atualizar Locação' : 'Atualizar Imóveis Flip') : 'Atualizar Imóveis Caixa')}
                   </span>
                 </button>
               </div>

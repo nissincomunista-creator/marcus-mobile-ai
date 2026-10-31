@@ -43,6 +43,7 @@ function assessAvailability(previous, url, httpStatus, html, now = (/* @__PURE__
     }
   }
   if (httpStatus !== 200 || /<title[^>]*>[^<]*(?:Just a moment|Access Denied|Captcha)|Radware Bot Manager/i.test(html)) return { ...previous, ...base, state: previous?.state || "unknown", reason: "Consulta bloqueada ou indispon\xEDvel; HTTP " + httpStatus };
+  if (!html || !html.trim()) return previous || { ...base, state: "unknown", reason: "Sem HTML fornecido" };
   const $ = cheerio.load(html);
   $('script,style,noscript,nav,header,footer,aside,select,option,template,[hidden],[aria-hidden="true"],.modal,.cards,[class*="related"],[class*="recommend"]').remove();
   const heading = $("h1").first().text().trim();
@@ -1477,18 +1478,20 @@ function validateDraft(input, options = {}) {
   visible('script,style,nav,footer,aside,[hidden],[class*="related"],[class*="recommend"]').remove();
   const third = visible("body").text().match(/(?:3[ºªo°]|terceir[oa]|nova)\s*(?:pra[cç]a|leil[aã]o|rodada)[^\d]{0,60}(\d{1,2})\/(\d{1,2})\/(20\d{2})/i);
   if (third) draft.thirdAuctionDate = `${third[3]}-${third[2].padStart(2, "0")}-${third[1].padStart(2, "0")}`;
-  const life = draft.sourceAvailability || assessAvailability(void 0, draft.auctionLink, 200, html, options.now, { dates: [draft.firstAuctionDate, draft.secondAuctionDate, draft.thirdAuctionDate, draft.auctionDate].filter(Boolean), saleMode: draft.saleMode });
-  const dated = assessAvailability(life, draft.auctionLink, 200, html, options.now, { dates: [draft.firstAuctionDate, draft.secondAuctionDate, draft.thirdAuctionDate, draft.auctionDate].filter(Boolean), saleMode: draft.saleMode });
-  if (draft.sourceClosed || isRetired({ availability: dated })) {
-    const retired = draft.sourceClosed && !isRetired({ availability: dated }) ? { ...dated, state: "closed", status: "finalizado", reason: "Encerramento confirmado pelo adaptador oficial" } : dated;
-    return { draft: { ...draft, sourceClosed: true, sourceAvailability: retired }, accepted: false, retired: true, reasons: [retired.reason] };
+  const isCaixaLot = draft.origin === "caixa" || draft.origin === "caixa_radar" || draft.id?.startsWith("auc-caixa-");
+  const defaultLife = isCaixaLot ? { state: "active", status: "ativo", url: draft.auctionLink, checkedAt: options.now || (/* @__PURE__ */ new Date()).toISOString(), reason: "Ativo na lista oficial da Caixa Econ\xF4mica Federal" } : void 0;
+  const life = draft.sourceAvailability || defaultLife || assessAvailability(void 0, draft.auctionLink, 200, html, options.now, { dates: [draft.firstAuctionDate, draft.secondAuctionDate, draft.thirdAuctionDate, draft.auctionDate].filter(Boolean), saleMode: draft.saleMode });
+  const dated = isCaixaLot ? life : assessAvailability(life, draft.auctionLink, 200, html, options.now, { dates: [draft.firstAuctionDate, draft.secondAuctionDate, draft.thirdAuctionDate, draft.auctionDate].filter(Boolean), saleMode: draft.saleMode });
+  const candidate = { ...draft, availability: dated, sourceAvailability: dated };
+  if (draft.sourceClosed || isRetired(candidate)) {
+    const retired = draft.sourceClosed && !isRetired(candidate) ? { ...dated, state: "closed", status: "finalizado", reason: "Encerramento confirmado pelo adaptador oficial" } : dated;
+    return { draft: { ...draft, sourceClosed: true, sourceAvailability: retired }, accepted: false, retired: true, reasons: [retired.reason || "Lote encerrado ou indispon\xEDvel"] };
   }
   const reasons = [];
   const declared = declaredAuctionLocation(draft);
   if (declared && (normalize2(declared.city) !== normalize2(draft.city) || declared.state !== draft.state)) reasons.push("localidade_divergente_do_detalhe");
   if (!(Number.isFinite(draft.auctionPrice) && draft.auctionPrice > 0 && draft.priceVerified === true)) reasons.push("preco_minimo_nao_confirmado");
   if (!draft.neighborhood) reasons.push("bairro_nao_confirmado");
-  const isCaixaLot = draft.origin === "caixa" || draft.origin === "caixa_radar";
   if (!draft.address || !isCaixaLot && !/\d/.test(draft.address)) reasons.push("endereco_incompleto");
   if (!draft.sourceVerified) reasons.push("detalhe_oficial_nao_confirmado");
   if (!draft.originVerified) reasons.push("modalidade_nao_confirmada");
@@ -15555,10 +15558,19 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
     });
     const page = await browser.newPage();
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    await page.setRequestInterception(true);
+    page.on("request", (req) => {
+      const resourceType = req.resourceType();
+      if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
     console.log("[Caixa Auto-Sync] Autenticando sess\xE3o em venda-imoveis.caixa.gov.br/sistema/download-lista.asp...");
     await page.goto("https://venda-imoveis.caixa.gov.br/sistema/download-lista.asp", {
       waitUntil: "domcontentloaded",
-      timeout: 25e3
+      timeout: 3e4
     });
     await new Promise((r) => setTimeout(r, 2e3));
     for (const uf of targetStates) {
@@ -15748,7 +15760,13 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
           importedList.push(recalculated);
         }
         if (stateProcessedSuccessfully) {
-          store.auctions = store.auctions.filter((a) => !(a.origin === "caixa" && (a.state || "RJ").toUpperCase() === uf.toUpperCase() && isAllowedTargetCity(a.city, a.state)));
+          const isCaixaForState = (a) => {
+            const isCaixa = a.origin === "caixa" || a.origin === "caixa_radar" || typeof a.id === "string" && a.id.startsWith("auc-caixa-");
+            if (!isCaixa) return false;
+            const aState = (a.state || (a.city && /juiz de fora/i.test(a.city) ? "MG" : "RJ")).toUpperCase().trim();
+            return aState === uf.toUpperCase();
+          };
+          store.auctions = store.auctions.filter((a) => !isCaixaForState(a));
           store.auctions.unshift(...importedList);
           catalogRevision++;
           persistedCatalogInvalidated = true;

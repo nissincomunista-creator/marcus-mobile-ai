@@ -19,6 +19,7 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  if(httpStatus===404||httpStatus===410)return finish('expirado_link_invalido','HTTP '+httpStatus+': anúncio indisponível');
  if(context.finalUrl){try{const original=new URL(url),final=new URL(context.finalUrl);if(original.pathname!=='/'&&/^\/(?:index\.(?:html?|php|asp))?$/i.test(final.pathname)&&!final.search)return finish('expirado_link_invalido','Detalhe redirecionado para a página inicial');}catch{}}
  if(httpStatus!==200||/<title[^>]*>[^<]*(?:Just a moment|Access Denied|Captcha)|Radware Bot Manager/i.test(html))return {...previous,...base,state:previous?.state||'unknown',reason:'Consulta bloqueada ou indisponível; HTTP '+httpStatus};
+ if(!html||!html.trim())return previous||{...base,state:'unknown',reason:'Sem HTML fornecido'};
  const $=cheerio.load(html);
  $('script,style,noscript,nav,header,footer,aside,select,option,template,[hidden],[aria-hidden="true"],.modal,.cards,[class*="related"],[class*="recommend"]').remove();
  const heading=$('h1').first().text().trim();

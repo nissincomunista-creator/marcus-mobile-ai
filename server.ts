@@ -6811,11 +6811,20 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
     });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+    await page.setRequestInterception(true);
+    page.on('request', (req: any) => {
+      const resourceType = req.resourceType();
+      if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
 
     console.log('[Caixa Auto-Sync] Autenticando sessão em venda-imoveis.caixa.gov.br/sistema/download-lista.asp...');
     await page.goto('https://venda-imoveis.caixa.gov.br/sistema/download-lista.asp', {
       waitUntil: 'domcontentloaded',
-      timeout: 25000
+      timeout: 30000
     });
     await new Promise(r => setTimeout(r, 2000));
 
@@ -7029,7 +7038,13 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
         // filtered result is meaningful too: it removes Caixa offers that
         // disappeared from the official list instead of keeping stale cards.
         if (stateProcessedSuccessfully) {
-          store.auctions = store.auctions.filter(a => !(a.origin === 'caixa' && (a.state || 'RJ').toUpperCase() === uf.toUpperCase() && isAllowedTargetCity(a.city, a.state)));
+          const isCaixaForState = (a: any) => {
+            const isCaixa = a.origin === 'caixa' || a.origin === 'caixa_radar' || (typeof a.id === 'string' && a.id.startsWith('auc-caixa-'));
+            if (!isCaixa) return false;
+            const aState = (a.state || (a.city && /juiz de fora/i.test(a.city) ? 'MG' : 'RJ')).toUpperCase().trim();
+            return aState === uf.toUpperCase();
+          };
+          store.auctions = store.auctions.filter(a => !isCaixaForState(a));
           store.auctions.unshift(...importedList);
           catalogRevision++;
           persistedCatalogInvalidated = true;
