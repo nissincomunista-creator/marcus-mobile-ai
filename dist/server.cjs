@@ -6140,7 +6140,7 @@ function selectRadiusTransactions(rows, radiusKm) {
     if (tx.transactionLocationPrecision !== "exact_number") return false;
     if (tx.distanceKm == null || tx.distanceKm === "") return false;
     const anchor = tx.distanceAnchorPrecision;
-    if (anchor && anchor !== "official_address" && anchor !== "geocoded_number") return false;
+    if (anchor && anchor !== "official_address" && anchor !== "geocoded_number" && anchor !== "street_centroid") return false;
     const distance2 = Number(tx.distanceKm);
     return Number.isFinite(distance2) && distance2 >= 0 && distance2 <= limit;
   });

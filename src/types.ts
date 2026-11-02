@@ -322,7 +322,7 @@ export interface ItbiTransaction {
   description?: string;// Full property description from ITBI
   distanceKm?: number; // Verified geodesic distance from the calculator target street
   distanceMeters?: number;
-  distanceAnchorPrecision?: 'official_address' | 'geocoded_number' | 'street_axis';
+  distanceAnchorPrecision?: 'official_address' | 'geocoded_number' | 'street_axis' | 'street_centroid';
   transactionLocationPrecision?: 'exact_number' | 'street_centroid';
   transactionLocationLat?: number;
   transactionLocationLng?: number;

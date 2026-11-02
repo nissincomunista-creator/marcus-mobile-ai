@@ -10795,5 +10795,1219 @@
     "cards": [],
     "updatedAt": "2026-10-31T15:42:40.625Z",
     "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_e": {
+    "street": "e",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:37:45.739Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_g": {
+    "street": "g",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:37:56.401Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_e": {
+    "street": "e",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:17.128Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_g": {
+    "street": "g",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:19.329Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_gabin": {
+    "street": "gabin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:43.777Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_estr": {
+    "street": "estr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:34.174Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_es": {
+    "street": "es",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-das-pedras/estrada-variante-de-jacarepagua-quadra-tres-quarta-face",
+    "canonicalTitle": "Estrada Variante de Jacarepagua Quadra Tres Quarta FaceQuem mora nas imediaçõesAs construçõesComo estão os preços em Rio de JaneiroO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta cidade predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.357.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8644,
+        "sampleCount": 100020,
+        "avgPrice": 899000,
+        "rawMeta": "~96 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4000,
+        "sampleCount": 33780,
+        "avgPrice": 850000,
+        "rawMeta": "~260 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6579,
+        "sampleCount": 14488,
+        "avgPrice": 500000,
+        "rawMeta": "~70 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:38:37.407Z"
+  },
+  "rj_rio de janeiro_jacarepagua_gabinl": {
+    "street": "gabinl",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jacarepagua/estrada-de-jacarepagua",
+    "canonicalTitle": "Estrada de JacarepaguaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.265.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8144,
+        "sampleCount": 2651,
+        "avgPrice": 599988,
+        "rawMeta": "~74 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3364,
+        "sampleCount": 678,
+        "avgPrice": 980000,
+        "rawMeta": "~262 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 8553,
+        "sampleCount": 327,
+        "avgPrice": 450000,
+        "rawMeta": "~49 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:38:36.791Z"
+  },
+  "rj_rio de janeiro_jacarepagua_est": {
+    "street": "est",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jacarepagua/estrada-de-jacarepagua",
+    "canonicalTitle": "Estrada de JacarepaguaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.265.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8144,
+        "sampleCount": 2651,
+        "avgPrice": 599988,
+        "rawMeta": "~74 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3364,
+        "sampleCount": 678,
+        "avgPrice": 980000,
+        "rawMeta": "~262 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 8553,
+        "sampleCount": 327,
+        "avgPrice": 450000,
+        "rawMeta": "~49 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:38:37.289Z"
+  },
+  "rj_rio de janeiro_jacarepagua_estrada": {
+    "street": "estrada",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jacarepagua/estrada-de-jacarepagua",
+    "canonicalTitle": "Estrada de JacarepaguaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.265.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8144,
+        "sampleCount": 2651,
+        "avgPrice": 599988,
+        "rawMeta": "~74 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3364,
+        "sampleCount": 678,
+        "avgPrice": 980000,
+        "rawMeta": "~262 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 8553,
+        "sampleCount": 327,
+        "avgPrice": 450000,
+        "rawMeta": "~49 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:38:37.212Z"
+  },
+  "rj_rio de janeiro_jacarepagua_gab": {
+    "street": "gab",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jacarepagua/rua-ministro-gabriel-de-piza",
+    "canonicalTitle": "Rua Ministro Gabriel de PizaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.265.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8144,
+        "sampleCount": 2651,
+        "avgPrice": 599988,
+        "rawMeta": "~74 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3364,
+        "sampleCount": 678,
+        "avgPrice": 980000,
+        "rawMeta": "~262 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 8553,
+        "sampleCount": 327,
+        "avgPrice": 450000,
+        "rawMeta": "~49 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:38:37.643Z"
+  },
+  "rj_rio de janeiro_jacarepagua_ga": {
+    "street": "ga",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:43.876Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_estrad": {
+    "street": "estrad",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:40.372Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_estra": {
+    "street": "estra",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:41.258Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_gab": {
+    "street": "gab",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/freguesia/rua-gabiroba",
+    "canonicalTitle": "Rua GabirobaQuem mora nas imediaçõesAs construçõesComo estão os preços em Rio de JaneiroO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta cidade predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.357.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8644,
+        "sampleCount": 100020,
+        "avgPrice": 899000,
+        "rawMeta": "~96 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4000,
+        "sampleCount": 33780,
+        "avgPrice": 850000,
+        "rawMeta": "~260 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6579,
+        "sampleCount": 14488,
+        "avgPrice": 500000,
+        "rawMeta": "~70 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:38:40.479Z"
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_do gabinal": {
+    "street": "Estrada do Gabinal",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/freguesia/estrada-do-gabinal",
+    "canonicalTitle": "Estrada do GabinalQuem mora nas imediaçõesAs construçõesComo estão os preços em Rio de JaneiroO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta cidade predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.357.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8644,
+        "sampleCount": 100020,
+        "avgPrice": 899000,
+        "rawMeta": "~96 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4000,
+        "sampleCount": 33780,
+        "avgPrice": 850000,
+        "rawMeta": "~260 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6579,
+        "sampleCount": 14488,
+        "avgPrice": 500000,
+        "rawMeta": "~70 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:38:40.595Z"
+  },
+  "rj_rio de janeiro_jacarepagua_gabi": {
+    "street": "gabi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:43.496Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_gabi": {
+    "street": "gabi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:42.960Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_ga": {
+    "street": "ga",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:38:43.409Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_saude_r": {
+    "street": "r",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:31.472Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_saude_s": {
+    "street": "rua s",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:32.098Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_do gabinal": {
+    "street": "Estrada do Gabinal",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/freguesia/estrada-do-gabinal",
+    "canonicalTitle": "Estrada do GabinalQuem mora nas imediaçõesAs construçõesComo estão os preços em Rio de JaneiroO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta cidade predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.357.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8644,
+        "sampleCount": 100020,
+        "avgPrice": 899000,
+        "rawMeta": "~96 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4000,
+        "sampleCount": 33780,
+        "avgPrice": 850000,
+        "rawMeta": "~260 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6579,
+        "sampleCount": 14488,
+        "avgPrice": 500000,
+        "rawMeta": "~70 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:47:33.873Z"
+  },
+  "rj_rio de janeiro_s_do gabinal": {
+    "street": "Estrada do Gabinal",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/freguesia/estrada-do-gabinal",
+    "canonicalTitle": "Estrada do GabinalQuem mora nas imediaçõesAs construçõesComo estão os preços em Rio de JaneiroO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta cidade predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.357.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8644,
+        "sampleCount": 100020,
+        "avgPrice": 899000,
+        "rawMeta": "~96 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4000,
+        "sampleCount": 33780,
+        "avgPrice": 850000,
+        "rawMeta": "~260 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6579,
+        "sampleCount": 14488,
+        "avgPrice": 500000,
+        "rawMeta": "~70 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:47:34.116Z"
+  },
+  "rj_rio de janeiro_saude_sacadura cabral": {
+    "street": "Rua Sacadura Cabral",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/saude/rua-sacadura-cabral",
+    "canonicalTitle": "Rua Sacadura Cabral, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:37.665Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_saude_rua": {
+    "street": "rua",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/curicica/rua-nossa-senhora-da-saude",
+    "canonicalTitle": "Rua Nossa Senhora da SaúdeQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.479.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5216,
+        "sampleCount": 400,
+        "avgPrice": 295985,
+        "rawMeta": "~53 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3308,
+        "sampleCount": 342,
+        "avgPrice": 472500,
+        "rawMeta": "~124 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4019,
+        "sampleCount": 20,
+        "avgPrice": 855000,
+        "rawMeta": "~294 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:47:38.772Z"
+  },
+  "rj_rio de janeiro_sa_do gabinal": {
+    "street": "Estrada do Gabinal",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-gazzi-de-sa",
+    "canonicalTitle": "Rua Gazzi de SaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:47:39.556Z"
+  },
+  "rj_rio de janeiro_saude_sa": {
+    "street": "rua sa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-gazzi-de-sa",
+    "canonicalTitle": "Rua Gazzi de SaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T22:47:39.630Z"
+  },
+  "rj_rio de janeiro_sau_do gabinal": {
+    "street": "Estrada do Gabinal",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:40.322Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_saud_do gabinal": {
+    "street": "Estrada do Gabinal",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:40.526Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_saude_saca": {
+    "street": "rua saca",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:43.911Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_saude_sac": {
+    "street": "rua sac",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:44.576Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_saude_ru": {
+    "street": "ru",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T22:47:56.310Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_sampaio_a": {
+    "street": "a",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:30:27.094Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_sampaio_m": {
+    "street": "m",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:30:27.205Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_s_sacadura cabral": {
+    "street": "Rua Sacadura Cabral",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/gamboa/rua-sacadura-cabral",
+    "canonicalTitle": "Rua Sacadura CabralQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.398.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7038,
+        "sampleCount": 34,
+        "avgPrice": 382500,
+        "rawMeta": "~60 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2574,
+        "sampleCount": 14,
+        "avgPrice": 395261,
+        "rawMeta": "~80 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2255,
+        "sampleCount": 49,
+        "avgPrice": 900000,
+        "rawMeta": "~378 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:30:28.174Z"
+  },
+  "rj_rio de janeiro_sa_sacadura cabral": {
+    "street": "Rua Sacadura Cabral",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/gamboa/rua-sacadura-cabral",
+    "canonicalTitle": "Rua Sacadura CabralQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.398.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7038,
+        "sampleCount": 34,
+        "avgPrice": 382500,
+        "rawMeta": "~60 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2574,
+        "sampleCount": 14,
+        "avgPrice": 395261,
+        "rawMeta": "~80 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2255,
+        "sampleCount": 49,
+        "avgPrice": 900000,
+        "rawMeta": "~378 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:30:28.272Z"
+  },
+  "rj_rio de janeiro_sampaio_ma": {
+    "street": "ma",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-comprido/rua-tenente-vieira-sampaio",
+    "canonicalTitle": "Rua Tenente Vieira SampaioQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.897.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5000,
+        "sampleCount": 432,
+        "avgPrice": 370000,
+        "rawMeta": "~74 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4083,
+        "sampleCount": 68,
+        "avgPrice": 570000,
+        "rawMeta": "~165 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2938,
+        "sampleCount": 72,
+        "avgPrice": 947500,
+        "rawMeta": "~264 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:30:30.659Z"
+  },
+  "rj_rio de janeiro_sampaio_marechal rondon": {
+    "street": "Avenida Marechal Rondon",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/sampaio/avenida-marechal-rondon",
+    "canonicalTitle": "Avenida Marechal RondonQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 2.809.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3094,
+        "sampleCount": 80,
+        "avgPrice": 225000,
+        "rawMeta": "~67 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2222,
+        "sampleCount": 48,
+        "avgPrice": 385000,
+        "rawMeta": "~189 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 1633,
+        "sampleCount": 10,
+        "avgPrice": 490000,
+        "rawMeta": "~300 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:30:31.101Z"
+  },
+  "rj_rio de janeiro_sampaio_mare": {
+    "street": "mare",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/mare/rua-bitencourt-sampaio",
+    "canonicalTitle": "Rua Bitencourt SampaioQuem mora nas imediaçõesAs construçõesComo estão os preços em Rio de JaneiroO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta cidade predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.357.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8644,
+        "sampleCount": 100020,
+        "avgPrice": 899000,
+        "rawMeta": "~96 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4000,
+        "sampleCount": 33780,
+        "avgPrice": 850000,
+        "rawMeta": "~260 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 6579,
+        "sampleCount": 14488,
+        "avgPrice": 500000,
+        "rawMeta": "~70 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:30:31.154Z"
+  },
+  "rj_rio de janeiro_sam_sacadura cabral": {
+    "street": "Rua Sacadura Cabral",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:30:31.373Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_samp_sacadura cabral": {
+    "street": "Rua Sacadura Cabral",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:30:31.373Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_sampaio_mar": {
+    "street": "mar",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-vina-del-mar",
+    "canonicalTitle": "Rua Vina Del MarComo estão os preçosEscolas por pertoSaúde por perto",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:30:33.845Z"
+  },
+  "rj_niteroi_vital brasil_f": {
+    "street": "f",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:34.076Z",
+    "notFound": true
+  },
+  "rj_niteroi_vital brasil_g": {
+    "street": "g",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:36.404Z",
+    "notFound": true
+  },
+  "rj_niteroi_vital brasil_fra": {
+    "street": "fra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:40.457Z",
+    "notFound": true
+  },
+  "rj_niteroi_vital brasil_fr": {
+    "street": "fr",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:40.642Z",
+    "notFound": true
+  },
+  "rj_niteroi_vital brasil_gr": {
+    "street": "gr",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:41.051Z",
+    "notFound": true
+  },
+  "rj_niteroi_vital brasil_gra": {
+    "street": "gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:41.098Z",
+    "notFound": true
+  },
+  "rj_niteroi_i_gra": {
+    "street": "gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:47.350Z",
+    "notFound": true
+  },
+  "rj_niteroi_icarai_g": {
+    "street": "g",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:46.718Z",
+    "notFound": true
+  },
+  "rj_niteroi_iac_gra": {
+    "street": "gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:47.352Z",
+    "notFound": true
+  },
+  "rj_niteroi_ia_gra": {
+    "street": "gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:47.363Z",
+    "notFound": true
+  },
+  "rj_niteroi_ic_gra": {
+    "street": "gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:47.360Z",
+    "notFound": true
+  },
+  "rj_niteroi_ica_gra": {
+    "street": "gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:49.055Z",
+    "notFound": true
+  },
+  "rj_niteroi_icarai_gr": {
+    "street": "gr",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:49.969Z",
+    "notFound": true
+  },
+  "rj_niteroi_icarai_gra": {
+    "street": "gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:50.630Z",
+    "notFound": true
+  },
+  "rj_niteroi_icarai_r": {
+    "street": "r",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:45:52.448Z",
+    "notFound": true
+  },
+  "rj_niteroi_icarai_rua": {
+    "street": "rua",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "/rj/niteroi/icarai/alameda-icarai",
+    "canonicalTitle": "Alameda IcaraiQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 7.800.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7911,
+        "sampleCount": 5548,
+        "avgPrice": 860000,
+        "rawMeta": "~110 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4539,
+        "sampleCount": 236,
+        "avgPrice": 1200000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 11400,
+        "sampleCount": 429,
+        "avgPrice": 400000,
+        "rawMeta": "~33 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:45:56.814Z"
+  },
+  "rj_niteroi_v_gra": {
+    "street": "rua gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:46:02.683Z",
+    "notFound": true
+  },
+  "rj_niteroi_vital brasil_r": {
+    "street": "r",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:46:03.623Z",
+    "notFound": true
+  },
+  "rj_niteroi_vi_gra": {
+    "street": "rua gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:46:05.694Z",
+    "notFound": true
+  },
+  "rj_niteroi_vita_gra": {
+    "street": "rua gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:46:05.880Z",
+    "notFound": true
+  },
+  "rj_niteroi_vit_gra": {
+    "street": "rua gra",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:46:05.883Z",
+    "notFound": true
+  },
+  "rj_niteroi_icarai_ru": {
+    "street": "ru",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:46:07.182Z",
+    "notFound": true
+  },
+  "rj_niteroi_vital brasil_rua": {
+    "street": "rua",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "/rj/niteroi/santa-rosa/rua-vital-brasil-filho",
+    "canonicalTitle": "Rua Vital Brasil FilhoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.778.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6471,
+        "sampleCount": 1374,
+        "avgPrice": 550000,
+        "rawMeta": "~80 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3122,
+        "sampleCount": 482,
+        "avgPrice": 700000,
+        "rawMeta": "~250 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5552,
+        "sampleCount": 198,
+        "avgPrice": 220000,
+        "rawMeta": "~30 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-01T23:46:08.451Z"
+  },
+  "rj_niteroi_vital brasil_ru": {
+    "street": "ru",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-01T23:46:19.227Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_her": {
+    "street": "her",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T01:41:03.772Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_f": {
+    "street": "f",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:28:23.721Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_fabi": {
+    "street": "fabi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-fabio-luz",
+    "canonicalTitle": "Rua Fabio LuzQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:28:31.849Z"
+  },
+  "rj_rio de janeiro_meier_fabio luz": {
+    "street": "Rua Fábio Luz",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-fabio-luz",
+    "canonicalTitle": "Rua Fabio LuzQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:28:31.927Z"
+  },
+  "rj_rio de janeiro_meier_fab": {
+    "street": "fab",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:28:35.076Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_fa": {
+    "street": "fa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:28:38.857Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_fai": {
+    "street": "fai",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:28:38.903Z",
+    "notFound": true
   }
 }
