@@ -1577,7 +1577,7 @@ let auctionCatalogResponseCache: {
   payload: AuctionProperty[];
 } | null = null;
 const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v7.json.gz');
-const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v13-deep-clean-sync';
+const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v14-caixa-fix';
 let persistedCatalogInvalidated = false;
 
 function auctionResponseCacheSignature() {
@@ -3470,9 +3470,14 @@ function startListedSync(reason: string, ids?: string[]) {
     else await fs.promises.writeFile(backup, JSON.stringify(store), 'utf8');
     const auditStartedAt = new Date().toISOString();
     const availabilityRun = startAvailabilityCheck();
-    if(reason==='app-open'){
+    const shouldSyncCaixa = !ids || ids.length === 0 || ids.includes('caixa');
+    if (shouldSyncCaixa) {
       openingSyncStage='caixa';
-      await runCaixaSyncExclusive(['RJ','MG'],'system');
+      try {
+        await runCaixaSyncExclusive(['RJ', 'MG'], 'system');
+      } catch (caixaErr: any) {
+        console.error('[Listed Sync] Falha ao sincronizar Caixa:', caixaErr.message);
+      }
     }
     openingSyncStage='leiloeiros';
     const report = await runListedPortalSync(reason, async (drafts,source) => applyListedDrafts(drafts, 'sync-audits/pending-'+source.id+'.jsonl'), {ids});
@@ -6934,7 +6939,8 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
 
           const auctionPrice = Number(precoStr) || 0;
           // Se já existir no store, ignora para não duplicar
-          const propertyType: PropertyType = toCanonicalPropertyType('', descricaoCaixa);
+          const rawCaixaType = (descricaoCaixa.split(',')[0] || '').trim();
+          const propertyType: PropertyType = toCanonicalPropertyType(rawCaixaType, '', descricaoCaixa);
 
           const sizeSqm = parseCaixaSizeSqm(descricaoCaixa, propertyType);
           const title = `${propertyType} Retomado Caixa - ${cleanBairro.toUpperCase()}`;
@@ -6950,9 +6956,16 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
           }
 
           let parsedParkingSpaces: number | undefined = undefined;
+          let parsedBathrooms: number | undefined = undefined;
           const vagaMatch = descricaoCaixa.match(/(\d+)\s*vaga/i);
           if (vagaMatch) {
             parsedParkingSpaces = parseInt(vagaMatch[1]);
+          }
+          const wcNumMatch = descricaoCaixa.match(/(\d+)\s*wc/i) || descricaoCaixa.match(/(\d+)\s*banheiro/i);
+          if (wcNumMatch) {
+            parsedBathrooms = parseInt(wcNumMatch[1]);
+          } else if (/\bwc\b/i.test(descricaoCaixa) || /\bbanheiro\b/i.test(descricaoCaixa)) {
+            parsedBathrooms = 1;
           }
 
           const caixaCleanNum = row.ndoimovel ? row.ndoimovel.replace(/\s+/g, '') : '';
@@ -6966,6 +6979,7 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
             propertyType,
             sizeSqm,
             auctionPrice,
+            evaluationPrice: Number(avaliacaoStr) || undefined,
             estimatedRepair: 0,
             pendingDebts: 0,
             otherCosts: 0,
@@ -6987,6 +7001,7 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
             origin: 'caixa',
             bedrooms: parsedBedrooms,
             parkingSpaces: parsedParkingSpaces,
+            bathrooms: parsedBathrooms,
             saleMode
           };
 

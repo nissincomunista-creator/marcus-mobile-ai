@@ -1758,14 +1758,61 @@ function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
   const urlLower = (url || "").toLowerCase();
   const titleLower = (title || "").toLowerCase();
   const descLower = (desc || "").toLowerCase();
-  const combined = `${urlLower} ${titleLower} ${descLower}`;
-  const isTerrenoInTitleOrUrl = urlLower.includes("terreno") || urlLower.includes("lote-") || urlLower.includes("loteamento") || urlLower.includes("gleba") || /\b(terreno|loteamento|gleba|lote\s+de\s+terreno|lote|área\s+de\s+terreno)\b/i.test(titleLower);
-  if (isTerrenoInTitleOrUrl || /\b(terreno|loteamento|gleba|lote\s+de\s+terreno)\b/i.test(descLower) && !titleLower.includes("apartamento") && !titleLower.includes("casa")) {
+  const primaryTokenDesc = (descLower.split(/[,.\s]+/)[0] || "").trim();
+  const primaryTokenTitle = (titleLower.split(/[,.\s]+/)[0] || "").trim();
+  const tokenCandidate = ["apartamento", "apto", "casa", "sobrado", "terreno", "lote", "gleba", "loja", "sala", "galpao", "galp\xE3o", "predio", "pr\xE9dio", "comercial"].includes(primaryTokenTitle) ? primaryTokenTitle : primaryTokenDesc;
+  if (tokenCandidate === "apartamento" || tokenCandidate === "apto") {
+    return { propertyType: "Apartamento", subtype: "Apartamento", displayPrefix: "Apartamento" };
+  }
+  if (tokenCandidate === "casa" || tokenCandidate === "sobrado") {
+    return { propertyType: "Casa", subtype: "Casa", displayPrefix: "Casa" };
+  }
+  if (tokenCandidate === "terreno" || tokenCandidate === "lote" || tokenCandidate === "gleba") {
+    return { propertyType: "Terreno", subtype: "Terreno / Lote", displayPrefix: "Terreno / Lote" };
+  }
+  if (["loja", "sobreloja"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Loja", displayPrefix: "Loja Comercial" };
+  }
+  if (["sala", "consultorio", "consult\xF3rio"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Sala Comercial", displayPrefix: "Sala Comercial" };
+  }
+  if (["galpao", "galp\xE3o", "deposito", "dep\xF3sito", "armazem", "armaz\xE9m"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Galp\xE3o", displayPrefix: "Galp\xE3o Comercial" };
+  }
+  if (["predio", "pr\xE9dio", "comercial"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Comercial", displayPrefix: "Im\xF3vel Comercial" };
+  }
+  if (titleLower.includes("cobertura") || urlLower.includes("cobertura") || descLower.includes("cobertura duplex") || descLower.includes("cobertura linear")) {
     return {
-      propertyType: "Terreno",
-      subtype: "Terreno / Lote",
-      displayPrefix: "Terreno / Lote"
+      propertyType: "Apartamento",
+      subtype: "Cobertura",
+      displayPrefix: "Cobertura"
     };
+  }
+  if (/\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(urlLower) || /\b(apart-?hotel|flat)\b/i.test(descLower)) {
+    return {
+      propertyType: "Apartamento",
+      subtype: "Kitnet / Studio",
+      displayPrefix: "Kitnet / Studio"
+    };
+  }
+  const isAptoExplicit = urlLower.includes("apartamento") || urlLower.includes("apto") || /\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio)\b/i.test(titleLower);
+  if (isAptoExplicit) {
+    return {
+      propertyType: "Apartamento",
+      subtype: "Apartamento",
+      displayPrefix: "Apartamento"
+    };
+  }
+  const isCasaInTitleOrUrl = urlLower.includes("casa-") || urlLower.includes("sobrado") || urlLower.includes("casa-a-venda") || housePattern.test(titleLower);
+  if (isCasaInTitleOrUrl && !titleLower.includes("apartamento") && !titleLower.includes("apto") && !urlLower.includes("apartamento")) {
+    if (!titleLower.includes("casa de festas") && !titleLower.includes("casa de show")) {
+      return {
+        propertyType: "Casa",
+        subtype: "Casa",
+        displayPrefix: "Casa"
+      };
+    }
   }
   if (urlLower.includes("sala-comercial") || urlLower.includes("conjunto-comercial") || urlLower.includes("sala-a-venda") || /\b(sala\s+comercial|conjunto\s+comercial|consult[oó]rio|escrit[oó]rio|sala\s+para\s+consult[oó]rio)\b/i.test(titleLower) || /\b(sala\s+comercial|conjunto\s+comercial)\b/i.test(descLower) && !titleLower.includes("apartamento")) {
     return {
@@ -1795,37 +1842,23 @@ function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
       displayPrefix: "Im\xF3vel Comercial"
     };
   }
-  if (titleLower.includes("cobertura") || urlLower.includes("cobertura") || descLower.includes("cobertura duplex") || descLower.includes("cobertura linear")) {
-    return {
-      propertyType: "Apartamento",
-      subtype: "Cobertura",
-      displayPrefix: "Cobertura"
-    };
-  }
-  if (/\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(urlLower) || /\b(apart-?hotel|flat)\b/i.test(descLower)) {
-    return {
-      propertyType: "Apartamento",
-      subtype: "Kitnet / Studio",
-      displayPrefix: "Kitnet / Studio"
-    };
-  }
-  const isAptoExplicit = urlLower.includes("apartamento") || urlLower.includes("apto") || /\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio)\b/i.test(titleLower);
-  if (isAptoExplicit) {
-    return {
-      propertyType: "Apartamento",
-      subtype: "Apartamento",
-      displayPrefix: "Apartamento"
-    };
-  }
-  const isCasaInTitleOrUrl = urlLower.includes("casa-") || urlLower.includes("sobrado") || urlLower.includes("casa-a-venda") || housePattern.test(titleLower);
-  if (isCasaInTitleOrUrl || housePattern.test(descLower) && !titleLower.includes("apartamento") && !titleLower.includes("apto") && !urlLower.includes("apartamento")) {
-    if (!titleLower.includes("casa de festas") && !titleLower.includes("casa de show")) {
+  const hasTerrenoKeyword = urlLower.includes("terreno") || urlLower.includes("lote-") || urlLower.includes("loteamento") || urlLower.includes("gleba") || /\b(terreno|loteamento|gleba|lote\s+de\s+terreno)\b/i.test(titleLower);
+  const hasTerrenoInDesc = /\b(terreno|loteamento|gleba|lote\s+de\s+terreno)\b/i.test(descLower) && !descLower.includes("apartamento") && !descLower.includes("casa") && !descLower.includes("qto(s)") && !descLower.includes("quarto");
+  if (hasTerrenoKeyword || hasTerrenoInDesc) {
+    if (!titleLower.includes("apartamento") && !titleLower.includes("apto") && !titleLower.includes("casa")) {
       return {
-        propertyType: "Casa",
-        subtype: "Casa",
-        displayPrefix: "Casa"
+        propertyType: "Terreno",
+        subtype: "Terreno / Lote",
+        displayPrefix: "Terreno / Lote"
       };
     }
+  }
+  if (housePattern.test(descLower) && !descLower.includes("apartamento") && !descLower.includes("apto")) {
+    return {
+      propertyType: "Casa",
+      subtype: "Casa",
+      displayPrefix: "Casa"
+    };
   }
   return {
     propertyType: "Apartamento",
@@ -1834,6 +1867,11 @@ function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
   };
 }
 function toCanonicalPropertyType(rawType = "", title = "", desc = "") {
+  const cleanRaw = (rawType || "").trim().toLowerCase();
+  if (/^apto|^apartamento|^kitnet|^studio|^loft|^flat|^cobertura/i.test(cleanRaw)) return "Apartamento";
+  if (/^casa|^sobrado|^bangal[oô]|^chal[eé]|^vila/i.test(cleanRaw)) return "Casa";
+  if (/^terreno|^loteamento|^gleba|^lote\b/i.test(cleanRaw) && !/casa|apto|apartamento/i.test(cleanRaw)) return "Terreno";
+  if (/^sala|^loja|^galp[aã]o|^comercial|^pr[eé]dio|^box|^dep[oó]sito/i.test(cleanRaw)) return "Comercial";
   const res = detectTypologyFromUrlAndText("", `${rawType} ${title}`, desc);
   return res.propertyType;
 }
@@ -11229,7 +11267,7 @@ function ensureItbiLoaded() {
 }
 var auctionCatalogResponseCache = null;
 var AUCTION_RESPONSE_CACHE_PATH = import_path4.default.join(process.cwd(), ".cache", "auction-catalog-response-v7.json.gz");
-var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v13-deep-clean-sync";
+var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v14-caixa-fix";
 var persistedCatalogInvalidated = false;
 function auctionResponseCacheSignature() {
   try {
@@ -12799,9 +12837,14 @@ function startListedSync(reason, ids) {
     else await import_fs5.default.promises.writeFile(backup, JSON.stringify(store), "utf8");
     const auditStartedAt = (/* @__PURE__ */ new Date()).toISOString();
     const availabilityRun = startAvailabilityCheck();
-    if (reason === "app-open") {
+    const shouldSyncCaixa = !ids || ids.length === 0 || ids.includes("caixa");
+    if (shouldSyncCaixa) {
       openingSyncStage = "caixa";
-      await runCaixaSyncExclusive(["RJ", "MG"], "system");
+      try {
+        await runCaixaSyncExclusive(["RJ", "MG"], "system");
+      } catch (caixaErr) {
+        console.error("[Listed Sync] Falha ao sincronizar Caixa:", caixaErr.message);
+      }
     }
     openingSyncStage = "leiloeiros";
     const report = await runListedPortalSync(reason, async (drafts, source) => applyListedDrafts(drafts, "sync-audits/pending-" + source.id + ".jsonl"), { ids });
@@ -15665,7 +15708,8 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
           }
           const cleanBairro = rawBairro ? rawBairro.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") : "N\xE3o informado";
           const auctionPrice = Number(precoStr) || 0;
-          const propertyType = toCanonicalPropertyType("", descricaoCaixa);
+          const rawCaixaType = (descricaoCaixa.split(",")[0] || "").trim();
+          const propertyType = toCanonicalPropertyType(rawCaixaType, "", descricaoCaixa);
           const sizeSqm = parseCaixaSizeSqm(descricaoCaixa, propertyType);
           const title = `${propertyType} Retomado Caixa - ${cleanBairro.toUpperCase()}`;
           const allowsFinancing = (row.financiamento || "").toLowerCase() === "sim";
@@ -15678,9 +15722,16 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
             if (quartoMatch) parsedBedrooms = parseInt(quartoMatch[1]);
           }
           let parsedParkingSpaces = void 0;
+          let parsedBathrooms = void 0;
           const vagaMatch = descricaoCaixa.match(/(\d+)\s*vaga/i);
           if (vagaMatch) {
             parsedParkingSpaces = parseInt(vagaMatch[1]);
+          }
+          const wcNumMatch = descricaoCaixa.match(/(\d+)\s*wc/i) || descricaoCaixa.match(/(\d+)\s*banheiro/i);
+          if (wcNumMatch) {
+            parsedBathrooms = parseInt(wcNumMatch[1]);
+          } else if (/\bwc\b/i.test(descricaoCaixa) || /\bbanheiro\b/i.test(descricaoCaixa)) {
+            parsedBathrooms = 1;
           }
           const caixaCleanNum = row.ndoimovel ? row.ndoimovel.replace(/\s+/g, "") : "";
           const newAuc = {
@@ -15693,6 +15744,7 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
             propertyType,
             sizeSqm,
             auctionPrice,
+            evaluationPrice: Number(avaliacaoStr) || void 0,
             estimatedRepair: 0,
             pendingDebts: 0,
             otherCosts: 0,
@@ -15714,6 +15766,7 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
             origin: "caixa",
             bedrooms: parsedBedrooms,
             parkingSpaces: parsedParkingSpaces,
+            bathrooms: parsedBathrooms,
             saleMode
           };
           const sourceEvidencePath = preserveSource(linkCaixa, "<pre>" + JSON.stringify(row) + "</pre>");

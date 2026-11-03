@@ -12009,5 +12009,635 @@
     "cards": [],
     "updatedAt": "2026-11-02T02:28:38.903Z",
     "notFound": true
+  },
+  "rj_rio de janeiro_meier_r": {
+    "street": "r",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:45:48.940Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_v": {
+    "street": "rua v",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:45:51.078Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_rua": {
+    "street": "rua",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-joaquim-meier",
+    "canonicalTitle": "Rua Joaquim MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:45:55.906Z"
+  },
+  "rj_rio de janeiro_meier_veb": {
+    "street": "rua veb",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-joaquim-meier",
+    "canonicalTitle": "Rua Joaquim MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:45:56.097Z"
+  },
+  "rj_rio de janeiro_meier_ves": {
+    "street": "rua ves",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-castro-alves",
+    "canonicalTitle": "Rua Castro AlvesQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:45:57.563Z"
+  },
+  "rj_rio de janeiro_meier_venceslau": {
+    "street": "Rua Venceslau",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-venceslau",
+    "canonicalTitle": "Rua VenceslauQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:45:59.339Z"
+  },
+  "rj_rio de janeiro_meier_ve": {
+    "street": "rua ve",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:46:05.305Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_ven": {
+    "street": "rua ven",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:46:04.857Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_ru": {
+    "street": "ru",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:46:12.810Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_m": {
+    "street": "rua m",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:58:47.152Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_ma": {
+    "street": "rua ma",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/engenho-de-dentro/rua-camarista-meier",
+    "canonicalTitle": "Rua Camarista MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.798.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4024,
+        "sampleCount": 510,
+        "avgPrice": 270000,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2917,
+        "sampleCount": 202,
+        "avgPrice": 500000,
+        "rawMeta": "~186 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 3296,
+        "sampleCount": 62,
+        "avgPrice": 685000,
+        "rawMeta": "~227 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:58:51.920Z"
+  },
+  "rj_rio de janeiro_meier_magalhaes couto": {
+    "street": "Rua Magalhães Couto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-magalhaes-couto",
+    "canonicalTitle": "Rua Magalhaes CoutoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T02:58:52.295Z"
+  },
+  "rj_rio de janeiro_meier_ry": {
+    "street": "ry",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:58:58.351Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_maga": {
+    "street": "rua maga",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:58:58.376Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_mag": {
+    "street": "rua mag",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:58:58.530Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_ri": {
+    "street": "ri",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T02:59:02.019Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_n": {
+    "street": "n",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T03:50:12.076Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_r=": {
+    "street": "r=",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T03:50:15.130Z"
+  },
+  "rj_rio de janeiro_meier_ry=": {
+    "street": "ry=",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T03:50:15.031Z"
+  },
+  "rj_rio de janeiro_meier_r=b": {
+    "street": "r=b",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-b",
+    "canonicalTitle": "Rua BQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T03:50:17.034Z"
+  },
+  "rj_rio de janeiro_meier_r=b=": {
+    "street": "r=b=",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-b",
+    "canonicalTitle": "Rua BQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T03:50:16.510Z"
+  },
+  "rj_rio de janeiro_meier_mar": {
+    "street": "mar",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-vina-del-mar",
+    "canonicalTitle": "Rua Vina Del MarComo estão os preçosEscolas por pertoSaúde por perto",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T03:50:17.602Z"
+  },
+  "rj_rio de janeiro_meier_maranhao": {
+    "street": "Rua Maranhão",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-maranhao",
+    "canonicalTitle": "Rua MaranhaoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T03:50:21.770Z"
+  },
+  "rj_rio de janeiro_meier_j": {
+    "street": "Rua j",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T04:09:09.383Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_maranh": {
+    "street": "Rua Maranh",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-maranhao",
+    "canonicalTitle": "Rua MaranhaoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T04:09:12.915Z"
+  },
+  "rj_rio de janeiro_meier_jose verissimo": {
+    "street": "Rua Jose Veríssimo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-jose-verissimo",
+    "canonicalTitle": "Rua José VerissimoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-02T04:09:15.367Z"
+  },
+  "rj_rio de janeiro_meier_maranha": {
+    "street": "Rua Maranhã",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T04:09:16.673Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_maran": {
+    "street": "Rua Maran",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T04:09:19.374Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_jo": {
+    "street": "Rua jo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-02T04:09:20.321Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_agariba": {
+    "street": "Rua Agariba",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/engenho-novo/rua-agariba",
+    "canonicalTitle": "Rua AgaribaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.300.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3463,
+        "sampleCount": 607,
+        "avgPrice": 229500,
+        "rawMeta": "~64 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2632,
+        "sampleCount": 218,
+        "avgPrice": 355000,
+        "rawMeta": "~150 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 1993,
+        "sampleCount": 38,
+        "avgPrice": 594500,
+        "rawMeta": "~515 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-03T20:29:13.654Z"
   }
 }
