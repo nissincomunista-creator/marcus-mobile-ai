@@ -1687,12 +1687,32 @@ export default function Dashboard({
     setLastUpdatedTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
     if (mode === 'portais') {
       onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda');
-    } else if (onSyncCaixaAuto) {
-      onSyncCaixaAuto();
-    } else if (onSyncJudiciaisAuto) {
-      onSyncJudiciaisAuto();
+    } else if (selectedOriginFilter === 'judicial') {
+      if (onSyncJudiciaisAuto) onSyncJudiciaisAuto();
+      else if (onGarimparJudiciais) onGarimparJudiciais(selectedCityFilter || undefined);
+    } else if (selectedOriginFilter === 'extrajudicial') {
+      if (onSyncExtrajudiciaisAuto) onSyncExtrajudiciaisAuto();
+      else if (onSyncJudiciaisAuto) onSyncJudiciaisAuto();
+    } else if (selectedOriginFilter === 'caixa' || selectedOriginFilter === 'caixa_radar') {
+      if (onSyncCaixaAuto) onSyncCaixaAuto();
+    } else {
+      if (onSyncJudiciaisAuto) onSyncJudiciaisAuto();
+      if (onSyncExtrajudiciaisAuto) onSyncExtrajudiciaisAuto();
+      if (onSyncCaixaAuto) onSyncCaixaAuto();
     }
-  }, [mode, onGarimparPortais, onSyncCaixaAuto, onSyncJudiciaisAuto, selectedCityFilter, selectedPortals, selectedNeighborhoods, advancedContextTab]);
+  }, [
+    mode,
+    selectedOriginFilter,
+    onGarimparPortais,
+    onSyncCaixaAuto,
+    onSyncJudiciaisAuto,
+    onSyncExtrajudiciaisAuto,
+    onGarimparJudiciais,
+    selectedCityFilter,
+    selectedPortals,
+    selectedNeighborhoods,
+    advancedContextTab
+  ]);
 
   return (
     <div id="dashboard-tab" className="space-y-4">
@@ -2504,8 +2524,24 @@ export default function Dashboard({
                   <RefreshCw className={`w-3.5 h-3.5 ${isMining ? 'animate-spin text-amber-300' : 'text-white'}`} />
                   <span>
                     {isMining
-                      ? (mode === 'portais' ? 'Extraindo Portais…' : 'Sincronizando Caixa…')
-                      : (mode === 'portais' ? (advancedContextTab === 'alugar' ? 'Atualizar Locação' : 'Atualizar Imóveis Flip') : 'Atualizar Imóveis Caixa')}
+                      ? (mode === 'portais'
+                          ? 'Extraindo Portais…'
+                          : selectedOriginFilter === 'judicial'
+                            ? 'Sincronizando Judiciais…'
+                            : selectedOriginFilter === 'extrajudicial'
+                              ? 'Sincronizando Extrajudiciais…'
+                              : selectedOriginFilter === 'todos'
+                                ? 'Sincronizando Todos os Leilões…'
+                                : 'Sincronizando Caixa…')
+                      : (mode === 'portais'
+                          ? (advancedContextTab === 'alugar' ? 'Atualizar Locação' : 'Atualizar Imóveis Flip')
+                          : selectedOriginFilter === 'judicial'
+                            ? 'Atualizar Leilões Judiciais'
+                            : selectedOriginFilter === 'extrajudicial'
+                              ? 'Atualizar Leilões Extrajudiciais'
+                              : selectedOriginFilter === 'todos'
+                                ? 'Atualizar Todos os Leilões'
+                                : 'Atualizar Imóveis Caixa')}
                   </span>
                 </button>
               </div>

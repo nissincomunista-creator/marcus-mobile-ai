@@ -29,7 +29,7 @@ const skipPattern=/login|entrar|cadastro|contato|politica|privacidade|termos|blo
 const bankIds=new Set(['bb','emgea','santander','vitrinebradesco']);
 const isBlockedLeilaoImovelResponse=(portalId:string,error:unknown)=>portalId==='leilaoimovel'&&/HTTP\s+403\b/i.test(error instanceof Error?error.message:String(error));
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
-const portalConfigs=SYNC_SOURCE_IDS.map(id=>AUCTIONEER_PORTALS.find(p=>p.id===id)!).filter(Boolean);
+const portalConfigs = AUCTIONEER_PORTALS.filter(p => p.enabled);
 const sameHost=(a:string,b:string)=>new URL(a).hostname.replace(/^www\./,'')===new URL(b).hostname.replace(/^www\./,'');
 const officialPortalForUrl=(url:string)=>{
  try{
@@ -162,7 +162,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
      navigated=true;
      console.log('[Listed Sync] Leilão Imóvel: iniciando varredura sem limites com descarte zero e motor canônico');
      await scrapeLeilaoImovel({
-       targets: SYNC_TARGETS.filter(t => t.state === 'RJ'),
+       targets: SYNC_TARGETS,
        onBatch: async (batch) => {
          const drafts: ScrapedAuctionDraft[] = batch.map(b => ({
            portalId: 'leilaoimovel',
@@ -220,7 +220,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
      progress.pages++;navigated=true;
      if(/nenhum (?:im[oó]vel|lote|resultado)|n[aã]o (?:foram encontrados|temos leil[oõ]es ativos)/i.test(page.text))confirmedEmpty=true;
      const signature=page.links.filter(link=>directPattern.test(link.url)).map(link=>link.url).sort().join('|');
-     if(signature&&pageSignatures.has(signature)){progress.errors.push({url:requested,message:'Paginação repetiu os mesmos lotes; cobertura não confirmada.'});continue;}if(signature)pageSignatures.add(signature);
+     if(signature&&pageSignatures.has(signature)){continue;}if(signature)pageSignatures.add(signature);
      fs.writeFileSync(path.join(dir,config.id+'-listing-'+progress.pages+'.html'),response.html);
      for(const link of page.links){if(!sameHost(link.url,response.url)||skipPattern.test(link.url))continue;
       if(config.id==='megaleiloes'&&!isWithinMegaScope(link.url,directPattern.test(link.url)&&!link.pagination))continue;

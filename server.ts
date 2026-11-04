@@ -3457,7 +3457,7 @@ function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0],
     throw error;
   }
 }
-function startListedSync(reason: string, ids?: string[]) {
+function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicial' | 'extrajudicial' | 'all') {
   if (listedSyncRunning || caixaDirectRunning) return false;
   openingSyncStage = 'preparing';
   const backup = 'sync-audits/backups/before-listed-sync-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
@@ -3470,7 +3470,7 @@ function startListedSync(reason: string, ids?: string[]) {
     else await fs.promises.writeFile(backup, JSON.stringify(store), 'utf8');
     const auditStartedAt = new Date().toISOString();
     const availabilityRun = startAvailabilityCheck();
-    const shouldSyncCaixa = !ids || ids.length === 0 || ids.includes('caixa');
+    const shouldSyncCaixa = (!targetOrigin || targetOrigin === 'all') && (!ids || ids.length === 0 || ids.includes('caixa'));
     if (shouldSyncCaixa) {
       openingSyncStage='caixa';
       try {
@@ -3480,6 +3480,36 @@ function startListedSync(reason: string, ids?: string[]) {
       }
     }
     openingSyncStage='leiloeiros';
+
+    // Prioridade de scrapers oficiais dedicados por comarca
+    const itbiIndexes = getOrBuildItbiIndexes(store.itbiTransactions, store.auctions);
+    const recalculate = (auc: AuctionProperty) => recalculateAuctionWithIndex(
+      auc, itbiIndexes.avgSqmMap, itbiIndexes.streetAvgSqmMap, itbiIndexes.volMap,
+      itbiIndexes.neighCityMap, itbiIndexes.cityAvgSqmMap, itbiIndexes.stateAvgSqmMap,
+      itbiIndexes.cityStreetToNeighMap, itbiIndexes.streetNumberNeighMap,
+      itbiIndexes.neighMap, itbiIndexes.jfCityMap, itbiIndexes.jfAreaModelByType
+    );
+
+    const originsToRun = targetOrigin === 'judicial' ? (['judicial'] as const)
+      : targetOrigin === 'extrajudicial' ? (['extrajudicial'] as const)
+      : (['judicial', 'extrajudicial'] as const);
+
+    for (const org of originsToRun) {
+      for (const target of SYNC_TARGETS) {
+        try {
+          const priorityResult = await syncPriorityOfficialAuctioneers(org, target.state, target.city, store.auctions, recalculate);
+          if (priorityResult?.newAuctions?.length) {
+            priorityResult.newAuctions.forEach(a => { a.userId = 'system'; a.lastSyncedAt = new Date().toISOString(); });
+            store.auctions.unshift(...priorityResult.newAuctions);
+            catalogRevision++;
+            persistedCatalogInvalidated = true;
+          }
+        } catch (priErr: any) {
+          console.warn(`[Priority Sync] ${org} ${target.city}: ${priErr.message}`);
+        }
+      }
+    }
+
     const report = await runListedPortalSync(reason, async (drafts,source) => applyListedDrafts(drafts, 'sync-audits/pending-'+source.id+'.jsonl'), {ids});
     await availabilityRun;
     // Newly imported/replaced source records must be checked too.
@@ -4661,8 +4691,9 @@ app.get('/api/itbi/transactions', async (req, res) => {
         const result = await geocodeAddress(`${tgt}, ${targetNumber}`, {
           neighborhood: filterNeighborhood, city: filterCity, state: filterState, allowStreetFallback: false
         });
-        if (result?.precision === 'rooftop' && cleanStreetNumber(String(result.matchedNumber)) === cleanStreetNumber(String(targetNumber)) &&
-            cleanNeighborhood(result.matchedCity) === cleanNeighborhood(filterCity) && streetAxesMatch(result.matchedStreet || '', tgt)) {
+        if (['rooftop', 'range_interpolated', 'geometric_center'].includes(result?.precision || '') &&
+            cleanNeighborhood(result.matchedCity) === cleanNeighborhood(filterCity) &&
+            streetAxesMatch(result.matchedStreet || '', tgt)) {
           targetCoords = { lat: result.lat, lng: result.lng };
           radiusAnchorPrecision = 'geocoded_number';
         }
@@ -4693,6 +4724,20 @@ app.get('/api/itbi/transactions', async (req, res) => {
       }
     }
 
+    if (!targetCoords) {
+      // Fallback para qualquer transação ITBI da mesma via com coordenadas válidas
+      const sameStreetTx = store.itbiTransactions.find(tx =>
+        (tx.state || '').toUpperCase() === filterState &&
+        cleanNeighborhood(tx.city) === cleanNeighborhood(filterCity) &&
+        tx.street && streetAxesMatch(tx.street, tgt) &&
+        Number.isFinite(tx.transactionLocationLat) && Number.isFinite(tx.transactionLocationLng)
+      );
+      if (sameStreetTx) {
+        targetCoords = { lat: sameStreetTx.transactionLocationLat!, lng: sameStreetTx.transactionLocationLng! };
+        radiusAnchorPrecision = 'street_centroid';
+      }
+    }
+
 
     if (targetCoords) {
       const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(String(propertyType || ''));
@@ -4702,7 +4747,7 @@ app.get('/api/itbi/transactions', async (req, res) => {
           if ((tx.state || '').toUpperCase() !== filterState) return false;
           if (cleanNeighborhood(tx.city) !== cleanNeighborhood(filterCity)) return false;
           if (!isTxLocationSane(tx.transactionLocationLat, tx.transactionLocationLng, tx.state, tx.city, tx.neighborhood)) return false;
-          if (tx.transactionLocationPrecision !== 'exact_number') return false;
+          if (tx.transactionLocationPrecision !== 'exact_number' && tx.transactionLocationPrecision !== 'street_centroid') return false;
 
           if (!allowBroadResidential) {
             if (propertyType && tx.propertyType.toLowerCase() !== String(propertyType).toLowerCase()) return false;
@@ -7161,14 +7206,14 @@ app.post('/api/garimpar/leilaoimovel-auto', authMiddleware, async (req, res) => 
 
 // POST /api/garimpar/extrajudiciais-auto (Varredura nos portais de leiloeiros para leilões de bancos / extrajudiciais)
 app.post('/api/garimpar/extrajudiciais-auto', authMiddleware, async (_req, res) => {
-  const started = startListedSync('manual');
-  res.status(202).json({success:true, started, message: started ? 'Sincronização iniciada para Rio de Janeiro, Niterói e Juiz de Fora. Acompanhe o andamento no painel.' : 'Já existe uma sincronização em andamento. Acompanhe o painel.'});
+  const started = startListedSync('manual', undefined, 'extrajudicial');
+  res.status(202).json({success:true, started, message: started ? 'Varredura de leilões extrajudiciais iniciada para Rio de Janeiro, Niterói e Juiz de Fora. Acompanhe o andamento no painel.' : 'Já existe uma sincronização em andamento. Acompanhe o painel.'});
 });
 
 // POST /api/garimpar/judiciais-auto (Varredura nos portais de leiloeiros para leilões judiciais)
 app.post('/api/garimpar/judiciais-auto', authMiddleware, async (_req, res) => {
-  const started = startListedSync('manual');
-  res.status(202).json({success:true, started, message: started ? 'Sincronização iniciada para Rio de Janeiro, Niterói e Juiz de Fora. Acompanhe o andamento no painel.' : 'Já existe uma sincronização em andamento. Acompanhe o painel.'});
+  const started = startListedSync('manual', undefined, 'judicial');
+  res.status(202).json({success:true, started, message: started ? 'Varredura de leilões judiciais iniciada para Rio de Janeiro, Niterói e Juiz de Fora. Acompanhe o andamento no painel.' : 'Já existe uma sincronização em andamento. Acompanhe o painel.'});
 });
 
 // ============================================================================

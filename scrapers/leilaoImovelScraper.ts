@@ -193,7 +193,8 @@ export async function scrapeLeilaoImovel(options: ScrapeOptions = {}): Promise<{
 }> {
   const targets = options.targets || [
     { city: 'Rio de Janeiro', slug: 'rio-de-janeiro', state: 'RJ' },
-    { city: 'Niterói', slug: 'niteroi', state: 'RJ' }
+    { city: 'Niterói', slug: 'niteroi', state: 'RJ' },
+    { city: 'Juiz de Fora', slug: 'juiz-de-fora', state: 'MG' }
   ];
 
   let totalCollected = 0;

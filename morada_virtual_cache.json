@@ -12639,5 +12639,301 @@
       }
     ],
     "updatedAt": "2026-11-03T20:29:13.654Z"
+  },
+  "rj_rio de janeiro_vila valqueire_e": {
+    "street": "e",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T02:14:42.529Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila valqueire_em": {
+    "street": "rua em",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-valqueire/praca-valqueire",
+    "canonicalTitle": "Praça ValqueireQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.402.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4935,
+        "sampleCount": 511,
+        "avgPrice": 450000,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3571,
+        "sampleCount": 551,
+        "avgPrice": 750000,
+        "rawMeta": "~221 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 34,
+        "avgPrice": 200000,
+        "rawMeta": "~39 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T02:15:07.730Z"
+  },
+  "rj_rio de janeiro_vila valqueire_emilio maurell neto": {
+    "street": "Rua Emílio Maurell Neto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-valqueire/rua-emilio-maurell-neto",
+    "canonicalTitle": "Rua Emilio Maurell NetoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.402.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4935,
+        "sampleCount": 511,
+        "avgPrice": 450000,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3571,
+        "sampleCount": 551,
+        "avgPrice": 750000,
+        "rawMeta": "~221 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 34,
+        "avgPrice": 200000,
+        "rawMeta": "~39 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T02:15:07.875Z"
+  },
+  "rj_rio de janeiro_vila valqueire_emi": {
+    "street": "emi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-valqueire/rua-emilio-maurell-neto",
+    "canonicalTitle": "Rua Emilio Maurell NetoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.402.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4935,
+        "sampleCount": 511,
+        "avgPrice": 450000,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3571,
+        "sampleCount": 551,
+        "avgPrice": 750000,
+        "rawMeta": "~221 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 34,
+        "avgPrice": 200000,
+        "rawMeta": "~39 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T02:15:09.831Z"
+  },
+  "rj_rio de janeiro_r_emilio maurell neto": {
+    "street": "Rua Emílio Maurell Neto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-valqueire/rua-emilio-maurell-neto",
+    "canonicalTitle": "Rua Emilio Maurell NetoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 4.402.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4935,
+        "sampleCount": 511,
+        "avgPrice": 450000,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3571,
+        "sampleCount": 551,
+        "avgPrice": 750000,
+        "rawMeta": "~221 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 34,
+        "avgPrice": 200000,
+        "rawMeta": "~39 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T02:27:07.081Z"
+  },
+  "rj_rio de janeiro_ra_emilio maurell neto": {
+    "street": "Rua Emílio Maurell Neto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/bangu/estrada-general-emilio-maurell-filho",
+    "canonicalTitle": "Estrada General Emilio Maurell FilhoQuem mora nas imediaçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo você se desloca",
+    "leadText": "Nesta região predominam casas de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 2.714.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3390,
+        "sampleCount": 78,
+        "avgPrice": 160000,
+        "rawMeta": "~50 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2320,
+        "sampleCount": 151,
+        "avgPrice": 360000,
+        "rawMeta": "~184 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2430,
+        "sampleCount": 46,
+        "avgPrice": 588860,
+        "rawMeta": "~566 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T02:27:12.644Z"
+  },
+  "rj_rio de janeiro_ramos_emilio maurell neto": {
+    "street": "Rua Emílio Maurell Neto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ramos/rua-emilio-zaluar",
+    "canonicalTitle": "Rua Emilio ZaluarQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.663.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4193,
+        "sampleCount": 136,
+        "avgPrice": 255500,
+        "rawMeta": "~56 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2756,
+        "sampleCount": 54,
+        "avgPrice": 440000,
+        "rawMeta": "~141 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2277,
+        "sampleCount": 54,
+        "avgPrice": 1200000,
+        "rawMeta": "~890 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T02:27:13.115Z"
+  },
+  "rj_rio de janeiro_ram_emilio maurell neto": {
+    "street": "Rua Emílio Maurell Neto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T02:27:13.775Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_cardoso de morais": {
+    "street": "Rua Cardoso de Morais",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ramos/rua-cardoso-de-morais",
+    "canonicalTitle": "Rua Cardoso de MoraisQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.663.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4193,
+        "sampleCount": 136,
+        "avgPrice": 255500,
+        "rawMeta": "~56 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2756,
+        "sampleCount": 54,
+        "avgPrice": 440000,
+        "rawMeta": "~141 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2277,
+        "sampleCount": 54,
+        "avgPrice": 1200000,
+        "rawMeta": "~890 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T02:27:13.946Z"
+  },
+  "rj_rio de janeiro_ramo_emilio maurell neto": {
+    "street": "Rua Emílio Maurell Neto",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T02:27:13.977Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_car": {
+    "street": "rua car",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T02:27:21.010Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_card": {
+    "street": "card",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ramos/rua-cardoso-de-morais",
+    "canonicalTitle": "Rua Cardoso de MoraisQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.663.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4193,
+        "sampleCount": 136,
+        "avgPrice": 255500,
+        "rawMeta": "~56 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2756,
+        "sampleCount": 54,
+        "avgPrice": 440000,
+        "rawMeta": "~141 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 2277,
+        "sampleCount": 54,
+        "avgPrice": 1200000,
+        "rawMeta": "~890 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T03:42:51.542Z"
   }
 }
