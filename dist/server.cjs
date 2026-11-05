@@ -6389,7 +6389,7 @@ function auctionCosts(p) {
   };
 }
 function calculateFlip(exitValue, acquisitionCost, monthlyHolding = 0) {
-  const brokerFee = Math.round(exitValue * 0.04);
+  const brokerFee = Math.round(exitValue * 0.06);
   const holding = monthlyHolding * 3;
   const netProfit = Math.round(exitValue - acquisitionCost);
   const roi = acquisitionCost > 0 ? Number((netProfit / acquisitionCost * 100).toFixed(2)) : 0;

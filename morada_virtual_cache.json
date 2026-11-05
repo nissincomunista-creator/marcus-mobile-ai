@@ -12935,5 +12935,341 @@
       }
     ],
     "updatedAt": "2026-11-04T03:42:51.542Z"
+  },
+  "rj_rio de janeiro_grajau_r": {
+    "street": "r",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T12:07:23.950Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_grajau_o": {
+    "street": "rua o",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T12:07:25.560Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_grajau_oliveira lima": {
+    "street": "Rua Oliveira Lima",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/grajau/rua-oliveira-lima",
+    "canonicalTitle": "Rua Oliveira LimaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5265,
+        "sampleCount": 1192,
+        "avgPrice": 489695,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3791,
+        "sampleCount": 348,
+        "avgPrice": 890000,
+        "rawMeta": "~250 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4194,
+        "sampleCount": 23,
+        "avgPrice": 800000,
+        "rawMeta": "~155 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T12:07:30.583Z"
+  },
+  "rj_rio de janeiro_grajau_rua": {
+    "street": "rua",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/grajau/rua-grajau",
+    "canonicalTitle": "Rua GrajauQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 5.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5265,
+        "sampleCount": 1192,
+        "avgPrice": 489695,
+        "rawMeta": "~90 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3791,
+        "sampleCount": 348,
+        "avgPrice": 890000,
+        "rawMeta": "~250 m² · em geral 4 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4194,
+        "sampleCount": 23,
+        "avgPrice": 800000,
+        "rawMeta": "~155 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T12:07:30.724Z"
+  },
+  "rj_rio de janeiro_grajau_oli": {
+    "street": "rua oli",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T12:07:37.646Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_grajau_ol": {
+    "street": "rua ol",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T12:07:37.919Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_grajau_ru": {
+    "street": "ru",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T12:07:48.246Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_carmela dutra": {
+    "street": "Rua Carmela Dutra",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-carmela-dutra",
+    "canonicalTitle": "Rua Carmela DutraQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 6.533.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6667,
+        "sampleCount": 6379,
+        "avgPrice": 700000,
+        "rawMeta": "~100 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 5200,
+        "sampleCount": 823,
+        "avgPrice": 960000,
+        "rawMeta": "~200 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 7600,
+        "sampleCount": 757,
+        "avgPrice": 299999,
+        "rawMeta": "~32 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T12:29:43.138Z"
+  },
+  "rj_rio de janeiro_pechincha_s": {
+    "street": "s",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T13:00:55.558Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_se": {
+    "street": "se",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pechincha/rua-jose-silva",
+    "canonicalTitle": "Rua José SilvaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.373.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4681,
+        "sampleCount": 1155,
+        "avgPrice": 350000,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3818,
+        "sampleCount": 729,
+        "avgPrice": 680000,
+        "rawMeta": "~175 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5767,
+        "sampleCount": 94,
+        "avgPrice": 994000,
+        "rawMeta": "~182 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T13:00:59.531Z"
+  },
+  "rj_rio de janeiro_pechincha_sernambi": {
+    "street": "Rua Sernambi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pechincha/rua-sernambi",
+    "canonicalTitle": "Rua SernambiQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.373.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4681,
+        "sampleCount": 1155,
+        "avgPrice": 350000,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3818,
+        "sampleCount": 729,
+        "avgPrice": 680000,
+        "rawMeta": "~175 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5767,
+        "sampleCount": 94,
+        "avgPrice": 994000,
+        "rawMeta": "~182 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T13:01:10.078Z"
+  },
+  "rj_rio de janeiro_pechincha_sern": {
+    "street": "sern",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pechincha/rua-sernambi",
+    "canonicalTitle": "Rua SernambiQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.373.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4681,
+        "sampleCount": 1155,
+        "avgPrice": 350000,
+        "rawMeta": "~70 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3818,
+        "sampleCount": 729,
+        "avgPrice": 680000,
+        "rawMeta": "~175 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5767,
+        "sampleCount": 94,
+        "avgPrice": 994000,
+        "rawMeta": "~182 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T13:01:10.161Z"
+  },
+  "rj_rio de janeiro_pechincha_ser": {
+    "street": "ser",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T13:01:15.779Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_sera": {
+    "street": "sera",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-04T13:01:10.387Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila isabel_paulo provincina": {
+    "street": "TRAVESSA PAULO PROVINCINA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-isabel/1a-travessa-da-rua-paulo-provincina",
+    "canonicalTitle": "1A Travessa da Rua Paulo ProvincinaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.929.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5172,
+        "sampleCount": 1677,
+        "avgPrice": 430000,
+        "rawMeta": "~80 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3947,
+        "sampleCount": 398,
+        "avgPrice": 699000,
+        "rawMeta": "~160 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4655,
+        "sampleCount": 179,
+        "avgPrice": 402200,
+        "rawMeta": "~80 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T15:53:20.257Z"
+  },
+  "rj_rio de janeiro_meier_herm": {
+    "street": "rua herm",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-hermengarda",
+    "canonicalTitle": "Rua HermengardaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-04T22:51:57.804Z"
   }
 }

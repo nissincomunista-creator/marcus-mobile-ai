@@ -487,7 +487,7 @@ export default function ExecutiveReportModal({ isOpen, onClose, data }: Executiv
                 ))}
               </div>
               <p className="text-[9.5px] text-slate-600 italic">
-                * Já deduzidos 4% de comissão de corretagem, 15% de Imposto de Renda sobre Ganho de Capital e carregamento mensal de R$ {data.totalMonthlyHolding.toLocaleString('pt-BR')}/mês
+                * Já deduzidos 6% de comissão de corretagem, 15% de Imposto de Renda sobre Ganho de Capital e carregamento mensal de R$ {data.totalMonthlyHolding.toLocaleString('pt-BR')}/mês
                 {data.monthlyFinancing > 0 && ` (inclui R$ ${data.monthlyInterestCost.toLocaleString('pt-BR')}/mês de juros de financiamento)`}.
               </p>
             </div>

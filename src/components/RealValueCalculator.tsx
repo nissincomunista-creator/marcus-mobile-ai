@@ -1746,7 +1746,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const reformCost = Math.round(activeVal * 0.05); // 5% reform cost
   const totalInvestedCapital = totalAcquisitionCost + reformCost;
   const resellValue = averageAskingValue;
-  const brokerFee = Math.round(resellValue * 0.05); // 5% broker fee
+  const brokerFee = Math.round(resellValue * 0.06); // 6% broker fee
   const netArbitrageProfit = resellValue - totalInvestedCapital - brokerFee;
   const arbitrageRoi = totalInvestedCapital > 0 ? Math.round((netArbitrageProfit / totalInvestedCapital) * 100) : 0;
 
@@ -2139,7 +2139,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Flip Scenarios data with 4% broker fee + 15% Capital Gains Tax (IR sobre Ganho de Capital)
   const flipScenariosData = useMemo(() => {
     return [1, 3, 6, 12, 24].map((months) => {
-      const brokerFeeVal = Math.round(activeFlipExitPrice * 0.04); // 4% corretagem
+      const brokerFeeVal = Math.round(activeFlipExitPrice * 0.06); // 6% corretagem
       const accumulatedHolding = totalMonthlyHolding * months;
       const grossGain = activeFlipExitPrice - totalArremateAcquisitionCost - accumulatedHolding - brokerFeeVal;
       const capitalGainsTax = grossGain > 0 ? Math.round(grossGain * 0.15) : 0; // 15% IR Ganho de Capital
@@ -2560,9 +2560,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         
         // 4 ROIs:
         // 1. Conservador / Venda Rápida
-        roiQuickSale: Math.round(((suggestedQuickSaleTotal - totalArremateAcquisitionCost - Math.round(suggestedQuickSaleTotal * 0.04)) / (totalArremateAcquisitionCost || 1)) * 100),
+        roiQuickSale: Math.round(((suggestedQuickSaleTotal - totalArremateAcquisitionCost - Math.round(suggestedQuickSaleTotal * 0.06)) / (totalArremateAcquisitionCost || 1)) * 100),
         valueQuickSale: suggestedQuickSaleTotal,
-        profitQuickSale: suggestedQuickSaleTotal - totalArremateAcquisitionCost - Math.round(suggestedQuickSaleTotal * 0.04),
+        profitQuickSale: suggestedQuickSaleTotal - totalArremateAcquisitionCost - Math.round(suggestedQuickSaleTotal * 0.06),
         
         // 2. Mesma Rua / Prédio (Média Real ITBI)
         roiStreetAverage: exactStreetStats ? Math.round(((exactStreetStats.avgSqm * sizeSqm - totalArremateAcquisitionCost) / (totalArremateAcquisitionCost || 1)) * 100) : Math.round(((calculatedStats.avgSqm * sizeSqm - totalArremateAcquisitionCost) / (totalArremateAcquisitionCost || 1)) * 100),
@@ -3926,31 +3926,31 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 <div>
                   <span className="text-slate-300 block font-bold text-[8px]">1m (Pico)</span>
                   <span className="text-white font-bold">
-                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 1) - Math.round(activeFlipExitPrice * 0.04))}
+                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 1) - Math.round(activeFlipExitPrice * 0.06))}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[8px]">3m</span>
                   <span className="text-white font-bold">
-                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 3) - Math.round(activeFlipExitPrice * 0.04))}
+                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 3) - Math.round(activeFlipExitPrice * 0.06))}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-300 block font-bold text-[8px]">6m (Alvo)</span>
                   <span className="text-white font-bold">
-                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 6) - Math.round(activeFlipExitPrice * 0.04))}
+                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 6) - Math.round(activeFlipExitPrice * 0.06))}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[8px]">12m</span>
                   <span className="text-white font-bold">
-                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 12) - Math.round(activeFlipExitPrice * 0.04))}
+                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 12) - Math.round(activeFlipExitPrice * 0.06))}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[8px]">24m</span>
                   <span className="text-white font-bold">
-                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 24) - Math.round(activeFlipExitPrice * 0.04))}
+                    {formatBRL(activeFlipExitPrice - totalArremateAcquisitionCost - (totalMonthlyHolding * 24) - Math.round(activeFlipExitPrice * 0.06))}
                   </span>
                 </div>
               </div>
@@ -3958,7 +3958,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
             {/* Explanatory Footnote for Investors */}
             <p className="text-[9.5px] text-slate-400 font-sans italic text-center sm:text-left leading-relaxed">
-              * O Lucro Líquido e o ROI já estão calculados deduzindo a comissão do corretor (4%) e o Imposto de Renda sobre Ganho de Capital (15% IRPF).
+              * O Lucro Líquido e o ROI já estão calculados deduzindo a comissão do corretor (6%) e o Imposto de Renda sobre Ganho de Capital (15% IRPF).
             </p>
 
           </div>

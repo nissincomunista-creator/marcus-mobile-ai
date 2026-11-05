@@ -1359,7 +1359,7 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
                             const deb = Number(arremateForm.iptuAndCondoDebts) || 0;
                             const oth = Number(arremateForm.otherExpenses) || 0;
                             const totalInv = bid + leil + itbi + reg + ref + leg + deb + oth;
-                            const broker = Math.round(sPrice * 0.04);
+                            const broker = Math.round(sPrice * 0.06);
                             const baseGain = sPrice - broker - totalInv;
                             const tax = baseGain > 0 ? Math.round(baseGain * 0.15) : 0;
                             setArremateForm(prev => ({
