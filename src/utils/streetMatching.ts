@@ -64,19 +64,31 @@ function calculateStringSimilarity(a: string, b: string): number {
   return 1 - dist / maxLen;
 }
 
+const streetCandCache = new WeakMap<string[], Array<{ street: string; key: string }>>();
+const streetResTargetCache = new Map<string, string | null>();
+
 export function resolveOfficialStreet(target: string, candidates: string[]): string | null {
   if (!target || !Array.isArray(candidates) || candidates.length === 0) return null;
   const wanted = canonicalStreet(target);
   if (!wanted) return null;
 
-  const unique = [...new Set(candidates.map(c => typeof c === 'string' ? c : (c as any)?.street).filter(Boolean))].map(street => ({
-    street: String(street),
-    key: canonicalStreet(String(street))
-  })).filter(c => c.key.length > 0);
+  let unique = streetCandCache.get(candidates);
+  if (!unique) {
+    unique = [...new Set(candidates.map(c => typeof c === 'string' ? c : (c as any)?.street).filter(Boolean))].map(street => ({
+      street: String(street),
+      key: canonicalStreet(String(street))
+    })).filter(c => c.key.length > 0);
+    try { streetCandCache.set(candidates, unique); } catch (_) {}
+  }
+
+  const tKey = wanted + '|' + (unique.length > 0 ? unique[0].key : '') + '|' + unique.length;
+  if (streetResTargetCache.has(tKey)) {
+    return streetResTargetCache.get(tKey)!;
+  }
 
   // 1. Match exato após normalização
   const exact = unique.filter(c => c.key === wanted);
-  if (exact.length) return exact[0].street;
+  if (exact.length) { streetResTargetCache.set(tKey, exact[0].street); return exact[0].street; }
 
   const wantedTokens = wanted.split(/\s+/).filter(Boolean);
 
@@ -90,10 +102,11 @@ export function resolveOfficialStreet(target: string, candidates: string[]): str
     }
     return false;
   });
-  if (tokenMatch.length === 1) return tokenMatch[0].street;
+  if (tokenMatch.length === 1) { streetResTargetCache.set(tKey, tokenMatch[0].street); return tokenMatch[0].street; }
   if (tokenMatch.length > 1) {
     // Escolhe o de tamanho mais próximo
     tokenMatch.sort((a, b) => Math.abs(a.key.length - wanted.length) - Math.abs(b.key.length - wanted.length));
+    streetResTargetCache.set(tKey, tokenMatch[0].street);
     return tokenMatch[0].street;
   }
 
@@ -104,7 +117,7 @@ export function resolveOfficialStreet(target: string, candidates: string[]): str
     }
     return false;
   });
-  if (substringMatch.length === 1) return substringMatch[0].street;
+  if (substringMatch.length === 1) { streetResTargetCache.set(tKey, substringMatch[0].street); return substringMatch[0].street; }
 
   // 4. Algoritmo de Similaridade e Auto-Seleção (NBR 14.653 / threshold 75%)
   const scored = unique.map(c => {
@@ -135,11 +148,12 @@ export function resolveOfficialStreet(target: string, candidates: string[]): str
     return { ...c, score: finalScore };
   }).filter(c => c.score >= 0.75).sort((a, b) => b.score - a.score);
 
-  if (!scored.length) return null;
+  if (!scored.length) { streetResTargetCache.set(tKey, null); return null; }
 
   // Se o primeiro tiver score isolado ou destacado
   if (!scored[1] || scored[0].score - scored[1].score >= 0.05) {
-    return scored[0].street;
+    streetResTargetCache.set(tKey, scored[0].street);
+  return scored[0].street;
   }
 
   return scored[0].street;

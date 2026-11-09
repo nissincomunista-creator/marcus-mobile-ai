@@ -6,6 +6,8 @@ import re
 import openpyxl
 
 possible_paths = [
+    r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-7-1.xlsx",
+    r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-7-1.xlsx",
     r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-5.xlsx",
     r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-5.xlsx",
     r"C:\Users\Marcus\OneDrive\Desktop\app garimpo leilao\itbi 2025-26.xlsx.xlsx",
@@ -17,6 +19,7 @@ possible_paths = [
 
 json_path = "data_store.json"
 gz_path = "data_store.json.gz"
+itbi_gz_path = "itbi_store.json.gz"
 
 def clean_excel_str(val):
     if val is None:
@@ -104,11 +107,12 @@ def import_data():
         
     print(f"Reading Excel file from: {excel_path}...")
     
-    # Also sync to Desktop folder if we read from Downloads
-    desktop_dest = r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-4.xlsx"
-    if excel_path != desktop_dest:
+    # Sync to Desktop folder if we read from Downloads
+    desktop_folder = r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES"
+    desktop_dest = os.path.join(desktop_folder, os.path.basename(excel_path))
+    if os.path.abspath(excel_path).lower() != os.path.abspath(desktop_dest).lower():
         try:
-            os.makedirs(os.path.dirname(desktop_dest), exist_ok=True)
+            os.makedirs(desktop_folder, exist_ok=True)
             shutil.copy2(excel_path, desktop_dest)
             print(f"Synced latest sheet to Desktop: {desktop_dest}")
         except Exception as copy_err:
@@ -182,8 +186,7 @@ def import_data():
             skipped_nan += 1
             continue
 
-        # Filtro de Sanidade Anti-Outlier em Bairros Periféricos:
-        # Em bairros periféricos da Zona Oeste, valores residenciais acima de R$ 7.000/m² são aberrações matemáticas ou erros de fonte
+        # Filtro de Sanidade Anti-Outlier em Bairros Periféricos
         if bairro_str in PERIPHERAL_BAIRROS and m2 > 7000:
             skipped_nan += 1
             continue
@@ -242,21 +245,63 @@ def import_data():
     # Load existing store to preserve auctions, users, sessions, Niterói & Juiz de Fora transactions
     store_data = {}
     existing_non_rj = []
+    existing_coords = {}
+
     if os.path.exists(json_path):
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 store_data = json.load(f)
                 existing_txs = store_data.get("itbiTransactions", [])
+                for t in existing_txs:
+                    if t.get("transactionLocationLat") and t.get("transactionLocationLng"):
+                        existing_coords[t["id"]] = {
+                            "lat": t["transactionLocationLat"],
+                            "lng": t["transactionLocationLng"],
+                            "precision": t.get("transactionLocationPrecision", "exact_number"),
+                            "spreadMeters": t.get("transactionLocationSpreadMeters", 0)
+                        }
                 existing_non_rj = [t for t in existing_txs if not (t.get("state") == "RJ" and t.get("city") == "Rio de Janeiro")]
                 print(f"Preserved {len(existing_non_rj)} existing non-RJ (Niterói / Juiz de Fora) transactions.")
+                print(f"Preserved {len(existing_coords)} coordinates from existing transactions.")
                 print(f"Preserved {len(store_data.get('auctions', []))} auctions, {len(store_data.get('users', []))} users.")
         except Exception as e:
             print(f"Failed to read existing store: {e}")
 
+    # Hydrate coordinates from itbi_address_locations.json and previous store
+    loc_path = "itbi_address_locations.json"
+    locations = {}
+    if os.path.exists(loc_path):
+        try:
+            with open(loc_path, 'r', encoding='utf-8') as f_loc:
+                locations = json.load(f_loc)
+        except Exception as e:
+            print(f"Notice: Could not load {loc_path}: {e}")
+
+    hydrated_count = 0
+    for tx in transactions:
+        tx_id = tx['id']
+        point = locations.get(tx_id)
+        if point and point.get('precision') == 'exact_number' and point.get('lat') and point.get('lng'):
+            tx['transactionLocationLat'] = point['lat']
+            tx['transactionLocationLng'] = point['lng']
+            tx['transactionLocationPrecision'] = point['precision']
+            if 'spreadMeters' in point:
+                tx['transactionLocationSpreadMeters'] = point['spreadMeters']
+            hydrated_count += 1
+        elif tx_id in existing_coords:
+            c = existing_coords[tx_id]
+            tx['transactionLocationLat'] = c['lat']
+            tx['transactionLocationLng'] = c['lng']
+            tx['transactionLocationPrecision'] = c['precision']
+            if 'spreadMeters' in c:
+                tx['transactionLocationSpreadMeters'] = c['spreadMeters']
+            hydrated_count += 1
+
+    print(f"Hydrated {hydrated_count} Rio de Janeiro transactions with coordinates.")
+
     # Merge transactions and update calibration version to trigger automatic index recalibration
     store_data["itbiTransactions"] = transactions + existing_non_rj
-    # Invalidate calibration version so server recalculates indexes and caches with fresh data
-    store_data["calibrationVersion"] = f"v{int(os.path.getmtime(excel_path))}"
+    store_data["calibrationVersion"] = "v24_purge_radius_outliers_parity_ssot"
 
     try:
         print(f"Writing updated {json_path} ({len(store_data['itbiTransactions'])} total transactions)...")
@@ -269,6 +314,12 @@ def import_data():
         with open(gz_path, 'wb') as f_gz:
             f_gz.write(compressed_bytes)
         print(f"data_store.json.gz updated successfully ({len(compressed_bytes)} bytes)!")
+
+        print(f"Compressing into {itbi_gz_path}...")
+        itbi_bytes = gzip.compress(json.dumps(store_data["itbiTransactions"], ensure_ascii=False).encode('utf-8'))
+        with open(itbi_gz_path, 'wb') as f_itbi:
+            f_itbi.write(itbi_bytes)
+        print(f"{itbi_gz_path} updated successfully ({len(itbi_bytes)} bytes)!")
 
         # Verify Princesa Isabel 500
         p500 = [t for t in transactions if 'princesa isabel' in t['street'].lower() and t['number'] == '500']

@@ -232,7 +232,7 @@ function cleanStreetKey(s?: string | null): string {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/z/g, 's')
     .replace(/ph/g, 'f')
-    .replace(/^(?:rua|r\.|avenida|av\.|estrada|est\.|travessa|tr\.|alameda|al\.|praca|pca\.)\s+/i, '')
+    .replace(/^(?:rua|r\.|avenida|avn|av\.|estrada|etr|est\.|travessa|trv|tr\.|alameda|al\.|praca|pra|pca\.|largo|lgo)\s+/i, '')
     .split(',')[0].replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
@@ -1923,15 +1923,17 @@ function buildItbiIndexes(txs: ItbiTransaction[], calibrationAuctions: AuctionPr
       sList.push(nTxs[i]);
     }
 
-    for (const [sc, sTxs] of streetGroup.entries()) {
-      const otherVals: number[] = [];
-      for (let i = 0; i < nTxs.length; i++) {
-        if ((nTxs[i] as any)._core !== sc) otherVals.push(nTxs[i].unitValueSqm);
-      }
+    const totalNeighSum = nTxs.reduce((sum, t) => sum + t.unitValueSqm, 0);
+    const totalNeighCount = nTxs.length;
 
-      const raioPrelim = otherVals.length > 0 ? (otherVals.reduce((a, b) => a + b, 0) / otherVals.length) : bSaneada;
+    for (const [sc, sTxs] of streetGroup.entries()) {
+      const streetSum = sTxs.reduce((sum, t) => sum + t.unitValueSqm, 0);
+      const streetCount = sTxs.length;
+      const otherCount = totalNeighCount - streetCount;
+      const otherSum = totalNeighSum - streetSum;
+      const raioPrelim = otherCount > 0 ? (otherSum / otherCount) : bSaneada;
       const refRaio = (raioPrelim >= bSaneada * 0.70 && raioPrelim <= bSaneada * 1.30) ? raioPrelim : bSaneada;
-      const raioValid = otherVals.filter(v => v >= refRaio * 0.75 && v <= refRaio * 1.25);
+      const raioValid = bValid.filter(v => v >= refRaio * 0.75 && v <= refRaio * 1.25);
       const raioSaneada = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : Math.round(refRaio);
 
       // Corte estrito de 25% acima e 25% abaixo balizado no raio
@@ -2273,6 +2275,9 @@ function estimateNotaryFees(price: number, origin: string, state = 'SP'): { nota
     registration: reg
   };
 }
+
+const neighDistinctStreetsCache = new Map<string, string[]>();
+const neighStreetResolutionCache = new Map<string, string>();
 
 function recalculateAuctionWithIndex(
   auc: AuctionProperty,
@@ -2796,10 +2801,21 @@ function recalculateAuctionWithIndex(
 
     // Tentar resolver a via oficial soberana pelo dicionário municipal do bairro
     if (neighborhoodTxs.length > 0) {
-      const distinctStreets = Array.from(new Set(neighborhoodTxs.map(t => t.street).filter(Boolean))) as string[];
-      const resolved = resolveOfficialStreet(benchmarkStreet, distinctStreets);
-      if (resolved) {
-        benchmarkStreet = resolved;
+      const resCacheKey = `${key}|${benchmarkStreet}`;
+      const cached = neighStreetResolutionCache.get(resCacheKey);
+      if (cached !== undefined) {
+        if (cached) benchmarkStreet = cached;
+      } else {
+        let distinctStreets = neighDistinctStreetsCache.get(key);
+        if (!distinctStreets) {
+          distinctStreets = Array.from(new Set(neighborhoodTxs.map(t => t.street).filter(Boolean))) as string[];
+          neighDistinctStreetsCache.set(key, distinctStreets);
+        }
+        const resolved = resolveOfficialStreet(benchmarkStreet, distinctStreets);
+        neighStreetResolutionCache.set(resCacheKey, resolved || '');
+        if (resolved) {
+          benchmarkStreet = resolved;
+        }
       }
     }
 

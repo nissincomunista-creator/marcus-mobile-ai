@@ -4599,16 +4599,32 @@ function calculateStringSimilarity(a, b) {
   const dist = editDistance(a, b);
   return 1 - dist / maxLen;
 }
+var streetCandCache = /* @__PURE__ */ new WeakMap();
+var streetResTargetCache = /* @__PURE__ */ new Map();
 function resolveOfficialStreet(target, candidates) {
   if (!target || !Array.isArray(candidates) || candidates.length === 0) return null;
   const wanted = canonicalStreet(target);
   if (!wanted) return null;
-  const unique = [...new Set(candidates.map((c) => typeof c === "string" ? c : c?.street).filter(Boolean))].map((street) => ({
-    street: String(street),
-    key: canonicalStreet(String(street))
-  })).filter((c) => c.key.length > 0);
+  let unique = streetCandCache.get(candidates);
+  if (!unique) {
+    unique = [...new Set(candidates.map((c) => typeof c === "string" ? c : c?.street).filter(Boolean))].map((street) => ({
+      street: String(street),
+      key: canonicalStreet(String(street))
+    })).filter((c) => c.key.length > 0);
+    try {
+      streetCandCache.set(candidates, unique);
+    } catch (_) {
+    }
+  }
+  const tKey = wanted + "|" + (unique.length > 0 ? unique[0].key : "") + "|" + unique.length;
+  if (streetResTargetCache.has(tKey)) {
+    return streetResTargetCache.get(tKey);
+  }
   const exact = unique.filter((c) => c.key === wanted);
-  if (exact.length) return exact[0].street;
+  if (exact.length) {
+    streetResTargetCache.set(tKey, exact[0].street);
+    return exact[0].street;
+  }
   const wantedTokens = wanted.split(/\s+/).filter(Boolean);
   const tokenMatch = unique.filter((c) => {
     const cTokens = c.key.split(/\s+/).filter(Boolean);
@@ -4619,9 +4635,13 @@ function resolveOfficialStreet(target, candidates) {
     }
     return false;
   });
-  if (tokenMatch.length === 1) return tokenMatch[0].street;
+  if (tokenMatch.length === 1) {
+    streetResTargetCache.set(tKey, tokenMatch[0].street);
+    return tokenMatch[0].street;
+  }
   if (tokenMatch.length > 1) {
     tokenMatch.sort((a, b) => Math.abs(a.key.length - wanted.length) - Math.abs(b.key.length - wanted.length));
+    streetResTargetCache.set(tKey, tokenMatch[0].street);
     return tokenMatch[0].street;
   }
   const substringMatch = unique.filter((c) => {
@@ -4630,7 +4650,10 @@ function resolveOfficialStreet(target, candidates) {
     }
     return false;
   });
-  if (substringMatch.length === 1) return substringMatch[0].street;
+  if (substringMatch.length === 1) {
+    streetResTargetCache.set(tKey, substringMatch[0].street);
+    return substringMatch[0].street;
+  }
   const scored = unique.map((c) => {
     const ts = c.key.split(/\s+/).filter(Boolean);
     const simplifiedWanted = wantedTokens.filter((t) => !["doutor", "doutora", "presidente", "general", "coronel", "padre", "santa", "santo", "marechal"].includes(t)).join(" ");
@@ -4653,8 +4676,12 @@ function resolveOfficialStreet(target, candidates) {
     const finalScore = Math.max(globalSim, avgTokenScore);
     return { ...c, score: finalScore };
   }).filter((c) => c.score >= 0.75).sort((a, b) => b.score - a.score);
-  if (!scored.length) return null;
+  if (!scored.length) {
+    streetResTargetCache.set(tKey, null);
+    return null;
+  }
   if (!scored[1] || scored[0].score - scored[1].score >= 0.05) {
+    streetResTargetCache.set(tKey, scored[0].street);
     return scored[0].street;
   }
   return scored[0].street;
@@ -10438,7 +10465,7 @@ function getCachedStreetCoords(state, city, neighborhood, street) {
 }
 function cleanStreetKey(s) {
   if (!s) return "";
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/z/g, "s").replace(/ph/g, "f").replace(/^(?:rua|r\.|avenida|av\.|estrada|est\.|travessa|tr\.|alameda|al\.|praca|pca\.)\s+/i, "").split(",")[0].replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/z/g, "s").replace(/ph/g, "f").replace(/^(?:rua|r\.|avenida|avn|av\.|estrada|etr|est\.|travessa|trv|tr\.|alameda|al\.|praca|pra|pca\.|largo|lgo)\s+/i, "").split(",")[0].replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
 }
 var itbiStreetCoordsIndex = /* @__PURE__ */ new Map();
 function buildItbiStreetCoordsIndex(txs) {
@@ -11821,14 +11848,16 @@ function buildItbiIndexes(txs, calibrationAuctions = []) {
       }
       sList.push(nTxs[i]);
     }
+    const totalNeighSum = nTxs.reduce((sum, t) => sum + t.unitValueSqm, 0);
+    const totalNeighCount = nTxs.length;
     for (const [sc, sTxs] of streetGroup.entries()) {
-      const otherVals = [];
-      for (let i = 0; i < nTxs.length; i++) {
-        if (nTxs[i]._core !== sc) otherVals.push(nTxs[i].unitValueSqm);
-      }
-      const raioPrelim = otherVals.length > 0 ? otherVals.reduce((a, b) => a + b, 0) / otherVals.length : bSaneada;
+      const streetSum = sTxs.reduce((sum, t) => sum + t.unitValueSqm, 0);
+      const streetCount = sTxs.length;
+      const otherCount = totalNeighCount - streetCount;
+      const otherSum = totalNeighSum - streetSum;
+      const raioPrelim = otherCount > 0 ? otherSum / otherCount : bSaneada;
       const refRaio = raioPrelim >= bSaneada * 0.7 && raioPrelim <= bSaneada * 1.3 ? raioPrelim : bSaneada;
-      const raioValid = otherVals.filter((v) => v >= refRaio * 0.75 && v <= refRaio * 1.25);
+      const raioValid = bValid.filter((v) => v >= refRaio * 0.75 && v <= refRaio * 1.25);
       const raioSaneada = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : Math.round(refRaio);
       const corteMin = Math.round(raioSaneada * 0.75);
       const corteMax = Math.round(raioSaneada * 1.25);
@@ -12117,6 +12146,8 @@ function estimateNotaryFees(price, origin, state = "SP") {
     registration: reg
   };
 }
+var neighDistinctStreetsCache = /* @__PURE__ */ new Map();
+var neighStreetResolutionCache = /* @__PURE__ */ new Map();
 function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType) {
   const state = (auc.state || "SP").toLowerCase();
   let neigh = cleanNeighborhood(auc.neighborhood);
@@ -12501,10 +12532,21 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     const numExtracted = cleanAddrParsed.number ? parseInt(cleanAddrParsed.number, 10) : extractAddressNumber(rawAddr);
     const sNum = numExtracted !== null && !isNaN(numExtracted) ? String(numExtracted) : "";
     if (neighborhoodTxs.length > 0) {
-      const distinctStreets = Array.from(new Set(neighborhoodTxs.map((t) => t.street).filter(Boolean)));
-      const resolved = resolveOfficialStreet(benchmarkStreet, distinctStreets);
-      if (resolved) {
-        benchmarkStreet = resolved;
+      const resCacheKey = `${key}|${benchmarkStreet}`;
+      const cached = neighStreetResolutionCache.get(resCacheKey);
+      if (cached !== void 0) {
+        if (cached) benchmarkStreet = cached;
+      } else {
+        let distinctStreets = neighDistinctStreetsCache.get(key);
+        if (!distinctStreets) {
+          distinctStreets = Array.from(new Set(neighborhoodTxs.map((t) => t.street).filter(Boolean)));
+          neighDistinctStreetsCache.set(key, distinctStreets);
+        }
+        const resolved = resolveOfficialStreet(benchmarkStreet, distinctStreets);
+        neighStreetResolutionCache.set(resCacheKey, resolved || "");
+        if (resolved) {
+          benchmarkStreet = resolved;
+        }
       }
     }
     const sameTypeTxs = auc.propertyType && !isJuizDeForaAuc ? neighborhoodTxs.filter((t) => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase()) : [];

@@ -13271,5 +13271,2255 @@
       }
     ],
     "updatedAt": "2026-11-04T22:51:57.804Z"
+  },
+  "rj_rio de janeiro_meier_i": {
+    "street": "rua i",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T00:56:08.576Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_isolina": {
+    "street": "Rua Isolina",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-isolina",
+    "canonicalTitle": "Rua IsolinaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T00:56:13.750Z"
+  },
+  "rj_rio de janeiro_meier_iso": {
+    "street": "rua iso",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-isolina",
+    "canonicalTitle": "Rua IsolinaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T00:56:13.982Z"
+  },
+  "rj_rio de janeiro_meier_is": {
+    "street": "rua is",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-visconde-de-tocantins",
+    "canonicalTitle": "Rua Visconde de TocantinsQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T00:56:15.749Z"
+  },
+  "rj_rio de janeiro_meier_d": {
+    "street": "d",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T01:09:30.924Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/campo-grande/rua-alfredo-duque-meier",
+    "canonicalTitle": "Rua Alfredo Duque MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam casas de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.200.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3711,
+        "sampleCount": 990,
+        "avgPrice": 190000,
+        "rawMeta": "~51 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2667,
+        "sampleCount": 1192,
+        "avgPrice": 449130,
+        "rawMeta": "~180 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 331,
+        "avgPrice": 350000,
+        "rawMeta": "~144 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:09:35.206Z"
+  },
+  "rj_rio de janeiro_meier_domin": {
+    "street": "domin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/avenida-domingos-vieira-muniz",
+    "canonicalTitle": "Avenida Domingos Vieira MunizQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:09:36.980Z"
+  },
+  "rj_rio de janeiro_meier_domi": {
+    "street": "domi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/avenida-domingos-vieira-muniz",
+    "canonicalTitle": "Avenida Domingos Vieira MunizQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:09:37.359Z"
+  },
+  "rj_rio de janeiro_meier_dom": {
+    "street": "dom",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-dom-francisco",
+    "canonicalTitle": "Rua Dom FranciscoComo estão os preçosEscolas por pertoSaúde por perto",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:09:38.228Z"
+  },
+  "rj_rio de janeiro_todos os santos_d": {
+    "street": "d",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T01:10:02.114Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pilares/rua-todos-os-santos",
+    "canonicalTitle": "Rua Todos Os SantosQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.322.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4000,
+        "sampleCount": 108,
+        "avgPrice": 262500,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2583,
+        "sampleCount": 71,
+        "avgPrice": 340000,
+        "rawMeta": "~150 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 50,
+        "avgPrice": 280000,
+        "rawMeta": "~60 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:10:03.420Z"
+  },
+  "rj_rio de janeiro_todos os santos_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pilares/rua-todos-os-santos",
+    "canonicalTitle": "Rua Todos Os SantosQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.322.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4000,
+        "sampleCount": 108,
+        "avgPrice": 262500,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2583,
+        "sampleCount": 71,
+        "avgPrice": 340000,
+        "rawMeta": "~150 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 50,
+        "avgPrice": 280000,
+        "rawMeta": "~60 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:10:03.738Z"
+  },
+  "rj_rio de janeiro_to_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T01:10:04.188Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_t_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T01:10:04.193Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_too_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-rio-grande-do-sul",
+    "canonicalTitle": "Rua Rio Grande do SulComo estão os preçosEscolas por pertoSaúde por perto",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:10:05.822Z"
+  },
+  "rj_rio de janeiro_todos os santos_dom": {
+    "street": "dom",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/avenida-dom-helder-camara",
+    "canonicalTitle": "Avenida Dom Helder CamaraQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:10:05.859Z"
+  },
+  "rj_rio de janeiro_tod_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-custodio-guimaraes",
+    "canonicalTitle": "Rua Custodio GuimaraesQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:10:05.902Z"
+  },
+  "rj_rio de janeiro_todo_do": {
+    "street": "do",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T01:10:07.605Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_domingos freire": {
+    "street": "Rua Domingos Freire",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-domingos-freire",
+    "canonicalTitle": "Rua Domingos FreireQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:10:07.892Z"
+  },
+  "rj_rio de janeiro_todos os santos_domi": {
+    "street": "domi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-domingos-freire",
+    "canonicalTitle": "Rua Domingos FreireQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T01:10:07.937Z"
+  },
+  "rj_rio de janeiro_meier_c": {
+    "street": "c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:21:04.774Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_c": {
+    "street": "c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:21:52.771Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_ruq": {
+    "street": "ruq",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:02.344Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:31.255Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_coli": {
+    "street": "coli",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:26.910Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_col": {
+    "street": "col",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:35.685Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tod_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:31.254Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_t_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:34.994Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_co": {
+    "street": "co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:35.689Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:53.247Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_to_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:38.187Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todo_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:38.187Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:42.984Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_coli": {
+    "street": "coli",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:44.136Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_col": {
+    "street": "col",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:44.136Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_ruqa": {
+    "street": "ruqa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:57.833Z"
+  },
+  "rj_rio de janeiro_meier_ruqa col": {
+    "street": "ruqa col",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:50.045Z"
+  },
+  "rj_rio de janeiro_meier_ruqa coli": {
+    "street": "ruqa coli",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:51.864Z"
+  },
+  "rj_rio de janeiro_todos o_co": {
+    "street": "rua co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:22:51.868Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_ruqa colibr": {
+    "street": "ruqa colibr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:57.666Z"
+  },
+  "rj_rio de janeiro_meier_ruqa colibri": {
+    "street": "ruqa colibri",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:57.755Z"
+  },
+  "rj_rio de janeiro_meier_ruqa co": {
+    "street": "ruqa co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:57.791Z"
+  },
+  "rj_rio de janeiro_meier_ruqa c": {
+    "street": "ruqa c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:59.531Z"
+  },
+  "rj_rio de janeiro_meier_ruqa colib": {
+    "street": "ruqa colib",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:22:59.600Z"
+  },
+  "rj_rio de janeiro_meier_colib": {
+    "street": "colib",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/travessa-dos-colibris",
+    "canonicalTitle": "Travessa dos ColibrisQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:23:02.549Z"
+  },
+  "rj_rio de janeiro_todos os santos_colib": {
+    "street": "colib",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-colibri",
+    "canonicalTitle": "Rua ColibriQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:23:10.076Z"
+  },
+  "rj_rio de janeiro_todos os santos_colibri": {
+    "street": "Travessa Colibri",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-colibri",
+    "canonicalTitle": "Rua ColibriQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:23:10.521Z"
+  },
+  "rj_rio de janeiro_todos os santos_t": {
+    "street": "t",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:28:26.631Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_tv": {
+    "street": "tv",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:28:35.777Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_tra": {
+    "street": "tra",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:28:40.867Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_tr": {
+    "street": "tr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:28:44.188Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_j": {
+    "street": "j",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:28:52.232Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_jose": {
+    "street": "jose",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-jose-bonifacio",
+    "canonicalTitle": "Rua José BonifácioQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:28:56.807Z"
+  },
+  "rj_rio de janeiro_todos os santos_jose bonifacio": {
+    "street": "Travessa José Bonifácio",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-jose-bonifacio",
+    "canonicalTitle": "Rua José BonifácioQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.752.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 5269,
+        "sampleCount": 581,
+        "avgPrice": 360000,
+        "rawMeta": "~66 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3385,
+        "sampleCount": 181,
+        "avgPrice": 525000,
+        "rawMeta": "~140 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5350,
+        "sampleCount": 83,
+        "avgPrice": 375441,
+        "rawMeta": "~85 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:28:56.861Z"
+  },
+  "rj_rio de janeiro_todos os santos_jo": {
+    "street": "jo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:29:03.478Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_jos": {
+    "street": "jos",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:29:05.461Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_f": {
+    "street": "f",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:29:22.228Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_fla": {
+    "street": "fla",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-flavio-carvalho",
+    "canonicalTitle": "Rua Flavio CarvalhoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:29:30.422Z"
+  },
+  "rj_rio de janeiro_todos os santos_pr": {
+    "street": "pr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pilares/rua-todos-os-santos",
+    "canonicalTitle": "Rua Todos Os SantosQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 3.322.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4000,
+        "sampleCount": 108,
+        "avgPrice": 262500,
+        "rawMeta": "~62 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 2583,
+        "sampleCount": 71,
+        "avgPrice": 340000,
+        "rawMeta": "~150 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5000,
+        "sampleCount": 50,
+        "avgPrice": 280000,
+        "rawMeta": "~60 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:29:31.277Z"
+  },
+  "rj_rio de janeiro_todos os santos_fl": {
+    "street": "fl",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:29:44.793Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_flavi": {
+    "street": "flavi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-flavio-carvalho",
+    "canonicalTitle": "Rua Flavio CarvalhoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:29:37.536Z"
+  },
+  "rj_rio de janeiro_todos os santos_flav": {
+    "street": "flav",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-flavio-da-silveira",
+    "canonicalTitle": "Rua Flavio da SilveiraQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9694,
+        "sampleCount": 1354,
+        "avgPrice": 1167500,
+        "rawMeta": "~115 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 4350,
+        "sampleCount": 265,
+        "avgPrice": 1100000,
+        "rawMeta": "~300 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 5319,
+        "sampleCount": 89,
+        "avgPrice": 280000,
+        "rawMeta": "~58 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:29:39.592Z"
+  },
+  "rj_rio de janeiro_todos os santos_pra": {
+    "street": "pra",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:29:40.030Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_meie": {
+    "street": "meie",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-joaquim-meier",
+    "canonicalTitle": "Rua Joaquim MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:30:56.484Z"
+  },
+  "rj_rio de janeiro_meier_joaquim meier": {
+    "street": "Rua Joaquim Meier",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-joaquim-meier",
+    "canonicalTitle": "Rua Joaquim MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:30:56.516Z"
+  },
+  "rj_rio de janeiro_meier_meier": {
+    "street": "meier",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-joaquim-meier",
+    "canonicalTitle": "Rua Joaquim MeierQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:30:56.556Z"
+  },
+  "rj_rio de janeiro_meier_me": {
+    "street": "me",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:30:59.547Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_mei": {
+    "street": "mei",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:31:02.378Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_cout": {
+    "street": "cout",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-magalhaes-couto",
+    "canonicalTitle": "Rua Magalhaes CoutoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:33:36.812Z"
+  },
+  "rj_rio de janeiro_meier_cou": {
+    "street": "cou",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-magalhaes-couto",
+    "canonicalTitle": "Rua Magalhaes CoutoQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:33:36.971Z"
+  },
+  "rj_rio de janeiro_meier_cone": {
+    "street": "cone",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-conego-tobias",
+    "canonicalTitle": "Rua Conego TobiasQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:36:15.853Z"
+  },
+  "rj_rio de janeiro_meier_conego": {
+    "street": "conego",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-conego-tobias",
+    "canonicalTitle": "Rua Conego TobiasQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:36:15.918Z"
+  },
+  "rj_rio de janeiro_meier_conego tobias": {
+    "street": "Rua Cônego Tobias",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-conego-tobias",
+    "canonicalTitle": "Rua Conego TobiasQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:36:16.085Z"
+  },
+  "rj_rio de janeiro_meier_coneg": {
+    "street": "coneg",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-conego-tobias",
+    "canonicalTitle": "Rua Conego TobiasQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
+    "leadText": "Nesta região predominam apartamentos de 2 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 4.468.",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4667,
+        "sampleCount": 1493,
+        "avgPrice": 380000,
+        "rawMeta": "~78 m² · em geral 2 quartos"
+      },
+      {
+        "tipo": "CASA",
+        "m2": 3627,
+        "sampleCount": 417,
+        "avgPrice": 600000,
+        "rawMeta": "~173 m² · em geral 3 quartos"
+      },
+      {
+        "tipo": "COMERCIAL",
+        "m2": 4828,
+        "sampleCount": 193,
+        "avgPrice": 199000,
+        "rawMeta": "~46 m² · salas e lojas"
+      }
+    ],
+    "updatedAt": "2026-11-05T17:36:16.144Z"
+  },
+  "rj_rio de janeiro_meier_con": {
+    "street": "con",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-05T17:36:23.478Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_r": {
+    "street": "r",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T15:59:35.767Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_j": {
+    "street": "rua j",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T15:59:37.732Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_rua": {
+    "street": "rua",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "/rj/niteroi/centro/rua-professor-joaquim-costa-ribeiro",
+    "canonicalTitle": "Rua Professor Joaquim Costa Ribeiro, Niterói, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T15:59:46.749Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_jose clemente": {
+    "street": "Rua JOSE CLEMENTE",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "/rj/niteroi/centro/rua-jose-clemente",
+    "canonicalTitle": "Rua José Clemente, Niterói, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T15:59:46.951Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_jose": {
+    "street": "rua jose",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "/rj/niteroi/centro/rua-jose-figueiredo",
+    "canonicalTitle": "Rua José Figueiredo, Niterói, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T15:59:47.581Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_jos": {
+    "street": "rua jos",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T15:59:56.134Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_jo": {
+    "street": "rua jo",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T15:59:57.836Z",
+    "notFound": true
+  },
+  "rj_niteroi_centro_ru": {
+    "street": "ru",
+    "city": "Niterói",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:00:03.704Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_g": {
+    "street": "g",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:14:45.853Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_gen": {
+    "street": "gen",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-da-penha/rua-general-otavio-povoa",
+    "canonicalTitle": "Rua General Otavio Povoa, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:15:02.352Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_gener": {
+    "street": "gener",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-da-penha/rua-general-otavio-povoa",
+    "canonicalTitle": "Rua General Otavio Povoa, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:15:05.541Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_gene": {
+    "street": "gene",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-da-penha/rua-general-otavio-povoa",
+    "canonicalTitle": "Rua General Otavio Povoa, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:15:05.749Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_ge": {
+    "street": "ge",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:15:10.016Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_general silveira sobrinho": {
+    "street": "Rua General Silveira Sobrinho",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-da-penha/rua-general-silveira-sobrinho",
+    "canonicalTitle": "Rua General Silveira Sobrinho, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:15:15.036Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_t": {
+    "street": "t",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:21:36.094Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_pr": {
+    "street": "pr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-da-penha/rua-ararai",
+    "canonicalTitle": "Rua Ararai, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:21:44.282Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_da prosperidade": {
+    "street": "Travessa da Prosperidade",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-da-penha/travessa-da-prosperidade",
+    "canonicalTitle": "Travessa da Prosperidade, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:21:44.351Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_pro": {
+    "street": "pro",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:21:51.991Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_tr": {
+    "street": "tr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:21:52.206Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_pros": {
+    "street": "pros",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T16:21:54.725Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_rio c_da prosperidade": {
+    "street": "Travessa da Prosperidade",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:01.776Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_r_da prosperidade": {
+    "street": "Travessa da Prosperidade",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/complexo-da-mare/rua-da-prosperidade",
+    "canonicalTitle": "Rua da Prosperidade, Complexo da Mare, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:02.433Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_rio_da prosperidade": {
+    "street": "Travessa da Prosperidade",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/complexo-da-mare/rua-da-prosperidade",
+    "canonicalTitle": "Rua da Prosperidade, Complexo da Mare, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:05.050Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_rio comprido_s": {
+    "street": "s",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:04.084Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ri_da prosperidade": {
+    "street": "Travessa da Prosperidade",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-almirante-realengo/rua-da-prosperidade",
+    "canonicalTitle": "Rua da Prosperidade, Vila Almirante Realengo, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:05.531Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ru_da prosperidade": {
+    "street": "Travessa da Prosperidade",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-almirante-realengo/rua-da-prosperidade",
+    "canonicalTitle": "Rua da Prosperidade, Vila Almirante Realengo, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:05.568Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_rio comprido_sa": {
+    "street": "sa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-comprido/rua-augusta-sa",
+    "canonicalTitle": "Rua Augusta Sa, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:08.299Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_rio comprido_santa alexandrina": {
+    "street": "Rua Santa Alexandrina",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-comprido/rua-santa-alexandrina",
+    "canonicalTitle": "Rua Santa Alexandrina, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:08.672Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_rio comprido_sant": {
+    "street": "sant",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-jorge-sant-anna",
+    "canonicalTitle": "Rua Jorge Sant Anna, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:11.566Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_rio comprido_san": {
+    "street": "san",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-06T17:03:16.343Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_c": {
+    "street": "c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:28:46.499Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_t": {
+    "street": "t",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:28:54.320Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_c": {
+    "street": "c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:04.890Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_coro": {
+    "street": "coro",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:18.784Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_tedi": {
+    "street": "tedi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/freguesia/praca-tedim-cerqueira",
+    "canonicalTitle": "Praça Tedim Cerqueira, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:20.420Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_coro": {
+    "street": "coro",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:20.700Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_cor": {
+    "street": "cor",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:22.576Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_co": {
+    "street": "co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:25.912Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_ted": {
+    "street": "ted",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jacarepagua/condominio-best-western-rio-convention-suited",
+    "canonicalTitle": "Condomínio Best Western Rio Convention Suited, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:33.248Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_coron": {
+    "street": "coron",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jacarepagua/estrada-coronel-pedro-correa",
+    "canonicalTitle": "Coronel Pedro Correa, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:33.300Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_te": {
+    "street": "te",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-bem-te-vi-de-coroa",
+    "canonicalTitle": "Rua Bem Te Vi de Coroa, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:35.002Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_coronel thedim": {
+    "street": "Rua Coronel Thedim",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pechincha/rua-coronel-thedim",
+    "canonicalTitle": "Rua Coronel Thedim, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:35.431Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_corone": {
+    "street": "corone",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pechincha/rua-coronel-thedim",
+    "canonicalTitle": "Rua Coronel Thedim, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:35.732Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_coronel": {
+    "street": "coronel",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pechincha/rua-coronel-thedim",
+    "canonicalTitle": "Rua Coronel Thedim, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:35.599Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pechincha_coron": {
+    "street": "coron",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pechincha/rua-coronel-thedim",
+    "canonicalTitle": "Rua Coronel Thedim, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:35.687Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_cor": {
+    "street": "cor",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:39.016Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_freguesia jacarepagua_co": {
+    "street": "co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T13:29:42.168Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_pilares_ivan de oliveira lima": {
+    "street": "RUA IVAN DE OLIVEIRA LIMA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/pilares/rua-ivan-de-oliveira-lima",
+    "canonicalTitle": "Rua Ivan de Oliveira Lima, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-07T15:21:01.374Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mateus_a": {
+    "street": "a",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:30:56.881Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mateus_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:31:04.117Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mateus_ata": {
+    "street": "ata",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:31:12.551Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mateus_at": {
+    "street": "at",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:31:12.743Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao m_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:33:53.070Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:33:53.322Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_s_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:33:53.381Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sa_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:33:53.462Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mate_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:33:58.559Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mat_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:33:58.626Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mateu_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:33:58.665Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao ma_ataliba de barros": {
+    "street": "Rua Ataliba De Barros",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:34:00.498Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mateus_atali": {
+    "street": "atali",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:34:12.156Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao mateus_atal": {
+    "street": "atal",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-mateus/rua-ataliba-de-barros",
+    "canonicalTitle": "Rua Ataliba de Barros, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-07T20:34:18.088Z",
+    "notFound": true
   }
 }

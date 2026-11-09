@@ -5,9 +5,8 @@ import zlib from 'zlib';
 process.env.RECALCULATE_ONLY = 'true';
 process.env.NODE_ENV = 'production';
 
-import { recalculateAuctions } from '../server.ts';
-
 async function main() {
+  const { recalculateAuctions } = await import('../server.ts');
   console.log('[Script] Iniciando recálculo global SSOT de leilões...');
 
   const GZ_ITBI_PATH = path.join(process.cwd(), 'itbi_store.json.gz');
@@ -100,6 +99,7 @@ async function main() {
   }
 
   console.log('[Script] Processo concluído com êxito total!');
+  process.exit(0);
 }
 
 main().catch(err => {
