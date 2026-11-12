@@ -115,9 +115,7 @@ var init_lifecycle = __esm({
         }
         return false;
       }
-      if (!isDirectSale) {
-        return true;
-      }
+      return false;
       return false;
     };
     isRetired = (a) => a?.availability?.state === "closed" || a?.availability?.state === "removed" || a?.sourceClosed === true || isExpiredAuction(a);
@@ -11217,11 +11215,6 @@ function loadStore() {
         a.ingestionStatus = "ativo";
       }
     });
-    const beforeStartupPurge = storeData.auctions.length;
-    storeData.auctions = storeData.auctions.filter((a) => !isRetired(a));
-    if (beforeStartupPurge !== storeData.auctions.length) {
-      console.log(`[Startup Gatekeeper] Expurgados ${beforeStartupPurge - storeData.auctions.length} lotes encerrados/expirados da base.`);
-    }
     storeData.auctions.forEach((a) => {
       const canon = getCanonicalTargetCity(a.city, a.state);
       if (canon) {

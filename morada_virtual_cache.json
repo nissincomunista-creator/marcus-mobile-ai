@@ -15741,5 +15741,45 @@
     "cards": [],
     "updatedAt": "2026-11-11T14:06:41.404Z",
     "notFound": true
+  },
+  "rj_rio de janeiro_vicente de carvalho_a": {
+    "street": "a",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-12T15:43:13.622Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vicente de carvalho_agr": {
+    "street": "agr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-12T15:43:33.830Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vicente de carvalho_agrario menezes": {
+    "street": "RUA AGRARIO MENEZES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vicente-de-carvalho/rua-agrario-menezes",
+    "canonicalTitle": "Rua Agrario Menezes, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-12T15:43:35.122Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vicente de carvalho_ag": {
+    "street": "ag",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-12T15:43:36.021Z",
+    "notFound": true
   }
 }

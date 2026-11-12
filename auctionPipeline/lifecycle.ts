@@ -85,9 +85,8 @@ export const isExpiredAuction = (a: any, now = new Date().toISOString()): boolea
 
   // Leilões judiciais/extrajudiciais sem qualquer data informada e sem venda direta contínua
   // são lotes do passado/expirados
-  if (!isDirectSale) {
-    return true;
-  }
+  // Manter ativo se sem data definida
+  return false;
 
   return false;
 };

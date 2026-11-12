@@ -827,6 +827,12 @@ export default function Dashboard({
         return true;
       }
 
+      // Imóveis da Caixa são sincronizados diretamente com a planilha oficial de ativos da Caixa
+      if (a.origin === 'caixa' || a.origin === 'caixa_radar' || a.id?.startsWith('auc-caixa-')) {
+        if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return false;
+        return true;
+      }
+
       if (a.availability?.state === 'closed' || a.availability?.state === 'removed' || a.sourceClosed === true) return false;
       if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return false;
       if (a.ingestionStatus === 'expirado_por_data' || a.ingestionStatus === 'finalizado') return false;
@@ -840,9 +846,7 @@ export default function Dashboard({
         if (dates.length > 0 && dates.every(d => d < todayEnd)) {
           return false;
         }
-        if (dates.length === 0 && (a.origin === 'judicial' || a.origin === 'extrajudicial')) {
-          return false;
-        }
+        
       }
       return true;
     });

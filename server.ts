@@ -1184,12 +1184,6 @@ function loadStore(): DataStore {
             a.ingestionStatus = 'ativo';
           }
         });
-        // Expurgador de leilões encerrados, suspensos ou fora do ar
-        const beforeStartupPurge = storeData.auctions.length;
-        storeData.auctions = storeData.auctions.filter(a => !isRetired(a));
-        if (beforeStartupPurge !== storeData.auctions.length) {
-          console.log(`[Startup Gatekeeper] Expurgados ${beforeStartupPurge - storeData.auctions.length} lotes encerrados/expirados da base.`);
-        }
         storeData.auctions.forEach(a => {
           const canon = getCanonicalTargetCity(a.city, a.state);
           if (canon) {
