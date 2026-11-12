@@ -1,8 +1,8 @@
 export type PropertyType = 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno' | 'Lote';
 
-import type { CaixaModality, CaixaModalityInfo } from './utils/caixaModality';
+import type { CaixaModality, CaixaModalityInfo } from './utils/caixaModality.ts';
 export type { CaixaModality, CaixaModalityInfo };
-export { normalizeCaixaModality, CAIXA_MODALITY_CONFIG, isCaixaAuction, getCaixaModality } from './utils/caixaModality';
+export { normalizeCaixaModality, CAIXA_MODALITY_CONFIG, isCaixaAuction, getCaixaModality } from './utils/caixaModality.ts';
 
 export const VALID_ITBI_CITIES_BY_STATE: Record<string, string[]> = {
   RJ: ['Rio de Janeiro', 'Niterói'],

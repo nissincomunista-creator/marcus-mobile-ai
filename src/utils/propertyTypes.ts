@@ -35,6 +35,16 @@ export function detectTypologyFromUrlAndText(
     return { propertyType: 'Casa', subtype: 'Casa', displayPrefix: 'Casa' };
   }
   if (tokenCandidate === 'terreno' || tokenCandidate === 'lote' || tokenCandidate === 'gleba') {
+    // Se o lote/terreno contiver menção explícita a unidade autônoma ou cômodos (quartos/apartamento/casa), NÃO é terreno nu!
+    if (/\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio|bloco|unidade\s+aut[oô]noma)\b/i.test(titleLower + ' ' + descLower)) {
+      return { propertyType: 'Apartamento', subtype: 'Apartamento', displayPrefix: 'Apartamento' };
+    }
+    if (/\b(casa|sobrado|chal[eé]|bangal[oô]|\d+\s*qto|\d+\s*quarto)\b/i.test(titleLower + ' ' + descLower)) {
+      return { propertyType: 'Casa', subtype: 'Casa', displayPrefix: 'Casa' };
+    }
+    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(titleLower + ' ' + descLower)) {
+      return { propertyType: 'Comercial', subtype: 'Comercial', displayPrefix: 'Imóvel Comercial' };
+    }
     return { propertyType: 'Terreno', subtype: 'Terreno / Lote', displayPrefix: 'Terreno / Lote' };
   }
   if (['loja', 'sobreloja'].includes(tokenCandidate)) {
@@ -217,7 +227,12 @@ export function toCanonicalPropertyType(rawType: string = '', title: string = ''
   const cleanRaw = (rawType || '').trim().toLowerCase();
   if (/^apto|^apartamento|^kitnet|^studio|^loft|^flat|^cobertura/i.test(cleanRaw)) return 'Apartamento';
   if (/^casa|^sobrado|^bangal[oô]|^chal[eé]|^vila/i.test(cleanRaw)) return 'Casa';
-  if (/^terreno|^loteamento|^gleba|^lote\b/i.test(cleanRaw) && !/casa|apto|apartamento/i.test(cleanRaw)) return 'Terreno';
+  if (/^terreno|^loteamento|^gleba|^lote\b/i.test(cleanRaw) && !/casa|apto|apartamento/i.test(cleanRaw)) {
+    if (/\b(apartamento|apto|bloco)\b/i.test(title + ' ' + desc)) return 'Apartamento';
+    if (/\b(casa|sobrado|\d+\s*qto|\d+\s*quarto)\b/i.test(title + ' ' + desc)) return 'Casa';
+    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(title + ' ' + desc)) return 'Comercial';
+    return 'Terreno';
+  }
   if (/^sala|^loja|^galp[aã]o|^comercial|^pr[eé]dio|^box|^dep[oó]sito/i.test(cleanRaw)) return 'Comercial';
 
   const res = detectTypologyFromUrlAndText('', `${rawType} ${title}`, desc);

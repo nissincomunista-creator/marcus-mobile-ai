@@ -94,6 +94,7 @@ interface DashboardProps {
   selectedOriginFilter: 'todos' | 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal';
   setSelectedOriginFilter: (val: 'todos' | 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal') => void;
   onOpenLinkModal: () => void;
+  onSyncAll?: () => void;
   onSyncCaixaAuto?: () => void;
   onSyncExtrajudiciaisAuto?: () => void;
   onSyncJudiciaisAuto?: () => void;
@@ -135,6 +136,7 @@ export default function Dashboard({
   selectedOriginFilter,
   setSelectedOriginFilter,
   onOpenLinkModal,
+  onSyncAll,
   onSyncCaixaAuto,
   onSyncExtrajudiciaisAuto,
   onSyncJudiciaisAuto,
@@ -1696,15 +1698,15 @@ export default function Dashboard({
     } else if (selectedOriginFilter === 'caixa' || selectedOriginFilter === 'caixa_radar') {
       if (onSyncCaixaAuto) onSyncCaixaAuto();
     } else {
-      if (onSyncJudiciaisAuto) onSyncJudiciaisAuto();
-      if (onSyncExtrajudiciaisAuto) onSyncExtrajudiciaisAuto();
-      if (onSyncCaixaAuto) onSyncCaixaAuto();
+      if (onSyncAll) onSyncAll();
+      else if (onSyncCaixaAuto) onSyncCaixaAuto();
     }
   }, [
     mode,
     selectedOriginFilter,
     onGarimparPortais,
-    onSyncCaixaAuto,
+    onSyncAll,
+  onSyncCaixaAuto,
     onSyncJudiciaisAuto,
     onSyncExtrajudiciaisAuto,
     onGarimparJudiciais,

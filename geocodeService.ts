@@ -310,7 +310,8 @@ async function queryPhoton(query: string, context: GeocodeSearchContext): Promis
   try {
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8`;
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'MarcusAssessoriaApp/2.0' }
+      headers: { 'User-Agent': 'MarcusAssessoriaApp/2.0' },
+      signal: AbortSignal.timeout(2500)
     });
     if (!response.ok) return null;
 
@@ -361,7 +362,8 @@ async function queryNominatim(query: string, context: GeocodeSearchContext): Pro
     }
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'MarcusAssessoriaApp/2.0 (imoveis@marcus.com.br)' }
+      headers: { 'User-Agent': 'MarcusAssessoriaApp/2.0 (imoveis@marcus.com.br)' },
+      signal: AbortSignal.timeout(2500)
     });
     if (!response.ok) return null;
 

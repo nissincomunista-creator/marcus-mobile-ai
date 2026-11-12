@@ -333,6 +333,22 @@ export default function App() {
     }
   };
 
+  const pollSyncStatusUntilDone = async (timeoutMs = 180000) => {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        const res = await authFetch('/api/sync/status');
+        if (res.ok) {
+          const statusData = await res.json();
+          if (statusData.status !== 'running') {
+            return statusData;
+          }
+        }
+      } catch {}
+    }
+  };
+
   const handleSyncCaixaAuto = async () => {
     setIsMining(true);
     try {
@@ -343,9 +359,9 @@ export default function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(data.message || 'Varredura automática da Caixa concluída com sucesso!');
-        await refreshMarketData();
+        await refreshMarketData({ force: true });
         setSelectedOriginFilter('caixa_radar');
+        alert(data.message || 'Varredura automática da Caixa concluída com sucesso!');
       } else {
         alert('Aviso: ' + (data.error || 'Erro ao sincronizar imóveis Caixa.'));
       }
@@ -371,9 +387,10 @@ export default function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(data.message || 'Varredura de leilões extrajudiciais concluída com sucesso!');
-        await refreshMarketData();
+        await pollSyncStatusUntilDone();
+        await refreshMarketData({ force: true });
         setSelectedOriginFilter('extrajudicial');
+        alert('Varredura de leilões extrajudiciais concluída e catálogo atualizado com sucesso!');
       } else {
         alert('Aviso: ' + (data.error || 'Erro ao sincronizar leilões extrajudiciais.'));
       }
@@ -399,14 +416,48 @@ export default function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(data.message || 'Varredura de leilões judiciais concluída com sucesso!');
-        await refreshMarketData();
+        await pollSyncStatusUntilDone();
+        await refreshMarketData({ force: true });
         setSelectedOriginFilter('judicial');
+        alert('Varredura de leilões judiciais concluída e catálogo atualizado com sucesso!');
       } else {
         alert('Aviso: ' + (data.error || 'Erro ao sincronizar leilões judiciais.'));
       }
     } catch (e: any) {
       alert('Erro na sincronização: ' + e.message);
+    } finally {
+      setIsMining(false);
+    }
+  };
+
+  const handleSyncAll = async () => {
+    setIsMining(true);
+    try {
+      try {
+        await authFetch('/api/garimpar/caixa-auto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ states: ['RJ', 'MG'] })
+        });
+      } catch (caixaErr) {
+        console.warn('[Sync All] Caixa erro silencioso:', caixaErr);
+      }
+
+      const payload: any = { states: ['MG', 'RJ', 'SP'] };
+      if (selectedStateFilter) payload.state = selectedStateFilter;
+      if (selectedCityFilter) payload.city = selectedCityFilter;
+
+      await authFetch('/api/garimpar/extrajudiciais-auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      await pollSyncStatusUntilDone();
+      await refreshMarketData({ force: true });
+      alert('Sincronização completa de todos os leiloeiros e Caixa concluída com sucesso!');
+    } catch (e: any) {
+      alert('Erro na sincronização completa: ' + e.message);
     } finally {
       setIsMining(false);
     }
@@ -433,11 +484,11 @@ export default function App() {
     setTimeout(() => setCopiedInviteCode(null), 3000);
   };
 
-  const refreshMarketData = async (options: { silent?: boolean } = {}) => {
+  const refreshMarketData = async (options: { silent?: boolean; force?: boolean } = {}) => {
     if (!options.silent) setIsLoading(true);
     try {
       const [aucRes, itbiRes] = await Promise.all([
-        authFetch('/api/auctions'),
+        authFetch(options.force ? '/api/auctions?refresh=true' : '/api/auctions'),
         authFetch('/api/itbi')
       ]);
       if (aucRes.ok && itbiRes.ok) {
@@ -450,8 +501,8 @@ export default function App() {
     } catch (e) {
       console.error(e);
     } finally {
-        if (!options.silent) setIsLoading(false);
-      }
+      if (!options.silent) setIsLoading(false);
+    }
   };
 
   const openingSyncPhase = useAuctionStartupSync();
@@ -1365,6 +1416,7 @@ export default function App() {
                       onGarimparJudiciais={handleGarimparJudiciais}
                       onGarimparCaixa={handleGarimparCaixa}
                       onGarimparPortais={handleGarimparPortais}
+                      onSyncAll={handleSyncAll}
                       onSyncCaixaAuto={handleSyncCaixaAuto}
                       onSyncExtrajudiciaisAuto={handleSyncExtrajudiciaisAuto}
                       onSyncJudiciaisAuto={handleSyncJudiciaisAuto}
@@ -1491,6 +1543,7 @@ export default function App() {
                       onGarimparJudiciais={handleGarimparJudiciais}
                       onGarimparCaixa={handleGarimparCaixa}
                       onGarimparPortais={handleGarimparPortais}
+                      onSyncAll={handleSyncAll}
                       onSyncCaixaAuto={handleSyncCaixaAuto}
                       onSyncExtrajudiciaisAuto={handleSyncExtrajudiciaisAuto}
                       onSyncJudiciaisAuto={handleSyncJudiciaisAuto}

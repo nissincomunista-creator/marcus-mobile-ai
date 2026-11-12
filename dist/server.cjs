@@ -1768,6 +1768,15 @@ function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
     return { propertyType: "Casa", subtype: "Casa", displayPrefix: "Casa" };
   }
   if (tokenCandidate === "terreno" || tokenCandidate === "lote" || tokenCandidate === "gleba") {
+    if (/\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio|bloco|unidade\s+aut[oô]noma)\b/i.test(titleLower + " " + descLower)) {
+      return { propertyType: "Apartamento", subtype: "Apartamento", displayPrefix: "Apartamento" };
+    }
+    if (/\b(casa|sobrado|chal[eé]|bangal[oô]|\d+\s*qto|\d+\s*quarto)\b/i.test(titleLower + " " + descLower)) {
+      return { propertyType: "Casa", subtype: "Casa", displayPrefix: "Casa" };
+    }
+    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(titleLower + " " + descLower)) {
+      return { propertyType: "Comercial", subtype: "Comercial", displayPrefix: "Im\xF3vel Comercial" };
+    }
     return { propertyType: "Terreno", subtype: "Terreno / Lote", displayPrefix: "Terreno / Lote" };
   }
   if (["loja", "sobreloja"].includes(tokenCandidate)) {
@@ -1870,7 +1879,12 @@ function toCanonicalPropertyType(rawType = "", title = "", desc = "") {
   const cleanRaw = (rawType || "").trim().toLowerCase();
   if (/^apto|^apartamento|^kitnet|^studio|^loft|^flat|^cobertura/i.test(cleanRaw)) return "Apartamento";
   if (/^casa|^sobrado|^bangal[oô]|^chal[eé]|^vila/i.test(cleanRaw)) return "Casa";
-  if (/^terreno|^loteamento|^gleba|^lote\b/i.test(cleanRaw) && !/casa|apto|apartamento/i.test(cleanRaw)) return "Terreno";
+  if (/^terreno|^loteamento|^gleba|^lote\b/i.test(cleanRaw) && !/casa|apto|apartamento/i.test(cleanRaw)) {
+    if (/\b(apartamento|apto|bloco)\b/i.test(title + " " + desc)) return "Apartamento";
+    if (/\b(casa|sobrado|\d+\s*qto|\d+\s*quarto)\b/i.test(title + " " + desc)) return "Casa";
+    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(title + " " + desc)) return "Comercial";
+    return "Terreno";
+  }
   if (/^sala|^loja|^galp[aã]o|^comercial|^pr[eé]dio|^box|^dep[oó]sito/i.test(cleanRaw)) return "Comercial";
   const res = detectTypologyFromUrlAndText("", `${rawType} ${title}`, desc);
   return res.propertyType;
@@ -6004,7 +6018,8 @@ async function queryPhoton(query, context) {
   try {
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8`;
     const response = await fetch(url, {
-      headers: { "User-Agent": "MarcusAssessoriaApp/2.0" }
+      headers: { "User-Agent": "MarcusAssessoriaApp/2.0" },
+      signal: AbortSignal.timeout(2500)
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -6051,7 +6066,8 @@ async function queryNominatim(query, context) {
     }
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
     const response = await fetch(url, {
-      headers: { "User-Agent": "MarcusAssessoriaApp/2.0 (imoveis@marcus.com.br)" }
+      headers: { "User-Agent": "MarcusAssessoriaApp/2.0 (imoveis@marcus.com.br)" },
+      signal: AbortSignal.timeout(2500)
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -6447,7 +6463,7 @@ function normalizeRadiusKm(value) {
 function selectRadiusTransactions(rows, radiusKm) {
   const limit = normalizeRadiusKm(radiusKm);
   return rows.filter((tx) => {
-    if (tx.transactionLocationPrecision !== "exact_number") return false;
+    if (tx.transactionLocationPrecision !== "exact_number" && tx.transactionLocationPrecision !== "street_centroid") return false;
     if (tx.distanceKm == null || tx.distanceKm === "") return false;
     const anchor = tx.distanceAnchorPrecision;
     if (anchor && anchor !== "official_address" && anchor !== "geocoded_number" && anchor !== "street_centroid") return false;
@@ -11558,7 +11574,8 @@ function readPersistedAuctionResponse(signature, userId) {
     return null;
   }
 }
-function readLastKnownAuctionResponse(userId) {
+function readLastKnownAuctionResponse(userId, forceRefresh = false) {
+  if (persistedCatalogInvalidated || forceRefresh) return null;
   try {
     const saved = JSON.parse(import_zlib.default.gunzipSync(import_fs5.default.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString("utf8"));
     return saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
@@ -13172,6 +13189,15 @@ function startListedSync(reason, ids, targetOrigin) {
     await availabilityRun;
     await startAvailabilityCheck(auditStartedAt);
     await saveStoreAsync(store);
+    catalogRevision++;
+    persistedCatalogInvalidated = true;
+    auctionCatalogResponseCache = null;
+    try {
+      if (import_fs5.default.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
+        import_fs5.default.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
+      }
+    } catch {
+    }
     return report;
   }).catch(async (error) => {
     console.error("[Listed Sync] Falha:", error);
@@ -13476,19 +13502,20 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
   try {
     const cacheSignature = auctionResponseCacheSignature();
     const calculationRevision = catalogRevision;
-    if (auctionCatalogResponseCache && auctionCatalogResponseCache.auctionsRef === store.auctions && auctionCatalogResponseCache.transactionsRef === store.itbiTransactions && auctionCatalogResponseCache.userId === req.userId && auctionCatalogResponseCache.revision === catalogRevision && auctionCatalogResponseCache.signature === cacheSignature) {
+    const isForceRefresh = req.query.refresh === "true" || req.headers["x-refresh-catalog"] === "true";
+    if (!isForceRefresh && auctionCatalogResponseCache && auctionCatalogResponseCache.auctionsRef === store.auctions && auctionCatalogResponseCache.transactionsRef === store.itbiTransactions && auctionCatalogResponseCache.userId === req.userId && auctionCatalogResponseCache.revision === catalogRevision && auctionCatalogResponseCache.signature === cacheSignature) {
       sendAuctionResponse(req, res, auctionCatalogResponseCache.payload);
       setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
       return;
     }
-    const persistedPayload = readPersistedAuctionResponse(cacheSignature, req.userId);
+    const persistedPayload = !isForceRefresh ? readPersistedAuctionResponse(cacheSignature, req.userId) : null;
     if (persistedPayload) {
       auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
       sendAuctionResponse(req, res, persistedPayload);
       setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
       return;
     }
-    const lastKnownPayload = readLastKnownAuctionResponse(req.userId);
+    const lastKnownPayload = readLastKnownAuctionResponse(req.userId, isForceRefresh);
     const fastPayload = lastKnownPayload || deduplicateAuctions(store.auctions.filter(
       (a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state)
     )).map((a) => {
@@ -15927,9 +15954,18 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
   let browser = null;
   try {
     browser = await launchPuppeteer(import_puppeteer7.default, {
-      headless: true
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-blink-features=AutomationControlled",
+        "--window-size=1920,1080"
+      ]
     });
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => void 0 });
+    });
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
     await page.setRequestInterception(true);
     page.on("request", (req) => {
@@ -15952,10 +15988,14 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
         let stateProcessedSuccessfully = false;
         console.log(`[Caixa Auto-Sync] Baixando planilha oficial de ${uf} dos servidores da Caixa...`);
         const content = await page.evaluate(async (ufParam) => {
-          let res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now());
+          let res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now(), {
+            headers: { "Accept": "text/csv,application/csv,text/plain,*/*", "Referer": window.location.href }
+          });
           if (!res.ok) {
             await new Promise((r) => setTimeout(r, 1500));
-            res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now());
+            res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now(), {
+              headers: { "Accept": "text/csv,application/csv,text/plain,*/*", "Referer": window.location.href }
+            });
           }
           if (!res.ok) throw new Error("HTTP " + res.status + " ao baixar CSV oficial para " + ufParam);
           const buffer = await res.arrayBuffer();
@@ -16154,6 +16194,12 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
           catalogRevision++;
           persistedCatalogInvalidated = true;
           auctionCatalogResponseCache = null;
+          try {
+            if (import_fs5.default.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
+              import_fs5.default.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
+            }
+          } catch {
+          }
           totalImported += importedList.length;
           caixaStatesReplaced++;
           console.log(`[Caixa Auto-Sync] Estado ${uf} atualizado com sucesso! ${importedList.length} im\xF3veis ativos (ofertas ausentes da planilha oficial removidas).`);

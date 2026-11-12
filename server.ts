@@ -1599,7 +1599,8 @@ function readPersistedAuctionResponse(signature: string, userId?: string): Aucti
   }
 }
 
-function readLastKnownAuctionResponse(userId?: string): AuctionProperty[] | null {
+function readLastKnownAuctionResponse(userId?: string, forceRefresh = false): AuctionProperty[] | null {
+  if (persistedCatalogInvalidated || forceRefresh) return null;
   try {
     const saved = JSON.parse(zlib.gunzipSync(fs.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString('utf8'));
     return saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
@@ -3531,6 +3532,14 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
     // Newly imported/replaced source records must be checked too.
     await startAvailabilityCheck(auditStartedAt);
     await saveStoreAsync(store);
+    catalogRevision++;
+    persistedCatalogInvalidated = true;
+    auctionCatalogResponseCache = null;
+    try {
+      if (fs.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
+        fs.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
+      }
+    } catch {}
     return report;
   }).catch(async error => {
     console.error('[Listed Sync] Falha:', error);
@@ -3908,7 +3917,9 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
   try {
   const cacheSignature = auctionResponseCacheSignature();
   const calculationRevision = catalogRevision;
-  if (auctionCatalogResponseCache &&
+  const isForceRefresh = req.query.refresh === 'true' || req.headers['x-refresh-catalog'] === 'true';
+  if (!isForceRefresh &&
+      auctionCatalogResponseCache &&
       auctionCatalogResponseCache.auctionsRef === store.auctions &&
       auctionCatalogResponseCache.transactionsRef === store.itbiTransactions &&
       auctionCatalogResponseCache.userId === req.userId &&
@@ -3918,7 +3929,7 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
     setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
     return;
   }
-  const persistedPayload = readPersistedAuctionResponse(cacheSignature, req.userId);
+  const persistedPayload = !isForceRefresh ? readPersistedAuctionResponse(cacheSignature, req.userId) : null;
   if (persistedPayload) {
     auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
     sendAuctionResponse(req, res, persistedPayload);
@@ -3930,7 +3941,7 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
   // request continues rebuilding and replaces the cache when the fresh pass is
   // complete. sendAuctionResponse intersects cached rows with the live store,
   // so removed/closed lots are still excluded from this fast response.
-  const lastKnownPayload = readLastKnownAuctionResponse(req.userId);
+  const lastKnownPayload = readLastKnownAuctionResponse(req.userId, isForceRefresh);
   const fastPayload = lastKnownPayload || deduplicateAuctions(store.auctions.filter(a =>
     catalogVisible(a) &&
     (!a.userId || a.userId === req.userId || ['caixa_radar', 'caixa', 'judicial', 'extrajudicial', 'portal'].includes(a.origin || '')) &&
@@ -6873,9 +6884,18 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
   let browser: any = null;
   try {
     browser = await launchPuppeteer(puppeteer, {
-      headless: true
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--window-size=1920,1080'
+      ]
     });
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
     await page.setRequestInterception(true);
     page.on('request', (req: any) => {
@@ -6900,10 +6920,14 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
         let stateProcessedSuccessfully = false;
         console.log(`[Caixa Auto-Sync] Baixando planilha oficial de ${uf} dos servidores da Caixa...`);
         const content = await page.evaluate(async (ufParam) => {
-          let res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now());
+          let res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now(), {
+            headers: { 'Accept': 'text/csv,application/csv,text/plain,*/*', 'Referer': window.location.href }
+          });
           if (!res.ok) {
             await new Promise(r => setTimeout(r, 1500));
-            res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now());
+            res = await fetch('/listaweb/Lista_imoveis_' + ufParam + '.csv?' + Date.now(), {
+              headers: { 'Accept': 'text/csv,application/csv,text/plain,*/*', 'Referer': window.location.href }
+            });
           }
           if (!res.ok) throw new Error('HTTP ' + res.status + ' ao baixar CSV oficial para ' + ufParam);
           const buffer = await res.arrayBuffer();
@@ -7125,6 +7149,11 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
           catalogRevision++;
           persistedCatalogInvalidated = true;
           auctionCatalogResponseCache = null;
+          try {
+            if (fs.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
+              fs.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
+            }
+          } catch {}
           totalImported += importedList.length;
           caixaStatesReplaced++;
           console.log(`[Caixa Auto-Sync] Estado ${uf} atualizado com sucesso! ${importedList.length} imóveis ativos (ofertas ausentes da planilha oficial removidas).`);
