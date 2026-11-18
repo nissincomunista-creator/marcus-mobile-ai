@@ -13,7 +13,7 @@ export function validateDraft<T extends {auctionLink:string;title:string;descrip
  const life=draft.sourceAvailability||defaultLife||assessAvailability(undefined,draft.auctionLink,200,html,options.now,{dates:[draft.firstAuctionDate,draft.secondAuctionDate,draft.thirdAuctionDate,draft.auctionDate].filter(Boolean) as string[],saleMode:draft.saleMode});
  const dated=isCaixaLot ? life : assessAvailability(life,draft.auctionLink,200,html,options.now,{dates:[draft.firstAuctionDate,draft.secondAuctionDate,draft.thirdAuctionDate,draft.auctionDate].filter(Boolean) as string[],saleMode:draft.saleMode});
  const candidate = { ...draft, availability: dated, sourceAvailability: dated };
- if(draft.sourceClosed||isRetired(candidate)){const retired=draft.sourceClosed&&!isRetired(candidate)?{...dated,state:'closed' as const,status:'finalizado' as const,reason:'Encerramento confirmado pelo adaptador oficial'}:dated;return {draft:{...draft,sourceClosed:true,sourceAvailability:retired},accepted:false,retired:true,reasons:[retired.reason || 'Lote encerrado ou indisponível']};}
+ if(draft.sourceClosed||isRetired(candidate)){const retired=draft.sourceClosed&&dated.state!=='closed'&&dated.state!=='removed'?{...dated,state:'closed' as const,status:'finalizado' as const,reason:'Encerramento confirmado pelo adaptador oficial'}:dated;return {draft:{...draft,sourceClosed:true,sourceAvailability:retired},accepted:false,retired:true,reasons:[retired.reason || 'Lote encerrado ou indisponível']};}
  const reasons:string[]=[];
  const declared=declaredAuctionLocation(draft);
  if(declared&&(normalize(declared.city)!==normalize(draft.city)||declared.state!==draft.state))reasons.push('localidade_divergente_do_detalhe');

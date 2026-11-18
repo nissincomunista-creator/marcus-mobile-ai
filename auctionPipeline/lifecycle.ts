@@ -19,17 +19,18 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  if(httpStatus===404||httpStatus===410)return finish('expirado_link_invalido','HTTP '+httpStatus+': anúncio indisponível');
  if(context.finalUrl){try{const original=new URL(url),final=new URL(context.finalUrl);if(original.pathname!=='/'&&/^\/(?:index\.(?:html?|php|asp))?$/i.test(final.pathname)&&!final.search)return finish('expirado_link_invalido','Detalhe redirecionado para a página inicial');}catch{}}
  if(httpStatus!==200||/<title[^>]*>[^<]*(?:Just a moment|Access Denied|Captcha)|Radware Bot Manager/i.test(html))return {...previous,...base,state:previous?.state||'unknown',reason:'Consulta bloqueada ou indisponível; HTTP '+httpStatus};
- if(!html||!html.trim())return previous||{...base,state:'unknown',reason:'Sem HTML fornecido'};
+ if(!html||!html.trim()){
+  if(expiredRounds([...(context.dates||[])],context.saleMode,now))return finish('expirado_por_data','Todas as rodadas publicadas transcorreram, sem nova rodada futura');
+  return previous||{...base,state:'unknown',reason:'Sem HTML fornecido'};
+ }
+ const isSpaShell = /<div[^>]+id=["'](?:root|__next|app)["']|<app-root\b|__NEXT_DATA__|window\.__NUXT__/i.test(html);
  const $=cheerio.load(html);
  $('script,style,noscript,nav,header,footer,aside,select,option,template,[hidden],[aria-hidden="true"],.modal,.cards,[class*="related"],[class*="recommend"]').remove();
  const heading=$('h1').first().text().trim();
  const visibleText=$('body').text().replace(/\s+/g,' ').trim();
  if(/verifique que voc[eê] [eé] humano|verify you are human|checking your browser/i.test(visibleText))return {...previous,...base,state:previous?.state||'unknown',reason:'Consulta bloqueada por desafio de acesso'};
  const isOnlyCookieNotice = visibleText.length < 300 && /cookie|pol[íi]tica de privacidade|consentir/i.test(visibleText);
- if (visibleText.length < 60 || isOnlyCookieNotice) {
-  return finish('expirado_link_invalido', 'Fonte não possui lote ativo (página em branco ou apenas cookies)');
- }
- if (/(?:lote|leil[aã]o)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|im[oó]vel\s+(?:j[aá]\s+)?(?:vendido|indispon[íi]vel)|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
+ if (/(?:este\s+|o\s+)?(?:lote|leil[aã]o)\s+(?:encontra-se|est[aá]|foi)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|(?:situa[cç][aã]o|status)\s*:\s*(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|vendido|retirado)|im[oó]vel\s+(?:j[aá]\s+)?(?:vendido|indispon[íi]vel)|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
   return finish('finalizado', 'Lote encerrado, cancelado ou indisponível no site do leiloeiro');
  }
  const unavailable=/^(?:(?:este|o)\s+)?(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+(?:n[aã]o\s+(?:foi\s+)?encontrad[oa]|n[aã]o\s+(?:(?:est[aá]|se encontra)\s+)?(?:mais\s+)?dispon[ií]vel\s*(?:para venda)?|indispon[ií]vel|removid[oa])[.!]?$/i;
@@ -46,6 +47,10 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  const extra=[...$('body').text().matchAll(/(?:[123][ºªo°]|primeir[oa]|segund[oa]|terceir[oa]|nova)\s*(?:pra[cç]a|leil[aã]o|rodada)[^\d]{0,60}(\d{1,2})\/(\d{1,2})\/(20\d{2})/gi)].map(m=>`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`);
  if(expiredRounds([...(context.dates||[]),...extra],context.saleMode,now))return finish('expirado_por_data','Todas as rodadas publicadas transcorreram, sem nova rodada futura');
  if(statusText.some(t=>/^(?:(?:lote|leil[aã]o)\s+)?(?:aberto(?: para lances)?|em andamento|dispon[ií]vel|liberado para lance)$/i.test(t)))return {...base,state:'active',status:'ativo',reason:'Disponibilidade explícita na fonte'};
+ if(!visibleText||isOnlyCookieNotice){
+  if(isSpaShell)return {...previous,...base,state:previous?.state||'unknown',reason:'Página requer renderização JavaScript; situação não confirmada'};
+  return finish('expirado_link_invalido','Fonte não possui lote ativo (página em branco ou apenas cookies)');
+ }
  return {...previous,...base,state:previous?.state||'unknown',reason:'Página acessível; situação não confirmada'};
 }
 export const isExpiredAuction = (a: any, now = new Date().toISOString()): boolean => {
@@ -75,6 +80,8 @@ export const isExpiredAuction = (a: any, now = new Date().toISOString()): boolea
   const rawDates = lifecycleDates(a);
   const nowMs = Date.parse(now);
   const parsedDates = rawDates.map(dayEnd).filter(Number.isFinite);
+
+  if (isDirectSale) return false;
 
   if (parsedDates.length > 0) {
     if (parsedDates.every(d => d < nowMs)) {

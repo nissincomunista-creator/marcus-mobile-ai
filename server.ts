@@ -1177,13 +1177,21 @@ function loadStore(): DataStore {
             }
           }
         });
-        // Restaura portais indevidamente marcados como encerrados
+        // Restaura portais indevidamente marcados como encerrados/removidos pela auditoria
         storeData.auctions.forEach(a => {
-          if (a.origin === 'portal' && a.availability?.reason === 'Todas as rodadas do leilão já transcorreram') {
+          if (a.origin === 'portal' && (a.sourceClosed || a.sourceAvailability || a.availability?.state === 'closed' || a.availability?.state === 'removed' || ['expirado_link_invalido', 'encerrado'].includes(String(a.ingestionStatus || '')))) {
             a.availability = undefined;
+            a.sourceAvailability = undefined;
+            a.sourceClosed = undefined;
             a.ingestionStatus = 'ativo';
           }
         });
+        // Remove cópias duplicadas da Caixa que entraram como extrajudiciais via Leilão Imóvel
+        storeData.auctions = storeData.auctions.filter(a => !(
+          a.origin === 'extrajudicial' &&
+          (/imovel-caixa-economica-federal-cef/i.test(a.auctionLink || '') ||
+            ((a.id.startsWith('auc-leilaoimovel-') || (a as any).portalId === 'leilaoimovel') && /caixa\s+econ[oô]mica/i.test(a.auctioneerName || '')))
+        ));
         storeData.auctions.forEach(a => {
           const canon = getCanonicalTargetCity(a.city, a.state);
           if (canon) {
@@ -3521,7 +3529,18 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
       }
     }
 
-    const report = await runListedPortalSync(reason, async (drafts,source) => applyListedDrafts(drafts, 'sync-audits/pending-'+source.id+'.jsonl'), {ids});
+    let lastIncrementalSaveAt = Date.now();
+    const report = await runListedPortalSync(reason, async (drafts, source) => {
+      const result = await applyListedDrafts(drafts, 'sync-audits/pending-' + source.id + '.jsonl');
+      if ((result.imported > 0 || result.updated > 0) && Date.now() - lastIncrementalSaveAt > 60000) {
+        lastIncrementalSaveAt = Date.now();
+        catalogRevision++;
+        persistedCatalogInvalidated = true;
+        auctionCatalogResponseCache = null;
+        void saveStoreAsync(store).catch(() => {});
+      }
+      return result;
+    }, {ids});
     await availabilityRun;
     // Newly imported/replaced source records must be checked too.
     await startAvailabilityCheck(auditStartedAt);

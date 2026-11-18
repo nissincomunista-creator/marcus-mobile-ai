@@ -5,6 +5,7 @@ export type AuditTarget = { url: string; parentIds: string[]; snapshot: AuctionP
 export function availabilityTargets(auctions: AuctionProperty[]): AuditTarget[] {
   const targets = new Map<string, AuditTarget>();
   for (const parent of auctions) {
+    if (parent.origin === 'portal' || parent.origin === 'caixa' || parent.origin === 'caixa_radar' || parent.id?.startsWith('auc-caixa-')) continue;
     const { sourceRecords, offers, ...primary } = parent;
     for (const row of [...(sourceRecords || []), primary as AuctionProperty]) {
       if (!row.auctionLink || isRetired(row)) continue;

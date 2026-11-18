@@ -15781,5 +15781,175 @@
     "cards": [],
     "updatedAt": "2026-11-12T15:43:36.021Z",
     "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_m": {
+    "street": "rua m",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-13T03:32:21.927Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_maria antonia": {
+    "street": "RUA MARIA ANTONIA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/engenho-novo/rua-maria-antonia",
+    "canonicalTitle": "Rua Maria Antonia, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-13T03:32:29.711Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_ma": {
+    "street": "rua ma",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/engenho-novo/rua-baronesa-do-engenho-novo",
+    "canonicalTitle": "Rua Baronesa do Engenho Novo, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-13T03:32:29.806Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_mar": {
+    "street": "rua mar",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-vina-del-mar",
+    "canonicalTitle": "Rua Vina Del Mar, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-13T03:32:32.460Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_mai": {
+    "street": "rua mai",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-13T03:32:37.944Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_engenho novo_mari": {
+    "street": "rua mari",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-13T03:32:39.565Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_araguari": {
+    "street": "Rua Araguari,",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ramos/rua-araguari",
+    "canonicalTitle": "Rua Araguari, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-14T00:57:14.773Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bonsucesso_c": {
+    "street": "c",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:10.409Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_comer": {
+    "street": "comer",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ramos/vila-dos-comerciarios",
+    "canonicalTitle": "Vila dos Comerciarios, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:11.265Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_com": {
+    "street": "com",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-industrial-comendador-rainho",
+    "canonicalTitle": "Rua Industrial Comendador Rainho, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:16.910Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_come": {
+    "street": "come",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:21.061Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bonsucesso_com": {
+    "street": "com",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-industrial-comendador-rainho",
+    "canonicalTitle": "Rua Industrial Comendador Rainho, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:17.570Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bonsucesso_comer": {
+    "street": "comer",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/avenida-do-comerciario",
+    "canonicalTitle": "Avenida do Comerciario, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:17.366Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_co": {
+    "street": "co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:26.599Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bonsucesso_come": {
+    "street": "come",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:28.471Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bonsucesso_co": {
+    "street": "co",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-14T02:05:30.867Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao pedro_lauro teles mesquita": {
+    "street": "Rua Lauro Teles Mesquita",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-pedro/rua-lauro-teles-mesquita",
+    "canonicalTitle": "Rua Lauro Teles Mesquita, Juiz de Fora, MG",
+    "cards": [],
+    "updatedAt": "2026-11-18T01:25:42.303Z",
+    "notFound": true
   }
 }

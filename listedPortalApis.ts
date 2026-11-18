@@ -71,7 +71,7 @@ export async function collectSoldApi(dir:string,onPage:(links:Array<{url:string;
   const seen=new Set<number>();let total=1;
   for(let page=1;seen.size<total;page++){
     const url=new URL('https://offer-query.superbid.net/offers/');
-    Object.entries({portalId:'[2,15]',requestOrigin:'store',locale:'pt_BR',timeZoneId:'America/Sao_Paulo',searchType:'opened',filter:'stores.id:[1161,1741];product.productType.description:imoveis;isShopping:false;auction.modalityId:[1,4,5,7]',pageNumber:String(page),pageSize:'24',orderBy:'price:desc;visits:desc',fieldList:'id;linkURL;price;endDate;offerStatus;product.shortDesc;product.template;product.productType;auction;offerDetail'}).forEach(([k,v])=>url.searchParams.set(k,v));
+    Object.entries({portalId:'[2,15]',requestOrigin:'store',locale:'pt_BR',timeZoneId:'America/Sao_Paulo',searchType:'opened',filter:'stores.id:[1161,1741];product.productType.description:imoveis;isShopping:false;auction.modalityId:[1,4,5,7]',pageNumber:String(page),pageSize:'24',orderBy:'price:desc;visits:desc',fieldList:'id;linkURL;price;endDate;offerStatus;product.shortDesc;product.location;product.template;product.productType;auction;offerDetail'}).forEach(([k,v])=>url.searchParams.set(k,v));
     const response=await fetch(url,{signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error(`Sold API: HTTP ${response.status}`);
     const body=await response.json();fs.writeFileSync(path.join(dir,`sold-api-${page}.json`),JSON.stringify(body));total=Number(body.total);
     if(!Array.isArray(body.offers)||!Number.isFinite(total))throw Error('Resposta inválida da API Sold');
@@ -79,34 +79,153 @@ export async function collectSoldApi(dir:string,onPage:(links:Array<{url:string;
     const links:Array<{url:string;text:string}>=[];
     for(const row of fresh){seen.add(row.id);const properties=row.product?.template?.groups?.flatMap((g:any)=>g.properties)||[];
       const address=properties.find((p:any)=>p.id==='endereco')?.value||'';const title=row.product?.shortDesc||'';
-      const location=sourceAuctionLocation(address)||sourceAuctionLocation(title);
+      const locCity=String(row.product?.location?.city||'').replace(/\s*-\s*[A-Z]{2}$/,'').trim();
+      const locState=String(row.product?.location?.city||'').match(/\s-\s*([A-Z]{2})$/)?.[1]||'';
+      const location=(locCity&&locState?{city:locCity,state:locState}:null)||sourceAuctionLocation(address)||sourceAuctionLocation(title);
       if(!location||!allowedSyncLocation(location.city,location.state))continue;
       // The public detail route uses the exact offer id, with the displayed title as its slug.
       const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-      links.push({url:row.linkURL||`https://www.sold.com.br/oferta/${slug}-${row.id}`,text:title+'\n'+address});
+      links.push({url:row.linkURL||`https://www.sold.com.br/oferta/${slug}-${row.id}`,text:`${title}\n${address}\n${location.city}/${location.state}`});
     }
     await onPage(links,fresh.length);
   }
 }
 
+export async function collectSuperbidOffers(id:'sold'|'superbid',dir:string,onPage:(rows:ScrapedAuctionDraft[],total:number)=>Promise<void>){
+  const seen=new Set<number>();let total=1;
+  const storeFilter=id==='sold'?'stores.id:[1161,1741];':'';
+  for(let page=1;seen.size<total&&page<=60;page++){
+    const url=new URL('https://offer-query.superbid.net/offers/');
+    Object.entries({
+      portalId:'[2,15]',requestOrigin:'store',locale:'pt_BR',timeZoneId:'America/Sao_Paulo',searchType:'opened',
+      filter:`${storeFilter}product.productType.description:imoveis;isShopping:false;auction.modalityId:[1,4,5,7]`,
+      pageNumber:String(page),pageSize:'50',orderBy:'price:desc;visits:desc',
+      fieldList:'id;linkURL;price;endDate;offerStatus;product.shortDesc;product.location;product.template;product.productType;product.thumbnailUrl;auction;offerDetail;stores'
+    }).forEach(([k,v])=>url.searchParams.set(k,v));
+    const response=await fetch(url,{signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error(`${id.toUpperCase()} API: HTTP ${response.status}`);
+    const body=await response.json();fs.writeFileSync(path.join(dir,`${id}-api-${page}.json`),JSON.stringify(body));total=Number(body.total);
+    if(!Array.isArray(body.offers)||!Number.isFinite(total))throw Error(`Resposta inválida da API ${id}`);
+    const fresh=body.offers.filter((r:any)=>!seen.has(r.id));if(!fresh.length)break;
+    const drafts:ScrapedAuctionDraft[]=[];
+    for(const row of fresh){
+      seen.add(row.id);
+      const properties=row.product?.template?.groups?.flatMap((g:any)=>g.properties)||[];
+      const address=properties.find((p:any)=>p.id==='endereco')?.value||'';
+      const title=row.product?.shortDesc||'';
+      const rawCity=String(row.product?.location?.city||'');
+      const locCity=rawCity.replace(/\s*-\s*[A-Z]{2}$/,'').trim();
+      const locState=rawCity.match(/\s-\s*([A-Z]{2})$/)?.[1]||'';
+      const location=(locCity&&locState?{city:locCity,state:locState}:null)||sourceAuctionLocation(address)||sourceAuctionLocation(title);
+      if(!location||!allowedSyncLocation(location.city,location.state))continue;
+      const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const link=row.linkURL||(id==='sold'?`https://www.sold.com.br/oferta/${slug}-${row.id}`:`https://www.superbid.net/oferta/${slug}-${row.id}`);
+      const price=Number(row.offerDetail?.currentMinBid||row.offerDetail?.initialBidValue||row.price||0);
+      const dateStr=dateOnly(String(row.endDate||row.auction?.endDate||''));
+      const propText=properties.map((p:any)=>`${p.title}: ${p.value}`).join('\n');
+      const fullText=`${title}\n${address}\n${location.city}/${location.state}\n${propText}`;
+      const isJudicial=/judicial|vara|processo|execu[cç][aã]o/i.test(fullText);
+      const origin:'judicial'|'extrajudicial'=isJudicial?'judicial':'extrajudicial';
+      const base:ScrapedAuctionDraft={
+        portalId:id,auctioneerName:id==='sold'?'Sold Leilões':'Superbid',title,address,neighborhood:row.product?.location?.neighborhood||'',
+        city:location.city,state:location.state,propertyType:'Apartamento',sizeSqm:0,auctionPrice:price,auctionDate:dateStr,firstAuctionDate:dateStr||undefined,
+        firstAuctionPrice:price||undefined,auctionLink:link,imageUrl:row.product?.thumbnailUrl||'',description:fullText,origin,
+        originVerified:true,sourceVerified:true,locationScopeVerified:true,priceVerified:price>0
+      };
+      const parsed=parseOfficialLotDetail(base,{title,text:fullText,image:row.product?.thumbnailUrl||'',structuredAddresses:address?[address]:[],structuredSizes:[],documentLinks:[],officialFinancials:{auctionPrice:price,priceVerified:price>0,auctionDate:dateStr,firstAuctionDate:dateStr||undefined,firstAuctionPrice:price||undefined}},link);
+      drafts.push({...parsed,city:location.city,state:location.state,neighborhood:parsed.neighborhood||row.product?.location?.neighborhood||'',origin,originVerified:true,sourceVerified:true});
+    }
+    await onPage(drafts,fresh.length);
+  }
+}
+
+export async function collectSantanderApi(dir:string,onPage:(rows:ScrapedAuctionDraft[],total:number)=>Promise<void>){
+  let apiKey='d9ffca1a-71af-48e4-bece-8bc852455cd7';
+  const browser=await launchPuppeteer(puppeteer,{headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  try{
+    const page=await browser.newPage();
+    page.on('request',req=>{if(req.url().includes('api.shi.santander')&&req.headers()['x-api-key'])apiKey=req.headers()['x-api-key'];});
+    await page.goto('https://www.santanderimoveis.com.br/',{waitUntil:'domcontentloaded',timeout:25000}).catch(()=>{});
+    await new Promise(r=>setTimeout(r,2000));
+    await page.close().catch(()=>{});
+  }finally{await browser.close().catch(()=>{});}
+
+  const limit=100;
+  let offset=0;
+  let total=1;
+  let pageNum=1;
+  while(offset<total){
+    const url=`https://api.shi.santander.com.br/v1/real_estate_auctions/real_estate_properties?_limit=${limit}&_offset=${offset}`;
+    const r=await fetch(url,{headers:{'x-api-key':apiKey,'Origin':'https://www.santanderimoveis.com.br','Referer':'https://www.santanderimoveis.com.br/','Accept':'application/json'},signal:AbortSignal.timeout(30000)});
+    if(!r.ok)throw Error(`Santander API: HTTP ${r.status}`);
+    const body=await r.json();
+    const records=body.content||[];
+    total=Number(body.pagination?.totalElements||0);
+    fs.writeFileSync(path.join(dir,`santander-api-${pageNum}.json`),JSON.stringify(body));
+    const drafts:ScrapedAuctionDraft[]=[];
+    for(const item of records){
+      const city=String(item.postalAddress?.city?.cityName||item.postalAddress?.townName||'').trim();
+      const state=String(item.postalAddress?.state?.stateCode||'').toUpperCase().trim();
+      if(!allowedSyncLocation(city,state))continue;
+      if(item.saleInformation?.isSold||item.saleInformation?.isAvailable===false)continue;
+      const addrStreet=String(item.postalAddress?.streetName||'').replace(/\s*,\s*[^,]+-\s*[A-Z]{2}\.?\s*CEP:.*$/i,'').trim();
+      const addrNum=String(item.postalAddress?.streetBuildingIdentification||'').trim();
+      const address=[addrStreet,addrNum&&addrNum!=='0'?`nº ${addrNum}`:''].filter(Boolean).join(', ');
+      const neighborhood=String(item.postalAddress?.districtName||'').trim();
+      const areaObj=item.physicalCharacteristics?.areaCharacteristics||{};
+      const sizeSqm=Math.round(Number(areaObj.privateArea||areaObj.usableArea||areaObj.builtArea||areaObj.totalArea||areaObj.landArea||0));
+      const price=Number(item.saleInformation?.minimumSalePrice?.amount||item.saleInformation?.initialSalePrice?.amount||0);
+      const appraisal=Number(item.financialInformation?.marketValue?.amount||item.financialInformation?.assessedValue?.amount||0);
+      const auctionDate=dateOnly(String(item.saleInformation?.auctionStartDate||item.saleInformation?.saleDate||''));
+      const partnerRaw=String(item.saleInformation?.salePartner?.salePartnerName||'');
+      const partnerUrl=partnerRaw.includes('|')?partnerRaw.split('|')[1].trim():'';
+      const urlLink=partnerUrl&&/^https?:\/\//i.test(partnerUrl)?partnerUrl:`https://www.santanderimoveis.com.br/imoveis/${item.realEstatePropertyId}`;
+      const bType=String(item.buildingType?.buildingTypeDescription||'Imóvel');
+      const title=`${bType} Santander - ${neighborhood||city} (${city}/${state})`;
+      const descText=cheerio.load(String(item.detailedDescription||item.description||'')).text().replace(/\s+/g,' ').trim();
+      const cover=item.images?.find((img:any)=>img.isCoverImage)?.imageUrl||item.images?.[0]?.imageUrl||'';
+      const matriculaDoc=item.documents?.find((d:any)=>/matr/i.test(d.documentUrl||''))?.documentUrl||'';
+      const occupied=item.occupationStatus?.occupationStatusName==='ocupado'?true:item.occupationStatus?.occupationStatusName==='desocupado'?false:undefined;
+      const base:ScrapedAuctionDraft={
+        portalId:'santander',auctioneerName:'Santander Imóveis',title,address:address||`${neighborhood}, ${city} - ${state}`,neighborhood,city,state,
+        propertyType:'Apartamento',sizeSqm,auctionPrice:price,estimatedValue:appraisal>0?appraisal:undefined,auctionDate,firstAuctionDate:auctionDate||undefined,
+        firstAuctionPrice:price||undefined,auctionLink:urlLink,imageUrl:cover,description:descText||item.postalAddress?.fullAddress||title,
+        saleMode:item.saleInformation?.saleType?.saleTypeDescription||'Leilão Extrajudicial Online',origin:'extrajudicial',sellerBank:'Santander',
+        occupied,matriculaUrl:matriculaDoc||undefined,matriculaNumber:item.registrationNumber||undefined,registryOffice:item.generalRealEstateRegistry||undefined,
+        originVerified:true,sourceVerified:true,locationScopeVerified:true,priceVerified:price>0,sizeVerified:sizeSqm>0,addressVerified:Boolean(address)
+      };
+      const parsed=parseOfficialLotDetail(base,{title,text:`${title}\n${address}\n${neighborhood}, ${city}/${state}\n${descText}`,image:cover,structuredAddresses:address?[address]:[],structuredSizes:sizeSqm>0?[sizeSqm]:[],documentLinks:matriculaDoc?[matriculaDoc]:[],officialFinancials:{auctionPrice:price,priceVerified:price>0,auctionDate,firstAuctionDate:auctionDate||undefined,firstAuctionPrice:price||undefined,estimatedValue:appraisal>0?appraisal:undefined}},urlLink);
+      drafts.push({...parsed,city,state,neighborhood:neighborhood||parsed.neighborhood,sizeSqm:sizeSqm>0?sizeSqm:parsed.sizeSqm,sizeVerified:sizeSqm>0||parsed.sizeVerified,origin:'extrajudicial',originVerified:true,sourceVerified:true,sellerBank:'Santander'});
+    }
+    await onPage(drafts,records.length);
+    if(!records.length)break;
+    offset+=records.length;pageNum++;
+  }
+}
+
 async function publicJson(url:string,body?:unknown){
  const r=await fetch(url,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});
- if(!r.ok)throw Error(`${url}: HTTP ${r.status}`);return r.json();
+ if(!r.ok)throw Error(`${url}: HTTP ${r.status}`);
+ const ct=r.headers.get('content-type')||'';
+ const raw=await r.text();
+ if(/Radware Captcha|Checking your browser/i.test(raw))throw Error(`Consulta bloqueada por desafio anti-bot (Radware) em ${url}`);
+ if(!ct.includes('json')&&raw.trim().startsWith('<'))throw Error(`Resposta HTML inesperada em ${url}`);
+ return JSON.parse(raw);
 }
-export async function collectRioLinks(dir:string,onPage:(links:Array<{url:string;text:string}>,total:number)=>Promise<void>){
- const inventory=await publicJson('https://www.rioleiloes.com.br/core/api/get-leiloes');
- fs.writeFileSync(path.join(dir,'rioleiloes-events.json'),JSON.stringify(inventory));
- if(!Array.isArray(inventory.items))throw Error('Inventário de leilões Rio indisponível');
+export async function collectRioLinks(dir:string,onPage:(links:Array<{url:string;text:string}>,total:number)=>Promise<void>,baseUrl='https://www.rioleiloes.com.br',prefix='rioleiloes'){
+ const cleanBase=baseUrl.replace(/\/$/,'');
+ const inventory=await publicJson(`${cleanBase}/core/api/get-leiloes`);
+ fs.writeFileSync(path.join(dir,`${prefix}-events.json`),JSON.stringify(inventory));
+ if(!Array.isArray(inventory.items))throw Error(`Inventário de leilões ${prefix} indisponível`);
  // The current endpoint returns all events. Do not claim coverage if pagination changes.
  const incomplete=Number(inventory.totalPages)>1;
  for(const event of inventory.items){
   if(!event.categorialeilao?.some((c:any)=>c.nm_categoria==='Imóveis'))continue;
-  const lots=await publicJson(`https://www.rioleiloes.com.br/leilao/filtro-id/leilao_id/${event.id}?`);
-  fs.writeFileSync(path.join(dir,`rioleiloes-event-${event.id}.json`),JSON.stringify(lots));
+  const lots=await publicJson(`${cleanBase}/leilao/filtro-id/leilao_id/${event.id}?`);
+  fs.writeFileSync(path.join(dir,`${prefix}-event-${event.id}.json`),JSON.stringify(lots));
   if(!Array.isArray(lots.lotes))throw Error(`Lotes indisponíveis para leilão ${event.id}`);
-  await onPage(lots.lotes.map((lot:any)=>({url:`https://www.rioleiloes.com.br/leilao/index/leilao_id/${event.id}/lote/${lot.lote_id}`,text:'Imóvel: '+event.nm})),lots.lotes.length);
+  await onPage(lots.lotes.map((lot:any)=>({url:`${cleanBase}/leilao/index/leilao_id/${event.id}/lote/${lot.lote_id}`,text:'Imóvel: '+event.nm})),lots.lotes.length);
  }
- if(incomplete)throw Error('Inventário Rio informou páginas adicionais; cobertura ainda não confirmada');
+ if(incomplete)throw Error(`Inventário ${prefix} informou páginas adicionais; cobertura ainda não confirmada`);
 }
 
 /** Convert one official Pestana API lot into a source-verified auction draft. */
@@ -240,7 +359,7 @@ export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
     matriculaNumber
   };
 
-  return parseOfficialLotDetail(base, {
+  const parsed = parseOfficialLotDetail(base, {
     title,
     text: descText,
     image: imageUrl,
@@ -255,6 +374,16 @@ export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
       firstAuctionDate: dateOnlyStr
     }
   }, url, '', matriculaUrl);
+  return {
+    ...parsed,
+    city,
+    state,
+    origin,
+    originVerified: true,
+    sourceVerified: true,
+    locationScopeVerified: true,
+    priceVerified: price > 0
+  };
 }
 
 export async function collectMariaFilomenaApi(
