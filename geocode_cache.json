@@ -11387,14 +11387,14 @@
     "matchedStreet": "Rua Piauí"
   },
   "rua piaui, todos os santos, rio de janeiro - rj": {
-    "lat": -22.8877895,
-    "lng": -43.2875496,
-    "displayName": "Condomínio UP Norte, 400, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
     "precision": "rooftop",
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Rua Piauí",
-    "matchedNumber": "400"
+    "matchedNumber": "66"
   },
   "rua piaui|rio de janeiro|rj": {
     "lat": -22.8892998,
@@ -19792,5 +19792,105 @@
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Rua Antônio Mendes Campos",
     "matchedNumber": "57"
+  },
+  "rua piaui, 66, apartamento 402": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66, apartamento 402|rio de janeiro|rj": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66, apto 402": {
+    "lat": -22.895344118719212,
+    "lng": -43.28706735448088,
+    "displayName": "Rua Piauí, 66, Todos os Santos, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66, apto 402|rio de janeiro|rj": {
+    "lat": -22.895344118719212,
+    "lng": -43.28706735448088,
+    "displayName": "Rua Piauí, 66, Todos os Santos, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66, a": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66, a|rio de janeiro|rj": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66,": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66,|rio de janeiro|rj": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
+  },
+  "rua piaui, 66|rio de janeiro|rj": {
+    "lat": -22.8953441,
+    "lng": -43.2870674,
+    "displayName": "66, Rua Piauí, Todos os Santos, Rio de Janeiro, Região Sudeste, 20770-130, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Piauí",
+    "matchedNumber": "66"
   }
 }

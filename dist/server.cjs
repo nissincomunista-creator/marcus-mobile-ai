@@ -2178,16 +2178,8386 @@ var init_addressComponents = __esm({
   }
 });
 
+// src/utils/nexusAuctioneers.ts
+var NEXUS_AUCTIONEERS;
+var init_nexusAuctioneers = __esm({
+  "src/utils/nexusAuctioneers.ts"() {
+    NEXUS_AUCTIONEERS = [
+      {
+        "id": "lancenoleilao_com_br",
+        "name": "Lance no Leil\xE3o",
+        "domain": "lancenoleilao.com.br",
+        "baseUrl": "https://www.lancenoleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 737,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "baldisseraleiloeiros_com_br",
+        "name": "Baldissera Leiloeiros",
+        "domain": "baldisseraleiloeiros.com.br",
+        "baseUrl": "https://www.baldisseraleiloeiros.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 568,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "liderleiloes_com_br",
+        "name": "Lider Leil\xF5es",
+        "domain": "liderleiloes.com.br",
+        "baseUrl": "https://www.liderleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 551,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bomvalor_com_br",
+        "name": "Bom Valor Leil\xF5es",
+        "domain": "bomvalor.com.br",
+        "aliasDomains": [
+          "mercado.bomvalor.com.br"
+        ],
+        "baseUrl": "https://mercado.bomvalor.com.br",
+        "searchUrl": "https://mercado.bomvalor.com.br/busca/segmento/imoveis",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 449,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jmleiloes_com_br",
+        "name": "JM Leil\xF5es",
+        "domain": "jmleiloes.com.br",
+        "aliasDomains": [
+          "jmleiloes.leilao.br"
+        ],
+        "baseUrl": "https://www.jmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 432,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jrleiloes_com_br",
+        "name": "Joyce Ribeiro Leil\xF5es",
+        "domain": "jrleiloes.com.br",
+        "baseUrl": "https://www.jrleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 304,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "webleiloes_com_br",
+        "name": "Web Leil\xF5es",
+        "domain": "webleiloes.com.br",
+        "baseUrl": "https://www.webleiloes.com.br",
+        "searchUrl": "https://www.webleiloes.com.br/imoveis",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 239,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jeleiloes_com_br",
+        "name": "Je Leil\xF5es",
+        "domain": "jeleiloes.com.br",
+        "baseUrl": "https://www.jeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 227,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "turanileiloes_com_br",
+        "name": "Gustavo Turani Leil\xF5es",
+        "domain": "turanileiloes.com.br",
+        "baseUrl": "https://www.turanileiloes.com.br",
+        "searchUrl": "https://www.turanileiloes.com.br/imoveis",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 226,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leilaosicoob_com_br",
+        "name": "Sicoob (Portal de Im\xF3veis)",
+        "domain": "leilaosicoob.com.br",
+        "baseUrl": "https://www.leilaosicoob.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 202,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rmoyses_com_br",
+        "name": "Rmoyses leil\xF5es",
+        "domain": "rmoyses.com.br",
+        "baseUrl": "https://www.rmoyses.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 194,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "topoleiloes_com_br",
+        "name": "Topo Leil\xF5es",
+        "domain": "topoleiloes.com.br",
+        "baseUrl": "https://www.topoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 159,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rafaelcoutinho_lel_br",
+        "name": "Rafael Coutinho",
+        "domain": "rafaelcoutinho.lel.br",
+        "baseUrl": "https://www.rafaelcoutinho.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 144,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gfleiloes_com_br",
+        "name": "GF Leil\xF5es | Galv\xE3o Frota Leil\xF5es",
+        "domain": "gfleiloes.com.br",
+        "baseUrl": "https://www.gfleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 138,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "satoleiloes_com_br",
+        "name": "Sato Leil\xF5es",
+        "domain": "satoleiloes.com.br",
+        "baseUrl": "https://www.satoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 126,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "clebercardosoleiloes_com_br",
+        "name": "Cleber Cardoso leil\xF5es",
+        "domain": "clebercardosoleiloes.com.br",
+        "baseUrl": "https://www.clebercardosoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 123,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "albertomacedoleiloes_com_br",
+        "name": "Alberto Macedo",
+        "domain": "albertomacedoleiloes.com.br",
+        "baseUrl": "https://www.albertomacedoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 122,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "d1lance_com_br",
+        "name": "D1 Lances Leil\xF5es",
+        "domain": "d1lance.com.br",
+        "baseUrl": "https://www.d1lance.com.br",
+        "searchUrl": "https://d1lance.com.br/navegar-pelo-mapa?tipo_filtro=imoveis",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 119,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "legisleiloes_com_br",
+        "name": "Legis Leil\xF5es",
+        "domain": "legisleiloes.com.br",
+        "baseUrl": "https://www.legisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 119,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "renovarleiloes_com_br",
+        "name": "Renovar Leil\xF5es",
+        "domain": "renovarleiloes.com.br",
+        "baseUrl": "https://www.renovarleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 119,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pecinileiloes_com_br",
+        "name": "Pecini Leil\xF5es",
+        "domain": "pecinileiloes.com.br",
+        "baseUrl": "https://www.pecinileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 117,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "centralsuldeleiloes_com_br",
+        "name": "Central Sul de Leil\xF5es",
+        "domain": "centralsuldeleiloes.com.br",
+        "baseUrl": "https://www.centralsuldeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 113,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alvaroleiloes_com_br",
+        "name": "Alvaro Leil\xF5es",
+        "domain": "alvaroleiloes.com.br",
+        "baseUrl": "https://www.alvaroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 109,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloeiropublico_com_br",
+        "name": "Rodolfo Schontag",
+        "domain": "leiloeiropublico.com.br",
+        "baseUrl": "https://www.leiloeiropublico.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 103,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leilaoeletronico_com_br",
+        "name": "Leil\xE3o Eletr\xF4nico",
+        "domain": "leilaoeletronico.com.br",
+        "baseUrl": "https://www.leilaoeletronico.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 99,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nakakogueleiloes_com_br",
+        "name": "Nakakogue Leil\xF5es",
+        "domain": "nakakogueleiloes.com.br",
+        "baseUrl": "https://www.nakakogueleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 99,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "allianceleiloes_com_br",
+        "name": "Alliance Leil\xF5es",
+        "domain": "allianceleiloes.com.br",
+        "baseUrl": "https://www.allianceleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 90,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "tabaleiloes_com_br",
+        "name": "Taba Leil\xF5es",
+        "domain": "tabaleiloes.com.br",
+        "baseUrl": "https://www.tabaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 89,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "sublimeleiloes_com_br",
+        "name": "Sublime Leil\xF5es",
+        "domain": "sublimeleiloes.com.br",
+        "baseUrl": "https://www.sublimeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 88,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "hastapublica_com_br",
+        "name": "Hasta Publica",
+        "domain": "hastapublica.com.br",
+        "baseUrl": "https://www.hastapublica.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 84,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "calilleiloes_com_br",
+        "name": "Calil leil\xF5es",
+        "domain": "calilleiloes.com.br",
+        "baseUrl": "https://www.calilleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 77,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "dhleiloes_com_br",
+        "name": "DH Leil\xF5es",
+        "domain": "dhleiloes.com.br",
+        "baseUrl": "https://www.dhleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 75,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "danielgarcialeiloes_com_br",
+        "name": "Daniel Garcia Leil\xF5es",
+        "domain": "danielgarcialeiloes.com.br",
+        "baseUrl": "https://www.danielgarcialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 74,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloariasmart_com_br",
+        "name": "Smart Leil\xF5es",
+        "domain": "leiloariasmart.com.br",
+        "baseUrl": "https://www.leiloariasmart.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 73,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesgold_com_br",
+        "name": "Gold Leil\xF5es",
+        "domain": "leiloesgold.com.br",
+        "baseUrl": "https://www.leiloesgold.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 71,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vegasleiloes_com_br",
+        "name": "Vegas Leil\xF5es",
+        "domain": "vegasleiloes.com.br",
+        "baseUrl": "https://www.vegasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 71,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "barretoleiloes_com_br",
+        "name": "Barreto Leil\xF5es",
+        "domain": "barretoleiloes.com.br",
+        "baseUrl": "https://www.barretoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 70,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "eckertleiloes_com_br",
+        "name": "Eckert Leil\xF5es",
+        "domain": "eckertleiloes.com.br",
+        "baseUrl": "https://www.eckertleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 69,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "trileiloes_com_br",
+        "name": "TriLeil\xF5es",
+        "domain": "trileiloes.com.br",
+        "baseUrl": "https://www.trileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 66,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "mullerleiloes_com_br",
+        "name": "Muller Leil\xF5es",
+        "domain": "mullerleiloes.com.br",
+        "baseUrl": "https://www.mullerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 63,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "portalbayit_com_br",
+        "name": "Portal Bayit",
+        "domain": "portalbayit.com.br",
+        "baseUrl": "https://www.portalbayit.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 63,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "kleiloes_com_br",
+        "name": "Klockner Leil\xF5es",
+        "domain": "kleiloes.com.br",
+        "baseUrl": "https://www.kleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 55,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "inovaleilao_com_br",
+        "name": "Diogo Martins Leiloeiro",
+        "domain": "inovaleilao.com.br",
+        "baseUrl": "https://www.inovaleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 53,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "balbinoleiloes_com_br",
+        "name": "Balbino Leil\xF5es",
+        "domain": "balbinoleiloes.com.br",
+        "baseUrl": "https://www.balbinoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 52,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "e_leiloes_com_br",
+        "name": "E-Leil\xF5es Market",
+        "domain": "e-leiloes.com.br",
+        "baseUrl": "https://www.e-leiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 51,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lutheroleiloes_com_br",
+        "name": "Luthero Leil\xF5es",
+        "domain": "lutheroleiloes.com.br",
+        "baseUrl": "https://www.lutheroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 50,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "picellileiloes_com_br",
+        "name": "Picelli Leil\xF5es",
+        "domain": "picellileiloes.com.br",
+        "baseUrl": "https://www.picellileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 50,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "thaisteixeiraleiloes_com_br",
+        "name": "Thais Teixeira Leil\xF5es",
+        "domain": "thaisteixeiraleiloes.com.br",
+        "baseUrl": "https://www.thaisteixeiraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 50,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gilsonleiloes_com_br",
+        "name": "Gilson Leil\xF5es",
+        "domain": "gilsonleiloes.com.br",
+        "baseUrl": "https://www.gilsonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 49,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "hastapublica_lel_br",
+        "name": "Hasta P\xFAblica Leil\xF5es",
+        "domain": "hastapublica.lel.br",
+        "baseUrl": "https://www.hastapublica.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 49,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "balboleiloes_com_br",
+        "name": "Balbo leil\xF5es",
+        "domain": "balboleiloes.com.br",
+        "baseUrl": "https://www.balboleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 48,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "santoseborinleiloes_com_br",
+        "name": "Santos & Borin Leil\xF5es",
+        "domain": "santoseborinleiloes.com.br",
+        "baseUrl": "https://www.santoseborinleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 48,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leilaooficialonline_com_br",
+        "name": "Leil\xE3o Oficial",
+        "domain": "leilaooficialonline.com.br",
+        "baseUrl": "https://www.leilaooficialonline.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 47,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "patiorochaleiloes_com_br",
+        "name": "P\xE1tio Rocha Leil\xF5es",
+        "domain": "patiorochaleiloes.com.br",
+        "baseUrl": "https://www.patiorochaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 47,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pwleiloes_com_br",
+        "name": "PW Leil\xF5es",
+        "domain": "pwleiloes.com.br",
+        "baseUrl": "https://www.pwleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 47,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vivaleiloes_com_br",
+        "name": "Viva Leil\xF5es",
+        "domain": "vivaleiloes.com.br",
+        "baseUrl": "https://www.vivaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 43,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "cargneluttileiloes_com_br",
+        "name": "Cargnelutti Leil\xF5es",
+        "domain": "cargneluttileiloes.com.br",
+        "baseUrl": "https://www.cargneluttileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 42,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rechleiloes_com_br",
+        "name": "Rech Leil\xF5es",
+        "domain": "rechleiloes.com.br",
+        "baseUrl": "https://www.rechleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 41,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "milanleiloes_com_br",
+        "name": "Miani Leil\xF5es",
+        "domain": "milanleiloes.com.br",
+        "baseUrl": "https://www.milanleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 40,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "zallileiloes_com_br",
+        "name": "Zalli Leil\xF5es",
+        "domain": "zallileiloes.com.br",
+        "baseUrl": "https://www.zallileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 40,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "apiceleiloes_com_br",
+        "name": "Apice Leil\xF5es",
+        "domain": "apiceleiloes.com.br",
+        "baseUrl": "https://www.apiceleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 39,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vendasjudiciais_com_br",
+        "name": "Vendas Judiciais Leil\xF5es",
+        "domain": "vendasjudiciais.com.br",
+        "baseUrl": "https://www.vendasjudiciais.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 37,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nortenordesteleiloes_com_br",
+        "name": "Norte Nordeste Leil\xF5es",
+        "domain": "nortenordesteleiloes.com.br",
+        "baseUrl": "https://www.nortenordesteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 36,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rauppleiloes_com_br",
+        "name": "Raupp Leil\xF5es",
+        "domain": "rauppleiloes.com.br",
+        "baseUrl": "https://www.rauppleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 35,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "santamarialeiloes_com_br",
+        "name": "Santa Maria Leil\xF5es",
+        "domain": "santamarialeiloes.com.br",
+        "baseUrl": "https://www.santamarialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 35,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "oroleiloes_lel_br",
+        "name": "Oro Leil\xF5es",
+        "domain": "oroleiloes.lel.br",
+        "baseUrl": "https://www.oroleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 34,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nrnleiloes_com_br",
+        "name": "NRN Leil\xF5es",
+        "domain": "nrnleiloes.com.br",
+        "baseUrl": "https://www.nrnleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 32,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "cidafixerleiloes_com_br",
+        "name": "Cida Fixer",
+        "domain": "cidafixerleiloes.com.br",
+        "baseUrl": "https://www.cidafixerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 31,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pessoaleiloes_com_br",
+        "name": "Pessoa Leil\xF5es",
+        "domain": "pessoaleiloes.com.br",
+        "baseUrl": "https://www.pessoaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 31,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "scheid_leilao_br",
+        "name": "Scheid Leil\xF5es",
+        "domain": "scheid.leilao.br",
+        "baseUrl": "https://www.scheid.leilao.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 31,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jussiaraleiloes_com",
+        "name": "Jussiara Leil\xF5es",
+        "domain": "jussiaraleiloes.com",
+        "baseUrl": "https://www.jussiaraleiloes.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 30,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "paulistanaleiloes_com_br",
+        "name": "Paulistana Leil\xF5es",
+        "domain": "paulistanaleiloes.com.br",
+        "baseUrl": "https://www.paulistanaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 30,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "argonetworkleiloes_com_br",
+        "name": "Argo network leil\xF5es",
+        "domain": "argonetworkleiloes.com.br",
+        "baseUrl": "https://www.argonetworkleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 29,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "cristianoescolaleiloes_com_br",
+        "name": "Cristiano Escola Leil\xF5es",
+        "domain": "cristianoescolaleiloes.com.br",
+        "baseUrl": "https://www.cristianoescolaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 29,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "damianileiloes_com_br",
+        "name": "Damiani Leil\xF5es",
+        "domain": "damianileiloes.com.br",
+        "baseUrl": "https://www.damianileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 28,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "grandesleiloes_com_br",
+        "name": "Grandes Leil\xF5es",
+        "domain": "grandesleiloes.com.br",
+        "baseUrl": "https://www.grandesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 28,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jrfleiloes_com_br",
+        "name": "JRF leil\xF5es",
+        "domain": "jrfleiloes.com.br",
+        "baseUrl": "https://www.jrfleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 28,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "qleilao_lel_br",
+        "name": "Q Leil\xE3o",
+        "domain": "qleilao.lel.br",
+        "baseUrl": "https://www.qleilao.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 28,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "fvleiloes_com_br",
+        "name": "FV Leil\xF5es",
+        "domain": "fvleiloes.com.br",
+        "baseUrl": "https://www.fvleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 27,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "marcusviniciusleiloes_com_br",
+        "name": "Marcus Vin\xEDcios Leil\xF5es",
+        "domain": "marcusviniciusleiloes.com.br",
+        "baseUrl": "https://www.marcusviniciusleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 27,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "presottoleiloes_com_br",
+        "name": "Presotto Leil\xF5es",
+        "domain": "presottoleiloes.com.br",
+        "baseUrl": "https://www.presottoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 27,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vecchileiloes_com_br",
+        "name": "Vecchi Leil\xF5es",
+        "domain": "vecchileiloes.com.br",
+        "baseUrl": "https://www.vecchileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 27,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alienajud_com_br",
+        "name": "Alienajud",
+        "domain": "alienajud.com.br",
+        "baseUrl": "https://www.alienajud.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 26,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesjudiciaisbahia_com_br",
+        "name": "Leil\xF5es Judiciais Bahia",
+        "domain": "leiloesjudiciaisbahia.com.br",
+        "baseUrl": "https://www.leiloesjudiciaisbahia.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 26,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nsleiloes_lel_br",
+        "name": "NS Leil\xF5es",
+        "domain": "nsleiloes.lel.br",
+        "baseUrl": "https://www.nsleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 25,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "simonleiloes_com_br",
+        "name": "Simon Leil\xF5es",
+        "domain": "simonleiloes.com.br",
+        "baseUrl": "https://www.simonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 25,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "regionalleiloes_com_br",
+        "name": "Regional Leil\xF5es",
+        "domain": "regionalleiloes.com.br",
+        "baseUrl": "https://www.regionalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 24,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "sodresantoro_com_br",
+        "name": "Sodr\xE9 Santoro",
+        "domain": "sodresantoro.com.br",
+        "baseUrl": "https://www.sodresantoro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 24,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "teleselimaleiloes_com_br",
+        "name": "Teles e Lima Leil\xF5es",
+        "domain": "teleselimaleiloes.com.br",
+        "baseUrl": "https://www.teleselimaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 24,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bastonleiloes_com_br",
+        "name": "Baston Leil\xF5es",
+        "domain": "bastonleiloes.com.br",
+        "baseUrl": "https://www.bastonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 23,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloeiro_lel_br",
+        "name": "Andr\xE9 Soares Menegat",
+        "domain": "leiloeiro.lel.br",
+        "baseUrl": "https://www.leiloeiro.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 23,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lottileiloes_com_br",
+        "name": "Lotti Leil\xF5es",
+        "domain": "lottileiloes.com.br",
+        "baseUrl": "https://www.lottileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 23,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "montenegroleiloes_com_br",
+        "name": "Montenegro Leil\xF5es",
+        "domain": "montenegroleiloes.com.br",
+        "baseUrl": "https://www.montenegroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 23,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alemaoleiloeiro_com_br",
+        "name": "Alem\xE3o Leiloeiro",
+        "domain": "alemaoleiloeiro.com.br",
+        "baseUrl": "https://www.alemaoleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 22,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "oesteleiloes_com_br",
+        "name": "Oeste Leil\xF5es",
+        "domain": "oesteleiloes.com.br",
+        "baseUrl": "https://www.oesteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 22,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "dilsonmoreira_com_br",
+        "name": "Dilson Moreira Leil\xF5es",
+        "domain": "dilsonmoreira.com.br",
+        "baseUrl": "https://www.dilsonmoreira.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 21,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "faleiloes_com_br",
+        "name": "Flares Aguiar Leil\xF5es",
+        "domain": "faleiloes.com.br",
+        "baseUrl": "https://www.faleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 21,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "marangonileiloes_com_br",
+        "name": "Marangoni Leil\xF5es",
+        "domain": "marangonileiloes.com.br",
+        "baseUrl": "https://www.marangonileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 21,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "mpleilao_com_br",
+        "name": "MP Leil\xF5es",
+        "domain": "mpleilao.com.br",
+        "baseUrl": "https://www.mpleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 21,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "projudleiloes_com_br",
+        "name": "Projud Leil\xF5es",
+        "domain": "projudleiloes.com.br",
+        "baseUrl": "https://www.projudleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 21,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "chbarbosaleiloes_com_br",
+        "name": "CH Barbosa Leil\xF5es",
+        "domain": "chbarbosaleiloes.com.br",
+        "baseUrl": "https://www.chbarbosaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "cunhaleiloeiro_com_br",
+        "name": "Cunha Leil\xF5es",
+        "domain": "cunhaleiloeiro.com.br",
+        "baseUrl": "https://www.cunhaleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "kleiberjrleiloes_com_br",
+        "name": "Kleiber Jr Leil\xF5es",
+        "domain": "kleiberjrleiloes.com.br",
+        "baseUrl": "https://www.kleiberjrleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesgoias_com_br",
+        "name": "Bueno Leil\xF5es",
+        "domain": "leiloesgoias.com.br",
+        "baseUrl": "https://www.leiloesgoias.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "marceloleiloeiro_com_br",
+        "name": "Marcelo Leiloeiro",
+        "domain": "marceloleiloeiro.com.br",
+        "baseUrl": "https://www.marceloleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "mouzarbastonleiloes_com_br",
+        "name": "Mouzar Baston Leil\xF5es",
+        "domain": "mouzarbastonleiloes.com.br",
+        "baseUrl": "https://www.mouzarbastonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "scholanteleiloes_com_br",
+        "name": "Scholante Leil\xF5es",
+        "domain": "scholanteleiloes.com.br",
+        "baseUrl": "https://www.scholanteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vsleiloes_com",
+        "name": "VS Leil\xF5es",
+        "domain": "vsleiloes.com",
+        "baseUrl": "https://www.vsleiloes.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 20,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gtleiloes_com_br",
+        "name": "GT Leil\xF5es",
+        "domain": "gtleiloes.com.br",
+        "baseUrl": "https://www.gtleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 19,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leilaonet_com_br",
+        "name": "Leilao Net",
+        "domain": "leilaonet.com.br",
+        "baseUrl": "https://www.leilaonet.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 19,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloes_sicoobvaledovinho_coop_br",
+        "name": "Sicoob Vale do Vinho",
+        "domain": "leiloes.sicoobvaledovinho.coop.br",
+        "baseUrl": "https://www.leiloes.sicoobvaledovinho.coop.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 19,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "mariafixerleiloes_com_br",
+        "name": "Maria Leil\xF5es",
+        "domain": "mariafixerleiloes.com.br",
+        "baseUrl": "https://www.mariafixerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 19,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "moraesleiloes_com_br",
+        "name": "Moraes Leil\xF5es",
+        "domain": "moraesleiloes.com.br",
+        "baseUrl": "https://www.moraesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 19,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pimentelleiloes_com_br",
+        "name": "Pimentel Leil\xF5es",
+        "domain": "pimentelleiloes.com.br",
+        "baseUrl": "https://www.pimentelleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 19,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "amleiloeiro_com_br",
+        "name": "AM Leiloeiro",
+        "domain": "amleiloeiro.com.br",
+        "baseUrl": "https://www.amleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 18,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bronzattoleiloes_com_br",
+        "name": "Bronzatto Leil\xF5es",
+        "domain": "bronzattoleiloes.com.br",
+        "baseUrl": "https://www.bronzattoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 18,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pietosoleiloes_com_br",
+        "name": "Pietoso Leil\xF5es",
+        "domain": "pietosoleiloes.com.br",
+        "baseUrl": "https://www.pietosoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 18,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alinemarquesleiloeira_lel_br",
+        "name": "Aline Marques - Leiloeira P\xFAblica",
+        "domain": "alinemarquesleiloeira.lel.br",
+        "baseUrl": "https://www.alinemarquesleiloeira.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 17,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "dmleiloesjudiciais_com_br",
+        "name": "Danyllo Maia",
+        "domain": "dmleiloesjudiciais.com.br",
+        "baseUrl": "https://www.dmleiloesjudiciais.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 17,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jmfleiloes_com_br",
+        "name": "JMF Leil\xF5es",
+        "domain": "jmfleiloes.com.br",
+        "baseUrl": "https://www.jmfleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 17,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lancevip_com_br",
+        "name": "Lance Vip",
+        "domain": "lancevip.com.br",
+        "baseUrl": "https://www.lancevip.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 17,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leffaleiloes_com_br",
+        "name": "Leffa Leil\xF5es",
+        "domain": "leffaleiloes.com.br",
+        "baseUrl": "https://www.leffaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 17,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "suedpeterleiloes_com_br",
+        "name": "Sued Peter Bastos Dyna",
+        "domain": "suedpeterleiloes.com.br",
+        "baseUrl": "https://www.suedpeterleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 17,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "tenleilao_com_br",
+        "name": "Ten Leil\xE3o",
+        "domain": "tenleilao.com.br",
+        "baseUrl": "https://www.tenleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 17,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "araujoleiloes_com_br",
+        "name": "Ara\xFAjo Leil\xF5es",
+        "domain": "araujoleiloes.com.br",
+        "baseUrl": "https://www.araujoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 16,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "giulianoferronato_com_br",
+        "name": "Giuliano Ferronato Leil\xF5es",
+        "domain": "giulianoferronato.com.br",
+        "baseUrl": "https://www.giulianoferronato.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 16,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "grupoarremateleiloes_com_br",
+        "name": "Arremate Leil\xF5es",
+        "domain": "grupoarremateleiloes.com.br",
+        "baseUrl": "https://www.grupoarremateleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 16,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jacleiloes_com_br",
+        "name": "JAC Leil\xF5es",
+        "domain": "jacleiloes.com.br",
+        "baseUrl": "https://www.jacleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 16,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "multipliqueleiloes_com_br",
+        "name": "Multiplique Leil\xF5es",
+        "domain": "multipliqueleiloes.com.br",
+        "baseUrl": "https://www.multipliqueleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 16,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "peixotoleiloes_com_br",
+        "name": "Peixoto Leil\xF5es",
+        "domain": "peixotoleiloes.com.br",
+        "baseUrl": "https://www.peixotoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 16,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "sumareleiloes_com_br",
+        "name": "Sumare Leil\xF5es",
+        "domain": "sumareleiloes.com.br",
+        "baseUrl": "https://www.sumareleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 16,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesbrasil_com_br",
+        "name": "Leil\xF5es Brasil",
+        "domain": "leiloesbrasil.com.br",
+        "baseUrl": "https://www.leiloesbrasil.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 15,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "oleiloes_com_br",
+        "name": "O Leil\xF5es",
+        "domain": "oleiloes.com.br",
+        "baseUrl": "https://www.oleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 15,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "clademirleiloeiro_com_br",
+        "name": "Clademir Leil\xF5es",
+        "domain": "clademirleiloeiro.com.br",
+        "baseUrl": "https://www.clademirleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 14,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "eduardovivian_com_br",
+        "name": "Eduardo Vivian Leiloeiro",
+        "domain": "eduardovivian.com.br",
+        "baseUrl": "https://www.eduardovivian.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 14,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "fidalgoleiloes_com_br",
+        "name": "Fidalgo Leil\xF5es",
+        "domain": "fidalgoleiloes.com.br",
+        "baseUrl": "https://www.fidalgoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 14,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "galvanileiloes_com_br",
+        "name": "Galvani Leil\xF5es",
+        "domain": "galvanileiloes.com.br",
+        "baseUrl": "https://www.galvanileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 14,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lunellileiloes_com_br",
+        "name": "Lunelli Leil\xF5es",
+        "domain": "lunellileiloes.com.br",
+        "baseUrl": "https://www.lunellileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 14,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "machadoleiloeiro_com_br",
+        "name": "Machado Leiloeiro",
+        "domain": "machadoleiloeiro.com.br",
+        "baseUrl": "https://www.machadoleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 14,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "casareisleiloes_com_br",
+        "name": "Casa Reis Leil\xF5es",
+        "domain": "casareisleiloes.com.br",
+        "baseUrl": "https://www.casareisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 13,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "tribunaleiloes_com_br",
+        "name": "Tribuna Leil\xF5es",
+        "domain": "tribunaleiloes.com.br",
+        "baseUrl": "https://www.tribunaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 13,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "aragaoleiloes_com_br",
+        "name": "Arag\xE3o Leil\xF5es",
+        "domain": "aragaoleiloes.com.br",
+        "baseUrl": "https://www.aragaoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "fabianebaldisseraleiloes_com_br",
+        "name": "Fabiane Baldissera Leil\xF5es",
+        "domain": "fabianebaldisseraleiloes.com.br",
+        "baseUrl": "https://www.fabianebaldisseraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "franklinleiloes_com_br",
+        "name": "Franklin Leil\xF5es",
+        "domain": "franklinleiloes.com.br",
+        "baseUrl": "https://www.franklinleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "ktzleiloes_com_br",
+        "name": "KTZ Leil\xF5es",
+        "domain": "ktzleiloes.com.br",
+        "baseUrl": "https://www.ktzleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesaguiar_com_br",
+        "name": "Leil\xF5es Aguiar",
+        "domain": "leiloesaguiar.com.br",
+        "baseUrl": "https://www.leiloesaguiar.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "silveiraleiloes_com_br",
+        "name": "Silveira Leil\xF5es",
+        "domain": "silveiraleiloes.com.br",
+        "baseUrl": "https://www.silveiraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "tonialleiloes_com_br",
+        "name": "Tonial Leil\xF5es",
+        "domain": "tonialleiloes.com.br",
+        "baseUrl": "https://www.tonialleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "valeroleiloes_com_br",
+        "name": "Valero Leil\xF5es",
+        "domain": "valeroleiloes.com.br",
+        "baseUrl": "https://www.valeroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 12,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "atrioleiloes_com_br",
+        "name": "Atrio Leil\xF5es",
+        "domain": "atrioleiloes.com.br",
+        "baseUrl": "https://www.atrioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "benedettoleiloes_com_br",
+        "name": "Benedetto Leil\xF5es",
+        "domain": "benedettoleiloes.com.br",
+        "baseUrl": "https://www.benedettoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bezerraleiloes_com_br",
+        "name": "Bezerra Leil\xF5es",
+        "domain": "bezerraleiloes.com.br",
+        "baseUrl": "https://www.bezerraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "colodeteleiloes_com_br",
+        "name": "Mauro Colodete Leil\xF5es",
+        "domain": "colodeteleiloes.com.br",
+        "baseUrl": "https://www.colodeteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "faroonline_com_br",
+        "name": "Faro Leil\xF5es",
+        "domain": "faroonline.com.br",
+        "baseUrl": "https://www.faroonline.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "flaviogarcia_lel_br",
+        "name": "Fl\xE1vio Garcia",
+        "domain": "flaviogarcia.lel.br",
+        "baseUrl": "https://www.flaviogarcia.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lancese_com_br",
+        "name": "Lance Leil\xF5es Sergipe",
+        "domain": "lancese.com.br",
+        "baseUrl": "https://www.lancese.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesrn_com_br",
+        "name": "Leil\xF5es RN",
+        "domain": "leiloesrn.com.br",
+        "baseUrl": "https://www.leiloesrn.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pbcastro_com_br",
+        "name": "PB Castro",
+        "domain": "pbcastro.com.br",
+        "baseUrl": "https://www.pbcastro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "topleiloes_com_br",
+        "name": "Top Leil\xF5es",
+        "domain": "topleiloes.com.br",
+        "baseUrl": "https://www.topleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "totalleiloes_com_br",
+        "name": "Total leil\xF5es",
+        "domain": "totalleiloes.com.br",
+        "baseUrl": "https://www.totalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vmleiloes_com_br",
+        "name": "VM Leil\xF5es",
+        "domain": "vmleiloes.com.br",
+        "baseUrl": "https://www.vmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "wspleiloes_com_br",
+        "name": "WSP Leil\xF5es",
+        "domain": "wspleiloes.com.br",
+        "baseUrl": "https://www.wspleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 11,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "123leiloes_com_br",
+        "name": "123 Leil\xF5es",
+        "domain": "123leiloes.com.br",
+        "baseUrl": "https://www.123leiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "absolutaleiloes_com_br",
+        "name": "Absoluta Leil\xF5es",
+        "domain": "absolutaleiloes.com.br",
+        "baseUrl": "https://www.absolutaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "agsleiloes_com_br",
+        "name": "AGS Leil\xF5es",
+        "domain": "agsleiloes.com.br",
+        "baseUrl": "https://www.agsleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alexandrepedrosaleiloeiro_com_br",
+        "name": "Alexandre Pedrosa Leiloeiro",
+        "domain": "alexandrepedrosaleiloeiro.com.br",
+        "baseUrl": "https://www.alexandrepedrosaleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "arremaxleiloes_com_br",
+        "name": "Arremax Leil\xF5es",
+        "domain": "arremaxleiloes.com.br",
+        "baseUrl": "https://www.arremaxleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "drleiloes_com_br",
+        "name": "DR Leil\xF5es",
+        "domain": "drleiloes.com.br",
+        "baseUrl": "https://www.drleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "felipefrazao_com_br",
+        "name": "Felipe Frazao Leil\xF5es",
+        "domain": "felipefrazao.com.br",
+        "baseUrl": "https://www.felipefrazao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jdleiloes_com_br",
+        "name": "JD Leil\xF5es",
+        "domain": "jdleiloes.com.br",
+        "baseUrl": "https://www.jdleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "marcaleiloes_com_br",
+        "name": "Marca Leil\xF5es",
+        "domain": "marcaleiloes.com.br",
+        "baseUrl": "https://www.marcaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "planaltoleiloes_com_br",
+        "name": "Planalto Leil\xF5es",
+        "domain": "planaltoleiloes.com.br",
+        "baseUrl": "https://www.planaltoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "planoleiloes_com_br",
+        "name": "Plano Leil\xF5es",
+        "domain": "planoleiloes.com.br",
+        "baseUrl": "https://www.planoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "polileiloes_com_br",
+        "name": "Poli Leil\xF5es",
+        "domain": "polileiloes.com.br",
+        "baseUrl": "https://www.polileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "serpaleiloes_com_br",
+        "name": "Serpa Leil\xF5es",
+        "domain": "serpaleiloes.com.br",
+        "baseUrl": "https://www.serpaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "victordortaleiloes_com_br",
+        "name": "Victor Dorta Leil\xF5es",
+        "domain": "victordortaleiloes.com.br",
+        "baseUrl": "https://www.victordortaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 10,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "arrematabem_com_br",
+        "name": "Arremata Bem Leil\xF5es Oficiais",
+        "domain": "arrematabem.com.br",
+        "baseUrl": "https://www.arrematabem.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bcoleiloes_com_br",
+        "name": "BCO Leil\xF5es",
+        "domain": "bcoleiloes.com.br",
+        "baseUrl": "https://www.bcoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "custodioleiloes_com_br",
+        "name": "Cust\xF3dio Leil\xF5es",
+        "domain": "custodioleiloes.com.br",
+        "baseUrl": "https://www.custodioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "donizetteleiloes_com_br",
+        "name": "Donizette Leil\xF5es",
+        "domain": "donizetteleiloes.com.br",
+        "baseUrl": "https://www.donizetteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "duarteleiloes_com_br",
+        "name": "Duarte Leil\xF5es Oficiais",
+        "domain": "duarteleiloes.com.br",
+        "baseUrl": "https://www.duarteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "flexleiloes_com_br",
+        "name": "Flex Leil\xF5es",
+        "domain": "flexleiloes.com.br",
+        "baseUrl": "https://www.flexleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloeirobarbieri_com_br",
+        "name": "Marciano Barbieri Leil\xF5es",
+        "domain": "leiloeirobarbieri.com.br",
+        "baseUrl": "https://www.leiloeirobarbieri.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloescentrooeste_com_br",
+        "name": "Leil\xF5es Centro Oeste",
+        "domain": "leiloescentrooeste.com.br",
+        "baseUrl": "https://www.leiloescentrooeste.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "mgleiloes_rs_com_br",
+        "name": "MGLeil\xF5es-RS",
+        "domain": "mgleiloes-rs.com.br",
+        "baseUrl": "https://www.mgleiloes-rs.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rochaleiloes_com_br",
+        "name": "Rocha Leil\xF5es",
+        "domain": "rochaleiloes.com.br",
+        "baseUrl": "https://www.rochaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "tmleiloes_com_br",
+        "name": "TM Leil\xF5es",
+        "domain": "tmleiloes.com.br",
+        "baseUrl": "https://www.tmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 9,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "agencialeilao_com_br",
+        "name": "Ag\xEAncia de Leil\xF5es",
+        "domain": "agencialeilao.com.br",
+        "baseUrl": "https://www.agencialeilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alexandridisleiloes_com_br",
+        "name": "Alexandridis Leil\xF5es",
+        "domain": "alexandridisleiloes.com.br",
+        "baseUrl": "https://www.alexandridisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "amazonasleiloes_com_br",
+        "name": "Amazonas Leil\xF5es",
+        "domain": "amazonasleiloes.com.br",
+        "baseUrl": "https://www.amazonasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "baldisseraleiloes_com_br",
+        "name": "Andr\xE9a Baldissera",
+        "domain": "baldisseraleiloes.com.br",
+        "baseUrl": "https://www.baldisseraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "brasilsulleiloes_com_br",
+        "name": "Brasil Sul Leil\xF5es",
+        "domain": "brasilsulleiloes.com.br",
+        "baseUrl": "https://www.brasilsulleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "cassianoleiloes_com_br",
+        "name": "Cassiano Dall'ago",
+        "domain": "cassianoleiloes.com.br",
+        "baseUrl": "https://www.cassianoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "crisleiloes_com_br",
+        "name": "Cris Leil\xF5es",
+        "domain": "crisleiloes.com.br",
+        "baseUrl": "https://www.crisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "crleiloes_com_br",
+        "name": "Cl\xE1udio Reis Leiloeiro",
+        "domain": "crleiloes.com.br",
+        "baseUrl": "https://www.crleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "dcmleiloes_com_br",
+        "name": "DCM Leil\xF5es",
+        "domain": "dcmleiloes.com.br",
+        "baseUrl": "https://www.dcmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "elance_com_br",
+        "name": "E-Lance Leil\xF5es",
+        "domain": "elance.com.br",
+        "baseUrl": "https://www.elance.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "fabiobarbosaleiloes_com_br",
+        "name": "Fabio Barbosa Leil\xF5es",
+        "domain": "fabiobarbosaleiloes.com.br",
+        "baseUrl": "https://www.fabiobarbosaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "fbleiloes_com_br",
+        "name": "Frida Becker Leil\xF5es",
+        "domain": "fbleiloes.com.br",
+        "baseUrl": "https://www.fbleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nasarleiloes_com_br",
+        "name": "Nasar Leil\xF5es",
+        "domain": "nasarleiloes.com.br",
+        "baseUrl": "https://www.nasarleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pulseleiloes_com_br",
+        "name": "Pulse Leil\xF5es",
+        "domain": "pulseleiloes.com.br",
+        "baseUrl": "https://www.pulseleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 8,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "akimotoleiloes_com_br",
+        "name": "Akimoto Leil\xF5es",
+        "domain": "akimotoleiloes.com.br",
+        "baseUrl": "https://www.akimotoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bianchileiloes_com_br",
+        "name": "Bianchi Leil\xF5es",
+        "domain": "bianchileiloes.com.br",
+        "baseUrl": "https://www.bianchileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "cardosoleiloes_com_br",
+        "name": "Cardoso Leil\xF5es",
+        "domain": "cardosoleiloes.com.br",
+        "baseUrl": "https://www.cardosoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "doleiloes_com_br",
+        "name": "Daniel Oliveira Leiloeiro Oficial",
+        "domain": "doleiloes.com.br",
+        "baseUrl": "https://www.doleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lecapeleiloes_com_br",
+        "name": "Lecape Leil\xF5es",
+        "domain": "lecapeleiloes.com.br",
+        "baseUrl": "https://www.lecapeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leilaopernambuco_com_br",
+        "name": "Leil\xE3o Pernambuco",
+        "domain": "leilaopernambuco.com.br",
+        "baseUrl": "https://www.leilaopernambuco.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lucianleiloes_com_br",
+        "name": "Lucian Leil\xF5es",
+        "domain": "lucianleiloes.com.br",
+        "baseUrl": "https://www.lucianleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "mazzollileiloes_com_br",
+        "name": "Mazzolli Leil\xF5es",
+        "domain": "mazzollileiloes.com.br",
+        "baseUrl": "https://www.mazzollileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nelcileiloes_com_br",
+        "name": "Nelci Leil\xF5es",
+        "domain": "nelcileiloes.com.br",
+        "baseUrl": "https://www.nelcileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "oaleiloes_com_br",
+        "name": "OAL Leil\xF5es",
+        "domain": "oaleiloes.com.br",
+        "baseUrl": "https://www.oaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "pinheiroleiloes_com_br",
+        "name": "Pinheiro Leil\xF5es",
+        "domain": "pinheiroleiloes.com.br",
+        "baseUrl": "https://www.pinheiroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "raotaleiloes_com_br",
+        "name": "Raota Leil\xF5es",
+        "domain": "raotaleiloes.com.br",
+        "baseUrl": "https://www.raotaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rapidaovende_com_br",
+        "name": "Rapid\xE3o Vende",
+        "domain": "rapidaovende.com.br",
+        "baseUrl": "https://www.rapidaovende.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "ruipintoleiloeiro_com_br",
+        "name": "Rui Pinto Leiloeiro",
+        "domain": "ruipintoleiloeiro.com.br",
+        "baseUrl": "https://www.ruipintoleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vargasepintoleiloes_com_br",
+        "name": "Vargas e Pinto Leil\xF5es",
+        "domain": "vargasepintoleiloes.com.br",
+        "baseUrl": "https://www.vargasepintoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 7,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alleiloes_com_br",
+        "name": "AL Leil\xF5es",
+        "domain": "alleiloes.com.br",
+        "baseUrl": "https://www.alleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "correaleiloes_com_br",
+        "name": "Corr\xEAa Leil\xF5es",
+        "domain": "correaleiloes.com.br",
+        "baseUrl": "https://www.correaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "fidelisleiloes_com_br",
+        "name": "Fidelis Leil\xF5es",
+        "domain": "fidelisleiloes.com.br",
+        "baseUrl": "https://www.fidelisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gelsonleiloes_com_br",
+        "name": "Gelson Leil\xF5es",
+        "domain": "gelsonleiloes.com.br",
+        "baseUrl": "https://www.gelsonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "goldenbrazilleiloes_com_br",
+        "name": "Golden Leil\xF5es",
+        "domain": "goldenbrazilleiloes.com.br",
+        "baseUrl": "https://www.goldenbrazilleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "krobelleiloes_com_br",
+        "name": "Krobel Leil\xF5es",
+        "domain": "krobelleiloes.com.br",
+        "baseUrl": "https://www.krobelleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesmonteiro_com_br",
+        "name": "Leil\xF5es Monteiro",
+        "domain": "leiloesmonteiro.com.br",
+        "baseUrl": "https://www.leiloesmonteiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lessaleiloes_com_br",
+        "name": "M\xE1rio Lessa",
+        "domain": "lessaleiloes.com.br",
+        "baseUrl": "https://www.lessaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "reginaaudeleiloes_com_br",
+        "name": "Regina Aude Leil\xF5es",
+        "domain": "reginaaudeleiloes.com.br",
+        "baseUrl": "https://www.reginaaudeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "superaleiloes_com_br",
+        "name": "Supera Leil\xF5es",
+        "domain": "superaleiloes.com.br",
+        "baseUrl": "https://www.superaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "trustbid_com_br",
+        "name": "Trust Bid",
+        "domain": "trustbid.com.br",
+        "baseUrl": "https://www.trustbid.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vidalleiloes_com_br",
+        "name": "Vidal Leil\xF5es",
+        "domain": "vidalleiloes.com.br",
+        "baseUrl": "https://www.vidalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 6,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "3torresleiloes_com_br",
+        "name": "3torres Leil\xF5es",
+        "domain": "3torresleiloes.com.br",
+        "baseUrl": "https://www.3torresleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "capitalleiloes_com_br",
+        "name": "Capital Leil\xF5es",
+        "domain": "capitalleiloes.com.br",
+        "baseUrl": "https://www.capitalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "capitalvalorleiloes_com_br",
+        "name": "Capital Valor Leil\xF5es",
+        "domain": "capitalvalorleiloes.com.br",
+        "baseUrl": "https://www.capitalvalorleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gabrielleiloes_com_br",
+        "name": "Gabriel Rosa Leil\xF5es",
+        "domain": "gabrielleiloes.com.br",
+        "baseUrl": "https://www.gabrielleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "insigneleiloes_com_br",
+        "name": "Insigne Leil\xF5es",
+        "domain": "insigneleiloes.com.br",
+        "baseUrl": "https://www.insigneleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesonlinems_com_br",
+        "name": "Leil\xF5es Online MS",
+        "domain": "leiloesonlinems.com.br",
+        "baseUrl": "https://www.leiloesonlinems.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "marcotulioleiloes_com_br",
+        "name": "Marco T\xFAlio Leil\xF5es",
+        "domain": "marcotulioleiloes.com.br",
+        "baseUrl": "https://www.marcotulioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "norteleiloes_com_br",
+        "name": "Norte Leil\xF5es",
+        "domain": "norteleiloes.com.br",
+        "baseUrl": "https://www.norteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nossoleilao_com_br",
+        "name": "Nosso Leil\xE3o",
+        "domain": "nossoleilao.com.br",
+        "baseUrl": "https://www.nossoleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "santayanaleiloes_com_br",
+        "name": "Santayana Leil\xF5es",
+        "domain": "santayanaleiloes.com.br",
+        "baseUrl": "https://www.santayanaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "verdeamareloleiloes_com_br",
+        "name": "Verde Amarelo Leil\xF5es",
+        "domain": "verdeamareloleiloes.com.br",
+        "baseUrl": "https://www.verdeamareloleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "zagoleiloes_com_br",
+        "name": "Zago Leil\xF5es",
+        "domain": "zagoleiloes.com.br",
+        "baseUrl": "https://www.zagoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 5,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "adrianoapolinario_com_br",
+        "name": "Adriano Apolin\xE1rio",
+        "domain": "adrianoapolinario.com.br",
+        "baseUrl": "https://www.adrianoapolinario.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "andreluizleiloes_com_br",
+        "name": "Andr\xE9 Luiz Leil\xF5es",
+        "domain": "andreluizleiloes.com.br",
+        "baseUrl": "https://www.andreluizleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "arenaleilao_com_br",
+        "name": "Arena Leil\xF5es",
+        "domain": "arenaleilao.com.br",
+        "baseUrl": "https://www.arenaleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "arnoldoleiloes_com_br",
+        "name": "Arnoldo Leil\xF5es",
+        "domain": "arnoldoleiloes.com.br",
+        "baseUrl": "https://www.arnoldoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "backleiloes_com_br",
+        "name": "Back Leil\xF5es",
+        "domain": "backleiloes.com.br",
+        "baseUrl": "https://www.backleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bestleiloes_com_br",
+        "name": "Best Leil\xF5es",
+        "domain": "bestleiloes.com.br",
+        "baseUrl": "https://www.bestleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "casaforteleiloes_com_br",
+        "name": "Casa Forte Leil\xF5es",
+        "domain": "casaforteleiloes.com.br",
+        "baseUrl": "https://www.casaforteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "casaleiloeira_com_br",
+        "name": "Casa Leiloeira",
+        "domain": "casaleiloeira.com.br",
+        "baseUrl": "https://www.casaleiloeira.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "cencin_com_br",
+        "name": "Cencin Leil\xF5es",
+        "domain": "cencin.com.br",
+        "baseUrl": "https://www.cencin.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "clovisleiloeiro_com_br",
+        "name": "Cl\xF3vis Leiloeiro",
+        "domain": "clovisleiloeiro.com.br",
+        "baseUrl": "https://www.clovisleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "colossoleiloes_com_br",
+        "name": "Colosso Leil\xF5es",
+        "domain": "colossoleiloes.com.br",
+        "baseUrl": "https://www.colossoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jorgebrasil_lel_br",
+        "name": "Engenheiro Jorge Brasil",
+        "domain": "jorgebrasil.lel.br",
+        "baseUrl": "https://www.jorgebrasil.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jritta_lel_br",
+        "name": "Ritta Leil\xF5es",
+        "domain": "jritta.lel.br",
+        "baseUrl": "https://www.jritta.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "kingleiloes_net",
+        "name": "King Leil\xF5es",
+        "domain": "kingleiloes.net",
+        "baseUrl": "https://www.kingleiloes.net",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloeiro_online",
+        "name": "Carstens Leiloeiros",
+        "domain": "leiloeiro.online",
+        "baseUrl": "https://www.leiloeiro.online",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leomarkirinusleiloes_com_br",
+        "name": "Leomar Kirinus Leil\xF5es",
+        "domain": "leomarkirinusleiloes.com.br",
+        "baseUrl": "https://www.leomarkirinusleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "monzonleiloes_com_br",
+        "name": "Monzon Leil\xF5es",
+        "domain": "monzonleiloes.com.br",
+        "baseUrl": "https://www.monzonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "raicherleiloes_com_br",
+        "name": "Raicher Leil\xF5es",
+        "domain": "raicherleiloes.com.br",
+        "baseUrl": "https://www.raicherleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rz_leilao_br",
+        "name": "[AGENTE] Roberta Zago Leil\xF5es 2110 212517",
+        "domain": "rz.leilao.br",
+        "baseUrl": "https://www.rz.leilao.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "selectleiloes_com_br",
+        "name": "Select Leil\xF5es",
+        "domain": "selectleiloes.com.br",
+        "baseUrl": "https://www.selectleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "superleiloes_net",
+        "name": "Super Leil\xF5es",
+        "domain": "superleiloes.net",
+        "baseUrl": "https://www.superleiloes.net",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "tulioleiloes_com_br",
+        "name": "Tulio Leil\xF5es",
+        "domain": "tulioleiloes.com.br",
+        "baseUrl": "https://www.tulioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "valerioiaminleiloes_com_br",
+        "name": "Valerio Iamin Leil\xF5es",
+        "domain": "valerioiaminleiloes.com.br",
+        "baseUrl": "https://www.valerioiaminleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vasconcelosleiloes_com_br",
+        "name": "Vasconcelos Leil\xF5es",
+        "domain": "vasconcelosleiloes.com.br",
+        "baseUrl": "https://www.vasconcelosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "zampierileiloes_com_br",
+        "name": "Zampieri Leil\xF5es",
+        "domain": "zampierileiloes.com.br",
+        "baseUrl": "https://www.zampierileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 4,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "andrealeiloeira_lel_br",
+        "name": "Andr\xE9a Leiloeira P\xFAblica",
+        "domain": "andrealeiloeira.lel.br",
+        "baseUrl": "https://www.andrealeiloeira.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bampileiloes_com_br",
+        "name": "RB Leil\xF5es",
+        "domain": "bampileiloes.com.br",
+        "baseUrl": "https://www.bampileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bnleiloes_com_br",
+        "name": "BN Leil\xF5es",
+        "domain": "bnleiloes.com.br",
+        "baseUrl": "https://www.bnleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "caiapoleiloes_com_br",
+        "name": "Caiap\xF3 Leil\xF5es",
+        "domain": "caiapoleiloes.com.br",
+        "baseUrl": "https://www.caiapoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "centraldosleiloes_com_br",
+        "name": "Central dos Leil\xF5es",
+        "domain": "centraldosleiloes.com.br",
+        "baseUrl": "https://www.centraldosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "deluccaleiloes_com_br",
+        "name": "De Lucca Leil\xF5es",
+        "domain": "deluccaleiloes.com.br",
+        "baseUrl": "https://www.deluccaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gspleiloes_com_br",
+        "name": "GSP Leil\xF5es",
+        "domain": "gspleiloes.com.br",
+        "baseUrl": "https://www.gspleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "ibecleiloes_com_br",
+        "name": "Ibec Leil\xF5es",
+        "domain": "ibecleiloes.com.br",
+        "baseUrl": "https://www.ibecleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "jorgemarcoleiloes_com_br",
+        "name": "Jorge Marco Leil\xF5es",
+        "domain": "jorgemarcoleiloes.com.br",
+        "baseUrl": "https://www.jorgemarcoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "juleiloes_com_br",
+        "name": "Jucenara de Mello Vieira Bordignon - Leil\xF5es",
+        "domain": "juleiloes.com.br",
+        "baseUrl": "https://www.juleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloesfederal_com_br",
+        "name": "Federal Leil\xF5es",
+        "domain": "leiloesfederal.com.br",
+        "baseUrl": "https://www.leiloesfederal.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloeslaraforster_com_br",
+        "name": "Lara-Forster Leil\xF5es",
+        "domain": "leiloeslaraforster.com.br",
+        "baseUrl": "https://www.leiloeslaraforster.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "luizleiloes_com_br",
+        "name": "Luiz Leil\xF5es",
+        "domain": "luizleiloes.com.br",
+        "baseUrl": "https://www.luizleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "magalhaesleiloes_com_br",
+        "name": "Magalh\xE3es Leil\xF5es",
+        "domain": "magalhaesleiloes.com.br",
+        "baseUrl": "https://www.magalhaesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "portaldoleiloeiro_com_br",
+        "name": "J\xFAlio Ramos Leil\xF5es",
+        "domain": "portaldoleiloeiro.com.br",
+        "baseUrl": "https://www.portaldoleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rjleiloes_com_br",
+        "name": "RJ Leil\xF5es",
+        "domain": "rjleiloes.com.br",
+        "baseUrl": "https://www.rjleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "tononleiloes_com_br",
+        "name": "Tonon Leil\xF5es",
+        "domain": "tononleiloes.com.br",
+        "baseUrl": "https://www.tononleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 3,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "abaleiloes_com_br",
+        "name": "Aba Leil\xF5es",
+        "domain": "abaleiloes.com.br",
+        "baseUrl": "https://www.abaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "agilileiloes_com_br",
+        "name": "Agili Leil\xF5es",
+        "domain": "agilileiloes.com.br",
+        "baseUrl": "https://www.agilileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "blmleiloes_com_br",
+        "name": "BLM Leil\xF5es",
+        "domain": "blmleiloes.com.br",
+        "baseUrl": "https://www.blmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "centraljudicial_com_br",
+        "name": "Central Judicial Leil\xF5es",
+        "domain": "centraljudicial.com.br",
+        "baseUrl": "https://www.centraljudicial.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "correaquinhonesleiloes_com_br",
+        "name": "Correa Quinhones Leil\xF5es",
+        "domain": "correaquinhonesleiloes.com.br",
+        "baseUrl": "https://www.correaquinhonesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "deborabarzleiloes_com_br",
+        "name": "D\xE9bora Barz Leil\xF5es",
+        "domain": "deborabarzleiloes.com.br",
+        "baseUrl": "https://www.deborabarzleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "diegoleiloes_com_br",
+        "name": "Diego Wolf de Oliveira",
+        "domain": "diegoleiloes.com.br",
+        "baseUrl": "https://www.diegoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "fariasleiloes_com_br",
+        "name": "Farias Leil\xF5es",
+        "domain": "fariasleiloes.com.br",
+        "baseUrl": "https://www.fariasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gaialeiloes_com_br",
+        "name": "Gaia Leil\xF5es",
+        "domain": "gaialeiloes.com.br",
+        "baseUrl": "https://www.gaialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "gustavoreisleiloes_com_br",
+        "name": "Gustavo Reis Leil\xF5es",
+        "domain": "gustavoreisleiloes.com.br",
+        "baseUrl": "https://www.gustavoreisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "judiciali_com",
+        "name": "Judiciali leil\xF5es",
+        "domain": "judiciali.com",
+        "baseUrl": "https://www.judiciali.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lancetotal_com_br",
+        "name": "Lance Total Leil\xF5es",
+        "domain": "lancetotal.com.br",
+        "baseUrl": "https://www.lancetotal.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloador_com_br",
+        "name": "Leiloador",
+        "domain": "leiloador.com.br",
+        "baseUrl": "https://www.leiloador.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloeirobonatto_com_br",
+        "name": "Leiloeiro Bonatto",
+        "domain": "leiloeirobonatto.com.br",
+        "baseUrl": "https://www.leiloeirobonatto.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leiloespb_com_br",
+        "name": "Leil\xF5es PB",
+        "domain": "leiloespb.com.br",
+        "baseUrl": "https://www.leiloespb.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "luciverareisleiloes_com_br",
+        "name": "Reis Leil\xF5es",
+        "domain": "luciverareisleiloes.com.br",
+        "baseUrl": "https://www.luciverareisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "maisleilao_com_br",
+        "name": "Mais Leil\xF5es",
+        "domain": "maisleilao.com.br",
+        "baseUrl": "https://www.maisleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "marquesleiloes_com_br",
+        "name": "Marques Leil\xF5es",
+        "domain": "marquesleiloes.com.br",
+        "baseUrl": "https://www.marquesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rmcleiloes_com_br",
+        "name": "RMC leil\xF5es",
+        "domain": "rmcleiloes.com.br",
+        "baseUrl": "https://www.rmcleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rmmleiloes_com_br",
+        "name": "RMM Leil\xF5es",
+        "domain": "rmmleiloes.com.br",
+        "baseUrl": "https://www.rmmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "schererleiloes_com_br",
+        "name": "Adalberto Scherer Leil\xF5es",
+        "domain": "schererleiloes.com.br",
+        "baseUrl": "https://www.schererleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "sfrazao_com_br",
+        "name": "SFraz\xE3o Leil\xF5es",
+        "domain": "sfrazao.com.br",
+        "baseUrl": "https://www.sfrazao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "spencerleiloes_com_br",
+        "name": "Spencer Leil\xF5es",
+        "domain": "spencerleiloes.com.br",
+        "baseUrl": "https://www.spencerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "startupleiloes_com_br",
+        "name": "Startup Leil\xF5es",
+        "domain": "startupleiloes.com.br",
+        "baseUrl": "https://www.startupleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vlleiloes_com_br",
+        "name": "VL Leil\xF5es",
+        "domain": "vlleiloes.com.br",
+        "baseUrl": "https://www.vlleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "wleiloes_com_br",
+        "name": "W Leil\xF5es",
+        "domain": "wleiloes.com.br",
+        "baseUrl": "https://www.wleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "zuccalmaglioleiloes_com_br",
+        "name": "Zuccalmaglio Leil\xF5es",
+        "domain": "zuccalmaglioleiloes.com.br",
+        "baseUrl": "https://www.zuccalmaglioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 2,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "adringleiloes_com_br",
+        "name": "ADring Leil\xF5es",
+        "domain": "adringleiloes.com.br",
+        "baseUrl": "https://www.adringleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "agleiloes_com_br",
+        "name": "AG Leil\xF5es",
+        "domain": "agleiloes.com.br",
+        "baseUrl": "https://www.agleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "alvaroantonioleiloes_com_br",
+        "name": "\xC1lvaro Ant\xF4nio Leil\xF5es",
+        "domain": "alvaroantonioleiloes.com.br",
+        "baseUrl": "https://www.alvaroantonioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "atlanticoleiloes_com_br",
+        "name": "Atl\xE2ntico Leil\xF5es",
+        "domain": "atlanticoleiloes.com.br",
+        "baseUrl": "https://www.atlanticoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bigleilao_com_br",
+        "name": "Big Leil\xE3o",
+        "domain": "bigleilao.com.br",
+        "baseUrl": "https://www.bigleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "brancalliao_com_br",
+        "name": "Brancalliao Leil\xF5es",
+        "domain": "brancalliao.com.br",
+        "baseUrl": "https://www.brancalliao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "bringelleiloes_com_br",
+        "name": "Bringel Leil\xF5es",
+        "domain": "bringelleiloes.com.br",
+        "baseUrl": "https://www.bringelleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "brunoleiloes_com_br",
+        "name": "Bruno Leil\xF5es",
+        "domain": "brunoleiloes.com.br",
+        "baseUrl": "https://www.brunoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "casadeleiloes_com_br",
+        "name": "Casa de Leil\xF5es",
+        "domain": "casadeleiloes.com.br",
+        "baseUrl": "https://www.casadeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "catarinaleiloes_com_br",
+        "name": "Catarinense Leil\xF5es",
+        "domain": "catarinaleiloes.com.br",
+        "baseUrl": "https://www.catarinaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "ceciliadelzeirleiloes_com_br",
+        "name": "Cec\xEDlia Delzeir Leil\xF5es",
+        "domain": "ceciliadelzeirleiloes.com.br",
+        "baseUrl": "https://www.ceciliadelzeirleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "darioleiloes_com_br",
+        "name": "Dario Leil\xF5es",
+        "domain": "darioleiloes.com.br",
+        "baseUrl": "https://www.darioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "dbsleiloes_com_br",
+        "name": "DBS Leil\xF5es",
+        "domain": "dbsleiloes.com.br",
+        "baseUrl": "https://www.dbsleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "desouzaleiloes_com_br",
+        "name": "De Souza Leil\xF5es",
+        "domain": "desouzaleiloes.com.br",
+        "baseUrl": "https://www.desouzaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "douglasleiloeiro_com_br",
+        "name": "Douglas Leil\xF5es",
+        "domain": "douglasleiloeiro.com.br",
+        "baseUrl": "https://www.douglasleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "espressoleiloes_com_br",
+        "name": "Espresso Leil\xF5es",
+        "domain": "espressoleiloes.com.br",
+        "baseUrl": "https://www.espressoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "impactoleiloes_com_br",
+        "name": "Impacto Leil\xF5es",
+        "domain": "impactoleiloes.com.br",
+        "baseUrl": "https://www.impactoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "iniciativabr_com_br",
+        "name": "Iniciativa Leil\xF5es",
+        "domain": "iniciativabr.com.br",
+        "baseUrl": "https://www.iniciativabr.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "isabelleiloes_com_br",
+        "name": "Isabel Leil\xF5es",
+        "domain": "isabelleiloes.com.br",
+        "baseUrl": "https://www.isabelleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "lancecertoleiloes_com_br",
+        "name": "Lance Certo Leil\xF5es",
+        "domain": "lancecertoleiloes.com.br",
+        "baseUrl": "https://www.lancecertoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leilaoinvestment_com_br",
+        "name": "Leil\xE3o Investment Leil\xF5es",
+        "domain": "leilaoinvestment.com.br",
+        "baseUrl": "https://www.leilaoinvestment.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "leilo_com_br",
+        "name": "Leilo",
+        "domain": "leilo.com.br",
+        "baseUrl": "https://www.leilo.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "machadoleiloesrs_com_br",
+        "name": "Machado Leil\xF5es RS",
+        "domain": "machadoleiloesrs.com.br",
+        "baseUrl": "https://www.machadoleiloesrs.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "mrl4leiloes_com_br",
+        "name": "MRL4 Leil\xF5es",
+        "domain": "mrl4leiloes.com.br",
+        "baseUrl": "https://www.mrl4leiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "nordesteleiloes_com_br",
+        "name": "Nordeste Leil\xF5es",
+        "domain": "nordesteleiloes.com.br",
+        "baseUrl": "https://www.nordesteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "omcleiloes_com_br",
+        "name": "OMC leil\xF5es",
+        "domain": "omcleiloes.com.br",
+        "baseUrl": "https://www.omcleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "prosperarleiloes_com_br",
+        "name": "Prosperar Leil\xF5es",
+        "domain": "prosperarleiloes.com.br",
+        "baseUrl": "https://www.prosperarleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "rdleiloes_com_br",
+        "name": "RD Leil\xF5es",
+        "domain": "rdleiloes.com.br",
+        "baseUrl": "https://www.rdleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "sfleiloes_com_br",
+        "name": "SF Leil\xF5es",
+        "domain": "sfleiloes.com.br",
+        "baseUrl": "https://www.sfleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "ubaldoleiloes_com_br",
+        "name": "Ubaldo Jord\xE3o Leil\xF5es",
+        "domain": "ubaldoleiloes.com.br",
+        "baseUrl": "https://www.ubaldoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "unileiloes_com_br",
+        "name": "Uni Leil\xF5es",
+        "domain": "unileiloes.com.br",
+        "baseUrl": "https://www.unileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "vianaleiloes_com_br",
+        "name": "Viana Leil\xF5es",
+        "domain": "vianaleiloes.com.br",
+        "baseUrl": "https://www.vianaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "zampierileiloeiro_com_br",
+        "name": "Zampieri Leiloeiro",
+        "domain": "zampierileiloeiro.com.br",
+        "baseUrl": "https://www.zampierileiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 1,
+        "nexusSituacao": "com_imoveis"
+      },
+      {
+        "id": "canaljudicial_com_br",
+        "name": "Canal judicial leil\xF5es",
+        "domain": "canaljudicial.com.br",
+        "baseUrl": "https://www.canaljudicial.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "agregador"
+      },
+      {
+        "id": "escritoriodeleiloes_com_br",
+        "name": "Escrit\xF3rio de Leil\xF5es",
+        "domain": "escritoriodeleiloes.com.br",
+        "baseUrl": "https://www.escritoriodeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "agregador"
+      },
+      {
+        "id": "leiloesjudiciais_com_br",
+        "name": "leiloesjudiciais.com.br",
+        "domain": "leiloesjudiciais.com.br",
+        "baseUrl": "https://www.leiloesjudiciais.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "agregador"
+      },
+      {
+        "id": "leiloesjudiciaismg_com_br",
+        "name": "Leil\xF5es Judiciais MG",
+        "domain": "leiloesjudiciaismg.com.br",
+        "baseUrl": "https://www.leiloesjudiciaismg.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "agregador"
+      },
+      {
+        "id": "maisativojudicial_com_br",
+        "name": "maisativojudicial.com.br",
+        "domain": "maisativojudicial.com.br",
+        "baseUrl": "https://www.maisativojudicial.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "agregador"
+      },
+      {
+        "id": "oneleiloes_com_br",
+        "name": "One Leil\xF5es",
+        "domain": "oneleiloes.com.br",
+        "baseUrl": "https://www.oneleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "agregador"
+      },
+      {
+        "id": "alvaroferreiraleiloeiro_com_br",
+        "name": "Alvaro Ferreira Leiloeiro",
+        "domain": "alvaroferreiraleiloeiro.com.br",
+        "baseUrl": "https://www.alvaroferreiraleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "andrearaujoleiloes_com_br",
+        "name": "Andr\xE9 Araujo Leil\xF5es",
+        "domain": "andrearaujoleiloes.com.br",
+        "baseUrl": "https://www.andrearaujoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "celsocunhaleiloes_com_br",
+        "name": "Celso Cunha Leil\xF5es",
+        "domain": "celsocunhaleiloes.com.br",
+        "baseUrl": "https://www.celsocunhaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "coimbraleiloes_com_br",
+        "name": "Coimbra Leil\xF5es",
+        "domain": "coimbraleiloes.com.br",
+        "baseUrl": "https://www.coimbraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "crepaldileiloes_com_br",
+        "name": "Crepaldi leil\xF5es",
+        "domain": "crepaldileiloes.com.br",
+        "baseUrl": "https://www.crepaldileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "damasioleiloes_com_br",
+        "name": "Damasio Leil\xF5es",
+        "domain": "damasioleiloes.com.br",
+        "baseUrl": "https://www.damasioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "daux_com_br",
+        "name": "Daux Leil\xF5es",
+        "domain": "daux.com.br",
+        "baseUrl": "https://www.daux.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "hastaleiloes_com_br",
+        "name": "Hasta Leil\xF5es",
+        "domain": "hastaleiloes.com.br",
+        "baseUrl": "https://www.hastaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "ipirangaleiloes_com_br",
+        "name": "Ipiiranga Leil\xF5es",
+        "domain": "ipirangaleiloes.com.br",
+        "baseUrl": "https://www.ipirangaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "jikalleiloes_com_br",
+        "name": "Jikal Leil\xF5es",
+        "domain": "jikalleiloes.com.br",
+        "baseUrl": "https://www.jikalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "jocaleiloesagro_com_br",
+        "name": "Joca Leil\xF5es AGRO",
+        "domain": "jocaleiloesagro.com.br",
+        "baseUrl": "https://www.jocaleiloesagro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "lbleiloes_com_br",
+        "name": "LB Leil\xF5es",
+        "domain": "lbleiloes.com.br",
+        "baseUrl": "https://www.lbleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "legalbidleilao_com_br",
+        "name": "Legal BID",
+        "domain": "legalbidleilao.com.br",
+        "baseUrl": "https://www.legalbidleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "leiloesbonfadini_com_br",
+        "name": "Leil\xF5es Bonfadini",
+        "domain": "leiloesbonfadini.com.br",
+        "baseUrl": "https://www.leiloesbonfadini.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "macedoleiloes_com_br",
+        "name": "Mac\xEAdo Leil\xF5es",
+        "domain": "macedoleiloes.com.br",
+        "baseUrl": "https://www.macedoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "parkleiloes_com_br",
+        "name": "Park Leil\xF5es",
+        "domain": "parkleiloes.com.br",
+        "baseUrl": "https://www.parkleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "portalax_com_br",
+        "name": "AX Leil\xF5es",
+        "domain": "portalax.com.br",
+        "baseUrl": "https://www.portalax.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "realizaleiloes_com_br",
+        "name": "Realiza Leil\xF5es",
+        "domain": "realizaleiloes.com.br",
+        "baseUrl": "https://www.realizaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "sperancaleiloes_com_br",
+        "name": "Speran\xE7a Leil\xF5es",
+        "domain": "sperancaleiloes.com.br",
+        "baseUrl": "https://www.sperancaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "spironelloleiloes_com_br",
+        "name": "Spironello Leil\xF5es",
+        "domain": "spironelloleiloes.com.br",
+        "baseUrl": "https://www.spironelloleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "sulleiloes_com_br",
+        "name": "Sul Leil\xF5es",
+        "domain": "sulleiloes.com.br",
+        "baseUrl": "https://www.sulleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "tochaleiloes_com_br",
+        "name": "Tocha Leil\xF5es",
+        "domain": "tochaleiloes.com.br",
+        "baseUrl": "https://www.tochaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "em_atualizacao"
+      },
+      {
+        "id": "3rleiloes_net",
+        "name": "3R Leil\xF5es",
+        "domain": "3rleiloes.net",
+        "baseUrl": "https://www.3rleiloes.net",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "abrantesleiloes_com",
+        "name": "Abrantes Leil\xF5es",
+        "domain": "abrantesleiloes.com",
+        "baseUrl": "https://www.abrantesleiloes.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "acleiloeiro_com_br",
+        "name": "acleiloeiro.com.br",
+        "domain": "acleiloeiro.com.br",
+        "baseUrl": "https://www.acleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "actleiloes_com_br",
+        "name": "ACT Leil\xF5es",
+        "domain": "actleiloes.com.br",
+        "baseUrl": "https://www.actleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "adelanepedrozoleiloes_com_br",
+        "name": "Adelane Pedrozo Leil\xF5es",
+        "domain": "adelanepedrozoleiloes.com.br",
+        "baseUrl": "https://www.adelanepedrozoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "alanleiloeiro_lel_br",
+        "name": "Alan Machado Ribeiro",
+        "domain": "alanleiloeiro.lel.br",
+        "baseUrl": "https://www.alanleiloeiro.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "albinoqueiroz_com_br",
+        "name": "Albino Queiroz Leiloeiro Oficial",
+        "domain": "albinoqueiroz.com.br",
+        "baseUrl": "https://www.albinoqueiroz.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "albuquerquelins_com_br",
+        "name": "Albuquerque Lins Leiloeiro Oficial",
+        "domain": "albuquerquelins.com.br",
+        "baseUrl": "https://www.albuquerquelins.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "alegranzzileiloes_com_br",
+        "name": "Alegranzzi Leil\xF5es",
+        "domain": "alegranzzileiloes.com.br",
+        "baseUrl": "https://www.alegranzzileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "alencastroleiloes_com_br",
+        "name": "Alencastro Leil\xF5es",
+        "domain": "alencastroleiloes.com.br",
+        "baseUrl": "https://www.alencastroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "alessandraleiloes_com_br",
+        "name": "Alessandra Leil\xF5es",
+        "domain": "alessandraleiloes.com.br",
+        "baseUrl": "https://www.alessandraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "alexsandroleiloes_com_br",
+        "name": "Alexsandro Leil\xF5es",
+        "domain": "alexsandroleiloes.com.br",
+        "baseUrl": "https://www.alexsandroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "almoedaleiloes_com_br",
+        "name": "Almoeda Leil\xF5es",
+        "domain": "almoedaleiloes.com.br",
+        "baseUrl": "https://www.almoedaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "amaralleiloes_com_br",
+        "name": "Amaral Leil\xF5es",
+        "domain": "amaralleiloes.com.br",
+        "baseUrl": "https://www.amaralleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "amarquesleiloes_com_br",
+        "name": "Auriannye Marques Leil\xF5es",
+        "domain": "amarquesleiloes.com.br",
+        "baseUrl": "https://www.amarquesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "amtleiloes_com_br",
+        "name": "AMT Leil\xF5es",
+        "domain": "amtleiloes.com.br",
+        "baseUrl": "https://www.amtleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "andradeleiloes_com_br",
+        "name": "andradeleiloes.com.br",
+        "domain": "andradeleiloes.com.br",
+        "baseUrl": "https://www.andradeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "andraleiloes_com_br",
+        "name": "Andra Leil\xF5es",
+        "domain": "andraleiloes.com.br",
+        "baseUrl": "https://www.andraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "argleiloes_com_br",
+        "name": "ARG Leil\xF5es",
+        "domain": "argleiloes.com.br",
+        "baseUrl": "https://www.argleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "arremataronline_com_br",
+        "name": "arremataronline.com.br",
+        "domain": "arremataronline.com.br",
+        "baseUrl": "https://www.arremataronline.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "arremateleilao_com_br",
+        "name": "Arremate leil\xF5es",
+        "domain": "arremateleilao.com.br",
+        "baseUrl": "https://www.arremateleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "arremateleiloes_com_br",
+        "name": "Arremate Leil\xF5es",
+        "domain": "arremateleiloes.com.br",
+        "baseUrl": "https://www.arremateleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "arremateleiloesjudiciais_com_br",
+        "name": "Arremate Leil\xF5es Judiciais",
+        "domain": "arremateleiloesjudiciais.com.br",
+        "baseUrl": "https://www.arremateleiloesjudiciais.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "arthurnunes_net",
+        "name": "Arthur Nunes Leil\xF5es",
+        "domain": "arthurnunes.net",
+        "baseUrl": "https://www.arthurnunes.net",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "asamileiloes_com_br",
+        "name": "Asami Leil\xF5es",
+        "domain": "asamileiloes.com.br",
+        "baseUrl": "https://www.asamileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bartmannleiloes_com_br",
+        "name": "Bartmann Leil\xF5es",
+        "domain": "bartmannleiloes.com.br",
+        "baseUrl": "https://www.bartmannleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "batistaleiloes_com_br",
+        "name": "Batista leil\xF5es",
+        "domain": "batistaleiloes.com.br",
+        "baseUrl": "https://www.batistaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "batistaregisleiloes_com_br",
+        "name": "Batista R\xE9gis Leil\xF5es",
+        "domain": "batistaregisleiloes.com.br",
+        "baseUrl": "https://www.batistaregisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bbmnetleiloes_com_br",
+        "name": "BBMNET Leil\xF5es",
+        "domain": "bbmnetleiloes.com.br",
+        "baseUrl": "https://www.bbmnetleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "benitosolucoesjudiciais_com_br",
+        "name": "benitosolucoesjudiciais.com.br",
+        "domain": "benitosolucoesjudiciais.com.br",
+        "baseUrl": "https://www.benitosolucoesjudiciais.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "benozzati_com_br",
+        "name": "Benozzati Leil\xF5es",
+        "domain": "benozzati.com.br",
+        "baseUrl": "https://www.benozzati.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bertoncello_lel_br",
+        "name": "Bertoncello Leil\xF5es",
+        "domain": "bertoncello.lel.br",
+        "baseUrl": "https://www.bertoncello.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bessaleiloes_com_br",
+        "name": "Bessa Leil\xF5es",
+        "domain": "bessaleiloes.com.br",
+        "baseUrl": "https://www.bessaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bidmax_com_br",
+        "name": "BidMax",
+        "domain": "bidmax.com.br",
+        "baseUrl": "https://www.bidmax.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bleiloes_com_br",
+        "name": "bleiloes.com.br",
+        "domain": "bleiloes.com.br",
+        "baseUrl": "https://www.bleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bolsadeleiloesbh_com_br",
+        "name": "Bolsa de Leil\xF5es",
+        "domain": "bolsadeleiloesbh.com.br",
+        "baseUrl": "https://www.bolsadeleiloesbh.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bomnegocioleiloes_com_br",
+        "name": "bomnegocioleiloes.com.br",
+        "domain": "bomnegocioleiloes.com.br",
+        "baseUrl": "https://www.bomnegocioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "borgesleiloes_com_br",
+        "name": "Borges Leil\xF5es",
+        "domain": "borgesleiloes.com.br",
+        "baseUrl": "https://www.borgesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "brasilialeiloes_com_br",
+        "name": "Bras\xEDlia Leil\xF5es",
+        "domain": "brasilialeiloes.com.br",
+        "baseUrl": "https://www.brasilialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "bsbleiloes_com_br",
+        "name": "BSB Leil\xF5es",
+        "domain": "bsbleiloes.com.br",
+        "baseUrl": "https://www.bsbleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "burihamleiloes_com_br",
+        "name": "Buriham leil\xF5es | Leil\xF5es Oficiais Buriham",
+        "domain": "burihamleiloes.com.br",
+        "baseUrl": "https://www.burihamleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "camilaleiloes_com_br",
+        "name": "Camila Leil\xF5es",
+        "domain": "camilaleiloes.com.br",
+        "baseUrl": "https://www.camilaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "canaldeleiloes_net",
+        "name": "Canal de Leil\xF5es",
+        "domain": "canaldeleiloes.net",
+        "baseUrl": "https://www.canaldeleiloes.net",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "canezinleiloes_com_br",
+        "name": "Canezin Leil\xF5es",
+        "domain": "canezinleiloes.com.br",
+        "baseUrl": "https://www.canezinleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "cariocaleiloes_com_br",
+        "name": "Carioca Leil\xF5es",
+        "domain": "cariocaleiloes.com.br",
+        "baseUrl": "https://www.cariocaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "carrollruralleiloes_com_br",
+        "name": "Carrol Solu\xE7\xF5es Inteligentes",
+        "domain": "carrollruralleiloes.com.br",
+        "baseUrl": "https://www.carrollruralleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ccjleiloes_com_br",
+        "name": "CCJ Leil\xF5es",
+        "domain": "ccjleiloes.com.br",
+        "baseUrl": "https://www.ccjleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "cesarbritoleiloes_com_br",
+        "name": "Cesar Brito Leil\xF5es",
+        "domain": "cesarbritoleiloes.com.br",
+        "baseUrl": "https://www.cesarbritoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "chuileiloes_com_br",
+        "name": "chuileiloes.com.br",
+        "domain": "chuileiloes.com.br",
+        "baseUrl": "https://www.chuileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "cianacionalleiloes_com_br",
+        "name": "CIA Nacional leil\xF5es",
+        "domain": "cianacionalleiloes.com.br",
+        "baseUrl": "https://www.cianacionalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ckleiloes_com_br",
+        "name": "CK Leil\xF5es",
+        "domain": "ckleiloes.com.br",
+        "baseUrl": "https://www.ckleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "claudiokussleiloes_com_br",
+        "name": "Claudio Cesar Kuss",
+        "domain": "claudiokussleiloes.com.br",
+        "baseUrl": "https://www.claudiokussleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "clicleiloes_com_br",
+        "name": "clicleiloes.com.br",
+        "domain": "clicleiloes.com.br",
+        "baseUrl": "https://www.clicleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "coliseumleiloes_com_br",
+        "name": "Coliseum Leil\xF5es",
+        "domain": "coliseumleiloes.com.br",
+        "baseUrl": "https://www.coliseumleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "conceitoleiloes_com_br",
+        "name": "Conceito Leil\xF5es",
+        "domain": "conceitoleiloes.com.br",
+        "baseUrl": "https://www.conceitoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "construbemleiloes_com_br",
+        "name": "Construbem Leil\xF5es",
+        "domain": "construbemleiloes.com.br",
+        "baseUrl": "https://www.construbemleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "costasalmanleiloes_com_br",
+        "name": "Costa Salman Leil\xF5es",
+        "domain": "costasalmanleiloes.com.br",
+        "baseUrl": "https://www.costasalmanleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "cpkleiloes_com_br",
+        "name": "CPK Leil\xF5es",
+        "domain": "cpkleiloes.com.br",
+        "baseUrl": "https://www.cpkleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "curiauleiloes_com_br",
+        "name": "Curia\xFA Leil\xF5es",
+        "domain": "curiauleiloes.com.br",
+        "baseUrl": "https://www.curiauleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dalaqualeiloes_com_br",
+        "name": "Dal'Aqua Leil\xF5es",
+        "domain": "dalaqualeiloes.com.br",
+        "baseUrl": "https://www.dalaqualeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dalcanaleleiloes_com_br",
+        "name": "dalcanaleleiloes.com.br",
+        "domain": "dalcanaleleiloes.com.br",
+        "baseUrl": "https://www.dalcanaleleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dallagnolleiloes_com_br",
+        "name": "Dallagnol Leil\xF5es",
+        "domain": "dallagnolleiloes.com.br",
+        "baseUrl": "https://www.dallagnolleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dantasleiloes_com_br",
+        "name": "Dantas Leil\xF5es",
+        "domain": "dantasleiloes.com.br",
+        "baseUrl": "https://www.dantasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dbmleiloes_com_br",
+        "name": "DBM leil\xF5es",
+        "domain": "dbmleiloes.com.br",
+        "baseUrl": "https://www.dbmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dearaujoleiloes_com_br",
+        "name": "De Araujo Leil\xF5es",
+        "domain": "dearaujoleiloes.com.br",
+        "baseUrl": "https://www.dearaujoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "deboramullerleiloes_com_br",
+        "name": "D\xE9bora M\xFCller Leil\xF5es",
+        "domain": "deboramullerleiloes.com.br",
+        "baseUrl": "https://www.deboramullerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "delanoleiloes_com_br",
+        "name": "delanoleiloes.com.br",
+        "domain": "delanoleiloes.com.br",
+        "baseUrl": "https://www.delanoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "delttaleiloes_com_br",
+        "name": "Delta Leil\xF5es",
+        "domain": "delttaleiloes.com.br",
+        "baseUrl": "https://www.delttaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "desantileiloes_com_br",
+        "name": "De Santi Leil\xF5es",
+        "domain": "desantileiloes.com.br",
+        "baseUrl": "https://www.desantileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "deseulance_com",
+        "name": "deseulance.com",
+        "domain": "deseulance.com",
+        "baseUrl": "https://www.deseulance.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "djanirleiloes_com_br",
+        "name": "Djanir Leil\xF5es",
+        "domain": "djanirleiloes.com.br",
+        "baseUrl": "https://www.djanirleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dldleiloeiro_com_br",
+        "name": "DLD Leiloeiro",
+        "domain": "dldleiloeiro.com.br",
+        "baseUrl": "https://www.dldleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "domingosleiloes_com_br",
+        "name": "domingosleiloes.com.br",
+        "domain": "domingosleiloes.com.br",
+        "baseUrl": "https://www.domingosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "dsleiloes_com_br",
+        "name": "DS Leil\xF5es",
+        "domain": "dsleiloes.com.br",
+        "baseUrl": "https://www.dsleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "duxleiloes_com_br",
+        "name": "Dux Leil\xF5es",
+        "domain": "duxleiloes.com.br",
+        "baseUrl": "https://www.duxleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "editalleiloes_com_br",
+        "name": "Edital Leil\xF5es",
+        "domain": "editalleiloes.com.br",
+        "baseUrl": "https://www.editalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "eduardosorgileiloeiro_com_br",
+        "name": "eduardosorgileiloeiro.com.br",
+        "domain": "eduardosorgileiloeiro.com.br",
+        "baseUrl": "https://www.eduardosorgileiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "eixoleiloes_com_br",
+        "name": "Eixo Leil\xF5es",
+        "domain": "eixoleiloes.com.br",
+        "baseUrl": "https://www.eixoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "elloleiloes_com_br",
+        "name": "Ello Leil\xF5es",
+        "domain": "elloleiloes.com.br",
+        "baseUrl": "https://www.elloleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "emleilao_com_br",
+        "name": "Em Leil\xE3o",
+        "domain": "emleilao.com.br",
+        "baseUrl": "https://www.emleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "esleiloes_com_br",
+        "name": "ES Leil\xF5es",
+        "domain": "esleiloes.com.br",
+        "baseUrl": "https://www.esleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "euamoleilao_com_br",
+        "name": "Eu Amo Leil\xE3o",
+        "domain": "euamoleilao.com.br",
+        "baseUrl": "https://www.euamoleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "euroleiloes_com_br",
+        "name": "Euro Leil\xF5es",
+        "domain": "euroleiloes.com.br",
+        "baseUrl": "https://www.euroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "eustacio_com_br",
+        "name": "Eust\xE1cio Leil\xF5es",
+        "domain": "eustacio.com.br",
+        "baseUrl": "https://www.eustacio.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "excellenceleiloes_com_br",
+        "name": "Excellence Leil\xF5es",
+        "domain": "excellenceleiloes.com.br",
+        "baseUrl": "https://www.excellenceleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "extrajustleiloes_com_br",
+        "name": "extrajustleiloes.com.br",
+        "domain": "extrajustleiloes.com.br",
+        "baseUrl": "https://www.extrajustleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "fabriccaleiloes_com_br",
+        "name": "Fabrica de Leil\xF5es",
+        "domain": "fabriccaleiloes.com.br",
+        "baseUrl": "https://www.fabriccaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "fauthleiloes_com_br",
+        "name": "Fauth Leiloeiro",
+        "domain": "fauthleiloes.com.br",
+        "baseUrl": "https://www.fauthleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "favaretoleiloes_com_br",
+        "name": "Favareto Leil\xF5es",
+        "domain": "favaretoleiloes.com.br",
+        "baseUrl": "https://www.favaretoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "fcrleiloes_com_br",
+        "name": "FCR Leil\xF5es",
+        "domain": "fcrleiloes.com.br",
+        "baseUrl": "https://www.fcrleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "fernandaleiloes_lel_br",
+        "name": "Fernanda Leil\xF5es",
+        "domain": "fernandaleiloes.lel.br",
+        "baseUrl": "https://www.fernandaleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ferrarileiloes_com_br",
+        "name": "Ferrari Leil\xF5es",
+        "domain": "ferrarileiloes.com.br",
+        "baseUrl": "https://www.ferrarileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ferronatoleiloes_com_br",
+        "name": "Ferronato Leil\xF5es",
+        "domain": "ferronatoleiloes.com.br",
+        "baseUrl": "https://www.ferronatoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "finattoleiloes_com_br",
+        "name": "Finatto Leil\xF5es",
+        "domain": "finattoleiloes.com.br",
+        "baseUrl": "https://www.finattoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "formullaleiloes_com_br",
+        "name": "F\xF3rmula Leil\xF5es",
+        "domain": "formullaleiloes.com.br",
+        "baseUrl": "https://www.formullaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "fumagallileiloes_com_br",
+        "name": "Fumagalli Leil\xF5es",
+        "domain": "fumagallileiloes.com.br",
+        "baseUrl": "https://www.fumagallileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gabrielleiloeiro_com_br",
+        "name": "Gabriel Leiloeiro",
+        "domain": "gabrielleiloeiro.com.br",
+        "baseUrl": "https://www.gabrielleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ganikoleiloes_com_br",
+        "name": "ganikoleiloes.com.br",
+        "domain": "ganikoleiloes.com.br",
+        "baseUrl": "https://www.ganikoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "garantialeiloes_com_br",
+        "name": "garantialeiloes.com.br",
+        "domain": "garantialeiloes.com.br",
+        "baseUrl": "https://www.garantialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gbleiloes_com_br",
+        "name": "GB Leil\xF5es",
+        "domain": "gbleiloes.com.br",
+        "baseUrl": "https://www.gbleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gdleiloes_com_br",
+        "name": "GD Leil\xF5es",
+        "domain": "gdleiloes.com.br",
+        "baseUrl": "https://www.gdleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gestaodeleiloes_com_br",
+        "name": "Gest\xE3o de Leil\xF5es",
+        "domain": "gestaodeleiloes.com.br",
+        "baseUrl": "https://www.gestaodeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gestorleiloes_com_br",
+        "name": "Gestor Leil\xF5es",
+        "domain": "gestorleiloes.com.br",
+        "baseUrl": "https://www.gestorleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ghisimachadoleiloes_com_br",
+        "name": "Ghisi Machado Leil\xF5es",
+        "domain": "ghisimachadoleiloes.com.br",
+        "baseUrl": "https://www.ghisimachadoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ghvmleiloes_com_br",
+        "name": "GHVM Leil\xF5es",
+        "domain": "ghvmleiloes.com.br",
+        "baseUrl": "https://www.ghvmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gislerleiloes_com_br",
+        "name": "Gisler Leiloeiro Oficial",
+        "domain": "gislerleiloes.com.br",
+        "baseUrl": "https://www.gislerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "glleiloes_com_br",
+        "name": "GL Leil\xF5es",
+        "domain": "glleiloes.com.br",
+        "baseUrl": "https://www.glleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gmleiloes_com_br",
+        "name": "GM Leil\xF5es",
+        "domain": "gmleiloes.com.br",
+        "baseUrl": "https://www.gmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gracieleiloes_com_br",
+        "name": "Gracie Leil\xF5es",
+        "domain": "gracieleiloes.com.br",
+        "baseUrl": "https://www.gracieleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gracindoleiloes_com_br",
+        "name": "gracindoleiloes.com.br",
+        "domain": "gracindoleiloes.com.br",
+        "baseUrl": "https://www.gracindoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "granadoleiloes_com_br",
+        "name": "Granado Leil\xF5es",
+        "domain": "granadoleiloes.com.br",
+        "baseUrl": "https://www.granadoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "guariglialeiloes_com_br",
+        "name": "guariglialeiloes.com.br",
+        "domain": "guariglialeiloes.com.br",
+        "baseUrl": "https://www.guariglialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "guinchofederalleiloes_com_br",
+        "name": "Guincho Federal Leil\xF5es",
+        "domain": "guinchofederalleiloes.com.br",
+        "baseUrl": "https://www.guinchofederalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "gutembergaraujoleiloes_com_br",
+        "name": "Gutemberg Araujo Leil\xF5es",
+        "domain": "gutembergaraujoleiloes.com.br",
+        "baseUrl": "https://www.gutembergaraujoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "hamouileiloes_com_br",
+        "name": "Hamou Leil\xF5es",
+        "domain": "hamouileiloes.com.br",
+        "baseUrl": "https://www.hamouileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "hastasleiloes_com_br",
+        "name": "Hastas Leil\xF5es",
+        "domain": "hastasleiloes.com.br",
+        "baseUrl": "https://www.hastasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "hastasp_com_br",
+        "name": "Hasta SP",
+        "domain": "hastasp.com.br",
+        "baseUrl": "https://www.hastasp.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "hatoryleiloes_com_br",
+        "name": "Hatory Leil\xF5es",
+        "domain": "hatoryleiloes.com.br",
+        "baseUrl": "https://www.hatoryleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "hcleiloes_com_br",
+        "name": "HC Leil\xF5es",
+        "domain": "hcleiloes.com.br",
+        "baseUrl": "https://www.hcleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "hirasawaleiloes_com_br",
+        "name": "hirasawaleiloes.com.br",
+        "domain": "hirasawaleiloes.com.br",
+        "baseUrl": "https://www.hirasawaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "hisaleiloes_com_br",
+        "name": "hisaleiloes.com.br",
+        "domain": "hisaleiloes.com.br",
+        "baseUrl": "https://www.hisaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "imoveis_economia_gov_br",
+        "name": "SPU",
+        "domain": "imoveis.economia.gov.br",
+        "baseUrl": "https://www.imoveis.economia.gov.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ineuleiloes_com_br",
+        "name": "Ineu Leil\xF5es",
+        "domain": "ineuleiloes.com.br",
+        "baseUrl": "https://www.ineuleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "innovaleiloes_com_br",
+        "name": "Innova Leil\xF5es",
+        "domain": "innovaleiloes.com.br",
+        "baseUrl": "https://www.innovaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ipcleiloes_com_br",
+        "name": "IPC Leil\xF5es",
+        "domain": "ipcleiloes.com.br",
+        "baseUrl": "https://www.ipcleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "isacleiloes_com_br",
+        "name": "Isac Leil\xF5es",
+        "domain": "isacleiloes.com.br",
+        "baseUrl": "https://www.isacleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "jgcargneluttileiloes_com_br",
+        "name": "Jo\xE3o Guilherme Leiloeiro Oficial",
+        "domain": "jgcargneluttileiloes.com.br",
+        "baseUrl": "https://www.jgcargneluttileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "jhcleiloeirooficial_lel_br",
+        "name": "Jo\xE3o Honor Coirollo de Souza - Leil\xF5es",
+        "domain": "jhcleiloeirooficial.lel.br",
+        "baseUrl": "https://www.jhcleiloeirooficial.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "jhleiloes_com_br",
+        "name": "JH Leil\xF5es",
+        "domain": "jhleiloes.com.br",
+        "baseUrl": "https://www.jhleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "josequencaleiloeiro_com_br",
+        "name": "josequencaleiloeiro.com.br",
+        "domain": "josequencaleiloeiro.com.br",
+        "baseUrl": "https://www.josequencaleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "jsilvaleiloes_com_br",
+        "name": "Junior Silva Leil\xF5es",
+        "domain": "jsilvaleiloes.com.br",
+        "baseUrl": "https://www.jsilvaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "judhastas_com_br",
+        "name": "JudHastas",
+        "domain": "judhastas.com.br",
+        "baseUrl": "https://www.judhastas.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "junkesleiloes_com_br",
+        "name": "Junkes Leil\xF5es",
+        "domain": "junkesleiloes.com.br",
+        "baseUrl": "https://www.junkesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "kairosleiloes_com_br",
+        "name": "Kairos Leil\xF5es",
+        "domain": "kairosleiloes.com.br",
+        "baseUrl": "https://www.kairosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "kcleiloes_com_br",
+        "name": "KC Leil\xF5es",
+        "domain": "kcleiloes.com.br",
+        "baseUrl": "https://www.kcleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "kielleiloes_com_br",
+        "name": "Kiel Leil\xF5es",
+        "domain": "kielleiloes.com.br",
+        "baseUrl": "https://www.kielleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "kildareleiloes_com_br",
+        "name": "Kildare Leil\xF5es",
+        "domain": "kildareleiloes.com.br",
+        "baseUrl": "https://www.kildareleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "kleiberleiloes_com_br",
+        "name": "Kleiber Leil\xF5es",
+        "domain": "kleiberleiloes.com.br",
+        "baseUrl": "https://www.kleiberleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "kronberg_lel_br",
+        "name": "PK Leiloaria Digital",
+        "domain": "kronberg.lel.br",
+        "baseUrl": "https://www.kronberg.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ksleiloes_com_br",
+        "name": "KS Leil\xF5es",
+        "domain": "ksleiloes.com.br",
+        "baseUrl": "https://www.ksleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lancejusto_com_br",
+        "name": "Lance Justo",
+        "domain": "lancejusto.com.br",
+        "baseUrl": "https://www.lancejusto.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lanceleiloes_com_br",
+        "name": "Lance Leil\xF5es",
+        "domain": "lanceleiloes.com.br",
+        "baseUrl": "https://www.lanceleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lancemaiorleiloes_com_br",
+        "name": "Lance Maior Leil\xF5es",
+        "domain": "lancemaiorleiloes.com.br",
+        "baseUrl": "https://www.lancemaiorleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lancenow_com_br",
+        "name": "Lance now",
+        "domain": "lancenow.com.br",
+        "baseUrl": "https://www.lancenow.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lauandleiloes_com_br",
+        "name": "lauandleiloes.com.br",
+        "domain": "lauandleiloes.com.br",
+        "baseUrl": "https://www.lauandleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leialeiloes_lel_br",
+        "name": "L\xE9ia Leil\xF5es",
+        "domain": "leialeiloes.lel.br",
+        "baseUrl": "https://www.leialeiloes.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leilaobutia_com_br",
+        "name": "Leil\xE3o Buti\xE1",
+        "domain": "leilaobutia.com.br",
+        "baseUrl": "https://www.leilaobutia.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leilaosantos_com_br",
+        "name": "Santos Leiloeiro Oficial",
+        "domain": "leilaosantos.com.br",
+        "baseUrl": "https://www.leilaosantos.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloaria_com_br",
+        "name": "Leiloaria",
+        "domain": "leiloaria.com.br",
+        "baseUrl": "https://www.leiloaria.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloeiramcl_com_br",
+        "name": "Leiloeira MCL",
+        "domain": "leiloeiramcl.com.br",
+        "baseUrl": "https://www.leiloeiramcl.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloeiroeduardo_com_br",
+        "name": "leiloeiroeduardo.com.br",
+        "domain": "leiloeiroeduardo.com.br",
+        "baseUrl": "https://www.leiloeiroeduardo.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloeirojudicial_lel_br",
+        "name": "Leiloeiro Judicial",
+        "domain": "leiloeirojudicial.lel.br",
+        "baseUrl": "https://www.leiloeirojudicial.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloeironacif_com",
+        "name": "On Leil\xF5es",
+        "domain": "leiloeironacif.com",
+        "baseUrl": "https://www.leiloeironacif.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloeirosdebrasilia_com_br",
+        "name": "Leiloeiros de Bras\xEDlia",
+        "domain": "leiloeirosdebrasilia.com.br",
+        "baseUrl": "https://www.leiloeirosdebrasilia.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloes_sc_com_br",
+        "name": "Leil\xF5es SC",
+        "domain": "leiloes-sc.com.br",
+        "baseUrl": "https://www.leiloes-sc.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloes61_com_br",
+        "name": "Leil\xF5es 61",
+        "domain": "leiloes61.com.br",
+        "baseUrl": "https://www.leiloes61.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesalbino_com_br",
+        "name": "Leil\xF5es Albino",
+        "domain": "leiloesalbino.com.br",
+        "baseUrl": "https://www.leiloesalbino.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesanapolis_com_br",
+        "name": "Leil\xF5es An\xE1polis",
+        "domain": "leiloesanapolis.com.br",
+        "baseUrl": "https://www.leiloesanapolis.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesaraujo_com_br",
+        "name": "Felipe Araujo Leiloeiro Oficial",
+        "domain": "leiloesaraujo.com.br",
+        "baseUrl": "https://www.leiloesaraujo.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesbrasilto_com_br",
+        "name": "Leil\xF5es Brasil Tocantins",
+        "domain": "leiloesbrasilto.com.br",
+        "baseUrl": "https://www.leiloesbrasilto.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesdonorte_com_br",
+        "name": "Leil\xF5es do Norte",
+        "domain": "leiloesdonorte.com.br",
+        "baseUrl": "https://www.leiloesdonorte.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesitamar_com_br",
+        "name": "Leil\xF5es Itamar",
+        "domain": "leiloesitamar.com.br",
+        "baseUrl": "https://www.leiloesitamar.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesjudiciaissc_com_br",
+        "name": "Leil\xF5es Judiciais SC",
+        "domain": "leiloesjudiciaissc.com.br",
+        "baseUrl": "https://www.leiloesjudiciaissc.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesmager_com_br",
+        "name": "leiloesmager.com.br",
+        "domain": "leiloesmager.com.br",
+        "baseUrl": "https://www.leiloesmager.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesmwd_com_br",
+        "name": "Leil\xF5es MWD",
+        "domain": "leiloesmwd.com.br",
+        "baseUrl": "https://www.leiloesmwd.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloesrei_com_br",
+        "name": "Rei dos Leil\xF5es",
+        "domain": "leiloesrei.com.br",
+        "baseUrl": "https://www.leiloesrei.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloestocantins_com",
+        "name": "Leil\xF5es Tocantins",
+        "domain": "leiloestocantins.com",
+        "baseUrl": "https://www.leiloestocantins.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leiloeszanoni_com_br",
+        "name": "Leil\xF5es Zanoni",
+        "domain": "leiloeszanoni.com.br",
+        "baseUrl": "https://www.leiloeszanoni.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leilofacil_lel_br",
+        "name": "Mauro Cesar Rocha Leiloeiro",
+        "domain": "leilofacil.lel.br",
+        "baseUrl": "https://www.leilofacil.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "leilovale_com_br",
+        "name": "leilovale.com.br",
+        "domain": "leilovale.com.br",
+        "baseUrl": "https://www.leilovale.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lelialenz_com_br",
+        "name": "L\xE9lia Lenz Leil\xF5es",
+        "domain": "lelialenz.com.br",
+        "baseUrl": "https://www.lelialenz.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lfrleiloes_com_br",
+        "name": "Luiz Fernando Rocha",
+        "domain": "lfrleiloes.com.br",
+        "baseUrl": "https://www.lfrleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "licitari_com_br",
+        "name": "Licitari Leil\xF5es",
+        "domain": "licitari.com.br",
+        "baseUrl": "https://www.licitari.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lipinskileiloes_com_br",
+        "name": "Lipinski Leil\xF5es",
+        "domain": "lipinskileiloes.com.br",
+        "baseUrl": "https://www.lipinskileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "liraleiloes_com_br",
+        "name": "Lira Leil\xF5es Leiloeira Oficial",
+        "domain": "liraleiloes.com.br",
+        "baseUrl": "https://www.liraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "livialeiloes_com_br",
+        "name": "L\xEDvia Leil\xF5es",
+        "domain": "livialeiloes.com.br",
+        "baseUrl": "https://www.livialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lkleiloes_com_br",
+        "name": "LK Leil\xF5es",
+        "domain": "lkleiloes.com.br",
+        "baseUrl": "https://www.lkleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lopesleiloes_com_br",
+        "name": "lopesleiloes.com.br",
+        "domain": "lopesleiloes.com.br",
+        "baseUrl": "https://www.lopesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lopesleiloes_net_br",
+        "name": "Lopes Leil\xF5es Leiloeiro Oficial",
+        "domain": "lopesleiloes.net.br",
+        "baseUrl": "https://www.lopesleiloes.net.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "loteleiloes_com_br",
+        "name": "Lote Leil\xF5es",
+        "domain": "loteleiloes.com.br",
+        "baseUrl": "https://www.loteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ltjleiloes_com_br",
+        "name": "LTJ Leil\xF5es",
+        "domain": "ltjleiloes.com.br",
+        "baseUrl": "https://www.ltjleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "lumussaleiloes_com_br",
+        "name": "Luzinete Mussa de Moraes Pereira Leiloeira",
+        "domain": "lumussaleiloes.com.br",
+        "baseUrl": "https://www.lumussaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "maestroleiloes_com_br",
+        "name": "Maestro Leil\xF5es",
+        "domain": "maestroleiloes.com.br",
+        "baseUrl": "https://www.maestroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "maiorofertaleiloes_com_br",
+        "name": "Maior Oferta Leil\xF5es e Venda Direta",
+        "domain": "maiorofertaleiloes.com.br",
+        "baseUrl": "https://www.maiorofertaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "maleiloesro_com_br",
+        "name": "MA Leil\xF5es",
+        "domain": "maleiloesro.com.br",
+        "baseUrl": "https://www.maleiloesro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "manrubialeiloes_com_br",
+        "name": "Manrubia Leil\xF5es",
+        "domain": "manrubialeiloes.com.br",
+        "baseUrl": "https://www.manrubialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "maraurzedoleilao_com_br",
+        "name": "Mara Urzedo Leil\xE3o",
+        "domain": "maraurzedoleilao.com.br",
+        "baseUrl": "https://www.maraurzedoleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "marcellolemosleiloeiro_com_br",
+        "name": "Marcello Lemos",
+        "domain": "marcellolemosleiloeiro.com.br",
+        "baseUrl": "https://www.marcellolemosleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "marcoleiloes_com_br",
+        "name": "Marco Leil\xF5es",
+        "domain": "marcoleiloes.com.br",
+        "baseUrl": "https://www.marcoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mariavitorinoleiloeira_com_br",
+        "name": "Maria Vitorino Leiloeira",
+        "domain": "mariavitorinoleiloeira.com.br",
+        "baseUrl": "https://www.mariavitorinoleiloeira.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "marquesbarretoleiloes_com_br",
+        "name": "Marques Barreto Leil\xF5es",
+        "domain": "marquesbarretoleiloes.com.br",
+        "baseUrl": "https://www.marquesbarretoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "martelodigital_com_br",
+        "name": "Martelo Digital",
+        "domain": "martelodigital.com.br",
+        "baseUrl": "https://www.martelodigital.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mateusleiloes_com_br",
+        "name": "Mateus Silva Leiloeiro Oficial",
+        "domain": "mateusleiloes.com.br",
+        "baseUrl": "https://www.mateusleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "matogrossoleiloes_com_br",
+        "name": "Mato Grosso Leil\xF5es",
+        "domain": "matogrossoleiloes.com.br",
+        "baseUrl": "https://www.matogrossoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "maxterleiloes_com_br",
+        "name": "Master Leil\xF5es",
+        "domain": "maxterleiloes.com.br",
+        "baseUrl": "https://www.maxterleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "maxxleiloes_com_br",
+        "name": "Max Leil\xF5es",
+        "domain": "maxxleiloes.com.br",
+        "baseUrl": "https://www.maxxleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mcleilao_com_br",
+        "name": "MC Leil\xE3o",
+        "domain": "mcleilao.com.br",
+        "baseUrl": "https://www.mcleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "medeirosleiloes_com_br",
+        "name": "Medeiros Leil\xF5es",
+        "domain": "medeirosleiloes.com.br",
+        "baseUrl": "https://www.medeirosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "megavaleleiloes_com_br",
+        "name": "Mega Vale Leil\xF5es",
+        "domain": "megavaleleiloes.com.br",
+        "baseUrl": "https://www.megavaleleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "meirelesleiloes_com_br",
+        "name": "Meireles Leil\xF5es",
+        "domain": "meirelesleiloes.com.br",
+        "baseUrl": "https://www.meirelesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mesquitaleiloes_com_br",
+        "name": "Mesquita Leil\xF5es",
+        "domain": "mesquitaleiloes.com.br",
+        "baseUrl": "https://www.mesquitaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mgrleiloes_com_br",
+        "name": "MGR Leil\xF5es",
+        "domain": "mgrleiloes.com.br",
+        "baseUrl": "https://www.mgrleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "miguelperezleiloes_com_br",
+        "name": "miguelperezleiloes.com.br",
+        "domain": "miguelperezleiloes.com.br",
+        "baseUrl": "https://www.miguelperezleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "milanileiloes_com_br",
+        "name": "Milani Leil\xF5es",
+        "domain": "milanileiloes.com.br",
+        "baseUrl": "https://www.milanileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "miottileiloes_com_br",
+        "name": "Miotti Leil\xF5es",
+        "domain": "miottileiloes.com.br",
+        "baseUrl": "https://www.miottileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mjleiloes_com_br",
+        "name": "MJE Leil\xF5es",
+        "domain": "mjleiloes.com.br",
+        "baseUrl": "https://www.mjleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mlleiloes_com_br",
+        "name": "ML Leil\xF5es",
+        "domain": "mlleiloes.com.br",
+        "baseUrl": "https://www.mlleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mnleilao_com_br",
+        "name": "MN Leil\xF5es",
+        "domain": "mnleilao.com.br",
+        "baseUrl": "https://www.mnleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "moacira_lel_br",
+        "name": "Moacira Goedert",
+        "domain": "moacira.lel.br",
+        "baseUrl": "https://www.moacira.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "molgado_com_br",
+        "name": "Molgado Leil\xF5es",
+        "domain": "molgado.com.br",
+        "baseUrl": "https://www.molgado.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "moralesleiloes_com_br",
+        "name": "moralesleiloes.com.br",
+        "domain": "moralesleiloes.com.br",
+        "baseUrl": "https://www.moralesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "morescoleiloes_com_br",
+        "name": "Cesar Moresco Leil\xF5es",
+        "domain": "morescoleiloes.com.br",
+        "baseUrl": "https://www.morescoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "mrleiloes_com_br",
+        "name": "mrleiloes.com.br",
+        "domain": "mrleiloes.com.br",
+        "baseUrl": "https://www.mrleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "nacionalleiloes_com_br",
+        "name": "Nacional Leil\xF5es",
+        "domain": "nacionalleiloes.com.br",
+        "baseUrl": "https://www.nacionalleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "natalialeiloes_com_br",
+        "name": "Nat\xE1lia Nunes Leil\xF5es",
+        "domain": "natalialeiloes.com.br",
+        "baseUrl": "https://www.natalialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "neteditaisleiloes_com_br",
+        "name": "Net editais leil\xF5es",
+        "domain": "neteditaisleiloes.com.br",
+        "baseUrl": "https://www.neteditaisleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "newtonleiloes_com_br",
+        "name": "Newton Leil\xF5es",
+        "domain": "newtonleiloes.com.br",
+        "baseUrl": "https://www.newtonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "nextleiloes_com_br",
+        "name": "Next Leil\xF5es",
+        "domain": "nextleiloes.com.br",
+        "baseUrl": "https://www.nextleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "nogarileiloes_com_br",
+        "name": "Nogari Leil\xF5es",
+        "domain": "nogarileiloes.com.br",
+        "baseUrl": "https://www.nogarileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "nogueiraleiloes_com_br",
+        "name": "Nogueira leil\xF5es",
+        "domain": "nogueiraleiloes.com.br",
+        "baseUrl": "https://www.nogueiraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "npleiloes_com_br",
+        "name": "NP Leil\xF5es",
+        "domain": "npleiloes.com.br",
+        "baseUrl": "https://www.npleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "octavioleiloes_com_br",
+        "name": "Octavio Leil\xF5es",
+        "domain": "octavioleiloes.com.br",
+        "baseUrl": "https://www.octavioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "olivirogerioleiloes_com_br",
+        "name": "Olivi Rog\xE9rio leil\xF5es",
+        "domain": "olivirogerioleiloes.com.br",
+        "baseUrl": "https://www.olivirogerioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "olmosleiloes_com_br",
+        "name": "olmosleiloes.com.br",
+        "domain": "olmosleiloes.com.br",
+        "baseUrl": "https://www.olmosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "omega1leiloes_com_br",
+        "name": "\xD4mega Leil\xF5es",
+        "domain": "omega1leiloes.com.br",
+        "baseUrl": "https://www.omega1leiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "oportunidadeleiloes_com_br",
+        "name": "oportunidadeleiloes.com.br",
+        "domain": "oportunidadeleiloes.com.br",
+        "baseUrl": "https://www.oportunidadeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "organizacaodeleiloes_com_br",
+        "name": "Organiza\xE7\xE3o de Leil\xF5es",
+        "domain": "organizacaodeleiloes.com.br",
+        "baseUrl": "https://www.organizacaodeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "oscarleiloes_com_br",
+        "name": "Oscar Leil\xF5es",
+        "domain": "oscarleiloes.com.br",
+        "baseUrl": "https://www.oscarleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "osvaldoleiloes_com_br",
+        "name": "Osvaldo Leil\xF5es",
+        "domain": "osvaldoleiloes.com.br",
+        "baseUrl": "https://www.osvaldoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ouroleiloes_com_br",
+        "name": "Ouro Leil\xF5es",
+        "domain": "ouroleiloes.com.br",
+        "baseUrl": "https://www.ouroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "pagliarinileiloes_com_br",
+        "name": "Pagliarini Leil\xF5es",
+        "domain": "pagliarinileiloes.com.br",
+        "baseUrl": "https://www.pagliarinileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "pavanileiloes_com_br",
+        "name": "pavanileiloes.com.br",
+        "domain": "pavanileiloes.com.br",
+        "baseUrl": "https://www.pavanileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "pedroalmeidaleiloeiro_rio_br",
+        "name": "Pedro Jos\xE9 de Almeida",
+        "domain": "pedroalmeidaleiloeiro.rio.br",
+        "baseUrl": "https://www.pedroalmeidaleiloeiro.rio.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "pedrocastroleiloes_com_brprincipal_asp",
+        "name": "Pedro Castro Leil\xF5es",
+        "domain": "pedrocastroleiloes.com.brprincipal.asp",
+        "baseUrl": "https://www.pedrocastroleiloes.com.brprincipal.asp",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "pegoraroleiloes_com_br",
+        "name": "Pegoraro leil\xF5es",
+        "domain": "pegoraroleiloes.com.br",
+        "baseUrl": "https://www.pegoraroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "pereiraleiloesce_com_br",
+        "name": "Pereira Leil\xF5es",
+        "domain": "pereiraleiloesce.com.br",
+        "baseUrl": "https://www.pereiraleiloesce.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "pineiroleiloes_com_br",
+        "name": "Pineiro Leil\xF5es",
+        "domain": "pineiroleiloes.com.br",
+        "baseUrl": "https://www.pineiroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "planetadosleiloes_com_br",
+        "name": "Planeta dos Leil\xF5es",
+        "domain": "planetadosleiloes.com.br",
+        "baseUrl": "https://www.planetadosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "plusleiloes_lel_br",
+        "name": "Plus Leil\xF5es",
+        "domain": "plusleiloes.lel.br",
+        "baseUrl": "https://www.plusleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "portaldosleiloes_com",
+        "name": "Portal Dos Leil\xF5es",
+        "domain": "portaldosleiloes.com",
+        "baseUrl": "https://www.portaldosleiloes.com",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "portelaleiloes_com_br",
+        "name": "Portela Leil\xF5es",
+        "domain": "portelaleiloes.com.br",
+        "baseUrl": "https://www.portelaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "portoleiloes_com_br",
+        "name": "Porto Leil\xF5es",
+        "domain": "portoleiloes.com.br",
+        "baseUrl": "https://www.portoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "primeirapraca_com_br",
+        "name": "primeirapraca.com.br",
+        "domain": "primeirapraca.com.br",
+        "baseUrl": "https://www.primeirapraca.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "psnleiloes_com_br",
+        "name": "PSN Leil\xF5es",
+        "domain": "psnleiloes.com.br",
+        "baseUrl": "https://www.psnleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "rabuskeleiloes_com_br",
+        "name": "Rabuske Leil\xF5es",
+        "domain": "rabuskeleiloes.com.br",
+        "baseUrl": "https://www.rabuskeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ramosleiloes_com_br",
+        "name": "Ramos Leil\xF5es",
+        "domain": "ramosleiloes.com.br",
+        "baseUrl": "https://www.ramosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "rangelleiloes_com_br",
+        "name": "Rangel Leil\xF5es",
+        "domain": "rangelleiloes.com.br",
+        "baseUrl": "https://www.rangelleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "rapportleiloes_com_br",
+        "name": "Rapport Leil\xF5es",
+        "domain": "rapportleiloes.com.br",
+        "baseUrl": "https://www.rapportleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "renannerisleiloeiro_com_br",
+        "name": "Renan Neris Leiloeiro",
+        "domain": "renannerisleiloeiro.com.br",
+        "baseUrl": "https://www.renannerisleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "rfleiloes_com_br",
+        "name": "Rafael Figueiredo Leiloeiro Oficial",
+        "domain": "rfleiloes.com.br",
+        "baseUrl": "https://www.rfleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ribeiroleiloes_com_br",
+        "name": "Ribeiro Leil\xF5es",
+        "domain": "ribeiroleiloes.com.br",
+        "baseUrl": "https://www.ribeiroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ricardogomesleiloes_com_br",
+        "name": "Ricardo Gomes Leil\xF5es",
+        "domain": "ricardogomesleiloes.com.br",
+        "baseUrl": "https://www.ricardogomesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "ricoleiloes_com_br",
+        "name": "ricoleiloes.com.br",
+        "domain": "ricoleiloes.com.br",
+        "baseUrl": "https://www.ricoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "robertofernandesleiloes_com_br",
+        "name": "Roberto Fernandes Leil\xF5es",
+        "domain": "robertofernandesleiloes.com.br",
+        "baseUrl": "https://www.robertofernandesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "robertomauroleiloes_com_br",
+        "name": "Roberto Mauro Leil\xF5es",
+        "domain": "robertomauroleiloes.com.br",
+        "baseUrl": "https://www.robertomauroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "rocketleiloes_com_br",
+        "name": "Rocket Leil\xF5es",
+        "domain": "rocketleiloes.com.br",
+        "baseUrl": "https://www.rocketleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "romeuherter_com_br",
+        "name": "Romeu Herter Leil\xF5es",
+        "domain": "romeuherter.com.br",
+        "baseUrl": "https://www.romeuherter.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "rossileiloes_com_br",
+        "name": "Rossi Leil\xF5es",
+        "domain": "rossileiloes.com.br",
+        "baseUrl": "https://www.rossileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "rubenshcastro_com_br",
+        "name": "Rubens Henrique de Castro",
+        "domain": "rubenshcastro.com.br",
+        "baseUrl": "https://www.rubenshcastro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sabrinaleiloes_lel_br",
+        "name": "Sabrina Leil\xF5es",
+        "domain": "sabrinaleiloes.lel.br",
+        "baseUrl": "https://www.sabrinaleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sabrinaverroneleiloeira_com_br",
+        "name": "Sabrina Verrone",
+        "domain": "sabrinaverroneleiloeira.com.br",
+        "baseUrl": "https://www.sabrinaverroneleiloeira.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "saleiloes_com_br",
+        "name": "SA Leil\xF5es",
+        "domain": "saleiloes.com.br",
+        "baseUrl": "https://www.saleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "salgadoleiloes_com_br",
+        "name": "Salgado Leil\xF5es",
+        "domain": "salgadoleiloes.com.br",
+        "baseUrl": "https://www.salgadoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "salgueiroleiloes_com_br",
+        "name": "Salgueiro Leil\xF5es",
+        "domain": "salgueiroleiloes.com.br",
+        "baseUrl": "https://www.salgueiroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sampaioleiloes_com_br",
+        "name": "Sampaio Leil\xF5es",
+        "domain": "sampaioleiloes.com.br",
+        "baseUrl": "https://www.sampaioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sancarleiloes_com_br",
+        "name": "Sancar Leil\xF5es",
+        "domain": "sancarleiloes.com.br",
+        "baseUrl": "https://www.sancarleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sanchesleiloes_com_br",
+        "name": "Sanches Leil\xF5es",
+        "domain": "sanchesleiloes.com.br",
+        "baseUrl": "https://www.sanchesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "santacatarinaleiloes_com_br",
+        "name": "Santa Catarina Leil\xF5es",
+        "domain": "santacatarinaleiloes.com.br",
+        "baseUrl": "https://www.santacatarinaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "santosmoraesleiloes_com_br",
+        "name": "Santos Moraes Leil\xF5es",
+        "domain": "santosmoraesleiloes.com.br",
+        "baseUrl": "https://www.santosmoraesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "saocaetanoleiloes_com_br",
+        "name": "S\xE3o Caetano Leil\xF5es",
+        "domain": "saocaetanoleiloes.com.br",
+        "baseUrl": "https://www.saocaetanoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "savoyleiloes_com_br",
+        "name": "savoyleiloes.com.br",
+        "domain": "savoyleiloes.com.br",
+        "baseUrl": "https://www.savoyleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sbleiloes_lel_br",
+        "name": "SB Leil\xF5es",
+        "domain": "sbleiloes.lel.br",
+        "baseUrl": "https://www.sbleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "schanzerleiloes_com_br",
+        "name": "Schanzer Leil\xF5es",
+        "domain": "schanzerleiloes.com.br",
+        "baseUrl": "https://www.schanzerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "shiokawaleiloes_com_br",
+        "name": "Shiokawa leil\xF5es",
+        "domain": "shiokawaleiloes.com.br",
+        "baseUrl": "https://www.shiokawaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "siteleiloes_com_br",
+        "name": "Site Leil\xF5es",
+        "domain": "siteleiloes.com.br",
+        "baseUrl": "https://www.siteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "snleiloes_com_br",
+        "name": "S\xE9rgio Nogueira Leil\xF5es",
+        "domain": "snleiloes.com.br",
+        "baseUrl": "https://www.snleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sopranoleilao_com_br",
+        "name": "Soprano Leil\xE3o",
+        "domain": "sopranoleilao.com.br",
+        "baseUrl": "https://www.sopranoleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sudesteleiloes_com_br",
+        "name": "sudesteleiloes.com.br",
+        "domain": "sudesteleiloes.com.br",
+        "baseUrl": "https://www.sudesteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "suenagaleiloes_com_br",
+        "name": "suenagaleiloes.com.br",
+        "domain": "suenagaleiloes.com.br",
+        "baseUrl": "https://www.suenagaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "superdiasleiloes_com_br",
+        "name": "Super Dias Leil\xF5es",
+        "domain": "superdiasleiloes.com.br",
+        "baseUrl": "https://www.superdiasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "superlojao_net",
+        "name": "Super Loj\xE3o",
+        "domain": "superlojao.net",
+        "baseUrl": "https://www.superlojao.net",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "suzanacarvalholeiloes_com_br",
+        "name": "Suzana Carvalho Leil\xF5es",
+        "domain": "suzanacarvalholeiloes.com.br",
+        "baseUrl": "https://www.suzanacarvalholeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "sydneyleiloes_com_br",
+        "name": "Sydney Leil\xF5es",
+        "domain": "sydneyleiloes.com.br",
+        "baseUrl": "https://www.sydneyleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "tahaleiloes_com_br",
+        "name": "tahaleiloes.com.br",
+        "domain": "tahaleiloes.com.br",
+        "baseUrl": "https://www.tahaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "taniagrimaldileiloes_com_br",
+        "name": "T\xE2nia Grimaldi Leiloeira Oficial",
+        "domain": "taniagrimaldileiloes.com.br",
+        "baseUrl": "https://www.taniagrimaldileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "telesleiloes_com_br",
+        "name": "Teles Leil\xF5es",
+        "domain": "telesleiloes.com.br",
+        "baseUrl": "https://www.telesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "tenorioleiloes_com_br",
+        "name": "Ten\xF3rio Leil\xF5es",
+        "domain": "tenorioleiloes.com.br",
+        "baseUrl": "https://www.tenorioleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "terrabrasilleiloes_com_br",
+        "name": "Terra Brasil Leil\xF5es",
+        "domain": "terrabrasilleiloes.com.br",
+        "baseUrl": "https://www.terrabrasilleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "tezaleiloes_com_br",
+        "name": "Teza Leil\xF5es",
+        "domain": "tezaleiloes.com.br",
+        "baseUrl": "https://www.tezaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "tirlonileiloes_com_br",
+        "name": "Tirloni Leil\xF5es",
+        "domain": "tirlonileiloes.com.br",
+        "baseUrl": "https://www.tirlonileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "tkl_com_br",
+        "name": "TKL Leil\xF5es | Turn Key Leil\xF5es",
+        "domain": "tkl.com.br",
+        "baseUrl": "https://www.tkl.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "tonoleilao_com_br",
+        "name": "Tono Leil\xF5es",
+        "domain": "tonoleilao.com.br",
+        "baseUrl": "https://www.tonoleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "torresleiloes_com_br",
+        "name": "Torres Leil\xF5es",
+        "domain": "torresleiloes.com.br",
+        "baseUrl": "https://www.torresleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "triadeleiloes_com_br",
+        "name": "Tr\xEDade Leil\xF5es",
+        "domain": "triadeleiloes.com.br",
+        "baseUrl": "https://www.triadeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "universodosleiloes_com_br",
+        "name": "Universo dos Leil\xF5es",
+        "domain": "universodosleiloes.com.br",
+        "baseUrl": "https://www.universodosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "upleilao_com_br",
+        "name": "upleilao.com.br",
+        "domain": "upleilao.com.br",
+        "baseUrl": "https://www.upleilao.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "valdeirpereiraleiloeiro_com_br",
+        "name": "Valdeir Pereira Leiloeiro",
+        "domain": "valdeirpereiraleiloeiro.com.br",
+        "baseUrl": "https://www.valdeirpereiraleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "valleleiloes_com_br",
+        "name": "valleleiloes.com.br",
+        "domain": "valleleiloes.com.br",
+        "baseUrl": "https://www.valleleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "vardanaleiloes_com_br",
+        "name": "Vardana Leil\xF5es",
+        "domain": "vardanaleiloes.com.br",
+        "baseUrl": "https://www.vardanaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "venturelileiloes_com_br",
+        "name": "venturelileiloes.com.br",
+        "domain": "venturelileiloes.com.br",
+        "baseUrl": "https://www.venturelileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "veronicaleiloes_com_br",
+        "name": "Ver\xF4nica Leil\xF5es",
+        "domain": "veronicaleiloes.com.br",
+        "baseUrl": "https://www.veronicaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "verrileiloes_com_br",
+        "name": "Verri Leil\xF5es",
+        "domain": "verrileiloes.com.br",
+        "baseUrl": "https://www.verrileiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "vgleiloespublicos_com_br",
+        "name": "VG Leil\xF5es",
+        "domain": "vgleiloespublicos.com.br",
+        "baseUrl": "https://www.vgleiloespublicos.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "vialeiloes_com_br",
+        "name": "Via Leil\xF5es",
+        "domain": "vialeiloes.com.br",
+        "baseUrl": "https://www.vialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "viannaleiloes_com_br",
+        "name": "Priscila Vianna Leiloeira P\xFAblica",
+        "domain": "viannaleiloes.com.br",
+        "baseUrl": "https://www.viannaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "vincileiloes_com_brexterno",
+        "name": "Vinci Leil\xF5es",
+        "domain": "vincileiloes.com.brexterno",
+        "baseUrl": "https://www.vincileiloes.com.brexterno",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "vivagoiasleiloes_com_br",
+        "name": "Viva Goi\xE1s Leil\xF5es",
+        "domain": "vivagoiasleiloes.com.br",
+        "baseUrl": "https://www.vivagoiasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "vixleiloes_com_br",
+        "name": "Vix Leil\xF5es",
+        "domain": "vixleiloes.com.br",
+        "baseUrl": "https://www.vixleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "vizeuonline_com_br",
+        "name": "vizeuonline.com.br",
+        "domain": "vizeuonline.com.br",
+        "baseUrl": "https://www.vizeuonline.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "wendelgarcia_com_br",
+        "name": "Wendel Garcia - Leiloeiro Oficial",
+        "domain": "wendelgarcia.com.br",
+        "baseUrl": "https://www.wendelgarcia.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "wrleiloes_com_br",
+        "name": "WR Leil\xF5es",
+        "domain": "wrleiloes.com.br",
+        "baseUrl": "https://www.wrleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "zaccariasleiloes_com_br",
+        "name": "Zaccarias Leiloeiro Oficial",
+        "domain": "zaccariasleiloes.com.br",
+        "baseUrl": "https://www.zaccariasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "zaccarino_com_br",
+        "name": "Zaccarino Leil\xF5es",
+        "domain": "zaccarino.com.br",
+        "baseUrl": "https://www.zaccarino.com.br",
+        "genericScrape": true,
+        "enabled": true,
+        "nexusImoveis": 0,
+        "nexusSituacao": "sem_imoveis"
+      },
+      {
+        "id": "almeidaleiloes_com_br",
+        "name": "Almeida Leil\xF5es",
+        "domain": "almeidaleiloes.com.br",
+        "baseUrl": "https://www.almeidaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "americaleiloes_com_br",
+        "name": "Am\xE9rica Leil\xF5es",
+        "domain": "americaleiloes.com.br",
+        "baseUrl": "https://www.americaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "amleiloes_lel_br",
+        "name": "AM Leil\xF5es",
+        "domain": "amleiloes.lel.br",
+        "baseUrl": "https://www.amleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "anabrasilleiloes_com_br",
+        "name": "Ana Brasil Leil\xF5es",
+        "domain": "anabrasilleiloes.com.br",
+        "baseUrl": "https://www.anabrasilleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "andersonleiloeiro_lel_br",
+        "name": "Anderson Leiloeiro",
+        "domain": "andersonleiloeiro.lel.br",
+        "baseUrl": "https://www.andersonleiloeiro.lel.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "bramoleiloes_com_br",
+        "name": "Bramo Leil\xF5es",
+        "domain": "bramoleiloes.com.br",
+        "baseUrl": "https://www.bramoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "casareisleiloesonline_com_br",
+        "name": "Casa Reis Leil\xF5es",
+        "domain": "casareisleiloesonline.com.br",
+        "baseUrl": "https://www.casareisleiloesonline.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "cearaleiloes_com_br",
+        "name": "Cear\xE1 Leil\xF5es",
+        "domain": "cearaleiloes.com.br",
+        "baseUrl": "https://www.cearaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "clicleilao_com_br",
+        "name": "Giuliano Ferronato",
+        "domain": "clicleilao.com.br",
+        "baseUrl": "https://www.clicleilao.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "confiancaleiloes_com_br",
+        "name": "Confian\xE7a Leil\xF5es",
+        "domain": "confiancaleiloes.com.br",
+        "baseUrl": "https://www.confiancaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "confiancaleiloes_leilao_br",
+        "name": "Confian\xE7a Leil\xF5es",
+        "domain": "confiancaleiloes.leilao.br",
+        "baseUrl": "https://www.confiancaleiloes.leilao.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "corleiloes_com_br",
+        "name": "Cor Leil\xF5es",
+        "domain": "corleiloes.com.br",
+        "baseUrl": "https://www.corleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "costanetoleiloeiro_com_br",
+        "name": "Costa Neto Leiloeiro",
+        "domain": "costanetoleiloeiro.com.br",
+        "baseUrl": "https://www.costanetoleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "danieloliveiraleiloes_com_br",
+        "name": "Daniel Oliveira Leil\xF5es",
+        "domain": "danieloliveiraleiloes.com.br",
+        "baseUrl": "https://www.danieloliveiraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "dasilvaleiloes_com_br",
+        "name": "Da Silva Leil\xF5es",
+        "domain": "dasilvaleiloes.com.br",
+        "baseUrl": "https://www.dasilvaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "e_confianca_com_br",
+        "name": "e-Confian\xE7a Leil\xF5es",
+        "domain": "e-confianca.com.br",
+        "baseUrl": "https://www.e-confianca.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "e_leiloeiro_com_br",
+        "name": "e-Leil\xF5es",
+        "domain": "e-leiloeiro.com.br",
+        "baseUrl": "https://www.e-leiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "ednleiloes_com_br",
+        "name": "EDN Leil\xF5es",
+        "domain": "ednleiloes.com.br",
+        "baseUrl": "https://www.ednleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "emersonoliveira_com_br",
+        "name": "Emerson Oliveira",
+        "domain": "emersonoliveira.com.br",
+        "baseUrl": "https://www.emersonoliveira.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "emperadorleiloes_com_br",
+        "name": "Emperador Leil\xF5es",
+        "domain": "emperadorleiloes.com.br",
+        "baseUrl": "https://www.emperadorleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "ericosobral_com_br",
+        "name": "Erico Sobral Leil\xF5es",
+        "domain": "ericosobral.com.br",
+        "baseUrl": "https://www.ericosobral.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "evolveleiloes_com_br",
+        "name": "Evolve Leil\xF5es",
+        "domain": "evolveleiloes.com.br",
+        "baseUrl": "https://www.evolveleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "ferronato_leilao_br",
+        "name": "Giuliano Ferronato",
+        "domain": "ferronato.leilao.br",
+        "baseUrl": "https://www.ferronato.leilao.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "freitasleiloes_com_br",
+        "name": "Freitas Leil\xF5es",
+        "domain": "freitasleiloes.com.br",
+        "baseUrl": "https://www.freitasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "hastaceara_com_br",
+        "name": "Hasta Cear\xE1",
+        "domain": "hastaceara.com.br",
+        "baseUrl": "https://www.hastaceara.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "hastavip_com_br",
+        "name": "Leil\xE3o VIP Leil\xF5es",
+        "domain": "hastavip.com.br",
+        "baseUrl": "https://www.hastavip.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "icaroleiloes_com_br",
+        "name": "Icaro Leil\xF5es",
+        "domain": "icaroleiloes.com.br",
+        "baseUrl": "https://www.icaroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "idleiloes_com_br",
+        "name": "ID Leil\xF5es",
+        "domain": "idleiloes.com.br",
+        "baseUrl": "https://www.idleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "imperioleiloes_com",
+        "name": "Imp\xE9rio dos Leil\xF5es",
+        "domain": "imperioleiloes.com",
+        "baseUrl": "https://www.imperioleiloes.com",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "infinityleiloes_com_br",
+        "name": "Infinity Leil\xF5es",
+        "domain": "infinityleiloes.com.br",
+        "baseUrl": "https://www.infinityleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "judicialileiloes_com_br",
+        "name": "Judiciali Leil\xF5es",
+        "domain": "judicialileiloes.com.br",
+        "baseUrl": "https://www.judicialileiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leilaomanaus_com_br",
+        "name": "Leil\xE3o Manaus",
+        "domain": "leilaomanaus.com.br",
+        "baseUrl": "https://www.leilaomanaus.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leiloesjudiciaisgo_com_br",
+        "name": "Leil\xF5es Judiciais GO",
+        "domain": "leiloesjudiciaisgo.com.br",
+        "baseUrl": "https://www.leiloesjudiciaisgo.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leiloesjudiciaismgnorte_com_br",
+        "name": "Leil\xF5es Judiciais MG Norte",
+        "domain": "leiloesjudiciaismgnorte.com.br",
+        "baseUrl": "https://www.leiloesjudiciaismgnorte.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leiloesjudiciaisrs_com_br",
+        "name": "Leil\xF5es Judiciais RS",
+        "domain": "leiloesjudiciaisrs.com.br",
+        "baseUrl": "https://www.leiloesjudiciaisrs.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leiloesonlinesp_com_br",
+        "name": "Leil\xF5es Online SP",
+        "domain": "leiloesonlinesp.com.br",
+        "baseUrl": "https://www.leiloesonlinesp.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leiloesrionegro_com_br",
+        "name": "Leil\xF5es Rio Negro",
+        "domain": "leiloesrionegro.com.br",
+        "baseUrl": "https://www.leiloesrionegro.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leilofy_com_br",
+        "name": "Leilofy",
+        "domain": "leilofy.com.br",
+        "baseUrl": "https://www.leilofy.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "leilomaster_com_br",
+        "name": "Leilo Master",
+        "domain": "leilomaster.com.br",
+        "baseUrl": "https://www.leilomaster.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "lut_com_br",
+        "name": "lut.com.br",
+        "domain": "lut.com.br",
+        "baseUrl": "https://www.lut.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "martinsleiloes_com_br",
+        "name": "Martins Leil\xF5es",
+        "domain": "martinsleiloes.com.br",
+        "baseUrl": "https://www.martinsleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "meloleiloes_com_br",
+        "name": "Melo Leil\xF5es",
+        "domain": "meloleiloes.com.br",
+        "baseUrl": "https://www.meloleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "multleiloes_com",
+        "name": "Mult Leil\xF5es",
+        "domain": "multleiloes.com",
+        "baseUrl": "https://www.multleiloes.com",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "munizleiloes_com_br",
+        "name": "Muniz Leil\xF5es",
+        "domain": "munizleiloes.com.br",
+        "baseUrl": "https://www.munizleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "mzmleiloes_com_br",
+        "name": "MZM Leil\xF5es Oficiais",
+        "domain": "mzmleiloes.com.br",
+        "baseUrl": "https://www.mzmleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "onebid_com_br",
+        "name": "Onebid Leil\xF5es",
+        "domain": "onebid.com.br",
+        "baseUrl": "https://www.onebid.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "oreidosleiloes_com_br",
+        "name": "O Rei dos Leil\xF5es",
+        "domain": "oreidosleiloes.com.br",
+        "baseUrl": "https://www.oreidosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "pactoleiloes_com_br",
+        "name": "Pacto Leil\xF5es",
+        "domain": "pactoleiloes.com.br",
+        "baseUrl": "https://www.pactoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "pamplonaleiloes_com_br",
+        "name": "Pamplona Leil\xF5es",
+        "domain": "pamplonaleiloes.com.br",
+        "baseUrl": "https://www.pamplonaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "paulotolentino_com_br",
+        "name": "Paulo Tolentino",
+        "domain": "paulotolentino.com.br",
+        "baseUrl": "https://www.paulotolentino.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "pietrangello_com_br",
+        "name": "Pietr\xE2ngello Leiloeiro",
+        "domain": "pietrangello.com.br",
+        "baseUrl": "https://www.pietrangello.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "portovelholeiloes_com_br",
+        "name": "Porto Velho Leil\xF5es",
+        "domain": "portovelholeiloes.com.br",
+        "baseUrl": "https://www.portovelholeiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "rzleiloes_com_br",
+        "name": "Roberta Zago Leil\xF5es",
+        "domain": "rzleiloes.com.br",
+        "baseUrl": "https://www.rzleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "sandraleiloeira_com_br",
+        "name": "Sandra Santos Leil\xF5es",
+        "domain": "sandraleiloeira.com.br",
+        "baseUrl": "https://www.sandraleiloeira.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "silviabarros_com_br",
+        "name": "S\xEDlvia Barros Leil\xF5es",
+        "domain": "silviabarros.com.br",
+        "baseUrl": "https://www.silviabarros.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "sold_superbid_net",
+        "name": "Sold Leil\xF5es",
+        "domain": "sold.superbid.net",
+        "baseUrl": "https://www.sold.superbid.net",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "souzasilvaleiloes_com_br",
+        "name": "souzasilvaleiloes.com.br",
+        "domain": "souzasilvaleiloes.com.br",
+        "baseUrl": "https://www.souzasilvaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "valland_com_br",
+        "name": "Valland Leil\xF5es",
+        "domain": "valland.com.br",
+        "baseUrl": "https://www.valland.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "outro_site"
+      },
+      {
+        "id": "acleiloes_com_br",
+        "name": "A Costa Leil\xF5es",
+        "domain": "acleiloes.com.br",
+        "baseUrl": "https://www.acleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "alexiusleiloes_com_br",
+        "name": "Alexius Leil\xF5es",
+        "domain": "alexiusleiloes.com.br",
+        "baseUrl": "https://www.alexiusleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "anhangueraleiloes_com_br",
+        "name": "Anhanguera Leil\xF5es",
+        "domain": "anhangueraleiloes.com.br",
+        "baseUrl": "https://www.anhangueraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "assuncaoleiloes_com_br",
+        "name": "Assun\xE7\xE3o Leil\xF5es",
+        "domain": "assuncaoleiloes.com.br",
+        "baseUrl": "https://www.assuncaoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "bagarolloleiloes_com_br",
+        "name": "Bagarollo Leil\xF5es",
+        "domain": "bagarolloleiloes.com.br",
+        "baseUrl": "https://www.bagarolloleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "baraodosleiloes_com_br",
+        "name": "Bar\xE3o dos Leil\xF5es",
+        "domain": "baraodosleiloes.com.br",
+        "baseUrl": "https://www.baraodosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "bvleiloes_com_br",
+        "name": "BV Leil\xF5es",
+        "domain": "bvleiloes.com.br",
+        "baseUrl": "https://www.bvleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "c3leiloes_com_br",
+        "name": "C3 Leil\xF5es",
+        "domain": "c3leiloes.com.br",
+        "baseUrl": "https://www.c3leiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "camargonet_com_br",
+        "name": "CamargoNet Leil\xF5es",
+        "domain": "camargonet.com.br",
+        "baseUrl": "https://www.camargonet.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "carmencapellaleiloes_com",
+        "name": "Camen Capella Leil\xF5es",
+        "domain": "carmencapellaleiloes.com",
+        "baseUrl": "https://www.carmencapellaleiloes.com",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "castroleiloes_com_br",
+        "name": "Castro Leil\xF5es",
+        "domain": "castroleiloes.com.br",
+        "baseUrl": "https://www.castroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "cecleiloes_com_br",
+        "name": "C&C Leil\xF5es",
+        "domain": "cecleiloes.com.br",
+        "baseUrl": "https://www.cecleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "centrodeleiloescanoas_lel_br",
+        "name": "Centro de Leil\xF5es Canoas",
+        "domain": "centrodeleiloescanoas.lel.br",
+        "baseUrl": "https://www.centrodeleiloescanoas.lel.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "cleversonleiloes_com_br",
+        "name": "Cleverson Leil\xF5es",
+        "domain": "cleversonleiloes.com.br",
+        "baseUrl": "https://www.cleversonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "cobalchinileiloes_com_br",
+        "name": "Cobalchini Leil\xF5es",
+        "domain": "cobalchinileiloes.com.br",
+        "baseUrl": "https://www.cobalchinileiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "cruzeiroleiloes_com_br",
+        "name": "Cruzeiro Leil\xF5es",
+        "domain": "cruzeiroleiloes.com.br",
+        "baseUrl": "https://www.cruzeiroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "ctsleiloes_com_br",
+        "name": "CTS Leil\xF5es",
+        "domain": "ctsleiloes.com.br",
+        "baseUrl": "https://www.ctsleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "daianaleiloeira_com_br",
+        "name": "Daiana Martins Leiloeira",
+        "domain": "daianaleiloeira.com.br",
+        "baseUrl": "https://www.daianaleiloeira.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "darkeleiloes_com_br",
+        "name": "Darke Leil\xF5es",
+        "domain": "darkeleiloes.com.br",
+        "baseUrl": "https://www.darkeleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "destroleiloes_com_br",
+        "name": "Destro Leil\xF5es",
+        "domain": "destroleiloes.com.br",
+        "baseUrl": "https://www.destroleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "dinamicaleiloes_com_br",
+        "name": "Din\xE2mica Leil\xF5es",
+        "domain": "dinamicaleiloes.com.br",
+        "baseUrl": "https://www.dinamicaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "dinizmartinsleiloes_com_br",
+        "name": "Diniz Martins Leil\xF5es",
+        "domain": "dinizmartinsleiloes.com.br",
+        "baseUrl": "https://www.dinizmartinsleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "feldensleiloes_lel_br",
+        "name": "Feldens Leil\xF5es",
+        "domain": "feldensleiloes.lel.br",
+        "baseUrl": "https://www.feldensleiloes.lel.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "fgleiloes_com_br",
+        "name": "FG Leil\xF5es",
+        "domain": "fgleiloes.com.br",
+        "baseUrl": "https://www.fgleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "futuraleiloes_com_br",
+        "name": "Futura Leil\xF5es",
+        "domain": "futuraleiloes.com.br",
+        "baseUrl": "https://www.futuraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "gabrielfelixleiloes_com_br",
+        "name": "Gabriel Felix Rio Leil\xF5es",
+        "domain": "gabrielfelixleiloes.com.br",
+        "baseUrl": "https://www.gabrielfelixleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "gestornacional_com_br",
+        "name": "Gestor Nacional",
+        "domain": "gestornacional.com.br",
+        "baseUrl": "https://www.gestornacional.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "gomesleiloes_com_br",
+        "name": "Gomes Leil\xF5es",
+        "domain": "gomesleiloes.com.br",
+        "baseUrl": "https://www.gomesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "gracamedeirosleiloes_com_br",
+        "name": "Gra\xE7a Medeiros Leil\xF5es",
+        "domain": "gracamedeirosleiloes.com.br",
+        "baseUrl": "https://www.gracamedeirosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "gualeiloes_com_br",
+        "name": "Gua Leil\xF5es",
+        "domain": "gualeiloes.com.br",
+        "baseUrl": "https://www.gualeiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "hkleiloes_com_br",
+        "name": "Helcio Kronberg Leil\xF5es",
+        "domain": "hkleiloes.com.br",
+        "baseUrl": "https://www.hkleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "horizonteleiloes_com_br",
+        "name": "Horizonte Leil\xF5es",
+        "domain": "horizonteleiloes.com.br",
+        "baseUrl": "https://www.horizonteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "hugopimentaleiloeiro_lel_br",
+        "name": "Hugo Pimenta Leiloeiro",
+        "domain": "hugopimentaleiloeiro.lel.br",
+        "baseUrl": "https://www.hugopimentaleiloeiro.lel.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "inoveleiloes_com_br",
+        "name": "Inove Leil\xF5es",
+        "domain": "inoveleiloes.com.br",
+        "baseUrl": "https://www.inoveleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "jicleiloes_com_br",
+        "name": "JIC Leil\xF5es",
+        "domain": "jicleiloes.com.br",
+        "baseUrl": "https://www.jicleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "jtleiloes_com_br",
+        "name": "JT Leil\xF5es",
+        "domain": "jtleiloes.com.br",
+        "baseUrl": "https://www.jtleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "k2leiloes_com_br",
+        "name": "K2 Leil\xF5es",
+        "domain": "k2leiloes.com.br",
+        "baseUrl": "https://www.k2leiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "kikoproencaleiloes_com_br",
+        "name": "Kiko Proen\xE7a Leil\xF5es",
+        "domain": "kikoproencaleiloes.com.br",
+        "baseUrl": "https://www.kikoproencaleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "kirinusleiloes_com_br",
+        "name": "Kirinus Leil\xF5es",
+        "domain": "kirinusleiloes.com.br",
+        "baseUrl": "https://www.kirinusleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "knleiloes_com_br",
+        "name": "KN Leil\xF5es",
+        "domain": "knleiloes.com.br",
+        "baseUrl": "https://www.knleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "kriegerleiloes_com_br",
+        "name": "Krieger Leil\xF5es",
+        "domain": "kriegerleiloes.com.br",
+        "baseUrl": "https://www.kriegerleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "lbnleiloes_com_br",
+        "name": "LBN Leil\xF5es",
+        "domain": "lbnleiloes.com.br",
+        "baseUrl": "https://www.lbnleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "leilaojud_com_br",
+        "name": "Leil\xE3o Jud",
+        "domain": "leilaojud.com.br",
+        "baseUrl": "https://www.leilaojud.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "leiloeiroqueiroz_com_br",
+        "name": "Leiloeiro Queiroz",
+        "domain": "leiloeiroqueiroz.com.br",
+        "baseUrl": "https://www.leiloeiroqueiroz.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "leiloeirosp_com_br",
+        "name": "Leiloeiro SP",
+        "domain": "leiloeirosp.com.br",
+        "baseUrl": "https://www.leiloeirosp.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "leiloescruz_com_br",
+        "name": "Leil\xF5es Cruz",
+        "domain": "leiloescruz.com.br",
+        "baseUrl": "https://www.leiloescruz.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "leiloesjudiciaisdf_com_br",
+        "name": "Leiloeiro Oficial \xC1lvaro S\xE9rgio Fuzo",
+        "domain": "leiloesjudiciaisdf.com.br",
+        "baseUrl": "https://www.leiloesjudiciaisdf.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "leiloesjudiciaisparaiba_com_br",
+        "name": "Leil\xF5es Judiciais Para\xEDba",
+        "domain": "leiloesjudiciaisparaiba.com.br",
+        "baseUrl": "https://www.leiloesjudiciaisparaiba.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "leiloesjvfarias_com_br",
+        "name": "Leil\xF5es JV Farias",
+        "domain": "leiloesjvfarias.com.br",
+        "baseUrl": "https://www.leiloesjvfarias.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "ligiaseixasleiloes_com_br",
+        "name": "Ligia Seixas Leil\xF5es",
+        "domain": "ligiaseixasleiloes.com.br",
+        "baseUrl": "https://www.ligiaseixasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "lotusleiloes_com_br",
+        "name": "Lotus Leil\xF5es",
+        "domain": "lotusleiloes.com.br",
+        "baseUrl": "https://www.lotusleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "luizbalbinoleiloes_com_br",
+        "name": "Luiz Banbino Leil\xF5es",
+        "domain": "luizbalbinoleiloes.com.br",
+        "baseUrl": "https://www.luizbalbinoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "macariosleiloes_com_br",
+        "name": "Macarios Leil\xF5es",
+        "domain": "macariosleiloes.com.br",
+        "baseUrl": "https://www.macariosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "magarte_com_br",
+        "name": "Margarte Leil\xF5es",
+        "domain": "magarte.com.br",
+        "baseUrl": "https://www.magarte.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "marcelocemin_lel_br",
+        "name": "Marcelo Cemin Leil\xF5es",
+        "domain": "marcelocemin.lel.br",
+        "baseUrl": "https://www.marcelocemin.lel.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "marianalangleiloes_com_br",
+        "name": "Mariana Lang Leil\xF5es",
+        "domain": "marianalangleiloes.com.br",
+        "baseUrl": "https://www.marianalangleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "marianapintoleiloes_com_br",
+        "name": "Mariana Pinto Leil\xF5es",
+        "domain": "marianapintoleiloes.com.br",
+        "baseUrl": "https://www.marianapintoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "melhorlanceleiloes_com_br",
+        "name": "Melhor Lance Leil\xF5es",
+        "domain": "melhorlanceleiloes.com.br",
+        "baseUrl": "https://www.melhorlanceleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "mikedutraleiloeiro_com_br",
+        "name": "Mike Dutra Leiloeiro",
+        "domain": "mikedutraleiloeiro.com.br",
+        "baseUrl": "https://www.mikedutraleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "mleiloes_com_br",
+        "name": "M Leil\xF5es",
+        "domain": "mleiloes.com.br",
+        "baseUrl": "https://www.mleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "msoleiloes_com_br",
+        "name": "MSO Leil\xF5es",
+        "domain": "msoleiloes.com.br",
+        "baseUrl": "https://www.msoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "muckleiloes_com_br",
+        "name": "Evandro Muck Leil\xF5es",
+        "domain": "muckleiloes.com.br",
+        "baseUrl": "https://www.muckleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "multialeiloes_com_br",
+        "name": "MultiA Leil\xF5es",
+        "domain": "multialeiloes.com.br",
+        "baseUrl": "https://www.multialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "mundodosleiloes_com_br",
+        "name": "Mundos dos Leil\xF5es",
+        "domain": "mundodosleiloes.com.br",
+        "baseUrl": "https://www.mundodosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "navesleiloes_com_br",
+        "name": "Naves Leil\xF5es",
+        "domain": "navesleiloes.com.br",
+        "baseUrl": "https://www.navesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "new_bid_com",
+        "name": "New Bid Leil\xF5es",
+        "domain": "new-bid.com",
+        "baseUrl": "https://www.new-bid.com",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "niltonbrancalliao_com_br",
+        "name": "niltonbrancalliao.com.br",
+        "domain": "niltonbrancalliao.com.br",
+        "baseUrl": "https://www.niltonbrancalliao.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "nortebahialeiloes_com_br",
+        "name": "Norte Bahia Leil\xF5es",
+        "domain": "nortebahialeiloes.com.br",
+        "baseUrl": "https://www.nortebahialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "nortonleiloes_com_br",
+        "name": "Norton Leil\xF5es",
+        "domain": "nortonleiloes.com.br",
+        "baseUrl": "https://www.nortonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "olianileiloes_com_br",
+        "name": "Oliani Leil\xF5es",
+        "domain": "olianileiloes.com.br",
+        "baseUrl": "https://www.olianileiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "perfilleiloes_com_br",
+        "name": "Perfil Leil\xF5es",
+        "domain": "perfilleiloes.com.br",
+        "baseUrl": "https://www.perfilleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "publicumleiloes_com_br",
+        "name": "Publicum Leil\xF5es",
+        "domain": "publicumleiloes.com.br",
+        "baseUrl": "https://www.publicumleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "rdantasleiloes_com_br",
+        "name": "Roberto Dantas Leiloeiro",
+        "domain": "rdantasleiloes.com.br",
+        "baseUrl": "https://www.rdantasleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "realfgleiloes_com_br",
+        "name": "Real FG Leil\xF5es",
+        "domain": "realfgleiloes.com.br",
+        "baseUrl": "https://www.realfgleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "rondoleiloes_com_br",
+        "name": "Rondo Leil\xF5es",
+        "domain": "rondoleiloes.com.br",
+        "baseUrl": "https://www.rondoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "rondonialeiloes_com_br",
+        "name": "Rond\xF4nia Leil\xF5es",
+        "domain": "rondonialeiloes.com.br",
+        "baseUrl": "https://www.rondonialeiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "superlanceleilao_com_br",
+        "name": "Super Lance Leil\xE3o",
+        "domain": "superlanceleilao.com.br",
+        "baseUrl": "https://www.superlanceleilao.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "targetleiloes_com_br",
+        "name": "Target Leil\xF5es",
+        "domain": "targetleiloes.com.br",
+        "baseUrl": "https://www.targetleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "tempoleiloes_com_br",
+        "name": "Tempo Leil\xF5es",
+        "domain": "tempoleiloes.com.br",
+        "baseUrl": "https://www.tempoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "trevosleiloes_com_br",
+        "name": "Trevos Leil\xF5es",
+        "domain": "trevosleiloes.com.br",
+        "baseUrl": "https://www.trevosleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "trt_eduardosorgileiloeiro_com_br",
+        "name": "Eduardo Sorgi",
+        "domain": "trt.eduardosorgileiloeiro.com.br",
+        "baseUrl": "https://www.trt.eduardosorgileiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "uonleiloes_com_br",
+        "name": "Uon Leil\xF5es",
+        "domain": "uonleiloes.com.br",
+        "baseUrl": "https://www.uonleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "valeleilao_com_br",
+        "name": "Vale Leil\xE3o",
+        "domain": "valeleilao.com.br",
+        "baseUrl": "https://www.valeleilao.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "varonesleiloes_com_br",
+        "name": "Varones Drabach Leil\xF5es",
+        "domain": "varonesleiloes.com.br",
+        "baseUrl": "https://www.varonesleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "vbleiloes_com_br",
+        "name": "VB Leil\xF5es",
+        "domain": "vbleiloes.com.br",
+        "baseUrl": "https://www.vbleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "vdleiloes_com_br",
+        "name": "Varones Drabach",
+        "domain": "vdleiloes.com.br",
+        "baseUrl": "https://www.vdleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "venetoleiloes_com_br",
+        "name": "Veneto Leil\xF5es",
+        "domain": "venetoleiloes.com.br",
+        "baseUrl": "https://www.venetoleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "veraleiloes_com_br",
+        "name": "Vera Leil\xF5es",
+        "domain": "veraleiloes.com.br",
+        "baseUrl": "https://www.veraleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "vicenteleiloeiro_com_br",
+        "name": "Vicente de Paula Xavier Filho",
+        "domain": "vicenteleiloeiro.com.br",
+        "baseUrl": "https://www.vicenteleiloeiro.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "vicenteleiloes_com_br",
+        "name": "Vicente Leil\xF5es",
+        "domain": "vicenteleiloes.com.br",
+        "baseUrl": "https://www.vicenteleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "weiderleiloes_com_br",
+        "name": "Weider Leil\xF5es",
+        "domain": "weiderleiloes.com.br",
+        "baseUrl": "https://www.weiderleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "whleiloes_com_br",
+        "name": "WH Leil\xF5es",
+        "domain": "whleiloes.com.br",
+        "baseUrl": "https://www.whleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "willianleiloes_com_br",
+        "name": "Willian Leil\xF5es",
+        "domain": "willianleiloes.com.br",
+        "baseUrl": "https://www.willianleiloes.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      },
+      {
+        "id": "zampierileilao_com_br",
+        "name": "Zampieri Leil\xE3o",
+        "domain": "zampierileilao.com.br",
+        "baseUrl": "https://www.zampierileilao.com.br",
+        "genericScrape": true,
+        "enabled": false,
+        "nexusImoveis": 0,
+        "nexusSituacao": "site_indisponivel"
+      }
+    ];
+  }
+});
+
 // src/utils/auctionSyncScope.ts
-var SYNC_TARGETS, SYNC_SOURCE_IDS, normalizeAuctionText, allowedSyncLocation;
+var SYNC_TARGETS, BASE_SYNC_SOURCE_IDS, SYNC_SOURCE_IDS, normalizeAuctionText, allowedSyncLocation;
 var init_auctionSyncScope = __esm({
   "src/utils/auctionSyncScope.ts"() {
+    init_nexusAuctioneers();
     SYNC_TARGETS = [
       { city: "Rio de Janeiro", state: "RJ", ibge: "3304557", slug: "rio-de-janeiro" },
       { city: "Niter\xF3i", state: "RJ", ibge: "3303302", slug: "niteroi" },
       { city: "Juiz de Fora", state: "MG", ibge: "3136702", slug: "juiz-de-fora" }
     ];
-    SYNC_SOURCE_IDS = [
+    BASE_SYNC_SOURCE_IDS = [
       "freitas",
       "leilaovip",
       "isaias",
@@ -2432,6 +10802,9 @@ var init_auctionSyncScope = __esm({
       "vitorcalableiloeiro_com_br",
       "bolsadeleiloes_com_br",
       "wsleiloes_com_br"
+    ];
+    SYNC_SOURCE_IDS = [
+      .../* @__PURE__ */ new Set([...BASE_SYNC_SOURCE_IDS, ...NEXUS_AUCTIONEERS.map((a) => a.id)])
     ];
     normalizeAuctionText = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
     allowedSyncLocation = (city, state) => SYNC_TARGETS.some((target) => target.state === state && normalizeAuctionText(city) === normalizeAuctionText(target.city));
@@ -4476,6 +12849,7 @@ var init_auctioneerSyncService = __esm({
     import_genai2 = require("@google/genai");
     init_documentTextService();
     init_addressComponents();
+    init_nexusAuctioneers();
     documentOcrPausedUntil = 0;
     AUCTIONEER_PORTALS = [
       { id: "freitas", name: "Freitas Leiloeiro", domain: "freitasleiloeiro.com.br", baseUrl: "https://www.freitasleiloeiro.com.br", genericScrape: true, enabled: true },
@@ -4721,7 +13095,8 @@ var init_auctioneerSyncService = __esm({
       { id: "globoleiloes_com_br", name: "Vanderlia de Assis Carvalho Freitas", domain: "globoleiloes.com.br", baseUrl: "https://www.globoleiloes.com.br", genericScrape: true, enabled: true },
       { id: "vitorcalableiloeiro_com_br", name: "V\xEDtor Calab Nunes", domain: "vitorcalableiloeiro.com.br", baseUrl: "https://www.vitorcalableiloeiro.com.br", genericScrape: true, enabled: true },
       { id: "bolsadeleiloes_com_br", name: "Viviane Garzon Corr\xEAa", domain: "bolsadeleiloes.com.br", baseUrl: "https://www.bolsadeleiloes.com.br", genericScrape: true, enabled: true },
-      { id: "wsleiloes_com_br", name: "Wanderson Belmiro dos Reis", domain: "wsleiloes.com.br", baseUrl: "https://www.wsleiloes.com.br", genericScrape: true, enabled: true }
+      { id: "wsleiloes_com_br", name: "Wanderson Belmiro dos Reis", domain: "wsleiloes.com.br", baseUrl: "https://www.wsleiloes.com.br", genericScrape: true, enabled: true },
+      ...NEXUS_AUCTIONEERS
     ];
     OFFICIAL_DETAIL_SEEDS = [
       {
@@ -5431,13 +13806,16 @@ init_listedPortalApis();
 init_leilaoImovelScraper();
 var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 var propertyWords = /\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba)\b/;
-var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|oferta|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/auctions\/\d+\/lot\/\d+|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+/i;
-var navigationPattern = /\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|agenda|pesquisa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)/i;
+var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+/i;
+var navigationPattern = /\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?/i;
 var skipPattern = /login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|\.pdf(?:\?|$)/i;
 var bankIds = /* @__PURE__ */ new Set(["bb", "emgea", "santander", "vitrinebradesco"]);
 var isBlockedLeilaoImovelResponse = (portalId, error) => portalId === "leilaoimovel" && /HTTP\s+403\b/i.test(error instanceof Error ? error.message : String(error));
 var wait2 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-var portalConfigs = AUCTIONEER_PORTALS.filter((p) => p.enabled);
+var portalConfigs = AUCTIONEER_PORTALS.filter((p) => p.enabled).sort((a, b) => {
+  const rank = (p) => !p.nexusSituacao ? 0 : p.nexusImoveis > 0 ? 1 : p.nexusSituacao === "em_atualizacao" || p.nexusSituacao === "agregador" ? 2 : 3;
+  return rank(a) - rank(b) || (b.nexusImoveis || 0) - (a.nexusImoveis || 0);
+});
 var sameHost = (a, b) => new URL(a).hostname.replace(/^www\./, "") === new URL(b).hostname.replace(/^www\./, "");
 var sameHostOrAlias = (linkUrl, responseUrl, config) => {
   if (sameHost(linkUrl, responseUrl)) return true;
@@ -5814,7 +14192,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
           progress.status = "completed";
           continue;
         }
-        const rioCloneIds = /* @__PURE__ */ new Set(["rioleiloes", "deonizialeiloes_com_br", "giordanoleiloes_com_br", "alessandroteixeiraleiloes_com_br", "hdleiloes_com_br"]);
+        const rioCloneIds = /* @__PURE__ */ new Set(["rioleiloes", "deonizialeiloes_com_br", "giordanoleiloes_com_br", "alessandroteixeiraleiloes_com_br", "hdleiloes_com_br", "jrleiloes_com_br"]);
         if (rioCloneIds.has(config.id)) {
           try {
             await collectRioLinks(dir, async (links) => {
@@ -8185,40 +16563,114 @@ async function searchMoradaVirtual(street, city, state, neighborhood) {
   }
   return null;
 }
+function parsePortugueseMoney(text) {
+  const m = text.match(/R\$\s*([\d.,]+)\s*(milh(?:[aã]o|[oõ]es)|mil)?/i);
+  if (!m) return 0;
+  let numStr = m[1].trim();
+  const unit = (m[2] || "").toLowerCase();
+  if (unit.startsWith("milh")) {
+    numStr = numStr.replace(/\./g, "").replace(",", ".");
+    return Math.round((parseFloat(numStr) || 0) * 1e6);
+  }
+  if (unit === "mil") {
+    numStr = numStr.replace(/\./g, "").replace(",", ".");
+    return Math.round((parseFloat(numStr) || 0) * 1e3);
+  }
+  const clean = numStr.replace(/\./g, "").replace(",", ".");
+  return Math.round(parseFloat(clean) || 0);
+}
 async function scrapeMoradaPage(pathUrl) {
   try {
-    const fullUrl = `https://moradavirtual.com.br${pathUrl}`;
+    const fullUrl = /^https?:\/\//i.test(pathUrl) ? pathUrl : `https://urbyx.com.br${pathUrl.startsWith("/") ? pathUrl : "/" + pathUrl}`;
     const resp = await fetch(fullUrl, {
-      headers: { "User-Agent": USER_AGENT }
+      headers: { "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(15e3)
     });
     if (!resp.ok) return null;
     const html = await resp.text();
     const $ = cheerio4.load(html);
-    const canonicalTitle = $("h1").text().trim() || "";
-    const leadText = $(".mvm-lead").text().trim() || "";
+    const titleFromTag = $("title").text().replace(/\s*[·|-]\s*(?:Urbyx|Morada Virtual).*$/i, "").replace(/:\s*risco clim[aá]tico.*$/i, "").trim();
+    const h1Clean = $("h1").clone().children().remove().end().text().replace(/\s+/g, " ").trim();
+    const canonicalTitle = titleFromTag || (h1Clean.length <= 90 ? h1Clean : h1Clean.split(/(?<=RJ|MG)(?=[A-Z])/)[0]) || $("h1").text().replace(/\s+/g, " ").trim() || "";
+    let leadText = $(".mvm-lead").text().replace(/\s+/g, " ").trim() || "";
     const cards = [];
-    $(".mvm-card").each((_, el) => {
-      const rawTipo = $(el).find(".mvm-card-tipo").text().trim().toUpperCase();
-      const rawM2 = $(el).find(".mvm-m2").text().trim();
-      const rawCount = $(el).find(".mvm-card-n").text().trim();
-      const rawMid = $(el).find(".mvm-faixa-mid").text().trim();
-      const rawMeta = $(el).find(".mvm-card-meta").text().trim();
-      const m2Match = rawM2.replace(/\./g, "").match(/(\d+)/);
-      const m2 = m2Match ? parseInt(m2Match[1], 10) : 0;
-      const countMatch = rawCount.replace(/\./g, "").match(/(\d+)/);
-      const sampleCount = countMatch ? parseInt(countMatch[1], 10) : 0;
-      const midMatch = rawMid.replace(/\./g, "").match(/(\d+)/);
-      const avgPrice = midMatch ? parseInt(midMatch[1], 10) : 0;
-      if (m2 > 0) {
-        cards.push({
-          tipo: rawTipo,
-          m2,
-          sampleCount,
-          avgPrice,
-          rawMeta
-        });
+    let urbyxM2 = 0;
+    let urbyxSummary = "";
+    $("#mv2-historia .k").each((_, el) => {
+      const label = normalizeText2($(el).find(".l").text());
+      if (label === "preco" || label.includes("preco")) {
+        const valText = $(el).find(".v").text().replace(/\s+/g, " ").trim();
+        const m2Match = valText.replace(/\./g, "").match(/R\$\s*(\d+)/i) || valText.replace(/\./g, "").match(/(\d+)/);
+        if (m2Match) {
+          urbyxM2 = parseInt(m2Match[1], 10);
+          urbyxSummary = $(el).find("p").text().replace(/\s+/g, " ").trim();
+        }
       }
     });
+    let urbyxSampleCount = 0;
+    let urbyxAvgPrice = 0;
+    let urbyxTypology = "RESIDENCIAL";
+    let urbyxCostLead = "";
+    $(".viver .row").each((_, el) => {
+      const rowText = $(el).text().replace(/\s+/g, " ").trim();
+      if (!/quanto custa|m[²2]|an[uú]ncios de venda/i.test(rowText)) return;
+      const fonteText = $(el).find(".viz .fonte").text().replace(/\s+/g, " ").trim();
+      const countMatch = fonteText.replace(/\./g, "").match(/(\d+)\s*an[uú]ncio/i);
+      if (countMatch) {
+        urbyxSampleCount = parseInt(countMatch[1], 10);
+      }
+      if (!urbyxM2) {
+        const hiBar = $(el).find(".viz .hb").filter((__, bar) => $(bar).find("i.hi").length > 0).first();
+        const barPrice = hiBar.find("b").last().text().replace(/\./g, "").match(/(\d+)/);
+        if (barPrice) urbyxM2 = parseInt(barPrice[1], 10);
+      }
+      const h3Text = $(el).find("h3").text().replace(/\s+/g, " ").trim();
+      const txText = $(el).find("p.tx").text().replace(/\s+/g, " ").trim();
+      if (h3Text) {
+        urbyxAvgPrice = parsePortugueseMoney(h3Text);
+        const h3Norm = normalizeText2(h3Text);
+        if (h3Norm.includes("apartamento")) urbyxTypology = "APARTAMENTO";
+        else if (h3Norm.includes("casa")) urbyxTypology = "CASA";
+        else if (h3Norm.includes("comercial") || h3Norm.includes("sala") || h3Norm.includes("loja")) urbyxTypology = "COMERCIAL";
+      }
+      urbyxCostLead = [h3Text, txText, fonteText].filter(Boolean).join(" \xB7 ");
+    });
+    if (urbyxM2 > 0) {
+      if (!leadText) {
+        leadText = [urbyxCostLead, urbyxSummary].filter(Boolean).join(" | ");
+      }
+      cards.push({
+        tipo: urbyxTypology,
+        m2: urbyxM2,
+        sampleCount: urbyxSampleCount || 1,
+        avgPrice: urbyxAvgPrice || Math.round(urbyxM2 * 70),
+        rawMeta: [urbyxSummary, urbyxCostLead].filter(Boolean).join(" \xB7 ") || "Urbyx / Morada Virtual"
+      });
+    }
+    if (cards.length === 0) {
+      $(".mvm-card").each((_, el) => {
+        const rawTipo = $(el).find(".mvm-card-tipo").text().trim().toUpperCase();
+        const rawM2 = $(el).find(".mvm-m2").text().trim();
+        const rawCount = $(el).find(".mvm-card-n").text().trim();
+        const rawMid = $(el).find(".mvm-faixa-mid").text().trim();
+        const rawMeta = $(el).find(".mvm-card-meta").text().trim();
+        const m2Match = rawM2.replace(/\./g, "").match(/(\d+)/);
+        const m2 = m2Match ? parseInt(m2Match[1], 10) : 0;
+        const countMatch = rawCount.replace(/\./g, "").match(/(\d+)/);
+        const sampleCount = countMatch ? parseInt(countMatch[1], 10) : 0;
+        const midMatch = rawMid.replace(/\./g, "").match(/(\d+)/);
+        const avgPrice = midMatch ? parseInt(midMatch[1], 10) : 0;
+        if (m2 > 0) {
+          cards.push({
+            tipo: rawTipo,
+            m2,
+            sampleCount,
+            avgPrice,
+            rawMeta
+          });
+        }
+      });
+    }
     if (cards.length === 0) {
       const rawFipe = $(".mvm-fipe-big").text().trim();
       const m2Match = rawFipe.replace(/\./g, "").match(/(\d+)/);
@@ -8229,7 +16681,7 @@ async function scrapeMoradaPage(pathUrl) {
           m2,
           sampleCount: 1,
           avgPrice: m2 * 60,
-          rawMeta: $(".mvm-fipe-scope").text().trim() || "FipeZap / Morada Virtual"
+          rawMeta: $(".mvm-fipe-scope").text().trim() || "FipeZap / Urbyx (Morada Virtual)"
         });
       }
     }
@@ -8239,10 +16691,19 @@ async function scrapeMoradaPage(pathUrl) {
     return null;
   }
 }
-async function fetchAndCacheMoradaVirtual(street, city, state, neighborhood) {
+var CACHE_REFRESH_MS = 15 * 24 * 60 * 60 * 1e3;
+async function fetchAndCacheMoradaVirtual(street, city, state, neighborhood, forceRefresh = false) {
   const cacheKey = getMoradaCacheKey(street, city, state, neighborhood);
-  if (moradaCache[cacheKey]) {
-    return moradaCache[cacheKey].notFound ? null : moradaCache[cacheKey];
+  const cached = moradaCache[cacheKey];
+  if (cached && !forceRefresh) {
+    const ageMs = Date.now() - (Date.parse(cached.updatedAt || "") || 0);
+    const hasLegacyMeta = cached.cards?.some((c) => !c.rawMeta?.includes("Urbyx"));
+    if (ageMs < CACHE_REFRESH_MS && !hasLegacyMeta && !cached.notFound) {
+      return cached;
+    }
+    if (cached.notFound && ageMs < 3 * 24 * 60 * 60 * 1e3) {
+      return null;
+    }
   }
   const match = await searchMoradaVirtual(street, city, state, neighborhood);
   if (!match) {
@@ -8332,7 +16793,7 @@ function getMoradaVirtualBenchmark(street, city, state, propertyType, neighborho
     sampleCount: matchedCard.sampleCount,
     avgPrice: matchedCard.avgPrice,
     typology: matchedCard.tipo,
-    streetUrl: `https://moradavirtual.com.br${entry.url}`,
+    streetUrl: /^https?:\/\//i.test(entry.url) ? entry.url.replace(/^https?:\/\/(?:www\.)?moradavirtual\.com\.br/i, "https://urbyx.com.br") : `https://urbyx.com.br${entry.url.startsWith("/") ? entry.url : "/" + entry.url}`,
     leadText: entry.leadText,
     dataColeta: entry.updatedAt
   };
@@ -11603,7 +20064,7 @@ function loadStore() {
               a.streetPortalAvgSqm = 5200;
               a.m2MercadoPortal = 5200;
               a.portalSampleCount = 823;
-              a.portalStreetUrl = "https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
+              a.portalStreetUrl = "https://urbyx.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
               a.fontePortal = "Morada Virtual";
             }
             recalibratedPortals++;
@@ -13178,7 +21639,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     auc.streetPortalAvgSqm = 5200;
     auc.m2MercadoPortal = 5200;
     auc.portalSampleCount = 823;
-    auc.portalStreetUrl = "https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
+    auc.portalStreetUrl = "https://urbyx.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel";
     auc.fontePortal = "Morada Virtual";
   }
   auc.precisa_revisao = Boolean(hasCoreListingIssue);
@@ -15667,9 +24128,10 @@ app.get("/api/morada/benchmark", async (req, res) => {
   if (!street || !city) {
     return res.status(400).json({ error: "Par\xE2metros street e city s\xE3o obrigat\xF3rios." });
   }
-  let bench = getMoradaVirtualBenchmark(street, city, state, propertyType, neighborhood);
+  const forceRefresh = req.query.refresh === "true";
+  let bench = forceRefresh ? null : getMoradaVirtualBenchmark(street, city, state, propertyType, neighborhood);
   if (!bench) {
-    await fetchAndCacheMoradaVirtual(street, city, state, neighborhood);
+    await fetchAndCacheMoradaVirtual(street, city, state, neighborhood, forceRefresh);
     bench = getMoradaVirtualBenchmark(street, city, state, propertyType, neighborhood);
   }
   return res.json({ benchmark: bench, stats: getMoradaCacheStats() });

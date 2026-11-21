@@ -250,53 +250,137 @@ async function searchMoradaVirtual(street: string, city: string, state: string, 
   return null;
 }
 
+function parsePortugueseMoney(text: string): number {
+  const m = text.match(/R\$\s*([\d.,]+)\s*(milh(?:[aã]o|[oõ]es)|mil)?/i);
+  if (!m) return 0;
+  let numStr = m[1].trim();
+  const unit = (m[2] || '').toLowerCase();
+  if (unit.startsWith('milh')) {
+    numStr = numStr.replace(/\./g, '').replace(',', '.');
+    return Math.round((parseFloat(numStr) || 0) * 1_000_000);
+  }
+  if (unit === 'mil') {
+    numStr = numStr.replace(/\./g, '').replace(',', '.');
+    return Math.round((parseFloat(numStr) || 0) * 1_000);
+  }
+  const clean = numStr.replace(/\./g, '').replace(',', '.');
+  return Math.round(parseFloat(clean) || 0);
+}
+
 /**
- * Faz o scrape da página HTML do Morada Virtual da via e extrai os cards de m²
+ * Faz o scrape da página HTML da Urbyx (antigo Morada Virtual) da via e extrai o m² médio
  */
 async function scrapeMoradaPage(pathUrl: string): Promise<{ cards: MoradaVirtualCard[]; leadText: string; canonicalTitle: string } | null> {
   try {
-    const fullUrl = `https://moradavirtual.com.br${pathUrl}`;
+    const fullUrl = /^https?:\/\//i.test(pathUrl)
+      ? pathUrl
+      : `https://urbyx.com.br${pathUrl.startsWith('/') ? pathUrl : '/' + pathUrl}`;
     const resp = await fetch(fullUrl, {
-      headers: { 'User-Agent': USER_AGENT }
+      headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(15000)
     });
     if (!resp.ok) return null;
 
     const html = await resp.text();
     const $ = cheerio.load(html);
 
-    const canonicalTitle = $('h1').text().trim() || '';
-    const leadText = $('.mvm-lead').text().trim() || '';
+    const titleFromTag = $('title').text().replace(/\s*[·|-]\s*(?:Urbyx|Morada Virtual).*$/i, '').replace(/:\s*risco clim[aá]tico.*$/i, '').trim();
+    const h1Clean = $('h1').clone().children().remove().end().text().replace(/\s+/g, ' ').trim();
+    const canonicalTitle = titleFromTag || (h1Clean.length <= 90 ? h1Clean : h1Clean.split(/(?<=RJ|MG)(?=[A-Z])/)[0]) || $('h1').text().replace(/\s+/g, ' ').trim() || '';
+    let leadText = $('.mvm-lead').text().replace(/\s+/g, ' ').trim() || '';
 
     const cards: MoradaVirtualCard[] = [];
-    $('.mvm-card').each((_, el) => {
-      const rawTipo = $(el).find('.mvm-card-tipo').text().trim().toUpperCase();
-      const rawM2 = $(el).find('.mvm-m2').text().trim();
-      const rawCount = $(el).find('.mvm-card-n').text().trim();
-      const rawMid = $(el).find('.mvm-faixa-mid').text().trim();
-      const rawMeta = $(el).find('.mvm-card-meta').text().trim();
 
-      // m²: "R$ 9.694 /m²" -> 9694
-      const m2Match = rawM2.replace(/\./g, '').match(/(\d+)/);
-      const m2 = m2Match ? parseInt(m2Match[1], 10) : 0;
-
-      // anúncios: "1.354 anúncios" -> 1354
-      const countMatch = rawCount.replace(/\./g, '').match(/(\d+)/);
-      const sampleCount = countMatch ? parseInt(countMatch[1], 10) : 0;
-
-      // preço médio: "R$ 1.167.500" -> 1167500
-      const midMatch = rawMid.replace(/\./g, '').match(/(\d+)/);
-      const avgPrice = midMatch ? parseInt(midMatch[1], 10) : 0;
-
-      if (m2 > 0) {
-        cards.push({
-          tipo: rawTipo,
-          m2,
-          sampleCount,
-          avgPrice,
-          rawMeta
-        });
+    // 1. Novo layout Urbyx (urbyx.com.br)
+    let urbyxM2 = 0;
+    let urbyxSummary = '';
+    $('#mv2-historia .k').each((_, el) => {
+      const label = normalizeText($(el).find('.l').text());
+      if (label === 'preco' || label.includes('preco')) {
+        const valText = $(el).find('.v').text().replace(/\s+/g, ' ').trim();
+        const m2Match = valText.replace(/\./g, '').match(/R\$\s*(\d+)/i) || valText.replace(/\./g, '').match(/(\d+)/);
+        if (m2Match) {
+          urbyxM2 = parseInt(m2Match[1], 10);
+          urbyxSummary = $(el).find('p').text().replace(/\s+/g, ' ').trim();
+        }
       }
     });
+
+    let urbyxSampleCount = 0;
+    let urbyxAvgPrice = 0;
+    let urbyxTypology = 'RESIDENCIAL';
+    let urbyxCostLead = '';
+
+    $('.viver .row').each((_, el) => {
+      const rowText = $(el).text().replace(/\s+/g, ' ').trim();
+      if (!/quanto custa|m[²2]|an[uú]ncios de venda/i.test(rowText)) return;
+
+      const fonteText = $(el).find('.viz .fonte').text().replace(/\s+/g, ' ').trim();
+      const countMatch = fonteText.replace(/\./g, '').match(/(\d+)\s*an[uú]ncio/i);
+      if (countMatch) {
+        urbyxSampleCount = parseInt(countMatch[1], 10);
+      }
+
+      if (!urbyxM2) {
+        const hiBar = $(el).find('.viz .hb').filter((__, bar) => $(bar).find('i.hi').length > 0).first();
+        const barPrice = hiBar.find('b').last().text().replace(/\./g, '').match(/(\d+)/);
+        if (barPrice) urbyxM2 = parseInt(barPrice[1], 10);
+      }
+
+      const h3Text = $(el).find('h3').text().replace(/\s+/g, ' ').trim();
+      const txText = $(el).find('p.tx').text().replace(/\s+/g, ' ').trim();
+      if (h3Text) {
+        urbyxAvgPrice = parsePortugueseMoney(h3Text);
+        const h3Norm = normalizeText(h3Text);
+        if (h3Norm.includes('apartamento')) urbyxTypology = 'APARTAMENTO';
+        else if (h3Norm.includes('casa')) urbyxTypology = 'CASA';
+        else if (h3Norm.includes('comercial') || h3Norm.includes('sala') || h3Norm.includes('loja')) urbyxTypology = 'COMERCIAL';
+      }
+      urbyxCostLead = [h3Text, txText, fonteText].filter(Boolean).join(' · ');
+    });
+
+    if (urbyxM2 > 0) {
+      if (!leadText) {
+        leadText = [urbyxCostLead, urbyxSummary].filter(Boolean).join(' | ');
+      }
+      cards.push({
+        tipo: urbyxTypology,
+        m2: urbyxM2,
+        sampleCount: urbyxSampleCount || 1,
+        avgPrice: urbyxAvgPrice || Math.round(urbyxM2 * 70),
+        rawMeta: [urbyxSummary, urbyxCostLead].filter(Boolean).join(' · ') || 'Urbyx / Morada Virtual'
+      });
+    }
+
+    // 2. Fallback para layout legado (.mvm-card / .mvm-fipe-big)
+    if (cards.length === 0) {
+      $('.mvm-card').each((_, el) => {
+        const rawTipo = $(el).find('.mvm-card-tipo').text().trim().toUpperCase();
+        const rawM2 = $(el).find('.mvm-m2').text().trim();
+        const rawCount = $(el).find('.mvm-card-n').text().trim();
+        const rawMid = $(el).find('.mvm-faixa-mid').text().trim();
+        const rawMeta = $(el).find('.mvm-card-meta').text().trim();
+
+        const m2Match = rawM2.replace(/\./g, '').match(/(\d+)/);
+        const m2 = m2Match ? parseInt(m2Match[1], 10) : 0;
+
+        const countMatch = rawCount.replace(/\./g, '').match(/(\d+)/);
+        const sampleCount = countMatch ? parseInt(countMatch[1], 10) : 0;
+
+        const midMatch = rawMid.replace(/\./g, '').match(/(\d+)/);
+        const avgPrice = midMatch ? parseInt(midMatch[1], 10) : 0;
+
+        if (m2 > 0) {
+          cards.push({
+            tipo: rawTipo,
+            m2,
+            sampleCount,
+            avgPrice,
+            rawMeta
+          });
+        }
+      });
+    }
 
     // Se a página não tiver cartões separados por tipologia, aproveita o bloco de preço FipeZap / Morada
     if (cards.length === 0) {
@@ -309,7 +393,7 @@ async function scrapeMoradaPage(pathUrl: string): Promise<{ cards: MoradaVirtual
           m2,
           sampleCount: 1,
           avgPrice: m2 * 60,
-          rawMeta: $('.mvm-fipe-scope').text().trim() || 'FipeZap / Morada Virtual'
+          rawMeta: $('.mvm-fipe-scope').text().trim() || 'FipeZap / Urbyx (Morada Virtual)'
         });
       }
     }
@@ -321,6 +405,8 @@ async function scrapeMoradaPage(pathUrl: string): Promise<{ cards: MoradaVirtual
   }
 }
 
+const CACHE_REFRESH_MS = 15 * 24 * 60 * 60 * 1000;
+
 /**
  * Consulta a via na internet (ou cache) e armazena os dados
  */
@@ -328,11 +414,20 @@ export async function fetchAndCacheMoradaVirtual(
   street: string,
   city: string,
   state: string,
-  neighborhood?: string
+  neighborhood?: string,
+  forceRefresh = false
 ): Promise<MoradaVirtualStreetData | null> {
   const cacheKey = getMoradaCacheKey(street, city, state, neighborhood);
-  if (moradaCache[cacheKey]) {
-    return moradaCache[cacheKey].notFound ? null : moradaCache[cacheKey];
+  const cached = moradaCache[cacheKey];
+  if (cached && !forceRefresh) {
+    const ageMs = Date.now() - (Date.parse(cached.updatedAt || '') || 0);
+    const hasLegacyMeta = cached.cards?.some(c => !c.rawMeta?.includes('Urbyx'));
+    if (ageMs < CACHE_REFRESH_MS && !hasLegacyMeta && !cached.notFound) {
+      return cached;
+    }
+    if (cached.notFound && ageMs < 3 * 24 * 60 * 60 * 1000) {
+      return null;
+    }
   }
 
   const match = await searchMoradaVirtual(street, city, state, neighborhood);
@@ -449,7 +544,9 @@ export function getMoradaVirtualBenchmark(
     sampleCount: matchedCard.sampleCount,
     avgPrice: matchedCard.avgPrice,
     typology: matchedCard.tipo,
-    streetUrl: `https://moradavirtual.com.br${entry.url}`,
+    streetUrl: /^https?:\/\//i.test(entry.url)
+      ? entry.url.replace(/^https?:\/\/(?:www\.)?moradavirtual\.com\.br/i, 'https://urbyx.com.br')
+      : `https://urbyx.com.br${entry.url.startsWith('/') ? entry.url : '/' + entry.url}`,
     leadText: entry.leadText,
     dataColeta: entry.updatedAt
   };

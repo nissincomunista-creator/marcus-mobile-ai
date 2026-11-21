@@ -1374,7 +1374,7 @@ function loadStore(): DataStore {
                 a.streetPortalAvgSqm = 5200;
                 a.m2MercadoPortal = 5200;
                 a.portalSampleCount = 823;
-                a.portalStreetUrl = 'https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel';
+                a.portalStreetUrl = 'https://urbyx.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel';
                 a.fontePortal = 'Morada Virtual';
               }
               recalibratedPortals++;
@@ -3278,7 +3278,7 @@ function recalculateAuctionWithIndex(
     auc.streetPortalAvgSqm = 5200;
     auc.m2MercadoPortal = 5200;
     auc.portalSampleCount = 823;
-    auc.portalStreetUrl = 'https://moradavirtual.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel';
+    auc.portalStreetUrl = 'https://urbyx.com.br/rj/rio-de-janeiro/tijuca/rua-sao-miguel';
     auc.fontePortal = 'Morada Virtual';
   }
 
@@ -6236,9 +6236,10 @@ app.get('/api/morada/benchmark', async (req, res) => {
     return res.status(400).json({ error: 'Parâmetros street e city são obrigatórios.' });
   }
 
-  let bench = getMoradaVirtualBenchmark(street, city, state, propertyType, neighborhood);
+  const forceRefresh = req.query.refresh === 'true';
+  let bench = forceRefresh ? null : getMoradaVirtualBenchmark(street, city, state, propertyType, neighborhood);
   if (!bench) {
-    await fetchAndCacheMoradaVirtual(street, city, state, neighborhood);
+    await fetchAndCacheMoradaVirtual(street, city, state, neighborhood, forceRefresh);
     bench = getMoradaVirtualBenchmark(street, city, state, propertyType, neighborhood);
   }
 

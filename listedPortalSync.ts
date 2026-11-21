@@ -24,13 +24,16 @@ export interface FullSyncReport {
 }
 const UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 const propertyWords=/\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba)\b/;
-const directPattern=/\/(?:item|lote|lotes\/\d+|imovel|oferta|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/auctions\/\d+\/lot\/\d+|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+/i;
-const navigationPattern=/\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|agenda|pesquisa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)/i;
+const directPattern=/\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+/i;
+const navigationPattern=/\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?/i;
 const skipPattern=/login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|\.pdf(?:\?|$)/i;
 const bankIds=new Set(['bb','emgea','santander','vitrinebradesco']);
 const isBlockedLeilaoImovelResponse=(portalId:string,error:unknown)=>portalId==='leilaoimovel'&&/HTTP\s+403\b/i.test(error instanceof Error?error.message:String(error));
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
-const portalConfigs = AUCTIONEER_PORTALS.filter(p => p.enabled);
+const portalConfigs = AUCTIONEER_PORTALS.filter(p => p.enabled).sort((a: any, b: any) => {
+  const rank = (p: any) => !p.nexusSituacao ? 0 : p.nexusImoveis > 0 ? 1 : p.nexusSituacao === 'em_atualizacao' || p.nexusSituacao === 'agregador' ? 2 : 3;
+  return rank(a) - rank(b) || (b.nexusImoveis || 0) - (a.nexusImoveis || 0);
+});
 const sameHost=(a:string,b:string)=>new URL(a).hostname.replace(/^www\./,'')===new URL(b).hostname.replace(/^www\./,'');
 const sameHostOrAlias=(linkUrl:string,responseUrl:string,config?:typeof portalConfigs[number])=>{
  if(sameHost(linkUrl,responseUrl))return true;
@@ -270,7 +273,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
     else await collectBankApi(config.id,dir,onPage);
     progress.status='completed';continue;
    }
-   const rioCloneIds=new Set(['rioleiloes','deonizialeiloes_com_br','giordanoleiloes_com_br','alessandroteixeiraleiloes_com_br','hdleiloes_com_br']);
+   const rioCloneIds=new Set(['rioleiloes','deonizialeiloes_com_br','giordanoleiloes_com_br','alessandroteixeiraleiloes_com_br','hdleiloes_com_br','jrleiloes_com_br']);
    if(rioCloneIds.has(config.id)){
     try{
      await collectRioLinks(dir,async(links)=>{navigated=true;progress.pages++;for(const link of links)details.set(link.url,link.text);progress.discovered=details.size;save();},config.baseUrl,config.id);

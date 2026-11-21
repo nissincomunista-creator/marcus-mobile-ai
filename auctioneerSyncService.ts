@@ -19,6 +19,7 @@ import { GoogleGenAI } from '@google/genai';
 import { PDFParse } from 'pdf-parse';
 import { readRegistryPdf, extractStructuredMatriculaFields } from './documentTextService.ts';
 import { parseAddressComponents } from './src/utils/addressComponents.ts';
+import { NEXUS_AUCTIONEERS } from './src/utils/nexusAuctioneers.ts';
 
 let documentOcrPausedUntil = 0;
 import { AuctionProperty, PropertyType } from './src/types.ts';
@@ -278,7 +279,8 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "globoleiloes_com_br", name: "Vanderlia de Assis Carvalho Freitas", domain: "globoleiloes.com.br", baseUrl: "https://www.globoleiloes.com.br", genericScrape: true, enabled: true },
   { id: "vitorcalableiloeiro_com_br", name: "Vítor Calab Nunes", domain: "vitorcalableiloeiro.com.br", baseUrl: "https://www.vitorcalableiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "bolsadeleiloes_com_br", name: "Viviane Garzon Corrêa", domain: "bolsadeleiloes.com.br", baseUrl: "https://www.bolsadeleiloes.com.br", genericScrape: true, enabled: true },
-  { id: "wsleiloes_com_br", name: "Wanderson Belmiro dos Reis", domain: "wsleiloes.com.br", baseUrl: "https://www.wsleiloes.com.br", genericScrape: true, enabled: true }
+  { id: "wsleiloes_com_br", name: "Wanderson Belmiro dos Reis", domain: "wsleiloes.com.br", baseUrl: "https://www.wsleiloes.com.br", genericScrape: true, enabled: true },
+  ...NEXUS_AUCTIONEERS
 ];
 
 export interface ScrapedAuctionDraft {

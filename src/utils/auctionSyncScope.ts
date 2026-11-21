@@ -1,9 +1,11 @@
+import { NEXUS_AUCTIONEERS } from './nexusAuctioneers.ts';
+
 export const SYNC_TARGETS = [
  {city:'Rio de Janeiro',state:'RJ',ibge:'3304557',slug:'rio-de-janeiro'},
  {city:'Niterói',state:'RJ',ibge:'3303302',slug:'niteroi'},
  {city:'Juiz de Fora',state:'MG',ibge:'3136702',slug:'juiz-de-fora'},
 ];
-export const SYNC_SOURCE_IDS = [
+const BASE_SYNC_SOURCE_IDS = [
   "freitas","leilaovip","isaias","alexandrecosta","ayupp","rioleiloes","mariafilomena","frazao","biasi","megaleiloes",
   "portalzuk","sold","pestana","mgl","leilaoimovel","leiloei","vitrinebradesco","santander","emgea","bb",
   "ricart","pamela","gustavo","onildo","schulmann","saraiva","rymer","depaula","jv","paulobotelho",
@@ -29,6 +31,9 @@ export const SYNC_SOURCE_IDS = [
   "saladeleiloes_com_br","leiloarialoucoporleiloes_com_br","mozarmirandaleiloes_com_br","patricialeiloeira_com_br","agostinholeiloes_com_br","pauloramosleiloeiro_com_br","jinkingsleiloes_com_br","ferreiraleiloes_com_br","priscillaferreiraleiloes_com_br","rafaelleiloeiro_com_br",
   "rvleiloes_com_br","rezendeguimaraes_com_br","rodrigoleiloeiro_com_br","leiloesuberlandia_com_br","rofremleiloes_com_br","ileiloes_com_br","sandrasantosleiloes_com_br","saulojulioleiloeiro_com_br","bhleiloaria_com_br","ssleiloes_com",
   "globoleiloes_com_br","vitorcalableiloeiro_com_br","bolsadeleiloes_com_br","wsleiloes_com_br"
+];
+export const SYNC_SOURCE_IDS = [
+  ...new Set([...BASE_SYNC_SOURCE_IDS, ...NEXUS_AUCTIONEERS.map(a => a.id)])
 ];
 export const normalizeAuctionText = (value: string) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 export const allowedSyncLocation = (city: string, state: string) => SYNC_TARGETS.some(target => target.state === state && normalizeAuctionText(city) === normalizeAuctionText(target.city));
