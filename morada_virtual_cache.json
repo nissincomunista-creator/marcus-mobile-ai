@@ -2395,36 +2395,22 @@
     "updatedAt": "2026-10-17T20:20:12.234Z"
   },
   "rj_rio de janeiro_tijuca_sao miguel": {
-    "street": "Rua São Miguel",
+    "street": "Rua Sao Miguel",
     "city": "Rio de Janeiro",
     "state": "RJ",
     "url": "/rj/rio-de-janeiro/tijuca/rua-sao-miguel",
-    "canonicalTitle": "Rua São MiguelQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
-    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte médio. Pelos nossos dados, o m² de venda gira em torno de R$ 6.533.",
+    "canonicalTitle": "Rua São Miguel, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 700 mil. · Para alugar, apartamentos de ~100 m² ficam na faixa de R$ 2.293 a R$ 8.000. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 7.959 anúncios | na região, 11% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
     "cards": [
       {
         "tipo": "APARTAMENTO",
-        "m2": 6667,
-        "sampleCount": 6379,
+        "m2": 6532,
+        "sampleCount": 7959,
         "avgPrice": 700000,
-        "rawMeta": "~100 m² · em geral 3 quartos"
-      },
-      {
-        "tipo": "CASA",
-        "m2": 5200,
-        "sampleCount": 823,
-        "avgPrice": 960000,
-        "rawMeta": "~200 m² · em geral 3 quartos"
-      },
-      {
-        "tipo": "COMERCIAL",
-        "m2": 7600,
-        "sampleCount": 757,
-        "avgPrice": 299999,
-        "rawMeta": "~32 m² · salas e lojas"
+        "rawMeta": "na região, 11% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 700 mil. · Para alugar, apartamentos de ~100 m² ficam na faixa de R$ 2.293 a R$ 8.000. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 7.959 anúncios"
       }
     ],
-    "updatedAt": "2026-10-17T21:05:16.621Z"
+    "updatedAt": "2026-11-21T02:13:18.456Z"
   },
   "mg_juiz de fora_estrela sul - santa luzia_passaros da polonia": {
     "street": "Alameda Passaros Da Polonia",
@@ -3569,13 +3555,13 @@
     "updatedAt": "2026-10-18T19:21:30.532Z"
   },
   "rj_rio de janeiro_braz de pina_maues": {
-    "street": "Rua Maués",
+    "street": "RUA MAUÉS",
     "city": "Rio de Janeiro",
     "state": "RJ",
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-10-18T20:40:54.201Z",
+    "updatedAt": "2026-11-21T02:22:36.558Z",
     "notFound": true
   },
   "rj_rio de janeiro_ipanema_rainha elizabeth da belgica": {
@@ -16890,6 +16876,400 @@
     "canonicalTitle": "",
     "cards": [],
     "updatedAt": "2026-11-21T02:04:19.283Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_visa_delfin": {
+    "street": "delfin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:08.062Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vi_delfin": {
+    "street": "delfin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:08.212Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vis_delfin": {
+    "street": "delfin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:10.318Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_v_delfin": {
+    "street": "delfin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:08.864Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vist_delfin": {
+    "street": "delfin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:15.532Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vista_delfin": {
+    "street": "delfin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:15.534Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vista alegre_maues": {
+    "street": "RUA MAUÉS",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:26.261Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ba_mau": {
+    "street": "RUA MAU",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:28.393Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vista alegre_maue": {
+    "street": "RUA MAUÉ",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:28.169Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vista alegre_mau": {
+    "street": "RUA MAU",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:28.280Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bas_mau": {
+    "street": "RUA MAU",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:28.391Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_br_mau": {
+    "street": "RUA MAU",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:37.427Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_b_mau": {
+    "street": "RUA MAU",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:37.569Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bra_mau": {
+    "street": "RUA MAU",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:39.711Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_bras_mau": {
+    "street": "RUA MAU",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T02:22:40.129Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_riachuelo_f": {
+    "street": "f",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T03:18:36.576Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_riachuelo_flack": {
+    "street": "RUA FLACK",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/riachuelo/rua-flack",
+    "canonicalTitle": "Rua Flack, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 260 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 1.025 a R$ 2.056. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 418 anúncios | na região, 52% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3555,
+        "sampleCount": 418,
+        "avgPrice": 260000,
+        "rawMeta": "na região, 52% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 260 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 1.025 a R$ 2.056. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 418 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T03:18:44.114Z"
+  },
+  "rj_rio de janeiro_r_maues": {
+    "street": "RUA MAUES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/bras-de-pina/rua-maues",
+    "canonicalTitle": "Rua Maues, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios | na região. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7357,
+        "sampleCount": 148288,
+        "avgPrice": 899000,
+        "rawMeta": "na região. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T03:18:44.253Z"
+  },
+  "rj_rio de janeiro_ri_maues": {
+    "street": "RUA MAUES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/bras-de-pina/rua-maues",
+    "canonicalTitle": "Rua Maues, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios | na região. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7357,
+        "sampleCount": 148288,
+        "avgPrice": 899000,
+        "rawMeta": "na região. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T03:18:44.336Z"
+  },
+  "rj_rio de janeiro_riachuelo_fla": {
+    "street": "fla",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/riachuelo/rua-flack",
+    "canonicalTitle": "Rua Flack, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 260 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 1.025 a R$ 2.056. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 418 anúncios | na região, 52% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3555,
+        "sampleCount": 418,
+        "avgPrice": 260000,
+        "rawMeta": "na região, 52% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 260 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 1.025 a R$ 2.056. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 418 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T03:18:44.542Z"
+  },
+  "rj_rio de janeiro_riachu_maues": {
+    "street": "RUA MAUES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T03:18:45.825Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_riac_maues": {
+    "street": "RUA MAUES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T03:18:45.954Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ria_maues": {
+    "street": "RUA MAUES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T03:18:45.958Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_riach_maues": {
+    "street": "RUA MAUES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T03:18:45.987Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_riachuelo_fl": {
+    "street": "fl",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T03:18:50.563Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_inhauma_adhemar bebiano": {
+    "street": "ESTRADA ADHEMAR BEBIANO",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/inhauma/estrada-adhemar-bebiano",
+    "canonicalTitle": "Estrada Adhemar Bebiano, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 215 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 850 a R$ 1.570. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 190 anúncios | na região, 46% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3980,
+        "sampleCount": 190,
+        "avgPrice": 215000,
+        "rawMeta": "na região, 46% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 215 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 850 a R$ 1.570. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 190 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T13:46:26.482Z"
+  },
+  "rj_rio de janeiro_inhauma_etr adhemar bebiano": {
+    "street": "ETR ADHEMAR BEBIANO",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/inhauma/estrada-adhemar-bebiano-2138",
+    "canonicalTitle": "Estrada Adhemar Bebiano 2138, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 215 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 850 a R$ 1.570. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 190 anúncios | na região, 46% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3980,
+        "sampleCount": 190,
+        "avgPrice": 215000,
+        "rawMeta": "na região, 46% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 215 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 850 a R$ 1.570. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 190 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T13:46:48.349Z"
+  },
+  "rj_rio de janeiro_inhauma_r": {
+    "street": "r",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T13:47:34.194Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_inhauma_p": {
+    "street": "rua p",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T13:47:42.961Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_inhauma_pi": {
+    "street": "rua pi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/mare/praia-de-inhauma",
+    "canonicalTitle": "Praia de Inhauma, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios | na região. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7357,
+        "sampleCount": 148288,
+        "avgPrice": 899000,
+        "rawMeta": "na região. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T13:47:54.017Z"
+  },
+  "rj_rio de janeiro_inhauma_rua": {
+    "street": "rua",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/mare/praia-de-inhauma",
+    "canonicalTitle": "Praia de Inhauma, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios | na região. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7357,
+        "sampleCount": 148288,
+        "avgPrice": 899000,
+        "rawMeta": "na região. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 899 mil. · Para alugar, apartamentos de ~70 m² ficam na faixa de R$ 920 a R$ 11.780. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda, por tipo de imóvel · 148.288 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-21T13:47:54.080Z"
+  },
+  "rj_rio de janeiro_inhauma_pin": {
+    "street": "pin",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T13:48:02.420Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_inhauma_ru": {
+    "street": "ru",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-21T13:48:14.009Z",
     "notFound": true
   }
 }

@@ -3513,18 +3513,22 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
       : targetOrigin === 'extrajudicial' ? (['extrajudicial'] as const)
       : (['judicial', 'extrajudicial'] as const);
 
-    for (const org of originsToRun) {
-      for (const target of SYNC_TARGETS) {
-        try {
-          const priorityResult = await syncPriorityOfficialAuctioneers(org, target.state, target.city, store.auctions, recalculate);
-          if (priorityResult?.newAuctions?.length) {
-            priorityResult.newAuctions.forEach(a => { a.userId = 'system'; a.lastSyncedAt = new Date().toISOString(); });
-            store.auctions.unshift(...priorityResult.newAuctions);
-            catalogRevision++;
-            persistedCatalogInvalidated = true;
+    const priorityIds = new Set(['megaleiloes', 'frazao', 'biasi', 'portalzuk', 'rogeriomenezes', 'santander', 'isaias']);
+    const shouldSyncPriority = !ids || ids.length === 0 || ids.some(id => priorityIds.has(id));
+    if (shouldSyncPriority) {
+      for (const org of originsToRun) {
+        for (const target of SYNC_TARGETS) {
+          try {
+            const priorityResult = await syncPriorityOfficialAuctioneers(org, target.state, target.city, store.auctions, recalculate);
+            if (priorityResult?.newAuctions?.length) {
+              priorityResult.newAuctions.forEach(a => { a.userId = 'system'; a.lastSyncedAt = new Date().toISOString(); });
+              store.auctions.unshift(...priorityResult.newAuctions);
+              catalogRevision++;
+              persistedCatalogInvalidated = true;
+            }
+          } catch (priErr: any) {
+            console.warn(`[Priority Sync] ${org} ${target.city}: ${priErr.message}`);
           }
-        } catch (priErr: any) {
-          console.warn(`[Priority Sync] ${org} ${target.city}: ${priErr.message}`);
         }
       }
     }
