@@ -547,11 +547,12 @@ export function extractAuctionRoundsAndPrices(text: string, todayParam?: string)
   const firstAuctionDate=one.date||generalDates.first,secondAuctionDate=two.date||generalDates.second;
   // The current/next bid explicitly displayed by the source prevails over the starting bid.
   const current=extractDisplayedCurrentBid(text);
+  const headerBid=markers.length&&new Set(explicitBids).size===1?unique(bids(text.slice(0,markers[0].index))):0;
   const genericPrice=markers.length?0:unique([...bids(text),...[...text.matchAll(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]))]);
   let activePrice=0,activeDate='';
-  if(firstAuctionDate && firstAuctionDate>=today){activePrice=firstAuctionPrice||genericPrice;activeDate=firstAuctionDate;}
-  else if(secondAuctionDate && secondAuctionDate>=today){activePrice=secondAuctionPrice||genericPrice;activeDate=secondAuctionDate;}
-  else if(!firstAuctionDate&&!secondAuctionDate){activePrice=genericPrice;}
+  if(firstAuctionDate && firstAuctionDate>=today){activePrice=firstAuctionPrice||genericPrice||headerBid;activeDate=firstAuctionDate;}
+  else if(secondAuctionDate && secondAuctionDate>=today){activePrice=secondAuctionPrice||genericPrice||headerBid;activeDate=secondAuctionDate;}
+  else if(!firstAuctionDate&&!secondAuctionDate){activePrice=genericPrice||headerBid;}
   if(current>0)activePrice=current;
 
   // 5. Appraisal
@@ -1465,10 +1466,13 @@ export async function scrapePortalZuk(
     }
     await new Promise(r => setTimeout(r, 3000));
 
-    const lotLinks = await page.evaluate(() => {
+    const lotEntries = await collectListingPages(page, () => page.evaluate(() => {
       const anchors = Array.from(document.querySelectorAll('a[href*="/imovel/"]')) as HTMLAnchorElement[];
-      return Array.from(new Set(anchors.map(a => a.href))).filter(h => !h.includes('/leilao-de-imoveis/'));
-    });
+      return Array.from(new Set(anchors.map(a => a.href)))
+        .filter(h => !h.includes('/leilao-de-imoveis/'))
+        .map(link => ({ link }));
+    }));
+    const lotLinks = lotEntries.map(e => e.link);
 
     console.log(`[Portal Zuk Scraper] ${city}/${state}: encontrados ${lotLinks.length} lotes.`);
 
@@ -1509,7 +1513,7 @@ export async function scrapePortalZuk(
         const roundInfo = extractAuctionRoundsAndPrices(bText, todayStr);
         let price = roundInfo.activePrice;
         if (!price || price < 1000) {
-          price = prod.price ? parseFloat(String(prod.price)) : 0;
+          price = prod.price ? (String(prod.price).includes(',') ? parseBrazilianMoney(String(prod.price)) : parseFloat(String(prod.price))) : 0;
         }
         if (!price || price < 1000) {
           price = roundInfo.firstAuctionPrice || roundInfo.secondAuctionPrice || 0;

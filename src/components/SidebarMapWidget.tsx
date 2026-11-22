@@ -1,6 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AuctionProperty } from '../types.ts';
 import { getPropertyCoordinates, CITY_COORDS } from '../utils/geoCoords.ts';
+import {
+  OPENFREEMAP_DARK_STYLE,
+  buildSatelliteStyle,
+  ensureMapLibrePMTilesProtocol,
+  maplibregl,
+  toLngLat,
+  upsertRio3DBuildingsLayer,
+} from '../utils/mapLibreSetup.ts';
 import { Maximize2, MapPin, Layers, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SidebarMapWidgetProps {
@@ -19,29 +27,31 @@ export default function SidebarMapWidget({
   onSelectProperty,
 }: SidebarMapWidgetProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersGroupRef = useRef<any>(null);
+  const mapInstanceRef = useRef<maplibregl.Map | null>(null);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const auctionsByIdRef = useRef<Map<string, AuctionProperty>>(new Map());
+  const onSelectPropertyRef = useRef(onSelectProperty);
+  onSelectPropertyRef.current = onSelectProperty;
+
   const [mapMode, setMapMode] = useState<'roadmap' | 'satellite'>('roadmap');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [locationsById, setLocationsById] = useState<Record<string, any>>({});
-  const tileLayerRef = useRef<any>(null);
+  const [styleVersion, setStyleVersion] = useState(0);
 
-  // Format currency
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
   };
 
-  // Determine initial center based on selected city or default to Rio de Janeiro
   const getTargetCenterAndZoom = (): { center: [number, number]; zoom: number } => {
     const cityKey = (selectedCity || '').toLowerCase().trim();
     if (cityKey && CITY_COORDS[cityKey]) {
-      return { center: CITY_COORDS[cityKey], zoom: 12 };
+      return { center: toLngLat(CITY_COORDS[cityKey]), zoom: 12 };
     }
     const stateKey = (selectedState || '').toUpperCase().trim();
     if (stateKey === 'MG') {
-      return { center: [-21.7642, -43.3503], zoom: 12 }; // Juiz de Fora default
+      return { center: [-43.3503, -21.7642], zoom: 12 };
     }
-    return { center: [-22.9068, -43.1729], zoom: 11 }; // Rio de Janeiro default
+    return { center: [-43.195, -22.9068], zoom: 11.2 };
   };
 
   useEffect(() => {
@@ -53,7 +63,7 @@ export default function SidebarMapWidget({
         const token = localStorage.getItem('token');
         const response = await fetch('/api/map/locations', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
-          signal: controller.signal
+          signal: controller.signal,
         });
         if (!response.ok) return;
         const rows = await response.json();
@@ -66,158 +76,215 @@ export default function SidebarMapWidget({
       }
     };
     void load();
-    return () => { cancelled = true; controller.abort(); if (timer) clearTimeout(timer); };
-  }, [auctions.map(auction => auction.id).join('|')]);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      if (timer) clearTimeout(timer);
+    };
+  }, [auctions.map((a) => a.id).join('|')]);
 
-  // Initialize Map
-  useEffect(() => {
-    if (isCollapsed) return;
-    const L = (window as any).L;
-    if (!L || !mapContainerRef.current) return;
+  const geojsonData = useMemo(() => {
+    const mapById = new Map<string, AuctionProperty>();
+    const features: any[] = [];
+    const sample = auctions.slice(0, 400);
 
-    // Clean existing instance if re-initializing
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-      mapInstanceRef.current = null;
+    for (const auc of sample) {
+      mapById.set(auc.id, auc);
+      const coords = getPropertyCoordinates({ ...auc, mapLocation: locationsById[auc.id] } as AuctionProperty);
+      if (!coords) continue;
+      const isCaixa = (auc.origin || '').toLowerCase().includes('caixa') || (auc.origin || '').toLowerCase().includes('extra');
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: toLngLat(coords) },
+        properties: {
+          id: auc.id,
+          color: isCaixa ? '#10b981' : '#6366f1',
+          title: (auc.title || 'Imóvel em Leilão').slice(0, 60),
+          sub: `${auc.neighborhood || ''} - ${auc.city || ''}`,
+          price: auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas',
+          roi: auc.calculatedRoi ? `${auc.calculatedRoi.toFixed(0)}%` : '-',
+        },
+      });
+    }
+    auctionsByIdRef.current = mapById;
+    return { type: 'FeatureCollection' as const, features };
+  }, [auctions, locationsById]);
+
+  const syncAuctionOverlay = (map: maplibregl.Map, data: typeof geojsonData) => {
+    if (!map.isStyleLoaded()) return;
+
+    upsertRio3DBuildingsLayer(map, 'm2', { opacity: 0.78, show3D: true });
+
+    const existing = map.getSource('sidebar-auctions') as maplibregl.GeoJSONSource | undefined;
+    if (existing) {
+      existing.setData(data as any);
+      return;
     }
 
+    map.addSource('sidebar-auctions', {
+      type: 'geojson',
+      data: data as any,
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 34,
+    });
+
+    map.addLayer({
+      id: 'sidebar-clusters',
+      type: 'circle',
+      source: 'sidebar-auctions',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': '#4f46e5',
+        'circle-radius': ['step', ['get', 'point_count'], 13, 25, 16, 100, 19],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#c7d2fe',
+      },
+    });
+
+    map.addLayer({
+      id: 'sidebar-cluster-count',
+      type: 'symbol',
+      source: 'sidebar-auctions',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': '{point_count_abbreviated}',
+        'text-size': 10,
+      },
+      paint: { 'text-color': '#ffffff' },
+    });
+
+    map.addLayer({
+      id: 'sidebar-points',
+      type: 'circle',
+      source: 'sidebar-auctions',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': ['get', 'color'],
+        'circle-radius': 5.5,
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': '#ffffff',
+      },
+    });
+  };
+
+  useEffect(() => {
+    if (isCollapsed || !mapContainerRef.current) return;
+
+    ensureMapLibrePMTilesProtocol();
     const { center, zoom } = getTargetCenterAndZoom();
 
-    const map = L.map(mapContainerRef.current, {
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: mapMode === 'satellite' ? buildSatelliteStyle() : OPENFREEMAP_DARK_STYLE,
       center,
       zoom,
-      zoomControl: false,
+      pitch: 32,
+      bearing: -10,
       attributionControl: false,
     });
 
-    // Add zoom control to top-right
-    L.control.zoom({ position: 'topright' }).addTo(map);
-
-    // Initial Tile Layer
-    const tileUrl = mapMode === 'satellite'
-      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-
-    const tileLayer = L.tileLayer(tileUrl, { maxNativeZoom: 19, maxZoom: 20 });
-    tileLayer.addTo(map);
-    tileLayerRef.current = tileLayer;
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     mapInstanceRef.current = map;
 
-    // Cluster group or layer group
-    const markersGroup = L.markerClusterGroup
-      ? L.markerClusterGroup({
-          maxClusterRadius: 35,
-          showCoverageOnHover: false,
-          iconCreateFunction: (cluster: any) => {
-            const count = cluster.getChildCount();
-            return L.divIcon({
-              html: `<div class="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 border-2 border-indigo-300 text-white font-black text-[11px] shadow-lg">${count > 99 ? '99+' : count}</div>`,
-              className: 'custom-sidebar-cluster',
-              iconSize: [32, 32],
-              iconAnchor: [16, 16],
-            });
-          }
-        })
-      : L.layerGroup();
+    map.on('style.load', () => {
+      setStyleVersion((v) => v + 1);
+    });
 
-    markersGroup.addTo(map);
-    markersGroupRef.current = markersGroup;
-
-    // Force size calculation after container renders
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 250);
-
-    return () => {
-      clearTimeout(timer);
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
+    map.on('click', 'sidebar-clusters', async (e) => {
+      const feat = e.features?.[0];
+      if (!feat) return;
+      const src = map.getSource('sidebar-auctions') as any;
+      const clusterId = feat.properties?.cluster_id;
+      if (src?.getClusterExpansionZoom && clusterId != null) {
+        try {
+          const z = await src.getClusterExpansionZoom(clusterId);
+          map.easeTo({ center: (feat.geometry as any).coordinates, zoom: z });
+        } catch {}
       }
-    };
-  }, [isCollapsed]);
+    });
 
-  // Update tile layer when mapMode changes
-  useEffect(() => {
-    const L = (window as any).L;
-    const map = mapInstanceRef.current;
-    if (!L || !map) return;
+    map.on('click', 'sidebar-points', (e) => {
+      const feat = e.features?.[0];
+      if (!feat) return;
+      const props = feat.properties || {};
+      const coords = (feat.geometry as any).coordinates as [number, number];
+      const auc = auctionsByIdRef.current.get(props.id);
 
-    if (tileLayerRef.current) {
-      map.removeLayer(tileLayerRef.current);
-    }
+      if (popupRef.current) popupRef.current.remove();
 
-    const tileUrl = mapMode === 'satellite'
-      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-
-    const newLayer = L.tileLayer(tileUrl, { maxNativeZoom: 19, maxZoom: 20 });
-    newLayer.addTo(map);
-    tileLayerRef.current = newLayer;
-  }, [mapMode]);
-
-  // Update markers when auctions list changes
-  useEffect(() => {
-    const L = (window as any).L;
-    const map = mapInstanceRef.current;
-    const group = markersGroupRef.current;
-    if (!L || !map || !group || isCollapsed) return;
-
-    group.clearLayers();
-
-    const sample = auctions.slice(0, 150); // Plot up to 150 for fluid sidebar performance
-
-    sample.forEach((auc) => {
-      const coords = getPropertyCoordinates({ ...auc, mapLocation: locationsById[auc.id] } as AuctionProperty);
-      if (!coords) return;
-
-      const isCaixa = (auc.origin || '').toLowerCase().includes('caixa');
-      const pinColor = isCaixa ? '#3b82f6' : '#10b981';
-
-      const customIcon = L.divIcon({
-        html: `<div style="background-color: ${pinColor}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 6px rgba(0,0,0,0.6); cursor: pointer;"></div>`,
-        className: 'sidebar-mini-pin',
-        iconSize: [12, 12],
-        iconAnchor: [6, 6],
-      });
-
-      const marker = L.marker(coords, { icon: customIcon });
-
-      const popupContent = document.createElement('div');
-      popupContent.className = 'p-1 text-slate-900 font-sans max-w-[200px] text-xs';
-      popupContent.innerHTML = `
+      const wrapper = document.createElement('div');
+      wrapper.className = 'p-1 text-slate-900 font-sans max-w-[205px] text-xs';
+      wrapper.innerHTML = `
         <div style="font-weight: 800; font-size: 11px; line-height: 1.2; margin-bottom: 4px; color: #0f172a;">
-          ${(auc.title || 'Imóvel em Leilão').slice(0, 50)}...
+          ${props.title || 'Imóvel em Leilão'}
         </div>
         <div style="font-size: 10px; color: #475569; margin-bottom: 6px;">
-          ${auc.neighborhood || ''} - ${auc.city || ''}
+          ${props.sub || ''}
         </div>
         <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 6px;">
-          <span style="color: #2563eb;">${formatBRL(auc.auctionPrice)}</span>
-          <span style="color: #059669;">ROI: ${auc.calculatedRoi ? `${auc.calculatedRoi.toFixed(0)}%` : '-'}</span>
+          <span style="color: #2563eb;">${props.price || '-'}</span>
+          <span style="color: #059669;">ROI: ${props.roi || '-'}</span>
         </div>
-        <button id="btn-view-${auc.id}" style="width: 100%; background: #4f46e5; color: white; border: none; border-radius: 6px; padding: 4px 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
+        <button id="btn-view-${props.id}" style="width: 100%; background: #4f46e5; color: white; border: none; border-radius: 6px; padding: 4px 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
           Simular Imóvel →
         </button>
       `;
 
-      marker.bindPopup(popupContent);
-      marker.on('popupopen', () => {
-        const btn = document.getElementById(`btn-view-${auc.id}`);
-        if (btn) {
-          btn.onclick = () => {
-            onSelectProperty(auc);
-          };
-        }
-      });
+      const popup = new maplibregl.Popup({ closeButton: true, maxWidth: '220px' })
+        .setLngLat(coords)
+        .setDOMContent(wrapper)
+        .addTo(map);
+      popupRef.current = popup;
 
-      group.addLayer(marker);
+      const btn = wrapper.querySelector(`#btn-view-${CSS.escape(props.id)}`) as HTMLButtonElement | null;
+      if (btn && auc) {
+        btn.onclick = () => onSelectPropertyRef.current(auc);
+      }
     });
 
-    // Recenter map on selected city/state
+    map.on('mouseenter', 'sidebar-points', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'sidebar-points', () => {
+      map.getCanvas().style.cursor = '';
+    });
+    map.on('mouseenter', 'sidebar-clusters', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'sidebar-clusters', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(mapContainerRef.current);
+
+    return () => {
+      ro.disconnect();
+      if (popupRef.current) popupRef.current.remove();
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, [isCollapsed]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    map.setStyle(mapMode === 'satellite' ? buildSatelliteStyle() : OPENFREEMAP_DARK_STYLE);
+  }, [mapMode]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || isCollapsed || !map.isStyleLoaded()) return;
+    syncAuctionOverlay(map, geojsonData);
+  }, [geojsonData, styleVersion, isCollapsed]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || isCollapsed) return;
     const { center, zoom } = getTargetCenterAndZoom();
-    map.setView(center, zoom, { animate: true });
-  }, [auctions, locationsById, selectedCity, selectedState, isCollapsed]);
+    map.easeTo({ center, zoom, duration: 500 });
+  }, [selectedCity, selectedState, isCollapsed]);
 
   return (
     <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all">
@@ -235,18 +302,16 @@ export default function SidebarMapWidget({
         </div>
 
         <div className="flex items-center space-x-1">
-          {/* Botão de Alternar Satélite / Rua */}
           {!isCollapsed && (
             <button
-              onClick={() => setMapMode(prev => prev === 'roadmap' ? 'satellite' : 'roadmap')}
+              onClick={() => setMapMode((prev) => (prev === 'roadmap' ? 'satellite' : 'roadmap'))}
               className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              title={mapMode === 'roadmap' ? 'Mudar para Satélite' : 'Mudar para Mapa Padrão'}
+              title={mapMode === 'roadmap' ? 'Mudar para Satélite' : 'Mudar para Mapa Vetorial 3D'}
             >
               <Layers className="w-3.5 h-3.5" />
             </button>
           )}
 
-          {/* Botão de Expandir Tela Cheia */}
           <button
             onClick={onOpenFullMap}
             className="p-1 rounded-md text-indigo-400 hover:text-white hover:bg-indigo-600 transition-colors cursor-pointer"
@@ -255,9 +320,8 @@ export default function SidebarMapWidget({
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
 
-          {/* Botão de Recolher/Expandir */}
           <button
-            onClick={() => setIsCollapsed(prev => !prev)}
+            onClick={() => setIsCollapsed((prev) => !prev)}
             className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
             title={isCollapsed ? 'Exibir Mapa' : 'Ocultar Mapa'}
           >
@@ -275,10 +339,9 @@ export default function SidebarMapWidget({
             style={{ minHeight: '208px' }}
           />
 
-          {/* Overlay Rodapé com Ação Rápida */}
           <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between pointer-events-none">
             <span className="text-[9.5px] font-bold bg-slate-950/90 text-slate-300 px-2 py-0.5 rounded-md border border-slate-800 backdrop-blur-xs">
-              📍 {selectedCity || selectedState || 'RJ · Niterói · JF'}
+              📍 {selectedCity || selectedState || 'RJ · Niterói · JF'} · 3D
             </span>
 
             <button

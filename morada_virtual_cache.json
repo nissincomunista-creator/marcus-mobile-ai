@@ -17269,5 +17269,23 @@
     "cards": [],
     "updatedAt": "2026-11-21T14:52:14.413Z",
     "notFound": true
+  },
+  "rj_rio de janeiro_vila da penha_apia": {
+    "street": "RUA APIA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-da-penha/rua-apia",
+    "canonicalTitle": "Rua Apia, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 369 mil. · Para alugar, apartamentos de ~68 m² ficam na faixa de R$ 1.145 a R$ 2.520. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 646 anúncios | na região, 40% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4398,
+        "sampleCount": 646,
+        "avgPrice": 369000,
+        "rawMeta": "na região, 40% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 369 mil. · Para alugar, apartamentos de ~68 m² ficam na faixa de R$ 1.145 a R$ 2.520. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 646 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-22T16:34:36.465Z"
   }
 }

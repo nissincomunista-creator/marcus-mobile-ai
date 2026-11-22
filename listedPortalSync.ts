@@ -24,9 +24,9 @@ export interface FullSyncReport {
 }
 const UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 const propertyWords=/\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba|chacara|sitio|sobrado|kitnet|residencial|duplex)\b/;
-const directPattern=/\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis|externo\/leilao|produto)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+/i;
+const directPattern=/\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
 const navigationPattern=/\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|categoria-produto\/imoveis|leiloes-imoveis|Leiloes\/Pesquisar|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?/i;
-const skipPattern=/login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|\.pdf(?:\?|$)/i;
+const skipPattern=/login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|fale-conosco|quem-somos|como-comprar|como-vender|indique|validar-documento|habilitacao|regulamento|duvidas|faq|\/home(?:\/|$)|\/venda-direta(?:\/|$)|\.pdf(?:\?|$)/i;
 const bankIds=new Set(['bb','emgea','santander','vitrinebradesco']);
 const isBlockedLeilaoImovelResponse=(portalId:string,error:unknown)=>portalId==='leilaoimovel'&&/HTTP\s+403\b/i.test(error instanceof Error?error.message:String(error));
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -76,6 +76,7 @@ function separatedTargetLocation(text:string){
  const normalized=norm(text);const matches=SYNC_TARGETS.filter(t=>new RegExp(`\\b${norm(t.city)}\\b`).test(normalized)&&new RegExp(`\\b${t.state.toLowerCase()}\\b`).test(normalized));
  return matches.length===1?{city:matches[0].city,state:matches[0].state}:null;
 }
+function urlLocation(rawUrl:string){try{const u=new URL(rawUrl),full=norm(decodeURIComponent(u.pathname+' '+u.search));if(/(?:^|[\/\-_\s])rj(?:[\/\-_\s])+(?:[a-z]+\/)?rio de janeiro\b|\brio de janeiro rj\b/.test(full))return {city:'Rio de Janeiro',state:'RJ'};if(/(?:^|[\/\-_\s])rj(?:[\/\-_\s])+(?:[a-z]+\/)?niteroi\b|\bniteroi rj\b/.test(full))return {city:'Niterói',state:'RJ'};if(/(?:^|[\/\-_\s])mg(?:[\/\-_\s])+(?:[a-z]+\/)?juiz de fora\b|\bjuiz de fora mg\b/.test(full))return {city:'Juiz de Fora',state:'MG'};}catch{}return null;}
 export function sourceSeedUrls(id:string, base:string):string[] {
  const cityUrls=(fn:(t:typeof SYNC_TARGETS[number])=>string)=>SYNC_TARGETS.map(fn);
  if(id==='leilaoimovel')return cityUrls(t=>`${base}/leilao-de-imovel/${t.slug}-${t.state.toLowerCase()}?pag=1`);
@@ -83,13 +84,13 @@ export function sourceSeedUrls(id:string, base:string):string[] {
  if(id==='biasi')return cityUrls(t=>`${base}/Sale/LotListSearch?start=0&limit=48&buscaImovel=true&estado=${t.state.toLowerCase()}&cidade=${t.slug}&bairro=todos-os-bairros&segmento=todos-os-segmentos`);
  if(id==='leiloei')return [base+'/busca/segmento/imoveis'];
  if(id==='pestana')return [base+'/leilao-de-imoveis'];
- if(id==='frazao')return cityUrls(t=>`${base}/sale/searchLot?estado=${t.state}&cidade=${encodeURIComponent(t.city)}&pesquisaSimples=false`);
- if(id==='portalzuk')return cityUrls(t=>`${base}/leilao-de-imoveis/c/todos-imoveis/${t.state.toLowerCase()}/regiao/${t.slug}`);
+ if(id==='frazao')return [...cityUrls(t=>`${base}/sale/searchLot?estado=${t.state}&cidade=${encodeURIComponent(t.city)}&pesquisaSimples=false`),...cityUrls(t=>`${base}/Sale/SearchLotResult?uf=${t.state}&cidade=${encodeURIComponent(t.city)}&pagina=1`)];
+ if(id==='portalzuk')return [...cityUrls(t=>`${base}/leilao-de-imoveis/c/todos-imoveis/${t.state.toLowerCase()}/regiao/${t.slug}`),...cityUrls(t=>`${base}/leilao-de-imoveis/c/todos-imoveis/${t.state.toLowerCase()}/regiao/${t.slug}?page=2`)];
  if(id==='jv')return cityUrls(t=>`${base}/lotes/imovel?tipo=imovel&address_uf=${t.state}&address_cidade_ibge=${t.ibge}`);
  if(id==='joaoemilio')return [...cityUrls(t=>`${base}/lotes/imovel?tipo=imovel&address_uf=${t.state}&address_cidade_ibge=${t.ibge}`),`${base}/leiloes`];
  if(id==='santander')return cityUrls(t=>`${base}/?cidade=${encodeURIComponent(t.city)}&uf=${t.state}&pag=1`);
  if(id==='bb')return [`${base}/catalogo/imoveis?uf=RJ`,`${base}/catalogo/imoveis?uf=MG`];
- if(id==='saraiva')return [`${base}/lotes?categoria=Im%C3%B3veis`];
+ if(id==='saraiva')return [1,2,3,4].map(p=>`${base}/lotes?categoria=Im%C3%B3veis&page=${p}`);
  if(id==='kronbergleiloes_com_br'||id==='kronleiloes_com_br')return ['https://www.kronleiloes.com.br/categorias/imoveis?searchType=opened&pageNumber=1&pageSize=30&orderBy=price:desc'];
  if(id==='apaleiloes_com_br')return ['https://www.apabrfleiloes.com.br'];
  if(id==='silas')return [base+'/Principal.asp?at=jd',base+'/Principal.asp?at=ex'];
@@ -111,7 +112,9 @@ export function parseSourcePage(html:string,url:string) {
   try{const u=new URL(raw,url);if(!/^https?:$/.test(u.protocol))return;
    const container=$(el).closest('article,[class*="card"],[class*="lote"],[class*="oferta"],li');
    const text=(container.length?container.text():$(el).parent().text()).replace(/\s+/g,' ').trim();
-   links.push({url:canonicalAuctionLink(u.href),text:text.slice(0,3500),pagination:$(el).attr('rel')==='next'||$(el).closest('[class*="pagin"], [aria-label*="pagin"]').length>0||/^(?:proxima?|próxima?|next|›|»|\d+)$/i.test($(el).text().trim())});
+   const isPag=$(el).attr('rel')==='next'||$(el).closest('[class*="pagin"], [aria-label*="pagin"]').length>0||/^(?:proxima?|próxima?|next|›|»|\d+)$/i.test($(el).text().trim());
+   if($(el).closest('header, footer, nav').length>0&&!isPag&&!directPattern.test(u.href)&&!/im[oó]ve(?:l|is)/i.test(u.pathname))return;
+   links.push({url:canonicalAuctionLink(u.href),text:text.slice(0,3500),pagination:isPag});
   }catch{}
  });
  // Legacy sites expose links in literal window.open/location assignments.
@@ -154,6 +157,7 @@ export function parseSourcePage(html:string,url:string) {
  $('br').replaceWith('\n');$('p,div,h1,h2,h3,h4,li,tr,dt,dd').each((_,el)=>{$(el).append('\n');});
  const title=$('#divDescrLoteTexto').text().trim()||$('h1,h2,h3,h4').map((_,el)=>$(el).text().trim()).get().find(t=>propertyWords.test(norm(t)))||$('h1').first().text().trim()||$('title').text().trim();
  let text=$('body').text().replace(/[\t \u00a0]+/g,' ').replace(/\n\s*\n/g,'\n').trim();
+ text=text.replace(/(?:Lote Anterior\s*)?(?:LOTE\s+\d{1,4}\s*){8,}/gi,' ').trim();
  if($('#divDescrLoteTexto').length){const visao=$('#divVisao1').text().replace(/[\t \u00a0]+/g,' ').replace(/\n\s*\n/g,'\n').trim();if(visao)text=visao;}
  if(mapLotText)text=[mapLotText,text].filter(Boolean).join('\n');
  if(lotData?.descricao){const description=cheerio.load(lotData.descricao).text();text=[eventData?.judicial===true?'Judicial':eventData?.judicial===false?'Extrajudicial':'',description,text].join('\n');}
@@ -214,10 +218,10 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   const cleanBase=config.baseUrl.replace(/\/$/,'');
   const listingQueue=sourceSeedUrls(config.id,cleanBase);
   if(config.id==='leilaovip'){listingQueue.push(`${cleanBase}/pesquisa?category=Im%C3%B3veis`);}
-  else if(config.id==='freitas'){listingQueue.push(`${cleanBase}/Leiloes/Pesquisar?Categoria=2`);}
+  else if(config.id==='freitas'){listingQueue.push(...[1,2,3,4,5].map(p=>`${cleanBase}/Leiloes/PesquisarLotes?Nome=&Categoria=2&TipoLoteId=0&FaixaValor=0&Pagina=${p}`),`${cleanBase}/Leiloes/Pesquisar?Categoria=2`);}
   else if(config.searchUrl && !listingQueue.includes(cleanBase) && !config.searchUrl.startsWith(`${cleanBase}/lotes/imovel`)){listingQueue.push(cleanBase);}
   const seenPages=new Set<string>();const details=new Map<string,string>();const seenDetails=new Set<string>();const batches:ScrapedAuctionDraft[]=[];
-  let renderedOnce=false;let navigated=false;const pageSignatures=new Set<string>();let confirmedEmpty=false;
+  let renderCalls=0;const maxListingRenders=16;let navigated=false;const pageSignatures=new Set<string>();let confirmedEmpty=false;
   let lastFlushAt=0;
   const flush=async()=>{if(!batches.length)return;const rows=batches.splice(0);lastFlushAt=Date.now();fs.appendFileSync(path.join(dir,config.id+'.jsonl'),rows.map(r=>JSON.stringify(r)).join('\n')+'\n');const audits=rows.filter(r=>r.areaAudit).map(r=>JSON.stringify({source:config.id,url:r.auctionLink,...r.areaAudit}));if(audits.length)fs.appendFileSync(path.join(dir,'area-audit.jsonl'),audits.join('\n')+'\n');const counts=await onDrafts(rows,progress);progress.imported+=counts.imported;progress.updated+=counts.updated;progress.pending+=counts.pending;save();};
   try{
@@ -284,13 +288,13 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
      await collectRioLinks(dir,async(links)=>{navigated=true;progress.pages++;for(const link of links)details.set(link.url,link.text);progress.discovered=details.size;save();},config.baseUrl,config.id);
     }catch(error:any){if(config.id==='rioleiloes')throw error;}
    }
-   while(listingQueue.length && progress.pages<40){const requested=listingQueue.shift()!;const key=canonicalAuctionLink(requested);if(seenPages.has(key)||seenDetails.has(key))continue;seenPages.add(key);
+   while(listingQueue.length && progress.pages<120){const requested=listingQueue.shift()!;const key=canonicalAuctionLink(requested);if(seenPages.has(key)||seenDetails.has(key))continue;seenPages.add(key);
      try{
       if(config.id==='leilaoimovel'&&progress.pages>0)await wait(1200);
-      let response;try{response=await load(requested);}catch(error){if((renderedOnce&&!isBlockedLeilaoImovelResponse(config.id,error))||!canRenderFallback(config.id,error))throw error;renderedOnce=true;response=await load(requested,true);}
+      let response;try{response=await load(requested);}catch(error){if((renderCalls>=maxListingRenders&&!isBlockedLeilaoImovelResponse(config.id,error))||!canRenderFallback(config.id,error))throw error;renderCalls++;response=await load(requested,true);}
      let page=parseSourcePage(response.html,response.url);
-     const isSpaShell=/<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?|<app-root\b/i.test(response.html);
-     if((!page.links.some(link=>directPattern.test(link.url))||isSpaShell)&&!renderedOnce&&!/LotListSearch/i.test(requested)){renderedOnce=true;response=await load(requested,true);page=parseSourcePage(response.html,response.url);}
+     const isSpaShell=/<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?|<app-root\b|self\.__next_f/i.test(response.html);
+     if((!page.links.some(link=>directPattern.test(link.url))||isSpaShell)&&renderCalls<maxListingRenders&&!/LotListSearch|PesquisarLotes|SearchLotResult/i.test(requested)){renderCalls++;response=await load(requested,true);page=parseSourcePage(response.html,response.url);}
      progress.pages++;navigated=true;
      if(/nenhum (?:im[oó]vel|lote|resultado)|n[aã]o (?:foram encontrados|temos leil[oõ]es ativos)/i.test(page.text))confirmedEmpty=true;
      const signature=page.links.filter(link=>directPattern.test(link.url)).map(link=>link.url).sort().join('|');
@@ -340,7 +344,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
       if(page.text.length<80)throw Error('Detalhe sem conteúdo verificável');
        const addressText=extractAddress(page.text,'');
        const lotLocationEvidence=[...page.structuredAddresses,addressText,page.lotDescription,page.title,listingText].filter(Boolean);
-       let location=sourceAuctionLocation(page.title)||sourceAuctionLocation(addressText)||sourceAuctionLocation(page.lotDescription)||separatedTargetLocation(page.lotDescription)||sourceAuctionLocation(page.text)||sourceAuctionLocation(listingText);
+       let location=sourceAuctionLocation(page.title)||sourceAuctionLocation(addressText)||sourceAuctionLocation(page.lotDescription)||separatedTargetLocation(page.lotDescription)||sourceAuctionLocation(page.text)||sourceAuctionLocation(listingText)||urlLocation(response.url)||urlLocation(url);
        // Several official details omit the UF after a municipality, while legacy
        // Rio auction pages show a known neighborhood followed by "RJ". Apply
        // these narrow fallbacks only to the lot's own address/title/card text,
@@ -351,6 +355,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
          if(location)break;
         }
        }
+       if(!location)location=separatedTargetLocation(page.text.slice(0,2500));
         if(!location||!allowedSyncLocation(location.city,location.state)){progress.errors.push({url,message:location?'Imóvel fora das três cidades solicitadas':'Localização do imóvel não confirmada no detalhe'});return;}
        if(!propertyWords.test(norm(page.title+' '+page.text)))return;
       const initial:ScrapedAuctionDraft={portalId:sourcePortal.id,auctioneerName:sourcePortal.name,title:page.title,address:'',neighborhood:'',city:location.city,state:location.state,propertyType:'Apartamento',sizeSqm:0,auctionPrice:0,auctionDate:'',auctionLink:canonicalAuctionLink(response.url),description:page.text,origin:bankIds.has(sourcePortal.id)?'extrajudicial':'judicial',locationScopeVerified:true};

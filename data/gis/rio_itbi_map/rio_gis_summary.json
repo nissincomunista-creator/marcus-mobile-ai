@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-11-22T19:57:34.858Z",
+  "sourceLayers": {
+    "edificacoes": "IPP CadLog/Edificacoes_2019 (FeatureServer/0) -> EPSG:4326",
+    "numerosPorta": "IPP CadLog/Numero_de_porta (FeatureServer/0) -> EPSG:4326",
+    "trechosLogradouros": "IPP CadLog/Trechos_Logradouros (FeatureServer/0) -> EPSG:4326",
+    "edificacoes2013ReferenceId": "124f1607b57d4292af5c0dfc2ff8572c_0"
+  },
+  "itbiStats": {
+    "rioTotalRows": 86946,
+    "validValueRows": 85889,
+    "skippedInvalidValue": 1057,
+    "matchedByIppClnp": 47236,
+    "matchedByExactXy": 7717,
+    "unmatchedAddress": 30936,
+    "uniqueDoorGroups": 23303
+  },
+  "spatialJoin": {
+    "buildingsScanned": 2358979,
+    "buildingsExported": 2174260,
+    "matchedBuildings": 21144,
+    "linkedDoorGroups": 23080,
+    "linkedTransactions": 53759,
+    "cityMedianSqm": 6241
+  },
+  "pmtiles": {
+    "path": "public/tiles/rio_edificacoes.pmtiles",
+    "sizeMB": 82.64,
+    "numTiles": 1380,
+    "minZoom": 12,
+    "maxZoom": 15,
+    "bounds": [
+      -43.772198,
+      -23.073249,
+      -43.102483,
+      -22.749197
+    ]
+  }
+}

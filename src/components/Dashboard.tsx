@@ -468,60 +468,86 @@ export default function Dashboard({
   const [visibleCount, setVisibleCount] = useState(16);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  const normalizeAuctioneerDisplay = useCallback((rawName?: string, link?: string): string => {
+    const lk = (link || '').toLowerCase();
+    let name = (rawName || '').trim();
+    if (/^emgea$/i.test(name) || lk.includes('emgeaimoveis')) return 'EMGEA Imóveis';
+    if (/^fabiano\s+ayupp(?:\s+leiloeiro)?$/i.test(name) || lk.includes('fabianoayupp')) return 'Fabiano Ayupp';
+    if (lk.includes('sold.com.br') || /^sold(?:\s+leil[oõ]es)?$/i.test(name)) return 'Sold Leilões';
+    if (!name && lk) {
+      if (lk.includes('portalzuk')) return 'Portal Zuk';
+      if (lk.includes('megaleiloes')) return 'Mega Leilões';
+      if (lk.includes('biasileiloes')) return 'Biasi Leilões';
+      if (lk.includes('frazaoleiloes') || lk.includes('frazao')) return 'Frazão Leilões';
+      if (lk.includes('santanderimoveis') || lk.includes('santander')) return 'Santander Imóveis';
+      if (lk.includes('isaiasleiloes')) return 'Isaías Leilões';
+      if (lk.includes('silasleiloeiro') || lk.includes('silas')) return 'Silas Leiloeiro';
+      if (lk.includes('portellaleiloes')) return 'Portella Leilões';
+      if (lk.includes('rioleiloes')) return 'Rio Leilões';
+      if (lk.includes('alexandroleiloeiro')) return 'Alexandro Leiloeiro';
+      if (lk.includes('paulobotelholeiloeiro')) return 'Paulo Botelho Leiloeiro';
+      if (lk.includes('jvleiloes')) return 'JV Leilões';
+      if (lk.includes('depaulaonline') || lk.includes('depaula')) return 'De Paula Leilões';
+      if (lk.includes('rymerleiloes')) return 'Rymer Leilões';
+      if (lk.includes('saraivaleiloes')) return 'Saraiva Leilões';
+      if (lk.includes('schulmannleiloes')) return 'Schulmann Leilões';
+      if (lk.includes('comprei.pgfn')) return 'Comprei PGFN';
+      if (lk.includes('pestanaleiloes')) return 'Pestana Leilões';
+      if (lk.includes('onildobastos')) return 'Onildo Bastos';
+      if (lk.includes('gustavoleiloeiro')) return 'Gustavo Leiloeiro';
+      if (lk.includes('mgl.com.br')) return 'MGL Leilões';
+      if (lk.includes('leiloei.com')) return 'Leiloei';
+      if (lk.includes('seuimovelbb')) return 'Seu Imóvel BB';
+      if (lk.includes('vitrinebradesco')) return 'Vitrine Bradesco';
+      if (lk.includes('ricartleiloes')) return 'Ricart Leilões';
+      if (lk.includes('pamelaleiloeira')) return 'Pamela Leiloeira';
+      if (lk.includes('facanhaleiloes')) return 'Façanha Leilões';
+      if (lk.includes('leilaoimovel')) return 'Leilão Imóvel';
+    }
+    return name;
+  }, []);
+
   // Dynamic Extrajudicial Auctioneers derivation
   const activeExtrajudicialAuctioneers = useMemo(() => {
     const counts = new Map<string, number>();
     for (const a of auctions) {
-      if (a.origin === 'extrajudicial' || (!a.id?.startsWith('auc-caixa') && a.origin !== 'caixa')) {
-        let name = a.auctioneerName || a.leiloeiro;
-        if (!name && a.auctionLink) {
-          const lk = a.auctionLink.toLowerCase();
-          if (lk.includes('portalzuk')) name = 'Portal Zuk';
-          else if (lk.includes('megaleiloes')) name = 'Mega Leilões';
-          else if (lk.includes('biasileiloes')) name = 'Biasi Leilões';
-          else if (lk.includes('frazaoleiloes') || lk.includes('frazao')) name = 'Frazão Leilões';
-          else if (lk.includes('santanderimoveis') || lk.includes('santander')) name = 'Santander Imóveis';
-          else if (lk.includes('isaiasleiloes')) name = 'Isaías Leilões';
-          else if (lk.includes('silasleiloeiro') || lk.includes('silas')) name = 'Silas Leiloeiro';
-          else if (lk.includes('portellaleiloes')) name = 'Portella Leilões';
-          else if (lk.includes('rioleiloes')) name = 'Rio Leilões';
-          else if (lk.includes('alexandroleiloeiro')) name = 'Alexandro Leiloeiro';
-          else if (lk.includes('paulobotelholeiloeiro')) name = 'Paulo Botelho Leiloeiro';
-          else if (lk.includes('jvleiloes')) name = 'JV Leilões';
-          else if (lk.includes('depaulaonline') || lk.includes('depaula')) name = 'De Paula Leilões';
-          else if (lk.includes('rymerleiloes')) name = 'Rymer Leilões';
-          else if (lk.includes('fabianoayupp')) name = 'Fabiano Ayupp';
-          else if (lk.includes('saraivaleiloes')) name = 'Saraiva Leilões';
-          else if (lk.includes('sold.com.br')) name = 'Sold Leilões';
-          else if (lk.includes('schulmannleiloes')) name = 'Schulmann Leilões';
-          else if (lk.includes('comprei.pgfn')) name = 'Comprei PGFN';
-          else if (lk.includes('pestanaleiloes')) name = 'Pestana Leilões';
-          else if (lk.includes('onildobastos')) name = 'Onildo Bastos';
-          else if (lk.includes('gustavoleiloeiro')) name = 'Gustavo Leiloeiro';
-          else if (lk.includes('mgl.com.br')) name = 'MGL Leilões';
-          else if (lk.includes('leiloei.com')) name = 'Leiloei';
-          else if (lk.includes('seuimovelbb')) name = 'Seu Imóvel BB';
-          else if (lk.includes('emgeaimoveis')) name = 'EMGEA Imóveis';
-          else if (lk.includes('vitrinebradesco')) name = 'Vitrine Bradesco';
-          else if (lk.includes('ricartleiloes')) name = 'Ricart Leilões';
-          else if (lk.includes('pamelaleiloeira')) name = 'Pamela Leiloeira';
-          else if (lk.includes('facanhaleiloes')) name = 'Façanha Leilões';
-          else if (lk.includes('leilaoimovel')) name = 'Leilão Imóvel';
-        }
+      if (a.origin === 'extrajudicial') {
+        const name = normalizeAuctioneerDisplay(a.auctioneerName || a.leiloeiro, a.auctionLink);
         if (name && name !== 'Caixa Econômica Federal' && name !== 'Caixa') {
           counts.set(name, (counts.get(name) || 0) + 1);
         }
       }
     }
     const list = Array.from(counts.entries()).map(([name, count]) => ({ name, count }));
-    const defaults = ['Portal Zuk', 'Mega Leilões', 'Biasi Leilões', 'Frazão Leilões', 'Santander Imóveis', 'Isaías Leilões', 'Silas Leiloeiro', 'Portella Leilões', 'Rio Leilões', 'Alexandro Leiloeiro', 'Paulo Botelho Leiloeiro', 'JV Leilões', 'De Paula Leilões', 'Rymer Leilões', 'Fabiano Ayupp', 'Saraiva Leilões', 'Sold Leilões', 'Schulmann Leilões', 'Comprei PGFN', 'Pestana Leilões', 'Onildo Bastos', 'Gustavo Leiloeiro', 'MGL Leilões', 'Leiloei', 'Seu Imóvel BB', 'EMGEA Imóveis', 'Vitrine Bradesco', 'Ricart Leilões', 'Pamela Leiloeira', 'Façanha Leilões', 'Leilão Imóvel'];
+    const defaults = ['Portal Zuk', 'Mega Leilões', 'Biasi Leilões', 'Frazão Leilões', 'Santander Imóveis', 'Sold Leilões', 'EMGEA Imóveis', 'Vitrine Bradesco', 'Seu Imóvel BB', 'Pestana Leilões', 'MGL Leilões', 'Leiloei', 'Superbid', 'Leilão Imóvel'];
     for (const d of defaults) {
       if (!counts.has(d)) {
         list.push({ name: d, count: 0 });
       }
     }
     return list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [auctions]);
+  }, [auctions, normalizeAuctioneerDisplay]);
+
+  // Dynamic Judicial Auctioneers derivation
+  const activeJudicialAuctioneers = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of auctions) {
+      if (a.origin === 'judicial') {
+        const name = normalizeAuctioneerDisplay(a.auctioneerName || a.leiloeiro, a.auctionLink);
+        if (name && name !== 'Caixa Econômica Federal' && name !== 'Caixa') {
+          counts.set(name, (counts.get(name) || 0) + 1);
+        }
+      }
+    }
+    const list = Array.from(counts.entries()).map(([name, count]) => ({ name, count }));
+    const defaults = ['Portella Leilões', 'Rymer Leilões', 'Paulo Botelho Leiloeiro', 'Ricart Leilões', 'JV Leilões', 'Rio Leilões', 'Fabiano Ayupp', 'Schulmann Leilões', 'Lance Judicial', 'Isaías Leilões', 'Silas Leiloeiro', 'Onildo Bastos', 'Gustavo Leiloeiro', 'De Paula Leilões', 'Façanha Leilões', 'Saraiva Leilões', 'Pamela Leiloeira', 'Alexandro Leiloeiro'];
+    for (const d of defaults) {
+      if (!counts.has(d)) {
+        list.push({ name: d, count: 0 });
+      }
+    }
+    return list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [auctions, normalizeAuctioneerDisplay]);
 
   // Portal counts for backwards compatibility
   const zukAuctionsCount = useMemo(() => {
@@ -565,12 +591,16 @@ export default function Dashboard({
     if (selectedAuctioneerFilter) {
       const q = selectedAuctioneerFilter.toLowerCase();
       const qClean = q.replace(/[^a-z0-9]/g, '');
+      const displayName = normalizeAuctioneerDisplay(a.auctioneerName || a.leiloeiro, a.auctionLink).toLowerCase();
       const aucName = (a.auctioneerName || a.leiloeiro || '').toLowerCase();
       const aucLink = (a.auctionLink || '').toLowerCase();
+      const srcLinks = (a.sourceLinks || []).join(' ').toLowerCase();
       const aucId = (a.id || '').toLowerCase();
       
-      const matches = aucName.includes(q) || 
-                      (qClean.length > 3 && (aucLink.includes(qClean) || aucId.includes(qClean)));
+      const matches = displayName === q ||
+                      displayName.includes(q) ||
+                      aucName.includes(q) || 
+                      (qClean.length > 3 && (aucLink.includes(qClean) || srcLinks.includes(qClean) || aucId.includes(qClean)));
       if (!matches) return false;
     }
 
@@ -2035,6 +2065,56 @@ export default function Dashboard({
                               {caixaModalityCounts.leilaoSfi}
                             </span>
                           </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sub-opções específicas quando Judicial estiver selecionada */}
+                    {selectedOriginFilter === 'judicial' && (
+                      <div className="p-2.5 bg-slate-950 border border-indigo-900/40 rounded-xl space-y-2 mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-indigo-400 uppercase font-mono flex items-center gap-1">
+                            <span>⚖️</span>
+                            <span>Leiloeiros Judiciais</span>
+                          </span>
+                          {selectedAuctioneerFilter && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAuctioneerFilter('')}
+                              className="text-[10px] text-indigo-400 hover:text-white cursor-pointer"
+                            >
+                              Ver todos
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-56 overflow-y-auto space-y-1.5 text-xs pr-1">
+                          {activeJudicialAuctioneers.map(item => {
+                            const isSelected = selectedAuctioneerFilter === item.name;
+                            return (
+                              <button
+                                key={item.name}
+                                type="button"
+                                onClick={() => setSelectedAuctioneerFilter(prev => prev === item.name ? '' : item.name)}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-xl border font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30 ring-2 ring-purple-400/50'
+                                    : item.count > 0
+                                      ? 'bg-slate-900 text-slate-200 hover:bg-slate-850 border-slate-800'
+                                      : 'bg-slate-950/40 text-slate-500 hover:bg-slate-900/30 border-slate-900/60'
+                                }`}
+                              >
+                                <span className="flex items-center gap-1.5 truncate mr-1">
+                                  <span>⚖️</span>
+                                  <span className="truncate">{item.name}</span>
+                                </span>
+                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full shrink-0 ${
+                                  item.count > 0 ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-800/40' : 'bg-black/30 text-slate-600'
+                                }`}>
+                                  {item.count}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

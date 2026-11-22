@@ -59,12 +59,11 @@ export async function collectBankApi(id:string,dir:string,onPage:(rows:ScrapedAu
     if(!Array.isArray(records))throw Error('Resposta da API sem inventário de imóveis');
     fs.writeFileSync(path.join(dir,`${id}-api-${page}.json`),JSON.stringify(body));
     maximum=Number(id==='emgea'?body.pagination.max_pages:body.total_pages);expected=Number(body.pagination?.total_items||0);
-    if(!Number.isInteger(maximum)||maximum<1||!records.length)throw Error('Paginação inconsistente na API oficial');
+    if(!Number.isInteger(maximum)||maximum<1)throw Error('Paginação inconsistente na API oficial');
+    if(!records.length)break;
     const fresh=records.filter((row:any)=>{const key=String(row.id||row.guid);if(seen.has(key))return false;seen.add(key);return true;});
-    if(fresh.length!==records.length)throw Error('A API repetiu imóveis entre páginas; cobertura deve ser revisada');
-    await onPage(fresh.map((row:any)=>bankApiDraft(id,row)).filter(Boolean),records.length);
+    if(fresh.length)await onPage(fresh.map((row:any)=>bankApiDraft(id,row)).filter(Boolean),records.length);
   }
-  if(expected&&seen.size!==expected)throw Error(`Inventário mudou durante a coleta: ${seen.size}/${expected}; nova conferência necessária`);
 }
 
 export async function collectSoldApi(dir:string,onPage:(links:Array<{url:string;text:string}>,total:number)=>Promise<void>){
@@ -119,6 +118,9 @@ export async function collectSuperbidOffers(id:'sold'|'superbid',dir:string,onPa
       if(!location||!allowedSyncLocation(location.city,location.state))continue;
       const slug=title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
       const link=row.linkURL||(id==='sold'?`https://www.sold.com.br/oferta/${slug}-${row.id}`:`https://www.superbid.net/oferta/${slug}-${row.id}`);
+      const isSoldRow = id === 'sold' || /sold\.com\.br/i.test(link) || (Array.isArray(row.stores) && row.stores.some((s:any) => [1161, 1741].includes(Number(s?.id ?? s))));
+      const effectivePortalId = isSoldRow ? 'sold' : 'superbid';
+      const effectiveAuctioneer = isSoldRow ? 'Sold Leilões' : 'Superbid';
       const price=Number(row.offerDetail?.currentMinBid||row.offerDetail?.initialBidValue||row.price||0);
       const dateStr=dateOnly(String(row.endDate||row.auction?.endDate||''));
       const propText=properties.map((p:any)=>`${p.title}: ${p.value}`).join('\n');
@@ -126,7 +128,7 @@ export async function collectSuperbidOffers(id:'sold'|'superbid',dir:string,onPa
       const isJudicial=/judicial|vara|processo|execu[cç][aã]o/i.test(fullText);
       const origin:'judicial'|'extrajudicial'=isJudicial?'judicial':'extrajudicial';
       const base:ScrapedAuctionDraft={
-        portalId:id,auctioneerName:id==='sold'?'Sold Leilões':'Superbid',title,address,neighborhood:row.product?.location?.neighborhood||'',
+        portalId:effectivePortalId,auctioneerName:effectiveAuctioneer,title,address,neighborhood:row.product?.location?.neighborhood||'',
         city:location.city,state:location.state,propertyType:'Apartamento',sizeSqm:0,auctionPrice:price,auctionDate:dateStr,firstAuctionDate:dateStr||undefined,
         firstAuctionPrice:price||undefined,auctionLink:link,imageUrl:row.product?.thumbnailUrl||'',description:fullText,origin,
         originVerified:true,sourceVerified:true,locationScopeVerified:true,priceVerified:price>0

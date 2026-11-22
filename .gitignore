@@ -16,3 +16,5 @@ EXPORT_COMPLETO_SISTEMA/
 scratch/
 *.bak*
 *.applied
+data/gis/rio_itbi_map/raw/
+data/gis/rio_itbi_map/grid/

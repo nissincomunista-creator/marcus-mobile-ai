@@ -1178,10 +1178,21 @@ function loadStore(): DataStore {
           }
         });
         // Restaura portais indevidamente marcados como encerrados/removidos pela auditoria
+        const spaPortalHostRe = /(?:vitrinebradesco\.com\.br|emgeaimoveis\.com\.br|sold\.com\.br|superbid\.net|santanderimoveis\.com\.br|comprei\.pgfn\.gov\.br|saraivaleiloes\.com\.br|mgl\.com\.br|leilaovip\.com\.br)/i;
         storeData.auctions.forEach(a => {
           if (a.origin === 'portal' && (a.sourceClosed || a.sourceAvailability || a.availability?.state === 'closed' || a.availability?.state === 'removed' || ['expirado_link_invalido', 'encerrado'].includes(String(a.ingestionStatus || '')))) {
             a.availability = undefined;
             a.sourceAvailability = undefined;
+            a.sourceClosed = undefined;
+            a.ingestionStatus = 'ativo';
+          } else if (
+            a.origin !== 'portal' &&
+            spaPortalHostRe.test(a.auctionLink || '') &&
+            (a.ingestionStatus === 'expirado_link_invalido' || a.availability?.status === 'expirado_link_invalido') &&
+            !isExpiredAuction({ ...a, availability: undefined, sourceAvailability: undefined, sourceClosed: undefined, ingestionStatus: 'ativo' })
+          ) {
+            a.availability = { state: 'unknown', url: a.auctionLink || '', checkedAt: new Date().toISOString(), reason: 'Página SPA restaurada após falso positivo de HTML estático' };
+            a.sourceAvailability = a.availability;
             a.sourceClosed = undefined;
             a.ingestionStatus = 'ativo';
           }
@@ -8156,6 +8167,28 @@ async function start() {
   const isCjsBundle = typeof __filename !== 'undefined' && __filename.endsWith('.cjs');
   const distIndexExists = fs.existsSync(path.join(process.cwd(), 'dist', 'index.html'));
   const isProduction = process.env.NODE_ENV === 'production' || isCjsBundle || distIndexExists;
+
+  // Serve PMTiles vector tilesets and static GIS assets with Range (206) support in dev & prod
+  const tilesDirs = [
+    path.join(process.cwd(), 'public', 'tiles'),
+    path.join(process.cwd(), 'dist', 'tiles'),
+  ];
+  for (const tDir of tilesDirs) {
+    if (fs.existsSync(tDir)) {
+      app.use('/tiles', express.static(tDir, {
+        acceptRanges: true,
+        maxAge: '1d',
+        setHeaders: (res, filePath) => {
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges, ETag');
+          if (filePath.endsWith('.pmtiles')) {
+            res.setHeader('Content-Type', 'application/octet-stream');
+          }
+        },
+      }));
+    }
+  }
 
   if (isProduction && distIndexExists) {
     const distPath = path.join(process.cwd(), 'dist');

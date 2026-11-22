@@ -23,7 +23,7 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
   if(expiredRounds([...(context.dates||[])],context.saleMode,now))return finish('expirado_por_data','Todas as rodadas publicadas transcorreram, sem nova rodada futura');
   return previous||{...base,state:'unknown',reason:'Sem HTML fornecido'};
  }
- const isSpaShell = /<div[^>]+id=["'](?:root|__next|app)["']|<app-root\b|__NEXT_DATA__|window\.__NUXT__/i.test(html);
+ const isSpaShell = /<div[^>]+id=["']?(?:root|__next|app|main-app)["']?|<app-root\b|__NEXT_DATA__|self\.__next_f|window\.__NUXT__|<script[^>]+type=["']module["'][^>]+src=|\/_next\/static\/|\/assets\/index-[a-z0-9_-]+\.js/i.test(html);
  const $=cheerio.load(html);
  $('script,style,noscript,nav,header,footer,aside,select,option,template,[hidden],[aria-hidden="true"],.modal,.cards,[class*="related"],[class*="recommend"]').remove();
  const heading=$('h1').first().text().trim();
