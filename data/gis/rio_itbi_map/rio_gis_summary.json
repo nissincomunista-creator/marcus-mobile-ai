@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T19:57:34.858Z",
+  "generatedAt": "2026-11-22T21:08:19.202Z",
   "sourceLayers": {
     "edificacoes": "IPP CadLog/Edificacoes_2019 (FeatureServer/0) -> EPSG:4326",
     "numerosPorta": "IPP CadLog/Numero_de_porta (FeatureServer/0) -> EPSG:4326",

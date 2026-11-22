@@ -787,7 +787,7 @@ async function buildPMTilesFromZ12({ minLon, minLat, maxLon, maxLat, existingSum
     const emitTile = (vtIndex, z, x, y) => {
       const tile = vtIndex.getTile(z, x, y);
       if (!tile || !tile.features || tile.features.length === 0) return;
-      const pbf = vtpbf.fromGeojsonVt({ edificacoes: tile }, { version: 2 });
+      const pbf = vtpbf.fromGeojsonVt({ edificacoes: tile }, { version: 2, extent: 2048 });
       const gz = zlib.gzipSync(Buffer.from(pbf), { level: 9 });
       writer.addTile(z, x, y, gz);
       if (!sampleTileZxy && z >= 14) sampleTileZxy = [z, x, y];
