@@ -11,6 +11,7 @@ import { auditOfficialArea } from './src/utils/officialAreaAudit.ts';
 import { runListedPortalSync, parseSourcePage } from './listedPortalSync.ts';
 import { allowedSyncLocation, SYNC_SOURCE_IDS, SYNC_TARGETS } from './src/utils/auctionSyncScope.ts';
 import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning, validOfficialLocation } from './propertyLocationService.ts';
+import { getRioAuctionBuildingsFilePath } from './rioIppLocationService.ts';
 import { addressUnits } from './src/utils/locationAddress.ts';
 import { auctionCosts, calculateFlip } from './src/utils/flipCalculation.ts';
 import express from 'express';
@@ -2854,6 +2855,11 @@ function recalculateAuctionWithIndex(
       const hasOfficialAuctionPoint = validOfficialLocation(officialAuctionLocation);
       let locLat = hasOfficialAuctionPoint ? officialAuctionLocation.lat! : undefined;
       let locLng = hasOfficialAuctionPoint ? officialAuctionLocation.lng! : undefined;
+      if (hasOfficialAuctionPoint && officialAuctionLocation.source === 'IPP_RIO_2019' && Number.isFinite(locLat) && Number.isFinite(locLng)) {
+        (auc as any).lat = locLat;
+        (auc as any).lng = locLng;
+        auc.status_geocodificacao = officialAuctionLocation.precision === 'address' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA';
+      }
 
       // Se não tiver ponto oficial do CNEFE, utilizar coordenadas diretas do imóvel ou centróide do logradouro
       if (!Number.isFinite(locLat) || !Number.isFinite(locLng)) {
@@ -4088,6 +4094,17 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
       }
     }
 
+    // Aplica coordenada oficial IPP Rio quando disponível para alinhamento estrito em mapa e cálculos de raio
+    const ippLoc = (a.city || '').toLowerCase().includes('rio de janeiro') ? getOfficialPropertyLocation(a) : null;
+    if (ippLoc && ippLoc.status === 'located' && ippLoc.source === 'IPP_RIO_2019' && Number.isFinite(ippLoc.lat) && Number.isFinite(ippLoc.lng)) {
+      return {
+        ...a,
+        lat: ippLoc.lat,
+        lng: ippLoc.lng,
+        status_geocodificacao: ippLoc.precision === 'address' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA',
+      };
+    }
+
     if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
       const cached = getCachedCoords(a.address, a.neighborhood, a.city, a.state);
       if (cached) {
@@ -4129,6 +4146,17 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
     console.error('[Catalog] Falha ao calcular catálogo:', error);
     if (!res.headersSent) res.status(500).json({ error: 'Não foi possível carregar o catálogo.' });
   }
+});
+
+// Polígonos 3D oficiais IPP (Edificacoes_2019) das edificações vinculadas a imóveis do Rio
+app.get('/api/map/auction-buildings', (_req, res) => {
+  const filePath = getRioAuctionBuildingsFilePath();
+  if (!filePath) {
+    return res.json({ type: 'FeatureCollection', features: [] });
+  }
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(filePath);
 });
 
 // All verified building locations; no viewport or listing cap.
@@ -4726,7 +4754,7 @@ app.get('/api/itbi/transactions', async (req, res) => {
         cleanStreetNumber(cleanBrazilianAddress(targetProperty.address || '').number) === cleanStreetNumber(String(targetNumber || ''))) {
       const official = getOfficialPropertyLocation(targetProperty);
       const requestedUnits = addressUnits(String(targetNumber || ''));
-      const unitsMatch = Object.entries(requestedUnits).every(([key, value]) => official.complements?.[key] === value);
+      const unitsMatch = official.source === 'IPP_RIO_2019' || Object.entries(requestedUnits).every(([key, value]) => official.complements?.[key] === value);
       if (official.status === 'located' && validOfficialLocation(official) && unitsMatch) {
         targetCoords = { lat: official.lat!, lng: official.lng! };
         radiusAnchorPrecision = 'official_address';

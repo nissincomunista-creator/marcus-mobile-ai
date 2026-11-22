@@ -2,7 +2,15 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Protocol } from 'pmtiles';
 
-export type RioBuildingMetric = 'm2' | 'liq' | 'spr';
+export type RioBuildingMetric = 'auctions' | 'm2' | 'liq' | 'spr';
+
+export function getTypologyColor(propertyType?: string): string {
+  const t = (propertyType || '').toLowerCase();
+  if (t.includes('casa') || t.includes('sobrado')) return '#10b981';
+  if (t.includes('comercial') || t.includes('loja') || t.includes('sala') || t.includes('galpao') || t.includes('predio')) return '#f59e0b';
+  if (t.includes('terreno') || t.includes('lote') || t.includes('gleba')) return '#a855f7';
+  return '#3b82f6';
+}
 
 export const OPENFREEMAP_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 
@@ -60,6 +68,9 @@ export function buildSatelliteStyle(): maplibregl.StyleSpecification {
 }
 
 export function getBuildingColorExpression(metric: RioBuildingMetric): any {
+  if (metric === 'auctions') {
+    return '#262d3a';
+  }
   if (metric === 'liq') {
     return [
       'case',

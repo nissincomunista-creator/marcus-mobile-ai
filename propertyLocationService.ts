@@ -5,11 +5,12 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cleanBrazilianAddress, geocodeAddress, getCachedCoords } from './geocodeService.ts';
+import { resolveRioIppLocation } from './rioIppLocationService.ts';
 
-type Address = { description?: string; id?: string; address?: string; city?: string; state?: string; neighborhood?: string };
+type Address = { description?: string; title?: string; id?: string; address?: string; city?: string; state?: string; neighborhood?: string };
 export type OfficialLocation = Address & {
   status: 'located' | 'pending'; reason?: string; lat?: number; lng?: number;
-  precision?: 'address'; source?: string; sourceUrl?: string;
+  precision?: 'address' | 'street'; source?: string; sourceUrl?: string;
   matchedStreet?: string; matchedNumber?: string; matchedLocality?: string;
   cnefeId?: string; geocodeLevel?: number; spreadMeters?: number;
   geocoderProvider?: 'nominatim' | 'photon';
@@ -18,6 +19,9 @@ export type OfficialLocation = Address & {
   geocodeAttemptedAt?: string;
   geocodeAlgorithmVersion?: number;
   complements?: Record<string, string>;
+  buildingOid?: number;
+  buildingHeight?: number;
+  ippMethod?: string;
   resolutionEvidence?: {
     method: 'ibge_sector_polygon_nearest_cnefe_cluster';
     sectorCode: string;
@@ -59,8 +63,11 @@ export function validOfficialLocation(r: OfficialLocation): boolean {
     !!requestedNumber && normalize(requestedNumber) === normalize(r.matchedNumber) &&
     !!r.city && normalize(r.city) === normalize(r.matchedCity) &&
     normalizeStreet(r.address) === normalizeStreet(r.matchedStreet);
-  return r.status === 'located' && (hasCnefeEvidence || hasExactGeocoderEvidence) &&
-    r.precision === 'address' && !!r.matchedStreet && !!r.matchedNumber &&
+  const hasIppEvidence = r.source === 'IPP_RIO_2019' && !!r.matchedStreet &&
+    (!r.matchedNumber || !requestedNumber || normalize(requestedNumber) === normalize(r.matchedNumber));
+  return r.status === 'located' && (hasCnefeEvidence || hasExactGeocoderEvidence || hasIppEvidence) &&
+    (r.precision === 'address' || (hasIppEvidence && r.precision === 'street')) && !!r.matchedStreet &&
+    (!!r.matchedNumber || hasIppEvidence) &&
     Number.isFinite(r.lat) && Number.isFinite(r.lng) && r.lat! > -34 && r.lat! < 6 && r.lng! > -74 && r.lng! < -32;
 }
 let stamp = -1;
@@ -116,6 +123,38 @@ function resolveCachedNumber(p: Address): OfficialLocation | null {
 }
 export function getOfficialPropertyLocation(p: Address): OfficialLocation {
   p = { ...p, address: locationAddress(p) };
+  // For Rio de Janeiro, resolve first against the official IPP Prefeitura do Rio
+  // cartography (Trechos_Logradouros + Numero_de_porta + Edificacoes_2019).
+  const ipp = resolveRioIppLocation({
+    id: p.id,
+    address: p.address,
+    neighborhood: p.neighborhood,
+    city: p.city,
+    state: p.state,
+    description: p.description,
+    title: p.title,
+  });
+  if (ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)) {
+    const ippResult: OfficialLocation = {
+      ...p,
+      status: 'located',
+      precision: ipp.matchedNumber ? 'address' : 'street',
+      source: 'IPP_RIO_2019',
+      sourceUrl: 'https://pgeo3.rio.rj.gov.br/',
+      lat: ipp.lat,
+      lng: ipp.lng,
+      matchedStreet: ipp.matchedStreet,
+      matchedNumber: ipp.matchedNumber,
+      matchedCity: 'Rio de Janeiro',
+      matchedLocality: ipp.bairro || p.neighborhood,
+      spreadMeters: 0,
+      buildingOid: ipp.oid || undefined,
+      buildingHeight: ipp.h || undefined,
+      ippMethod: ipp.method,
+    };
+    if (validOfficialLocation(ippResult)) return ippResult;
+  }
+
   refresh();
   const row = byAddress.get(propertyLocationKey(p));
   if (row && validOfficialLocation(row)) return { ...row, id: p.id, address: p.address };

@@ -18,6 +18,7 @@ import {
   buildSatelliteStyle,
   ensureMapLibrePMTilesProtocol,
   getBuildingColorExpression,
+  getTypologyColor,
   maplibregl,
   toLngLat,
   upsertRio3DBuildingsLayer,
@@ -54,6 +55,18 @@ const METRIC_LEGENDS: Record<
     stops: { color: string; label: string }[];
   }
 > = {
+  auctions: {
+    title: 'Imóveis em Leilão 3D',
+    subtitle: 'Cor por tipologia no endereço IPP',
+    stops: [
+      { color: '#10b981', label: 'Casa / Sobrado' },
+      { color: '#3b82f6', label: 'Apartamento' },
+      { color: '#f59e0b', label: 'Comercial / Sala' },
+      { color: '#a855f7', label: 'Terreno / Lote' },
+      { color: '#fde047', label: 'Selecionado' },
+      { color: '#262d3a', label: 'Demais prédios' },
+    ],
+  },
   m2: {
     title: 'ITBI R$/m² por Prédio',
     subtitle: 'Mediana oficial IPP + ITBI',
@@ -105,7 +118,8 @@ export default function PropertyMap({
 }: PropertyMapProps) {
   const [selectedPropId, setSelectedPropId] = useState<string>(initialSelectedPropertyId || '');
   const [mapMode, setMapMode] = useState<'satellite' | 'roadmap'>('roadmap');
-  const [activeMetric, setActiveMetric] = useState<RioBuildingMetric>('m2');
+  const [activeMetric, setActiveMetric] = useState<RioBuildingMetric>('auctions');
+  const [auctionBuildingsByOid, setAuctionBuildingsByOid] = useState<Record<number, any>>({});
   const [is3DMode, setIs3DMode] = useState<boolean>(true);
   const [showAuctionsLayer, setShowAuctionsLayer] = useState<boolean>(true);
   const [legendCollapsed, setLegendCollapsed] = useState<boolean>(false);
@@ -137,10 +151,13 @@ export default function PropertyMap({
 
   const getMapCoordinates = useCallback(
     (property: AuctionProperty): [number, number] | null => {
-      return getPropertyCoordinates({
-        ...property,
-        mapLocation: locationRecords[property.id] || (property as any).mapLocation,
-      } as AuctionProperty);
+      return getPropertyCoordinates(
+        {
+          ...property,
+          mapLocation: locationRecords[property.id] || (property as any).mapLocation,
+        } as AuctionProperty,
+        { strictRio: true }
+      );
     },
     [locationRecords]
   );
@@ -207,7 +224,7 @@ export default function PropertyMap({
   };
 
   // Group multi-unit properties into building clusters and prepare GeoJSON for MapLibre WebGL layer
-  const { auctionGeoJson, buildingClusterByKey, propById } = useMemo(() => {
+  const { auctionGeoJson, auctionBuildingsGeoJson, buildingClusterByKey, propById } = useMemo(() => {
     const clusterMap: Record<
       string,
       {
@@ -251,53 +268,98 @@ export default function PropertyMap({
       clusterMap[buildingKey].properties.push(prop);
     }
 
+    const buildingFeatures: any[] = [];
+    const seenBuildingOids = new Set<number>();
+
     const features = clusters.map((cluster) => {
       const count = cluster.properties.length;
       const firstProp = cluster.properties[0];
-      const origin = firstProp.origin || (firstProp.id.includes('caixa') ? 'caixa' : 'judicial');
-      let pinColor = '#6366f1'; // judicial
-      if (count > 1) pinColor = '#4338ca';
-      else if (origin === 'caixa' || origin === 'extrajudicial') pinColor = '#10b981';
-      else if (origin === 'portal') pinColor = '#f59e0b';
+      const pinColor = getTypologyColor(firstProp.propertyType);
+      const isClusterSelected = cluster.properties.some((p) => p.id === selectedPropId) ? 1 : 0;
+
+      // Resolve linked official IPP 3D building polygon if available
+      let matchedBuildingFeat: any = null;
+      for (const p of cluster.properties) {
+        const oid = Number(locationRecords[p.id]?.buildingOid);
+        if (oid && auctionBuildingsByOid[oid]) {
+          matchedBuildingFeat = auctionBuildingsByOid[oid];
+          break;
+        }
+      }
 
       const minPrice = Math.min(...cluster.properties.map((p) => p.auctionPrice || 0));
       const maxRoi = Math.max(...cluster.properties.map((p) => p.calculatedRoi || 0));
+      const priceLabel =
+        count > 1
+          ? `A partir de ${formatBRL(minPrice)}`
+          : firstProp.auctionPrice > 0
+            ? formatBRL(firstProp.auctionPrice)
+            : 'Aberto a Propostas';
+      const roiLabel = `${maxRoi.toFixed(0)}%`;
+      const [lng, lat] = toLngLat(cluster.coords);
+
+      if (matchedBuildingFeat) {
+        const oid = Number(matchedBuildingFeat.properties?.oid);
+        if (!seenBuildingOids.has(oid)) {
+          seenBuildingOids.add(oid);
+          buildingFeatures.push({
+            type: 'Feature',
+            id: oid,
+            geometry: matchedBuildingFeat.geometry,
+            properties: {
+              oid,
+              h: Number(matchedBuildingFeat.properties?.h) || 8,
+              clusterKey: cluster.key,
+              propId: firstProp.id,
+              unitCount: count,
+              isMulti: count > 1 ? 1 : 0,
+              isSelected: isClusterSelected,
+              color: pinColor,
+              lng,
+              lat,
+              title: firstProp.title || 'Imóvel em Leilão',
+              address: cluster.address || '',
+              priceLabel,
+              roiLabel,
+            },
+          });
+        }
+      }
 
       return {
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: toLngLat(cluster.coords),
+          coordinates: [lng, lat],
         },
         properties: {
           clusterKey: cluster.key,
           propId: firstProp.id,
           unitCount: count,
           isMulti: count > 1 ? 1 : 0,
-          isSelected: cluster.properties.some((p) => p.id === selectedPropId) ? 1 : 0,
+          hasBuilding: matchedBuildingFeat ? 1 : 0,
+          isSelected: isClusterSelected,
           color: pinColor,
           title: firstProp.title || 'Imóvel em Leilão',
           address: cluster.address || '',
-          priceLabel:
-            count > 1
-              ? `A partir de ${formatBRL(minPrice)}`
-              : firstProp.auctionPrice > 0
-                ? formatBRL(firstProp.auctionPrice)
-                : 'Aberto a Propostas',
-          roiLabel: `${maxRoi.toFixed(0)}%`,
+          priceLabel,
+          roiLabel,
         },
       };
     });
 
     return {
       auctionGeoJson: { type: 'FeatureCollection' as const, features },
+      auctionBuildingsGeoJson: { type: 'FeatureCollection' as const, features: buildingFeatures },
       buildingClusterByKey: clusterMap,
       propById: byId,
     };
-  }, [filteredList, selectedPropId, getMapCoordinates]);
+  }, [filteredList, selectedPropId, getMapCoordinates, locationRecords, auctionBuildingsByOid]);
 
   const auctionGeoJsonRef = useRef(auctionGeoJson);
   auctionGeoJsonRef.current = auctionGeoJson;
+  const auctionBuildingsGeoJsonRef = useRef(auctionBuildingsGeoJson);
+  auctionBuildingsGeoJsonRef.current = auctionBuildingsGeoJson;
   const buildingClusterByKeyRef = useRef(buildingClusterByKey);
   buildingClusterByKeyRef.current = buildingClusterByKey;
   const propByIdRef = useRef(propById);
@@ -392,13 +454,16 @@ export default function PropertyMap({
       }
     });
 
-    // Click individual or multi-unit auction pin
+    // Click individual, multi-unit or 3D-extruded auction building
     const handleAuctionFeatureClick = (e: any) => {
       e.originalEvent?.stopPropagation?.();
       const feat = e.features?.[0];
       if (!feat) return;
       const props = feat.properties || {};
-      const coords = (feat.geometry as any).coordinates as [number, number];
+      const coords: [number, number] =
+        feat.geometry?.type === 'Point'
+          ? (feat.geometry.coordinates as [number, number])
+          : [Number(props.lng) || e.lngLat.lng, Number(props.lat) || e.lngLat.lat];
       const cluster = buildingClusterByKeyRef.current[props.clusterKey];
       const auctionProp = propByIdRef.current.get(props.propId);
 
@@ -410,7 +475,7 @@ export default function PropertyMap({
         map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 17.2), pitch: 52, duration: 550 });
       } else {
         setBuildingClusterModal(null);
-        map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 16.2), duration: 450 });
+        map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 16.4), duration: 450 });
       }
 
       if (auctionProp) {
@@ -419,14 +484,22 @@ export default function PropertyMap({
       }
     };
 
-    map.on('click', 'auctions-points', handleAuctionFeatureClick);
+    map.on('click', 'auctions-points-unmatched', handleAuctionFeatureClick);
+    map.on('click', 'auctions-points-overview', handleAuctionFeatureClick);
     map.on('click', 'auctions-multi-unit', handleAuctionFeatureClick);
+    map.on('click', 'auctions-buildings-3d', handleAuctionFeatureClick);
 
     // Click any 3D IPP building polygon -> inspect ITBI metrics + height + nearby auctions
     map.on('click', 'rio-edificacoes-3d', (e) => {
-      // Skip if an auction marker sits directly under the click
+      // Skip if an auction marker or highlighted auction building sits directly under the click
       const pinHits = map.queryRenderedFeatures(e.point, {
-        layers: ['auctions-points', 'auctions-multi-unit', 'auctions-clusters'].filter((id) => Boolean(map.getLayer(id))),
+        layers: [
+          'auctions-buildings-3d',
+          'auctions-points-unmatched',
+          'auctions-points-overview',
+          'auctions-multi-unit',
+          'auctions-clusters',
+        ].filter((id) => Boolean(map.getLayer(id))),
       });
       if (pinHits.length > 0) return;
 
@@ -459,13 +532,16 @@ export default function PropertyMap({
       });
     });
 
-    // Hover tooltips on auction pins
+    // Hover tooltips on auction pins & colored 3D auction buildings
     const showPinTooltip = (e: any) => {
       map.getCanvas().style.cursor = 'pointer';
       const feat = e.features?.[0];
       if (!feat) return;
       const p = feat.properties || {};
-      const coords = (feat.geometry as any).coordinates as [number, number];
+      const coords: [number, number] =
+        feat.geometry?.type === 'Point'
+          ? (feat.geometry.coordinates as [number, number])
+          : [Number(p.lng) || e.lngLat.lng, Number(p.lat) || e.lngLat.lat];
       if (hoverPopupRef.current) hoverPopupRef.current.remove();
 
       const isMulti = Number(p.isMulti) === 1;
@@ -506,10 +582,14 @@ export default function PropertyMap({
       }
     };
 
-    map.on('mouseenter', 'auctions-points', showPinTooltip);
-    map.on('mouseleave', 'auctions-points', hidePinTooltip);
+    map.on('mouseenter', 'auctions-points-unmatched', showPinTooltip);
+    map.on('mouseleave', 'auctions-points-unmatched', hidePinTooltip);
+    map.on('mouseenter', 'auctions-points-overview', showPinTooltip);
+    map.on('mouseleave', 'auctions-points-overview', hidePinTooltip);
     map.on('mouseenter', 'auctions-multi-unit', showPinTooltip);
     map.on('mouseleave', 'auctions-multi-unit', hidePinTooltip);
+    map.on('mouseenter', 'auctions-buildings-3d', showPinTooltip);
+    map.on('mouseleave', 'auctions-buildings-3d', hidePinTooltip);
     map.on('mouseenter', 'auctions-clusters', () => {
       map.getCanvas().style.cursor = 'pointer';
     });
@@ -602,6 +682,49 @@ export default function PropertyMap({
 
     upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88 });
 
+    const bldData = auctionBuildingsGeoJsonRef.current;
+    const beforeSymbol = map.getStyle()?.layers?.find((l) => l.type === 'symbol')?.id;
+    const existingBldSrc = map.getSource('auctions-buildings-source') as maplibregl.GeoJSONSource | undefined;
+
+    if (existingBldSrc) {
+      existingBldSrc.setData(bldData as any);
+    } else {
+      map.addSource('auctions-buildings-source', {
+        type: 'geojson',
+        data: bldData as any,
+      });
+
+      map.addLayer(
+        {
+          id: 'auctions-buildings-3d',
+          type: 'fill-extrusion',
+          source: 'auctions-buildings-source',
+          paint: {
+            'fill-extrusion-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', ['get', 'color']],
+            'fill-extrusion-height': ['+', ['coalesce', ['get', 'h'], 8], 0.8],
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': 0.96,
+            'fill-extrusion-vertical-gradient': true,
+          },
+        },
+        beforeSymbol
+      );
+
+      map.addLayer(
+        {
+          id: 'auctions-buildings-outline',
+          type: 'line',
+          source: 'auctions-buildings-source',
+          filter: ['==', ['get', 'isSelected'], 1],
+          paint: {
+            'line-color': '#fef08a',
+            'line-width': 3,
+          },
+        },
+        beforeSymbol
+      );
+    }
+
     const data = auctionGeoJsonRef.current;
     const existingSrc = map.getSource('auctions-source') as maplibregl.GeoJSONSource | undefined;
 
@@ -612,7 +735,7 @@ export default function PropertyMap({
         type: 'geojson',
         data: data as any,
         cluster: true,
-        clusterMaxZoom: 15,
+        clusterMaxZoom: 14,
         clusterRadius: 34,
       });
 
@@ -642,15 +765,31 @@ export default function PropertyMap({
         paint: { 'text-color': '#ffffff' },
       });
 
+      // Pins for lots WITHOUT a 3D building polygon (e.g., empty land or Niterói/JF)
       map.addLayer({
-        id: 'auctions-points',
+        id: 'auctions-points-unmatched',
         type: 'circle',
         source: 'auctions-source',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'isMulti'], 0]],
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'isMulti'], 0], ['==', ['get', 'hasBuilding'], 0]],
         paint: {
           'circle-color': ['get', 'color'],
           'circle-radius': ['case', ['==', ['get', 'isSelected'], 1], 10, 6.5],
           'circle-stroke-width': ['case', ['==', ['get', 'isSelected'], 1], 3, 1.8],
+          'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
+        },
+      });
+
+      // Overview dots ONLY when zoomed out (< 14.3); at building zoom, the 3D building itself is colored!
+      map.addLayer({
+        id: 'auctions-points-overview',
+        type: 'circle',
+        source: 'auctions-source',
+        maxzoom: 14.3,
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'isMulti'], 0], ['==', ['get', 'hasBuilding'], 1]],
+        paint: {
+          'circle-color': ['get', 'color'],
+          'circle-radius': ['case', ['==', ['get', 'isSelected'], 1], 9, 5.5],
+          'circle-stroke-width': ['case', ['==', ['get', 'isSelected'], 1], 2.5, 1.5],
           'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
         },
       });
@@ -661,10 +800,11 @@ export default function PropertyMap({
         source: 'auctions-source',
         filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'isMulti'], 1]],
         paint: {
-          'circle-color': '#4338ca',
-          'circle-radius': ['case', ['==', ['get', 'isSelected'], 1], 14, 11],
+          'circle-color': ['get', 'color'],
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 9],
           'circle-stroke-width': 2.5,
-          'circle-stroke-color': '#fbbf24',
+          'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
+          'circle-opacity': 0.92,
         },
       });
 
@@ -677,17 +817,26 @@ export default function PropertyMap({
           'text-field': ['to-string', ['get', 'unitCount']],
           'text-size': 10.5,
         },
-        paint: { 'text-color': '#fef08a' },
+        paint: { 'text-color': '#ffffff' },
       });
     }
 
     const vis = showAuctionsLayer ? 'visible' : 'none';
-    for (const lid of ['auctions-clusters', 'auctions-cluster-count', 'auctions-points', 'auctions-multi-unit', 'auctions-multi-count']) {
+    for (const lid of [
+      'auctions-buildings-3d',
+      'auctions-buildings-outline',
+      'auctions-clusters',
+      'auctions-cluster-count',
+      'auctions-points-unmatched',
+      'auctions-points-overview',
+      'auctions-multi-unit',
+      'auctions-multi-count',
+    ]) {
       if (map.getLayer(lid)) map.setLayoutProperty(lid, 'visibility', vis);
     }
 
     updateViewportCounter();
-  }, [auctionGeoJson, styleVersion, showAuctionsLayer, updateViewportCounter]);
+  }, [auctionGeoJson, auctionBuildingsGeoJson, styleVersion, showAuctionsLayer, updateViewportCounter]);
 
   // Factions overlay inside MapLibre
   useEffect(() => {
@@ -764,6 +913,26 @@ export default function PropertyMap({
       .catch((err) => console.error('Erro ao carregar faccoes_rj.json', err));
   }, [showFactionsLayer, styleVersion]);
 
+  // Fetch Rio 3D auction building footprints (official IPP Edificacoes_2019)
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/map/auction-buildings')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((fc) => {
+        if (cancelled || !fc || !Array.isArray(fc.features)) return;
+        const mapByOid: Record<number, any> = {};
+        for (const f of fc.features) {
+          const oid = Number(f.properties?.oid);
+          if (oid) mapByOid[oid] = f;
+        }
+        setAuctionBuildingsByOid(mapByOid);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Fetch verified coordinates
   useEffect(() => {
     let cancelled = false;
@@ -787,7 +956,7 @@ export default function PropertyMap({
             const current = currentById.get(location.id);
             if (current) records[location.id] = location;
             if (current) {
-              const point = getPropertyCoordinates({ ...current, mapLocation: location } as AuctionProperty);
+              const point = getPropertyCoordinates({ ...current, mapLocation: location } as AuctionProperty, { strictRio: true });
               if (point) next[location.id] = point;
             }
           }
@@ -1085,9 +1254,10 @@ export default function PropertyMap({
 
             {!legendCollapsed && (
               <div className="pt-2 space-y-2">
-                <div className="grid grid-cols-3 gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[10px] font-bold">
+                <div className="grid grid-cols-4 gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[9.5px] font-bold">
                   {(
                     [
+                      ['auctions', 'Leilões'],
                       ['m2', 'R$/m²'],
                       ['liq', 'Liquidez'],
                       ['spr', 'Spread'],

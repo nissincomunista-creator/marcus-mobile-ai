@@ -378,20 +378,37 @@ function normalizeGeoString(str) {
   if (!str) return "";
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
-function getPropertyCoordinates(prop) {
+function getPropertyCoordinates(prop, options) {
   if (!prop) return null;
+  const location2 = prop.mapLocation;
   const pLat = Number(prop.lat ?? prop.latitude ?? prop.coords?.[0]);
   const pLng = Number(prop.lng ?? prop.longitude ?? prop.lon ?? prop.coords?.[1]);
-  if (Number.isFinite(pLat) && Number.isFinite(pLng) && pLat !== 0 && pLng !== 0 && pLat >= -34 && pLat <= 6 && pLng >= -74 && pLng <= -32) {
-    return [pLat, pLng];
-  }
-  const location2 = prop.mapLocation;
+  const hasDirectCoords = Number.isFinite(pLat) && Number.isFinite(pLng) && pLat !== 0 && pLng !== 0 && pLat >= -34 && pLat <= 6 && pLng >= -74 && pLng <= -32;
   if (location2 && location2.status === "located") {
     const lat = Number(location2.lat);
     const lng = Number(location2.lng);
     if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0 && lat >= -34 && lat <= 6 && lng >= -74 && lng <= -32) {
       return [lat, lng];
     }
+  }
+  const normCityPre = normalizeGeoString(prop.city);
+  const isRio = normCityPre.includes("rio de janeiro");
+  if (options?.strictRio && isRio) {
+    if (!hasDirectCoords) return null;
+    if (location2?.status === "pending") return null;
+    if (!(prop.address || "").trim()) return null;
+    if (prop.precisa_revisao === true || prop.status_geocodificacao === "PENDENTE_REVISAO") {
+      return null;
+    }
+    for (const [bLat, bLng] of Object.values(RIO_DE_JANEIRO_BAIRROS)) {
+      if (Math.abs(pLat - bLat) < 5e-4 && Math.abs(pLng - bLng) < 5e-4) {
+        return null;
+      }
+    }
+    return [pLat, pLng];
+  }
+  if (hasDirectCoords) {
+    return [pLat, pLng];
   }
   const normNeigh = normalizeGeoString(prop.neighborhood);
   const normCity = normalizeGeoString(prop.city);
@@ -1593,9 +1610,9 @@ function officialLotFinancials(html, url) {
   }
   if (!lot || typeof lot !== "object") return void 0;
   try {
-    const path13 = new URL(url).pathname;
-    const offer = path13.match(/\/(\d+)\/id-(\d+)(?:\/|$)/i);
-    const lotId = path13.match(/\/lote\/(\d+)(?:\/|$)/i)?.[1];
+    const path14 = new URL(url).pathname;
+    const offer = path14.match(/\/(\d+)\/id-(\d+)(?:\/|$)/i);
+    const lotId = path14.match(/\/lote\/(\d+)(?:\/|$)/i)?.[1];
     if (offer) {
       if (String(lot.aid) !== offer[2] || String(lot.bemId ?? lot.id) !== offer[1]) return void 0;
     } else if (!lotId || String(lot.id) !== lotId) return void 0;
@@ -14766,8 +14783,8 @@ function locationAddress(p) {
 }
 
 // propertyLocationService.ts
-var import_node_fs7 = __toESM(require("node:fs"), 1);
-var import_node_path7 = __toESM(require("node:path"), 1);
+var import_node_fs8 = __toESM(require("node:fs"), 1);
+var import_node_path8 = __toESM(require("node:path"), 1);
 var import_node_child_process2 = require("node:child_process");
 var import_node_crypto4 = require("node:crypto");
 
@@ -15080,9 +15097,342 @@ async function geocodeAddress(query, options) {
   return null;
 }
 
+// rioIppLocationService.ts
+var import_node_fs7 = __toESM(require("node:fs"), 1);
+var import_node_path7 = __toESM(require("node:path"), 1);
+var import_node_zlib = __toESM(require("node:zlib"), 1);
+var GIS_DIR = import_node_path7.default.resolve("data/gis/rio_itbi_map");
+var SHARDS_DIR = import_node_path7.default.join(GIS_DIR, "ipp_shards");
+var STREETS_FILE = import_node_path7.default.join(SHARDS_DIR, "streets.json.gz");
+var AUCTION_LOCS_FILE = import_node_path7.default.join(GIS_DIR, "rio_auction_locations.json");
+var AUCTION_BUILDINGS_FILE = import_node_path7.default.join(GIS_DIR, "rio_auction_buildings.geojson");
+var FIRST_TOKEN_ABBR = {
+  R: "RUA",
+  AV: "AVENIDA",
+  AVN: "AVENIDA",
+  AVDA: "AVENIDA",
+  EST: "ESTRADA",
+  ESTR: "ESTRADA",
+  PC: "PRACA",
+  PCA: "PRACA",
+  PR: "PRACA",
+  TV: "TRAVESSA",
+  TRV: "TRAVESSA",
+  TRAV: "TRAVESSA",
+  AL: "ALAMEDA",
+  LG: "LARGO",
+  LGO: "LARGO",
+  ROD: "RODOVIA",
+  CAM: "CAMINHO",
+  LAD: "LADEIRA",
+  VL: "VILA",
+  PQ: "PARQUE",
+  BCO: "BECO",
+  PAS: "PASSAGEM",
+  VIAD: "VIADUTO",
+  PTE: "PONTE",
+  TUN: "TUNEL",
+  PRQ: "PARQUE",
+  JD: "JARDIM",
+  SERV: "SERVIDAO",
+  BLV: "BOULEVARD"
+};
+var WORD_ABBR = {
+  STA: "SANTA",
+  STO: "SANTO",
+  DR: "DOUTOR",
+  DRA: "DOUTORA",
+  PROF: "PROFESSOR",
+  PROFA: "PROFESSORA",
+  PRES: "PRESIDENTE",
+  GEN: "GENERAL",
+  CEL: "CORONEL",
+  MAJ: "MAJOR",
+  CAP: "CAPITAO",
+  ALM: "ALMIRANTE",
+  BRIG: "BRIGADEIRO",
+  MAL: "MARECHAL",
+  DES: "DESEMBARGADOR",
+  SEN: "SENADOR",
+  GOV: "GOVERNADOR",
+  DEP: "DEPUTADO",
+  VER: "VEREADOR",
+  ENG: "ENGENHEIRO",
+  ARQ: "ARQUITETO",
+  PE: "PADRE",
+  MONS: "MONSENHOR",
+  VISC: "VISCONDE",
+  JORN: "JORNALISTA",
+  MIN: "MINISTRO",
+  TEN: "TENENTE",
+  SGT: "SARGENTO",
+  COM: "COMENDADOR",
+  SRA: "SENHORA",
+  SR: "SENHOR",
+  NSRA: "NOSSA SENHORA",
+  N: "NOSSA",
+  CONS: "CONSELHEIRO",
+  BAR: "BARAO",
+  EMB: "EMBAIXADOR",
+  PREF: "PREFEITO",
+  REV: "REVERENDO"
+};
+var TYPE_PREFIXES = /* @__PURE__ */ new Set([
+  "RUA",
+  "AVENIDA",
+  "ESTRADA",
+  "PRACA",
+  "TRAVESSA",
+  "ALAMEDA",
+  "LARGO",
+  "RODOVIA",
+  "CAMINHO",
+  "LADEIRA",
+  "VILA",
+  "PARQUE",
+  "BECO",
+  "PASSAGEM",
+  "VIADUTO",
+  "PONTE",
+  "TUNEL",
+  "PRAIA",
+  "JARDIM",
+  "CONDOMINIO",
+  "SERVIDAO",
+  "BOULEVARD",
+  "ESCADA",
+  "ESCADARIA",
+  "MORRO",
+  "ILHA",
+  "CAIS"
+]);
+var STOPWORDS = /* @__PURE__ */ new Set(["DE", "DA", "DO", "DOS", "DAS", "E", "A", "O"]);
+function normalizeText(str) {
+  if (!str) return "";
+  return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\bN\.?\s*SRA\.?\b/g, "NOSSA SENHORA").replace(/\bN\.?\s*S\.?\b/g, "NOSSA SENHORA").replace(/[^A-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+function expandStreetTokens(normStr) {
+  if (!normStr) return "";
+  const tokens = normStr.split(" ").filter(Boolean);
+  if (!tokens.length) return "";
+  if (FIRST_TOKEN_ABBR[tokens[0]]) tokens[0] = FIRST_TOKEN_ABBR[tokens[0]];
+  const out = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (i > 0 && WORD_ABBR[t]) out.push(...WORD_ABBR[t].split(" "));
+    else out.push(t);
+  }
+  return out.join(" ");
+}
+function buildStreetKeys(raw) {
+  const expanded = expandStreetTokens(normalizeText(raw));
+  if (!expanded) return { full: "", core: "" };
+  const tokens = expanded.split(" ");
+  const noType = TYPE_PREFIXES.has(tokens[0]) ? tokens.slice(1) : tokens;
+  const core = noType.filter((t) => !STOPWORDS.has(t)).join(" ") || expanded;
+  return { full: expanded, core };
+}
+function normalizeBairro(raw) {
+  return normalizeText(raw).replace(/\bJARDIM\b/g, "JD").replace(/\bVILA\b/g, "VL");
+}
+function extractRioStreetAndNumber(rawAddr, rawTitle) {
+  const candidates = [];
+  if (rawAddr && String(rawAddr).trim().length >= 4) candidates.push(String(rawAddr));
+  if (rawTitle && /(rua|avenida|av\.|estrada|estr\.|praça|praca|travessa|alameda|largo|rodovia|praia|caminho|ladeira)/i.test(rawTitle)) {
+    candidates.push(String(rawTitle));
+  }
+  const parsedOptions = [];
+  for (const cand of candidates) {
+    const parenMatch = cand.match(/\(([^)]+)\)/);
+    const cleaned = cand.replace(/\([^)]*\)/g, " ").replace(/\bCONF\.?\s*ITBI.*$/i, "").replace(/\bBAIRRO\s*:.*$/i, "").replace(/\bCEP\s*:?[\s\d-]+/gi, "").replace(/\bRio\s+de\s+Janeiro\s*[-/,]\s*RJ\b.*$/i, "").trim();
+    const numRegex = /(?:,\s*|\s+)(?:N[ºO°.]?\s*)(\d{1,5})\b|,\s*(\d{1,5})\b/i;
+    const numM = cleaned.match(numRegex);
+    let numInt = numM ? parseInt(numM[1] || numM[2], 10) : 0;
+    let streetPart = numM && numM.index != null ? cleaned.slice(0, numM.index) : cleaned.split(",")[0];
+    streetPart = streetPart.replace(/^(?:Pr[ée]dio\s+localizado\s+na|Apartamento\s+na|Casa\s+na|Im[óo]vel\s+na|Terreno\s+na|Sala\s+na|Loja\s+na)\s+/i, "").replace(/[,\-]+$/g, "").trim();
+    if (!numInt) {
+      const explicitN = cand.match(/\bN[ºO°.]\s*(\d{1,5})\b/i);
+      if (explicitN) numInt = parseInt(explicitN[1], 10);
+    }
+    if (streetPart.length >= 3) parsedOptions.push({ street: streetPart, numInt });
+    if (parenMatch?.[1] && parenMatch[1].length >= 5) {
+      const altStreet = parenMatch[1].replace(/^ANTIG[AO]\s+/i, "").trim();
+      if (altStreet.length >= 4) parsedOptions.push({ street: altStreet, numInt });
+    }
+  }
+  return parsedOptions;
+}
+var cachedAuctionLocs = null;
+var cachedStreetsIndex = null;
+var doorShardCache = /* @__PURE__ */ new Map();
+function loadAuctionLocationsMap() {
+  if (cachedAuctionLocs) return cachedAuctionLocs;
+  try {
+    if (import_node_fs7.default.existsSync(AUCTION_LOCS_FILE)) {
+      cachedAuctionLocs = JSON.parse(import_node_fs7.default.readFileSync(AUCTION_LOCS_FILE, "utf8"));
+      return cachedAuctionLocs;
+    }
+  } catch (err) {
+    console.warn("[RioIPP] Falha ao carregar rio_auction_locations.json:", err);
+  }
+  cachedAuctionLocs = {};
+  return cachedAuctionLocs;
+}
+function loadStreetsIndex() {
+  if (cachedStreetsIndex) return cachedStreetsIndex;
+  try {
+    if (import_node_fs7.default.existsSync(STREETS_FILE)) {
+      const buf = import_node_zlib.default.gunzipSync(import_node_fs7.default.readFileSync(STREETS_FILE));
+      cachedStreetsIndex = JSON.parse(buf.toString("utf8"));
+      return cachedStreetsIndex;
+    }
+  } catch (err) {
+    console.warn("[RioIPP] Falha ao carregar streets.json.gz:", err);
+  }
+  return null;
+}
+function loadDoorsForCl(cl) {
+  let h = 0;
+  for (let i = 0; i < cl.length; i++) h = h * 31 + cl.charCodeAt(i) & 15;
+  const key = h.toString(16);
+  let shard = doorShardCache.get(key);
+  if (!shard) {
+    const file2 = import_node_path7.default.join(SHARDS_DIR, `doors_${key}.json.gz`);
+    if (!import_node_fs7.default.existsSync(file2)) return [];
+    try {
+      shard = JSON.parse(import_node_zlib.default.gunzipSync(import_node_fs7.default.readFileSync(file2)).toString("utf8"));
+      if (doorShardCache.size >= 4) {
+        const oldestKey = doorShardCache.keys().next().value;
+        if (oldestKey !== void 0) doorShardCache.delete(oldestKey);
+      }
+      doorShardCache.set(key, shard);
+    } catch {
+      return [];
+    }
+  }
+  return shard[cl] || [];
+}
+function resolveRioIppLocation(params) {
+  const cityNorm = normalizeText(params.city);
+  const stateNorm = normalizeText(params.state);
+  if (cityNorm && !cityNorm.includes("RIO DE JANEIRO")) return null;
+  if (!cityNorm && stateNorm && stateNorm !== "RJ") return null;
+  if (params.id) {
+    const pre = loadAuctionLocationsMap()[params.id];
+    if (pre && Number.isFinite(pre.lat) && Number.isFinite(pre.lng)) {
+      return pre;
+    }
+  }
+  const idx = loadStreetsIndex();
+  if (!idx) return null;
+  const opts = extractRioStreetAndNumber(params.address, params.title || params.description);
+  const nb = normalizeBairro(params.neighborhood);
+  for (const opt of opts) {
+    const { full, core } = buildStreetKeys(opt.street);
+    const cls = [];
+    const addAll = (arr) => {
+      if (!arr) return;
+      for (const c of arr) if (!cls.includes(c)) cls.push(c);
+    };
+    if (nb) addAll(idx.exactBairro[`${full}|${nb}`]);
+    if (nb) addAll(idx.coreBairro[`${core}|${nb}`]);
+    if (!cls.length) {
+      addAll(idx.fullMap[full]);
+      if (!cls.length) addAll(idx.coreMap[core]);
+    }
+    if (!cls.length) continue;
+    const numInt = opt.numInt;
+    if (numInt > 0) {
+      for (const cl of cls) {
+        const doors2 = loadDoorsForCl(cl);
+        if (!doors2.length) continue;
+        const exact = doors2.find((d) => d[0] === numInt);
+        const m2 = idx.clMeta[cl];
+        if (exact) {
+          return {
+            lng: exact[1],
+            lat: exact[2],
+            cl,
+            clnp: exact[3],
+            matchedStreet: m2?.[0] || opt.street,
+            matchedNumber: String(numInt),
+            bairro: m2?.[1] || params.neighborhood || "",
+            method: "ipp_exact_door"
+          };
+        }
+        const sameParity = doors2.filter((d) => d[0] > 0 && d[0] % 2 === numInt % 2);
+        const pool = sameParity.length >= 2 ? sameParity : doors2.filter((d) => d[0] > 0);
+        if (!pool.length) continue;
+        let lo = null;
+        let hi = null;
+        let best = pool[0];
+        let bestDiff = Math.abs(pool[0][0] - numInt);
+        for (const d of pool) {
+          const diff = Math.abs(d[0] - numInt);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = d;
+          }
+          if (d[0] < numInt && (!lo || d[0] > lo[0])) lo = d;
+          if (d[0] > numInt && (!hi || d[0] < hi[0])) hi = d;
+        }
+        let lng = best[1];
+        let lat = best[2];
+        let method = "ipp_nearest_door";
+        if (lo && hi && hi[0] > lo[0] && hi[0] - lo[0] <= 300) {
+          const t = (numInt - lo[0]) / (hi[0] - lo[0]);
+          lng = lo[1] + t * (hi[1] - lo[1]);
+          lat = lo[2] + t * (hi[2] - lo[2]);
+          method = "ipp_interpolated_door";
+        }
+        return {
+          lng: Math.round(lng * 1e6) / 1e6,
+          lat: Math.round(lat * 1e6) / 1e6,
+          cl,
+          clnp: `${cl}${String(numInt).padStart(5, "0")}`,
+          matchedStreet: m2?.[0] || opt.street,
+          matchedNumber: String(numInt),
+          bairro: m2?.[1] || params.neighborhood || "",
+          method
+        };
+      }
+    }
+    const cl0 = cls[0];
+    const m = idx.clMeta[cl0];
+    const doors = loadDoorsForCl(cl0);
+    if (doors.length) {
+      const mid = doors[Math.floor(doors.length / 2)];
+      return {
+        lng: mid[1],
+        lat: mid[2],
+        cl: cl0,
+        matchedStreet: m?.[0] || opt.street,
+        matchedNumber: "",
+        bairro: m?.[1] || params.neighborhood || "",
+        method: "ipp_street_axis"
+      };
+    }
+    if (m && m[2] && m[3]) {
+      return {
+        lng: m[2],
+        lat: m[3],
+        cl: cl0,
+        matchedStreet: m[0] || opt.street,
+        matchedNumber: "",
+        bairro: m[1] || params.neighborhood || "",
+        method: "ipp_trecho_midpoint"
+      };
+    }
+  }
+  return null;
+}
+function getRioAuctionBuildingsFilePath() {
+  return import_node_fs7.default.existsSync(AUCTION_BUILDINGS_FILE) ? AUCTION_BUILDINGS_FILE : null;
+}
+
 // propertyLocationService.ts
 var EXACT_GEOCODE_ALGORITHM_VERSION = 2;
-var file = import_node_path7.default.join(process.cwd(), "official_property_locations.json");
+var file = import_node_path8.default.join(process.cwd(), "official_property_locations.json");
 var normalize4 = (s) => (s || "").normalize("NFC").trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
 var normalizeStreet = (s) => normalize4(cleanBrazilianAddress(s || "").street).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").replace(/^(rua|avenida|av|estrada|travessa|alameda|praca|rodovia|largo|beco)\s+/, "").trim();
 function addressHouseUnit(address) {
@@ -15101,7 +15451,8 @@ function validOfficialLocation(r) {
   const hasCnefeEvidence = r.source === "IBGE_CNEFE_2022" && [1, 2].includes(r.geocodeLevel) && !!r.cnefeId && cnefeHouseMatches && blockMatches && Number.isFinite(r.spreadMeters) && r.spreadMeters >= 0 && r.spreadMeters <= 20;
   const requestedNumber = cleanBrazilianAddress(r.address || "").number;
   const hasExactGeocoderEvidence = r.source === "GEOCODE_NUMBER" && !requestedUnits.bloco && ["nominatim", "photon"].includes(String(r.geocoderProvider)) && r.geocoderPrecision === "rooftop" && !!requestedNumber && normalize4(requestedNumber) === normalize4(r.matchedNumber) && !!r.city && normalize4(r.city) === normalize4(r.matchedCity) && normalizeStreet(r.address) === normalizeStreet(r.matchedStreet);
-  return r.status === "located" && (hasCnefeEvidence || hasExactGeocoderEvidence) && r.precision === "address" && !!r.matchedStreet && !!r.matchedNumber && Number.isFinite(r.lat) && Number.isFinite(r.lng) && r.lat > -34 && r.lat < 6 && r.lng > -74 && r.lng < -32;
+  const hasIppEvidence = r.source === "IPP_RIO_2019" && !!r.matchedStreet && (!r.matchedNumber || !requestedNumber || normalize4(requestedNumber) === normalize4(r.matchedNumber));
+  return r.status === "located" && (hasCnefeEvidence || hasExactGeocoderEvidence || hasIppEvidence) && (r.precision === "address" || hasIppEvidence && r.precision === "street") && !!r.matchedStreet && (!!r.matchedNumber || hasIppEvidence) && Number.isFinite(r.lat) && Number.isFinite(r.lng) && r.lat > -34 && r.lat < 6 && r.lng > -74 && r.lng < -32;
 }
 var stamp = -1;
 var byAddress = /* @__PURE__ */ new Map();
@@ -15112,7 +15463,7 @@ var isMapLocationRefreshRunning = () => refreshing || geocodingPending;
 function refresh() {
   let stat;
   try {
-    stat = import_node_fs7.default.statSync(file);
+    stat = import_node_fs8.default.statSync(file);
   } catch {
     byAddress = /* @__PURE__ */ new Map();
     stamp = -1;
@@ -15120,7 +15471,7 @@ function refresh() {
   }
   if (stat.mtimeMs === stamp) return;
   try {
-    const rows = JSON.parse(import_node_fs7.default.readFileSync(file, "utf8"));
+    const rows = JSON.parse(import_node_fs8.default.readFileSync(file, "utf8"));
     if (!Array.isArray(rows)) throw new Error("Expected an array of address records");
     const next = /* @__PURE__ */ new Map();
     for (const row of rows) next.set(propertyLocationKey(row), row);
@@ -15133,15 +15484,15 @@ function refresh() {
 var candidateFiles = /* @__PURE__ */ new Map();
 function resolveCachedNumber(p) {
   try {
-    const root2 = import_node_path7.default.join(process.cwd(), ".cache", "map-cnefe");
-    const manifest = JSON.parse(import_node_fs7.default.readFileSync(import_node_path7.default.join(root2, "manifest.json"), "utf8"));
+    const root2 = import_node_path8.default.join(process.cwd(), ".cache", "map-cnefe");
+    const manifest = JSON.parse(import_node_fs8.default.readFileSync(import_node_path8.default.join(root2, "manifest.json"), "utf8"));
     const municipality = manifest.find((m) => normalize4(m.city) === normalize4(p.city) && normalize4(m.state) === normalize4(p.state));
     if (!municipality) return null;
-    const sourceFile = import_node_path7.default.join(root2, "resolved", import_node_path7.default.basename(municipality.name) + ".json");
-    const mtime = import_node_fs7.default.statSync(sourceFile).mtimeMs;
+    const sourceFile = import_node_path8.default.join(root2, "resolved", import_node_path8.default.basename(municipality.name) + ".json");
+    const mtime = import_node_fs8.default.statSync(sourceFile).mtimeMs;
     let cached = candidateFiles.get(sourceFile);
     if (!cached || cached.stamp !== mtime) {
-      cached = { stamp: mtime, candidates: JSON.parse(import_node_fs7.default.readFileSync(sourceFile, "utf8")).candidates || {} };
+      cached = { stamp: mtime, candidates: JSON.parse(import_node_fs8.default.readFileSync(sourceFile, "utf8")).candidates || {} };
       candidateFiles.set(sourceFile, cached);
     }
     const parsed = cleanBrazilianAddress(p.address || "");
@@ -15178,6 +15529,35 @@ function resolveCachedNumber(p) {
 }
 function getOfficialPropertyLocation(p) {
   p = { ...p, address: locationAddress(p) };
+  const ipp = resolveRioIppLocation({
+    id: p.id,
+    address: p.address,
+    neighborhood: p.neighborhood,
+    city: p.city,
+    state: p.state,
+    description: p.description,
+    title: p.title
+  });
+  if (ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)) {
+    const ippResult = {
+      ...p,
+      status: "located",
+      precision: ipp.matchedNumber ? "address" : "street",
+      source: "IPP_RIO_2019",
+      sourceUrl: "https://pgeo3.rio.rj.gov.br/",
+      lat: ipp.lat,
+      lng: ipp.lng,
+      matchedStreet: ipp.matchedStreet,
+      matchedNumber: ipp.matchedNumber,
+      matchedCity: "Rio de Janeiro",
+      matchedLocality: ipp.bairro || p.neighborhood,
+      spreadMeters: 0,
+      buildingOid: ipp.oid || void 0,
+      buildingHeight: ipp.h || void 0,
+      ippMethod: ipp.method
+    };
+    if (validOfficialLocation(ippResult)) return ippResult;
+  }
   refresh();
   const row = byAddress.get(propertyLocationKey(p));
   if (row && validOfficialLocation(row)) return { ...row, id: p.id, address: p.address };
@@ -15210,20 +15590,20 @@ function getOfficialPropertyLocation(p) {
 function persistLocationRows(rows) {
   try {
     const temp = `${file}.${process.pid}.tmp`;
-    import_node_fs7.default.writeFileSync(temp, JSON.stringify(rows), "utf8");
+    import_node_fs8.default.writeFileSync(temp, JSON.stringify(rows), "utf8");
     try {
-      import_node_fs7.default.renameSync(temp, file);
+      import_node_fs8.default.renameSync(temp, file);
     } catch (error) {
       if (!["EPERM", "EBUSY", "EACCES"].includes(error?.code)) {
         console.warn("[Mapa] Falha no rename:", error?.message);
       }
       try {
-        import_node_fs7.default.copyFileSync(temp, file);
+        import_node_fs8.default.copyFileSync(temp, file);
       } catch (copyErr) {
         console.warn("[Mapa] Aviso ao copiar arquivo de localiza\xE7\xE3o (travado por OneDrive/antiv\xEDrus):", copyErr?.message);
       }
       try {
-        import_node_fs7.default.unlinkSync(temp);
+        import_node_fs8.default.unlinkSync(temp);
       } catch {
       }
     }
@@ -15238,7 +15618,7 @@ async function geocodePendingPropertyLocations(properties) {
   geocodingPending = true;
   try {
     refresh();
-    const rows = JSON.parse(import_node_fs7.default.readFileSync(file, "utf8"));
+    const rows = JSON.parse(import_node_fs8.default.readFileSync(file, "utf8"));
     const byId = new Map(rows.map((row, index) => [row.id, index]));
     const pending = properties.filter((property) => {
       const index = property.id ? byId.get(property.id) : void 0;
@@ -15319,19 +15699,19 @@ function ensureOfficialLocationCoverage(properties) {
   const inputs = properties.map((p) => ({ id: p.id, address: locationAddress(p), city: p.city || "", state: p.state || "", neighborhood: p.neighborhood || "" }));
   const fingerprint = (0, import_node_crypto4.createHash)("sha256").update(JSON.stringify(inputs)).digest("hex");
   if (fingerprint === lastRefreshKey) return;
-  const cache2 = import_node_path7.default.join(process.cwd(), ".cache", "map-cnefe");
-  if (!import_node_fs7.default.existsSync(import_node_path7.default.join(cache2, "manifest.json"))) return;
+  const cache2 = import_node_path8.default.join(process.cwd(), ".cache", "map-cnefe");
+  if (!import_node_fs8.default.existsSync(import_node_path8.default.join(cache2, "manifest.json"))) return;
   let config = {};
   try {
-    config = JSON.parse(import_node_fs7.default.readFileSync(import_node_path7.default.join(process.cwd(), "map_sources_config.json"), "utf8"));
+    config = JSON.parse(import_node_fs8.default.readFileSync(import_node_path8.default.join(process.cwd(), "map_sources_config.json"), "utf8"));
   } catch {
   }
   const python = process.env.PYTHON_EXECUTABLE || config.pythonExecutable || "python";
-  const inputPath = import_node_path7.default.join(cache2, "refresh_targets.json");
-  import_node_fs7.default.writeFileSync(inputPath, JSON.stringify(inputs));
+  const inputPath = import_node_path8.default.join(cache2, "refresh_targets.json");
+  import_node_fs8.default.writeFileSync(inputPath, JSON.stringify(inputs));
   lastRefreshKey = fingerprint;
   refreshing = true;
-  const child = (0, import_node_child_process2.spawn)(python, [import_node_path7.default.join(process.cwd(), "scripts", "refresh_map_locations.py"), inputPath], {
+  const child = (0, import_node_child_process2.spawn)(python, [import_node_path8.default.join(process.cwd(), "scripts", "refresh_map_locations.py"), inputPath], {
     cwd: process.cwd(),
     windowsHide: true,
     stdio: ["ignore", "ignore", "pipe"],
@@ -16539,8 +16919,8 @@ var neighborhoodPortalM2Cache = /* @__PURE__ */ new Map();
 function getNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions, propertyType, sizeSqm) {
   const uf = (state || "RJ").toUpperCase().trim();
   const rawCity = city || (uf === "MG" ? "Juiz de Fora" : uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
-  const cityKey = `${uf}_${normalizeText(rawCity).toUpperCase()}`;
-  const neighNorm = normalizeText(neighborhood || "");
+  const cityKey = `${uf}_${normalizeText2(rawCity).toUpperCase()}`;
+  const neighNorm = normalizeText2(neighborhood || "");
   const roundedSize = Math.round((sizeSqm || 60) / 10) * 10;
   const cacheKey = `${cityKey}|${neighNorm}|${propertyType || "all"}|${roundedSize}`;
   if (neighborhoodPortalM2Cache.has(cacheKey)) {
@@ -16556,8 +16936,8 @@ function getNeighTxsFast(itbiTransactions, cityNorm, neighNorm) {
   if (!index) {
     index = /* @__PURE__ */ new Map();
     for (const tx of itbiTransactions) {
-      const c = normalizeText(tx.city || "rio de janeiro");
-      const n = normalizeText(tx.neighborhood || "");
+      const c = normalizeText2(tx.city || "rio de janeiro");
+      const n = normalizeText2(tx.neighborhood || "");
       if (!n) continue;
       const key = `${c}|${n}`;
       let arr = index.get(key);
@@ -16574,10 +16954,10 @@ function getNeighTxsFast(itbiTransactions, cityNorm, neighNorm) {
 function computeNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions, propertyType, sizeSqm) {
   const uf = (state || "RJ").toUpperCase().trim();
   const rawCity = city || (uf === "MG" ? "Juiz de Fora" : uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
-  const cityKey = `${uf}_${normalizeText(rawCity).toUpperCase()}`;
-  const neighNorm = normalizeText(neighborhood || "");
+  const cityKey = `${uf}_${normalizeText2(rawCity).toUpperCase()}`;
+  const neighNorm = normalizeText2(neighborhood || "");
   if (Array.isArray(itbiTransactions) && itbiTransactions.length > 0 && neighNorm) {
-    const cityNorm = normalizeText(rawCity);
+    const cityNorm = normalizeText2(rawCity);
     const neighTxs = getNeighTxsFast(itbiTransactions, cityNorm, neighNorm);
     if (neighTxs.length > 0) {
       const targetType = propertyType ? propertyType.toLowerCase() : "";
@@ -16666,7 +17046,7 @@ function computeNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions
   }
   return finalRate || 3600;
 }
-function normalizeText(text) {
+function normalizeText2(text) {
   if (!text) return "";
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
@@ -16685,13 +17065,13 @@ function getPortalAreaBracket(sizeSqm) {
 function calculatePortalBenchmark(input) {
   const uf = (input.state || "MG").toUpperCase().trim();
   const rawCity = input.city || (uf === "MG" ? "Juiz de Fora" : uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
-  const cityKey = `${uf}_${normalizeText(rawCity).toUpperCase()}`;
-  const neighNorm = normalizeText(input.neighborhood || "");
+  const cityKey = `${uf}_${normalizeText2(rawCity).toUpperCase()}`;
+  const neighNorm = normalizeText2(input.neighborhood || "");
   const sizeSqm = input.sizeSqm && input.sizeSqm > 0 ? input.sizeSqm : 60;
   const { bracket, factor } = getPortalAreaBracket(sizeSqm);
   let baseSqm = 0;
   let isBairroPortalFallback = true;
-  const isRioCity = uf === "RJ" && normalizeText(rawCity).includes("rio");
+  const isRioCity = uf === "RJ" && normalizeText2(rawCity).includes("rio");
   let portalSource = "Morada Virtual / Portais";
   if (input.moradaM2 && input.moradaM2 > 0) {
     if (isRioCity && input.moradaM2 < 1500) {
@@ -16750,18 +17130,18 @@ function calculatePortalBenchmark(input) {
 }
 
 // src/services/moradaVirtualService.ts
-var import_node_fs8 = __toESM(require("node:fs"), 1);
-var import_node_path8 = __toESM(require("node:path"), 1);
+var import_node_fs9 = __toESM(require("node:fs"), 1);
+var import_node_path9 = __toESM(require("node:path"), 1);
 var cheerio4 = __toESM(require("cheerio"), 1);
-var CACHE_FILE = import_node_path8.default.join(process.cwd(), "morada_virtual_cache.json");
+var CACHE_FILE = import_node_path9.default.join(process.cwd(), "morada_virtual_cache.json");
 var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 var moradaCache = {};
 var isDirty = false;
 var saveTimeout = null;
 function loadMoradaCache() {
   try {
-    if (import_node_fs8.default.existsSync(CACHE_FILE)) {
-      const raw = import_node_fs8.default.readFileSync(CACHE_FILE, "utf-8");
+    if (import_node_fs9.default.existsSync(CACHE_FILE)) {
+      const raw = import_node_fs9.default.readFileSync(CACHE_FILE, "utf-8");
       moradaCache = JSON.parse(raw);
       console.log(`[Morada Virtual] Cache carregado: ${Object.keys(moradaCache).length} vias indexadas.`);
     } else {
@@ -16774,7 +17154,7 @@ function loadMoradaCache() {
 }
 function saveMoradaCacheSync() {
   try {
-    import_node_fs8.default.writeFileSync(CACHE_FILE, JSON.stringify(moradaCache, null, 2), "utf-8");
+    import_node_fs9.default.writeFileSync(CACHE_FILE, JSON.stringify(moradaCache, null, 2), "utf-8");
     isDirty = false;
   } catch (err) {
     console.error(`[Morada Virtual] Falha ao persistir cache: ${err?.message}`);
@@ -16791,7 +17171,7 @@ function scheduleSaveMoradaCache() {
   }, 2e3);
 }
 loadMoradaCache();
-function normalizeText2(str) {
+function normalizeText3(str) {
   if (!str) return "";
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
@@ -16803,8 +17183,8 @@ function cleanStreetName(rawStreet) {
   return s;
 }
 function resolveStreetAliases(cleanName, city) {
-  const normC = normalizeText2(city);
-  const normS = normalizeText2(cleanName);
+  const normC = normalizeText3(city);
+  const normS = normalizeText3(cleanName);
   const aliases = [cleanName];
   if (normC.includes("niteroi")) {
     if (normS.includes("moreira cesar") || normS.includes("coronel moreira cesar")) {
@@ -16830,21 +17210,21 @@ function resolveStreetAliases(cleanName, city) {
   return Array.from(new Set(aliases));
 }
 function getMoradaCacheKey(street, city, state, neighborhood) {
-  const normS = normalizeText2(cleanStreetName(street));
-  const normC = normalizeText2(city || "");
-  const normUf = normalizeText2(state || "").substring(0, 2);
-  const normN = neighborhood ? normalizeText2(neighborhood) : "";
+  const normS = normalizeText3(cleanStreetName(street));
+  const normC = normalizeText3(city || "");
+  const normUf = normalizeText3(state || "").substring(0, 2);
+  const normN = neighborhood ? normalizeText3(neighborhood) : "";
   return normN ? `${normUf}_${normC}_${normN}_${normS}` : `${normUf}_${normC}_${normS}`;
 }
 async function searchMoradaVirtual(street, city, state, neighborhood) {
   const cleanBase = cleanStreetName(street);
   if (!cleanBase || cleanBase.length < 2) return null;
   const candidateNames = resolveStreetAliases(cleanBase, city);
-  const normCity = normalizeText2(city);
-  const normState = normalizeText2(state);
-  const normNeigh = neighborhood ? normalizeText2(neighborhood) : "";
+  const normCity = normalizeText3(city);
+  const normState = normalizeText3(state);
+  const normNeigh = neighborhood ? normalizeText3(neighborhood) : "";
   for (const name of candidateNames) {
-    const normName = normalizeText2(name);
+    const normName = normalizeText3(name);
     const queries = [
       normNeigh ? `${name} ${neighborhood} ${city}` : null,
       normNeigh ? `${street} ${neighborhood} ${city}` : null,
@@ -16864,12 +17244,12 @@ async function searchMoradaVirtual(street, city, state, neighborhood) {
         const scored = [];
         for (const item of data.resultados) {
           if (item.tipo !== "logradouro") continue;
-          const itemTextNorm = normalizeText2(item.texto);
+          const itemTextNorm = normalizeText3(item.texto);
           const itemUrl = item.url || "";
           const matchesState = itemTextNorm.includes(normState) || itemUrl.includes(`/${normState}/`);
           const matchesCity = itemTextNorm.includes(normCity) || itemUrl.includes(`/${normCity.replace(/\s+/g, "-")}/`);
           if (!matchesState || !matchesCity) continue;
-          const itemStreetPart = normalizeText2(cleanStreetName(item.texto.split(",")[0] || ""));
+          const itemStreetPart = normalizeText3(cleanStreetName(item.texto.split(",")[0] || ""));
           let score = 0;
           if (itemStreetPart === normName) {
             score = 100;
@@ -16879,8 +17259,8 @@ async function searchMoradaVirtual(street, city, state, neighborhood) {
             score = 65;
           }
           const urlParts = itemUrl.split("/").filter(Boolean);
-          const resultNeighFromUrl = urlParts.length >= 4 ? normalizeText2(urlParts[2].replace(/-/g, " ")) : "";
-          const textParts = item.texto.split(",").map((p) => normalizeText2(p.trim()));
+          const resultNeighFromUrl = urlParts.length >= 4 ? normalizeText3(urlParts[2].replace(/-/g, " ")) : "";
+          const textParts = item.texto.split(",").map((p) => normalizeText3(p.trim()));
           const resultNeighFromText = textParts.length >= 2 ? textParts[1] : "";
           const candidateNeigh = resultNeighFromUrl || resultNeighFromText;
           if (normNeigh) {
@@ -16939,7 +17319,7 @@ async function scrapeMoradaPage(pathUrl) {
     let urbyxM2 = 0;
     let urbyxSummary = "";
     $("#mv2-historia .k").each((_, el) => {
-      const label = normalizeText2($(el).find(".l").text());
+      const label = normalizeText3($(el).find(".l").text());
       if (label === "preco" || label.includes("preco")) {
         const valText = $(el).find(".v").text().replace(/\s+/g, " ").trim();
         const m2Match = valText.replace(/\./g, "").match(/R\$\s*(\d+)/i) || valText.replace(/\./g, "").match(/(\d+)/);
@@ -16970,7 +17350,7 @@ async function scrapeMoradaPage(pathUrl) {
       const txText = $(el).find("p.tx").text().replace(/\s+/g, " ").trim();
       if (h3Text) {
         urbyxAvgPrice = parsePortugueseMoney(h3Text);
-        const h3Norm = normalizeText2(h3Text);
+        const h3Norm = normalizeText3(h3Text);
         if (h3Norm.includes("apartamento")) urbyxTypology = "APARTAMENTO";
         else if (h3Norm.includes("casa")) urbyxTypology = "CASA";
         else if (h3Norm.includes("comercial") || h3Norm.includes("sala") || h3Norm.includes("loja")) urbyxTypology = "COMERCIAL";
@@ -17092,7 +17472,7 @@ async function fetchAndCacheMoradaVirtual(street, city, state, neighborhood, for
   return streetData;
 }
 function mapTypologyCategory(propertyType) {
-  const t = normalizeText2(propertyType || "");
+  const t = normalizeText3(propertyType || "");
   if (t.includes("apart") || t.includes("apto") || t.includes("cobertura") || t.includes("kitnet") || t.includes("conjugado") || t.includes("loft") || t.includes("flat")) {
     return "APARTAMENTO";
   }
@@ -17111,10 +17491,10 @@ function getMoradaVirtualBenchmark(street, city, state, propertyType, neighborho
     const generalEntry = moradaCache[getMoradaCacheKey(street, city, state || "RJ")];
     if (generalEntry && !generalEntry.notFound && generalEntry.cards && generalEntry.cards.length > 0) {
       if (neighborhood) {
-        const normN = normalizeText2(neighborhood);
-        const entryNorm = normalizeText2(`${generalEntry.canonicalTitle} ${generalEntry.url} ${generalEntry.leadText || ""}`);
+        const normN = normalizeText3(neighborhood);
+        const entryNorm = normalizeText3(`${generalEntry.canonicalTitle} ${generalEntry.url} ${generalEntry.leadText || ""}`);
         const urlParts = (generalEntry.url || "").split("/").filter(Boolean);
-        const entryNeighFromUrl = urlParts.length >= 4 ? normalizeText2(urlParts[2].replace(/-/g, " ")) : "";
+        const entryNeighFromUrl = urlParts.length >= 4 ? normalizeText3(urlParts[2].replace(/-/g, " ")) : "";
         if (entryNeighFromUrl && entryNeighFromUrl !== normN && !entryNeighFromUrl.includes(normN) && !normN.includes(entryNeighFromUrl)) {
         } else {
           entry = generalEntry;
@@ -21617,6 +21997,11 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       const hasOfficialAuctionPoint = validOfficialLocation(officialAuctionLocation);
       let locLat = hasOfficialAuctionPoint ? officialAuctionLocation.lat : void 0;
       let locLng = hasOfficialAuctionPoint ? officialAuctionLocation.lng : void 0;
+      if (hasOfficialAuctionPoint && officialAuctionLocation.source === "IPP_RIO_2019" && Number.isFinite(locLat) && Number.isFinite(locLng)) {
+        auc.lat = locLat;
+        auc.lng = locLng;
+        auc.status_geocodificacao = officialAuctionLocation.precision === "address" ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA";
+      }
       if (!Number.isFinite(locLat) || !Number.isFinite(locLng)) {
         if (Number.isFinite(auc.lat) && Number.isFinite(auc.lng)) {
           locLat = Number(auc.lat);
@@ -22675,6 +23060,15 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
           a.calculatedRoi = cost > 0 ? Number((profit / cost * 100).toFixed(2)) : 0;
         }
       }
+      const ippLoc = (a.city || "").toLowerCase().includes("rio de janeiro") ? getOfficialPropertyLocation(a) : null;
+      if (ippLoc && ippLoc.status === "located" && ippLoc.source === "IPP_RIO_2019" && Number.isFinite(ippLoc.lat) && Number.isFinite(ippLoc.lng)) {
+        return {
+          ...a,
+          lat: ippLoc.lat,
+          lng: ippLoc.lng,
+          status_geocodificacao: ippLoc.precision === "address" ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA"
+        };
+      }
       if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
         const cached = getCachedCoords(a.address, a.neighborhood, a.city, a.state);
         if (cached) {
@@ -22706,6 +23100,15 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     console.error("[Catalog] Falha ao calcular cat\xE1logo:", error);
     if (!res.headersSent) res.status(500).json({ error: "N\xE3o foi poss\xEDvel carregar o cat\xE1logo." });
   }
+});
+app.get("/api/map/auction-buildings", (_req, res) => {
+  const filePath = getRioAuctionBuildingsFilePath();
+  if (!filePath) {
+    return res.json({ type: "FeatureCollection", features: [] });
+  }
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.sendFile(filePath);
 });
 app.get("/api/map/locations", authMiddleware, (req, res) => {
   ensureOfficialLocationCoverage(store.auctions);
@@ -23179,7 +23582,7 @@ app.get("/api/itbi/transactions", async (req, res) => {
       if (targetProperty && (targetProperty.state || "").toUpperCase() === filterState && cleanNeighborhood(targetProperty.city) === cleanNeighborhood(filterCity) && streetAxesMatch(targetProperty.address || "", tgt) && cleanStreetNumber(cleanBrazilianAddress(targetProperty.address || "").number) === cleanStreetNumber(String(targetNumber || ""))) {
         const official = getOfficialPropertyLocation(targetProperty);
         const requestedUnits = addressUnits(String(targetNumber || ""));
-        const unitsMatch = Object.entries(requestedUnits).every(([key, value]) => official.complements?.[key] === value);
+        const unitsMatch = official.source === "IPP_RIO_2019" || Object.entries(requestedUnits).every(([key, value]) => official.complements?.[key] === value);
         if (official.status === "located" && validOfficialLocation(official) && unitsMatch) {
           targetCoords = { lat: official.lat, lng: official.lng };
           radiusAnchorPrecision = "official_address";

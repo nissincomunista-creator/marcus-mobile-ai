@@ -468,24 +468,45 @@ export const SAO_PAULO_BAIRROS: Record<string, [number, number]> = {
   'vila leopoldina': [-23.5260, -46.7320]
 };
 
-export function getPropertyCoordinates(prop: AuctionProperty): [number, number] | null {
+export function getPropertyCoordinates(prop: AuctionProperty, options?: { strictRio?: boolean }): [number, number] | null {
   if (!prop) return null;
 
-  // 1. Coordenadas diretas numéricas válidas já presentes no imóvel
+  const location = (prop as AuctionProperty & { mapLocation?: any }).mapLocation;
   const pLat = Number((prop as any).lat ?? (prop as any).latitude ?? (prop as any).coords?.[0]);
   const pLng = Number((prop as any).lng ?? (prop as any).longitude ?? (prop as any).lon ?? (prop as any).coords?.[1]);
-  if (Number.isFinite(pLat) && Number.isFinite(pLng) && pLat !== 0 && pLng !== 0 && pLat >= -34 && pLat <= 6 && pLng >= -74 && pLng <= -32) {
-    return [pLat, pLng];
-  }
+  const hasDirectCoords = Number.isFinite(pLat) && Number.isFinite(pLng) && pLat !== 0 && pLng !== 0 && pLat >= -34 && pLat <= 6 && pLng >= -74 && pLng <= -32;
 
-  // 2. Validação oficial de mapa por CNEFE ou Geocoder Rooftop
-  const location = (prop as AuctionProperty & { mapLocation?: any }).mapLocation;
+  // 1. Coordenadas oficiais verificadas (IPP Rio / CNEFE / Geocoder Rooftop) têm prioridade máxima sobre centroides antigos
   if (location && location.status === 'located') {
     const lat = Number(location.lat);
     const lng = Number(location.lng);
     if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0 && lat >= -34 && lat <= 6 && lng >= -74 && lng <= -32) {
       return [lat, lng];
     }
+  }
+
+  // Em modo estrito no Rio de Janeiro, rejeita centroides aproximados ou imóveis sem endereço válido se não houver match na cartografia IPP
+  const normCityPre = normalizeGeoString(prop.city);
+  const isRio = normCityPre.includes('rio de janeiro');
+  if (options?.strictRio && isRio) {
+    if (!hasDirectCoords) return null;
+    if (location?.status === 'pending') return null;
+    if (!(prop.address || '').trim()) return null;
+    if ((prop as any).precisa_revisao === true || (prop as any).status_geocodificacao === 'PENDENTE_REVISAO') {
+      return null;
+    }
+    // Ignora coordenadas idênticas aos centroides genéricos de bairros do Rio (~50m de tolerância)
+    for (const [bLat, bLng] of Object.values(RIO_DE_JANEIRO_BAIRROS)) {
+      if (Math.abs(pLat - bLat) < 0.0005 && Math.abs(pLng - bLng) < 0.0005) {
+        return null;
+      }
+    }
+    return [pLat, pLng];
+  }
+
+  // 2. Coordenadas diretas numéricas válidas já presentes no imóvel
+  if (hasDirectCoords) {
+    return [pLat, pLng];
   }
 
   // 3. Fallback inteligente para centróide do bairro (garante que imóveis do Flip House e leilões apareçam no mapa no bairro correto)

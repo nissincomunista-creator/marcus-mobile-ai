@@ -5,6 +5,7 @@ import {
   OPENFREEMAP_DARK_STYLE,
   buildSatelliteStyle,
   ensureMapLibrePMTilesProtocol,
+  getTypologyColor,
   maplibregl,
   toLngLat,
   upsertRio3DBuildingsLayer,
@@ -91,15 +92,14 @@ export default function SidebarMapWidget({
 
     for (const auc of sample) {
       mapById.set(auc.id, auc);
-      const coords = getPropertyCoordinates({ ...auc, mapLocation: locationsById[auc.id] } as AuctionProperty);
+      const coords = getPropertyCoordinates({ ...auc, mapLocation: locationsById[auc.id] } as AuctionProperty, { strictRio: true });
       if (!coords) continue;
-      const isCaixa = (auc.origin || '').toLowerCase().includes('caixa') || (auc.origin || '').toLowerCase().includes('extra');
       features.push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: toLngLat(coords) },
         properties: {
           id: auc.id,
-          color: isCaixa ? '#10b981' : '#6366f1',
+          color: getTypologyColor(auc.propertyType),
           title: (auc.title || 'Imóvel em Leilão').slice(0, 60),
           sub: `${auc.neighborhood || ''} - ${auc.city || ''}`,
           price: auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas',
@@ -114,7 +114,7 @@ export default function SidebarMapWidget({
   const syncAuctionOverlay = (map: maplibregl.Map, data: typeof geojsonData) => {
     if (!styleReadyRef.current || !map.getStyle()) return;
 
-    upsertRio3DBuildingsLayer(map, 'm2', { opacity: 0.78, show3D: true });
+    upsertRio3DBuildingsLayer(map, 'auctions', { opacity: 0.78, show3D: true });
 
     const existing = map.getSource('sidebar-auctions') as maplibregl.GeoJSONSource | undefined;
     if (existing) {
