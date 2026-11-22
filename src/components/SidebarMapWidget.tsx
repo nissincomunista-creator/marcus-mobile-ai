@@ -29,6 +29,7 @@ export default function SidebarMapWidget({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
+  const styleReadyRef = useRef(false);
   const auctionsByIdRef = useRef<Map<string, AuctionProperty>>(new Map());
   const onSelectPropertyRef = useRef(onSelectProperty);
   onSelectPropertyRef.current = onSelectProperty;
@@ -111,7 +112,7 @@ export default function SidebarMapWidget({
   }, [auctions, locationsById]);
 
   const syncAuctionOverlay = (map: maplibregl.Map, data: typeof geojsonData) => {
-    if (!map.isStyleLoaded()) return;
+    if (!styleReadyRef.current || !map.getStyle()) return;
 
     upsertRio3DBuildingsLayer(map, 'm2', { opacity: 0.78, show3D: true });
 
@@ -188,6 +189,7 @@ export default function SidebarMapWidget({
     mapInstanceRef.current = map;
 
     map.on('style.load', () => {
+      styleReadyRef.current = true;
       setStyleVersion((v) => v + 1);
     });
 
@@ -267,15 +269,20 @@ export default function SidebarMapWidget({
     };
   }, [isCollapsed]);
 
+  const prevMapModeRef = useRef(mapMode);
+
   useEffect(() => {
+    if (prevMapModeRef.current === mapMode) return;
+    prevMapModeRef.current = mapMode;
     const map = mapInstanceRef.current;
     if (!map) return;
+    styleReadyRef.current = false;
     map.setStyle(mapMode === 'satellite' ? buildSatelliteStyle() : OPENFREEMAP_DARK_STYLE);
   }, [mapMode]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || isCollapsed || !map.isStyleLoaded()) return;
+    if (!map || isCollapsed || !styleReadyRef.current) return;
     syncAuctionOverlay(map, geojsonData);
   }, [geojsonData, styleVersion, isCollapsed]);
 

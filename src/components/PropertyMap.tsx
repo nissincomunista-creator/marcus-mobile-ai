@@ -133,6 +133,7 @@ export default function PropertyMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
+  const styleReadyRef = useRef(false);
 
   const getMapCoordinates = useCallback(
     (property: AuctionProperty): [number, number] | null => {
@@ -356,12 +357,22 @@ export default function PropertyMap({
     mapRef.current = map;
 
     map.on('load', () => {
+      styleReadyRef.current = true;
       setMapReady(true);
+      setStyleVersion((v) => v + 1);
       updateViewportCounter();
     });
 
     map.on('style.load', () => {
+      styleReadyRef.current = true;
       setStyleVersion((v) => v + 1);
+    });
+
+    map.on('error', (ev: any) => {
+      const msg = ev?.error?.message || '';
+      if (msg && !/abort/i.test(msg)) {
+        console.warn('[MapLibre]', msg);
+      }
     });
 
     map.on('moveend', updateViewportCounter);
@@ -546,15 +557,23 @@ export default function PropertyMap({
     }
   }, [activeTab]);
 
+  const prevMapModeRef = useRef(mapMode);
+  const prevIs3DRef = useRef(is3DMode);
+
   // Switch between OpenFreeMap Dark vector & Satellite
   useEffect(() => {
+    if (prevMapModeRef.current === mapMode) return;
+    prevMapModeRef.current = mapMode;
     const map = mapRef.current;
     if (!map) return;
+    styleReadyRef.current = false;
     map.setStyle(mapMode === 'satellite' ? buildSatelliteStyle() : OPENFREEMAP_DARK_STYLE);
   }, [mapMode]);
 
   // Update 3D tilt/pitch seamlessly
   useEffect(() => {
+    if (prevIs3DRef.current === is3DMode) return;
+    prevIs3DRef.current = is3DMode;
     const map = mapRef.current;
     if (!map) return;
     map.easeTo({
@@ -562,7 +581,7 @@ export default function PropertyMap({
       bearing: is3DMode ? -14 : 0,
       duration: 500,
     });
-    if (map.isStyleLoaded() && map.getLayer('rio-edificacoes-3d')) {
+    if (styleReadyRef.current && map.getLayer('rio-edificacoes-3d')) {
       upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88 });
     }
   }, [is3DMode]);
@@ -570,7 +589,7 @@ export default function PropertyMap({
   // Update active building color ramp metric (R$/m², Liquidez, Spread)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !styleReadyRef.current) return;
     if (map.getLayer('rio-edificacoes-3d')) {
       map.setPaintProperty('rio-edificacoes-3d', 'fill-extrusion-color', getBuildingColorExpression(activeMetric));
     }
@@ -579,7 +598,7 @@ export default function PropertyMap({
   // Re-attach Rio 3D buildings layer & auction WebGL layers whenever style loads or data updates
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !styleReadyRef.current) return;
 
     upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88 });
 
@@ -673,7 +692,7 @@ export default function PropertyMap({
   // Factions overlay inside MapLibre
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map || !styleReadyRef.current) return;
 
     if (!showFactionsLayer) {
       if (map.getLayer('factions-fill')) map.setLayoutProperty('factions-fill', 'visibility', 'none');
@@ -690,7 +709,7 @@ export default function PropertyMap({
     fetch('/faccoes_rj.json')
       .then((res) => res.json())
       .then((geoJsonData) => {
-        if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+        if (!mapRef.current || !styleReadyRef.current) return;
         if (!mapRef.current.getSource('factions-rj')) {
           mapRef.current.addSource('factions-rj', {
             type: 'geojson',
@@ -1047,14 +1066,6 @@ export default function PropertyMap({
           }`}
         >
           <div ref={mapContainerRef} className="w-full h-full z-0 bg-slate-950" />
-
-          {/* Pill de status vetorial IPP 3D */}
-          <div className="absolute top-3 left-3 z-20 pointer-events-none hidden sm:flex">
-            <div className="pointer-events-auto flex items-center gap-2 bg-slate-950/90 text-slate-200 px-3 py-1.5 rounded-full border border-slate-800 text-[11px] font-bold shadow-xl backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
-              <span>Cartografia IPP Rio 3D · PMTiles + OpenFreeMap</span>
-            </div>
-          </div>
 
           {/* Legenda Interativa Inferior Esquerda (Métricas MapaImóveisRio + Toggle Lotes) */}
           <div className="absolute bottom-3 left-3 z-20 bg-slate-950/95 border border-slate-800 backdrop-blur-xl rounded-2xl shadow-2xl p-2.5 w-60 sm:w-64 text-slate-200">

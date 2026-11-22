@@ -9,6 +9,9 @@ export const OPENFREEMAP_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark
 let protocolRegistered = false;
 
 export function ensureMapLibrePMTilesProtocol() {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    maplibregl.setWorkerUrl(`${window.location.origin}/maplibre-gl-worker.mjs`);
+  }
   if (!protocolRegistered) {
     const protocol = new Protocol();
     maplibregl.addProtocol('pmtiles', protocol.tile);
@@ -118,9 +121,15 @@ export function upsertRio3DBuildingsLayer(
   metric: RioBuildingMetric,
   options?: { opacity?: number; show3D?: boolean }
 ) {
-  if (!map.isStyleLoaded()) return;
+  let style: any;
+  try {
+    style = map.getStyle();
+  } catch {
+    return;
+  }
+  if (!style || !Array.isArray(style.layers)) return;
 
-  const styleLayers = map.getStyle()?.layers || [];
+  const styleLayers = style.layers;
   // Keep OpenFreeMap flat building footprints unobtrusive and avoid OSM 3D collisions
   for (const layer of styleLayers) {
     const idLower = layer.id.toLowerCase();

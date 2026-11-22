@@ -8168,6 +8168,23 @@ async function start() {
   const distIndexExists = fs.existsSync(path.join(process.cwd(), 'dist', 'index.html'));
   const isProduction = process.env.NODE_ENV === 'production' || isCjsBundle || distIndexExists;
 
+  // Serve MapLibre Web Worker script with strict module JS MIME type before SPA fallback
+  app.get('/maplibre-gl-worker.mjs', (_req, res) => {
+    const candidates = [
+      path.join(process.cwd(), 'dist', 'maplibre-gl-worker.mjs'),
+      path.join(process.cwd(), 'public', 'maplibre-gl-worker.mjs'),
+      path.join(process.cwd(), 'node_modules', 'maplibre-gl', 'dist', 'maplibre-gl-worker.mjs'),
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.sendFile(p);
+      }
+    }
+    return res.status(404).end();
+  });
+
   // Serve PMTiles vector tilesets and static GIS assets with Range (206) support in dev & prod
   const tilesDirs = [
     path.join(process.cwd(), 'public', 'tiles'),

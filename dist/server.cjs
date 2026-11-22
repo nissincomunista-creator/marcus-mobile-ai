@@ -26089,6 +26089,21 @@ async function start() {
   const isCjsBundle = typeof __filename !== "undefined" && __filename.endsWith(".cjs");
   const distIndexExists = import_fs5.default.existsSync(import_path4.default.join(process.cwd(), "dist", "index.html"));
   const isProduction = process.env.NODE_ENV === "production" || isCjsBundle || distIndexExists;
+  app.get("/maplibre-gl-worker.mjs", (_req, res) => {
+    const candidates = [
+      import_path4.default.join(process.cwd(), "dist", "maplibre-gl-worker.mjs"),
+      import_path4.default.join(process.cwd(), "public", "maplibre-gl-worker.mjs"),
+      import_path4.default.join(process.cwd(), "node_modules", "maplibre-gl", "dist", "maplibre-gl-worker.mjs")
+    ];
+    for (const p of candidates) {
+      if (import_fs5.default.existsSync(p)) {
+        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        return res.sendFile(p);
+      }
+    }
+    return res.status(404).end();
+  });
   const tilesDirs = [
     import_path4.default.join(process.cwd(), "public", "tiles"),
     import_path4.default.join(process.cwd(), "dist", "tiles")
