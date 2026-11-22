@@ -273,7 +273,8 @@ ${a.description || ""}`);
     }
     const group = [...records.values()].map((a) => {
       const isCaixa = a.origin === "caixa" || a.id && a.id.startsWith("auc-caixa-");
-      if (!isCaixa && !isRetired(a) && a.ingestionStatus !== "quarentena_extracao" && expiredRounds([a.firstAuctionDate, a.secondAuctionDate, a.thirdAuctionDate, a.auctionDate].filter(Boolean), a.saleMode)) return { ...a, ingestionStatus: "expirado_por_data", availability: { state: "closed", status: "expirado_por_data", url: a.auctionLink || "", checkedAt: (/* @__PURE__ */ new Date()).toISOString(), reason: "Todas as rodadas transcorreram" } };
+      const isPortal = a.origin === "portal";
+      if (!isCaixa && !isPortal && !isRetired(a) && a.ingestionStatus !== "quarentena_extracao" && expiredRounds([a.firstAuctionDate, a.secondAuctionDate, a.thirdAuctionDate, a.auctionDate].filter(Boolean), a.saleMode)) return { ...a, ingestionStatus: "expirado_por_data", availability: { state: "closed", status: "expirado_por_data", url: a.auctionLink || "", checkedAt: (/* @__PURE__ */ new Date()).toISOString(), reason: "Todas as rodadas transcorreram" } };
       return a;
     });
     const live = group.filter((a) => !isRetired(a) && a.ingestionStatus !== "quarentena_extracao");
@@ -11437,6 +11438,7 @@ async function collectRioLinks(dir, onPage, baseUrl = "https://www.rioleiloes.co
   const incomplete = Number(inventory.totalPages) > 1;
   for (const event of inventory.items) {
     if (!event.categorialeilao?.some((c) => c.nm_categoria === "Im\xF3veis")) continue;
+    if (Array.isArray(event.uf) && event.uf.length > 0 && !event.uf.some((u) => /^(?:RJ|MG)$/i.test(String(u || "").trim()))) continue;
     const lots = await publicJson(`${cleanBase}/leilao/filtro-id/leilao_id/${event.id}?`);
     import_node_fs4.default.writeFileSync(import_node_path3.default.join(dir, `${prefix}-event-${event.id}.json`), JSON.stringify(lots));
     if (!Array.isArray(lots.lotes)) throw Error(`Lotes indispon\xEDveis para leil\xE3o ${event.id}`);
@@ -20621,15 +20623,16 @@ function persistAuctionResponse(signature, userId, payloadJson) {
 function sendAuctionResponse(req, res, payload) {
   const rows = typeof payload === "string" ? JSON.parse(payload) : payload;
   const current = new Map(store.auctions.map((a) => [a.id, a]));
-  const seenIds = new Set(rows.map((r) => r.id));
-  const livePortalProps = store.auctions.filter((a) => a.origin === "portal" && !seenIds.has(a.id));
-  const combined = [...livePortalProps, ...rows];
-  const json = JSON.stringify(combined.filter((a) => {
+  const validRows = rows.filter((a) => {
     const live = current.get(a.id);
     if (!live) return false;
-    if (a.origin === "portal") return catalogVisible(a);
+    if (a.origin === "portal") return catalogVisible(live);
     return catalogVisible(a) && catalogVisible(live) && canonicalAuctionLink(a.auctionLink || "") === canonicalAuctionLink(live.auctionLink || "");
-  }));
+  });
+  const seenIds = new Set(validRows.map((r) => r.id));
+  const livePortalProps = store.auctions.filter((a) => a.origin === "portal" && !seenIds.has(a.id) && catalogVisible(a));
+  const combined = [...livePortalProps, ...validRows];
+  const json = JSON.stringify(combined);
   if (!String(req.headers["accept-encoding"] || "").includes("gzip")) {
     res.type("json").send(json);
     return;

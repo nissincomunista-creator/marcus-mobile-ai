@@ -1642,16 +1642,17 @@ function sendAuctionResponse(req: express.Request, res: express.Response, payloa
   const current = new Map(store.auctions.map(a => [a.id, a]));
 
   // Garante que imóveis do módulo Portais sempre apareçam na resposta do feed
-  const seenIds = new Set(rows.map(r => r.id));
-  const livePortalProps = store.auctions.filter(a => a.origin === 'portal' && !seenIds.has(a.id));
-  const combined = [...livePortalProps, ...rows];
-
-  const json = JSON.stringify(combined.filter(a => {
+  const validRows = rows.filter(a => {
     const live = current.get(a.id);
     if (!live) return false;
-    if (a.origin === 'portal') return catalogVisible(a);
+    if (a.origin === 'portal') return catalogVisible(live);
     return catalogVisible(a) && catalogVisible(live) && canonicalAuctionLink(a.auctionLink || '') === canonicalAuctionLink(live.auctionLink || '');
-  }));
+  });
+  const seenIds = new Set(validRows.map(r => r.id));
+  const livePortalProps = store.auctions.filter(a => a.origin === 'portal' && !seenIds.has(a.id) && catalogVisible(a));
+  const combined = [...livePortalProps, ...validRows];
+
+  const json = JSON.stringify(combined);
   if (!String(req.headers['accept-encoding'] || '').includes('gzip')) {
     res.type('json').send(json);
     return;

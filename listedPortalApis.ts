@@ -220,6 +220,7 @@ export async function collectRioLinks(dir:string,onPage:(links:Array<{url:string
  const incomplete=Number(inventory.totalPages)>1;
  for(const event of inventory.items){
   if(!event.categorialeilao?.some((c:any)=>c.nm_categoria==='Imóveis'))continue;
+  if(Array.isArray(event.uf)&&event.uf.length>0&&!event.uf.some((u:string)=>/^(?:RJ|MG)$/i.test(String(u||'').trim())))continue;
   const lots=await publicJson(`${cleanBase}/leilao/filtro-id/leilao_id/${event.id}?`);
   fs.writeFileSync(path.join(dir,`${prefix}-event-${event.id}.json`),JSON.stringify(lots));
   if(!Array.isArray(lots.lotes))throw Error(`Lotes indisponíveis para leilão ${event.id}`);

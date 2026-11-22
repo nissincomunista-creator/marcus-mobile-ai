@@ -128,36 +128,14 @@
     "updatedAt": "2026-10-01T22:49:13.711Z"
   },
   "rj_rio de janeiro_atlantica": {
-    "street": "Avenida Atlântica",
+    "street": "Avenida Atlantica",
     "city": "Rio de Janeiro",
     "state": "RJ",
     "url": "/rj/rio-de-janeiro/rio-de-janeiro/avenida-atlantica",
-    "canonicalTitle": "Avenida AtlanticaQuem mora nas imediaçõesAs construçõesComo estão os preçosO que tem por pertoEscolas por pertoSaúde por pertoComo é a infraestruturaComo você se desloca",
-    "leadText": "Nesta região predominam apartamentos de 3 quartos, de porte mais amplo. Pelos nossos dados, o m² de venda gira em torno de R$ 9.000.",
-    "cards": [
-      {
-        "tipo": "APARTAMENTO",
-        "m2": 9694,
-        "sampleCount": 1354,
-        "avgPrice": 1167500,
-        "rawMeta": "~115 m² · em geral 3 quartos"
-      },
-      {
-        "tipo": "CASA",
-        "m2": 4350,
-        "sampleCount": 265,
-        "avgPrice": 1100000,
-        "rawMeta": "~300 m² · em geral 3 quartos"
-      },
-      {
-        "tipo": "COMERCIAL",
-        "m2": 5319,
-        "sampleCount": 89,
-        "avgPrice": 280000,
-        "rawMeta": "~58 m² · salas e lojas"
-      }
-    ],
-    "updatedAt": "2026-10-01T22:49:14.057Z"
+    "canonicalTitle": "Avenida Atlantica, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-21T14:41:00.415Z",
+    "notFound": true
   },
   "rj_niteroi_coronel moreira cesar": {
     "street": "Rua Coronel Moreira César",
@@ -17270,6 +17248,26 @@
     "canonicalTitle": "",
     "cards": [],
     "updatedAt": "2026-11-21T13:48:14.009Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_copacabana_atlantica": {
+    "street": "Avenida Atlantica",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/copacabana/avenida-atlantica",
+    "canonicalTitle": "Avenida Atlantica, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-21T14:42:12.220Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_taquara_soldado hilario zanesco": {
+    "street": "RUA SOLDADO HILARIO ZANESCO",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-soldado-hilario-zanesco",
+    "canonicalTitle": "Rua Soldado Hilario Zanesco, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-21T14:52:14.413Z",
     "notFound": true
   }
 }

@@ -16,7 +16,8 @@ export function aggregateAuctions(auctions:AuctionProperty[],canonicalize:(u:str
   for(const a of originalGroup){for(const r of a.sourceRecords||[]){const key=canonicalize(r.auctionLink||r.id);if(!records.has(key))records.set(key,r);}const {sourceRecords,offers,...snapshot}=a;records.set(canonicalize(a.auctionLink||a.id),snapshot as AuctionProperty);}
   const group=[...records.values()].map(a=>{
    const isCaixa = a.origin === 'caixa' || (a.id && a.id.startsWith('auc-caixa-'));
-   if(!isCaixa&&!isRetired(a)&&a.ingestionStatus!=='quarentena_extracao'&&expiredRounds([a.firstAuctionDate,a.secondAuctionDate,a.thirdAuctionDate,a.auctionDate].filter(Boolean) as string[],a.saleMode))return {...a,ingestionStatus:'expirado_por_data' as const,availability:{state:'closed' as const,status:'expirado_por_data' as const,url:a.auctionLink||'',checkedAt:new Date().toISOString(),reason:'Todas as rodadas transcorreram'}};
+   const isPortal = a.origin === 'portal';
+   if(!isCaixa&&!isPortal&&!isRetired(a)&&a.ingestionStatus!=='quarentena_extracao'&&expiredRounds([a.firstAuctionDate,a.secondAuctionDate,a.thirdAuctionDate,a.auctionDate].filter(Boolean) as string[],a.saleMode))return {...a,ingestionStatus:'expirado_por_data' as const,availability:{state:'closed' as const,status:'expirado_por_data' as const,url:a.auctionLink||'',checkedAt:new Date().toISOString(),reason:'Todas as rodadas transcorreram'}};
    return a;
   });
   const live=group.filter(a=>!isRetired(a)&&a.ingestionStatus!=='quarentena_extracao');const source=(live.length?live:group).slice().sort((a,b)=>timestamp(b).localeCompare(timestamp(a)))[0];
