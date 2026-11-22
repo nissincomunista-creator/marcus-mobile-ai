@@ -146,6 +146,22 @@ type StreetsIndex = {
 let cachedAuctionLocs: Record<string, RioIppResolution> | null = null;
 let cachedStreetsIndex: StreetsIndex | null = null;
 const doorShardCache = new Map<string, Record<string, [number, number, number, string, string][]>>();
+const resolvedMemo = new Map<string, RioIppResolution | null>();
+
+function memoSet(key: string, val: RioIppResolution | null) {
+  if (resolvedMemo.size >= 16000) {
+    const oldest = resolvedMemo.keys().next().value;
+    if (oldest !== undefined) resolvedMemo.delete(oldest);
+  }
+  resolvedMemo.set(key, val);
+}
+
+export function releaseRioIppScratchCaches() {
+  doorShardCache.clear();
+  if (process.env.RENDER === 'true') {
+    cachedStreetsIndex = null;
+  }
+}
 
 function loadAuctionLocationsMap(): Record<string, RioIppResolution> {
   if (cachedAuctionLocs) return cachedAuctionLocs;
@@ -186,8 +202,9 @@ function loadDoorsForCl(cl: string): [number, number, number, string, string][] 
     if (!fs.existsSync(file)) return [];
     try {
       shard = JSON.parse(zlib.gunzipSync(fs.readFileSync(file)).toString('utf8'));
-      // Bound shard cache to max 4 shards (~15MB total RAM) to fit Render Free 512MB comfortably
-      if (doorShardCache.size >= 4) {
+      // Bound shard cache (~8MB/shard, smaller on Render 512MB) to avoid V8 OOM
+      const maxShards = process.env.RENDER === 'true' ? 2 : 4;
+      if (doorShardCache.size >= maxShards) {
         const oldestKey = doorShardCache.keys().next().value;
         if (oldestKey !== undefined) doorShardCache.delete(oldestKey);
       }
@@ -220,11 +237,22 @@ export function resolveRioIppLocation(params: {
     }
   }
 
-  const idx = loadStreetsIndex();
-  if (!idx) return null;
+  const nb = normalizeBairro(params.neighborhood);
+  const memoKey = params.id
+    ? `id:${params.id}:${normalizeText(params.address)}:${nb}`
+    : `addr:${cityNorm}:${nb}:${normalizeText(params.address)}:${normalizeText(params.title)}`;
+  if (resolvedMemo.has(memoKey)) {
+    return resolvedMemo.get(memoKey) ?? null;
+  }
 
   const opts = extractRioStreetAndNumber(params.address, params.title || params.description);
-  const nb = normalizeBairro(params.neighborhood);
+  if (!opts.length) {
+    memoSet(memoKey, null);
+    return null;
+  }
+
+  const idx = loadStreetsIndex();
+  if (!idx) return null;
 
   for (const opt of opts) {
     const { full, core } = buildStreetKeys(opt.street);
@@ -243,14 +271,14 @@ export function resolveRioIppLocation(params: {
 
     const numInt = opt.numInt;
     if (numInt > 0) {
-      for (const cl of cls) {
+      for (const cl of cls.slice(0, 6)) {
         const doors = loadDoorsForCl(cl);
         if (!doors.length) continue;
-        // Exact binary search on sorted door tuples [np, lng, lat, clnp, lote]
+        // Exact search on sorted door tuples [np, lng, lat, clnp, lote]
         const exact = doors.find((d) => d[0] === numInt);
         const m = idx.clMeta[cl];
         if (exact) {
-          return {
+          const hit: RioIppResolution = {
             lng: exact[1],
             lat: exact[2],
             cl,
@@ -260,6 +288,8 @@ export function resolveRioIppLocation(params: {
             bairro: m?.[1] || params.neighborhood || '',
             method: 'ipp_exact_door',
           };
+          memoSet(memoKey, hit);
+          return hit;
         }
 
         const sameParity = doors.filter((d) => d[0] > 0 && d[0] % 2 === numInt % 2);
@@ -285,7 +315,7 @@ export function resolveRioIppLocation(params: {
           lat = lo[2] + t * (hi[2] - lo[2]);
           method = 'ipp_interpolated_door';
         }
-        return {
+        const hit: RioIppResolution = {
           lng: Math.round(lng * 1e6) / 1e6,
           lat: Math.round(lat * 1e6) / 1e6,
           cl,
@@ -295,26 +325,15 @@ export function resolveRioIppLocation(params: {
           bairro: m?.[1] || params.neighborhood || '',
           method,
         };
+        memoSet(memoKey, hit);
+        return hit;
       }
     }
 
     const cl0 = cls[0];
     const m = idx.clMeta[cl0];
-    const doors = loadDoorsForCl(cl0);
-    if (doors.length) {
-      const mid = doors[Math.floor(doors.length / 2)];
-      return {
-        lng: mid[1],
-        lat: mid[2],
-        cl: cl0,
-        matchedStreet: m?.[0] || opt.street,
-        matchedNumber: '',
-        bairro: m?.[1] || params.neighborhood || '',
-        method: 'ipp_street_axis',
-      };
-    }
     if (m && m[2] && m[3]) {
-      return {
+      const hit: RioIppResolution = {
         lng: m[2],
         lat: m[3],
         cl: cl0,
@@ -323,9 +342,12 @@ export function resolveRioIppLocation(params: {
         bairro: m[1] || params.neighborhood || '',
         method: 'ipp_trecho_midpoint',
       };
+      memoSet(memoKey, hit);
+      return hit;
     }
   }
 
+  memoSet(memoKey, null);
   return null;
 }
 

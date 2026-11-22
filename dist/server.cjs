@@ -15265,6 +15265,20 @@ function extractRioStreetAndNumber(rawAddr, rawTitle) {
 var cachedAuctionLocs = null;
 var cachedStreetsIndex = null;
 var doorShardCache = /* @__PURE__ */ new Map();
+var resolvedMemo = /* @__PURE__ */ new Map();
+function memoSet(key, val) {
+  if (resolvedMemo.size >= 16e3) {
+    const oldest = resolvedMemo.keys().next().value;
+    if (oldest !== void 0) resolvedMemo.delete(oldest);
+  }
+  resolvedMemo.set(key, val);
+}
+function releaseRioIppScratchCaches() {
+  doorShardCache.clear();
+  if (process.env.RENDER === "true") {
+    cachedStreetsIndex = null;
+  }
+}
 function loadAuctionLocationsMap() {
   if (cachedAuctionLocs) return cachedAuctionLocs;
   try {
@@ -15301,7 +15315,8 @@ function loadDoorsForCl(cl) {
     if (!import_node_fs7.default.existsSync(file2)) return [];
     try {
       shard = JSON.parse(import_node_zlib.default.gunzipSync(import_node_fs7.default.readFileSync(file2)).toString("utf8"));
-      if (doorShardCache.size >= 4) {
+      const maxShards = process.env.RENDER === "true" ? 2 : 4;
+      if (doorShardCache.size >= maxShards) {
         const oldestKey = doorShardCache.keys().next().value;
         if (oldestKey !== void 0) doorShardCache.delete(oldestKey);
       }
@@ -15323,10 +15338,18 @@ function resolveRioIppLocation(params) {
       return pre;
     }
   }
+  const nb = normalizeBairro(params.neighborhood);
+  const memoKey = params.id ? `id:${params.id}:${normalizeText(params.address)}:${nb}` : `addr:${cityNorm}:${nb}:${normalizeText(params.address)}:${normalizeText(params.title)}`;
+  if (resolvedMemo.has(memoKey)) {
+    return resolvedMemo.get(memoKey) ?? null;
+  }
+  const opts = extractRioStreetAndNumber(params.address, params.title || params.description);
+  if (!opts.length) {
+    memoSet(memoKey, null);
+    return null;
+  }
   const idx = loadStreetsIndex();
   if (!idx) return null;
-  const opts = extractRioStreetAndNumber(params.address, params.title || params.description);
-  const nb = normalizeBairro(params.neighborhood);
   for (const opt of opts) {
     const { full, core } = buildStreetKeys(opt.street);
     const cls = [];
@@ -15343,13 +15366,13 @@ function resolveRioIppLocation(params) {
     if (!cls.length) continue;
     const numInt = opt.numInt;
     if (numInt > 0) {
-      for (const cl of cls) {
-        const doors2 = loadDoorsForCl(cl);
-        if (!doors2.length) continue;
-        const exact = doors2.find((d) => d[0] === numInt);
+      for (const cl of cls.slice(0, 6)) {
+        const doors = loadDoorsForCl(cl);
+        if (!doors.length) continue;
+        const exact = doors.find((d) => d[0] === numInt);
         const m2 = idx.clMeta[cl];
         if (exact) {
-          return {
+          const hit2 = {
             lng: exact[1],
             lat: exact[2],
             cl,
@@ -15359,9 +15382,11 @@ function resolveRioIppLocation(params) {
             bairro: m2?.[1] || params.neighborhood || "",
             method: "ipp_exact_door"
           };
+          memoSet(memoKey, hit2);
+          return hit2;
         }
-        const sameParity = doors2.filter((d) => d[0] > 0 && d[0] % 2 === numInt % 2);
-        const pool = sameParity.length >= 2 ? sameParity : doors2.filter((d) => d[0] > 0);
+        const sameParity = doors.filter((d) => d[0] > 0 && d[0] % 2 === numInt % 2);
+        const pool = sameParity.length >= 2 ? sameParity : doors.filter((d) => d[0] > 0);
         if (!pool.length) continue;
         let lo = null;
         let hi = null;
@@ -15385,7 +15410,7 @@ function resolveRioIppLocation(params) {
           lat = lo[2] + t * (hi[2] - lo[2]);
           method = "ipp_interpolated_door";
         }
-        return {
+        const hit = {
           lng: Math.round(lng * 1e6) / 1e6,
           lat: Math.round(lat * 1e6) / 1e6,
           cl,
@@ -15395,25 +15420,14 @@ function resolveRioIppLocation(params) {
           bairro: m2?.[1] || params.neighborhood || "",
           method
         };
+        memoSet(memoKey, hit);
+        return hit;
       }
     }
     const cl0 = cls[0];
     const m = idx.clMeta[cl0];
-    const doors = loadDoorsForCl(cl0);
-    if (doors.length) {
-      const mid = doors[Math.floor(doors.length / 2)];
-      return {
-        lng: mid[1],
-        lat: mid[2],
-        cl: cl0,
-        matchedStreet: m?.[0] || opt.street,
-        matchedNumber: "",
-        bairro: m?.[1] || params.neighborhood || "",
-        method: "ipp_street_axis"
-      };
-    }
     if (m && m[2] && m[3]) {
-      return {
+      const hit = {
         lng: m[2],
         lat: m[3],
         cl: cl0,
@@ -15422,8 +15436,11 @@ function resolveRioIppLocation(params) {
         bairro: m[1] || params.neighborhood || "",
         method: "ipp_trecho_midpoint"
       };
+      memoSet(memoKey, hit);
+      return hit;
     }
   }
+  memoSet(memoKey, null);
   return null;
 }
 function getRioAuctionBuildingsFilePath() {
@@ -15482,10 +15499,25 @@ function refresh() {
   }
 }
 var candidateFiles = /* @__PURE__ */ new Map();
+var manifestCache = null;
+function loadCnefeManifest(root2) {
+  const manifestPath = import_node_path8.default.join(root2, "manifest.json");
+  try {
+    const mtime = import_node_fs8.default.statSync(manifestPath).mtimeMs;
+    if (manifestCache && manifestCache.stamp === mtime) return manifestCache.entries;
+    const entries = JSON.parse(import_node_fs8.default.readFileSync(manifestPath, "utf8"));
+    manifestCache = { stamp: mtime, entries };
+    return entries;
+  } catch {
+    manifestCache = { stamp: -1, entries: [] };
+    return null;
+  }
+}
 function resolveCachedNumber(p) {
   try {
     const root2 = import_node_path8.default.join(process.cwd(), ".cache", "map-cnefe");
-    const manifest = JSON.parse(import_node_fs8.default.readFileSync(import_node_path8.default.join(root2, "manifest.json"), "utf8"));
+    const manifest = loadCnefeManifest(root2);
+    if (!manifest || !manifest.length) return null;
     const municipality = manifest.find((m) => normalize4(m.city) === normalize4(p.city) && normalize4(m.state) === normalize4(p.state));
     if (!municipality) return null;
     const sourceFile = import_node_path8.default.join(root2, "resolved", import_node_path8.default.basename(municipality.name) + ".json");
@@ -22950,6 +22982,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     }
     const persistedPayload = !isForceRefresh ? readPersistedAuctionResponse(cacheSignature, req.userId) : null;
     if (persistedPayload) {
+      releaseRioIppScratchCaches();
       auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
       sendAuctionResponse(req, res, persistedPayload);
       setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
@@ -23060,13 +23093,13 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
           a.calculatedRoi = cost > 0 ? Number((profit / cost * 100).toFixed(2)) : 0;
         }
       }
-      const ippLoc = (a.city || "").toLowerCase().includes("rio de janeiro") ? getOfficialPropertyLocation(a) : null;
-      if (ippLoc && ippLoc.status === "located" && ippLoc.source === "IPP_RIO_2019" && Number.isFinite(ippLoc.lat) && Number.isFinite(ippLoc.lng)) {
+      const ipp = (a.city || "").toLowerCase().includes("rio de janeiro") ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }) : null;
+      if (ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)) {
         return {
           ...a,
-          lat: ippLoc.lat,
-          lng: ippLoc.lng,
-          status_geocodificacao: ippLoc.precision === "address" ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA"
+          lat: ipp.lat,
+          lng: ipp.lng,
+          status_geocodificacao: ipp.matchedNumber ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA"
         };
       }
       if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
@@ -23085,6 +23118,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
       const verifiedLocation = enrichLocation({ ...a, city: a.city || "" });
       return verifiedLocation.neighborhood && verifiedLocation.neighborhood !== a.neighborhood ? { ...a, neighborhood: verifiedLocation.neighborhood } : a;
     });
+    releaseRioIppScratchCaches();
     auctionCatalogResponseCache = {
       auctionsRef: store.auctions,
       transactionsRef: store.itbiTransactions,
@@ -23110,15 +23144,53 @@ app.get("/api/map/auction-buildings", (_req, res) => {
   res.setHeader("Cache-Control", "public, max-age=3600");
   res.sendFile(filePath);
 });
+var mapLocationsCache = null;
 app.get("/api/map/locations", authMiddleware, (req, res) => {
-  ensureOfficialLocationCoverage(store.auctions);
+  setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
   res.setHeader("X-Map-Refreshing", isMapLocationRefreshRunning() ? "1" : "0");
   res.setHeader("Cache-Control", "no-store");
-  const locations = deduplicateAuctions(store.auctions.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state))).filter(catalogVisible).flatMap((a) => {
-    const point = getOfficialPropertyLocation(a);
-    return [point];
+  if (mapLocationsCache && mapLocationsCache.auctionsRef === store.auctions && mapLocationsCache.userId === req.userId && mapLocationsCache.revision === catalogRevision) {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    return res.send(mapLocationsCache.json);
+  }
+  const locations = deduplicateAuctions(
+    store.auctions.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state))
+  ).filter(catalogVisible).map((a) => {
+    const p = getOfficialPropertyLocation(a);
+    return {
+      id: p.id,
+      status: p.status,
+      reason: p.reason,
+      lat: p.lat,
+      lng: p.lng,
+      precision: p.precision,
+      source: p.source,
+      sourceUrl: p.sourceUrl,
+      matchedStreet: p.matchedStreet,
+      matchedNumber: p.matchedNumber,
+      matchedCity: p.matchedCity,
+      matchedLocality: p.matchedLocality,
+      spreadMeters: p.spreadMeters,
+      buildingOid: p.buildingOid,
+      buildingHeight: p.buildingHeight,
+      ippMethod: p.ippMethod,
+      geocoderProvider: p.geocoderProvider,
+      geocoderPrecision: p.geocoderPrecision,
+      cnefeId: p.cnefeId,
+      geocodeLevel: p.geocodeLevel,
+      complements: p.complements,
+      resolutionEvidence: p.resolutionEvidence,
+      address: p.address,
+      city: p.city,
+      state: p.state,
+      neighborhood: p.neighborhood
+    };
   });
-  res.json(locations);
+  releaseRioIppScratchCaches();
+  const json = JSON.stringify(locations);
+  mapLocationsCache = { auctionsRef: store.auctions, userId: req.userId, revision: catalogRevision, json };
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.send(json);
 });
 app.get("/api/auctions/bbox", (req, res) => {
   const minLat = parseFloat(req.query.minLat);

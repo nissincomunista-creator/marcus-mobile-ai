@@ -90,10 +90,25 @@ function refresh() {
 }
 type CachedCandidate = { lat: number; lng: number; level: string; street: string; number: string; locality: string; cnefeId: string; complements: Record<string, string> };
 const candidateFiles = new Map<string, { stamp: number; candidates: Record<string, CachedCandidate[]> }>();
+let manifestCache: { stamp: number; entries: any[] } | null = null;
+function loadCnefeManifest(root: string): any[] | null {
+  const manifestPath = path.join(root, 'manifest.json');
+  try {
+    const mtime = fs.statSync(manifestPath).mtimeMs;
+    if (manifestCache && manifestCache.stamp === mtime) return manifestCache.entries;
+    const entries = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifestCache = { stamp: mtime, entries };
+    return entries;
+  } catch {
+    manifestCache = { stamp: -1, entries: [] };
+    return null;
+  }
+}
 function resolveCachedNumber(p: Address): OfficialLocation | null {
   try {
     const root = path.join(process.cwd(), '.cache', 'map-cnefe');
-    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+    const manifest = loadCnefeManifest(root);
+    if (!manifest || !manifest.length) return null;
     const municipality = manifest.find((m: any) => normalize(m.city) === normalize(p.city) && normalize(m.state) === normalize(p.state));
     if (!municipality) return null;
     const sourceFile = path.join(root, 'resolved', path.basename(municipality.name) + '.json');

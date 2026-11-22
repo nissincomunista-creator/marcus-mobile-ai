@@ -11,7 +11,7 @@ import { auditOfficialArea } from './src/utils/officialAreaAudit.ts';
 import { runListedPortalSync, parseSourcePage } from './listedPortalSync.ts';
 import { allowedSyncLocation, SYNC_SOURCE_IDS, SYNC_TARGETS } from './src/utils/auctionSyncScope.ts';
 import { getOfficialPropertyLocation, ensureOfficialLocationCoverage, isMapLocationRefreshRunning, validOfficialLocation } from './propertyLocationService.ts';
-import { getRioAuctionBuildingsFilePath } from './rioIppLocationService.ts';
+import { getRioAuctionBuildingsFilePath, resolveRioIppLocation, releaseRioIppScratchCaches } from './rioIppLocationService.ts';
 import { addressUnits } from './src/utils/locationAddress.ts';
 import { auctionCosts, calculateFlip } from './src/utils/flipCalculation.ts';
 import express from 'express';
@@ -3966,7 +3966,8 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
   }
   const persistedPayload = !isForceRefresh ? readPersistedAuctionResponse(cacheSignature, req.userId) : null;
   if (persistedPayload) {
-    auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
+    releaseRioIppScratchCaches();
+  auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
     sendAuctionResponse(req, res, persistedPayload);
     setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
     return;
@@ -4095,13 +4096,15 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
     }
 
     // Aplica coordenada oficial IPP Rio quando disponível para alinhamento estrito em mapa e cálculos de raio
-    const ippLoc = (a.city || '').toLowerCase().includes('rio de janeiro') ? getOfficialPropertyLocation(a) : null;
-    if (ippLoc && ippLoc.status === 'located' && ippLoc.source === 'IPP_RIO_2019' && Number.isFinite(ippLoc.lat) && Number.isFinite(ippLoc.lng)) {
+    const ipp = (a.city || '').toLowerCase().includes('rio de janeiro')
+      ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title })
+      : null;
+    if (ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)) {
       return {
         ...a,
-        lat: ippLoc.lat,
-        lng: ippLoc.lng,
-        status_geocodificacao: ippLoc.precision === 'address' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA',
+        lat: ipp.lat,
+        lng: ipp.lng,
+        status_geocodificacao: ipp.matchedNumber ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA',
       };
     }
 
@@ -4126,6 +4129,7 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
       ? { ...a, neighborhood: verifiedLocation.neighborhood }
       : a;
   });
+  releaseRioIppScratchCaches();
   auctionCatalogResponseCache = {
     auctionsRef: store.auctions,
     transactionsRef: store.itbiTransactions,
@@ -4159,16 +4163,61 @@ app.get('/api/map/auction-buildings', (_req, res) => {
   res.sendFile(filePath);
 });
 
+// Cache leve de localizações para evitar serialização repetida de payloads enormes e OOM no Render
+let mapLocationsCache: { auctionsRef: any; userId: string; revision: number; json: string } | null = null;
+
 // All verified building locations; no viewport or listing cap.
 app.get('/api/map/locations', authMiddleware, (req, res) => {
-  ensureOfficialLocationCoverage(store.auctions);
+  setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
   res.setHeader('X-Map-Refreshing', isMapLocationRefreshRunning() ? '1' : '0');
   res.setHeader('Cache-Control', 'no-store');
-  const locations = deduplicateAuctions(store.auctions.filter(a => catalogVisible(a) && (!a.userId || a.userId === req.userId || ['caixa_radar','caixa','judicial','extrajudicial','portal'].includes(a.origin || '')) && isAllowedTargetCity(a.city, a.state))).filter(catalogVisible).flatMap(a => {
-    const point = getOfficialPropertyLocation(a);
-    return [point];
+  if (
+    mapLocationsCache &&
+    mapLocationsCache.auctionsRef === store.auctions &&
+    mapLocationsCache.userId === req.userId &&
+    mapLocationsCache.revision === catalogRevision
+  ) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.send(mapLocationsCache.json);
+  }
+  const locations = deduplicateAuctions(
+    store.auctions.filter(a => catalogVisible(a) && (!a.userId || a.userId === req.userId || ['caixa_radar','caixa','judicial','extrajudicial','portal'].includes(a.origin || '')) && isAllowedTargetCity(a.city, a.state))
+  ).filter(catalogVisible).map(a => {
+    const p = getOfficialPropertyLocation(a);
+    return {
+      id: p.id,
+      status: p.status,
+      reason: p.reason,
+      lat: p.lat,
+      lng: p.lng,
+      precision: p.precision,
+      source: p.source,
+      sourceUrl: p.sourceUrl,
+      matchedStreet: p.matchedStreet,
+      matchedNumber: p.matchedNumber,
+      matchedCity: p.matchedCity,
+      matchedLocality: p.matchedLocality,
+      spreadMeters: p.spreadMeters,
+      buildingOid: p.buildingOid,
+      buildingHeight: p.buildingHeight,
+      ippMethod: p.ippMethod,
+      geocoderProvider: p.geocoderProvider,
+      geocoderPrecision: p.geocoderPrecision,
+      cnefeId: p.cnefeId,
+      geocodeLevel: p.geocodeLevel,
+      complements: p.complements,
+      resolutionEvidence: p.resolutionEvidence,
+      address: p.address,
+      city: p.city,
+      state: p.state,
+      neighborhood: p.neighborhood,
+    };
   });
-  res.json(locations);
+  releaseRioIppScratchCaches();
+  const json = JSON.stringify(locations);
+  mapLocationsCache = { auctionsRef: store.auctions, userId: req.userId, revision: catalogRevision, json };
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.send(json);
 });
 
 // All verified locations inside the requested viewport. No silent truncation.
