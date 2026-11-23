@@ -1920,16 +1920,42 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     return exactBuildingTxs.length > 0 || (exactStreetStats !== null && exactStreetStats.count > 0);
   }, [bidiBenchmark, exactBuildingTxs.length, exactStreetStats]);
 
-  // 2. Balizador Portais (ZapImóveis / QuintoAndar)
+  // 2. Balizador Portais Imobiliários (usa anúncios confirmados na via + benchmark da rua)
+  const [moradaBench, setMoradaBench] = useState<{ m2: number; sampleCount: number; typology: string; streetUrl: string } | null>(null);
+  useEffect(() => {
+    setMoradaBench(null);
+    if (!selectedStreet || !selectedCity) return;
+    const ctrl = new AbortController();
+    const qs = new URLSearchParams({ 
+      street: selectedStreet, 
+      city: selectedCity, 
+      state: selectedState || 'RJ', 
+      neighborhood: selectedNeighborhood || '',
+      propertyType: propertyType || '' 
+    });
+    fetch('/api/morada/benchmark?' + qs.toString(), { signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.benchmark?.m2 > 0 && d.benchmark.m2 <= 75000) setMoradaBench(d.benchmark); })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [selectedStreet, selectedCity, selectedState, selectedNeighborhood, propertyType]);
+
   const portalBenchmarkSqm = useMemo(() => {
-    if (portalStreetStats && portalStreetStats.avgSqm > 0) {
+    if (portalStreetStats && portalStreetStats.avgSqm > 0 && portalStreetStats.avgSqm <= 75000) {
       return portalStreetStats.avgSqm;
     }
-    if (portalResults?.close?.avgSqm && portalResults.close.avgSqm > 0) {
+    if (portalResults?.close?.avgSqm && portalResults.close.avgSqm > 0 && portalResults.close.avgSqm <= 75000) {
       return portalResults.close.avgSqm;
     }
+    if (moradaBench?.m2 && moradaBench.m2 > 0 && moradaBench.m2 <= 75000) {
+      return moradaBench.m2;
+    }
+    const propPortalSqm = Number((prefillData as any)?.moradaM2 || (prefillData as any)?.streetPortalAvgSqm || (prefillData as any)?.m2MercadoPortal || 0);
+    if (propPortalSqm > 0 && propPortalSqm <= 75000) {
+      return propPortalSqm;
+    }
     return 0;
-  }, [portalStreetStats, portalResults]);
+  }, [portalStreetStats, portalResults, moradaBench, prefillData]);
 
   // 3. Preço Sugerido Flip (Giro rápido em até 60 dias):
   // 100% Ancorado no Gabarito Real de Cartório (Corte Bidirecional) com Deságio Tático de 10% para Liquidez Imediata
@@ -2169,32 +2195,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     setCustomSalePrice(activeFlipExitPrice || 0);
   }, [activeFlipExitPrice]);
 
-  // Item 5: média de anúncios da rua pelo Morada Virtual (fonte prioritária)
-  const [moradaBench, setMoradaBench] = useState<{ m2: number; sampleCount: number; typology: string; streetUrl: string } | null>(null);
-  useEffect(() => {
-    setMoradaBench(null);
-    if (!selectedStreet || !selectedCity) return;
-    const ctrl = new AbortController();
-    const qs = new URLSearchParams({ 
-      street: selectedStreet, 
-      city: selectedCity, 
-      state: selectedState || 'RJ', 
-      neighborhood: selectedNeighborhood || '',
-      propertyType: propertyType || '' 
-    });
-    fetch('/api/morada/benchmark?' + qs.toString(), { signal: ctrl.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.benchmark?.m2 > 0) setMoradaBench(d.benchmark); })
-      .catch(() => {});
-    return () => ctrl.abort();
-  }, [selectedStreet, selectedCity, selectedState, selectedNeighborhood, propertyType]);
-
   // Market Tiers for 1-to-1 Comparison with Auction Acquisition
   const marketTiers = useMemo(() => {
     const portalSqm = moradaBench && moradaBench.m2 > 0 ? moradaBench.m2 : null;
     const portalSamplesLabel = portalSqm
-      ? `✓ Morada Virtual (${moradaBench!.sampleCount} anúncios · ${moradaBench!.typology})`
-      : 'Sem média confirmada na Morada Virtual';
+      ? `✓ Portais Imobiliários (${moradaBench!.sampleCount} anúncios · ${moradaBench!.typology})`
+      : 'Sem média confirmada nos portais';
 
     const streetSqm = (exactStreetStats && exactStreetStats.count > 0 && exactStreetStats.avgSqm > 0) ? exactStreetStats.avgSqm : null;
     const buildingSqm = (exactBuildingStats && exactBuildingStats.count > 0 && exactBuildingStats.avgSqm > 0) ? exactBuildingStats.avgSqm : null;
@@ -2262,7 +2268,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       },
       {
         id: 'portals_street',
-        label: '5. Média de Anúncios na Rua (Morada Virtual)',
+        label: '5. Média de Anúncios na Rua (Portais Imobiliários)',
         icon: Globe,
         color: 'cyan',
         sqm: portalSqm,
@@ -2502,7 +2508,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             ...(responseData.above?.matches || [])
           ];
           const uniqueMatches = Array.from(new Map(allMatches.map((match: any) => [match.link, match])).values()) as any[];
-          const valid = uniqueMatches.filter((match: any) => Number(match.unitValueSqm) > 0 && Number(match.price) > 0);
+          const valid = uniqueMatches.filter((match: any) => Number(match.unitValueSqm) >= 800 && Number(match.unitValueSqm) <= 75000 && Number(match.price) > 0);
           if (valid.length > 0) {
             const avgSqm = Math.round(valid.reduce((sum: number, match: any) => sum + Number(match.unitValueSqm), 0) / valid.length);
             const zap = valid.filter((match: any) => /zapimoveis/i.test(match.link || ''));
@@ -4638,7 +4644,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         <div className="flex justify-between items-center gap-2 text-[11px]">
                           <span className="text-slate-300 font-bold flex items-center gap-1.5">
                             <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                            5. Média de Anúncios na Rua (Morada Virtual)
+                            5. Média de Anúncios na Rua (Portais Imobiliários)
                           </span>
                           <span className="font-bold text-cyan-400 text-right">
                             {tierSqm > 0 ? `R$ ${tierSqm.toLocaleString('pt-BR')}/m²` : 'Sem média'}
@@ -4647,7 +4653,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         <p className="text-[9px] text-slate-500 font-mono">{tierLabel}</p>
                         {moradaBench?.streetUrl && (
                           <a href={moradaBench.streetUrl} target="_blank" rel="noreferrer" className="text-[9px] text-cyan-400 hover:text-cyan-300 font-mono inline-flex items-center gap-1">
-                            Abrir fonte Morada Virtual <ExternalLink className="w-3 h-3" />
+                            Análise da Rua nos Portais <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
                         <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden flex">

@@ -446,7 +446,7 @@ async function main() {
   tree.load(items);
 
   const cellFiles = fs.readdirSync(GRID_DIR).filter((f) => f.endsWith('.ndjson')).sort();
-  const PAD = 0.00024; // ~25m
+  const PAD = 0.00058; // ~60m search window so setback houses & wide avenues match their 3D building polygon
   const matchedBuildingGeoms = new Map(); // oid -> { oid, h, isMulti, coords }
 
   for (const file of cellFiles) {
@@ -469,8 +469,9 @@ async function main() {
         let rank = 99;
         if (exactClnp && dist <= 90) rank = 0;
         else if (dist === 0) rank = 1;
-        else if (exactLote && dist <= 35) rank = 2;
+        else if (exactLote && dist <= 45) rank = 2;
         else if (dist <= 22) rank = 3;
+        else if (dist <= 55) rank = 4;
         else continue;
 
         const effRank = rank * 10 + ((area || 0) < 16 ? 1 : 0);

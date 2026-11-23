@@ -515,7 +515,7 @@ export function calculatePortalBenchmark(input: PortalBenchmarkInput): PortalBen
   const isRioCity = uf === 'RJ' && normalizeText(rawCity).includes('rio');
   let portalSource: 'Morada Virtual / Portais' | 'ZAP Imóveis' | 'QuintoAndar' | string = 'Morada Virtual / Portais';
 
-  if (input.moradaM2 && input.moradaM2 > 0) {
+  if (input.moradaM2 && input.moradaM2 > 0 && input.moradaM2 <= 75000) {
     if (isRioCity && input.moradaM2 < 1500) {
       baseSqm = 0;
       isBairroPortalFallback = true;
@@ -524,7 +524,7 @@ export function calculatePortalBenchmark(input: PortalBenchmarkInput): PortalBen
         m2MercadoPortal: input.moradaM2,
         valorSugeridoPortal: 0,
         referenciaTexto: 'Mesma Rua',
-        fontePortal: 'Morada Virtual',
+        fontePortal: 'Portais Imobiliários',
         dataColetaPortal: new Date().toISOString(),
         isBairroPortalFallback: false,
         portalAreaBracket: bracket,
@@ -534,23 +534,23 @@ export function calculatePortalBenchmark(input: PortalBenchmarkInput): PortalBen
         portalLeadText: input.portalLeadText
       };
     }
-  } else if (input.streetPortalAvgSqm && input.streetPortalAvgSqm > 0) {
+  } else if (input.streetPortalAvgSqm && input.streetPortalAvgSqm > 0 && input.streetPortalAvgSqm <= 75000) {
     if (isRioCity && input.streetPortalAvgSqm < 1500) {
       baseSqm = 0;
       isBairroPortalFallback = true;
     } else {
       baseSqm = input.streetPortalAvgSqm;
       isBairroPortalFallback = false;
-      portalSource = (uf === 'RJ' || uf === 'SP') ? 'QuintoAndar' : 'ZAP Imóveis';
+      portalSource = 'Portais Imobiliários';
     }
   } else if (input.itbiStreetAvgSqm && input.itbiStreetAvgSqm > 0 && (input.itbiStreetCount || 0) >= 2) {
     baseSqm = Math.round(input.itbiStreetAvgSqm * 1.18);
     isBairroPortalFallback = false;
-    portalSource = (uf === 'RJ' || uf === 'SP') ? 'QuintoAndar' : 'ZAP Imóveis';
+    portalSource = 'Portais Imobiliários';
   } else {
     baseSqm = 0;
     isBairroPortalFallback = true;
-    portalSource = (uf === 'RJ' || uf === 'SP') ? 'QuintoAndar' : 'ZAP Imóveis';
+    portalSource = 'Portais Imobiliários';
   }
 
   const m2MercadoPortal = baseSqm > 0 ? Math.round(baseSqm * factor) : 0;

@@ -1533,14 +1533,26 @@ function loadStore(): DataStore {
     }
   }
 
-  // Sanitize Portal sanity filter: Discard any portal m2 < 1500 R$/m2 in Rio de Janeiro
+  // Sanitize Portal sanity filter: Discard impossible < 1500 (RJ) or > 75000 R$/m² outliers
   storeData.auctions.forEach(auc => {
     const isRio = (auc.state || '').toUpperCase() === 'RJ' || String(auc.city || '').toLowerCase().includes('rio de janeiro');
-    if (isRio && auc.streetPortalAvgSqm !== undefined && auc.streetPortalAvgSqm < 1500) {
+    const badSqm = (v?: number) => v !== undefined && Number.isFinite(Number(v)) && Number(v) > 0 && ((isRio && Number(v) < 1500) || Number(v) > 75000);
+    if (badSqm(auc.streetPortalAvgSqm) || badSqm(auc.m2MercadoPortal) || badSqm((auc as any).moradaM2) || badSqm((auc as any).moradaVirtualM2)) {
       auc.streetPortalAvgSqm = undefined;
       auc.m2MercadoPortal = 0;
       auc.valorSugeridoPortal = 0;
+      (auc as any).moradaM2 = 0;
+      (auc as any).moradaVirtualM2 = 0;
       auc.isBairroPortalFallback = true;
+    }
+    if (Number((auc as any).unitValueSqm || 0) > 75000) {
+      (auc as any).unitValueSqm = undefined;
+    }
+    if (!auc.fontePortal || /morada|quinto|zap|imovelweb/i.test(String(auc.fontePortal))) {
+      auc.fontePortal = 'Portais Imobiliários';
+    }
+    if ((auc as any).portalSource && /morada|quinto|zap|imovelweb/i.test(String((auc as any).portalSource))) {
+      (auc as any).portalSource = 'Portais Imobiliários';
     }
   });
   
@@ -1592,7 +1604,7 @@ let auctionCatalogResponseCache: {
   gz?: Buffer;
 } | null = null;
 const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v7.json.gz');
-const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v14-caixa-fix';
+const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v15-portais-clean';
 let persistedCatalogInvalidated = false;
 
 function auctionResponseCacheSignature() {
@@ -1618,7 +1630,7 @@ function readLastKnownAuctionResponse(userId?: string, forceRefresh = false): Au
   if (persistedCatalogInvalidated || forceRefresh) return null;
   try {
     const saved = JSON.parse(zlib.gunzipSync(fs.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString('utf8'));
-    return saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
+    return typeof saved.signature === 'string' && saved.signature.startsWith(`${AUCTION_RESPONSE_CACHE_VERSION}|`) && saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
   } catch {
     return null;
   }
@@ -3086,25 +3098,32 @@ function recalculateAuctionWithIndex(
   });
 
   const isRJ = (auc.state || '').toUpperCase() === 'RJ' || String(auc.city || '').toLowerCase().includes('rio de janeiro');
-  auc.m2MercadoPortal = portalBench.m2MercadoPortal;
+  auc.m2MercadoPortal = portalBench.m2MercadoPortal > 75000 ? 0 : portalBench.m2MercadoPortal;
   auc.valorSugeridoPortal = portalBench.valorSugeridoPortal;
-  auc.fontePortal = portalBench.fontePortal;
+  auc.fontePortal = 'Portais Imobiliários';
   auc.dataColetaPortal = portalBench.dataColetaPortal;
   auc.isBairroPortalFallback = portalBench.isBairroPortalFallback;
   auc.portalAreaBracket = portalBench.portalAreaBracket;
-  auc.streetPortalAvgSqm = (!portalBench.isBairroPortalFallback && portalBench.m2MercadoPortal >= (isRJ ? 1500 : 500)) ? portalBench.m2MercadoPortal : undefined;
+  auc.streetPortalAvgSqm = (!portalBench.isBairroPortalFallback && auc.m2MercadoPortal >= (isRJ ? 1500 : 500) && auc.m2MercadoPortal <= 75000) ? auc.m2MercadoPortal : undefined;
   auc.portalDataVerifiedAt = portalBench.dataColetaPortal;
   if (portalBench.portalSampleCount) auc.portalSampleCount = portalBench.portalSampleCount;
   if (portalBench.portalStreetUrl) auc.portalStreetUrl = portalBench.portalStreetUrl;
   if (portalBench.portalTypologyAvgPrice) auc.portalTypologyAvgPrice = portalBench.portalTypologyAvgPrice;
   if (portalBench.portalLeadText) auc.portalLeadText = portalBench.portalLeadText;
-  if (moradaMatch && moradaMatch.m2 > 0) {
+  if (moradaMatch && moradaMatch.m2 > 0 && moradaMatch.m2 <= 75000) {
     (auc as any).moradaM2 = moradaMatch.m2;
     (auc as any).moradaVirtualM2 = moradaMatch.m2;
     auc.streetPortalAvgSqm = moradaMatch.m2;
+    auc.m2MercadoPortal = moradaMatch.m2;
     auc.portalSampleCount = moradaMatch.sampleCount;
     auc.portalStreetUrl = moradaMatch.streetUrl;
-    auc.fontePortal = 'Morada Virtual';
+    auc.fontePortal = 'Portais Imobiliários';
+  } else {
+    if (Number((auc as any).moradaM2 || 0) > 75000) (auc as any).moradaM2 = 0;
+    if (Number((auc as any).moradaVirtualM2 || 0) > 75000) (auc as any).moradaVirtualM2 = 0;
+  }
+  if (Number((auc as any).unitValueSqm || 0) > 75000) {
+    (auc as any).unitValueSqm = undefined;
   }
 
   const ageFactor = ageDepreciationPct > 0 ? (1 - ageDepreciationPct / 100) : 1.0;

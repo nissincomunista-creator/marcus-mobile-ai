@@ -1579,7 +1579,7 @@ export default function Dashboard({
         ...(data.above?.matches || [])
       ];
       const unique = Array.from(new Map(matches.map((item: any) => [item.link, item])).values()) as any[];
-      const valid = unique.filter(item => Number(item.unitValueSqm) > 0 && Number(item.price) > 0);
+      const valid = unique.filter(item => Number(item.unitValueSqm) >= 800 && Number(item.unitValueSqm) <= 75000 && Number(item.price) > 0);
       if (!data.verified || valid.length === 0) return;
 
       const averagePrice = (items: any[]) => items.length
@@ -3118,13 +3118,6 @@ export default function Dashboard({
                                     </span>
                                   );
                                 })()}
-                                <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border bg-slate-900/60 border-slate-800 ${
-                                  auc.riskLevel === 'Baixo' ? 'text-emerald-400' :
-                                  auc.riskLevel === 'Médio' ? 'text-amber-400' :
-                                  'text-rose-400'
-                                }`}>
-                                  Risco {auc.riskLevel || 'Baixo'}
-                                </span>
                               </div>
                             )}
 
@@ -3723,12 +3716,12 @@ export default function Dashboard({
                             ? (rawPortalSqm > 0 ? Math.round(rawPortalSqm * 0.0055) : (auc.mediaLocacaoCalculadora && auc.sizeSqm ? Math.round(auc.mediaLocacaoCalculadora / auc.sizeSqm) : 0))
                             : rawPortalSqm;
 
-                          // Filtro Visual de Sanidade: Descartar m² < R$ 1.500/m² no RJ para venda
+                          // Filtro Visual de Sanidade: Descartar m² < R$ 1.500/m² no RJ ou outliers > R$ 75.000/m²
                           const hasValidPortal = isRental
-                            ? displayPortalSqm > 0
-                            : (rawPortalSqm > 0 && (!isRioDeJaneiroCity || rawPortalSqm >= 1500));
+                            ? (displayPortalSqm > 0 && displayPortalSqm <= 1500)
+                            : (rawPortalSqm > 0 && rawPortalSqm <= 75000 && (!isRioDeJaneiroCity || rawPortalSqm >= 1500));
 
-                          // Em leilões, só exibe o banner se a rua foi de fato encontrada no Morada Virtual com dados válidos
+                          // Em leilões, só exibe o banner se houver dados válidos de portais
                           if (auc.origin !== 'portal' && !hasValidPortal) return null;
 
                           return (
@@ -3744,13 +3737,9 @@ export default function Dashboard({
                                     </span>
                                     {auc.portalSampleCount ? (
                                       <span className="text-[10px] font-mono text-slate-400 font-normal">
-                                        ({auc.portalSampleCount.toLocaleString('pt-BR')} anúncios na via · Morada Virtual)
+                                        ({auc.portalSampleCount.toLocaleString('pt-BR')} anúncios na via)
                                       </span>
-                                    ) : (
-                                      <span className="text-[10px] font-mono text-slate-400 font-normal">
-                                        (Morada Virtual)
-                                      </span>
-                                    )}
+                                    ) : null}
                                     {!isRental && auc.portalTypologyAvgPrice ? (
                                       <span className="text-[10px] text-slate-400 hidden md:inline">
                                         · Preço médio anúncios: <strong className="text-slate-200 font-mono">{formatBRL(auc.portalTypologyAvgPrice)}</strong>
@@ -3761,7 +3750,7 @@ export default function Dashboard({
                                   <div className="flex items-center space-x-1.5">
                                     <span className="text-[10px] font-bold uppercase font-mono text-slate-400">Portais Imobiliários:</span>
                                     <span className="font-mono font-semibold text-slate-400 text-[11px]">
-                                      Rua não encontrada no Morada Virtual
+                                      Sem média na via
                                     </span>
                                   </div>
                                 )}
@@ -3773,7 +3762,7 @@ export default function Dashboard({
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
                                     className="text-[10px] text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-0.5 transition-colors underline ml-auto"
-                                    title="Ver análise completa da rua no Morada Virtual"
+                                    title="Ver análise completa da rua nos portais"
                                   >
                                     <span>Análise da Rua</span>
                                     <ExternalLink className="w-2.5 h-2.5" />
@@ -3791,12 +3780,8 @@ export default function Dashboard({
                             {/* Ocupação, Financiamento e Parcelamento (Apenas para leilões) */}
                             {auc.origin !== 'portal' && (
                               <>
-                                <span className={`text-[11px] font-black flex items-center space-x-1 px-2.5 py-0.5 rounded-full border ${
-                                  auc.occupied 
-                                    ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600/50' 
-                                    : 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600/50'
-                                }`}>
-                                  <span>● {auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
+                                <span className="text-[11px] font-semibold flex items-center space-x-1 px-2.5 py-0.5 rounded-full border bg-slate-800/80 text-slate-300 border-slate-700">
+                                  <span>{auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
                                 </span>
 
                                 {auc.allowsFinancing && (
@@ -3884,10 +3869,10 @@ export default function Dashboard({
                       </div>
 
                       {/* Footer com Ações */}
-                      <div className="bg-slate-950/60 border-t border-slate-800/90 px-5 py-3.5 flex items-center justify-between">
+                      <div className="bg-slate-950/60 border-t border-slate-800/90 px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2.5">
                         <button
                           onClick={() => setSimulatingAuction(auc)}
-                          className={`px-4 py-2 text-white font-bold text-xs rounded-xl transition-all flex items-center space-x-1.5 shadow-sm cursor-pointer active:scale-95 ${
+                          className={`px-3.5 py-2 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm cursor-pointer active:scale-95 shrink-0 ${
                             auc.transactionType === 'aluguel'
                               ? 'bg-emerald-600 hover:bg-emerald-500'
                               : auc.origin === 'portal'
@@ -3895,22 +3880,24 @@ export default function Dashboard({
                               : 'bg-indigo-600 hover:bg-indigo-500'
                           }`}
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>{auc.transactionType === 'aluguel' ? 'Simular Locação (Calculadora)' : auc.origin === 'portal' ? 'Simular Viabilidade (Flip)' : 'Simular Viabilidade & Jurídico'}</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                          <span className="whitespace-nowrap">
+                            {auc.transactionType === 'aluguel' ? 'Simular Locação' : auc.origin === 'portal' ? 'Simular Flip' : 'Simular Viabilidade'}
+                          </span>
+                          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
                         </button>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2 ml-auto">
                           {auc.auctionLink && (
                             <a
                               href={auc.auctionLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700 flex items-center gap-1"
+                              className="px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700 flex items-center gap-1.5 whitespace-nowrap"
                               title={auc.transactionType === 'aluguel' ? "Acessar anúncio de locação no portal" : auc.origin === 'portal' ? "Acessar anúncio original no portal" : "Acessar edital/anúncio original"}
                             >
-                              <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio de Locação' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
+                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                             </a>
                           )}
                           <button

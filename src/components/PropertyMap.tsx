@@ -446,6 +446,40 @@ export default function PropertyMap({
             },
           });
         }
+      } else {
+        // Fallback: gera um polígono 3D do lote no endereço exato para nenhum imóvel ficar sem cor no mapa
+        const dLng = 0.00007;
+        const dLat = 0.000065;
+        buildingFeatures.push({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[
+              [lng - dLng, lat - dLat],
+              [lng + dLng, lat - dLat],
+              [lng + dLng, lat + dLat],
+              [lng - dLng, lat + dLat],
+              [lng - dLng, lat - dLat],
+            ]],
+          },
+          properties: {
+            oid: 0,
+            h: 6.5,
+            clusterKey: cluster.key,
+            propId: firstProp.id,
+            unitCount: count,
+            isMulti: count > 1 ? 1 : 0,
+            isSelected: isClusterSelected,
+            isBairroMatch,
+            color: pinColor,
+            lng,
+            lat,
+            title: firstProp.title || 'Imóvel em Leilão',
+            address: cluster.address || '',
+            priceLabel,
+            roiLabel,
+          },
+        });
       }
 
       return {
@@ -621,8 +655,6 @@ export default function PropertyMap({
       }
     };
 
-    map.on('click', 'auctions-points-unmatched', handleAuctionFeatureClick);
-    map.on('click', 'auctions-points-overview', handleAuctionFeatureClick);
     map.on('click', 'auctions-multi-unit', handleAuctionFeatureClick);
     map.on('click', 'auctions-buildings-3d', handleAuctionFeatureClick);
 
@@ -632,19 +664,43 @@ export default function PropertyMap({
       const pinHits = map.queryRenderedFeatures(e.point, {
         layers: [
           'auctions-buildings-3d',
-          'auctions-points-unmatched',
-          'auctions-points-overview',
           'auctions-multi-unit',
           'auctions-clusters',
         ].filter((id) => Boolean(map.getLayer(id))),
       });
       if (pinHits.length > 0) return;
 
-      const feat = e.features?.[0];
+      const bbox10: [maplibregl.PointLike, maplibregl.PointLike] = [
+        [e.point.x - 10, e.point.y - 10],
+        [e.point.x + 10, e.point.y + 10],
+      ];
+      const candidateFeats = [
+        ...(e.features || []),
+        ...map.queryRenderedFeatures(bbox10, { layers: ['rio-edificacoes-3d'] }),
+      ];
+      const feat =
+        candidateFeats.find((f: any) => Number(f.properties?.m2 || 0) > 0 && f.properties?.a) ||
+        candidateFeats.find((f: any) => Number(f.properties?.m2 || 0) > 0) ||
+        e.features?.[0];
       if (!feat) return;
       const p = feat.properties || {};
       const clickLng = e.lngLat.lng;
       const clickLat = e.lngLat.lat;
+
+      let displayAddress = p.a || '';
+      if (!displayAddress) {
+        try {
+          const roadHits = map.queryRenderedFeatures([
+            [e.point.x - 65, e.point.y - 65],
+            [e.point.x + 65, e.point.y + 65],
+          ]);
+          const roadName = roadHits.find((rf: any) => {
+            const lid = String(rf.layer?.id || '').toLowerCase();
+            return (lid.includes('road') || lid.includes('transport') || lid.includes('highway') || lid.includes('street')) && rf.properties?.name;
+          })?.properties?.name;
+          if (roadName) displayAddress = `Edificação em ${roadName}`;
+        } catch {}
+      }
 
       // Find auctions within ~45m of the clicked building
       const nearby = filteredListRef.current.filter((a) => {
@@ -657,7 +713,7 @@ export default function PropertyMap({
 
       setSelectedBuildingInfo({
         id: Number(p.id) || undefined,
-        address: p.a || 'Edificação Cartográfica Oficial IPP',
+        address: displayAddress || 'Edificação Cartográfica Oficial IPP',
         bairro: p.b || 'Rio de Janeiro',
         altura: Number(p.h) || 5,
         m2: Number(p.m2) || 0,
@@ -719,10 +775,6 @@ export default function PropertyMap({
       }
     };
 
-    map.on('mouseenter', 'auctions-points-unmatched', showPinTooltip);
-    map.on('mouseleave', 'auctions-points-unmatched', hidePinTooltip);
-    map.on('mouseenter', 'auctions-points-overview', showPinTooltip);
-    map.on('mouseleave', 'auctions-points-overview', hidePinTooltip);
     map.on('mouseenter', 'auctions-multi-unit', showPinTooltip);
     map.on('mouseleave', 'auctions-multi-unit', hidePinTooltip);
     map.on('mouseenter', 'auctions-buildings-3d', showPinTooltip);
@@ -885,9 +937,9 @@ export default function PropertyMap({
           source: 'auctions-buildings-source',
           paint: {
             'fill-extrusion-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', ['get', 'color']],
-            'fill-extrusion-height': ['+', ['coalesce', ['get', 'h'], 8], 0.8],
+            'fill-extrusion-height': ['max', ['+', ['coalesce', ['get', 'h'], 7], 2.5], 6.5],
             'fill-extrusion-base': 0,
-            'fill-extrusion-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.96, 0.28],
+            'fill-extrusion-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.98, 0.28],
             'fill-extrusion-vertical-gradient': true,
           },
         },
@@ -899,10 +951,10 @@ export default function PropertyMap({
           id: 'auctions-buildings-outline',
           type: 'line',
           source: 'auctions-buildings-source',
-          filter: ['==', ['get', 'isSelected'], 1],
           paint: {
-            'line-color': '#fef08a',
-            'line-width': 3,
+            'line-color': ['case', ['==', ['get', 'isSelected'], 1], '#fef08a', '#f8fafc'],
+            'line-width': ['case', ['==', ['get', 'isSelected'], 1], 3.5, 1.3],
+            'line-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.92, 0.2],
           },
         },
         beforeSymbol
@@ -919,7 +971,7 @@ export default function PropertyMap({
         type: 'geojson',
         data: data as any,
         cluster: true,
-        clusterMaxZoom: 14,
+        clusterMaxZoom: 12.8,
         clusterRadius: 34,
       });
 
@@ -949,39 +1001,7 @@ export default function PropertyMap({
         paint: { 'text-color': '#ffffff' },
       });
 
-      // Pins for lots WITHOUT a 3D building polygon (e.g., empty land or Niterói/JF)
-      map.addLayer({
-        id: 'auctions-points-unmatched',
-        type: 'circle',
-        source: 'auctions-source',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'isMulti'], 0], ['==', ['get', 'hasBuilding'], 0]],
-        paint: {
-          'circle-color': ['get', 'color'],
-          'circle-radius': ['case', ['==', ['get', 'isSelected'], 1], 10, 6.5],
-          'circle-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.96, 0.25],
-          'circle-stroke-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 1, 0.25],
-          'circle-stroke-width': ['case', ['==', ['get', 'isSelected'], 1], 3, 1.8],
-          'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
-        },
-      });
-
-      // Overview dots ONLY when zoomed out (< 14.3); at building zoom, the 3D building itself is colored!
-      map.addLayer({
-        id: 'auctions-points-overview',
-        type: 'circle',
-        source: 'auctions-source',
-        maxzoom: 14.3,
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'isMulti'], 0], ['==', ['get', 'hasBuilding'], 1]],
-        paint: {
-          'circle-color': ['get', 'color'],
-          'circle-radius': ['case', ['==', ['get', 'isSelected'], 1], 9, 5.5],
-          'circle-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.96, 0.25],
-          'circle-stroke-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 1, 0.25],
-          'circle-stroke-width': ['case', ['==', ['get', 'isSelected'], 1], 2.5, 1.5],
-          'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
-        },
-      });
-
+      // Bolinha numerada SOMENTE quando houver mais de 1 leilão no mesmo endereço/prédio
       map.addLayer({
         id: 'auctions-multi-unit',
         type: 'circle',
@@ -1016,8 +1036,6 @@ export default function PropertyMap({
       'auctions-buildings-outline',
       'auctions-clusters',
       'auctions-cluster-count',
-      'auctions-points-unmatched',
-      'auctions-points-overview',
       'auctions-multi-unit',
       'auctions-multi-count',
     ]) {
@@ -1812,18 +1830,6 @@ export default function PropertyMap({
                               {auc.parkingSpaces ? ` • ${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : ''}
                             </span>
 
-                            <span
-                              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
-                                auc.riskLevel === 'Baixo'
-                                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                  : auc.riskLevel === 'Médio'
-                                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                              }`}
-                            >
-                              Risco {auc.riskLevel}
-                            </span>
-
                             {auc.isCommunityRisk && (
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/60 font-mono inline-flex items-center gap-1">
                                 ⛔ {auc.communityName ? `${auc.communityName}` : 'Comunidade'}{' '}
@@ -1914,7 +1920,7 @@ export default function PropertyMap({
                             <span className="text-[8px] text-amber-400/80 font-mono">ℹ️</span>
                           </div>
                           <span className="text-xs font-black text-amber-300 font-mono block mt-0.5">
-                            {auc.hasMicroBenchmark === false || (!auc.estimatedValue && !auc.itbiStreetAvgSqm) ? (
+                            {!auc.estimatedValue && !auc.itbiStreetAvgSqm ? (
                               <span className="text-amber-400/90 font-mono text-[10px]">Sem amostragem</span>
                             ) : auc.estimatedValue ? (
                               formatBRL(auc.estimatedValue)
@@ -1953,14 +1959,14 @@ export default function PropertyMap({
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">ROI Estimado</span>
                           <span
                             className={`text-xs font-black font-mono mt-0.5 ${
-                              auc.hasMicroBenchmark === false
+                              auc.calculatedRoi === undefined
                                 ? 'text-slate-400'
                                 : (auc.calculatedRoi || 0) > 40
                                   ? 'text-emerald-400'
                                   : 'text-indigo-400'
                             }`}
                           >
-                            {auc.hasMicroBenchmark === false || auc.calculatedRoi === undefined
+                            {auc.calculatedRoi === undefined
                               ? 'Sob consulta'
                               : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
                           </span>
@@ -2026,7 +2032,7 @@ export default function PropertyMap({
                             <span className="text-[8px] text-emerald-400/80 font-mono">ℹ️</span>
                           </div>
                           <span className="text-xs font-black text-emerald-300 font-mono block mt-0.5">
-                            {auc.hasMicroBenchmark === false || !auc.vendaBaixaPrice ? (
+                            {!auc.vendaBaixaPrice ? (
                               <span className="text-slate-400 font-mono text-[10px]">Sem amostragem</span>
                             ) : (
                               formatBRL(auc.vendaBaixaPrice)
@@ -2067,32 +2073,27 @@ export default function PropertyMap({
                                   ? `${formatBRL(auc.itbiUnitValueAvg)}/m²`
                                   : 'Sem dados'}
                         </span>
-                        {(auc.m2MercadoPortal || auc.streetPortalAvgSqm) && (
-                          <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-indigo-300 flex items-center gap-1">
-                            <span>🌐 {auc.fontePortal || 'Portais'}:</span>
-                            <span className="font-bold text-slate-100">
-                              {formatBRL(auc.m2MercadoPortal || auc.streetPortalAvgSqm || 0)}/m²
+                        {(() => {
+                          const portalSqm = Number((auc as any).moradaM2 || (auc as any).moradaVirtualM2 || auc.m2MercadoPortal || auc.streetPortalAvgSqm || 0);
+                          if (!(portalSqm > 0 && portalSqm <= 75000)) return null;
+                          return (
+                            <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-indigo-300 flex items-center gap-1">
+                              <span>🌐 Portais Imobiliários:</span>
+                              <span className="font-bold text-slate-100">
+                                {formatBRL(portalSqm)}/m²
+                              </span>
+                              {auc.valorSugeridoPortal ? (
+                                <span className="text-cyan-300">({formatBRL(auc.valorSugeridoPortal)})</span>
+                              ) : null}
                             </span>
-                            {auc.valorSugeridoPortal && (
-                              <span className="text-cyan-300">({formatBRL(auc.valorSugeridoPortal)})</span>
-                            )}
-                            <span className="text-[9px] text-slate-400">
-                              [{auc.isBairroPortalFallback ? 'Bairro' : 'Rua'}]
-                            </span>
-                          </span>
-                        )}
-                        <span
-                          className={`px-1.5 py-0.5 rounded border ${
-                            auc.occupied
-                              ? 'bg-amber-950/40 text-amber-300 border-amber-800/40'
-                              : 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
-                          }`}
-                        >
-                          ● {auc.occupied ? 'Ocupado' : 'Desocupado'}
+                          );
+                        })()}
+                        <span className="px-1.5 py-0.5 rounded border bg-slate-800/80 text-slate-300 border-slate-700">
+                          {auc.occupied ? 'Ocupado' : 'Desocupado'}
                         </span>
                       </div>
 
-                      <div className="pt-1 flex items-center gap-1.5">
+                      <div className="pt-1.5 flex flex-wrap items-center gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2162,7 +2163,7 @@ export default function PropertyMap({
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="pointer-events-auto w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden"
+                className="pointer-events-auto w-screen max-w-[96vw] lg:max-w-[94vw] xl:max-w-[92vw] bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col h-full overflow-hidden"
               >
                 <div className="bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center justify-between gap-3 shrink-0">
                   <div className="flex items-center gap-3">

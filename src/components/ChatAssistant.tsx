@@ -191,7 +191,6 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
                   </div>
                   <div>
                     <h3 className="font-bold text-xs">Chat do Investidor</h3>
-                    <span className="text-[9px] text-slate-400 font-medium">Powered by Gemini AI</span>
                   </div>
                 </div>
                 <button 

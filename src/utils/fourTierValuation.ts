@@ -95,10 +95,9 @@ export function computeFourTierValuation(input: {
   const calibratedWithoutLocal = input.allowContextOnly !== false && localSampleCount < minimumLocalSamples &&
     (input.surrounding?.count || 0) >= 5 && (input.neighborhood?.count || 0) >= 7;
 
-  // Solid local hierarchy (SSOT - NBR 14.653):
-  // 1. Condomínio/Prédio com >= 2 vendas: O prédio é a referência direta e soberana.
-  // 2. Condomínio com 1 venda e Rua com >= 5: Pondera prédio + rua sem contaminação externa.
-  // 3. Mesma Rua com >= 4 vendas (e sem vendas no prédio): A rua é a referência direta e soberana.
+  // Balizamento ponderado dos 4 níveis (Prédio 40%, Rua 35%, Entorno/Raio 15%, Bairro 10%):
+  // Sempre pondera todos os níveis oficiais disponíveis com transações válidas,
+  // descartando apenas o entorno caso o freio anti-outlier do raio seja acionado.
   const bldgCount = input.building?.count || 0;
   const streetCount = input.street?.count || 0;
   const neighborhoodValue = input.neighborhood?.value || 0;
@@ -113,18 +112,8 @@ export function computeFourTierValuation(input: {
   const isSurroundingOutlier = surroundingCount > 0 && refBenchmarkVal > 0 &&
     (surroundingValue > refBenchmarkVal * 1.35 || surroundingValue < refBenchmarkVal * 0.65 || (surroundingCount < 3 && surroundingValue > refBenchmarkVal * 1.25));
 
-  const hasSolidBuilding = bldgCount >= 2;
-  const hasBuildingAndSolidStreet = bldgCount >= 1 && streetCount >= 4;
-  const hasSolidStreet = streetCount >= 4 && bldgCount === 0;
-
   let activeTiers: ItbiWeightedComponent[];
-  if (hasSolidBuilding) {
-    activeTiers = tiers.filter(tier => tier.id === 'building');
-  } else if (hasBuildingAndSolidStreet) {
-    activeTiers = tiers.filter(tier => tier.id === 'building' || tier.id === 'street');
-  } else if (hasSolidStreet) {
-    activeTiers = tiers.filter(tier => tier.id === 'street');
-  } else if (calibratedWithoutLocal) {
+  if (calibratedWithoutLocal) {
     activeTiers = tiers.filter(tier => tier.id === 'surrounding' || tier.id === 'neighborhood');
   } else if (isSurroundingOutlier && (streetCount >= 2 || (input.neighborhood?.count || 0) >= 5)) {
     // Freio ativado: descarta o entorno discrepante e faz a média ponderada sobre os dados confiáveis (Prédio, Rua e Bairro)
@@ -147,10 +136,9 @@ export function computeFourTierValuation(input: {
     }
   }
 
-  // Trava de segurança da via: se a Mesma Rua tem amostragem confiável (>= 3 vendas),
-  // o valor ponderado final não pode descolar mais de 10% da média da própria rua
-  if (streetCount >= 3 && streetValue > 0 && finalValue > Math.round(streetValue * 1.10)) {
-    finalValue = Math.round(streetValue * 1.10);
+  // Trava de segurança da via: só limita em 10% sobre a rua quando não há transações no próprio prédio e o entorno/bairro não sustentam valor maior
+  if (bldgCount === 0 && surroundingCount < 3 && streetCount >= 3 && streetValue > 0 && finalValue > Math.round(streetValue * 1.15)) {
+    finalValue = Math.round(streetValue * 1.15);
   }
 
   const calibrated = priceable && (localSampleCount < 7);

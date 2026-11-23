@@ -17287,5 +17287,177 @@
       }
     ],
     "updatedAt": "2026-11-22T16:34:36.465Z"
+  },
+  "rj_rio de janeiro_lins de vasconcelos_lins de vasconcelos": {
+    "street": "RUA LINS DE VASCONCELOS",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/lins-de-vasconcelos/rua-lins-de-vasconcelos",
+    "canonicalTitle": "Rua Lins de Vasconcelos, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-23T01:34:12.172Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_aquiri": {
+    "street": "RUA AQUIRI",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ramos/rua-aquiri",
+    "canonicalTitle": "Rua Aquiri, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 256 mil. · Para alugar, apartamentos de ~55 m² ficam na faixa de R$ 1.100 a R$ 2.724. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 244 anúncios | na região, 50% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3662,
+        "sampleCount": 244,
+        "avgPrice": 256000,
+        "rawMeta": "na região, 50% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 256 mil. · Para alugar, apartamentos de ~55 m² ficam na faixa de R$ 1.100 a R$ 2.724. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 244 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:11:33.530Z"
+  },
+  "rj_rio de janeiro_piedade_monteiro vieira": {
+    "street": "RUA MONTEIRO VIEIRA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/piedade/rua-monteiro-vieira",
+    "canonicalTitle": "Rua Monteiro Vieira, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 215 mil. · Para alugar, apartamentos de ~44 m² ficam na faixa de R$ 901 a R$ 1.584. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 480 anúncios | na região, 58% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3083,
+        "sampleCount": 480,
+        "avgPrice": 215000,
+        "rawMeta": "na região, 58% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 215 mil. · Para alugar, apartamentos de ~44 m² ficam na faixa de R$ 901 a R$ 1.584. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 480 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:12:41.150Z"
+  },
+  "rj_rio de janeiro_rocha_marechal rondon": {
+    "street": "Avenida Marechal Rondon",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rocha/avenida-marechal-rondon",
+    "canonicalTitle": "Avenida Marechal Rondon, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 245 mil. · Para alugar, apartamentos de ~67 m² ficam na faixa de R$ 1.100 a R$ 3.823. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 249 anúncios | na região, 56% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3225,
+        "sampleCount": 249,
+        "avgPrice": 245000,
+        "rawMeta": "na região, 56% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 245 mil. · Para alugar, apartamentos de ~67 m² ficam na faixa de R$ 1.100 a R$ 3.823. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 249 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:13:43.297Z"
+  },
+  "rj_rio de janeiro_rocha_avn mal rondon": {
+    "street": "AVN MAL RONDON",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rocha/avenida-marechal-rondon",
+    "canonicalTitle": "Avenida Marechal Rondon, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 245 mil. · Para alugar, apartamentos de ~67 m² ficam na faixa de R$ 1.100 a R$ 3.823. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 249 anúncios | na região, 56% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 3225,
+        "sampleCount": 249,
+        "avgPrice": 245000,
+        "rawMeta": "na região, 56% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 245 mil. · Para alugar, apartamentos de ~67 m² ficam na faixa de R$ 1.100 a R$ 3.823. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 249 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:13:44.812Z"
+  },
+  "rj_rio de janeiro_vila valqueire_das dalias": {
+    "street": "RUA DAS DALIAS",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-valqueire/rua-das-dalias",
+    "canonicalTitle": "Rua das Dalias, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de casa aqui pede até R$ 750 mil. · Para alugar, apartamentos de ~85 m² ficam na faixa de R$ 1.176 a R$ 3.760. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.096 anúncios | na região, 40% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "CASA",
+        "m2": 4401,
+        "sampleCount": 1096,
+        "avgPrice": 750000,
+        "rawMeta": "na região, 40% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de casa aqui pede até R$ 750 mil. · Para alugar, apartamentos de ~85 m² ficam na faixa de R$ 1.176 a R$ 3.760. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.096 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:24:01.556Z"
+  },
+  "rj_rio de janeiro_vila isabel_visconde de santa isabel": {
+    "street": "RUA VISCONDE DE SANTA ISABEL",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-isabel/rua-visconde-de-santa-isabel",
+    "canonicalTitle": "Rua Visconde de Santa Isabel, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~91 m² ficam na faixa de R$ 1.506 a R$ 4.990. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.254 anúncios | na região, 33% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4928,
+        "sampleCount": 2254,
+        "avgPrice": 430000,
+        "rawMeta": "na região, 33% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~91 m² ficam na faixa de R$ 1.506 a R$ 4.990. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.254 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:25:56.504Z"
+  },
+  "rj_rio de janeiro_vila isabel_de visc santa isabel": {
+    "street": "RUA DE VISC SANTA ISABEL",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-isabel/rua-visconde-de-santa-isabel",
+    "canonicalTitle": "Rua Visconde de Santa Isabel, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~91 m² ficam na faixa de R$ 1.506 a R$ 4.990. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.254 anúncios | na região, 33% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4928,
+        "sampleCount": 2254,
+        "avgPrice": 430000,
+        "rawMeta": "na região, 33% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~91 m² ficam na faixa de R$ 1.506 a R$ 4.990. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.254 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:26:01.343Z"
+  },
+  "rj_rio de janeiro_recreio dos bandeirantes_alfredo balthazar da silveira": {
+    "street": "Avenida Alfredo Balthazar da Silveira",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/recreio-dos-bandeirantes/avenida-alfredo-balthazar-da-silveira",
+    "canonicalTitle": "Avenida Alfredo Balthazar da Silveira, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 890 mil. · Para alugar, apartamentos de ~120 m² ficam na faixa de R$ 2.900 a R$ 10.507. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 13.889 anúncios | na região. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7368,
+        "sampleCount": 13889,
+        "avgPrice": 890000,
+        "rawMeta": "na região. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 890 mil. · Para alugar, apartamentos de ~120 m² ficam na faixa de R$ 2.900 a R$ 10.507. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 13.889 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:29:08.369Z"
+  },
+  "rj_rio de janeiro_recreio dos bandeirantes_avn alfredo balthazar da silveira": {
+    "street": "AVN ALFREDO BALTHAZAR DA SILVEIRA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/recreio-dos-bandeirantes/avenida-alfredo-balthazar-da-silveira",
+    "canonicalTitle": "Avenida Alfredo Balthazar da Silveira, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 890 mil. · Para alugar, apartamentos de ~120 m² ficam na faixa de R$ 2.900 a R$ 10.507. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 13.889 anúncios | na região. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7368,
+        "sampleCount": 13889,
+        "avgPrice": 890000,
+        "rawMeta": "na região. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 890 mil. · Para alugar, apartamentos de ~120 m² ficam na faixa de R$ 2.900 a R$ 10.507. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 13.889 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T02:29:17.365Z"
   }
 }
