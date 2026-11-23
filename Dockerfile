@@ -18,5 +18,5 @@ RUN npm install --omit=dev --legacy-peer-deps --no-audit --no-fund --no-package-
 COPY . .
 EXPOSE 10000
 EXPOSE 3000
-CMD ["node", "--expose-gc", "--max-old-space-size=450", "dist/server.cjs"]
+CMD ["node", "--expose-gc", "--max-old-space-size=340", "dist/server.cjs"]
 

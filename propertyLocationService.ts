@@ -137,9 +137,8 @@ function resolveCachedNumber(p: Address): OfficialLocation | null {
   } catch { return null; }
 }
 export function getOfficialPropertyLocation(p: Address): OfficialLocation {
-  p = { ...p, address: locationAddress(p) };
   // For Rio de Janeiro, resolve first against the official IPP Prefeitura do Rio
-  // cartography (Trechos_Logradouros + Numero_de_porta + Edificacoes_2019).
+  // cartography before parsing multi-KB description lines via locationAddress().
   const ipp = resolveRioIppLocation({
     id: p.id,
     address: p.address,
@@ -169,6 +168,8 @@ export function getOfficialPropertyLocation(p: Address): OfficialLocation {
     };
     if (validOfficialLocation(ippResult)) return ippResult;
   }
+
+  p = p.address ? { ...p, address: locationAddress(p) } : p;
 
   refresh();
   const row = byAddress.get(propertyLocationKey(p));
@@ -321,7 +322,9 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
 // The source files stay local. New or changed addresses are matched in a worker;
 // the last complete result remains available until an atomic replacement succeeds.
 export function ensureOfficialLocationCoverage(properties: Address[]) {
-  if (refreshing) return;
+  if (refreshing || process.env.RENDER === 'true') return;
+  const cache = path.join(process.cwd(), '.cache', 'map-cnefe');
+  if (!fs.existsSync(path.join(cache, 'manifest.json'))) return;
   refresh();
   const hasMissingLocationRecord = properties.some(p => !byAddress.has(propertyLocationKey({ ...p, address: locationAddress(p) })));
   if (!hasMissingLocationRecord) {
@@ -331,8 +334,6 @@ export function ensureOfficialLocationCoverage(properties: Address[]) {
   const inputs = properties.map(p => ({ id:p.id, address:locationAddress(p), city:p.city || '', state:p.state || '', neighborhood:p.neighborhood || '' }));
   const fingerprint = createHash('sha256').update(JSON.stringify(inputs)).digest('hex');
   if (fingerprint === lastRefreshKey) return;
-  const cache = path.join(process.cwd(), '.cache', 'map-cnefe');
-  if (!fs.existsSync(path.join(cache, 'manifest.json'))) return;
   let config: { pythonExecutable?: string } = {};
   try { config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'map_sources_config.json'), 'utf8')); } catch {}
   const python = process.env.PYTHON_EXECUTABLE || config.pythonExecutable || 'python';
