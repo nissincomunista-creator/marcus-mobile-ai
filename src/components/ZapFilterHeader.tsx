@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Check, Search, X, ShieldAlert } from 'lucide-react';
+import {
+  ChevronDown,
+  Check,
+  Search,
+  X,
+  ShieldAlert,
+  MapPin,
+  Layers,
+  SlidersHorizontal,
+  RefreshCw,
+  ArrowUpDown,
+  Map as MapIcon,
+} from 'lucide-react';
 import { BRAZIL_STATES, VALID_ITBI_CITIES_BY_STATE } from '../types.ts';
 
 interface AuctioneerCountItem {
@@ -277,6 +289,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
               : pillIdle
           }`}
         >
+          <Layers className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
           <span className="max-w-[140px] truncate">{originLabel}</span>
           <ChevronDown
             className={`w-3.5 h-3.5 opacity-75 transition-transform ${openPopover === 'leiloes' ? 'rotate-180' : ''}`}
@@ -555,7 +568,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
               </div>
 
               <label className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 cursor-pointer text-xs text-slate-200 font-semibold">
-                <span>Aceita Financiamento</span>
+                <span className="flex items-center gap-2">
+                  <span>🏦</span>
+                  <span>Aceita Financiamento</span>
+                </span>
                 <input
                   type="checkbox"
                   checked={onlyFinancing}
@@ -565,7 +581,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
               </label>
 
               <label className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 cursor-pointer text-xs text-slate-200 font-semibold">
-                <span>Aceita Parcelamento</span>
+                <span className="flex items-center gap-2">
+                  <span>💳</span>
+                  <span>Aceita Parcelamento</span>
+                </span>
                 <input
                   type="checkbox"
                   checked={onlyInstallments}
@@ -575,7 +594,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
               </label>
 
               <label className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 cursor-pointer text-xs text-slate-200 font-semibold">
-                <span>Imóvel Desocupado</span>
+                <span className="flex items-center gap-2">
+                  <span>🔑</span>
+                  <span>Imóvel Desocupado</span>
+                </span>
                 <input
                   type="checkbox"
                   checked={onlyVacant}
@@ -726,6 +748,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
         onClick={onOpenAdvancedFilters}
         className={`${pillBase} ${activeAdvancedFiltersCount > 0 ? pillActive : pillIdle}`}
       >
+        <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
         <span>Filtros</span>
         {activeAdvancedFiltersCount > 0 && (
           <span className="px-1.5 py-0.2 rounded-full bg-indigo-500 text-white text-[10px] font-mono">
@@ -747,6 +770,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             : pillIdle
         }`}
       >
+        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
         <span className="max-w-[230px] truncate">{locationSummary}</span>
         <ChevronDown
           className={`w-3.5 h-3.5 opacity-75 transition-transform ${openPopover === 'location' ? 'rotate-180' : ''}`}
@@ -756,7 +780,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
       {openPopover === 'location' && (
         <div className="absolute left-0 top-full mt-2 w-[310px] sm:w-[350px] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-4 z-[60] space-y-3 animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-            <span className="text-xs font-bold text-white">Estado, Cidade e Bairros</span>
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-emerald-400" />
+              <span>Estado, Cidade e Bairros</span>
+            </span>
             <button
               type="button"
               onClick={() => setOpenPopover(null)}
@@ -1001,9 +1028,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             type="button"
             onClick={onSyncNow}
             disabled={isMining}
-            className="text-[11px] font-semibold text-slate-400 hover:text-white cursor-pointer transition-colors"
+            className="text-[11px] font-semibold text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
           >
-            {isMining ? 'Atualizando...' : 'Atualizar'}
+            <RefreshCw className={`w-3 h-3 ${isMining ? 'animate-spin text-amber-400' : 'text-emerald-400'}`} />
+            <span>{isMining ? 'Atualizando...' : 'Atualizar'}</span>
           </button>
         </div>
 
@@ -1014,9 +1042,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
               onResetFocusedMapProp();
               setViewMode('map');
             }}
-            className="px-3.5 py-1.5 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer transition-colors"
+            className="px-3.5 py-1.5 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            Abrir no Mapa
+            <MapIcon className="w-3.5 h-3.5 opacity-80" />
+            <span>Abrir no Mapa</span>
           </button>
 
           {/* ORDENAR POR */}
@@ -1026,6 +1055,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
               onClick={() => togglePopover('sort')}
               className="px-3.5 py-1.5 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
             >
+              <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
               <span>Ordenar por</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 opacity-75 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`}
@@ -1035,7 +1065,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             {openPopover === 'sort' && (
               <div className="absolute right-0 top-full mt-2 w-60 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3.5 z-[60] space-y-2 animate-in fade-in zoom-in-95 duration-150">
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
-                  <span className="text-xs font-bold text-white">Ordenar por</span>
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Ordenar por</span>
+                  </span>
                   <button
                     type="button"
                     onClick={() => setOpenPopover(null)}
@@ -1057,7 +1090,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                       temporalSortMode === 'neutral' ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
-                    <span>Padrão</span>
+                    <span>📈 Padrão</span>
                     {temporalSortMode === 'neutral' && <Check className="w-3.5 h-3.5 text-indigo-300" />}
                   </button>
                   <button
@@ -1070,7 +1103,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                       temporalSortMode === 'urgent' ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
-                    <span>{mode === 'portais' ? 'Mais Antigos' : 'Próximas Praças'}</span>
+                    <span>{mode === 'portais' ? '⏳ Mais Antigos' : '⏳ Próximas Praças'}</span>
                     {temporalSortMode === 'urgent' && <Check className="w-3.5 h-3.5 text-indigo-300" />}
                   </button>
                   <button
@@ -1083,7 +1116,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                       temporalSortMode === 'newest' ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
-                    <span>Inclusão Mais Recente</span>
+                    <span>✨ Inclusão Mais Recente</span>
                     {temporalSortMode === 'newest' && <Check className="w-3.5 h-3.5 text-indigo-300" />}
                   </button>
                 </div>
@@ -1092,16 +1125,16 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                   <div className="text-[10px] font-mono uppercase text-slate-400 font-bold">Estratégia</div>
                   {(mode === 'portais'
                     ? ([
-                        ['discount', 'Maior Desconto ITBI'],
-                        ['profit', 'Maior Lucro Flip'],
-                        ['lowestSqm', 'Menor Preço/m²'],
-                        ['under250k', 'Até R$ 250k'],
+                        ['discount', '🏷️ Maior Desconto ITBI'],
+                        ['profit', '💰 Maior Lucro Flip'],
+                        ['lowestSqm', '📐 Menor Preço/m²'],
+                        ['under250k', '💸 Até R$ 250k'],
                       ] as const)
                     : ([
-                        ['liquidity', 'Maior Liquidez'],
-                        ['roi', 'Maior ROI'],
-                        ['profit', 'Maior Lucro Real'],
-                        ['spread', 'Maior Spread/m²'],
+                        ['liquidity', '💧 Maior Liquidez'],
+                        ['roi', '📈 Maior ROI'],
+                        ['profit', '💰 Maior Lucro Real'],
+                        ['spread', '📐 Maior Spread/m²'],
                       ] as const)
                   ).map(([key, label]) => (
                     <label

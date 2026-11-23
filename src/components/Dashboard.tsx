@@ -1961,103 +1961,112 @@ export default function Dashboard({
                           : 'border-slate-800/35 hover:border-slate-700/60'
                       }`}
                     >
-                      {/* Foto em formato widescreen 16:9 estilo Zap Imóveis */}
-                      <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-t-2xl group/img">
-                        <PropertyThumbnail
-                          property={auc}
-                          size="cover"
-                          className="!w-full !h-full !rounded-none !border-0"
-                          onClick={() => setSelectedLightboxProperty(auc)}
-                        />
-                        <div className="absolute top-2 left-2.5 pointer-events-none">
-                          <span className="text-white text-[11px] font-extrabold tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]">
-                            {auc.origin === 'portal'
-                              ? (auc.portalName || 'Portal')
-                              : auc.origin === 'judicial'
-                                ? 'Leilão Judicial'
-                                : auc.origin === 'caixa'
-                                  ? 'Imóveis Caixa'
+                      {/* Foto em formato widescreen 16:9 arredondado estilo Zap Imóveis */}
+                      <div className="p-2.5 pb-0">
+                        <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-2xl group/img">
+                          <PropertyThumbnail
+                            property={auc}
+                            size="cover"
+                            className="!w-full !h-full !rounded-2xl !border-0"
+                            onClick={() => setSelectedLightboxProperty(auc)}
+                          />
+                          <div className="absolute top-2 left-2.5 pointer-events-none">
+                            {auc.origin === 'caixa' ? (
+                              <span className="inline-block bg-white/90 text-blue-700 text-[10.5px] font-bold px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-xs">
+                                Imóveis Caixa
+                              </span>
+                            ) : auc.origin === 'judicial' ? (
+                              <span className="inline-block bg-white/90 text-purple-700 text-[10.5px] font-bold px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-xs">
+                                Leilão Judicial
+                              </span>
+                            ) : (
+                              <span className="text-white text-[11px] font-extrabold tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]">
+                                {auc.origin === 'portal'
+                                  ? (auc.portalName || 'Portal')
                                   : (auc.auctioneerName || auc.leiloeiro || 'Leilão Extrajudicial')}
-                          </span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="p-3 space-y-2">
-                        {/* Linha logo abaixo da foto: descrição livre + modalidade (esq) e Salvar alinhado à direita */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0 space-y-1">
-                            {auc.transactionType === 'aluguel' ? (
-                              <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
-                                <div className="font-bold uppercase tracking-wide text-white">
-                                  {auc.vereditoLocacao === 'barato'
-                                    ? `Aluguel Abaixo da Média (-${Math.abs(auc.aluguelDiferencaPct || 0)}%)`
-                                    : auc.vereditoLocacao === 'caro'
-                                      ? `Aluguel Acima da Média (+${auc.aluguelDiferencaPct || 0}%)`
-                                      : 'Preço Justo de Locação'}
-                                </div>
-                                <div className="text-slate-400 font-mono">
-                                  Valor estimado: <strong className="text-white">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500)))}</strong>
-                                </div>
-                              </div>
-                            ) : auc.origin === 'portal' && (() => {
-                              const valEst = (auc.estimatedValue && auc.estimatedValue > 0) ? auc.estimatedValue : (flipPrice > 0 ? Math.round(flipPrice / 0.90) : (auc.valorMercadoEstimado || 0));
-                              const preco = auc.precoAnunciado || auc.auctionPrice || 0;
-                              const diff = valEst - preco;
-                              const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : 0;
-                              return pct >= 15 || (auc.oportunidadeAbaixoMercado && pct > 0);
-                            })() ? (() => {
-                              const valEst = (auc.estimatedValue && auc.estimatedValue > 0) ? auc.estimatedValue : (flipPrice > 0 ? Math.round(flipPrice / 0.90) : (auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 3600))));
-                              const preco = auc.precoAnunciado || auc.auctionPrice || 0;
-                              const diff = valEst - preco;
-                              const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : (auc.descontoMercadoPct || 0);
-                              return (
-                                <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
-                                  <div className="font-bold uppercase tracking-wide text-slate-200">
-                                    Abaixo do Valor de Mercado (-{pct}%)
-                                  </div>
-                                  <div className="text-slate-400 font-mono">
-                                    Valor Estimado: <strong className="text-white">{formatBRL(valEst)}</strong>
-                                  </div>
-                                </div>
-                              );
-                            })() : null}
-
-                            <div className="text-xs text-slate-300 leading-snug">
-                              <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'}>
-                                {[
-                                  auc.propertyType,
-                                  auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada',
-                                  auc.bedrooms ? `${auc.bedrooms} quarto${auc.bedrooms > 1 ? 's' : ''}` : '',
-                                  auc.parkingSpaces ? `${auc.parkingSpaces} vaga${auc.parkingSpaces > 1 ? 's' : ''}` : '',
-                                ].filter(Boolean).join(', ')}
-                              </span>
-                              {auc.origin !== 'portal' && (() => {
-                                const badge = getSaleModeBadge(auc);
-                                return badge?.label ? (
-                                  <span className="ml-1.5 italic font-semibold text-slate-200">
-                                    — {badge.label}
-                                  </span>
-                                ) : null;
-                              })()}
-                            </div>
+                      <div className="px-3 pt-2 pb-3 space-y-2">
+                        {/* Linha imediatamente abaixo da foto: descrição (esq) | modalidade sem hífen + Salvar (dir) */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div
+                            className="text-xs text-slate-300 leading-snug truncate min-w-0 flex-1"
+                            title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'}
+                          >
+                            {[
+                              auc.propertyType,
+                              auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada',
+                              auc.bedrooms ? `${auc.bedrooms} quarto${auc.bedrooms > 1 ? 's' : ''}` : '',
+                              auc.parkingSpaces ? `${auc.parkingSpaces} vaga${auc.parkingSpaces > 1 ? 's' : ''}` : '',
+                            ].filter(Boolean).join(', ')}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onUpdateProperty({ id: auc.id, saved: !auc.saved });
-                            }}
-                            className={`p-1.5 rounded-full transition-colors cursor-pointer shrink-0 ${
-                              auc.saved
-                                ? 'text-indigo-300 bg-indigo-500/15'
-                                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                            }`}
-                            title={auc.saved ? 'Remover dos salvos' : 'Salvar oportunidade no perfil'}
-                          >
-                            <Bookmark className={`w-4 h-4 ${auc.saved ? 'fill-current' : ''}`} />
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {auc.origin !== 'portal' && (() => {
+                              const badge = getSaleModeBadge(auc);
+                              return badge?.label ? (
+                                <span className="text-[11px] italic font-semibold text-slate-200 whitespace-nowrap">
+                                  {badge.label}
+                                </span>
+                              ) : null;
+                            })()}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateProperty({ id: auc.id, saved: !auc.saved });
+                              }}
+                              className={`p-1 rounded-full transition-colors cursor-pointer shrink-0 ${
+                                auc.saved
+                                  ? 'text-indigo-300 bg-indigo-500/15'
+                                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                              }`}
+                              title={auc.saved ? 'Remover dos salvos' : 'Salvar oportunidade no perfil'}
+                            >
+                              <Bookmark className={`w-4 h-4 ${auc.saved ? 'fill-current' : ''}`} />
+                            </button>
+                          </div>
                         </div>
+
+                        {auc.transactionType === 'aluguel' ? (
+                          <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
+                            <div className="font-bold uppercase tracking-wide text-white">
+                              {auc.vereditoLocacao === 'barato'
+                                ? `Aluguel Abaixo da Média (-${Math.abs(auc.aluguelDiferencaPct || 0)}%)`
+                                : auc.vereditoLocacao === 'caro'
+                                  ? `Aluguel Acima da Média (+${auc.aluguelDiferencaPct || 0}%)`
+                                  : 'Preço Justo de Locação'}
+                            </div>
+                            <div className="text-slate-400 font-mono">
+                              Valor estimado: <strong className="text-white">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500)))}</strong>
+                            </div>
+                          </div>
+                        ) : auc.origin === 'portal' && (() => {
+                          const valEst = (auc.estimatedValue && auc.estimatedValue > 0) ? auc.estimatedValue : (flipPrice > 0 ? Math.round(flipPrice / 0.90) : (auc.valorMercadoEstimado || 0));
+                          const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+                          const diff = valEst - preco;
+                          const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : 0;
+                          return pct >= 15 || (auc.oportunidadeAbaixoMercado && pct > 0);
+                        })() ? (() => {
+                          const valEst = (auc.estimatedValue && auc.estimatedValue > 0) ? auc.estimatedValue : (flipPrice > 0 ? Math.round(flipPrice / 0.90) : (auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 3600))));
+                          const preco = auc.precoAnunciado || auc.auctionPrice || 0;
+                          const diff = valEst - preco;
+                          const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : (auc.descontoMercadoPct || 0);
+                          return (
+                            <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
+                              <div className="font-bold uppercase tracking-wide text-slate-200">
+                                Abaixo do Valor de Mercado (-{pct}%)
+                              </div>
+                              <div className="text-slate-400 font-mono">
+                                Valor Estimado: <strong className="text-white">{formatBRL(valEst)}</strong>
+                              </div>
+                            </div>
+                          );
+                        })() : null}
 
                         {/* Título e Endereço (sem ícone antes do endereço) */}
                         <div className="space-y-0.5">
@@ -2354,8 +2363,19 @@ export default function Dashboard({
                         </div>
                       </div>
 
-                      {/* Footer empilhado centralizado (Simular em cima, Acessar Leilão embaixo) */}
+                      {/* Footer empilhado centralizado (Acessar Leilão em cima, Simular Viabilidade embaixo) */}
                       <div className="px-3 pb-3 pt-1 space-y-1.5">
+                        {auc.auctionLink && (
+                          <a
+                            href={auc.auctionLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2 px-3 text-xs font-semibold text-slate-200 hover:text-white bg-transparent hover:bg-slate-800/70 rounded-xl transition-colors border border-slate-800 flex items-center justify-center text-center"
+                          >
+                            <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
+                          </a>
+                        )}
+
                         <button
                           onClick={() => setSimulatingAuction(auc)}
                           className={`w-full py-2.5 px-3 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-[0.99] ${
@@ -2370,17 +2390,6 @@ export default function Dashboard({
                             {auc.transactionType === 'aluguel' ? 'Simular Locação' : auc.origin === 'portal' ? 'Simular Flip' : 'Simular Viabilidade'}
                           </span>
                         </button>
-
-                        {auc.auctionLink && (
-                          <a
-                            href={auc.auctionLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2 px-3 text-xs font-semibold text-slate-200 hover:text-white bg-transparent hover:bg-slate-800/70 rounded-xl transition-colors border border-slate-800 flex items-center justify-center text-center"
-                          >
-                            <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
-                          </a>
-                        )}
                       </div>
                     </motion.div>
                   );

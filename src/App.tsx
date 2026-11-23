@@ -932,14 +932,15 @@ export default function App() {
                     setActiveTab('portais');
                     setSelectedAuctionId(null);
                   }}
-                  className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
                     activeTab === 'portais'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-400 shadow-orange-950/50 ring-2 ring-amber-400/40'
                       : 'bg-gradient-to-r from-amber-950/50 to-orange-950/50 text-amber-300 border-amber-600/40 hover:from-amber-900/70 hover:to-orange-900/70 hover:text-white'
                   }`}
                 >
+                  <span className="text-xs">🔥</span>
                   <span>Flip House</span>
-                  <span className="text-[10px] bg-black/30 text-white font-mono px-1.5 py-0.2 rounded-full">
+                  <span className="text-[10px] bg-black/40 text-amber-200 font-mono px-1.5 py-0.2 rounded-full border border-amber-400/30">
                     {auctions.filter(a => a.origin === 'portal').length}
                   </span>
                 </button>
