@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { AuctionProperty } from '../types.ts';
 import {
   MapPin, Compass, ExternalLink, X, ShieldAlert, Building2,
-  Sparkles, ChevronRight, ListFilter, Box, Layers, Eye, EyeOff
+  Sparkles, ChevronRight, ChevronLeft, ListFilter, Box, Eye, EyeOff
 } from 'lucide-react';
 import { getPropertyCoordinates } from '../utils/geoCoords.ts';
 import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
@@ -15,7 +15,6 @@ import { assessDataQuality } from '../utils/dataQuality.ts';
 import {
   OPENFREEMAP_DARK_STYLE,
   RioBuildingMetric,
-  buildSatelliteStyle,
   ensureMapLibrePMTilesProtocol,
   getBuildingColorExpression,
   getTypologyColor,
@@ -23,6 +22,62 @@ import {
   toLngLat,
   upsertRio3DBuildingsLayer,
 } from '../utils/mapLibreSetup.ts';
+
+function normalizeBairroKey(raw?: string): string {
+  return String(raw || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatBairroTitle(raw?: string): string {
+  const clean = String(raw || '').trim();
+  if (!clean) return '';
+  return clean
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => (['de', 'da', 'do', 'dos', 'das', 'e'].includes(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ');
+}
+
+function buildExpandedHullPolygon(lngLatPoints: [number, number][]): [number, number][][] | null {
+  if (!lngLatPoints.length) return null;
+  let cx = 0;
+  let cy = 0;
+  for (const [x, y] of lngLatPoints) {
+    cx += x;
+    cy += y;
+  }
+  cx /= lngLatPoints.length;
+  cy /= lngLatPoints.length;
+
+  // Pad each point slightly outward (~120m) so even 1-2 points form a clean visible area
+  const pad = 0.0014;
+  const pts: [number, number][] = [];
+  for (const [x, y] of lngLatPoints) {
+    pts.push([x - pad, y - pad], [x + pad, y - pad], [x + pad, y + pad], [x - pad, y + pad]);
+  }
+  pts.sort((a, b) => (a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: [number, number][] = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: [number, number][] = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  const hull = [...lower.slice(0, -1), ...upper.slice(0, -1)];
+  if (hull.length < 3) return null;
+  hull.push(hull[0]);
+  return [hull];
+}
 
 interface PropertyMapProps {
   auctions: AuctionProperty[];
@@ -117,7 +172,6 @@ export default function PropertyMap({
   onClose,
 }: PropertyMapProps) {
   const [selectedPropId, setSelectedPropId] = useState<string>(initialSelectedPropertyId || '');
-  const [mapMode, setMapMode] = useState<'satellite' | 'roadmap'>('roadmap');
   const [activeMetric, setActiveMetric] = useState<RioBuildingMetric>('auctions');
   const [auctionBuildingsByOid, setAuctionBuildingsByOid] = useState<Record<number, any>>({});
   const [is3DMode, setIs3DMode] = useState<boolean>(true);
@@ -125,6 +179,14 @@ export default function PropertyMap({
   const [legendCollapsed, setLegendCollapsed] = useState<boolean>(false);
   const [stateFilter, setStateFilter] = useState<string>('');
   const [selectedTypologyFilter, setSelectedTypologyFilter] = useState<string | null>(null);
+  const [selectedBairroKey, setSelectedBairroKey] = useState<string>('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [viewportBounds, setViewportBounds] = useState<{
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  } | null>(null);
   const [showFactionsLayer, setShowFactionsLayer] = useState<boolean>(false);
   const [simulatingProperty, setSimulatingProperty] = useState<AuctionProperty | null>(null);
   const [activeTab, setActiveTab] = useState<'both' | 'map' | 'list'>(() =>
@@ -203,21 +265,79 @@ export default function PropertyMap({
   const filteredListRef = useRef(filteredList);
   filteredListRef.current = filteredList;
 
+  const getPropertyBairroKey = useCallback(
+    (a: AuctionProperty) =>
+      normalizeBairroKey(a.neighborhood || locationRecords[a.id]?.matchedLocality || ''),
+    [locationRecords]
+  );
+
+  const neighborhoodOptions = useMemo(() => {
+    const counts = new Map<string, { key: string; label: string; count: number }>();
+    for (const a of filteredList) {
+      if (!getMapCoordinates(a)) continue;
+      const raw = a.neighborhood || locationRecords[a.id]?.matchedLocality || '';
+      const key = normalizeBairroKey(raw);
+      if (!key) continue;
+      const existing = counts.get(key);
+      if (existing) existing.count += 1;
+      else counts.set(key, { key, label: formatBairroTitle(raw), count: 1 });
+    }
+    return Array.from(counts.values()).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'pt-BR'));
+  }, [filteredList, getMapCoordinates, locationRecords]);
+
   const orderedList = useMemo(() => {
-    const sorted = [...filteredList].sort((a, b) => (b.calculatedRoi || 0) - (a.calculatedRoi || 0));
+    const scoped = filteredList.filter((a) => {
+      const c = getMapCoordinates(a);
+      if (!c) return false;
+      if (selectedBairroKey) {
+        return getPropertyBairroKey(a) === selectedBairroKey;
+      }
+      if (!viewportBounds) return true;
+      return (
+        c[0] >= viewportBounds.minLat &&
+        c[0] <= viewportBounds.maxLat &&
+        c[1] >= viewportBounds.minLng &&
+        c[1] <= viewportBounds.maxLng
+      );
+    });
+    const sorted = scoped.sort((a, b) => (b.calculatedRoi || 0) - (a.calculatedRoi || 0));
     if (selectedPropId) {
-      const sel = filteredList.find((p) => p.id === selectedPropId);
+      const sel = sorted.find((p) => p.id === selectedPropId);
       if (sel) {
         return [sel, ...sorted.filter((p) => p.id !== selectedPropId)];
       }
     }
     return sorted;
-  }, [filteredList, selectedPropId]);
+  }, [filteredList, selectedPropId, selectedBairroKey, viewportBounds, getMapCoordinates, getPropertyBairroKey]);
+
+  const selectedBairroHullGeoJson = useMemo(() => {
+    if (!selectedBairroKey) {
+      return { type: 'FeatureCollection' as const, features: [] };
+    }
+    const pts: [number, number][] = [];
+    for (const a of filteredList) {
+      if (getPropertyBairroKey(a) !== selectedBairroKey) continue;
+      const c = getMapCoordinates(a);
+      if (c) pts.push(toLngLat(c));
+    }
+    const ring = buildExpandedHullPolygon(pts);
+    if (!ring) return { type: 'FeatureCollection' as const, features: [] };
+    return {
+      type: 'FeatureCollection' as const,
+      features: [
+        {
+          type: 'Feature' as const,
+          geometry: { type: 'Polygon' as const, coordinates: ring },
+          properties: { bairro: selectedBairroKey },
+        },
+      ],
+    };
+  }, [selectedBairroKey, filteredList, getMapCoordinates, getPropertyBairroKey]);
 
   const displayedList = orderedList.slice(0, visibleCardCount);
   useEffect(() => {
     setVisibleCardCount(100);
-  }, [stateFilter, selectedTypologyFilter]);
+  }, [stateFilter, selectedTypologyFilter, selectedBairroKey]);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
@@ -276,6 +396,7 @@ export default function PropertyMap({
       const firstProp = cluster.properties[0];
       const pinColor = getTypologyColor(firstProp.propertyType);
       const isClusterSelected = cluster.properties.some((p) => p.id === selectedPropId) ? 1 : 0;
+      const isBairroMatch = !selectedBairroKey || cluster.properties.some((p) => getPropertyBairroKey(p) === selectedBairroKey) ? 1 : 0;
 
       // Resolve linked official IPP 3D building polygon if available
       let matchedBuildingFeat: any = null;
@@ -314,6 +435,7 @@ export default function PropertyMap({
               unitCount: count,
               isMulti: count > 1 ? 1 : 0,
               isSelected: isClusterSelected,
+              isBairroMatch,
               color: pinColor,
               lng,
               lat,
@@ -339,6 +461,7 @@ export default function PropertyMap({
           isMulti: count > 1 ? 1 : 0,
           hasBuilding: matchedBuildingFeat ? 1 : 0,
           isSelected: isClusterSelected,
+          isBairroMatch,
           color: pinColor,
           title: firstProp.title || 'Imóvel em Leilão',
           address: cluster.address || '',
@@ -354,7 +477,7 @@ export default function PropertyMap({
       buildingClusterByKey: clusterMap,
       propById: byId,
     };
-  }, [filteredList, selectedPropId, getMapCoordinates, locationRecords, auctionBuildingsByOid]);
+  }, [filteredList, selectedPropId, selectedBairroKey, getMapCoordinates, getPropertyBairroKey, locationRecords, auctionBuildingsByOid]);
 
   const auctionGeoJsonRef = useRef(auctionGeoJson);
   auctionGeoJsonRef.current = auctionGeoJson;
@@ -364,6 +487,8 @@ export default function PropertyMap({
   buildingClusterByKeyRef.current = buildingClusterByKey;
   const propByIdRef = useRef(propById);
   propByIdRef.current = propById;
+  const selectedBairroHullGeoJsonRef = useRef(selectedBairroHullGeoJson);
+  selectedBairroHullGeoJsonRef.current = selectedBairroHullGeoJson;
 
   const updateViewportCounter = useCallback(() => {
     const map = mapRef.current;
@@ -373,6 +498,18 @@ export default function PropertyMap({
     const maxLng = bounds.getEast();
     const minLat = bounds.getSouth();
     const maxLat = bounds.getNorth();
+    setViewportBounds((prev) => {
+      if (
+        prev &&
+        Math.abs(prev.minLat - minLat) < 1e-6 &&
+        Math.abs(prev.maxLat - maxLat) < 1e-6 &&
+        Math.abs(prev.minLng - minLng) < 1e-6 &&
+        Math.abs(prev.maxLng - maxLng) < 1e-6
+      ) {
+        return prev;
+      }
+      return { minLat, maxLat, minLng, maxLng };
+    });
     const inView = filteredListRef.current.filter((a) => {
       const c = getMapCoordinatesRef.current(a);
       return c && c[0] >= minLat && c[0] <= maxLat && c[1] >= minLng && c[1] <= maxLng;
@@ -404,7 +541,7 @@ export default function PropertyMap({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: mapMode === 'satellite' ? buildSatelliteStyle() : OPENFREEMAP_DARK_STYLE,
+      style: OPENFREEMAP_DARK_STYLE,
       center: initialCenter,
       zoom: initialZoom,
       pitch: is3DMode ? 48 : 0,
@@ -633,22 +770,30 @@ export default function PropertyMap({
 
   useEffect(() => {
     if (mapRef.current) {
-      setTimeout(() => mapRef.current?.resize(), 150);
+      setTimeout(() => {
+        mapRef.current?.resize();
+        updateViewportCounter();
+      }, 220);
     }
-  }, [activeTab]);
+  }, [activeTab, isSidebarCollapsed, updateViewportCounter]);
 
-  const prevMapModeRef = useRef(mapMode);
   const prevIs3DRef = useRef(is3DMode);
 
-  // Switch between OpenFreeMap Dark vector & Satellite
+  // Focus & fit bounds when user picks a specific Bairro
   useEffect(() => {
-    if (prevMapModeRef.current === mapMode) return;
-    prevMapModeRef.current = mapMode;
     const map = mapRef.current;
-    if (!map) return;
-    styleReadyRef.current = false;
-    map.setStyle(mapMode === 'satellite' ? buildSatelliteStyle() : OPENFREEMAP_DARK_STYLE);
-  }, [mapMode]);
+    if (!map || !selectedBairroKey) return;
+    const pts: [number, number][] = [];
+    for (const a of filteredListRef.current) {
+      if (getPropertyBairroKey(a) !== selectedBairroKey) continue;
+      const c = getMapCoordinatesRef.current(a);
+      if (c) pts.push(toLngLat(c));
+    }
+    if (!pts.length) return;
+    const bounds = new maplibregl.LngLatBounds();
+    for (const pt of pts) bounds.extend(pt);
+    map.fitBounds(bounds, { padding: 80, maxZoom: 16.2, duration: 600 });
+  }, [selectedBairroKey, getPropertyBairroKey]);
 
   // Update 3D tilt/pitch seamlessly
   useEffect(() => {
@@ -682,6 +827,45 @@ export default function PropertyMap({
 
     upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88 });
 
+    // Bairro highlight overlay (glow perimeter polygon around selected bairro lots)
+    const hullData = selectedBairroHullGeoJsonRef.current;
+    const existingHullSrc = map.getSource('selected-bairro-hull-source') as maplibregl.GeoJSONSource | undefined;
+    const beforeSymbolLayer = map.getStyle()?.layers?.find((l) => l.type === 'symbol')?.id;
+    if (existingHullSrc) {
+      existingHullSrc.setData(hullData as any);
+    } else {
+      map.addSource('selected-bairro-hull-source', {
+        type: 'geojson',
+        data: hullData as any,
+      });
+      map.addLayer(
+        {
+          id: 'selected-bairro-hull-fill',
+          type: 'fill',
+          source: 'selected-bairro-hull-source',
+          paint: {
+            'fill-color': '#38bdf8',
+            'fill-opacity': 0.14,
+          },
+        },
+        beforeSymbolLayer
+      );
+      map.addLayer(
+        {
+          id: 'selected-bairro-hull-outline',
+          type: 'line',
+          source: 'selected-bairro-hull-source',
+          paint: {
+            'line-color': '#38bdf8',
+            'line-width': 2.5,
+            'line-dasharray': [3, 2],
+            'line-opacity': 0.9,
+          },
+        },
+        beforeSymbolLayer
+      );
+    }
+
     const bldData = auctionBuildingsGeoJsonRef.current;
     const beforeSymbol = map.getStyle()?.layers?.find((l) => l.type === 'symbol')?.id;
     const existingBldSrc = map.getSource('auctions-buildings-source') as maplibregl.GeoJSONSource | undefined;
@@ -703,7 +887,7 @@ export default function PropertyMap({
             'fill-extrusion-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', ['get', 'color']],
             'fill-extrusion-height': ['+', ['coalesce', ['get', 'h'], 8], 0.8],
             'fill-extrusion-base': 0,
-            'fill-extrusion-opacity': 0.96,
+            'fill-extrusion-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.96, 0.28],
             'fill-extrusion-vertical-gradient': true,
           },
         },
@@ -774,6 +958,8 @@ export default function PropertyMap({
         paint: {
           'circle-color': ['get', 'color'],
           'circle-radius': ['case', ['==', ['get', 'isSelected'], 1], 10, 6.5],
+          'circle-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.96, 0.25],
+          'circle-stroke-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 1, 0.25],
           'circle-stroke-width': ['case', ['==', ['get', 'isSelected'], 1], 3, 1.8],
           'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
         },
@@ -789,6 +975,8 @@ export default function PropertyMap({
         paint: {
           'circle-color': ['get', 'color'],
           'circle-radius': ['case', ['==', ['get', 'isSelected'], 1], 9, 5.5],
+          'circle-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.96, 0.25],
+          'circle-stroke-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 1, 0.25],
           'circle-stroke-width': ['case', ['==', ['get', 'isSelected'], 1], 2.5, 1.5],
           'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
         },
@@ -804,7 +992,8 @@ export default function PropertyMap({
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 9],
           'circle-stroke-width': 2.5,
           'circle-stroke-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', '#ffffff'],
-          'circle-opacity': 0.92,
+          'circle-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.94, 0.25],
+          'circle-stroke-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 1, 0.25],
         },
       });
 
@@ -836,7 +1025,7 @@ export default function PropertyMap({
     }
 
     updateViewportCounter();
-  }, [auctionGeoJson, auctionBuildingsGeoJson, styleVersion, showAuctionsLayer, updateViewportCounter]);
+  }, [auctionGeoJson, auctionBuildingsGeoJson, selectedBairroHullGeoJson, styleVersion, showAuctionsLayer, updateViewportCounter]);
 
   // Factions overlay inside MapLibre
   useEffect(() => {
@@ -1042,7 +1231,7 @@ export default function PropertyMap({
   const currentLegend = METRIC_LEGENDS[activeMetric];
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[88vh] sm:h-[90vh] lg:h-[92vh] relative w-full">
+    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose ? 'h-full' : 'h-[calc(100vh-5rem)] rounded-2xl border border-slate-800'}`}>
       <div className="bg-slate-950/95 border-b border-slate-800 px-4 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 z-10">
         <div className="flex items-center space-x-2.5">
           <div className="p-1.5 sm:p-2 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
@@ -1050,7 +1239,7 @@ export default function PropertyMap({
           </div>
           <div>
             <h2 className="font-black text-white text-sm sm:text-base tracking-tight flex items-center gap-2 flex-wrap">
-              <span>Mapa Georreferenciado 3D & ITBI Rio</span>
+              <span>Mapa Georreferenciado</span>
               <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40">
                 {filteredList.length} Lotes {inViewportCount > 0 ? `• ${inViewportCount} no Enquadramento` : ''}
               </span>
@@ -1071,7 +1260,7 @@ export default function PropertyMap({
                 ? 'Carregando endereços dos imóveis de leilão…'
                 : locationError
                   ? 'Não foi possível carregar os endereços confirmados. Reabra o mapa para tentar novamente.'
-                  : `${locatedCount} de ${auctions.length} lotes confirmados no mapa vetorial IPP 3D (OpenFreeMap Dark + Edificações 2019).`}
+                  : `${locatedCount} de ${auctions.length} lotes confirmados no mapa`}
             </p>
           </div>
         </div>
@@ -1092,7 +1281,7 @@ export default function PropertyMap({
                 activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-400'
               }`}
             >
-              Fichas ({displayedList.length})
+              Fichas ({orderedList.length})
             </button>
           </div>
 
@@ -1107,27 +1296,8 @@ export default function PropertyMap({
             title="Alternar extrusão 3D pelas alturas oficiais (IPP ALTURA)"
           >
             <Box className="w-3.5 h-3.5" />
-            <span>{is3DMode ? '3D ON' : '2D'}</span>
+            <span>{is3DMode ? '3D ON' : '3D OFF'}</span>
           </button>
-
-          <div className="flex items-center bg-slate-900 p-0.5 sm:p-1 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setMapMode('roadmap')}
-              className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold font-mono transition-colors cursor-pointer ${
-                mapMode === 'roadmap' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Escuro 3D
-            </button>
-            <button
-              onClick={() => setMapMode('satellite')}
-              className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold font-mono transition-colors cursor-pointer ${
-                mapMode === 'satellite' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Satélite
-            </button>
-          </div>
 
           {onClose && (
             <button
@@ -1231,10 +1401,29 @@ export default function PropertyMap({
       <div className="relative flex-1 w-full h-full flex flex-col lg:flex-row overflow-hidden">
         <div
           className={`relative h-full transition-all duration-200 ${
-            activeTab === 'list' ? 'hidden' : activeTab === 'map' ? 'w-full' : 'w-full lg:w-8/12 xl:w-[72%]'
+            activeTab === 'list'
+              ? 'hidden'
+              : activeTab === 'map' || isSidebarCollapsed
+                ? 'w-full'
+                : 'w-full lg:flex-1'
           }`}
         >
           <div ref={mapContainerRef} className="w-full h-full z-0 bg-slate-950" />
+
+          {isSidebarCollapsed && (
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="hidden lg:flex items-center gap-1.5 absolute top-3 right-12 z-20 px-3 py-2 rounded-xl bg-slate-950/95 hover:bg-slate-900 text-slate-100 border border-slate-700 shadow-2xl backdrop-blur-md text-xs font-bold cursor-pointer transition-all"
+              title="Expandir painel lateral de imóveis"
+            >
+              <ChevronLeft className="w-4 h-4 text-sky-400" />
+              <span>{selectedBairroKey ? formatBairroTitle(selectedBairroKey) : 'Imóveis'}</span>
+              <span className="font-mono text-[10px] bg-sky-950 text-sky-300 px-1.5 py-0.5 rounded border border-sky-700/60">
+                {orderedList.length}
+              </span>
+            </button>
+          )}
 
           {/* Legenda Interativa Inferior Esquerda (Métricas MapaImóveisRio + Toggle Lotes) */}
           <div className="absolute bottom-3 left-3 z-20 bg-slate-950/95 border border-slate-800 backdrop-blur-xl rounded-2xl shadow-2xl p-2.5 w-60 sm:w-64 text-slate-200">
@@ -1537,18 +1726,54 @@ export default function PropertyMap({
 
         <div
           className={`h-full bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col z-20 relative transition-all duration-200 ${
-            activeTab === 'map' ? 'hidden' : activeTab === 'list' ? 'w-full' : 'w-full lg:w-[450px] xl:w-[480px]'
+            activeTab === 'map'
+              ? 'hidden'
+              : activeTab === 'list'
+                ? 'w-full'
+                : isSidebarCollapsed
+                  ? 'hidden'
+                  : 'w-full lg:w-[440px] xl:w-[470px]'
           }`}
         >
-          <div className="p-3.5 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between gap-2">
-            <div className="flex items-center space-x-2">
-              <ListFilter className="w-4 h-4 text-indigo-400" />
-              <span className="font-extrabold text-white text-xs sm:text-sm">Fichas no Enquadramento</span>
-              <span className="text-[10px] font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 font-bold">
-                {displayedList.length}
-              </span>
+          <div className="p-3 border-b border-slate-800 bg-slate-900/70 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="relative flex-1 min-w-0">
+                <select
+                  value={selectedBairroKey}
+                  onChange={(e) => setSelectedBairroKey(e.target.value)}
+                  aria-label="Selecionar bairro"
+                  className="w-full bg-slate-950 text-slate-100 text-xs font-bold pl-2.5 pr-7 py-2 rounded-xl border border-slate-700 hover:border-sky-500/70 focus:border-sky-400 focus:outline-none cursor-pointer truncate"
+                >
+                  <option value="">
+                    Todos os Bairros ({orderedList.length} no enquadramento)
+                  </option>
+                  {neighborhoodOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label} ({opt.count})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedBairroKey && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedBairroKey('')}
+                  className="px-2 py-2 rounded-xl bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-700/60 text-xs font-bold cursor-pointer shrink-0 flex items-center gap-1"
+                  title="Limpar filtro de bairro e voltar ao enquadramento"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            <div className="text-[11px] text-slate-400 font-mono">Clique para focar ou simular</div>
+
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(true)}
+              className="hidden lg:flex items-center justify-center p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 cursor-pointer shrink-0 transition-colors"
+              title="Minimizar painel para a direita"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">

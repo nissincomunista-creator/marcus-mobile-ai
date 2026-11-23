@@ -21057,7 +21057,16 @@ function persistAuctionResponse(signature, userId, payloadJson) {
     }
   });
 }
-function sendAuctionResponse(req, res, payload) {
+function sendAuctionResponse(req, res, payload, cacheEntry) {
+  const wantsGzip = String(req.headers["accept-encoding"] || "").includes("gzip");
+  if (wantsGzip && cacheEntry?.gz) {
+    res.status(200);
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.vary("Accept-Encoding");
+    res.setHeader("Content-Encoding", "gzip");
+    res.send(cacheEntry.gz);
+    return;
+  }
   const rows = typeof payload === "string" ? JSON.parse(payload) : payload;
   const current = new Map(store.auctions.map((a) => [a.id, a]));
   const validRows = rows.filter((a) => {
@@ -21069,7 +21078,6 @@ function sendAuctionResponse(req, res, payload) {
   const seenIds = new Set(validRows.map((r) => r.id));
   const livePortalProps = store.auctions.filter((a) => a.origin === "portal" && !seenIds.has(a.id) && catalogVisible(a));
   const combined = [...livePortalProps, ...validRows];
-  const wantsGzip = String(req.headers["accept-encoding"] || "").includes("gzip");
   res.status(200);
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   const writeStreamChunks = async (target) => {
@@ -21093,9 +21101,20 @@ function sendAuctionResponse(req, res, payload) {
   res.vary("Accept-Encoding");
   res.setHeader("Content-Encoding", "gzip");
   const gzip = import_zlib.default.createGzip({ level: 1 });
+  const compressedChunks = cacheEntry ? [] : null;
   gzip.on("error", () => {
     if (!res.writableEnded) res.end();
   });
+  if (compressedChunks) {
+    gzip.on("data", (chunk) => {
+      compressedChunks.push(chunk);
+    });
+    gzip.on("end", () => {
+      if (cacheEntry && !cacheEntry.gz && compressedChunks.length) {
+        cacheEntry.gz = Buffer.concat(compressedChunks);
+      }
+    });
+  }
   gzip.pipe(res);
   void writeStreamChunks(gzip);
 }
@@ -22992,7 +23011,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     const calculationRevision = catalogRevision;
     const isForceRefresh = req.query.refresh === "true" || req.headers["x-refresh-catalog"] === "true";
     if (!isForceRefresh && auctionCatalogResponseCache && auctionCatalogResponseCache.auctionsRef === store.auctions && auctionCatalogResponseCache.transactionsRef === store.itbiTransactions && auctionCatalogResponseCache.userId === req.userId && auctionCatalogResponseCache.revision === catalogRevision && auctionCatalogResponseCache.signature === cacheSignature) {
-      sendAuctionResponse(req, res, auctionCatalogResponseCache.payload);
+      sendAuctionResponse(req, res, auctionCatalogResponseCache.payload, auctionCatalogResponseCache);
       setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
       return;
     }
@@ -23000,7 +23019,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     if (persistedPayload) {
       releaseRioIppScratchCaches();
       auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
-      sendAuctionResponse(req, res, persistedPayload);
+      sendAuctionResponse(req, res, persistedPayload, auctionCatalogResponseCache);
       setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
       return;
     }
@@ -23008,11 +23027,14 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     const fastPayload = lastKnownPayload || deduplicateAuctions(store.auctions.filter(
       (a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state)
     )).map((a) => {
-      if (catalogEligible(a)) return a;
       const isRio = (a.state || "").toUpperCase() === "RJ" || String(a.city || "").toLowerCase().includes("rio de janeiro");
+      const ipp = isRio ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }) : null;
+      const ippPatch = ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng) ? { lat: ipp.lat, lng: ipp.lng, status_geocodificacao: ipp.matchedNumber ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA" } : {};
+      if (catalogEligible(a)) return Object.keys(ippPatch).length ? { ...a, ...ippPatch } : a;
       const safeStreetPortal = isRio && a.streetPortalAvgSqm && a.streetPortalAvgSqm < 1500 ? void 0 : a.streetPortalAvgSqm;
       return {
         ...a,
+        ...ippPatch,
         streetPortalAvgSqm: safeStreetPortal,
         m2MercadoPortal: safeStreetPortal || 0,
         estimatedValue: void 0,
@@ -23035,8 +23057,12 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
         itbiNeighborhoodCount: void 0
       };
     });
-    res.setHeader("X-Catalog-Recalculation", "pending");
-    if (!auctionCatalogResponseCache) {
+    releaseRioIppScratchCaches();
+    const skipRenderColdRebuild = process.env.RENDER === "true" && !isForceRefresh && Boolean(store.calibrationVersion) && fastPayload.length > 0;
+    if (!skipRenderColdRebuild) {
+      res.setHeader("X-Catalog-Recalculation", "pending");
+    }
+    if (!auctionCatalogResponseCache || skipRenderColdRebuild) {
       auctionCatalogResponseCache = {
         auctionsRef: store.auctions,
         transactionsRef: store.itbiTransactions,
@@ -23046,7 +23072,8 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
         payload: fastPayload
       };
     }
-    sendAuctionResponse(req, res, fastPayload);
+    sendAuctionResponse(req, res, fastPayload, auctionCatalogResponseCache);
+    if (skipRenderColdRebuild) return;
     if (!res.writableFinished) {
       await new Promise((resolve) => {
         res.once("finish", resolve);

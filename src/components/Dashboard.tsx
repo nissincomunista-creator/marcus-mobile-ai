@@ -4088,8 +4088,8 @@ export default function Dashboard({
 
         {/* MODAL: MAPA FOCADO NO IMÓVEL SELECIONADO ("Ver no Mapa" no Card) */}
         {selectedMapProperty && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="relative w-full max-w-[96vw] lg:max-w-6xl h-[90vh] bg-slate-900 border border-slate-750 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="fixed inset-0 z-50 w-screen h-screen bg-[#020617] flex flex-col animate-in fade-in duration-150">
+            <div className="relative w-full h-full bg-slate-900 overflow-hidden flex flex-col">
               <PropertyMap
                 auctions={auctions}
                 itbiStats={itbiStats}
@@ -4110,8 +4110,8 @@ export default function Dashboard({
 
         {/* MODAL: MAPA GERAL EM TELA CHEIA (Expandir no Sidebar ou no Feed) */}
         {isGeneralMapModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="relative w-full max-w-[96vw] lg:max-w-6xl h-[90vh] bg-slate-900 border border-slate-750 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="fixed inset-0 z-50 w-screen h-screen bg-[#020617] flex flex-col animate-in fade-in duration-150">
+            <div className="relative w-full h-full bg-slate-900 overflow-hidden flex flex-col">
               <PropertyMap
                 auctions={auctions}
                 itbiStats={itbiStats}

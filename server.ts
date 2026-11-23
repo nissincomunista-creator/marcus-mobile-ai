@@ -1589,6 +1589,7 @@ let auctionCatalogResponseCache: {
   revision: number;
   signature: string;
   payload: AuctionProperty[];
+  gz?: Buffer;
 } | null = null;
 const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v7.json.gz');
 const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v14-caixa-fix';
@@ -1648,7 +1649,22 @@ function persistAuctionResponse(signature: string, userId: string | undefined, p
   });
 }
 
-function sendAuctionResponse(req: express.Request, res: express.Response, payload: AuctionProperty[] | string) {
+function sendAuctionResponse(
+  req: express.Request,
+  res: express.Response,
+  payload: AuctionProperty[] | string,
+  cacheEntry?: { gz?: Buffer } | null
+) {
+  const wantsGzip = String(req.headers['accept-encoding'] || '').includes('gzip');
+  if (wantsGzip && cacheEntry?.gz) {
+    res.status(200);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.vary('Accept-Encoding');
+    res.setHeader('Content-Encoding', 'gzip');
+    res.send(cacheEntry.gz);
+    return;
+  }
+
   // Recheck lifecycle even for cached responses (dates can expire without a sync).
   const rows: AuctionProperty[] = typeof payload === 'string' ? JSON.parse(payload) : payload;
   const current = new Map(store.auctions.map(a => [a.id, a]));
@@ -1664,7 +1680,6 @@ function sendAuctionResponse(req: express.Request, res: express.Response, payloa
   const livePortalProps = store.auctions.filter(a => a.origin === 'portal' && !seenIds.has(a.id) && catalogVisible(a));
   const combined = [...livePortalProps, ...validRows];
 
-  const wantsGzip = String(req.headers['accept-encoding'] || '').includes('gzip');
   res.status(200);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
@@ -1692,9 +1707,20 @@ function sendAuctionResponse(req: express.Request, res: express.Response, payloa
   res.vary('Accept-Encoding');
   res.setHeader('Content-Encoding', 'gzip');
   const gzip = zlib.createGzip({ level: 1 });
+  const compressedChunks: Buffer[] | null = cacheEntry ? [] : null;
   gzip.on('error', () => {
     if (!res.writableEnded) res.end();
   });
+  if (compressedChunks) {
+    gzip.on('data', (chunk: Buffer) => {
+      compressedChunks.push(chunk);
+    });
+    gzip.on('end', () => {
+      if (cacheEntry && !cacheEntry.gz && compressedChunks.length) {
+        cacheEntry.gz = Buffer.concat(compressedChunks);
+      }
+    });
+  }
   gzip.pipe(res);
   void writeStreamChunks(gzip);
 }
@@ -3979,15 +4005,15 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
       auctionCatalogResponseCache.userId === req.userId &&
       auctionCatalogResponseCache.revision === catalogRevision &&
       auctionCatalogResponseCache.signature === cacheSignature) {
-    sendAuctionResponse(req, res, auctionCatalogResponseCache.payload);
+    sendAuctionResponse(req, res, auctionCatalogResponseCache.payload, auctionCatalogResponseCache);
     setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
     return;
   }
   const persistedPayload = !isForceRefresh ? readPersistedAuctionResponse(cacheSignature, req.userId) : null;
   if (persistedPayload) {
     releaseRioIppScratchCaches();
-  auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
-    sendAuctionResponse(req, res, persistedPayload);
+    auctionCatalogResponseCache = { auctionsRef: store.auctions, transactionsRef: store.itbiTransactions, userId: req.userId, revision: catalogRevision, signature: cacheSignature, payload: persistedPayload };
+    sendAuctionResponse(req, res, persistedPayload, auctionCatalogResponseCache);
     setImmediate(() => ensureOfficialLocationCoverage(store.auctions));
     return;
   }
@@ -4002,11 +4028,18 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
     (!a.userId || a.userId === req.userId || ['caixa_radar', 'caixa', 'judicial', 'extrajudicial', 'portal'].includes(a.origin || '')) &&
     isAllowedTargetCity(a.city, a.state)
   )).map(a => {
-    if (catalogEligible(a)) return a;
     const isRio = (a.state || '').toUpperCase() === 'RJ' || String(a.city || '').toLowerCase().includes('rio de janeiro');
+    const ipp = isRio
+      ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title })
+      : null;
+    const ippPatch = ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)
+      ? { lat: ipp.lat, lng: ipp.lng, status_geocodificacao: ipp.matchedNumber ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA' }
+      : {};
+    if (catalogEligible(a)) return Object.keys(ippPatch).length ? { ...a, ...ippPatch } : a;
     const safeStreetPortal = (isRio && a.streetPortalAvgSqm && a.streetPortalAvgSqm < 1500) ? undefined : a.streetPortalAvgSqm;
     return {
       ...a,
+      ...ippPatch,
       streetPortalAvgSqm: safeStreetPortal,
       m2MercadoPortal: safeStreetPortal || 0,
       estimatedValue: undefined,
@@ -4029,8 +4062,12 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
       itbiNeighborhoodCount: undefined
     };
   });
-  res.setHeader('X-Catalog-Recalculation', 'pending');
-  if (!auctionCatalogResponseCache) {
+  releaseRioIppScratchCaches();
+  const skipRenderColdRebuild = process.env.RENDER === 'true' && !isForceRefresh && Boolean(store.calibrationVersion) && fastPayload.length > 0;
+  if (!skipRenderColdRebuild) {
+    res.setHeader('X-Catalog-Recalculation', 'pending');
+  }
+  if (!auctionCatalogResponseCache || skipRenderColdRebuild) {
     auctionCatalogResponseCache = {
       auctionsRef: store.auctions,
       transactionsRef: store.itbiTransactions,
@@ -4040,7 +4077,8 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
       payload: fastPayload
     };
   }
-  sendAuctionResponse(req, res, fastPayload);
+  sendAuctionResponse(req, res, fastPayload, auctionCatalogResponseCache);
+  if (skipRenderColdRebuild) return;
   if (!res.writableFinished) {
     await new Promise<void>(resolve => {
       res.once('finish', resolve);
