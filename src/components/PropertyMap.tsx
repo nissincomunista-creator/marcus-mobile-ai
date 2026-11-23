@@ -90,6 +90,7 @@ interface PropertyMapProps {
   hideCloseButton?: boolean;
   showFactionsExternal?: boolean;
   onToggleFactionsExternal?: () => void;
+  renderMapFilters?: React.ReactNode;
 }
 
 interface BuildingInspectorData {
@@ -117,10 +118,10 @@ const METRIC_LEGENDS: Record<
     title: 'Imóveis em Leilão 3D',
     subtitle: 'Cor por tipologia no endereço IPP',
     stops: [
-      { color: '#10b981', label: 'Casa / Sobrado' },
-      { color: '#3b82f6', label: 'Apartamento' },
-      { color: '#f59e0b', label: 'Comercial / Sala' },
-      { color: '#a855f7', label: 'Terreno / Lote' },
+      { color: '#22c55e', label: 'Casa / Sobrado' },
+      { color: '#38bdf8', label: 'Apartamento' },
+      { color: '#facc15', label: 'Comercial / Sala' },
+      { color: '#c084fc', label: 'Terreno / Lote' },
       { color: '#fde047', label: 'Selecionado' },
       { color: '#262d3a', label: 'Demais prédios' },
     ],
@@ -176,6 +177,7 @@ export default function PropertyMap({
   hideCloseButton = false,
   showFactionsExternal,
   onToggleFactionsExternal,
+  renderMapFilters,
 }: PropertyMapProps) {
   const [selectedPropId, setSelectedPropId] = useState<string>(initialSelectedPropertyId || '');
   const [activeMetric, setActiveMetric] = useState<RioBuildingMetric>('auctions');
@@ -1331,37 +1333,29 @@ export default function PropertyMap({
   const currentLegend = METRIC_LEGENDS[activeMetric];
 
   return (
-    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose && !hideCloseButton ? 'h-full' : 'h-[calc(100vh-11.5rem)] min-h-[600px] rounded-2xl border border-slate-800'}`}>
-      <div className="bg-slate-950/95 border-b border-slate-800 px-4 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 z-10">
+    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose ? 'h-full' : 'h-[calc(100vh-5rem)] rounded-2xl border border-slate-800'}`}>
+      <div className="bg-slate-950/95 border-b border-slate-800 px-4 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 z-20">
         <div className="flex items-center space-x-2.5">
-          <div className="p-1.5 sm:p-2 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+          <div className="p-1.5 sm:p-2 bg-slate-900 text-slate-300 rounded-xl border border-slate-800">
             <Compass className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h2 className="font-black text-white text-sm sm:text-base tracking-tight flex items-center gap-2 flex-wrap">
+            <h2 className="font-black text-white text-sm sm:text-base tracking-tight flex items-center gap-3 flex-wrap">
               <span>Mapa Georreferenciado</span>
-              <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/40">
+              <span className="text-xs font-bold text-slate-300 font-mono">
                 {filteredList.length} Lotes {inViewportCount > 0 ? `• ${inViewportCount} no Enquadramento` : ''}
               </span>
               {locationsLoaded && pendingReviewProps.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowPendingDrawer(true)}
-                  className="flex items-center gap-1.5 text-[10.5px] font-bold font-mono bg-amber-950/90 hover:bg-amber-900/90 text-amber-300 px-2.5 py-0.5 rounded-lg border border-amber-600/50 cursor-pointer shadow-sm transition-all"
+                  className="text-xs font-bold font-mono text-slate-300 hover:text-white cursor-pointer transition-colors"
                   title="Imóveis bloqueados no mapa por falta de validação cartográfica estrita de endereço"
                 >
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{pendingReviewProps.length} Pendentes de Revisão</span>
+                  {pendingReviewProps.length} Pendentes de Revisão
                 </button>
               )}
             </h2>
-            <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block">
-              {!locationsLoaded
-                ? 'Carregando endereços dos imóveis de leilão…'
-                : locationError
-                  ? 'Não foi possível carregar os endereços confirmados. Reabra o mapa para tentar novamente.'
-                  : `${locatedCount} de ${auctions.length} lotes confirmados no mapa`}
-            </p>
           </div>
         </div>
 
@@ -1370,7 +1364,7 @@ export default function PropertyMap({
             <button
               onClick={() => setActiveTab('map')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                activeTab === 'map' ? 'bg-indigo-600 text-white' : 'text-slate-400'
+                activeTab === 'map' ? 'bg-slate-800 text-white' : 'text-slate-400'
               }`}
             >
               Mapa
@@ -1378,7 +1372,7 @@ export default function PropertyMap({
             <button
               onClick={() => setActiveTab('list')}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-400'
+                activeTab === 'list' ? 'bg-slate-800 text-white' : 'text-slate-400'
               }`}
             >
               Fichas ({orderedList.length})
@@ -1390,7 +1384,7 @@ export default function PropertyMap({
             onClick={() => setIs3DMode((v) => !v)}
             className={`px-2.5 py-1 rounded-xl text-xs font-bold font-mono transition-colors cursor-pointer border flex items-center gap-1 ${
               is3DMode
-                ? 'bg-sky-600/20 text-sky-300 border-sky-500/60'
+                ? 'bg-slate-800 text-slate-100 border-slate-600'
                 : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
             }`}
             title="Alternar extrusão 3D pelas alturas oficiais (IPP ALTURA)"
@@ -1398,6 +1392,16 @@ export default function PropertyMap({
             <Box className="w-3.5 h-3.5" />
             <span>{is3DMode ? '3D ON' : '3D OFF'}</span>
           </button>
+
+          {onClose && hideCloseButton && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-1.5 rounded-full bg-transparent hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer transition-colors"
+            >
+              Abrir em Lista ({filteredList.length})
+            </button>
+          )}
 
           {onClose && !hideCloseButton && (
             <button
@@ -1411,92 +1415,30 @@ export default function PropertyMap({
         </div>
       </div>
 
-      <div className="bg-slate-950/80 border-b border-slate-800 px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-10 text-xs">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-slate-400 font-bold uppercase font-mono text-[10px] mr-1 hidden sm:inline">Tipologia:</span>
-          <button
-            type="button"
-            onClick={() => setSelectedTypologyFilter(null)}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer border text-xs ${
-              selectedTypologyFilter === null
-                ? 'bg-slate-200 text-slate-950 border-white'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
-            }`}
-          >
-            Todos ({baseList.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedTypologyFilter((prev) => (prev === 'casa' ? null : 'casa'))}
-            className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer border ${
-              selectedTypologyFilter === 'casa'
-                ? 'bg-emerald-600 text-white border-emerald-300 ring-2 ring-emerald-400/50'
-                : 'bg-emerald-950/30 text-emerald-400/80 border-emerald-800/40 hover:text-emerald-300'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-            <span>🏡 Casa</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedTypologyFilter((prev) => (prev === 'apartamento' ? null : 'apartamento'))}
-            className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer border ${
-              selectedTypologyFilter === 'apartamento'
-                ? 'bg-blue-600 text-white border-blue-300 ring-2 ring-blue-400/50'
-                : 'bg-blue-950/30 text-blue-400/80 border-blue-800/40 hover:text-blue-300'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
-            <span>🏢 Apartamento</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedTypologyFilter((prev) => (prev === 'comercial' ? null : 'comercial'))}
-            className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer border ${
-              selectedTypologyFilter === 'comercial'
-                ? 'bg-amber-600 text-white border-amber-300 ring-2 ring-amber-400/50'
-                : 'bg-amber-950/30 text-amber-400/80 border-amber-800/40 hover:text-amber-300'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
-            <span>🏬 Comercial</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedTypologyFilter((prev) => (prev === 'terreno' ? null : 'terreno'))}
-            className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer border ${
-              selectedTypologyFilter === 'terreno'
-                ? 'bg-purple-600 text-white border-purple-300 ring-2 ring-purple-400/50'
-                : 'bg-purple-950/30 text-purple-400/80 border-purple-800/40 hover:text-purple-300'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
-            <span>📐 Terreno</span>
-          </button>
-        </div>
-
-        {!onToggleFactionsExternal && (
-          <button
-            type="button"
-            onClick={() => setShowFactionsLayer((prev) => !prev)}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-              effectiveShowFactions
-                ? 'bg-rose-950/90 text-rose-300 border-rose-500 shadow-md shadow-rose-950/50'
-                : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
-            }`}
-            title="Camada de controle de facções RJ (dadosderiscos.com.br)"
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-            <span className="hidden sm:inline">Risco & Facções RJ</span>
-            <span className="sm:hidden">Facções</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${effectiveShowFactions ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-              {effectiveShowFactions ? 'ON' : 'OFF'}
-            </span>
-          </button>
+      <div className="bg-slate-950/90 border-b border-slate-800 px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-20 text-xs">
+        {renderMapFilters ? (
+          renderMapFilters
+        ) : (
+          <div className="w-full flex items-center justify-end">
+            {!onToggleFactionsExternal && (
+              <button
+                type="button"
+                onClick={() => setShowFactionsLayer((prev) => !prev)}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                  effectiveShowFactions
+                    ? 'bg-rose-950/90 text-rose-300 border-rose-500'
+                    : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
+                }`}
+                title="Camada de controle de facções RJ (dadosderiscos.com.br)"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                <span>Risco &amp; Facções RJ</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${effectiveShowFactions ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                  {effectiveShowFactions ? 'ON' : 'OFF'}
+                </span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -1560,8 +1502,8 @@ export default function PropertyMap({
                       onClick={() => setActiveMetric(metricKey)}
                       className={`py-1 rounded-md transition-colors cursor-pointer ${
                         activeMetric === metricKey
-                          ? 'bg-sky-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'bg-indigo-500/15 text-indigo-200 border border-indigo-400/60'
+                          : 'text-slate-400 border border-transparent hover:text-slate-200'
                       }`}
                     >
                       {label}
@@ -1585,10 +1527,10 @@ export default function PropertyMap({
                   <button
                     type="button"
                     onClick={() => setShowAuctionsLayer((v) => !v)}
-                    className={`w-full flex items-center justify-between px-2 py-1 rounded-lg text-[10.5px] font-bold border transition-colors cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-1 py-1 text-[10.5px] font-bold transition-colors cursor-pointer ${
                       showAuctionsLayer
-                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/60'
-                        : 'bg-slate-900 text-slate-400 border-slate-800'
+                        ? 'text-slate-200 hover:text-white'
+                        : 'text-slate-500'
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
@@ -1606,32 +1548,20 @@ export default function PropertyMap({
             <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-slate-800 backdrop-blur-md rounded-xl p-2.5 shadow-2xl z-20 space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
               <div className="flex items-start justify-between gap-1.5">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <span className="text-[8.5px] font-black uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
-                      {selectedProp.propertyType}
-                      {selectedProp.sizeSqm > 0 ? ` • ${selectedProp.sizeSqm}m²` : ''}
-                    </span>
+                  <div className="text-[11px] font-semibold text-slate-300 truncate">
+                    {selectedProp.propertyType}
+                    {selectedProp.sizeSqm > 0 ? `, ${selectedProp.sizeSqm} m²` : ''}
                     {(() => {
                       const risk = checkPropertyCommunityRisk(selectedProp);
                       if (!risk.isRisk) return null;
-                      return (
-                        <span
-                          className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-rose-950/90 text-rose-300 border border-rose-800/70 font-mono"
-                          title={risk.communityName ? `Área: ${risk.communityName}` : 'Área de risco'}
-                        >
-                          {risk.badgeLabel || '⚠️ Área de Risco'}
-                        </span>
-                      );
+                      return ` — ${risk.badgeLabel || 'Área de Risco'}`;
                     })()}
                   </div>
                   <h3 className="font-extrabold text-white text-xs mt-0.5 truncate leading-tight">
                     {selectedProp.title}
                   </h3>
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1 truncate">
-                    <MapPin className="w-2.5 h-2.5 text-slate-500 shrink-0" />
-                    <span>
-                      {selectedProp.address || 'Endereço'}, {selectedProp.neighborhood}
-                    </span>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    {selectedProp.address || 'Endereço'}, {selectedProp.neighborhood}
                   </p>
                 </div>
                 <button
@@ -1642,16 +1572,16 @@ export default function PropertyMap({
                 </button>
               </div>
 
-              <div className="flex items-center justify-between bg-slate-900/90 px-2 py-1 rounded-lg border border-slate-800 text-xs font-mono">
+              <div className="flex items-center justify-between py-1 border-y border-slate-800 text-xs font-mono">
                 <div>
-                  <span className="text-[8px] text-slate-500 block uppercase font-semibold">Lance</span>
-                  <span className="font-black text-emerald-400 text-xs">
+                  <span className="text-[8px] text-slate-400 block uppercase font-semibold">Lance</span>
+                  <span className="font-bold text-white text-xs">
                     {selectedProp.auctionPrice > 0 ? formatBRL(selectedProp.auctionPrice) : 'Aberto a Propostas'}
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[8px] text-slate-500 block uppercase font-semibold">ITBI</span>
-                  <span className="font-black text-amber-400 text-xs">
+                  <span className="text-[8px] text-slate-400 block uppercase font-semibold">ITBI</span>
+                  <span className="font-bold text-white text-xs">
                     {formatBRL(
                       selectedProp.estimatedValue ||
                         (selectedProp.itbiUnitValueAvg && selectedProp.sizeSqm
@@ -1665,10 +1595,9 @@ export default function PropertyMap({
               <div className="flex items-center gap-1.5 pt-0.5">
                 <button
                   onClick={() => setSimulatingProperty(selectedProp)}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-1.5 px-2 rounded-lg transition-colors cursor-pointer text-center flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30"
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-1.5 px-2 rounded-lg transition-colors cursor-pointer text-center border border-slate-700"
                 >
-                  <Sparkles className="w-3 h-3" />
-                  <span>Simular</span>
+                  Simular
                 </button>
 
                 {selectedProp.auctionLink && (
@@ -1676,21 +1605,20 @@ export default function PropertyMap({
                     href={selectedProp.auctionLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-2 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-lg border border-blue-500 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-lg border border-slate-700 text-xs font-bold transition-colors cursor-pointer text-center"
                     title="Página oficial na Caixa / Edital"
                   >
-                    <Building2 className="w-3 h-3 text-blue-200" />
-                    <span>{selectedProp.origin === 'caixa' ? 'Caixa' : 'Edital'}</span>
+                    {selectedProp.origin === 'caixa' ? 'Caixa' : 'Edital'}
                   </a>
                 )}
               </div>
             </div>
           ) : buildingClusterModal ? (
-            <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-indigo-700/60 backdrop-blur-md rounded-xl shadow-2xl z-20 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-slate-800 backdrop-blur-md rounded-xl shadow-2xl z-20 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
               <div className="px-2.5 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <h4 className="text-[11px] font-black text-white leading-tight truncate">
-                    🏢 {buildingClusterModal.properties.length} Imóveis neste Prédio
+                    {buildingClusterModal.properties.length} Imóveis neste Prédio
                   </h4>
                   <p className="text-[10px] text-slate-400 truncate">
                     {buildingClusterModal.address}
@@ -1717,14 +1645,14 @@ export default function PropertyMap({
                         const el = document.getElementById(`side-card-${item.id}`);
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                       }}
-                      className="p-2 rounded-lg border bg-slate-900/90 border-slate-800 hover:border-indigo-500/70 transition-all cursor-pointer flex items-center justify-between gap-2"
+                      className="p-2 rounded-lg border bg-slate-900/90 border-slate-800 hover:border-slate-600 transition-all cursor-pointer flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0">
                         <div className="text-[11px] font-bold text-white font-mono truncate">
                           {unitLabel}
-                          {item.sizeSqm > 0 ? ` • ${item.sizeSqm}m²` : ''}
+                          {item.sizeSqm > 0 ? `, ${item.sizeSqm} m²` : ''}
                         </div>
-                        <div className="text-[10.5px] font-mono font-bold text-emerald-400">
+                        <div className="text-[10.5px] font-mono font-bold text-slate-300">
                           {item.auctionPrice > 0 ? formatBRL(item.auctionPrice) : 'Aberto a Propostas'}
                         </div>
                       </div>
@@ -1733,7 +1661,7 @@ export default function PropertyMap({
                           e.stopPropagation();
                           setSimulatingProperty(item);
                         }}
-                        className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold cursor-pointer shrink-0"
+                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded text-[10px] font-bold cursor-pointer shrink-0"
                       >
                         Simular
                       </button>
@@ -1743,13 +1671,13 @@ export default function PropertyMap({
               </div>
             </div>
           ) : selectedBuildingInfo ? (
-            <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-sky-700/60 backdrop-blur-md rounded-2xl p-3 shadow-2xl z-20 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-slate-800 backdrop-blur-md rounded-2xl p-3 shadow-2xl z-20 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="text-[9px] font-black uppercase font-mono px-1.5 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-700/50">
-                    Edificação 3D IPP • {selectedBuildingInfo.altura.toFixed(1)}m (~{Math.max(1, Math.round(selectedBuildingInfo.altura / 3.1))} pav.)
+                  <span className="text-[10px] font-bold uppercase font-mono text-slate-400">
+                    Edificação 3D IPP, {selectedBuildingInfo.altura.toFixed(1)}m (~{Math.max(1, Math.round(selectedBuildingInfo.altura / 3.1))} pav.)
                   </span>
-                  <h4 className="font-extrabold text-white text-xs mt-1 truncate">{selectedBuildingInfo.address}</h4>
+                  <h4 className="font-extrabold text-white text-xs mt-0.5 truncate">{selectedBuildingInfo.address}</h4>
                   <p className="text-[10.5px] text-slate-400 truncate">{selectedBuildingInfo.bairro}</p>
                 </div>
                 <button
@@ -1762,33 +1690,33 @@ export default function PropertyMap({
               </div>
 
               {selectedBuildingInfo.m2 > 0 ? (
-                <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-2 rounded-xl border border-slate-800 text-[10.5px] font-mono">
+                <div className="grid grid-cols-3 gap-1.5 py-2 border-y border-slate-800 text-[10.5px] font-mono">
                   <div>
-                    <span className="text-[8.5px] text-slate-500 block uppercase">ITBI/m²</span>
-                    <strong className="text-sky-300">{formatBRL(selectedBuildingInfo.m2)}</strong>
+                    <span className="text-[8.5px] text-slate-400 block uppercase">ITBI/m²</span>
+                    <strong className="text-white">{formatBRL(selectedBuildingInfo.m2)}</strong>
                   </div>
                   <div>
-                    <span className="text-[8.5px] text-slate-500 block uppercase">Liquidez</span>
-                    <strong className="text-emerald-400">
+                    <span className="text-[8.5px] text-slate-400 block uppercase">Liquidez</span>
+                    <strong className="text-slate-200">
                       {selectedBuildingInfo.liq}/10 ({selectedBuildingInfo.tx}tx)
                     </strong>
                   </div>
                   <div>
-                    <span className="text-[8.5px] text-slate-500 block uppercase">Spread</span>
-                    <strong className={selectedBuildingInfo.spr <= 0 ? 'text-emerald-400' : 'text-amber-300'}>
+                    <span className="text-[8.5px] text-slate-400 block uppercase">Spread</span>
+                    <strong className="text-slate-200">
                       {selectedBuildingInfo.spr > 0 ? `+${selectedBuildingInfo.spr}%` : `${selectedBuildingInfo.spr}%`}
                     </strong>
                   </div>
                 </div>
               ) : (
-                <div className="text-[10.5px] text-slate-400 bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                <div className="text-[10.5px] text-slate-400 py-1 border-t border-slate-800">
                   Edificação sem histórico recente de escrituras ITBI vinculadas.
                 </div>
               )}
 
               {selectedBuildingInfo.nearbyAuctions.length > 0 && (
                 <div className="space-y-1 pt-1 border-t border-slate-800">
-                  <div className="text-[10px] font-bold text-amber-300">
+                  <div className="text-[10px] font-bold text-slate-300">
                     {selectedBuildingInfo.nearbyAuctions.length} lote(s) em leilão neste raio:
                   </div>
                   {selectedBuildingInfo.nearbyAuctions.slice(0, 2).map((item) => (
@@ -1802,7 +1730,7 @@ export default function PropertyMap({
                       className="w-full text-left px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10.5px] flex justify-between items-center cursor-pointer"
                     >
                       <span className="truncate text-slate-200 max-w-[170px]">{item.title}</span>
-                      <span className="font-mono font-bold text-emerald-400">
+                      <span className="font-mono font-bold text-slate-200">
                         {item.auctionPrice > 0 ? formatBRL(item.auctionPrice) : 'Ver'}
                       </span>
                     </button>
@@ -1884,65 +1812,49 @@ export default function PropertyMap({
                     key={auc.id}
                     id={`side-card-${auc.id}`}
                     onClick={() => handleCardClick(auc)}
-                    className={`bg-slate-900/90 rounded-2xl border transition-all cursor-pointer overflow-visible relative ${
+                    className={`bg-slate-900/75 rounded-2xl border transition-all cursor-pointer overflow-visible relative ${
                       isSelected
-                        ? 'border-indigo-500 ring-2 ring-indigo-500/50 shadow-xl shadow-indigo-950/50 bg-slate-900'
-                        : 'border-slate-800 hover:border-slate-700'
+                        ? 'border-slate-500 ring-1 ring-slate-500/40 bg-slate-900'
+                        : 'border-slate-800/40 hover:border-slate-700/60'
                     }`}
                   >
-                    <div className="p-3.5 space-y-2.5">
+                    <div className="p-3 space-y-2">
                       <div className="flex gap-2.5 items-start justify-between">
                         <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex flex-wrap items-center gap-1">
-                            <span className="bg-slate-800 text-slate-200 text-[10.5px] font-semibold px-2 py-0.5 rounded border border-slate-700">
-                              {auc.propertyType} •{' '}
-                              {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
-                              {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
-                              {auc.parkingSpaces ? ` • ${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : ''}
-                            </span>
-
+                          <div className="text-[11px] text-slate-300 font-semibold leading-snug">
+                            {[
+                              auc.propertyType,
+                              auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada',
+                              auc.bedrooms ? `${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : '',
+                              auc.parkingSpaces ? `${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : '',
+                            ]
+                              .filter(Boolean)
+                              .join(', ')}
                             {auc.isCommunityRisk && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/60 font-mono inline-flex items-center gap-1">
-                                ⛔ {auc.communityName ? `${auc.communityName}` : 'Comunidade'}{' '}
-                                {auc.factionName ? `(${auc.factionName})` : ''}
+                              <span className="ml-1.5 font-bold text-slate-300">
+                                — {auc.communityName || 'Comunidade'}{auc.factionName ? ` (${auc.factionName})` : ''}
                               </span>
                             )}
-
                             {!auc.isCommunityRisk && auc.nearbyCommunityName && (
                               <span
-                                className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800/50 inline-flex items-center gap-1 cursor-help"
-                                title={`Localizado a ~${auc.nearbyCommunityDistanceM || 300}m da comunidade ${auc.nearbyCommunityName}. Sem desvalorização forçada.`}
+                                className="ml-1.5 text-slate-400 cursor-help"
+                                title={`Localizado a ~${auc.nearbyCommunityDistanceM || 300}m da comunidade ${auc.nearbyCommunityName}.`}
                               >
-                                ⚠️ Próx. {auc.nearbyCommunityName} (~{auc.nearbyCommunityDistanceM || 300}m)
-                              </span>
-                            )}
-
-                            {isFeatured && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                ★ Top ROI
+                                — Próx. {auc.nearbyCommunityName}
                               </span>
                             )}
                           </div>
 
                           <div className="space-y-0.5">
-                            <h4 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 hover:text-indigo-300 transition-colors">
+                            <h4 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2">
                               {auc.title}
                             </h4>
-                            <p className="text-[11px] text-slate-400 flex items-center gap-1 line-clamp-1">
-                              <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
-                              <span>
-                                {auc.address || 'Endereço'} ({auc.neighborhood} - {auc.state || 'RJ'})
-                              </span>
+                            <p className="text-[11px] text-slate-400 line-clamp-1">
+                              {auc.address || 'Endereço'} ({auc.neighborhood} - {auc.state || 'RJ'})
                             </p>
                             {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
-                              <div className="pt-0.5">
-                                <span
-                                  className="text-[9px] bg-amber-950/80 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1"
-                                  title="Bairro cadastrado no edital difere do endereço real no mapa/cartório"
-                                >
-                                  <span>⚠️</span>
-                                  <span>{cleanDivergentNotice(auc.divergentNeighborhoodNotice)}</span>
-                                </span>
+                              <div className="text-[10px] text-slate-400 font-mono italic">
+                                {cleanDivergentNotice(auc.divergentNeighborhoodNotice)}
                               </div>
                             )}
                           </div>
@@ -1953,17 +1865,17 @@ export default function PropertyMap({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80 items-stretch">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 py-1.5 border-t border-slate-800/60 items-stretch">
                         <div className="flex flex-col justify-center">
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Lance Mínimo</span>
-                          <span className="text-xs font-black text-white font-mono mt-0.5">
+                          <span className="text-xs font-bold text-white font-mono mt-0.5">
                             {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}
                           </span>
                         </div>
 
                         <div className="flex flex-col justify-center">
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Custo Total</span>
-                          <span className="text-xs font-black text-slate-300 font-mono mt-0.5">
+                          <span className="text-xs font-bold text-slate-200 font-mono mt-0.5">
                             {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
                           </span>
                         </div>
@@ -1972,27 +1884,24 @@ export default function PropertyMap({
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Lucro Líquido</span>
                           <span
                             className={`text-xs font-black font-mono mt-0.5 ${
-                              auc.hasMicroBenchmark === false
+                              auc.calculatedProfit === undefined && !auc.vendaBaixaPrice
                                 ? 'text-slate-400'
-                                : (auc.calculatedProfit || 0) >= 0
-                                  ? 'text-white'
+                                : (auc.calculatedProfit ?? ((auc.vendaBaixaPrice || 0) - totalCost)) >= 0
+                                  ? 'text-emerald-400'
                                   : 'text-rose-400'
                             }`}
                           >
-                            {auc.hasMicroBenchmark === false || auc.calculatedProfit === undefined
+                            {auc.calculatedProfit === undefined && !auc.vendaBaixaPrice
                               ? 'Sob consulta'
-                              : formatBRL(auc.calculatedProfit || 0)}
+                              : formatBRL(auc.calculatedProfit ?? ((auc.vendaBaixaPrice || 0) - totalCost))}
                           </span>
                         </div>
 
-                        <div className="relative group/itbi bg-amber-950/30 p-1.5 rounded-lg border border-amber-500/40 shadow-xs flex flex-col justify-center cursor-help">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[8.5px] text-amber-400 block uppercase font-bold truncate">Gabarito ITBI</span>
-                            <span className="text-[8px] text-amber-400/80 font-mono">ℹ️</span>
-                          </div>
-                          <span className="text-xs font-black text-amber-300 font-mono block mt-0.5">
+                        <div className="relative group/itbi flex flex-col justify-center cursor-help">
+                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold truncate">Gabarito ITBI</span>
+                          <span className="text-xs font-bold text-slate-200 font-mono block mt-0.5">
                             {!auc.estimatedValue && !auc.itbiStreetAvgSqm ? (
-                              <span className="text-amber-400/90 font-mono text-[10px]">Sem amostragem</span>
+                              <span className="text-slate-400 font-mono text-[10px]">Sem amostragem</span>
                             ) : auc.estimatedValue ? (
                               formatBRL(auc.estimatedValue)
                             ) : auc.itbiUnitValueAvg ? (
@@ -2002,41 +1911,19 @@ export default function PropertyMap({
                             )}
                           </span>
 
-                          <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-amber-500/40 shadow-2xl opacity-0 pointer-events-none group-hover/itbi:opacity-100 transition-opacity z-50 text-left">
-                            <div className="text-[10.5px] font-bold text-amber-300 mb-1">🏛️ Gabarito Oficial de ITBI</div>
+                          <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/itbi:opacity-100 transition-opacity z-50 text-left">
+                            <div className="text-[10.5px] font-bold text-slate-200 mb-1">Gabarito Oficial de ITBI</div>
                             <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
-                              Média pericial de escrituras públicas de cartório registradas nesta rua e bairro (NBR 14.653 com Chauvenet).
+                              Média pericial de escrituras públicas registradas nesta rua e bairro (NBR 14.653).
                             </p>
-                            <div className="mt-1.5 pt-1 border-t border-slate-800 text-[9px] font-mono text-slate-400 flex justify-between">
-                              <span>
-                                {auc.itbiIsDerivedSqm
-                                  ? 'Unitário Homogeneizado:'
-                                  : auc.itbiIsAbsolutePricing
-                                    ? 'Preço Médio ITBI:'
-                                    : 'Unitário:'}
-                              </span>
-                              <strong className="text-amber-300">
-                                {auc.itbiIsAbsolutePricing
-                                  ? formatBRL(auc.itbiAbsoluteAvgPrice || auc.estimatedValue || 0)
-                                  : `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²`}
-                              </strong>
-                            </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80 items-stretch text-left">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 py-1.5 border-t border-slate-800/60 items-stretch text-left">
                         <div className="flex flex-col justify-center">
                           <span className="text-[8.5px] text-slate-400 block uppercase font-bold">ROI Estimado</span>
-                          <span
-                            className={`text-xs font-black font-mono mt-0.5 ${
-                              auc.calculatedRoi === undefined
-                                ? 'text-slate-400'
-                                : (auc.calculatedRoi || 0) > 40
-                                  ? 'text-emerald-400'
-                                  : 'text-indigo-400'
-                            }`}
-                          >
+                          <span className="text-xs font-bold text-slate-200 font-mono mt-0.5">
                             {auc.calculatedRoi === undefined
                               ? 'Sob consulta'
                               : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
@@ -2044,149 +1931,55 @@ export default function PropertyMap({
                         </div>
 
                         <div className="flex flex-col justify-center">
-                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Avaliação Caixa</span>
-                          <span className="text-xs font-black text-slate-300 font-mono mt-0.5">
+                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Avaliação Edital</span>
+                          <span className="text-xs font-bold text-slate-200 font-mono mt-0.5">
                             {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
                           </span>
                         </div>
 
-                        <div className="relative group/liq bg-slate-950/40 p-1.5 rounded-lg border border-slate-800 flex flex-col justify-center cursor-help">
+                        <div className="flex flex-col justify-center">
                           {(() => {
                             const effScore =
                               !auc.itbiStreetCount || auc.itbiStreetCount === 0
                                 ? 0
                                 : Math.min(auc.liquidityScore ?? 0, assessDataQuality(auc).liquidityCeiling);
-                            const streetCount = auc.itbiStreetCount || 0;
-                            const roi = auc.calculatedRoi || 0;
                             return (
                               <>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[8.5px] text-slate-400 font-medium block">Liquidez</span>
-                                  <span className="text-[8px] text-slate-400 font-mono">ℹ️</span>
-                                </div>
-                                <span
-                                  className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
-                                    effScore >= 7 ? 'text-emerald-400' : 'text-amber-400'
-                                  }`}
-                                >
-                                  {effScore}/10
-                                </span>
-
-                                <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-indigo-500/40 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
-                                  <div className="text-[10.5px] font-bold text-indigo-300 mb-1">
-                                    📊 Indicador de Liquidez ({effScore}/10)
-                                  </div>
-                                  <div className="text-[9px] text-slate-300 space-y-1 font-sans">
-                                    <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                                      <span>Amostras na Via:</span>
-                                      <strong className="font-mono text-slate-200">{streetCount} tx</strong>
-                                    </div>
-                                    <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                                      <span>Margem de Retorno:</span>
-                                      <strong className="font-mono text-emerald-400">ROI {roi}%</strong>
-                                    </div>
-                                  </div>
-                                </div>
+                                <span className="text-[8.5px] text-slate-400 font-bold uppercase block">Liquidez</span>
+                                <span className="text-xs font-bold text-slate-200 font-mono mt-0.5">{effScore}/10</span>
                               </>
                             );
                           })()}
                         </div>
 
-                        <div className="relative group/flip bg-emerald-950/30 p-1.5 rounded-lg border border-emerald-500/40 shadow-xs flex flex-col justify-center cursor-help">
-                          <div className="flex items-center justify-between">
-                            <span
-                              className="text-[8.5px] text-emerald-400 block uppercase font-bold truncate"
-                              title="Flip Rápido (60d)"
-                            >
-                              Flip Rápido
-                            </span>
-                            <span className="text-[8px] text-emerald-400/80 font-mono">ℹ️</span>
-                          </div>
-                          <span className="text-xs font-black text-emerald-300 font-mono block mt-0.5">
+                        <div className="flex flex-col justify-center">
+                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold truncate">
+                            Flip Rápido
+                          </span>
+                          <span className="text-xs font-bold text-slate-200 font-mono block mt-0.5">
                             {!auc.vendaBaixaPrice ? (
                               <span className="text-slate-400 font-mono text-[10px]">Sem amostragem</span>
                             ) : (
                               formatBRL(auc.vendaBaixaPrice)
                             )}
                           </span>
-
-                          <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-emerald-500/40 shadow-2xl opacity-0 pointer-events-none group-hover/flip:opacity-100 transition-opacity z-50 text-left">
-                            <div className="text-[10.5px] font-bold text-emerald-300 mb-1">
-                              ⚡ Preço Sugerido p/ Revenda (60d)
-                            </div>
-                            <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
-                              85% ITBI (Piso Real de Cartório) + 15% Portais (Teto de Anúncios) calibrado para liquidez acelerada em até 60 dias.
-                            </p>
-                            {auc.ageDepreciationPct && auc.ageDepreciationPct > 0 ? (
-                              <div className="mt-1.5 pt-1 border-t border-slate-800 text-[9px] font-mono text-amber-300 flex justify-between">
-                                <span>Idade Ross-Heidecke:</span>
-                                <strong>-{auc.ageDepreciationPct}%</strong>
-                              </div>
-                            ) : null}
-                          </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/80 text-[10px] font-mono text-slate-400">
-                        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                          🏛️ ITBI:{' '}
-                          {auc.itbiIsDerivedSqm
-                            ? auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg
-                              ? `${formatBRL(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg)}/m² (${formatBRL(auc.estimatedValue || 0)})`
-                              : 'Sem dados'
-                            : auc.itbiIsAbsolutePricing
-                              ? auc.estimatedValue
-                                ? `${formatBRL(auc.estimatedValue)} (Preço Médio)`
-                                : 'Sem dados'
-                              : auc.itbiStreetAvgSqm
-                                ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²`
-                                : auc.itbiUnitValueAvg
-                                  ? `${formatBRL(auc.itbiUnitValueAvg)}/m²`
-                                  : 'Sem dados'}
-                        </span>
-                        {(() => {
-                          const portalSqm = Number((auc as any).moradaM2 || (auc as any).moradaVirtualM2 || auc.m2MercadoPortal || auc.streetPortalAvgSqm || 0);
-                          if (!(portalSqm > 0 && portalSqm <= 75000)) return null;
-                          return (
-                            <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-indigo-300 flex items-center gap-1">
-                              <span>🌐 Portais Imobiliários:</span>
-                              <span className="font-bold text-slate-100">
-                                {formatBRL(portalSqm)}/m²
-                              </span>
-                              {auc.valorSugeridoPortal ? (
-                                <span className="text-cyan-300">({formatBRL(auc.valorSugeridoPortal)})</span>
-                              ) : null}
-                            </span>
-                          );
-                        })()}
-                        <span className="px-1.5 py-0.5 rounded border bg-slate-800/80 text-slate-300 border-slate-700">
-                          {auc.occupied ? 'Ocupado' : 'Desocupado'}
-                        </span>
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[10.5px] text-slate-400">
+                        <span>{auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
+                        {auc.allowsFinancing && <span>✓ Financiamento</span>}
                       </div>
 
-                      <div className="pt-1.5 flex flex-wrap items-center gap-2">
+                      <div className="pt-1 space-y-1.5">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setSimulatingProperty(auc);
                           }}
-                          className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs py-1.5 px-2.5 rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-600/30"
+                          className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2 px-3 rounded-xl border border-slate-700 transition-colors cursor-pointer text-center"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-white" />
-                          <span>Simular Viabilidade</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCardClick(auc);
-                          }}
-                          className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl border border-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-                          title="Focar no mapa"
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Focar</span>
+                          Simular Viabilidade
                         </button>
 
                         {auc.auctionLink && (
@@ -2195,11 +1988,10 @@ export default function PropertyMap({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="px-2.5 py-1.5 bg-blue-800 hover:bg-blue-700 text-white rounded-xl border border-blue-600 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                            className="w-full block py-1.5 px-3 bg-transparent hover:bg-slate-800/70 text-slate-300 hover:text-white rounded-xl border border-slate-800 text-xs font-semibold transition-colors cursor-pointer text-center"
                             title="Acessar edital / Caixa oficial"
                           >
-                            <Building2 className="w-3 h-3 text-blue-200" />
-                            <span>{auc.origin === 'caixa' ? 'Caixa' : 'Edital'}</span>
+                            {auc.origin === 'caixa' ? 'Acessar Caixa' : 'Acessar Leilão'}
                           </a>
                         )}
                       </div>

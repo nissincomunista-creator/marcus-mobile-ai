@@ -186,77 +186,54 @@ export default function AdvancedFiltersModal({
             </button>
           </div>
 
-          {/* TAB DE CONTEXTO ESTILO QUINTOANDAR: COMPRAR | ALUGAR | IMÓVEL NOVO */}
-          <div className="px-5 pt-3 pb-2 bg-slate-900/95 border-b border-slate-800 shrink-0">
-            <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 max-w-sm">
-              <button
-                type="button"
-                onClick={() => setContextTab('comprar')}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
-                  contextTab === 'comprar'
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-sm ring-1 ring-indigo-400/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Comprar
-              </button>
-              <button
-                type="button"
-                onClick={() => setContextTab('alugar')}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
-                  contextTab === 'alugar'
-                    ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-sm ring-1 ring-amber-400/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Alugar
-              </button>
-              <button
-                type="button"
-                onClick={() => setContextTab('novo')}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
-                  contextTab === 'novo'
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-sm ring-1 ring-emerald-400/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Imóvel Novo
-              </button>
-            </div>
-            {contextTab === 'alugar' && (
-              <p className="text-[10.5px] text-amber-300/90 mt-2 font-mono">
-                🔑 Modo Locação & Moradia: Imóveis residenciais para alugar e morar. Compara o preço pedido com a média pericial da Calculadora para indicar se está Barato, Justo ou Caro.
-              </p>
-            )}
-            {contextTab === 'novo' && (
-              <p className="text-[10.5px] text-emerald-300/90 mt-2 font-mono">
-                ✨ Lançamentos e empreendimentos recém-entregues com garantia construtora.
-              </p>
-            )}
-          </div>
-
-          {/* CAMPO DE BUSCA (ESTILO QUINTOANDAR: RUA, BAIRRO OU CONDOMÍNIO) */}
-          {setSearchQuery && (
-            <div className="px-5 py-2.5 bg-slate-950/60 border-b border-slate-800 shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Digite rua, bairro ou condomínio..."
-                  className="w-full text-xs font-medium pl-10 pr-8 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
+          {/* TAB DE CONTEXTO: COMPRAR | ALUGAR | IMÓVEL NOVO (Somente no Flip House) */}
+          {mode === 'portais' && (
+            <div className="px-5 pt-3 pb-2 bg-slate-900/95 border-b border-slate-800 shrink-0">
+              <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 max-w-sm">
+                <button
+                  type="button"
+                  onClick={() => setContextTab('comprar')}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+                    contextTab === 'comprar'
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-sm ring-1 ring-indigo-400/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Comprar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContextTab('alugar')}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+                    contextTab === 'alugar'
+                      ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-sm ring-1 ring-amber-400/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Alugar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContextTab('novo')}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer text-center ${
+                    contextTab === 'novo'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-sm ring-1 ring-emerald-400/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Imóvel Novo
+                </button>
               </div>
+              {contextTab === 'alugar' && (
+                <p className="text-[10.5px] text-amber-300/90 mt-2 font-mono">
+                  Modo Locação &amp; Moradia: Imóveis residenciais para alugar e morar. Compara o preço pedido com a média pericial da Calculadora.
+                </p>
+              )}
+              {contextTab === 'novo' && (
+                <p className="text-[10.5px] text-emerald-300/90 mt-2 font-mono">
+                  Lançamentos e empreendimentos recém-entregues com garantia construtora.
+                </p>
+              )}
             </div>
           )}
 
@@ -439,64 +416,6 @@ export default function AdvancedFiltersModal({
               </div>
             </div>
 
-            {/* 6. CONDIÇÕES DE AQUISIÇÃO & OCUPAÇÃO (FINANCIAMENTO, PARCELAMENTO, DESOCUPADO) - Apenas Leilões */}
-            {mode !== 'portais' && (
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-                  Condições de Aquisição & Ocupação
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setOnlyFinancing((prev: boolean) => !prev)}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-between border ${
-                      onlyFinancing
-                        ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm ring-1 ring-emerald-400/30'
-                        : 'bg-slate-950 text-slate-300 hover:bg-slate-800 border-slate-750'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 truncate">
-                      <span>🏦</span>
-                      <span>Financiamento</span>
-                    </span>
-                    {onlyFinancing && <Check className="w-3.5 h-3.5 shrink-0 ml-1 text-white" />}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setOnlyInstallments((prev: boolean) => !prev)}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-between border ${
-                      onlyInstallments
-                        ? 'bg-blue-600 text-white border-blue-400 shadow-sm ring-1 ring-blue-400/30'
-                        : 'bg-slate-950 text-slate-300 hover:bg-slate-800 border-slate-750'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 truncate">
-                      <span>💳</span>
-                      <span>Parcelamento</span>
-                    </span>
-                    {onlyInstallments && <Check className="w-3.5 h-3.5 shrink-0 ml-1 text-white" />}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setOnlyVacant((prev: boolean) => !prev)}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-between border ${
-                      onlyVacant
-                        ? 'bg-teal-600 text-white border-teal-400 shadow-sm ring-1 ring-teal-400/30'
-                        : 'bg-slate-950 text-slate-300 hover:bg-slate-800 border-slate-750'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 truncate">
-                      <span>🔑</span>
-                      <span>Desocupado</span>
-                    </span>
-                    {onlyVacant && <Check className="w-3.5 h-3.5 shrink-0 ml-1 text-white" />}
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* 7. PARÂMETROS DE INVESTIMENTO & RETORNO (ESPECÍFICOS DO APP) */}
             <div className="pt-2 border-t border-slate-800">
               <button
@@ -656,30 +575,32 @@ export default function AdvancedFiltersModal({
                     </div>
                   </div>
 
-                  {/* Alocação de Capital */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400 font-mono uppercase font-bold">
-                        Orçamento Disponível (R$)
-                      </span>
-                      <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+                  {/* Alocação de Capital (somente Flip House) */}
+                  {mode === 'portais' && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-mono uppercase font-bold">
+                          Orçamento Disponível (R$)
+                        </span>
+                        <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-xs text-slate-500 font-mono">R$</span>
+                        <input
+                          type="number"
+                          placeholder="Ex: 200000"
+                          value={capitalBudget}
+                          onChange={(e) => setCapitalBudget(e.target.value)}
+                          className="w-full text-xs font-mono font-bold border border-slate-750 rounded-xl pl-9 pr-3 py-2 bg-slate-950 text-emerald-400 placeholder-slate-600 outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      {capitalBudget && Number(capitalBudget) > 0 && (
+                        <p className="text-[10px] text-emerald-400 font-mono">
+                          Filtrando lotes que cabem em {formatBRL(Number(capitalBudget))} (à vista ou com 5% de entrada).
+                        </p>
+                      )}
                     </div>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs text-slate-500 font-mono">R$</span>
-                      <input
-                        type="number"
-                        placeholder="Ex: 200000"
-                        value={capitalBudget}
-                        onChange={(e) => setCapitalBudget(e.target.value)}
-                        className="w-full text-xs font-mono font-bold border border-slate-750 rounded-xl pl-9 pr-3 py-2 bg-slate-950 text-emerald-400 placeholder-slate-600 outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    {capitalBudget && Number(capitalBudget) > 0 && (
-                      <p className="text-[10px] text-emerald-400 font-mono">
-                        Filtrando lotes que cabem em {formatBRL(Number(capitalBudget))} (à vista ou com 5% de entrada).
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
             </div>

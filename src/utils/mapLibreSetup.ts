@@ -6,10 +6,10 @@ export type RioBuildingMetric = 'auctions' | 'm2' | 'liq' | 'spr';
 
 export function getTypologyColor(propertyType?: string): string {
   const t = (propertyType || '').toLowerCase();
-  if (t.includes('casa') || t.includes('sobrado')) return '#10b981';
-  if (t.includes('comercial') || t.includes('loja') || t.includes('sala') || t.includes('galpao') || t.includes('predio')) return '#f59e0b';
-  if (t.includes('terreno') || t.includes('lote') || t.includes('gleba')) return '#a855f7';
-  return '#3b82f6';
+  if (t.includes('casa') || t.includes('sobrado')) return '#22c55e';
+  if (t.includes('comercial') || t.includes('loja') || t.includes('sala') || t.includes('galpao') || t.includes('predio')) return '#facc15';
+  if (t.includes('terreno') || t.includes('lote') || t.includes('gleba')) return '#c084fc';
+  return '#38bdf8';
 }
 
 export const OPENFREEMAP_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';

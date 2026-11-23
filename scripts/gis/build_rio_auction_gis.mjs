@@ -474,10 +474,26 @@ async function main() {
         else if (dist <= 55) rank = 4;
         else continue;
 
+        const candH = Math.max(3.5, Math.round((Number(alturaRaw) || 6) * 10) / 10);
         const effRank = rank * 10 + ((area || 0) < 16 ? 1 : 0);
         const prev = tgt.bestBld;
-        if (!prev || effRank < prev.effRank || (effRank === prev.effRank && (dist < prev.dist - 0.5 || (Math.abs(dist - prev.dist) <= 0.5 && area > prev.area)))) {
-          tgt.bestBld = { oid, rank, effRank, dist: Math.round(dist * 10) / 10, area: area || 0, h: Math.max(3.5, Math.round((Number(alturaRaw) || 6) * 10) / 10), clnp };
+        const prefersTallerTower =
+          prev &&
+          rank <= 1 &&
+          prev.rank <= 1 &&
+          dist <= 15 &&
+          prev.dist <= 15 &&
+          candH > prev.h + 2;
+        if (
+          !prev ||
+          effRank < prev.effRank ||
+          prefersTallerTower ||
+          (effRank === prev.effRank &&
+            !(candH < prev.h - 2 && Math.abs(dist - prev.dist) <= 15) &&
+            (dist < prev.dist - 0.5 ||
+              (Math.abs(dist - prev.dist) <= 0.5 && (candH > prev.h + 1 || (Math.abs(candH - prev.h) <= 1 && area > prev.area)))))
+        ) {
+          tgt.bestBld = { oid, rank, effRank, dist: Math.round(dist * 10) / 10, area: area || 0, h: candH, clnp };
           if (!matchedBuildingGeoms.has(oid)) {
             matchedBuildingGeoms.set(oid, { oid, h: tgt.bestBld.h, isMulti, coords, area: area || 0 });
           }

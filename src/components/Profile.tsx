@@ -426,7 +426,7 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
             <button
               onClick={() => setAnalysisSortBy('roi')}
               className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                analysisSortBy === 'roi' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+                analysisSortBy === 'roi' ? 'bg-slate-800 text-white border border-slate-600' : 'text-slate-400 hover:text-white'
               }`}
             >
               Maior ROI %
@@ -434,7 +434,7 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
             <button
               onClick={() => setAnalysisSortBy('profit')}
               className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                analysisSortBy === 'profit' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+                analysisSortBy === 'profit' ? 'bg-slate-800 text-white border border-slate-600' : 'text-slate-400 hover:text-white'
               }`}
             >
               Maior Lucro R$
@@ -442,7 +442,7 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
             <button
               onClick={() => setAnalysisSortBy('date')}
               className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                analysisSortBy === 'date' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+                analysisSortBy === 'date' ? 'bg-slate-800 text-white border border-slate-600' : 'text-slate-400 hover:text-white'
               }`}
             >
               Recentes
@@ -474,100 +474,86 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
                     onClick={() => setSelectedAnalysis(item)}
                     className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between space-y-3 ${
                       isSelected 
-                        ? 'bg-slate-800/90 border-amber-500/70 shadow-lg ring-1 ring-amber-500/50' 
-                        : 'bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
+                        ? 'bg-slate-800/90 border-slate-500 shadow-lg' 
+                        : 'bg-slate-950 border-slate-800/60 hover:border-slate-700 hover:bg-slate-900/60'
                     }`}
                   >
                     {/* Card Header: Address & Acquisition Tag */}
                     <div className="flex justify-between items-start gap-2">
                       <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-[10px] font-mono font-bold bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800">
-                            {item.propertyType} • {item.sizeSqm}m²
-                          </span>
-                          <span className="text-[10px] font-mono font-bold bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                        <div className="text-xs text-slate-300 font-semibold">
+                          <span>{item.propertyType}, {item.sizeSqm} m²</span>
+                          <span className="mx-1.5 text-slate-500">—</span>
+                          <span className="italic font-bold text-slate-200">
                             {item.acquisitionMode === 'caixa' ? 'Venda Direta Caixa' : 'Leilão Judicial'}
                           </span>
                         </div>
-                        <h3 className="text-sm font-bold text-white mt-1.5 flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>{item.street}{item.streetNumber ? `, ${item.streetNumber}` : ''} - {item.neighborhood}, {item.city}/{item.state}</span>
+                        <h3 className="text-sm font-bold text-white mt-1">
+                          {item.street}{item.streetNumber ? `, ${item.streetNumber}` : ''} - {item.neighborhood}, {item.city}/{item.state}
                         </h3>
                       </div>
 
                       {/* Delete button */}
                       <button
                         onClick={(e) => handleDeleteAnalysis(item.id, e)}
-                        className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                        className="text-slate-500 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                         title="Excluir análise"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
 
-                    {/* Cost & Bid Snapshot */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/80 text-xs font-mono">
+                    {/* Cost, Bid & Lucro Líquido Snapshot */}
+                    {(() => {
+                      const netProfit =
+                        item.profitQuickSale !== undefined
+                          ? item.profitQuickSale
+                          : item.valueQuickSale
+                            ? item.valueQuickSale - item.totalAcquisitionCost
+                            : 0;
+                      return (
+                        <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-800/70 text-xs font-mono">
+                          <div>
+                            <span className="text-[9px] text-slate-400 uppercase block font-bold">Lance Arremate</span>
+                            <strong className="text-white font-bold">{formatBRL(item.arrematePrice)}</strong>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-slate-400 uppercase block font-bold">Custo Total Entrada</span>
+                            <strong className="text-slate-200 font-bold">{formatBRL(item.totalAcquisitionCost)}</strong>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-slate-400 uppercase block font-bold">Lucro Líquido</span>
+                            <strong className={`font-black ${netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {netProfit >= 0 ? `+${formatBRL(netProfit)}` : formatBRL(netProfit)}
+                            </strong>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Gabarito ITBI & Flip Rápido (mesmos dois parâmetros dos cards de leilão) */}
+                    <div className="grid grid-cols-2 gap-3 text-xs font-mono pt-1">
                       <div>
-                        <span className="text-[9px] text-slate-400 uppercase block font-bold">Lance Arremate</span>
-                        <strong className="text-white font-bold">{formatBRL(item.arrematePrice)}</strong>
+                        <span className="text-[9px] text-slate-400 uppercase block font-bold">Gabarito ITBI</span>
+                        <strong className="text-white text-xs block">{formatBRL(item.valueStreetAverage)}</strong>
+                        <span className="text-[10px] font-bold text-slate-400 block">+{item.roiStreetAverage}% ROI</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-slate-400 uppercase block font-bold">Custo Total Entrada</span>
-                        <strong className="text-amber-300 font-bold">{formatBRL(item.totalAcquisitionCost)}</strong>
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-slate-400 uppercase block font-bold">Custo / m² Efetivo</span>
-                        <strong className="text-slate-300 font-bold">R$ {item.effectiveSqmCost?.toLocaleString('pt-BR') || Math.round(item.totalAcquisitionCost / item.sizeSqm)}/m²</strong>
-                      </div>
-                    </div>
-
-                    {/* 4 ROIs & VALUES COMPARATIVE MATRIX (Requested by user) */}
-                    <div className="space-y-1 pt-1">
-                      <span className="text-[9.5px] font-mono text-slate-400 uppercase font-bold tracking-wider block">
-                        4 Faixas de Mercado & ROIs Projetados:
-                      </span>
-                      
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-mono">
-                        {/* Tier 1: Conservador / Venda Rápida */}
-                        <div className="bg-slate-900 p-2 rounded-xl border border-slate-800/80 text-center">
-                          <span className="text-[8px] text-slate-400 uppercase block font-bold">1. Venda Rápida</span>
-                          <strong className="text-white text-[11px] block">{formatBRL(item.valueQuickSale)}</strong>
-                          <span className="text-[10px] font-black text-emerald-400 block mt-0.5">+{item.roiQuickSale}% ROI</span>
-                        </div>
-
-                        {/* Tier 2: Média Mesma Rua / Prédio */}
-                        <div className="bg-slate-900 p-2 rounded-xl border border-slate-800/80 text-center">
-                          <span className="text-[8px] text-slate-400 uppercase block font-bold">2. Mesma Rua</span>
-                          <strong className="text-white text-[11px] block">{formatBRL(item.valueStreetAverage)}</strong>
-                          <span className="text-[10px] font-black text-emerald-400 block mt-0.5">+{item.roiStreetAverage}% ROI</span>
-                        </div>
-
-                        {/* Tier 3: Média Saneada Bairro */}
-                        <div className="bg-slate-900 p-2 rounded-xl border border-slate-800/80 text-center">
-                          <span className="text-[8px] text-slate-400 uppercase block font-bold">3. Média Bairro</span>
-                          <strong className="text-white text-[11px] block">{formatBRL(item.valueNeighborhood)}</strong>
-                          <span className="text-[10px] font-black text-emerald-400 block mt-0.5">+{item.roiNeighborhood}% ROI</span>
-                        </div>
-
-                        {/* Tier 4: Portais Teto */}
-                        <div className="bg-slate-900 p-2 rounded-xl border border-slate-800/80 text-center">
-                          <span className="text-[8px] text-slate-400 uppercase block font-bold">4. Portais Teto</span>
-                          <strong className="text-white text-[11px] block">{formatBRL(item.valuePortalsAsking)}</strong>
-                          <span className="text-[10px] font-black text-emerald-400 block mt-0.5">+{item.roiPortalsAsking}% ROI</span>
-                        </div>
+                        <span className="text-[9px] text-slate-400 uppercase block font-bold">Flip Rápido</span>
+                        <strong className="text-white text-xs block">{formatBRL(item.valueQuickSale)}</strong>
+                        <span className="text-[10px] font-bold text-slate-400 block">+{item.roiQuickSale}% ROI</span>
                       </div>
                     </div>
 
                     {/* Footer Summary Badges */}
-                    <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80">
+                    <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 pt-1.5 border-t border-slate-800/60">
                       <div className="flex items-center space-x-2">
-                        <span className="text-emerald-400 font-bold">Flip 6m: +{item.flipNetRoi6m}% ROI</span>
+                        <span className="text-slate-300 font-semibold">Flip 6m: +{item.flipNetRoi6m}% ROI</span>
                         <span>•</span>
-                        <span className="text-indigo-400 font-bold">Locação: {item.netRentalYieldAnnual?.toFixed(1)}% a.a.</span>
+                        <span className="text-slate-300 font-semibold">Locação: {item.netRentalYieldAnnual?.toFixed(1)}% a.a.</span>
                       </div>
                       <span className="text-slate-500">Salvo em: {new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
                     </div>
-
                   </div>
                 );
               })}
@@ -625,8 +611,8 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
                         <span className="text-slate-300">{formatBRL(selectedAnalysis.acquisitionMode === 'leilao' ? Math.round(selectedAnalysis.arrematePrice * 0.05) : 0)}</span>
                       </div>
                       <div className="flex justify-between pt-1.5 border-t border-slate-800 font-black">
-                        <span className="text-amber-400">CUSTO TOTAL ENTRADA:</span>
-                        <span className="text-amber-400">{formatBRL(selectedAnalysis.totalAcquisitionCost)}</span>
+                        <span className="text-slate-200">CUSTO TOTAL ENTRADA:</span>
+                        <span className="text-white">{formatBRL(selectedAnalysis.totalAcquisitionCost)}</span>
                       </div>
                     </div>
                   </div>
@@ -634,28 +620,28 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
                   {/* 2. Matriz de Saída & Lucro Líquido */}
                   <div className="space-y-1.5">
                     <span className="text-[9.5px] font-mono uppercase text-slate-400 font-bold tracking-wider block">
-                      2. Matriz Comparativa de Saída:
+                      2. Gabarito &amp; Flip Rápido:
                     </span>
                     <div className="space-y-1.5 text-xs font-mono">
                       <div className="p-2 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
                         <div>
-                          <span className="text-white font-bold block text-xs">🚀 Venda Rápida (Conservador)</span>
+                          <span className="text-white font-bold block text-xs">Flip Rápido (Conservador)</span>
                           <span className="text-[10px] text-slate-400">Saída: {formatBRL(selectedAnalysis.valueQuickSale)}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-emerald-400 font-black block text-xs">+{selectedAnalysis.roiQuickSale}% ROI</span>
-                          <span className="text-[10px] text-slate-300">Lucro: +{formatBRL(selectedAnalysis.profitQuickSale)}</span>
+                          <span className="text-slate-200 font-bold block text-xs">+{selectedAnalysis.roiQuickSale}% ROI</span>
+                          <span className="text-[10px] text-emerald-400 font-bold">Lucro: +{formatBRL(selectedAnalysis.profitQuickSale)}</span>
                         </div>
                       </div>
 
                       <div className="p-2 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
                         <div>
-                          <span className="text-white font-bold block text-xs">🏛️ Média da Mesma Rua (ITBI)</span>
+                          <span className="text-white font-bold block text-xs">Gabarito ITBI (Mesma Rua)</span>
                           <span className="text-[10px] text-slate-400">Saída: {formatBRL(selectedAnalysis.valueStreetAverage)}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-emerald-400 font-black block text-xs">+{selectedAnalysis.roiStreetAverage}% ROI</span>
-                          <span className="text-[10px] text-slate-300">Lucro: +{formatBRL(selectedAnalysis.profitStreetAverage)}</span>
+                          <span className="text-slate-200 font-bold block text-xs">+{selectedAnalysis.roiStreetAverage}% ROI</span>
+                          <span className="text-[10px] text-emerald-400 font-bold">Lucro: +{formatBRL(selectedAnalysis.profitStreetAverage)}</span>
                         </div>
                       </div>
                     </div>
@@ -665,13 +651,13 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                     <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
                       <span className="text-[8.5px] text-slate-400 uppercase font-bold block">Flip Líquido 6m</span>
-                      <strong className="text-emerald-400 font-black text-xs block mt-0.5">+{selectedAnalysis.flipNetRoi6m}% ROI</strong>
-                      <span className="text-[9.5px] text-slate-300 block mt-0.5">+{formatBRL(selectedAnalysis.flipNetProfit6m)}</span>
+                      <strong className="text-white font-bold text-xs block mt-0.5">+{selectedAnalysis.flipNetRoi6m}% ROI</strong>
+                      <span className="text-[9.5px] text-emerald-400 font-bold block mt-0.5">+{formatBRL(selectedAnalysis.flipNetProfit6m)}</span>
                     </div>
 
                     <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
                       <span className="text-[8.5px] text-slate-400 uppercase font-bold block">Locação Líquida</span>
-                      <strong className="text-indigo-400 font-black text-xs block mt-0.5">{selectedAnalysis.netRentalYieldAnnual?.toFixed(1)}% a.a.</strong>
+                      <strong className="text-white font-bold text-xs block mt-0.5">{selectedAnalysis.netRentalYieldAnnual?.toFixed(1)}% a.a.</strong>
                       <span className="text-[9.5px] text-slate-300 block mt-0.5">{formatBRL(selectedAnalysis.netRentMonthly)}/mês pós-IR</span>
                     </div>
                   </div>
@@ -794,14 +780,14 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
           </div>
 
           <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
-            <span className="text-[10px] text-indigo-400 uppercase font-mono font-bold block">ROI Médio da Carteira</span>
-            <h3 className="text-2xl font-black font-mono text-indigo-400">+{portfolioSummary.averageRoi}%</h3>
+            <span className="text-[10px] text-slate-400 uppercase font-mono font-bold block">ROI Médio da Carteira</span>
+            <h3 className="text-2xl font-black font-mono text-white">+{portfolioSummary.averageRoi}%</h3>
             <span className="text-[10px] text-slate-500 font-mono">Retorno sobre capital</span>
           </div>
 
           <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1">
-            <span className="text-[10px] text-amber-400 uppercase font-mono font-bold block">Em Carteira Ativa</span>
-            <h3 className="text-2xl font-black font-mono text-amber-400">{portfolioSummary.activeCount} Imóveis</h3>
+            <span className="text-[10px] text-slate-400 uppercase font-mono font-bold block">Em Carteira Ativa</span>
+            <h3 className="text-2xl font-black font-mono text-white">{portfolioSummary.activeCount} Imóveis</h3>
             <span className="text-[10px] text-slate-500 font-mono">Em obras / venda / locação</span>
           </div>
         </div>
@@ -826,25 +812,19 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
                   key={item.id}
                   className="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-3 flex flex-col justify-between hover:border-slate-700 transition-colors"
                 >
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-start gap-1">
-                      <span className="text-[10px] font-mono font-bold bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                        {item.propertyType} • {item.sizeSqm}m²
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-start gap-2 text-xs">
+                      <span className="font-semibold text-slate-300">
+                        {item.propertyType}, {item.sizeSqm} m²
                       </span>
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                        item.status === 'Vendido' ? 'bg-emerald-950 text-emerald-300 border-emerald-800' :
-                        item.status === 'À Venda' ? 'bg-indigo-950 text-indigo-300 border-indigo-800' :
-                        item.status === 'Locado' ? 'bg-blue-950 text-blue-300 border-blue-800' :
-                        'bg-amber-950 text-amber-300 border-amber-800'
-                      }`}>
+                      <span className="font-bold text-slate-300">
                         {item.status}
                       </span>
                     </div>
 
                     <h4 className="font-bold text-sm text-white line-clamp-1">{item.title}</h4>
-                    <p className="text-xs text-slate-400 truncate flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>{item.address || item.neighborhood} - {item.city}/{item.state}</span>
+                    <p className="text-xs text-slate-400 truncate">
+                      {item.address || item.neighborhood} - {item.city}/{item.state}
                     </p>
                   </div>
 
@@ -865,22 +845,22 @@ export default function Profile({ auctions, onUpdateProperty, onSelectAuction }:
 
                     {isSold ? (
                       <div className="pt-2 border-t border-slate-800/80 space-y-1">
-                        <div className="flex justify-between text-emerald-400 font-bold">
+                        <div className="flex justify-between text-slate-200 font-bold">
                           <span>Preço Venda Real:</span>
                           <span>{formatBRL(item.salePrice || 0)}</span>
                         </div>
-                        <div className="flex justify-between text-xs font-black bg-emerald-950/60 p-1.5 rounded border border-emerald-800/50">
-                          <span className="text-emerald-300">LUCRO NO BOLSO:</span>
-                          <span className="text-emerald-300">+{formatBRL(item.netProfitReal || 0)}</span>
+                        <div className="flex justify-between text-xs font-black">
+                          <span className="text-slate-300">LUCRO LÍQUIDO:</span>
+                          <span className="text-emerald-400">+{formatBRL(item.netProfitReal || 0)}</span>
                         </div>
                         <div className="flex justify-between text-[10.5px] font-bold">
                           <span className="text-slate-400">ROI Efetivo:</span>
-                          <span className="text-emerald-400 font-mono">+{item.netRoiReal}% ROI ({item.monthlyYieldReal}% a.m.)</span>
+                          <span className="text-slate-200 font-mono">+{item.netRoiReal}% ROI ({item.monthlyYieldReal}% a.m.)</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="pt-1.5 text-[10px] text-amber-400 font-mono">
-                        ⏳ Imóvel em carregamento ({item.holdingMonths} meses previstos)
+                      <div className="pt-1.5 text-[10px] text-slate-400 font-mono">
+                        Imóvel em carregamento ({item.holdingMonths} meses previstos)
                       </div>
                     )}
                   </div>

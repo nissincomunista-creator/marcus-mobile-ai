@@ -1778,99 +1778,107 @@ export default function Dashboard({
         )}
       </AnimatePresence>
 
-      {/* Main Full-Width View: Zap-Style Filter Header + Integrated Lista/Mapa */}
+      {/* Main Full-Width View: Zap-Style Filter Header + Lista + Fullscreen Mapa */}
       <div className="space-y-3">
         <main className="w-full space-y-3">
-          <ZapFilterHeader
-            mode={mode}
-            syncStatus={syncStatus}
-            selectedStateFilter={selectedStateFilter}
-            setSelectedStateFilter={setSelectedStateFilter}
-            uniqueStates={uniqueStates}
-            selectedCityFilter={selectedCityFilter}
-            setSelectedCityFilter={setSelectedCityFilter}
-            citySearchInput={citySearchInput}
-            setCitySearchInput={setCitySearchInput}
-            filteredCitiesTypeahead={filteredCitiesTypeahead}
-            selectedNeighborhoods={selectedNeighborhoods}
-            setSelectedNeighborhoods={setSelectedNeighborhoods}
-            setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
-            neighborhoodSearch={neighborhoodSearch}
-            setNeighborhoodSearch={setNeighborhoodSearch}
-            visibleNeighborhoods={visibleNeighborhoods}
-            handleToggleNeighborhood={handleToggleNeighborhood}
-            handleSelectAllNeighborhoods={handleSelectAllNeighborhoods}
-            handleClearNeighborhoods={handleClearNeighborhoods}
-            locationScopeText={locationScopeText}
-            selectedOriginFilter={selectedOriginFilter}
-            setSelectedOriginFilter={setSelectedOriginFilter}
-            caixaSubModes={caixaSubModes}
-            setCaixaSubModes={setCaixaSubModes}
-            caixaModalityCounts={caixaModalityCounts}
-            selectedAuctioneerFilter={selectedAuctioneerFilter}
-            setSelectedAuctioneerFilter={setSelectedAuctioneerFilter}
-            activeJudicialAuctioneers={activeJudicialAuctioneers}
-            activeExtrajudicialAuctioneers={activeExtrajudicialAuctioneers}
-            advancedContextTab={advancedContextTab}
-            setAdvancedContextTab={setAdvancedContextTab}
-            selectedPortals={selectedPortals}
-            ALL_PORTALS={ALL_PORTALS}
-            portalCounts={portalCounts}
-            totalPortalCount={totalPortalCount}
-            handleTogglePortal={handleTogglePortal}
-            handleToggleAllPortals={handleToggleAllPortals}
-            handleSelectAllPortals={handleSelectAllPortals}
-            handleClearPortals={handleClearPortals}
-            onGarimparPortais={onGarimparPortais}
-            onlyFinancing={onlyFinancing}
-            setOnlyFinancing={setOnlyFinancing}
-            onlyInstallments={onlyInstallments}
-            setOnlyInstallments={setOnlyInstallments}
-            onlyVacant={onlyVacant}
-            setOnlyVacant={setOnlyVacant}
-            selectedTypeFilter={selectedTypeFilter}
-            setSelectedTypeFilter={setSelectedTypeFilter}
-            bedroomsFilter={bedroomsFilter}
-            setBedroomsFilter={setBedroomsFilter}
-            parkingFilter={parkingFilter}
-            setParkingFilter={setParkingFilter}
-            activeAdvancedFiltersCount={activeAdvancedFiltersCount}
-            onOpenAdvancedFilters={() => setIsAdvancedModalOpen(true)}
-            onOpenPresets={() => setIsPresetModalOpen(true)}
-            savedPresetsCount={savedPresets.length}
-            onClearAllFilters={handleClearAllFilters}
-            matchingCount={filteredAndSortedAuctions.length}
-            temporalSortMode={temporalSortMode}
-            setTemporalSortMode={setTemporalSortMode}
-            setSortBy={setSortBy}
-            strategyFilters={strategyFilters}
-            setStrategyFilters={setStrategyFilters}
-            isMining={isMining}
-            onSyncNow={handleSyncNow}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            onResetFocusedMapProp={() => setFocusedMapPropId(null)}
-            showMapFactions={showMapFactions}
-            setShowMapFactions={setShowMapFactions}
-          />
+          {(() => {
+            const zapFilterProps = {
+              mode,
+              selectedStateFilter,
+              setSelectedStateFilter,
+              uniqueStates,
+              selectedCityFilter,
+              setSelectedCityFilter,
+              citySearchInput,
+              setCitySearchInput,
+              filteredCitiesTypeahead,
+              selectedNeighborhoods,
+              setSelectedNeighborhoods,
+              setSelectedNeighborhoodFilter,
+              neighborhoodSearch,
+              setNeighborhoodSearch,
+              visibleNeighborhoods,
+              handleToggleNeighborhood,
+              handleSelectAllNeighborhoods,
+              handleClearNeighborhoods,
+              selectedOriginFilter,
+              setSelectedOriginFilter,
+              caixaSubModes,
+              setCaixaSubModes,
+              caixaModalityCounts,
+              selectedAuctioneerFilter,
+              setSelectedAuctioneerFilter,
+              activeJudicialAuctioneers,
+              activeExtrajudicialAuctioneers,
+              advancedContextTab,
+              setAdvancedContextTab,
+              selectedPortals,
+              ALL_PORTALS,
+              portalCounts,
+              totalPortalCount,
+              handleTogglePortal,
+              handleToggleAllPortals,
+              handleSelectAllPortals,
+              handleClearPortals,
+              onGarimparPortais,
+              onlyFinancing,
+              setOnlyFinancing,
+              onlyInstallments,
+              setOnlyInstallments,
+              onlyVacant,
+              setOnlyVacant,
+              selectedTypeFilter,
+              setSelectedTypeFilter,
+              bedroomsFilter,
+              setBedroomsFilter,
+              parkingFilter,
+              setParkingFilter,
+              activeAdvancedFiltersCount,
+              onOpenAdvancedFilters: () => setIsAdvancedModalOpen(true),
+              matchingCount: filteredAndSortedAuctions.length,
+              temporalSortMode,
+              setTemporalSortMode,
+              setSortBy,
+              strategyFilters,
+              setStrategyFilters,
+              isMining,
+              onSyncNow: handleSyncNow,
+              viewMode,
+              setViewMode,
+              onResetFocusedMapProp: () => setFocusedMapPropId(null),
+              showMapFactions,
+              setShowMapFactions,
+            };
 
-          {viewMode === 'map' ? (
-            <PropertyMap
-              auctions={auctions}
-              itbiStats={itbiStats}
-              onUpdateProperty={onUpdateProperty}
-              initialFilteredAuctions={filteredAndSortedAuctions}
-              initialSelectedPropertyId={focusedMapPropId || hoveredPropertyId || undefined}
-              hideCloseButton
-              showFactionsExternal={showMapFactions}
-              onToggleFactionsExternal={() => setShowMapFactions(v => !v)}
-              onSelectPropertyFromMap={(id) => {
-                const found = auctions.find(a => a.id === id);
-                if (found) setSimulatingAuction(found);
-              }}
-            />
-          ) : (
-            <>
+            return (
+              <>
+                <ZapFilterHeader {...zapFilterProps} />
+
+                {viewMode === 'map' && (
+                  <div className="fixed inset-0 z-50 w-screen h-screen bg-[#020617] flex flex-col animate-in fade-in duration-150">
+                    <PropertyMap
+                      auctions={auctions}
+                      itbiStats={itbiStats}
+                      onUpdateProperty={onUpdateProperty}
+                      initialFilteredAuctions={filteredAndSortedAuctions}
+                      initialSelectedPropertyId={focusedMapPropId || hoveredPropertyId || undefined}
+                      hideCloseButton
+                      onClose={() => setViewMode('list')}
+                      showFactionsExternal={showMapFactions}
+                      onToggleFactionsExternal={() => setShowMapFactions((v) => !v)}
+                      renderMapFilters={<ZapFilterHeader {...zapFilterProps} embeddedInMap />}
+                      onSelectPropertyFromMap={(id) => {
+                        const found = auctions.find((a) => a.id === id);
+                        if (found) setSimulatingAuction(found);
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            );
+          })()}
+
+          <>
           {/* LISTA / GRID DE CARDS DE OPORTUNIDADES */}
           {filteredAndSortedAuctions.length === 0 ? (
             <div className="bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3">
@@ -1947,73 +1955,48 @@ export default function Dashboard({
                       transition={{ duration: 0.2 }}
                       onMouseEnter={() => setHoveredPropertyId(auc.id)}
                       onMouseLeave={() => setHoveredPropertyId(null)}
-                      className={`auction-card bg-slate-900/95 border rounded-2xl shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col justify-between ${
+                      className={`auction-card bg-slate-900/70 border rounded-2xl transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                         isSelected
-                          ? 'border-indigo-400 ring-2 ring-indigo-400/60 shadow-[0_20px_50px_rgba(99,102,241,0.25)]'
-                          : 'border-slate-800 hover:border-slate-700'
+                          ? 'border-slate-500 ring-1 ring-slate-500/50'
+                          : 'border-slate-800/35 hover:border-slate-700/60'
                       }`}
                     >
-                      {/* Top cover photo padronizado (Portais e Leilões Judiciais/Extrajudiciais/Caixa) */}
-                      <div className="relative w-full h-44 sm:h-52 bg-slate-950 overflow-hidden border-b border-slate-800 rounded-t-2xl group/img">
+                      {/* Foto em formato widescreen 16:9 estilo Zap Imóveis */}
+                      <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-t-2xl group/img">
                         <PropertyThumbnail
                           property={auc}
                           size="cover"
                           className="!w-full !h-full !rounded-none !border-0"
                           onClick={() => setSelectedLightboxProperty(auc)}
                         />
-                        <div className="absolute top-2.5 left-2.5 flex items-center gap-2 pointer-events-none">
-                          {auc.origin === 'portal' ? (
-                            <span className="bg-slate-900/90 backdrop-blur-md text-amber-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg border border-amber-600/40 shadow-md font-mono flex items-center gap-1.5">
-                              <span>🏷️</span>
-                              <span>{auc.portalName || 'Portal'}</span>
-                            </span>
-                          ) : (
-                            <span className="bg-slate-900/90 backdrop-blur-md text-indigo-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg border border-indigo-600/40 shadow-md font-mono flex items-center gap-1.5">
-                              <span>🏛️</span>
-                              <span>{auc.origin === 'judicial' ? 'Leilão Judicial' : auc.origin === 'caixa' ? 'Imóveis Caixa' : (auc.auctioneerName || auc.leiloeiro || 'Leilão Extrajudicial')}</span>
-                            </span>
-                          )}
+                        <div className="absolute top-2 left-2.5 pointer-events-none">
+                          <span className="text-white text-[11px] font-extrabold tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]">
+                            {auc.origin === 'portal'
+                              ? (auc.portalName || 'Portal')
+                              : auc.origin === 'judicial'
+                                ? 'Leilão Judicial'
+                                : auc.origin === 'caixa'
+                                  ? 'Imóveis Caixa'
+                                  : (auc.auctioneerName || auc.leiloeiro || 'Leilão Extrajudicial')}
+                          </span>
                         </div>
-                        {auc.auctionLink && (
-                          <a
-                            href={auc.auctionLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute bottom-2.5 right-2.5 bg-indigo-600/90 hover:bg-indigo-600 text-white text-[11px] font-bold px-3 py-1 rounded-lg backdrop-blur-sm border border-indigo-400/50 shadow-md transition-all flex items-center gap-1 cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span>{auc.origin === 'portal' ? 'Ver Anúncio Original ↗' : 'Ver Lote do Leilão ↗'}</span>
-                          </a>
-                        )}
                       </div>
 
-                      <div className="p-3.5 sm:p-4 space-y-2.5">
-                        
-                        {/* Header do Card com Badges, Título e Alerta */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0 space-y-2">
-                            
-                            {/* Alerta Visual de Imóvel para Locação (Comparado à Calculadora de Valor Real) ou Venda Abaixo do Mercado */}
+                      <div className="p-3 space-y-2">
+                        {/* Linha logo abaixo da foto: descrição livre + modalidade (esq) e Salvar alinhado à direita */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0 space-y-1">
                             {auc.transactionType === 'aluguel' ? (
-                              <div className={`w-full py-2 px-0 mb-2 border-b border-slate-800/80 flex items-start gap-2 bg-transparent ${
-                                auc.vereditoLocacao === 'barato' ? 'text-emerald-300' :
-                                auc.vereditoLocacao === 'caro' ? 'text-rose-300' : 'text-cyan-300'
-                              }`}>
-                                <span className="text-base shrink-0 select-none">
-                                  {auc.vereditoLocacao === 'barato' ? '🔥' : auc.vereditoLocacao === 'caro' ? '⚠️' : '⚖️'}
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                  <div className={`text-xs font-black uppercase tracking-wide whitespace-normal break-words ${
-                                    auc.vereditoLocacao === 'barato' ? 'text-emerald-400' :
-                                    auc.vereditoLocacao === 'caro' ? 'text-rose-400' : 'text-cyan-400'
-                                  }`}>
-                                    {auc.vereditoLocacao === 'barato' ? `Alerta: Aluguel Barato para Morar (${Math.abs(auc.aluguelDiferencaPct || 0)}% abaixo da média)` :
-                                     auc.vereditoLocacao === 'caro' ? `Alerta: Aluguel Acima da Média (+${auc.aluguelDiferencaPct || 0}% acima da calculadora)` :
-                                     'Preço Justo de Locação (Na média da Calculadora)'}
-                                  </div>
-                                  <div className="text-[11px] text-slate-300 font-mono whitespace-normal break-words mt-0.5" style={{ overflowWrap: 'anywhere' }}>
-                                    O imóvel vale: <strong className="text-white font-bold">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500)))}</strong>
-                                  </div>
+                              <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
+                                <div className="font-bold uppercase tracking-wide text-white">
+                                  {auc.vereditoLocacao === 'barato'
+                                    ? `Aluguel Abaixo da Média (-${Math.abs(auc.aluguelDiferencaPct || 0)}%)`
+                                    : auc.vereditoLocacao === 'caro'
+                                      ? `Aluguel Acima da Média (+${auc.aluguelDiferencaPct || 0}%)`
+                                      : 'Preço Justo de Locação'}
+                                </div>
+                                <div className="text-slate-400 font-mono">
+                                  Valor estimado: <strong className="text-white">{formatBRL(auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500)))}</strong>
                                 </div>
                               </div>
                             ) : auc.origin === 'portal' && (() => {
@@ -2028,746 +2011,333 @@ export default function Dashboard({
                               const diff = valEst - preco;
                               const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : (auc.descontoMercadoPct || 0);
                               return (
-                                <div className="w-full py-2 px-0 mb-2 border-b border-slate-800/80 flex items-start gap-2 bg-transparent text-slate-200">
-                                  <span className="text-base shrink-0 select-none">🔥</span>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-black uppercase tracking-wide text-rose-400 whitespace-normal break-words overflow-visible">
-                                      Alerta: Abaixo do Valor de Mercado (-{pct}%)
-                                    </div>
-                                    <div className="text-[11px] text-slate-300 font-mono whitespace-normal break-words mt-0.5" style={{ overflowWrap: 'anywhere' }}>
-                                      Valor Estimado: <strong className="text-emerald-400 font-bold">{formatBRL(valEst)}</strong>
-                                      <span className="mx-1 text-slate-500">•</span>
-                                      Preço Anunciado: <strong className="text-white font-bold">{formatBRL(preco)}</strong>
-                                    </div>
+                                <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
+                                  <div className="font-bold uppercase tracking-wide text-slate-200">
+                                    Abaixo do Valor de Mercado (-{pct}%)
+                                  </div>
+                                  <div className="text-slate-400 font-mono">
+                                    Valor Estimado: <strong className="text-white">{formatBRL(valEst)}</strong>
                                   </div>
                                 </div>
                               );
                             })() : null}
 
-                            {/* Badges de Status dos Cards (apenas leilões, em portais já está no título) */}
-                            {auc.origin !== 'portal' && (
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'} className="bg-slate-900/60 text-slate-200 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-800">
-                                  {auc.propertyType} • {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
-                                  {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
-                                </span>
-                                {(() => {
-                                  const badge = getSaleModeBadge(auc);
-                                  return (
-                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${badge.className}`}>
-                                      <span>{badge.icon}</span>
-                                      <span>{badge.label}</span>
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                            )}
-
-                            {/* Título e Endereço */}
-                            <div>
-                              <h3 
-                                className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug hover:text-indigo-300 transition-colors cursor-pointer break-words"
-                                style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
-                                onClick={() => setSimulatingAuction(auc)}
-                                title={auc.title}
-                              >
-                                {auc.title}
-                              </h3>
-                              <div className="flex items-center text-xs text-slate-400 space-x-1.5 mt-1">
-                                <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                <span 
-                                  className="truncate break-words" 
-                                  style={{ overflowWrap: 'anywhere' }} 
-                                  title={(() => {
-                                    let addr = (auc.address || '').trim();
-                                    addr = addr.replace(/,\s*undefined\s*-/g, `, ${auc.city || 'Rio de Janeiro'} -`);
-                                    addr = addr.replace(/^(?:Rua|Avenida|Av|Travessa|Alameda|Estrada|Praça)\s*,\s*/i, '');
-                                    if (!addr) return `${auc.neighborhood || ''}, ${auc.city || ''} - ${auc.state || 'RJ'}`.replace(/^, /, '');
-                                    if (addr.includes(' - ') || (auc.city && addr.toLowerCase().includes((auc.city || '').toLowerCase()))) return addr;
-                                    const hasNeigh = auc.neighborhood && addr.toLowerCase().includes(auc.neighborhood.toLowerCase());
-                                    if (hasNeigh) return `${addr}, ${auc.city || ''} - ${auc.state || 'RJ'}`;
-                                    return `${addr} (${auc.neighborhood || ''} - ${auc.city || ''}/${auc.state || 'RJ'})`;
-                                  })()}
-                                >
-                                  {(() => {
-                                    let addr = (auc.address || '').trim();
-                                    addr = addr.replace(/,\s*undefined\s*-/g, `, ${auc.city || 'Rio de Janeiro'} -`);
-                                    addr = addr.replace(/^(?:Rua|Avenida|Av|Travessa|Alameda|Estrada|Praça)\s*,\s*/i, '');
-                                    if (!addr) return `${auc.neighborhood || ''}, ${auc.city || ''} - ${auc.state || 'RJ'}`.replace(/^, /, '');
-                                    if (addr.includes(' - ') || (auc.city && addr.toLowerCase().includes((auc.city || '').toLowerCase()))) return addr;
-                                    const hasNeigh = auc.neighborhood && addr.toLowerCase().includes(auc.neighborhood.toLowerCase());
-                                    if (hasNeigh) return `${addr}, ${auc.city || ''} - ${auc.state || 'RJ'}`;
-                                    return `${addr} (${auc.neighborhood || ''} - ${auc.city || ''}/${auc.state || 'RJ'})`;
-                                  })()}
-                                </span>
-                              </div>
-                              {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
-                                <div className="mt-1">
-                                  <span className="text-[11px] text-amber-400 font-mono font-bold inline-flex items-center gap-1" title="Bairro cadastrado no edital difere do endereço real no mapa/cartório">
-                                    <span>⚠️</span>
-                                    <span>{cleanDivergentNotice(auc.divergentNeighborhoodNotice)}</span>
+                            <div className="text-xs text-slate-300 leading-snug">
+                              <span title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'}>
+                                {[
+                                  auc.propertyType,
+                                  auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada',
+                                  auc.bedrooms ? `${auc.bedrooms} quarto${auc.bedrooms > 1 ? 's' : ''}` : '',
+                                  auc.parkingSpaces ? `${auc.parkingSpaces} vaga${auc.parkingSpaces > 1 ? 's' : ''}` : '',
+                                ].filter(Boolean).join(', ')}
+                              </span>
+                              {auc.origin !== 'portal' && (() => {
+                                const badge = getSaleModeBadge(auc);
+                                return badge?.label ? (
+                                  <span className="ml-1.5 italic font-semibold text-slate-200">
+                                    — {badge.label}
                                   </span>
-                                </div>
-                              )}
+                                ) : null;
+                              })()}
                             </div>
-
-                            {/* Informações complementares de publicação */}
-                            {auc.origin === 'portal' ? (
-                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
-                                <span>Publicação: <strong className="text-slate-200">{formatPublicationDateDisplay(auc)}</strong></span>
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
-                                <span>Origem: <strong className={
-                                  (auc.leiloeiro === 'Portal Zuk' || (auc.auctionLink && auc.auctionLink.includes('portalzuk')))
-                                    ? "text-purple-300 font-bold"
-                                    : "text-slate-200"
-                                }>
-                                  {getAuctionPortalDisplayName(auc)}
-                                </strong></span>
-                                <span>1ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.firstAuctionDate || auc.auctionDate)}</strong></span>
-                                {auc.secondAuctionDate && (
-                                  <span>2ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.secondAuctionDate)}</strong></span>
-                                )}
-                              </div>
-                            )}
-
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdateProperty({ id: auc.id, saved: !auc.saved });
+                            }}
+                            className={`p-1.5 rounded-full transition-colors cursor-pointer shrink-0 ${
+                              auc.saved
+                                ? 'text-indigo-300 bg-indigo-500/15'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                            }`}
+                            title={auc.saved ? 'Remover dos salvos' : 'Salvar oportunidade no perfil'}
+                          >
+                            <Bookmark className={`w-4 h-4 ${auc.saved ? 'fill-current' : ''}`} />
+                          </button>
                         </div>
 
-                        {/* Grid Financeiro: Locação vs Flip House (Portais) vs Leilões */}
+                        {/* Título e Endereço (sem ícone antes do endereço) */}
+                        <div className="space-y-0.5">
+                          <h3
+                            className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug hover:text-slate-200 transition-colors cursor-pointer break-words"
+                            style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                            onClick={() => setSimulatingAuction(auc)}
+                            title={auc.title}
+                          >
+                            {auc.title}
+                          </h3>
+                          <div
+                            className="text-xs text-slate-400 truncate break-words"
+                            style={{ overflowWrap: 'anywhere' }}
+                          >
+                            {(() => {
+                              let addr = (auc.address || '').trim();
+                              addr = addr.replace(/,\s*undefined\s*-/g, `, ${auc.city || 'Rio de Janeiro'} -`);
+                              addr = addr.replace(/^(?:Rua|Avenida|Av|Travessa|Alameda|Estrada|Praça)\s*,\s*/i, '');
+                              if (!addr) return `${auc.neighborhood || ''}, ${auc.city || ''} - ${auc.state || 'RJ'}`.replace(/^, /, '');
+                              if (addr.includes(' - ') || (auc.city && addr.toLowerCase().includes((auc.city || '').toLowerCase()))) return addr;
+                              const hasNeigh = auc.neighborhood && addr.toLowerCase().includes(auc.neighborhood.toLowerCase());
+                              if (hasNeigh) return `${addr}, ${auc.city || ''} - ${auc.state || 'RJ'}`;
+                              return `${addr} (${auc.neighborhood || ''} - ${auc.city || ''}/${auc.state || 'RJ'})`;
+                            })()}
+                          </div>
+                          {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
+                            <div className="text-[10.5px] text-slate-400 font-mono italic">
+                              {cleanDivergentNotice(auc.divergentNeighborhoodNotice)}
+                            </div>
+                          )}
+                          {auc.origin === 'portal' ? (
+                            <div className="text-[10.5px] text-slate-400 font-mono">
+                              Publicação: <strong className="text-slate-200">{formatPublicationDateDisplay(auc)}</strong>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[10.5px] text-slate-400 font-mono">
+                              <span>Origem: <strong className="text-slate-200">{getAuctionPortalDisplayName(auc)}</strong></span>
+                              <span>1ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.firstAuctionDate || auc.auctionDate)}</strong></span>
+                              {auc.secondAuctionDate && (
+                                <span>2ª Praça: <strong className="text-slate-200">{formatAuctionDate(auc.secondAuctionDate)}</strong></span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Grid Financeiro (sem bordas/caixas internas, cores somente em Lucro) */}
                         {auc.transactionType === 'aluguel' ? (
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                              {/* Aluguel Pedido */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Aluguel Pedido
-                                </span>
-                                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">
+                          <div className="space-y-1.5 pt-1.5 border-t border-slate-800/50">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">Aluguel Pedido</span>
+                                <span className="text-xs font-bold text-white font-mono">
                                   {formatBRL(auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice)}/mês
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
-                                  {auc.portalName || 'Portal'}
-                                </span>
                               </div>
-
-                              {/* Aluguel / m² Anunciado */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Aluguel / m²
-                                </span>
-                                <span className="text-xs sm:text-sm font-normal text-amber-300 font-mono mt-0.5">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">Aluguel / m²</span>
+                                <span className="text-xs font-bold text-slate-200 font-mono">
                                   {formatBRL(Math.round((auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice) / (auc.sizeSqm || 1)))}/m²
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
-                                  Área: {auc.sizeSqm}m²
-                                </span>
                               </div>
-
-                              {/* Média da Calculadora */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Média Calculadora
-                                </span>
-                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">Média Calc.</span>
+                                <span className="text-xs font-bold text-slate-200 font-mono">
                                   {formatBRL(auc.mediaLocacaoCalculadora || Math.round((auc.valorMercadoEstimado || (auc.sizeSqm * (auc.m2ReferenciaBairro || 4500))) * 0.0055))}/mês
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
-                                  0.55% de {formatBRL(auc.valorMercadoEstimado)}
-                                </span>
                               </div>
-
-                              {/* Veredito Pericial */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Veredito Calculadora
-                                </span>
-                                <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
-                                  auc.vereditoLocacao === 'barato' ? 'text-emerald-400' :
-                                  auc.vereditoLocacao === 'caro' ? 'text-rose-400' : 'text-cyan-400'
-                                }`}>
-                                  {auc.vereditoLocacao === 'barato' ? `BARATO (-${Math.abs(auc.aluguelDiferencaPct || 0)}%)` :
-                                   auc.vereditoLocacao === 'caro' ? `CARO (+${auc.aluguelDiferencaPct || 0}%)` : 'PREÇO JUSTO'}
-                                </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
-                                  {auc.vereditoLocacao === 'barato' ? 'Ótimo p/ Morar' : auc.vereditoLocacao === 'caro' ? 'Acima do Mercado' : 'Alinhado à Região'}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Linha 2: Pacote Completo de Moradia e Taxas */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                              {/* Condomínio */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Condomínio
-                                </span>
-                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
-                                  {auc.valorCondominio ? `${formatBRL(auc.valorCondominio)}/mês` : 'Incluso / Sem taxa'}
-                                </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  {auc.valorCondominio ? 'Taxa ordinária' : 'Sem cobrança'}
-                                </span>
-                              </div>
-
-                              {/* IPTU Mensal */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  IPTU Mensal
-                                </span>
-                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
-                                  {auc.valorIptu ? `${formatBRL(auc.valorIptu)}/mês` : 'Isento'}
-                                </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  {auc.valorIptu ? 'Cota mensal' : 'Isento pela prefeitura'}
-                                </span>
-                              </div>
-
-                              {/* Total de Taxas (Condomínio + IPTU + Serviços) */}
-                              <div className="flex flex-col justify-center">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                    Total de Taxas
-                                  </span>
-                                  {auc.taxasServico ? (
-                                    <span className="text-[8px] bg-slate-800 text-amber-300/90 px-1 py-0.2 rounded font-mono" title={`Inclui taxas de serviço e seguro do portal: ${formatBRL(auc.taxasServico)}/mês`}>
-                                      +{formatBRL(auc.taxasServico)} serv.
-                                    </span>
-                                  ) : null}
-                                </div>
-                                <span className="text-xs sm:text-sm font-bold text-amber-300 font-mono mt-0.5">
-                                  {formatBRL(auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0)))}/mês
-                                </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  Cond. + IPTU{auc.taxasServico ? ' + Taxas' : ''}
-                                </span>
-                              </div>
-
-                              {/* Custo Total (Aluguel + Condomínio + IPTU + Taxas) */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-emerald-400 block uppercase font-bold tracking-wider">
-                                  Custo Total
-                                </span>
-                                <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono mt-0.5">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">Custo Total</span>
+                                <span className="text-xs font-bold text-white font-mono">
                                   {formatBRL(
                                     auc.totalRentalPackage ||
                                     ((auc.monthlyRent || auc.precoAnunciado || auc.auctionPrice || 0) +
                                      (auc.totalTaxas !== undefined ? auc.totalTaxas : ((auc.valorCondominio || 0) + (auc.valorIptu || 0) + (auc.taxasServico || 0))))
                                   )}/mês
                                 </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  Aluguel + Todas Taxas
-                                </span>
                               </div>
                             </div>
                           </div>
                         ) : auc.origin === 'portal' ? (
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                              {/* Preço Anunciado */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Preço Anunciado
-                                </span>
-                                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">
+                          <div className="space-y-1.5 pt-1.5 border-t border-slate-800/50">
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">Preço Anunciado</span>
+                                <span className="text-xs font-bold text-white font-mono">
                                   {formatBRL(auc.precoAnunciado || auc.auctionPrice)}
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
-                                  {auc.portalName || 'Portal'} · Área: {auc.sizeSqm}m²
-                                </span>
                               </div>
-
-                              {/* Custo Total Est. (Trocado de lugar com M² Ref. Bairro) */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Custo Total Est.
-                                </span>
-                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">Custo Total Est.</span>
+                                <span className="text-xs font-normal text-slate-200 font-mono">
                                   {formatBRL(totalCost)}
                                 </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  ITBI (3%) + RGI (2%) + Ref. (5%)
-                                </span>
                               </div>
-
-                              {/* Preço Sugerido Flip */}
-                              <div className="flex flex-col justify-center min-w-0">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider leading-tight">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold leading-tight">
                                   {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
                                 </span>
-                                <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5">
+                                <span className="text-xs font-bold text-white font-mono">
                                   {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
                                 </span>
-                                {(() => {
-                                  const preco = auc.precoAnunciado || auc.auctionPrice || 0;
-                                  const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
-                                  const diffPct = valEst > 0 ? Math.round(((valEst - preco) / valEst) * 100) : 0;
-                                  if (diffPct > 0) {
-                                    return (
-                                      <span className="text-[8.5px] font-mono text-slate-500 font-normal">
-                                        Deságio Flip: -{diffPct}%
-                                      </span>
-                                    );
-                                  } else if (diffPct < 0) {
-                                    return (
-                                      <span className="text-[8.5px] font-mono text-slate-500 font-normal">
-                                        Acima do Flip: +{Math.abs(diffPct)}%
-                                      </span>
-                                    );
-                                  }
-                                  return null;
-                                })()}
                               </div>
                             </div>
 
-                            {/* Linha 2: Viabilidade de Compra & Venda (Flip Rápido) */}
-                            <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                              {/* M² Ref. Bairro (Trocado de lugar com Custo Total) */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  M² Ref. Bairro
-                                </span>
-                                <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5">
+                            <div className="grid grid-cols-3 gap-2 pt-1.5 border-t border-slate-800/50">
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">M² Ref. Bairro</span>
+                                <span className="text-xs font-normal text-slate-200 font-mono">
                                   {(() => {
-                                    const itbiStat = itbiStats?.find(s => 
-                                      normalizeText(s.neighborhood) === normalizeText(auc.neighborhood) && 
+                                    const itbiStat = itbiStats?.find(s =>
+                                      normalizeText(s.neighborhood) === normalizeText(auc.neighborhood) &&
                                       (!auc.propertyType || s.propertyType === auc.propertyType)
                                     ) || itbiStats?.find(s => normalizeText(s.neighborhood) === normalizeText(auc.neighborhood));
                                     const m2Val = itbiStat?.avgSqm || auc.itbiNeighborhoodAvgSqm || auc.itbiUnitValueAvg || auc.m2ReferenciaBairro || 0;
                                     return formatBRL(m2Val);
                                   })()}/m²
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-mono">
-                                  Benchmark Calculadora
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">ROI Projetado</span>
+                                <span className="text-xs font-bold text-slate-200 font-mono">
+                                  {roi !== undefined ? (roi > 0 ? `+${roi}%` : `${roi}%`) : 'Sob análise'}
                                 </span>
                               </div>
-
-                              {/* ROI Projetado (Trocado de lugar com Lucro Estimado) */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  ROI Projetado
-                                </span>
-                                <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${
-                                  roi !== undefined && roi > 0 ? 'text-amber-400' :
-                                  roi !== undefined && roi < 0 ? 'text-rose-400' : 'text-slate-400'
-                                }`}>
-                                  {roi !== undefined ? (
-                                    roi > 0 ? `+${roi}%` : `${roi}%`
-                                  ) : 'Sob análise'}
-                                </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  Retorno sobre Custo
-                                </span>
-                              </div>
-
-                              {/* Lucro Estimado (Trocado de lugar com ROI Projetado) */}
-                              <div className="flex flex-col justify-center">
-                                <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                  Lucro Estimado
-                                </span>
-                                <span className={`text-xs sm:text-sm font-bold font-mono mt-0.5 ${
+                              <div>
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold">Lucro Estimado</span>
+                                <span className={`text-xs font-bold font-mono ${
                                   lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
                                   lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
                                 }`}>
-                                  {lucroReal !== undefined ? (
-                                    lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`
-                                  ) : 'Sob análise'}
-                                </span>
-                                <span className="text-[8.5px] text-slate-500 font-mono">
-                                  {lucroReal !== undefined && lucroReal > 0 ? 'Margem Líquida Flip' : 'Sem Margem Flip'}
+                                  {lucroReal !== undefined
+                                    ? (lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`)
+                                    : 'Sob análise'}
                                 </span>
                               </div>
                             </div>
                           </div>
                         ) : (
                           <>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                          
-                          {/* Lance Mínimo */}
-                          <div className="flex flex-col justify-center min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">
-                                Lance Mínimo
-                              </span>
-                              {auc.firstAuctionPrice && auc.secondAuctionPrice ? (
-                                <span className={`text-[8px] font-bold px-1 py-0.5 rounded leading-none ${
-                                  auc.auctionPrice === auc.firstAuctionPrice
-                                    ? 'bg-amber-950/80 text-amber-300 border border-amber-700/50'
-                                    : 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/50'
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t border-slate-800/50">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  <span className="text-[9px] text-slate-400 uppercase font-bold">Lance Mínimo</span>
+                                  {auc.firstAuctionPrice && auc.secondAuctionPrice ? (
+                                    <span className="text-[9px] font-bold text-slate-200">
+                                      {auc.auctionPrice === auc.firstAuctionPrice ? '1º Leilão' : '2º Leilão'}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <span className="text-xs font-bold text-white font-mono block truncate">
+                                  {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}
+                                </span>
+                                {auc.firstAuctionPrice && auc.secondAuctionPrice && (
+                                  <span className="text-[8.5px] text-slate-500 font-mono block leading-tight">
+                                    1º: {formatBRL(auc.firstAuctionPrice)} | 2º: {formatBRL(auc.secondAuctionPrice)}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="relative group/cost cursor-help min-w-0">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Custo Total Est.</span>
+                                <span className="text-xs font-normal text-slate-200 font-mono block truncate">
+                                  {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
+                                </span>
+                                <span className="text-[8.5px] text-slate-500 font-mono leading-tight block">
+                                  ITBI (3%) + RGI (2%) + Ref. (5%)
+                                </span>
+                                <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
+                                  <div className="font-bold text-slate-200 border-b border-slate-800 pb-1">Composição do Custo</div>
+                                  <div className="flex justify-between"><span>Lance:</span><strong>{costs.bid > 0 ? formatBRL(costs.bid) : 'Lance não confirmado'}</strong></div>
+                                  {costs.auctioneer > 0 && <div className="flex justify-between"><span>Comissão Leiloeiro (5%):</span><strong>{formatBRL(costs.auctioneer)}</strong></div>}
+                                  <div className="flex justify-between"><span>ITBI &amp; RGI:</span><strong>{formatBRL(costs.itbi + costs.registry)}</strong></div>
+                                  <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(costs.repair)}</strong></div>
+                                  <div className="flex justify-between border-t border-slate-800 pt-1 font-bold text-slate-100"><span>Total:</span><strong>{formatBRL(totalCost)}</strong></div>
+                                </div>
+                              </div>
+
+                              <div className="min-w-0">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Lucro Real Est.</span>
+                                <span className={`text-xs font-bold font-mono block truncate ${
+                                  lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
+                                  lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
                                 }`}>
-                                  {auc.auctionPrice === auc.firstAuctionPrice ? '1º Leilão' : '2º Leilão'}
+                                  {lucroReal !== undefined
+                                    ? (lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`)
+                                    : 'Sob análise'}
                                 </span>
-                              ) : null}
-                            </div>
-                            <span className="text-xs sm:text-sm font-normal text-white font-mono mt-0.5 truncate">
-                              {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}
-                            </span>
-                            {auc.firstAuctionPrice && auc.secondAuctionPrice && (
-                              <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
-                                1º: {formatBRL(auc.firstAuctionPrice)} | 2º: {formatBRL(auc.secondAuctionPrice)}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Custo Total Est. com Tooltip */}
-                          <div className="relative group/cost flex flex-col justify-center cursor-help min-w-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
-                                Custo Total Est.
-                              </span>
-                              <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
-                            </div>
-                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 truncate">
-                              {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
-                            </span>
-                            <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
-                              ITBI (3%) + RGI (2%) + Ref. (5%)
-                            </span>
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
-                              <div className="font-bold text-indigo-300 border-b border-slate-800 pb-1">Composição do Custo</div>
-                              <div className="flex justify-between"><span>Lance:</span><strong>{costs.bid > 0 ? formatBRL(costs.bid) : 'Lance não confirmado'}</strong></div>
-                              {costs.auctioneer > 0 && <div className="flex justify-between"><span>Comissão Leiloeiro (5%):</span><strong>{formatBRL(costs.auctioneer)}</strong></div>}
-                              <div className="flex justify-between"><span>ITBI & RGI:</span><strong>{formatBRL(costs.itbi + costs.registry)}</strong></div>
-                              <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(costs.repair)}</strong></div>
-                              {(costs.iptu > 0 || costs.condo > 0) && <div className="flex justify-between"><span>Dívidas (IPTU/Condomínio):</span><strong>{formatBRL(costs.iptu + costs.condo)}</strong></div>}
-                              <div className="flex justify-between"><span>Carregamento (1.5% Gabarito):</span><strong>{formatBRL(costs.custoCarregamento)}</strong></div>
-                              <div className="flex justify-between border-t border-slate-800 pt-1 font-bold text-slate-100"><span>Total:</span><strong>{formatBRL(totalCost)}</strong></div>
-                            </div>
-                          </div>
-
-                          {/* Lucro Estimado Real com cor idêntica ao Flip House */}
-                          <div className="flex flex-col justify-center min-w-0">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
-                              Lucro Real Est.
-                            </span>
-                            <span className={`text-xs sm:text-sm font-bold font-mono mt-0.5 truncate ${
-                              lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
-                              lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
-                            }`}>
-                              {lucroReal !== undefined ? (
-                                lucroReal > 0 ? formatBRL(lucroReal) : `Sem margem (${formatBRL(lucroReal)})`
-                              ) : 'Sob análise'}
-                            </span>
-                            {spreadSqm > 0 && (
-                              <span className="text-[8.5px] font-mono text-slate-500 font-normal mt-0.5 leading-tight" title="Spread líquido de saída por m² privativo">
-                                Spread: {formatBRL(spreadSqm)}/m²
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Gabarito ITBI com Tooltip Pericial NBR 14.653 */}
-                          <div className="relative group/itbi flex flex-col justify-center cursor-help min-w-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider flex items-center space-x-0.5 truncate">
-                                <span>Gabarito ITBI</span>
-                              </span>
-                              <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
-                            </div>
-                            <span className="text-[11px] sm:text-xs xl:text-sm font-black text-slate-200 font-mono mt-0.5 truncate">
-                              {auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem amostras'}
-                            </span>
-                            {auc.isAreaHomogeneizada && (
-                              <span className="text-[8.5px] font-mono text-slate-500 font-normal mt-0.5 leading-tight" title="Homogeneizado por Curva de Escala Inversa da ABNT NBR 14.653">
-                                Escala NBR: {auc.fatorEscala ? auc.fatorEscala.toFixed(3) : '1.000'}
-                              </span>
-                            )}
-
-                            {/* Tooltip pericial */}
-                            <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/itbi:opacity-100 transition-opacity z-50 text-left">
-                              <div className="text-[11px] font-bold text-slate-200 flex items-center gap-1 mb-1">
-                                <span>🏛️ Base Pericial ITBI Municipal</span>
+                                {spreadSqm > 0 && (
+                                  <span className="text-[8.5px] font-mono text-slate-500 block leading-tight">
+                                    Spread: {formatBRL(spreadSqm)}/m²
+                                  </span>
+                                )}
                               </div>
-                              <p className="text-[10px] text-slate-300 leading-relaxed">
-                                Base apurada no registro de escrituras públicas da Prefeitura para esta via e bairro (Norma ABNT NBR 14.653 com saneamento Chauvenet).
-                              </p>
-                              <div className="mt-2 pt-1.5 border-t border-slate-800 text-[9.5px] font-mono text-slate-400 flex justify-between">
-                                <span>{auc.itbiIsDerivedSqm ? 'Unitário Homogeneizado:' : auc.itbiIsAbsolutePricing ? 'Preço Médio Compra e Venda:' : 'Unitário Apurado:'}</span>
-                                <strong className="text-slate-200">
-                                  {auc.itbiIsAbsolutePricing 
-                                    ? formatBRL(auc.itbiAbsoluteAvgPrice || auc.estimatedValue || 0) 
-                                    : `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²`}
-                                </strong>
-                              </div>
-                              {auc.itbiIsAbsolutePricing ? (
-                                <div className="text-[9px] font-mono text-emerald-400 flex justify-between pt-1">
-                                  <span>Amostras Compra e Venda:</span>
-                                  <strong>{auc.itbiCompraEVendaCount || 0} tx ({auc.itbiPeriodRange?.minDate && auc.itbiPeriodRange?.maxDate ? `${auc.itbiPeriodRange.minDate} a ${auc.itbiPeriodRange.maxDate}` : "2024-2025"})</strong>
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
 
-                        </div>
-
-                        {/* Grid Financeiro: Linha 2 (Avaliação Edital, ROI Projetado, Liquidez, Preço Sugerido Flip) */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                          
-                          {/* Coluna 1: Avaliação do Edital (Trocado de lugar com ROI Projetado) */}
-                          <div className="flex flex-col justify-center min-w-0">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
-                              Avaliação Edital
-                            </span>
-                            <span className="text-xs sm:text-sm font-normal text-slate-200 font-mono mt-0.5 truncate">
-                              {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
-                            </span>
-                            <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
-                              Laudo do Leilão
-                            </span>
-                          </div>
-
-                          {/* Coluna 2: ROI Projetado (Trocado de lugar com Avaliação Edital) */}
-                          <div className="flex flex-col justify-center min-w-0">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">
-                              ROI Projetado
-                            </span>
-                            <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 truncate ${
-                              roi !== undefined && roi > 0 ? 'text-amber-400' :
-                              roi !== undefined && roi < 0 ? 'text-rose-400' : 'text-slate-400'
-                            }`}>
-                              {roi !== undefined ? (
-                                roi > 0 ? `+${roi}%` : `${roi}%`
-                              ) : 'Sob análise'}
-                            </span>
-                            <span className="text-[8.5px] text-slate-500 font-mono leading-tight">
-                              Retorno sobre Custo
-                            </span>
-                          </div>
-
-                          {/* Coluna 3: Liquidez com Tooltip */}
-                          {(() => {
-                            const streetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
-                            const hasStreetData = streetCount > 0;
-                            const isCalibratedBadge = quality.badgeLabel.includes('Calibrado') || Boolean(auc.valuationCalibration);
-                            const effectiveCeiling = !hasStreetData 
-                              ? 0 
-                              : (isCalibratedBadge 
-                                  ? ((Number(auc.itbiSurroundingCount) || 0) < 5 ? 3.0 : 5.0) 
-                                  : quality.liquidityCeiling);
-                            const finalLiquidity = !hasStreetData ? 0 : Math.min(auc.liquidityScore ?? 0, effectiveCeiling);
-
-                            return (
-                              <div className="relative group/liq flex flex-col justify-center cursor-help min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider truncate">Liquidez</span>
-                                  <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
-                                </div>
-                                <span className={`text-xs sm:text-sm font-black font-mono mt-0.5 ${finalLiquidity === 0 ? 'text-slate-400' : 'text-slate-200'}`}>
-                                  {finalLiquidity}/10
+                              <div className="relative group/itbi cursor-help min-w-0">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Gabarito ITBI</span>
+                                <span className="text-xs font-bold text-slate-200 font-mono block truncate">
+                                  {auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem amostras'}
                                 </span>
+                                {auc.isAreaHomogeneizada && (
+                                  <span className="text-[8.5px] font-mono text-slate-500 block leading-tight">
+                                    Escala NBR: {auc.fatorEscala ? auc.fatorEscala.toFixed(3) : '1.000'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
 
-                                {/* Tooltip de Liquidez */}
-                                <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
-                                  <div className="text-[11px] font-bold text-slate-200 flex items-center gap-1 mb-1">
-                                    <span>📊 Critérios de Liquidez ({finalLiquidity}/10)</span>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t border-slate-800/50">
+                              <div className="min-w-0">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Avaliação Edital</span>
+                                <span className="text-xs font-normal text-slate-200 font-mono block truncate">
+                                  {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
+                                </span>
+                              </div>
+
+                              <div className="min-w-0">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">ROI Projetado</span>
+                                <span className="text-xs font-bold text-slate-200 font-mono block truncate">
+                                  {roi !== undefined ? (roi > 0 ? `+${roi}%` : `${roi}%`) : 'Sob análise'}
+                                </span>
+                              </div>
+
+                              {(() => {
+                                const streetCount = Math.max(0, Number(auc.itbiStreetCount) || 0);
+                                const hasStreetData = streetCount > 0;
+                                const isCalibratedBadge = quality.badgeLabel.includes('Calibrado') || Boolean(auc.valuationCalibration);
+                                const effectiveCeiling = !hasStreetData ? 0 : (isCalibratedBadge ? ((Number(auc.itbiSurroundingCount) || 0) < 5 ? 3.0 : 5.0) : quality.liquidityCeiling);
+                                const finalLiquidity = !hasStreetData ? 0 : Math.min(auc.liquidityScore ?? 0, effectiveCeiling);
+                                return (
+                                  <div className="min-w-0">
+                                    <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Liquidez</span>
+                                    <span className="text-xs font-bold text-slate-200 font-mono block">{finalLiquidity}/10</span>
                                   </div>
-                                  <p className="text-[10px] text-slate-300 leading-relaxed">
-                                    {!hasStreetData ? (
-                                      <span className="text-amber-300 font-bold block mb-1">
-                                        ⚠️ Sem dados na rua: Nenhuma transação registrada na via pública. Liquidez zerada (0/10).
-                                      </span>
-                                    ) : isCalibratedBadge ? (
-                                      <span className="text-amber-300 font-bold block mb-1">
-                                        ⚠️ Amostragem Calibrada: Dados locais insuficientes ({auc.itbiStreetCount || 0} na rua, {auc.itbiBuildingCount || 0} no prédio). Liquidez travada no teto máximo de {effectiveCeiling}/10.
-                                      </span>
-                                    ) : quality.hasNoLocalHistory ? (
-                                      <span className="text-amber-300 font-bold block mb-1">
-                                        ⚠️ Escuridão Amostral: Sem histórico de transações na via ou condomínio. Liquidez travada no teto de {quality.liquidityCeiling <= 1 ? '1.0/10' : '3.0/10'}.
-                                      </span>
-                                    ) : quality.hasFragileLocalHistory ? (
-                                      <span className="text-amber-300 font-bold block mb-1">
-                                        ⚠️ Amostragem Frágil: Poucas transações na via ({auc.itbiStreetCount || 0} na rua, {auc.itbiBuildingCount || 0} no prédio). Liquidez travada no teto máximo de 5.0/10.
-                                      </span>
-                                    ) : null}
-                                    Giro factual estritamente apurado pela densidade de escrituras públicas (ITBI) registradas no condomínio/prédio, na rua, no raio geodésico do entorno e no bairro.
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          {/* Coluna 4: Preço Sugerido Flip com Deságio Flip */}
-                          <div className="relative group/flip flex flex-col justify-center cursor-help min-w-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider leading-tight">
-                                {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
-                              </span>
-                              <Info className="w-2.5 h-2.5 text-slate-500 shrink-0" />
-                            </div>
-                            <span className="text-xs sm:text-sm font-bold text-white font-mono mt-0.5 truncate">
-                              {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
-                            </span>
-                            {(() => {
-                              const preco = auc.auctionPrice || 0;
-                              const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
-                              const diffPct = (valEst > 0 && preco > 0) ? Math.round(((valEst - preco) / valEst) * 100) : 0;
-                              if (diffPct > 0) {
-                                return (
-                                  <span className="text-[8.5px] font-mono text-slate-500 font-normal block leading-tight">
-                                    Deságio Flip: -{diffPct}%
-                                  </span>
                                 );
-                              } else if (diffPct < 0) {
-                                return (
-                                  <span className="text-[8.5px] font-mono text-slate-500 font-normal block leading-tight">
-                                    Acima do Flip: +{Math.abs(diffPct)}%
-                                  </span>
-                                );
-                              }
-                              return null;
-                            })()}
+                              })()}
 
-                            {/* Tooltip de Flip Rápido */}
-                            <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/flip:opacity-100 transition-opacity z-50 text-left">
-                              <div className="text-[11px] font-bold text-slate-200 flex items-center gap-1 mb-1">
-                                <span>⚡ Preço Sugerido p/ Revenda em 60 Dias</span>
+                              <div className="min-w-0">
+                                <span className="text-[9px] text-slate-400 block uppercase font-bold leading-tight">
+                                  {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
+                                </span>
+                                <span className="text-xs font-bold text-white font-mono block truncate">
+                                  {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
+                                </span>
+                                {(() => {
+                                  const preco = auc.auctionPrice || 0;
+                                  const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
+                                  const diffPct = (valEst > 0 && preco > 0) ? Math.round(((valEst - preco) / valEst) * 100) : 0;
+                                  if (diffPct > 0) return <span className="text-[8.5px] font-mono text-slate-500 block leading-tight">Deságio Flip: -{diffPct}%</span>;
+                                  if (diffPct < 0) return <span className="text-[8.5px] font-mono text-slate-500 block leading-tight">Acima do Flip: +{Math.abs(diffPct)}%</span>;
+                                  return null;
+                                })()}
                               </div>
-                              <p className="text-[10px] text-slate-300 leading-relaxed">
-                                90% do valor pericial de corte ITBI verificado, com depreciação de idade (Ross-Heidecke) quando aplicável para liquidação rápida.{auc.buildingSafetyValveApplied ? ' Aplicada válvula de segurança (-5%) por ausência de amostras no próprio condomínio.' : ''}
-                              </p>
                             </div>
-                          </div>
-
-                        </div>
-                        </>
+                          </>
                         )}
 
-                        {/* MÓDULO 2: Benchmark de Mercado dos Portais na Rua */}
-                        {(() => {
-                          const isRioDeJaneiroCity = (auc.state || 'RJ').toUpperCase() === 'RJ' && 
-                            (auc.city || 'Rio de Janeiro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('rio');
-                          const isRental = auc.transactionType === 'aluguel';
-                          const moradaSqm = (auc as any).moradaM2 || (auc as any).moradaVirtualM2;
-                          const rawPortalSqm = moradaSqm && moradaSqm > 0
-                            ? moradaSqm
-                            : ((!auc.isBairroPortalFallback && auc.m2MercadoPortal && auc.m2MercadoPortal > 0)
-                              ? auc.m2MercadoPortal
-                              : (auc.streetPortalAvgSqm && auc.streetPortalAvgSqm > 0 ? auc.streetPortalAvgSqm : 0));
-
-                          // Para locação, calcular m² médio de locação da via (~0,55% do m² venal da via ou média calculadora)
-                          const displayPortalSqm = isRental
-                            ? (rawPortalSqm > 0 ? Math.round(rawPortalSqm * 0.0055) : (auc.mediaLocacaoCalculadora && auc.sizeSqm ? Math.round(auc.mediaLocacaoCalculadora / auc.sizeSqm) : 0))
-                            : rawPortalSqm;
-
-                          // Filtro Visual de Sanidade: Descartar m² < R$ 1.500/m² no RJ ou outliers > R$ 75.000/m²
-                          const hasValidPortal = isRental
-                            ? (displayPortalSqm > 0 && displayPortalSqm <= 1500)
-                            : (rawPortalSqm > 0 && rawPortalSqm <= 75000 && (!isRioDeJaneiroCity || rawPortalSqm >= 1500));
-
-                          // Em leilões, só exibe o banner se houver dados válidos de portais
-                          if (auc.origin !== 'portal' && !hasValidPortal) return null;
-
-                          return (
-                            <div className="border-t border-slate-800/80 pt-2.5 flex items-center justify-between text-xs">
-                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 w-full justify-between">
-                                {hasValidPortal ? (
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[10px] font-bold uppercase font-mono text-slate-400">
-                                      {isRental ? 'Portais Imobiliários - Metro Quadrado Locação Rua:' : 'Portais Imobiliários - Metro Quadrado Rua:'}
-                                    </span>
-                                    <span className="font-mono font-bold text-slate-100 text-[12px]">
-                                      {formatBRL(displayPortalSqm)}/m²{isRental ? ' de locação' : ''}
-                                    </span>
-                                    {auc.portalSampleCount ? (
-                                      <span className="text-[10px] font-mono text-slate-400 font-normal">
-                                        ({auc.portalSampleCount.toLocaleString('pt-BR')} anúncios na via)
-                                      </span>
-                                    ) : null}
-                                    {!isRental && auc.portalTypologyAvgPrice ? (
-                                      <span className="text-[10px] text-slate-400 hidden md:inline">
-                                        · Preço médio anúncios: <strong className="text-slate-200 font-mono">{formatBRL(auc.portalTypologyAvgPrice)}</strong>
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center space-x-1.5">
-                                    <span className="text-[10px] font-bold uppercase font-mono text-slate-400">Portais Imobiliários:</span>
-                                    <span className="font-mono font-semibold text-slate-400 text-[11px]">
-                                      Sem média na via
-                                    </span>
-                                  </div>
-                                )}
-
-                                {auc.portalStreetUrl && (
-                                  <a
-                                    href={auc.portalStreetUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-0.5 transition-colors underline ml-auto"
-                                    title="Ver análise completa da rua nos portais"
-                                  >
-                                    <span>Análise da Rua</span>
-                                    <ExternalLink className="w-2.5 h-2.5" />
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* METADADOS E AVISOS DO IMÓVEL (Ocupação, Financiamento, Parcelamento, Comunidade, Potencial IA) */}
-                        {(auc.origin !== 'portal' || auc.isCommunityRisk || auc.nearbyCommunityName || auc.aiAppreciationScore) && (
-                          <div className="flex flex-wrap gap-2 pt-2.5 border-t border-slate-800/80 items-center">
-                            
-                            {/* Ocupação, Financiamento e Parcelamento (Apenas para leilões) */}
+                        {/* Linha única: Ocupado / Financiamento à esquerda e Ver no Mapa à direita */}
+                        <div className="pt-1.5 border-t border-slate-800/50 flex items-center justify-between gap-2 text-[11px] text-slate-300">
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 min-w-0">
                             {auc.origin !== 'portal' && (
                               <>
-                                <span className="text-[11px] font-semibold flex items-center space-x-1 px-2.5 py-0.5 rounded-full border bg-slate-800/80 text-slate-300 border-slate-700">
-                                  <span>{auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
-                                </span>
-
-                                {auc.allowsFinancing && (
-                                  <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                                    ✓ Financiamento
-                                  </span>
-                                )}
-
-                                {auc.allowsInstallments && (
-                                  <span className="text-[11px] bg-slate-800/80 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                                    ✓ Parcelamento
-                                  </span>
-                                )}
+                                <span>{auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
+                                {auc.allowsFinancing && <span>✓ Financiamento</span>}
+                                {auc.allowsInstallments && <span>✓ Parcelamento</span>}
                               </>
                             )}
-
-                            {/* Alerta de Comunidade / Risco Perimetral */}
                             {(() => {
                               const communityName = auc.isCommunityRisk ? auc.communityName : auc.nearbyCommunityName;
                               const faction = auc.isCommunityRisk ? auc.factionName : auc.nearbyFactionName;
                               const distance = auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM;
                               if (!communityName) return null;
-                              const isCritical = !!auc.isCommunityRisk;
                               return (
-                                <span
-                                  className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
-                                    isCritical
-                                      ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
-                                      : 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                                  }`}
-                                  title={isCritical ? 'Faixa crítica abaixo de 200m: reduz valor de venda e liquidez.' : 'Entre 200m e 500m: informativo.'}
-                                >
-                                  <AlertTriangle className={`w-3 h-3 shrink-0 ${isCritical ? 'text-rose-400' : 'text-amber-400'}`} />
-                                  <span>
-                                    {isCritical ? 'ÁREA CRÍTICA' : 'PRÓX. COMUNIDADE'}: {communityName}{faction ? ` (${faction})` : ''} • {distance === 0 ? 'dentro' : `~${distance || 0}m`}
-                                  </span>
+                                <span className="text-[10.5px] text-slate-400">
+                                  {auc.isCommunityRisk ? 'Área de risco' : 'Próx.'}: {communityName}{faction ? ` (${faction})` : ''} {distance === 0 ? 'dentro' : `~${distance || 0}m`}
                                 </span>
                               );
                             })()}
-
-                            {/* Potencial IA */}
-                            {auc.aiAppreciationScore && (
-                              <span className="text-[11px] bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full font-medium">
-                                ★ Potencial IA: {auc.aiAppreciationScore}/10
-                              </span>
-                            )}
-
                           </div>
-                        )}
 
-                        {/* LINHA EXCLUSIVA DO ITBI COM "VER NO MAPA" NA FRENTE (SEPARADO POR UMA LINHA, IGUAL AO FLIP HOUSE) */}
-                        <div className="border-t border-slate-800/80 pt-2 flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -2776,93 +2346,42 @@ export default function Dashboard({
                               setViewMode('map');
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 px-3 py-0.5 rounded-full font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                            className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-full font-bold cursor-pointer transition-colors shrink-0"
                             title="Localizar imóvel no Mapa Georreferenciado"
                           >
-                            <MapPin className="w-3 h-3 text-white" />
-                            <span>Ver no Mapa</span>
+                            Ver no Mapa
                           </button>
-
-                          {/* ITBI Rua vs Entorno */}
-                          {auc.itbiIsDerivedSqm ? (
-                            <span className="text-[11px] bg-slate-950 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-full font-mono" title="ITBI Homogeneizado NBR 14.653 Juiz de Fora">
-                              🏛️ ITBI JF: <strong className="text-slate-200">{auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg ? `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²` : 'Sem dados'}</strong>
-                              {auc.estimatedValue ? <span className="text-slate-300"> ({formatBRL(auc.estimatedValue)})</span> : null}
-                              {auc.itbiCompraEVendaCount ? <span className="text-slate-400"> • {auc.itbiCompraEVendaCount} tx</span> : null}
-                            </span>
-                          ) : auc.itbiIsAbsolutePricing ? (
-                            <span className="text-[11px] bg-slate-950 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-full font-mono" title="Média oficial de ITBI Juiz de Fora (Compra e Venda)">
-                              🏛️ ITBI JF: <strong className="text-slate-200">{auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem dados'}</strong>
-                              {auc.itbiCompraEVendaCount ? <span className="text-slate-400"> ({auc.itbiCompraEVendaCount} tx Compra e Venda)</span> : null}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] bg-slate-950 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-full font-mono" title="Média oficial de ITBI">
-                              🏛️ ITBI RUA: <strong className="text-slate-200">{(auc.itbiStreetCount && auc.itbiStreetCount > 0 && auc.itbiStreetAvgSqm) ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²` : 'Sem dados'}</strong> | ENTORNO: <strong className="text-slate-200">{auc.itbiUnitValueAvg ? `${formatBRL(auc.itbiUnitValueAvg)}/m²` : '-'}</strong>
-                            </span>
-                          )}
                         </div>
-
                       </div>
 
-                      {/* Footer com Ações */}
-                      <div className="bg-slate-950/60 border-t border-slate-800/90 px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2.5">
+                      {/* Footer empilhado centralizado (Simular em cima, Acessar Leilão embaixo) */}
+                      <div className="px-3 pb-3 pt-1 space-y-1.5">
                         <button
                           onClick={() => setSimulatingAuction(auc)}
-                          className={`px-3.5 py-2 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm cursor-pointer active:scale-95 shrink-0 ${
+                          className={`w-full py-2.5 px-3 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-[0.99] ${
                             auc.transactionType === 'aluguel'
                               ? 'bg-emerald-600 hover:bg-emerald-500'
                               : auc.origin === 'portal'
-                              ? 'bg-amber-600 hover:bg-amber-500'
-                              : 'bg-indigo-600 hover:bg-indigo-500'
+                                ? 'bg-amber-600 hover:bg-amber-500'
+                                : 'bg-indigo-600 hover:bg-indigo-500'
                           }`}
                         >
-                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                          <span className="whitespace-nowrap">
+                          <span>
                             {auc.transactionType === 'aluguel' ? 'Simular Locação' : auc.origin === 'portal' ? 'Simular Flip' : 'Simular Viabilidade'}
                           </span>
-                          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
                         </button>
 
-                        <div className="flex items-center gap-2 ml-auto">
-                          {auc.auctionLink && (
-                            <a
-                              href={auc.auctionLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700 flex items-center gap-1.5 whitespace-nowrap"
-                              title={auc.transactionType === 'aluguel' ? "Acessar anúncio de locação no portal" : auc.origin === 'portal' ? "Acessar anúncio original no portal" : "Acessar edital/anúncio original"}
-                            >
-                              <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
-                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                            </a>
-                          )}
-                          <button
-                            onClick={() => {
-                              onUpdateProperty({ id: auc.id, saved: !auc.saved });
-                            }}
-                            className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                              auc.saved
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
-                            }`}
-                            title={auc.saved ? 'Remover dos salvos' : 'Salvar oportunidade no perfil'}
+                        {auc.auctionLink && (
+                          <a
+                            href={auc.auctionLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2 px-3 text-xs font-semibold text-slate-200 hover:text-white bg-transparent hover:bg-slate-800/70 rounded-xl transition-colors border border-slate-800 flex items-center justify-center text-center"
                           >
-                            <Bookmark className={`w-4 h-4 ${auc.saved ? 'fill-current' : ''}`} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('Deseja remover este lote da base de garimpo?')) {
-                                onDeleteAuction(auc.id);
-                              }
-                            }}
-                            className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
-                            title="Remover leilão"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                            <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
+                          </a>
+                        )}
                       </div>
-
                     </motion.div>
                   );
                 })}
@@ -2871,7 +2390,6 @@ export default function Dashboard({
           )}
 
             </>
-          )}
         </main>
       </div>
 

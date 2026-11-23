@@ -914,13 +914,13 @@ export default function App() {
                     setActiveTab('garimpo');
                     setSelectedAuctionId(null);
                   }}
-                  className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border ${
                     activeTab === 'garimpo'
                       ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/40 ring-2 ring-emerald-400/30'
                       : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
                   }`}
                 >
-                  <Building2 className="w-3.5 h-3.5 text-emerald-300" />
+                  <Building2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                   <span>Garimpar Leilões</span>
                   <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/30 text-white">
                     {auctions.filter(a => a.origin !== 'portal').length}
@@ -932,15 +932,14 @@ export default function App() {
                     setActiveTab('portais');
                     setSelectedAuctionId(null);
                   }}
-                  className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
+                  className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border ${
                     activeTab === 'portais'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-400 shadow-orange-950/50 ring-2 ring-amber-400/40'
                       : 'bg-gradient-to-r from-amber-950/50 to-orange-950/50 text-amber-300 border-amber-600/40 hover:from-amber-900/70 hover:to-orange-900/70 hover:text-white'
                   }`}
                 >
-                  <span className="text-xs">🔥</span>
                   <span>Flip House</span>
-                  <span className="text-[10px] bg-black/40 text-amber-200 font-mono px-1.5 py-0.2 rounded-full border border-amber-400/30">
+                  <span className="text-[10px] bg-black/30 text-white font-mono px-1.5 py-0.2 rounded-full">
                     {auctions.filter(a => a.origin === 'portal').length}
                   </span>
                 </button>

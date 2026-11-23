@@ -57,7 +57,7 @@ export default function PropertyThumbnail({
   const isTerreno = propType.includes('terreno') || propType.includes('lote');
 
   const dimClasses = size === 'cover'
-    ? 'w-full h-44 sm:h-48'
+    ? 'w-full aspect-[16/9]'
     : size === 'sm'
     ? 'w-16 h-16 min-w-[64px]'
     : size === 'lg'
@@ -130,12 +130,6 @@ export default function PropertyThumbnail({
         </div>
       )}
 
-      {/* Caixa or Edital Mini Tag */}
-      {property.origin === 'caixa' && (
-        <span className="absolute bottom-1 right-1 px-1 py-0.2 bg-blue-950/90 text-blue-300 border border-blue-800/80 rounded text-[7.5px] font-mono font-bold shadow-xs">
-          CAIXA
-        </span>
-      )}
     </div>
   );
 }
