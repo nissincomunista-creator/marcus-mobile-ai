@@ -87,6 +87,9 @@ interface PropertyMapProps {
   onSelectPropertyFromMap: (id: string) => void;
   initialSelectedPropertyId?: string;
   onClose?: () => void;
+  hideCloseButton?: boolean;
+  showFactionsExternal?: boolean;
+  onToggleFactionsExternal?: () => void;
 }
 
 interface BuildingInspectorData {
@@ -170,6 +173,9 @@ export default function PropertyMap({
   onSelectPropertyFromMap,
   initialSelectedPropertyId,
   onClose,
+  hideCloseButton = false,
+  showFactionsExternal,
+  onToggleFactionsExternal,
 }: PropertyMapProps) {
   const [selectedPropId, setSelectedPropId] = useState<string>(initialSelectedPropertyId || '');
   const [activeMetric, setActiveMetric] = useState<RioBuildingMetric>('auctions');
@@ -300,7 +306,27 @@ export default function PropertyMap({
         c[1] <= viewportBounds.maxLng
       );
     });
-    const sorted = scoped.sort((a, b) => (b.calculatedRoi || 0) - (a.calculatedRoi || 0));
+    const getAuctionNetProfit = (a: AuctionProperty): number => {
+      if (a.calculatedProfit !== undefined && Number.isFinite(Number(a.calculatedProfit))) {
+        return Number(a.calculatedProfit);
+      }
+      const flipPrice =
+        Number((a as any).vendaBaixaPrice) ||
+        Number((a as any).vendaMediaPrice) ||
+        Number(a.estimatedValue) ||
+        0;
+      if (flipPrice > 0 && a.auctionPrice > 0) {
+        const totalCost =
+          a.auctionPrice + (a.pendingDebts || 0) + (a.estimatedRepair || 0) + (a.otherCosts || 0);
+        return flipPrice - totalCost;
+      }
+      return -Infinity;
+    };
+    const sorted = scoped.sort((a, b) => {
+      const diff = getAuctionNetProfit(b) - getAuctionNetProfit(a);
+      if (diff !== 0) return diff;
+      return (b.calculatedRoi ?? -Infinity) - (a.calculatedRoi ?? -Infinity);
+    });
     if (selectedPropId) {
       const sel = sorted.find((p) => p.id === selectedPropId);
       if (sel) {
@@ -611,118 +637,131 @@ export default function PropertyMap({
     map.on('moveend', updateViewportCounter);
     map.on('zoomend', updateViewportCounter);
 
-    // Click cluster bubble -> expand zoom smoothly
-    map.on('click', 'auctions-clusters', async (e) => {
-      const feat = e.features?.[0];
-      if (!feat) return;
-      const src = map.getSource('auctions-source') as any;
-      const clusterId = feat.properties?.cluster_id;
-      if (src?.getClusterExpansionZoom && clusterId != null) {
-        try {
-          const z = await src.getClusterExpansionZoom(clusterId);
-          map.easeTo({ center: (feat.geometry as any).coordinates, zoom: Math.min(18, z + 0.5) });
-        } catch {}
+    // Unified click handler: strict precedence (cluster > auction building/multi > IPP 3D building > clear)
+    map.on('click', async (e) => {
+      const existingLayer = (ids: string[]) => ids.filter((id) => Boolean(map.getLayer(id)));
+
+      // 1. Cluster zoom bubble
+      const clusterLayers = existingLayer(['auctions-clusters']);
+      if (clusterLayers.length) {
+        const clusterHits = map.queryRenderedFeatures(e.point, { layers: clusterLayers });
+        const feat = clusterHits[0];
+        if (feat) {
+          const src = map.getSource('auctions-source') as any;
+          const clusterId = feat.properties?.cluster_id;
+          if (src?.getClusterExpansionZoom && clusterId != null) {
+            try {
+              const z = await src.getClusterExpansionZoom(clusterId);
+              map.easeTo({ center: (feat.geometry as any).coordinates, zoom: Math.min(18, z + 0.5) });
+            } catch {}
+          }
+          return;
+        }
       }
-    });
 
-    // Click individual, multi-unit or 3D-extruded auction building
-    const handleAuctionFeatureClick = (e: any) => {
-      e.originalEvent?.stopPropagation?.();
-      const feat = e.features?.[0];
-      if (!feat) return;
-      const props = feat.properties || {};
-      const coords: [number, number] =
-        feat.geometry?.type === 'Point'
-          ? (feat.geometry.coordinates as [number, number])
-          : [Number(props.lng) || e.lngLat.lng, Number(props.lat) || e.lngLat.lat];
-      const cluster = buildingClusterByKeyRef.current[props.clusterKey];
-      const auctionProp = propByIdRef.current.get(props.propId);
+      // 2. Auction multi-unit or 3D colored auction building
+      const auctionLayers = existingLayer(['auctions-multi-unit', 'auctions-buildings-3d']);
+      if (auctionLayers.length) {
+        const auctionHits = map.queryRenderedFeatures(e.point, { layers: auctionLayers });
+        const feat = auctionHits[0];
+        if (feat) {
+          const props = feat.properties || {};
+          const coords: [number, number] =
+            feat.geometry?.type === 'Point'
+              ? (feat.geometry.coordinates as [number, number])
+              : [Number(props.lng) || e.lngLat.lng, Number(props.lat) || e.lngLat.lat];
+          const cluster = buildingClusterByKeyRef.current[props.clusterKey];
+          const auctionProp = propByIdRef.current.get(props.propId);
 
+          setSelectedBuildingInfo(null);
+
+          if (cluster && cluster.properties.length > 1) {
+            setSelectedPropId('');
+            setBuildingClusterModal({ address: cluster.address, properties: cluster.properties });
+            map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 17.2), pitch: 52, duration: 500 });
+          } else {
+            setBuildingClusterModal(null);
+            setSelectedPropId(props.propId || '');
+            map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 16.4), duration: 450 });
+          }
+
+          if (auctionProp) {
+            const el = document.getElementById(`side-card-${auctionProp.id}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+          return;
+        }
+      }
+
+      // 3. Regular IPP 3D building inspector
+      const ippLayers = existingLayer(['rio-edificacoes-3d']);
+      if (ippLayers.length) {
+        const ippHits = map.queryRenderedFeatures(e.point, { layers: ippLayers });
+        if (ippHits.length > 0) {
+          const bbox10: [maplibregl.PointLike, maplibregl.PointLike] = [
+            [e.point.x - 10, e.point.y - 10],
+            [e.point.x + 10, e.point.y + 10],
+          ];
+          const candidateFeats = [
+            ...ippHits,
+            ...map.queryRenderedFeatures(bbox10, { layers: ['rio-edificacoes-3d'] }),
+          ];
+          const feat =
+            candidateFeats.find((f: any) => Number(f.properties?.m2 || 0) > 0 && f.properties?.a) ||
+            candidateFeats.find((f: any) => Number(f.properties?.m2 || 0) > 0) ||
+            ippHits[0];
+          if (feat) {
+            const p = feat.properties || {};
+            const clickLng = e.lngLat.lng;
+            const clickLat = e.lngLat.lat;
+
+            let displayAddress = p.a || '';
+            if (!displayAddress) {
+              try {
+                const roadHits = map.queryRenderedFeatures([
+                  [e.point.x - 65, e.point.y - 65],
+                  [e.point.x + 65, e.point.y + 65],
+                ]);
+                const roadName = roadHits.find((rf: any) => {
+                  const lid = String(rf.layer?.id || '').toLowerCase();
+                  return (lid.includes('road') || lid.includes('transport') || lid.includes('highway') || lid.includes('street')) && rf.properties?.name;
+                })?.properties?.name;
+                if (roadName) displayAddress = `Edificação em ${roadName}`;
+              } catch {}
+            }
+
+            const nearby = filteredListRef.current.filter((a) => {
+              const c = getMapCoordinatesRef.current(a);
+              if (!c) return false;
+              const dLat = (c[0] - clickLat) * 110540;
+              const dLng = (c[1] - clickLng) * 111320 * Math.cos((clickLat * Math.PI) / 180);
+              return Math.hypot(dLat, dLng) <= 45;
+            });
+
+            // Clear any active auction/cluster card so the new IPP card cleanly replaces it
+            setSelectedPropId('');
+            setBuildingClusterModal(null);
+            setSelectedBuildingInfo({
+              id: Number(p.id) || undefined,
+              address: displayAddress || 'Edificação Cartográfica Oficial IPP',
+              bairro: p.b || 'Rio de Janeiro',
+              altura: Number(p.h) || 5,
+              m2: Number(p.m2) || 0,
+              tx: Number(p.tx) || 0,
+              liq: Number(p.liq) || 0,
+              spr: p.spr != null ? Number(p.spr) : 0,
+              lngLat: [clickLng, clickLat],
+              nearbyAuctions: nearby.slice(0, 6),
+            });
+            return;
+          }
+        }
+      }
+
+      // 4. Clicked empty area -> dismiss active bottom card
+      setSelectedPropId('');
+      setBuildingClusterModal(null);
       setSelectedBuildingInfo(null);
-      setSelectedPropId(props.propId);
-
-      if (cluster && cluster.properties.length > 1) {
-        setBuildingClusterModal({ address: cluster.address, properties: cluster.properties });
-        map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 17.2), pitch: 52, duration: 550 });
-      } else {
-        setBuildingClusterModal(null);
-        map.easeTo({ center: coords, zoom: Math.max(map.getZoom(), 16.4), duration: 450 });
-      }
-
-      if (auctionProp) {
-        const el = document.getElementById(`side-card-${auctionProp.id}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    };
-
-    map.on('click', 'auctions-multi-unit', handleAuctionFeatureClick);
-    map.on('click', 'auctions-buildings-3d', handleAuctionFeatureClick);
-
-    // Click any 3D IPP building polygon -> inspect ITBI metrics + height + nearby auctions
-    map.on('click', 'rio-edificacoes-3d', (e) => {
-      // Skip if an auction marker or highlighted auction building sits directly under the click
-      const pinHits = map.queryRenderedFeatures(e.point, {
-        layers: [
-          'auctions-buildings-3d',
-          'auctions-multi-unit',
-          'auctions-clusters',
-        ].filter((id) => Boolean(map.getLayer(id))),
-      });
-      if (pinHits.length > 0) return;
-
-      const bbox10: [maplibregl.PointLike, maplibregl.PointLike] = [
-        [e.point.x - 10, e.point.y - 10],
-        [e.point.x + 10, e.point.y + 10],
-      ];
-      const candidateFeats = [
-        ...(e.features || []),
-        ...map.queryRenderedFeatures(bbox10, { layers: ['rio-edificacoes-3d'] }),
-      ];
-      const feat =
-        candidateFeats.find((f: any) => Number(f.properties?.m2 || 0) > 0 && f.properties?.a) ||
-        candidateFeats.find((f: any) => Number(f.properties?.m2 || 0) > 0) ||
-        e.features?.[0];
-      if (!feat) return;
-      const p = feat.properties || {};
-      const clickLng = e.lngLat.lng;
-      const clickLat = e.lngLat.lat;
-
-      let displayAddress = p.a || '';
-      if (!displayAddress) {
-        try {
-          const roadHits = map.queryRenderedFeatures([
-            [e.point.x - 65, e.point.y - 65],
-            [e.point.x + 65, e.point.y + 65],
-          ]);
-          const roadName = roadHits.find((rf: any) => {
-            const lid = String(rf.layer?.id || '').toLowerCase();
-            return (lid.includes('road') || lid.includes('transport') || lid.includes('highway') || lid.includes('street')) && rf.properties?.name;
-          })?.properties?.name;
-          if (roadName) displayAddress = `Edificação em ${roadName}`;
-        } catch {}
-      }
-
-      // Find auctions within ~45m of the clicked building
-      const nearby = filteredListRef.current.filter((a) => {
-        const c = getMapCoordinatesRef.current(a);
-        if (!c) return false;
-        const dLat = (c[0] - clickLat) * 110540;
-        const dLng = (c[1] - clickLng) * 111320 * Math.cos((clickLat * Math.PI) / 180);
-        return Math.hypot(dLat, dLng) <= 45;
-      });
-
-      setSelectedBuildingInfo({
-        id: Number(p.id) || undefined,
-        address: displayAddress || 'Edificação Cartográfica Oficial IPP',
-        bairro: p.b || 'Rio de Janeiro',
-        altura: Number(p.h) || 5,
-        m2: Number(p.m2) || 0,
-        tx: Number(p.tx) || 0,
-        liq: Number(p.liq) || 0,
-        spr: p.spr != null ? Number(p.spr) : 0,
-        lngLat: [clickLng, clickLat],
-        nearbyAuctions: nearby.slice(0, 6),
-      });
     });
 
     // Hover tooltips on auction pins & colored 3D auction buildings
@@ -861,6 +900,20 @@ export default function PropertyMap({
     if (styleReadyRef.current && map.getLayer('rio-edificacoes-3d')) {
       upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88 });
     }
+    if (styleReadyRef.current && map.getLayer('auctions-buildings-3d')) {
+      map.setPaintProperty(
+        'auctions-buildings-3d',
+        'fill-extrusion-height',
+        is3DMode
+          ? [
+              'case',
+              ['==', ['get', 'isBairroMatch'], 1],
+              ['max', 6.5, ['+', ['coalesce', ['to-number', ['get', 'h'], 7], 7], 1.8]],
+              2,
+            ]
+          : 0.7
+      );
+    }
   }, [is3DMode]);
 
   // Update active building color ramp metric (R$/m², Liquidez, Spread)
@@ -922,8 +975,29 @@ export default function PropertyMap({
     const beforeSymbol = map.getStyle()?.layers?.find((l) => l.type === 'symbol')?.id;
     const existingBldSrc = map.getSource('auctions-buildings-source') as maplibregl.GeoJSONSource | undefined;
 
+    const auctionHeightExpr: any = is3DMode
+      ? [
+          'case',
+          ['==', ['get', 'isBairroMatch'], 1],
+          ['max', 6.5, ['+', ['coalesce', ['to-number', ['get', 'h'], 7], 7], 1.8]],
+          2,
+        ]
+      : 0.7;
+
     if (existingBldSrc) {
       existingBldSrc.setData(bldData as any);
+      if (map.getLayer('auctions-buildings-3d')) {
+        map.moveLayer('auctions-buildings-3d', beforeSymbol);
+        map.setPaintProperty('auctions-buildings-3d', 'fill-extrusion-height', auctionHeightExpr);
+        map.setPaintProperty(
+          'auctions-buildings-3d',
+          'fill-extrusion-color',
+          ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], '#334155']
+        );
+      }
+      if (map.getLayer('auctions-buildings-outline')) {
+        map.moveLayer('auctions-buildings-outline', beforeSymbol);
+      }
     } else {
       map.addSource('auctions-buildings-source', {
         type: 'geojson',
@@ -936,10 +1010,10 @@ export default function PropertyMap({
           type: 'fill-extrusion',
           source: 'auctions-buildings-source',
           paint: {
-            'fill-extrusion-color': ['case', ['==', ['get', 'isSelected'], 1], '#fde047', ['get', 'color']],
-            'fill-extrusion-height': ['max', ['+', ['coalesce', ['get', 'h'], 7], 2.5], 6.5],
+            'fill-extrusion-color': ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], '#334155'],
+            'fill-extrusion-height': auctionHeightExpr,
             'fill-extrusion-base': 0,
-            'fill-extrusion-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.98, 0.28],
+            'fill-extrusion-opacity': 0.96,
             'fill-extrusion-vertical-gradient': true,
           },
         },
@@ -952,9 +1026,16 @@ export default function PropertyMap({
           type: 'line',
           source: 'auctions-buildings-source',
           paint: {
-            'line-color': ['case', ['==', ['get', 'isSelected'], 1], '#fef08a', '#f8fafc'],
-            'line-width': ['case', ['==', ['get', 'isSelected'], 1], 3.5, 1.3],
-            'line-opacity': ['case', ['==', ['get', 'isBairroMatch'], 1], 0.92, 0.2],
+            'line-color': [
+              'case',
+              ['==', ['get', 'isSelected'], 1],
+              '#fde047',
+              ['==', ['get', 'isBairroMatch'], 1],
+              '#ffffff',
+              '#475569',
+            ],
+            'line-width': ['case', ['==', ['get', 'isSelected'], 1], 3.5, 1.0],
+            'line-opacity': 0.88,
           },
         },
         beforeSymbol
@@ -1043,14 +1124,15 @@ export default function PropertyMap({
     }
 
     updateViewportCounter();
-  }, [auctionGeoJson, auctionBuildingsGeoJson, selectedBairroHullGeoJson, styleVersion, showAuctionsLayer, updateViewportCounter]);
+  }, [auctionGeoJson, auctionBuildingsGeoJson, selectedBairroHullGeoJson, styleVersion, showAuctionsLayer, is3DMode, updateViewportCounter]);
 
   // Factions overlay inside MapLibre
+  const effectiveShowFactions = showFactionsExternal ?? showFactionsLayer;
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !styleReadyRef.current) return;
 
-    if (!showFactionsLayer) {
+    if (!effectiveShowFactions) {
       if (map.getLayer('factions-fill')) map.setLayoutProperty('factions-fill', 'visibility', 'none');
       if (map.getLayer('factions-outline')) map.setLayoutProperty('factions-outline', 'visibility', 'none');
       return;
@@ -1118,7 +1200,7 @@ export default function PropertyMap({
         }
       })
       .catch((err) => console.error('Erro ao carregar faccoes_rj.json', err));
-  }, [showFactionsLayer, styleVersion]);
+  }, [effectiveShowFactions, styleVersion]);
 
   // Fetch Rio 3D auction building footprints (official IPP Edificacoes_2019)
   useEffect(() => {
@@ -1249,7 +1331,7 @@ export default function PropertyMap({
   const currentLegend = METRIC_LEGENDS[activeMetric];
 
   return (
-    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose ? 'h-full' : 'h-[calc(100vh-5rem)] rounded-2xl border border-slate-800'}`}>
+    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose && !hideCloseButton ? 'h-full' : 'h-[calc(100vh-11.5rem)] min-h-[600px] rounded-2xl border border-slate-800'}`}>
       <div className="bg-slate-950/95 border-b border-slate-800 px-4 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 z-10">
         <div className="flex items-center space-x-2.5">
           <div className="p-1.5 sm:p-2 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
@@ -1317,7 +1399,7 @@ export default function PropertyMap({
             <span>{is3DMode ? '3D ON' : '3D OFF'}</span>
           </button>
 
-          {onClose && (
+          {onClose && !hideCloseButton && (
             <button
               onClick={onClose}
               className="p-1.5 sm:p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-colors cursor-pointer"
@@ -1397,23 +1479,25 @@ export default function PropertyMap({
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowFactionsLayer((prev) => !prev)}
-          className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-            showFactionsLayer
-              ? 'bg-rose-950/90 text-rose-300 border-rose-500 shadow-md shadow-rose-950/50'
-              : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
-          }`}
-          title="Camada de controle de facções RJ (dadosderiscos.com.br)"
-        >
-          <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-          <span className="hidden sm:inline">Risco & Facções RJ</span>
-          <span className="sm:hidden">Facções</span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${showFactionsLayer ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-            {showFactionsLayer ? 'ON' : 'OFF'}
-          </span>
-        </button>
+        {!onToggleFactionsExternal && (
+          <button
+            type="button"
+            onClick={() => setShowFactionsLayer((prev) => !prev)}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+              effectiveShowFactions
+                ? 'bg-rose-950/90 text-rose-300 border-rose-500 shadow-md shadow-rose-950/50'
+                : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
+            }`}
+            title="Camada de controle de facções RJ (dadosderiscos.com.br)"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden sm:inline">Risco & Facções RJ</span>
+            <span className="sm:hidden">Facções</span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${effectiveShowFactions ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              {effectiveShowFactions ? 'ON' : 'OFF'}
+            </span>
+          </button>
+        )}
       </div>
 
       <div className="relative flex-1 w-full h-full flex flex-col lg:flex-row overflow-hidden">
@@ -1518,82 +1602,147 @@ export default function PropertyMap({
             )}
           </div>
 
-          {buildingClusterModal && (
-            <div className="absolute top-14 left-3 right-3 sm:right-auto sm:w-96 max-h-[65vh] bg-slate-950/95 border border-slate-700 backdrop-blur-xl rounded-2xl shadow-2xl z-30 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="p-1.5 bg-indigo-950/80 border border-indigo-800/60 rounded-lg text-sm">🏢</span>
-                  <div>
-                    <h4 className="text-xs font-black text-white leading-tight">
-                      {buildingClusterModal.properties.length} Imóveis em Leilão neste Prédio
-                    </h4>
-                    <p className="text-[10.5px] text-slate-400 truncate max-w-[220px]">
-                      {buildingClusterModal.address}
-                    </p>
+          {selectedProp ? (
+            <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-slate-800 backdrop-blur-md rounded-xl p-2.5 shadow-2xl z-20 space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+              <div className="flex items-start justify-between gap-1.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="text-[8.5px] font-black uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
+                      {selectedProp.propertyType}
+                      {selectedProp.sizeSqm > 0 ? ` • ${selectedProp.sizeSqm}m²` : ''}
+                    </span>
+                    {(() => {
+                      const risk = checkPropertyCommunityRisk(selectedProp);
+                      if (!risk.isRisk) return null;
+                      return (
+                        <span
+                          className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-rose-950/90 text-rose-300 border border-rose-800/70 font-mono"
+                          title={risk.communityName ? `Área: ${risk.communityName}` : 'Área de risco'}
+                        >
+                          {risk.badgeLabel || '⚠️ Área de Risco'}
+                        </span>
+                      );
+                    })()}
                   </div>
+                  <h3 className="font-extrabold text-white text-xs mt-0.5 truncate leading-tight">
+                    {selectedProp.title}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 flex items-center gap-1 truncate">
+                    <MapPin className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                    <span>
+                      {selectedProp.address || 'Endereço'}, {selectedProp.neighborhood}
+                    </span>
+                  </p>
                 </div>
                 <button
-                  onClick={() => setBuildingClusterModal(null)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+                  onClick={() => setSelectedPropId('')}
+                  className="text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer shrink-0"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-2.5 space-y-2 custom-scrollbar max-h-[48vh]">
+              <div className="flex items-center justify-between bg-slate-900/90 px-2 py-1 rounded-lg border border-slate-800 text-xs font-mono">
+                <div>
+                  <span className="text-[8px] text-slate-500 block uppercase font-semibold">Lance</span>
+                  <span className="font-black text-emerald-400 text-xs">
+                    {selectedProp.auctionPrice > 0 ? formatBRL(selectedProp.auctionPrice) : 'Aberto a Propostas'}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[8px] text-slate-500 block uppercase font-semibold">ITBI</span>
+                  <span className="font-black text-amber-400 text-xs">
+                    {formatBRL(
+                      selectedProp.estimatedValue ||
+                        (selectedProp.itbiUnitValueAvg && selectedProp.sizeSqm
+                          ? Math.round(selectedProp.itbiUnitValueAvg * selectedProp.sizeSqm)
+                          : 0)
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <button
+                  onClick={() => setSimulatingProperty(selectedProp)}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-1.5 px-2 rounded-lg transition-colors cursor-pointer text-center flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Simular</span>
+                </button>
+
+                {selectedProp.auctionLink && (
+                  <a
+                    href={selectedProp.auctionLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-lg border border-blue-500 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                    title="Página oficial na Caixa / Edital"
+                  >
+                    <Building2 className="w-3 h-3 text-blue-200" />
+                    <span>{selectedProp.origin === 'caixa' ? 'Caixa' : 'Edital'}</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : buildingClusterModal ? (
+            <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-indigo-700/60 backdrop-blur-md rounded-xl shadow-2xl z-20 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+              <div className="px-2.5 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <h4 className="text-[11px] font-black text-white leading-tight truncate">
+                    🏢 {buildingClusterModal.properties.length} Imóveis neste Prédio
+                  </h4>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    {buildingClusterModal.address}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setBuildingClusterModal(null)}
+                  className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-2 space-y-1.5 custom-scrollbar max-h-48">
                 {buildingClusterModal.properties.map((item) => {
                   const aptMatch = item.address?.match(/\b(apto|apt|ap|casa|unidade|loja)\s*[\d\w]+/i);
-                  const unitLabel = aptMatch ? aptMatch[0].toUpperCase() : 'Unidade';
-                  const isCurSelected = selectedPropId === item.id;
+                  const unitLabel = aptMatch ? aptMatch[0].toUpperCase() : item.propertyType || 'Unidade';
                   return (
                     <div
                       key={item.id}
                       onClick={() => {
+                        setBuildingClusterModal(null);
                         setSelectedPropId(item.id);
                         const el = document.getElementById(`side-card-${item.id}`);
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                       }}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-                        isCurSelected
-                          ? 'bg-indigo-950/40 border-indigo-500 ring-1 ring-indigo-500/40 shadow-sm'
-                          : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
-                      }`}
+                      className="p-2 rounded-lg border bg-slate-900/90 border-slate-800 hover:border-indigo-500/70 transition-all cursor-pointer flex items-center justify-between gap-2"
                     >
-                      <div className="flex justify-between items-start text-xs">
-                        <span className="font-bold text-white font-mono">
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-bold text-white font-mono truncate">
                           {unitLabel}
                           {item.sizeSqm > 0 ? ` • ${item.sizeSqm}m²` : ''}
-                        </span>
-                        <span className="text-[10px] font-black text-emerald-400 font-mono">
-                          ROI: {(item.calculatedRoi || 0).toFixed(0)}%
-                        </span>
+                        </div>
+                        <div className="text-[10.5px] font-mono font-bold text-emerald-400">
+                          {item.auctionPrice > 0 ? formatBRL(item.auctionPrice) : 'Aberto a Propostas'}
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center mt-1.5 text-[11px] font-mono">
-                        <span className="text-slate-400">
-                          Lance:{' '}
-                          <strong className="text-emerald-300">
-                            {item.auctionPrice > 0 ? formatBRL(item.auctionPrice) : 'Aberto a Propostas'}
-                          </strong>
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSimulatingProperty(item);
-                          }}
-                          className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10.5px] font-bold cursor-pointer"
-                        >
-                          Simular
-                        </button>
-                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSimulatingProperty(item);
+                        }}
+                        className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold cursor-pointer shrink-0"
+                      >
+                        Simular
+                      </button>
                     </div>
                   );
                 })}
               </div>
             </div>
-          )}
-
-          {/* Card de Edifício 3D Clicado (IPP + ITBI + Leilões no prédio) */}
-          {selectedBuildingInfo && !selectedProp && (
+          ) : selectedBuildingInfo ? (
             <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:w-80 bg-slate-950/95 border border-sky-700/60 backdrop-blur-md rounded-2xl p-3 shadow-2xl z-20 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -1661,85 +1810,7 @@ export default function PropertyMap({
                 </div>
               )}
             </div>
-          )}
-
-          {selectedProp && (
-            <div className="absolute bottom-3 right-3 left-3 sm:left-auto sm:max-w-xs bg-slate-950/95 border border-slate-800 backdrop-blur-md rounded-xl p-2.5 shadow-2xl z-20 space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
-              <div className="flex items-start justify-between gap-1.5">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <span className="text-[8.5px] font-black uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
-                      {selectedProp.propertyType}
-                      {selectedProp.sizeSqm > 0 ? ` • ${selectedProp.sizeSqm}m²` : ''}
-                    </span>
-                    {(() => {
-                      const risk = checkPropertyCommunityRisk(selectedProp);
-                      if (!risk.isRisk) return null;
-                      return (
-                        <span
-                          className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-rose-950/90 text-rose-300 border border-rose-800/70 font-mono"
-                          title={risk.communityName ? `Área: ${risk.communityName}` : 'Área de risco'}
-                        >
-                          {risk.badgeLabel || '⚠️ Área de Risco'}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <h3 className="font-extrabold text-white text-xs mt-0.5 truncate leading-tight">
-                    {selectedProp.title}
-                  </h3>
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1 truncate">
-                    <MapPin className="w-2.5 h-2.5 text-slate-500 shrink-0" />
-                    <span>
-                      {selectedProp.address || 'Endereço'}, {selectedProp.neighborhood}
-                    </span>
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedPropId('')}
-                  className="text-slate-500 hover:text-slate-300 p-0.5 cursor-pointer shrink-0"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between bg-slate-900/90 px-2 py-1 rounded-lg border border-slate-800 text-xs font-mono">
-                <div>
-                  <span className="text-[8px] text-slate-500 block uppercase font-semibold">Lance</span>
-                  <span className="font-black text-emerald-400 text-xs">
-                    {selectedProp.auctionPrice > 0 ? formatBRL(selectedProp.auctionPrice) : 'Aberto a Propostas'}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[8px] text-slate-500 block uppercase font-semibold">ITBI</span>
-                  <span className="font-black text-amber-400 text-xs">{formatBRL(selectedProp.estimatedValue || 0)}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 pt-0.5">
-                <button
-                  onClick={() => setSimulatingProperty(selectedProp)}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-1.5 px-2 rounded-lg transition-colors cursor-pointer text-center flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>Simular</span>
-                </button>
-
-                {selectedProp.auctionLink && (
-                  <a
-                    href={selectedProp.auctionLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2 py-1.5 bg-blue-700 hover:bg-blue-600 text-white rounded-lg border border-blue-500 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
-                    title="Página oficial na Caixa / Edital"
-                  >
-                    <Building2 className="w-3 h-3 text-blue-200" />
-                    <span>{selectedProp.origin === 'caixa' ? 'Caixa' : 'Edital'}</span>
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
 
         <div

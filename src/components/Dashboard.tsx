@@ -34,13 +34,16 @@ import {
   Sliders,
   Wallet,
   Calendar,
-  FileText
+  FileText,
+  ShieldAlert,
+  BedDouble,
+  Car
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import RealValueCalculator from './RealValueCalculator.tsx';
 import PropertyMap from './PropertyMap.tsx';
-import SidebarMapWidget from './SidebarMapWidget.tsx';
 import PropertyThumbnail from './PropertyThumbnail.tsx';
+import ZapFilterHeader from './ZapFilterHeader.tsx';
 import AdvancedFiltersModal from './AdvancedFiltersModal.tsx';
 import LightboxModal from './LightboxModal.tsx';
 import { getAvailableZonesForCity, isNeighborhoodInZone } from '../utils/cityZones.ts';
@@ -101,6 +104,12 @@ interface DashboardProps {
   itbiStats?: any[];
   onClearAll?: () => void;
   onOpenCapitalMatcher?: () => void;
+  syncStatus?: {
+    lastSyncTime: string;
+    isSyncing: boolean;
+    totalLots: number;
+    onRefresh: () => void | Promise<void>;
+  };
 }
 
 export default function Dashboard({
@@ -142,7 +151,8 @@ export default function Dashboard({
   onSyncJudiciaisAuto,
   itbiStats = [],
   onClearAll,
-  onOpenCapitalMatcher
+  onOpenCapitalMatcher,
+  syncStatus
 }: DashboardProps) {
   // Sidebar state
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>(() => {
@@ -457,11 +467,12 @@ export default function Dashboard({
     lowestRentSqm: false,
     bestRentDiscount: false,
   });
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [focusedMapPropId, setFocusedMapPropId] = useState<string | null>(null);
+  const [showMapFactions, setShowMapFactions] = useState<boolean>(false);
+
   const [selectedLightboxProperty, setSelectedLightboxProperty] = useState<AuctionProperty | null>(null);
   const [simulatingAuction, setSimulatingAuction] = useState<AuctionProperty | null>(null);
-  const [selectedMapProperty, setSelectedMapProperty] = useState<AuctionProperty | null>(null);
-  const [isGeneralMapModalOpen, setIsGeneralMapModalOpen] = useState(false);
   const [selectedAuctioneerFilter, setSelectedAuctioneerFilter] = useState<string>('');
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
   const [saveToastVisible, setSaveToastVisible] = useState(false);
@@ -1767,1168 +1778,99 @@ export default function Dashboard({
         )}
       </AnimatePresence>
 
-      {/* Main Split View Layout: Sidebar (25-30%) + Feed (70-75%) */}
-      <div className="flex flex-col lg:flex-row gap-5 items-start">
-        
-        {/* ============================================================== */}
-        {/* LEFT SIDEBAR: FILTROS E CONTROLES (Sticky 28% width) */}
-        {/* ============================================================== */}
-        <aside className="w-full lg:w-80 xl:w-88 shrink-0 space-y-4 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 pb-10 scrollbar-thin scrollbar-thumb-slate-800">
-          
-          <div className="bg-slate-900 border border-slate-800/90 rounded-2xl p-4 shadow-xl space-y-5">
-            
-            {/* Header com Título e Limpar Filtros */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center space-x-2">
-                <Filter className="w-4 h-4 text-indigo-400" />
-                <h2 className="font-extrabold text-white text-sm tracking-tight">
-                  Filtros de Oportunidades
-                </h2>
-              </div>
-              <button
-                onClick={handleClearAllFilters}
-                className="text-[11px] font-bold text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer flex items-center gap-1"
-                title="Redefinir todos os filtros para o padrão"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Limpar</span>
-              </button>
-            </div>
+      {/* Main Full-Width View: Zap-Style Filter Header + Integrated Lista/Mapa */}
+      <div className="space-y-3">
+        <main className="w-full space-y-3">
+          <ZapFilterHeader
+            mode={mode}
+            syncStatus={syncStatus}
+            selectedStateFilter={selectedStateFilter}
+            setSelectedStateFilter={setSelectedStateFilter}
+            uniqueStates={uniqueStates}
+            selectedCityFilter={selectedCityFilter}
+            setSelectedCityFilter={setSelectedCityFilter}
+            citySearchInput={citySearchInput}
+            setCitySearchInput={setCitySearchInput}
+            filteredCitiesTypeahead={filteredCitiesTypeahead}
+            selectedNeighborhoods={selectedNeighborhoods}
+            setSelectedNeighborhoods={setSelectedNeighborhoods}
+            setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
+            neighborhoodSearch={neighborhoodSearch}
+            setNeighborhoodSearch={setNeighborhoodSearch}
+            visibleNeighborhoods={visibleNeighborhoods}
+            handleToggleNeighborhood={handleToggleNeighborhood}
+            handleSelectAllNeighborhoods={handleSelectAllNeighborhoods}
+            handleClearNeighborhoods={handleClearNeighborhoods}
+            locationScopeText={locationScopeText}
+            selectedOriginFilter={selectedOriginFilter}
+            setSelectedOriginFilter={setSelectedOriginFilter}
+            caixaSubModes={caixaSubModes}
+            setCaixaSubModes={setCaixaSubModes}
+            caixaModalityCounts={caixaModalityCounts}
+            selectedAuctioneerFilter={selectedAuctioneerFilter}
+            setSelectedAuctioneerFilter={setSelectedAuctioneerFilter}
+            activeJudicialAuctioneers={activeJudicialAuctioneers}
+            activeExtrajudicialAuctioneers={activeExtrajudicialAuctioneers}
+            advancedContextTab={advancedContextTab}
+            setAdvancedContextTab={setAdvancedContextTab}
+            selectedPortals={selectedPortals}
+            ALL_PORTALS={ALL_PORTALS}
+            portalCounts={portalCounts}
+            totalPortalCount={totalPortalCount}
+            handleTogglePortal={handleTogglePortal}
+            handleToggleAllPortals={handleToggleAllPortals}
+            handleSelectAllPortals={handleSelectAllPortals}
+            handleClearPortals={handleClearPortals}
+            onGarimparPortais={onGarimparPortais}
+            onlyFinancing={onlyFinancing}
+            setOnlyFinancing={setOnlyFinancing}
+            onlyInstallments={onlyInstallments}
+            setOnlyInstallments={setOnlyInstallments}
+            onlyVacant={onlyVacant}
+            setOnlyVacant={setOnlyVacant}
+            selectedTypeFilter={selectedTypeFilter}
+            setSelectedTypeFilter={setSelectedTypeFilter}
+            bedroomsFilter={bedroomsFilter}
+            setBedroomsFilter={setBedroomsFilter}
+            parkingFilter={parkingFilter}
+            setParkingFilter={setParkingFilter}
+            activeAdvancedFiltersCount={activeAdvancedFiltersCount}
+            onOpenAdvancedFilters={() => setIsAdvancedModalOpen(true)}
+            onOpenPresets={() => setIsPresetModalOpen(true)}
+            savedPresetsCount={savedPresets.length}
+            onClearAllFilters={handleClearAllFilters}
+            matchingCount={filteredAndSortedAuctions.length}
+            temporalSortMode={temporalSortMode}
+            setTemporalSortMode={setTemporalSortMode}
+            setSortBy={setSortBy}
+            strategyFilters={strategyFilters}
+            setStrategyFilters={setStrategyFilters}
+            isMining={isMining}
+            onSyncNow={handleSyncNow}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onResetFocusedMapProp={() => setFocusedMapPropId(null)}
+            showMapFactions={showMapFactions}
+            setShowMapFactions={setShowMapFactions}
+          />
 
-            {/* WIDGET DE MAPA GEORREFERENCIADO (LOGO ACIMA DOS FILTROS) */}
-            <SidebarMapWidget
-              auctions={filteredAndSortedAuctions}
-              selectedCity={selectedCityFilter}
-              selectedState={selectedStateFilter}
-              onOpenFullMap={() => setIsGeneralMapModalOpen(true)}
-              onSelectProperty={(property) => {
-                setSimulatingAuction(property);
+          {viewMode === 'map' ? (
+            <PropertyMap
+              auctions={auctions}
+              itbiStats={itbiStats}
+              onUpdateProperty={onUpdateProperty}
+              initialFilteredAuctions={filteredAndSortedAuctions}
+              initialSelectedPropertyId={focusedMapPropId || hoveredPropertyId || undefined}
+              hideCloseButton
+              showFactionsExternal={showMapFactions}
+              onToggleFactionsExternal={() => setShowMapFactions(v => !v)}
+              onSelectPropertyFromMap={(id) => {
+                const found = auctions.find(a => a.id === id);
+                if (found) setSimulatingAuction(found);
               }}
             />
-
-            {/* BOTÃO DESTACADO: FILTROS AVANÇADOS (ESTILO QUINTOANDAR - LOGO ABAIXO DO MAPA) */}
-            <div className="pt-0.5">
-              <button
-                type="button"
-                onClick={() => setIsAdvancedModalOpen(true)}
-                className="w-full py-3 px-3.5 bg-gradient-to-r from-slate-800 via-slate-800 to-slate-850 hover:from-slate-750 hover:to-slate-800 text-white font-extrabold text-xs rounded-2xl border border-slate-700/80 shadow-lg transition-all flex items-center justify-between cursor-pointer group"
-              >
-                <div className="flex items-center space-x-2.5">
-                  <div className="p-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                    <SlidersHorizontal className="w-3.5 h-3.5" />
-                  </div>
-                  <span>⚙️ Filtros Avançados</span>
-                </div>
-                {activeAdvancedFiltersCount > 0 ? (
-                  <span className="text-[10.5px] bg-indigo-600 text-white font-black px-2 py-0.5 rounded-full font-mono shadow-xs border border-indigo-400/40">
-                    {activeAdvancedFiltersCount} {activeAdvancedFiltersCount === 1 ? 'ativo' : 'ativos'}
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-slate-400 group-hover:text-slate-200 transition-colors flex items-center gap-1 font-mono">
-                    <span>Configurar</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* 1. SELETOR DE MODALIDADE (GARIMPAR LEILÕES) OU BANNER + PORTAIS (FLIP HOUSE) */}
-            {mode === 'portais' ? (
-              <div className="space-y-3">
-                {/* Seletor de Finalidade: Comprar vs Alugar */}
-                <div className="bg-slate-950 p-1.5 rounded-xl border border-slate-800 space-y-1">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-mono uppercase text-slate-400 font-bold">
-                      Finalidade da Busca:
-                    </span>
-                    <span className="text-[10px] font-mono text-amber-400 font-bold">
-                      {advancedContextTab === 'alugar' ? 'Locação Residencial' : 'Venda / Flip'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdvancedContextTab('comprar');
-                        setVisibleCount(24);
-                      }}
-                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        advancedContextTab !== 'alugar'
-                          ? 'bg-amber-600 text-white shadow-xs ring-1 ring-amber-400/30'
-                          : 'text-slate-400 hover:text-white bg-slate-900/60'
-                      }`}
-                    >
-                      <span>🏢 Comprar</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdvancedContextTab('alugar');
-                        setSelectedOriginFilter('portal');
-                        setVisibleCount(24);
-                      }}
-                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        advancedContextTab === 'alugar'
-                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs ring-1 ring-emerald-400/30'
-                          : 'text-slate-400 hover:text-white bg-slate-900/60'
-                      }`}
-                    >
-                      <span>🔑 Alugar</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* BOTÃO PRINCIPAL DE EXTRAÇÃO FLIP / LOCAÇÃO NA SIDEBAR */}
-                <button
-                  type="button"
-                  onClick={() => onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda')}
-                  disabled={isMining}
-                  className={`w-full py-2.5 px-3 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
-                    isMining
-                      ? 'bg-amber-600/50 animate-pulse text-amber-200 border border-amber-500/50'
-                      : advancedContextTab === 'alugar'
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-950/40 border border-emerald-400/30'
-                        : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 shadow-amber-950/40 border border-amber-400/30'
-                  }`}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isMining ? 'animate-spin' : ''}`} />
-                  <span>
-                    {isMining
-                      ? 'Extraindo dos Portais...'
-                      : (advancedContextTab === 'alugar' ? '🚀 Garimpar Imóveis para Alugar' : '🚀 Garimpar Imóveis Flip House')}
-                  </span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {/* Bloco Colapsável: Modalidades de Leilão */}
-                <button
-                  type="button"
-                  onClick={() => setIsModalitiesOpen(prev => !prev)}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
-                >
-                  <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Modalidades de Leilão</span>
-                  </span>
-                  {isModalitiesOpen ? (
-                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  )}
-                </button>
-                
-                {isModalitiesOpen && (
-                  <div className="space-y-1.5 mt-1.5">
-                    {[
-                      { id: 'todos', label: 'Todos os Leilões', icon: Layers, desc: 'Caixa + Judiciais + Extrajudiciais', color: 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300' },
-                      { id: 'caixa', label: 'Imóveis Caixa', icon: Building2, desc: 'Venda Direta / Licitação / SFI', color: 'border-blue-500/50 bg-blue-950/40 text-blue-300' },
-                      { id: 'judicial', label: 'Leilões Judiciais', icon: Gavel, desc: 'Varas Cíveis e Trabalhistas', color: 'border-indigo-500/50 bg-indigo-950/40 text-indigo-300' },
-                      { id: 'extrajudicial', label: 'Leilões Extrajudiciais', icon: FileText, desc: 'Alienação Fiduciária & Bancos', color: 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300' }
-                    ].map(item => {
-                      const isSelected = selectedOriginFilter === item.id;
-                      const Icon = item.icon;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setSelectedOriginFilter(item.id as any);
-                            setSelectedNeighborhoodFilter('');
-                            setSelectedNeighborhoods([]);
-                          }}
-                          className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                            isSelected
-                              ? `${item.color} ring-1 ring-white/30 shadow-md font-bold`
-                              : 'bg-slate-950/60 hover:bg-slate-800/60 border-slate-800 text-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-2.5">
-                            <Icon className="w-4 h-4 shrink-0" />
-                            <div>
-                              <div className="text-xs font-bold">{item.label}</div>
-                              <div className="text-[10px] text-slate-400 font-normal">{item.desc}</div>
-                            </div>
-                          </div>
-                          {isSelected && <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-xs shrink-0" />}
-                        </button>
-                      );
-                    })}
-
-                    {selectedOriginFilter === 'caixa' && (
-                      <div className="p-2.5 bg-slate-950 border border-blue-900/40 rounded-xl space-y-2 mt-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-blue-400 block uppercase font-mono">
-                            Sub-modalidades Caixa ({caixaModalityCounts.total})
-                          </span>
-                          <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                            <button
-                              type="button"
-                              onClick={() => setCaixaSubModes({ vendaDireta: true, vendaOnline: true, licitacao: true, leilaoSfi: true })}
-                              className="text-indigo-400 hover:text-white transition-colors cursor-pointer"
-                              title="Marcar todas as modalidades Caixa"
-                            >
-                              Todas
-                            </button>
-                            <span className="text-slate-600">•</span>
-                            <button
-                              type="button"
-                              onClick={() => setCaixaSubModes({ vendaDireta: false, vendaOnline: false, licitacao: false, leilaoSfi: false })}
-                              className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                              title="Desmarcar todas"
-                            >
-                              Nenhuma
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 text-xs">
-                          {/* 1. Venda Direta Online */}
-                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={caixaSubModes.vendaDireta}
-                                onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaDireta: e.target.checked }))}
-                                className="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 cursor-pointer"
-                              />
-                              <span className="flex items-center gap-1">
-                                <span>🤝</span>
-                                <span className="font-semibold text-slate-200">Venda Direta Online</span>
-                              </span>
-                            </div>
-                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                              caixaModalityCounts.vendaDireta > 0 ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/40' : 'bg-black/30 text-slate-600'
-                            }`}>
-                              {caixaModalityCounts.vendaDireta}
-                            </span>
-                          </label>
-
-                          {/* 2. Venda Online */}
-                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={caixaSubModes.vendaOnline}
-                                onChange={e => setCaixaSubModes(prev => ({ ...prev, vendaOnline: e.target.checked }))}
-                                className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 cursor-pointer"
-                              />
-                              <span className="flex items-center gap-1">
-                                <span>⏱️</span>
-                                <span className="font-semibold text-slate-200">Venda Online</span>
-                              </span>
-                            </div>
-                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                              caixaModalityCounts.vendaOnline > 0 ? 'bg-cyan-950/80 text-cyan-300 font-bold border border-cyan-800/40' : 'bg-black/30 text-slate-600'
-                            }`}>
-                              {caixaModalityCounts.vendaOnline}
-                            </span>
-                          </label>
-
-                          {/* 3. Licitação Aberta */}
-                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={caixaSubModes.licitacao}
-                                onChange={e => setCaixaSubModes(prev => ({ ...prev, licitacao: e.target.checked }))}
-                                className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                              />
-                              <span className="flex items-center gap-1">
-                                <span>📢</span>
-                                <span className="font-semibold text-slate-200">Licitação Aberta</span>
-                              </span>
-                            </div>
-                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                              caixaModalityCounts.licitacao > 0 ? 'bg-amber-950/80 text-amber-300 font-bold border border-amber-800/40' : 'bg-black/30 text-slate-600'
-                            }`}>
-                              {caixaModalityCounts.licitacao}
-                            </span>
-                          </label>
-
-                          {/* 4. Leilão SFI */}
-                          <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-900/60 cursor-pointer text-slate-300 hover:text-white transition-colors group">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={caixaSubModes.leilaoSfi}
-                                onChange={e => setCaixaSubModes(prev => ({ ...prev, leilaoSfi: e.target.checked }))}
-                                className="rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-0 cursor-pointer"
-                              />
-                              <span className="flex items-center gap-1">
-                                <span>⚖️</span>
-                                <span className="font-semibold text-slate-200">Leilão SFI (1º/2º)</span>
-                              </span>
-                            </div>
-                            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                              caixaModalityCounts.leilaoSfi > 0 ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-800/40' : 'bg-black/30 text-slate-600'
-                            }`}>
-                              {caixaModalityCounts.leilaoSfi}
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sub-opções específicas quando Judicial estiver selecionada */}
-                    {selectedOriginFilter === 'judicial' && (
-                      <div className="p-2.5 bg-slate-950 border border-indigo-900/40 rounded-xl space-y-2 mt-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-indigo-400 uppercase font-mono flex items-center gap-1">
-                            <span>⚖️</span>
-                            <span>Leiloeiros Judiciais</span>
-                          </span>
-                          {selectedAuctioneerFilter && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedAuctioneerFilter('')}
-                              className="text-[10px] text-indigo-400 hover:text-white cursor-pointer"
-                            >
-                              Ver todos
-                            </button>
-                          )}
-                        </div>
-                        <div className="max-h-56 overflow-y-auto space-y-1.5 text-xs pr-1">
-                          {activeJudicialAuctioneers.map(item => {
-                            const isSelected = selectedAuctioneerFilter === item.name;
-                            return (
-                              <button
-                                key={item.name}
-                                type="button"
-                                onClick={() => setSelectedAuctioneerFilter(prev => prev === item.name ? '' : item.name)}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-xl border font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30 ring-2 ring-purple-400/50'
-                                    : item.count > 0
-                                      ? 'bg-slate-900 text-slate-200 hover:bg-slate-850 border-slate-800'
-                                      : 'bg-slate-950/40 text-slate-500 hover:bg-slate-900/30 border-slate-900/60'
-                                }`}
-                              >
-                                <span className="flex items-center gap-1.5 truncate mr-1">
-                                  <span>⚖️</span>
-                                  <span className="truncate">{item.name}</span>
-                                </span>
-                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full shrink-0 ${
-                                  item.count > 0 ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-800/40' : 'bg-black/30 text-slate-600'
-                                }`}>
-                                  {item.count}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sub-opções específicas quando Extrajudicial estiver selecionada */}
-                    {selectedOriginFilter === 'extrajudicial' && (
-                      <div className="p-2.5 bg-slate-950 border border-emerald-900/40 rounded-xl space-y-2 mt-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-emerald-400 uppercase font-mono flex items-center gap-1">
-                            <span>🏛️</span>
-                            <span>Leiloeiros Extrajudiciais</span>
-                          </span>
-                          {selectedAuctioneerFilter && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedAuctioneerFilter('')}
-                              className="text-[10px] text-indigo-400 hover:text-white cursor-pointer"
-                            >
-                              Ver todos
-                            </button>
-                          )}
-                        </div>
-                        <div className="max-h-56 overflow-y-auto space-y-1.5 text-xs pr-1">
-                          {activeExtrajudicialAuctioneers.map(item => {
-                            const isSelected = selectedAuctioneerFilter === item.name;
-                            return (
-                              <button
-                                key={item.name}
-                                type="button"
-                                onClick={() => setSelectedAuctioneerFilter(prev => prev === item.name ? '' : item.name)}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-xl border font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30 ring-2 ring-purple-400/50'
-                                    : item.count > 0
-                                      ? 'bg-slate-900 text-slate-200 hover:bg-slate-850 border-slate-800'
-                                      : 'bg-slate-950/40 text-slate-500 hover:bg-slate-900/30 border-slate-900/60'
-                                }`}
-                              >
-                                <span className="flex items-center gap-1.5 truncate mr-1">
-                                  <span>🏛️</span>
-                                  <span className="truncate">{item.name}</span>
-                                </span>
-                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full shrink-0 ${
-                                  item.count > 0 ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/40' : 'bg-black/30 text-slate-600'
-                                }`}>
-                                  {item.count}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 2. FILTRO DE LOCALIZAÇÃO GEOGRÁFICA (ESTADO -> CIDADE -> BAIRROS COLAPSÁVEL) */}
-            <div className="space-y-3 pt-2 border-t border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => setIsLocationOpen(prev => !prev)}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
-              >
-                <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Localização Geográfica</span>
-                </span>
-                {isLocationOpen ? (
-                  <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </button>
-
-              {isLocationOpen && (
-                <div className="space-y-3 p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 mt-1">
-                  {/* Estado (UF) */}
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-1">Estado (UF)</span>
-                    <select
-                      value={selectedStateFilter}
-                      onChange={(e) => {
-                        setSelectedStateFilter(e.target.value);
-                        setSelectedCityFilter('');
-                        setCitySearchInput('');
-                        setSelectedNeighborhoods([]);
-                        setSelectedNeighborhoodFilter('');
-                      }}
-                      className="w-full text-xs font-bold border border-slate-700 rounded-xl p-2.5 bg-slate-900 text-slate-100 hover:bg-slate-850 focus:border-indigo-500 outline-none transition-colors cursor-pointer"
-                    >
-                      <option value="">Todos os Estados (RJ, MG)</option>
-                      {uniqueStates.map(uf => {
-                        const stateObj = BRAZIL_STATES.find(s => s.value === uf);
-                        return (
-                          <option key={uf} value={uf}>
-                            {uf} {stateObj ? `- ${stateObj.label}` : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  {/* Cidade com Autocomplete Typeahead */}
-                  <div className="relative">
-                    <span className="text-[10px] text-slate-400 block mb-1">Cidade</span>
-                    {selectedCityFilter ? (
-                      <div className="flex items-center justify-between bg-indigo-950/60 border border-indigo-600/50 px-3 py-2 rounded-xl text-xs text-indigo-200 font-bold">
-                        <span className="truncate">{selectedCityFilter}</span>
-                        <button
-                          onClick={() => {
-                            setSelectedCityFilter('');
-                            setCitySearchInput('');
-                            setSelectedNeighborhoods([]);
-                            setSelectedNeighborhoodFilter('');
-                          }}
-                          className="p-1 hover:text-white rounded-md text-indigo-400 transition-colors"
-                          title="Remover cidade selecionada"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="relative">
-                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                          <input
-                            type="text"
-                            placeholder="Buscar cidade..."
-                            value={citySearchInput}
-                            onChange={e => {
-                              setCitySearchInput(e.target.value);
-                              setIsCityDropdownOpen(true);
-                            }}
-                            onFocus={() => setIsCityDropdownOpen(true)}
-                            className="w-full text-xs border border-slate-700 rounded-xl pl-8 pr-3 py-2 bg-slate-900 text-slate-100 placeholder-slate-500 focus:border-indigo-500 outline-none"
-                          />
-                        </div>
-
-                        {isCityDropdownOpen && filteredCitiesTypeahead.length > 0 && (
-                          <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-750 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto p-1">
-                            {filteredCitiesTypeahead.map(city => (
-                              <button
-                                key={city}
-                                onClick={() => {
-                                  setSelectedCityFilter(city);
-                                  setCitySearchInput('');
-                                  setIsCityDropdownOpen(false);
-                                  setSelectedNeighborhoods([]);
-                                  setSelectedNeighborhoodFilter('');
-                                  for (const [st, cities] of Object.entries(VALID_ITBI_CITIES_BY_STATE)) {
-                                    if (cities.includes(city)) {
-                                      setSelectedStateFilter(st);
-                                      break;
-                                    }
-                                  }
-                                }}
-                                className="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-indigo-600 hover:text-white rounded-lg transition-colors cursor-pointer truncate"
-                              >
-                                {city}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bairros Acordeão Colapsável */}
-                  <div className="space-y-1.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsNeighborhoodsOpen(prev => !prev)}
-                      className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
-                    >
-                      <span className="font-bold text-slate-300">
-                        Bairros {selectedNeighborhoods.length > 0 ? `(${selectedNeighborhoods.length} selecionados)` : '(Todos)'}
-                      </span>
-                      {isNeighborhoodsOpen ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-                      ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                      )}
-                    </button>
-
-                    {isNeighborhoodsOpen && (
-                      <div className="space-y-2 p-2 bg-slate-950 rounded-xl border border-slate-800/80 mt-1">
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-slate-400 font-mono">Seleção:</span>
-                          <div className="space-x-2">
-                            <button
-                              type="button"
-                              onClick={handleSelectAllNeighborhoods}
-                              className="text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer"
-                            >
-                              Todos
-                            </button>
-                            <span className="text-slate-600">•</span>
-                            <button
-                              type="button"
-                              onClick={handleClearNeighborhoods}
-                              className="text-slate-500 hover:text-slate-300 cursor-pointer"
-                            >
-                              Nenhum
-                            </button>
-                          </div>
-                        </div>
-
-                        <input
-                          type="text"
-                          placeholder="Filtrar bairro..."
-                          value={neighborhoodSearch}
-                          onChange={e => setNeighborhoodSearch(e.target.value)}
-                          className="w-full text-[11px] border border-slate-750 rounded-lg px-2.5 py-1.5 bg-slate-900 text-slate-200 placeholder-slate-500 focus:border-indigo-500 outline-none"
-                        />
-
-                        <div className="max-h-40 overflow-y-auto space-y-1 pr-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800 text-xs">
-                          {visibleNeighborhoods.length === 0 ? (
-                            <div className="text-center py-3 text-[11px] text-slate-500">
-                              Nenhum bairro com lotes ativos.
-                            </div>
-                          ) : (
-                            visibleNeighborhoods.map(({ name, count }) => {
-                              const isChecked = selectedNeighborhoods.includes(name);
-                              return (
-                                <label
-                                  key={name}
-                                  className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px]"
-                                >
-                                  <div className="flex items-center space-x-2 truncate pr-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() => handleToggleNeighborhood(name)}
-                                      className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer"
-                                    />
-                                    <span className={`truncate ${isChecked ? 'text-white font-bold' : 'text-slate-300'}`}>
-                                      {name}
-                                    </span>
-                                  </div>
-                                  <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
-                                    {count}
-                                  </span>
-                                </label>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Bloco Colapsável: Portais Imobiliários (4 portais oficiais) - Exibido logo abaixo de Localização Geográfica */}
-            {mode === 'portais' && (
-              <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                <button
-                  type="button"
-                  onClick={() => setIsPortalsOpen(prev => !prev)}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer text-xs"
-                >
-                  <span className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wide font-mono text-[11px]">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Portais Imobiliários ({selectedPortals.length}/4)</span>
-                  </span>
-                  {isPortalsOpen ? (
-                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  )}
-                </button>
-
-                {isPortalsOpen && (
-                  <div className="space-y-1.5 p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 mt-1">
-                    <div className="flex items-center justify-between text-[10px] pb-1 border-b border-slate-800/60">
-                      <span className="text-slate-400 font-mono">Seleção de Portais:</span>
-                      <div className="space-x-2">
-                        <button
-                          type="button"
-                          onClick={handleSelectAllPortals}
-                          className="text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer"
-                        >
-                          Todos
-                        </button>
-                        <span className="text-slate-600">•</span>
-                        <button
-                          type="button"
-                          onClick={handleClearPortals}
-                          className="text-slate-500 hover:text-slate-300 cursor-pointer"
-                        >
-                          Nenhum
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Opção Todos os Portais */}
-                    <label className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px] border-b border-slate-800/40 pb-1 mb-1">
-                      <div className="flex items-center space-x-2 truncate pr-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedPortals.length === ALL_PORTALS.length}
-                          onChange={handleToggleAllPortals}
-                          className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                        />
-                        <span className={`truncate ${selectedPortals.length === ALL_PORTALS.length ? 'text-white font-bold' : 'text-slate-300'}`}>
-                          Todos os 4 Portais
-                        </span>
-                      </div>
-                      <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
-                        {totalPortalCount}
-                      </span>
-                    </label>
-
-                    {ALL_PORTALS.map((portal) => {
-                      const isChecked = selectedPortals.includes(portal);
-                      const count = portalCounts[portal] || 0;
-                      return (
-                        <label
-                          key={portal}
-                          className="flex items-center justify-between p-1 rounded-md hover:bg-slate-850 cursor-pointer select-none text-[11px]"
-                        >
-                          <div className="flex items-center space-x-2 truncate pr-2">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleTogglePortal(portal)}
-                              className="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
-                            />
-                            <span className={`truncate ${isChecked ? 'text-white font-bold' : 'text-slate-300'}`}>
-                              {portal}
-                            </span>
-                          </div>
-                          <span className="text-[9.5px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.2 rounded shrink-0">
-                            {count}
-                          </span>
-                        </label>
-                      );
-                    })}
-
-                    <button
-                      type="button"
-                      onClick={() => onGarimparPortais(selectedCityFilter || undefined, selectedPortals, selectedNeighborhoods, advancedContextTab === 'alugar' ? 'aluguel' : 'venda')}
-                      disabled={isMining}
-                      className={`w-full mt-2 py-2 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
-                        advancedContextTab === 'alugar'
-                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500'
-                          : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500'
-                      }`}
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-white" />
-                      <span>{isMining ? 'Extraindo...' : (advancedContextTab === 'alugar' ? 'Buscar Imóveis para Alugar' : 'Buscar Ofertas com Desconto')}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 3. CONDIÇÕES & OCUPAÇÃO (FINANCIAMENTO, PARCELAMENTO, DESOCUPADO) - Apenas Leilões */}
-            {mode !== 'portais' && (
-              <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                  Condições & Ocupação
-                </label>
-                <div className="space-y-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setOnlyFinancing(prev => !prev)}
-                    className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-                      onlyFinancing
-                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/40 ring-1 ring-emerald-400/40'
-                        : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🏦</span>
-                      <span>Aceita Financiamento</span>
-                    </span>
-                    {onlyFinancing && <Check className="w-3.5 h-3.5 text-white" />}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setOnlyInstallments(prev => !prev)}
-                    className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-                      onlyInstallments
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-950/40 ring-1 ring-blue-400/40'
-                        : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>💳</span>
-                      <span>Aceita Parcelamento</span>
-                    </span>
-                    {onlyInstallments && <Check className="w-3.5 h-3.5 text-white" />}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setOnlyVacant(prev => !prev)}
-                    className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-                      onlyVacant
-                        ? 'bg-teal-600 text-white border-teal-500 shadow-md shadow-teal-950/40 ring-1 ring-teal-400/40'
-                        : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🔑</span>
-                      <span>Imóvel Desocupado</span>
-                    </span>
-                    {onlyVacant && <Check className="w-3.5 h-3.5 text-white" />}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 5. RODAPÉ DA SIDEBAR: GERENCIADOR DE PRESETS DE BUSCA */}
-            <div className="pt-2 border-t border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => setIsPresetModalOpen(true)}
-                className="w-full py-2.5 px-3.5 bg-slate-950 hover:bg-slate-850 text-slate-200 hover:text-white rounded-xl border border-slate-800 hover:border-slate-700 font-bold text-xs transition-all flex items-center justify-between cursor-pointer group shadow-sm"
-                title="Abrir gerenciador de presets de busca salvos"
-              >
-                <div className="flex items-center space-x-2.5">
-                  <Bookmark className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-                  <span>💾 Presets de Busca</span>
-                </div>
-                <span className="text-[10px] font-mono bg-slate-900 border border-slate-750 px-2 py-0.5 rounded-full text-slate-400 group-hover:text-amber-300">
-                  {savedPresets.length} {savedPresets.length === 1 ? 'salvo' : 'salvos'}
-                </span>
-              </button>
-            </div>
-
-          </div>
-        </aside>
-
-        {/* ============================================================== */}
-        {/* RIGHT FEED AREA: CONTADOR, ORDENAÇÃO, TOGGLE E CARDS (72% width) */}
-        {/* ============================================================== */}
-        <main className="flex-1 min-w-0 space-y-4">
-          
-          {/* Top Bar do Feed: Oportunidades, Ordenação, Temporal Toggle e Salvar Busca */}
-          <div className="bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 shadow-xl space-y-2.5">
-            
-            {/* Linha 1: Contador e Contexto à esquerda, Controles Temporais e Salvar Busca à direita */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
-              
-              {/* Esquerda: Contador Dinâmico e Auditoria ITBI / Calculadora */}
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-xl border shrink-0 ${
-                  advancedContextTab === 'alugar'
-                    ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30'
-                    : 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30'
-                }`}>
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h2 className="text-base sm:text-lg font-black text-white font-display">
-                      {filteredAndSortedAuctions.length} {advancedContextTab === 'alugar' ? (filteredAndSortedAuctions.length === 1 ? 'Imóvel para Alugar' : 'Imóveis para Alugar') : (filteredAndSortedAuctions.length === 1 ? 'Oportunidade Encontrada' : 'Oportunidades Encontradas')}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    {advancedContextTab === 'alugar' ? (
-                      <>Varredura de locação residencial em <strong className="text-slate-200 font-bold">{locationScopeText}</strong> • <span className="text-emerald-300 font-semibold">Avaliado via Calculadora de Valor Real</span></>
-                    ) : (
-                      <>Varredura ativa em <strong className="text-slate-200 font-bold">{locationScopeText}</strong> • <span className="text-indigo-300 font-semibold">Auditado via ITBI Municipal</span></>
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              {/* Centro/Direita: Botão de Ação Imediata para Atualizar/Extrair */}
-              <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap">
-                <button
-                  type="button"
-                  onClick={handleSyncNow}
-                  disabled={isMining}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all border shadow-sm ${
-                    isMining
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
-                      : mode === 'portais'
-                        ? (advancedContextTab === 'alugar'
-                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-emerald-400/30'
-                            : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white border-amber-400/30')
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 hover:border-slate-600'
-                  }`}
-                  title={mode === 'portais' ? 'Extrair novas ofertas e sincronizar preços dos portais agora' : 'Sincronizar base de dados agora'}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isMining ? 'animate-spin text-amber-300' : 'text-white'}`} />
-                  <span>
-                    {isMining
-                      ? (mode === 'portais'
-                          ? 'Extraindo Portais…'
-                          : selectedOriginFilter === 'judicial'
-                            ? 'Sincronizando Judiciais…'
-                            : selectedOriginFilter === 'extrajudicial'
-                              ? 'Sincronizando Extrajudiciais…'
-                              : selectedOriginFilter === 'todos'
-                                ? 'Sincronizando Todos os Leilões…'
-                                : 'Sincronizando Caixa…')
-                      : (mode === 'portais'
-                          ? (advancedContextTab === 'alugar' ? 'Atualizar Locação' : 'Atualizar Imóveis Flip')
-                          : selectedOriginFilter === 'judicial'
-                            ? 'Atualizar Leilões Judiciais'
-                            : selectedOriginFilter === 'extrajudicial'
-                              ? 'Atualizar Leilões Extrajudiciais'
-                              : selectedOriginFilter === 'todos'
-                                ? 'Atualizar Todos os Leilões'
-                                : 'Atualizar Imóveis Caixa')}
-                  </span>
-                </button>
-              </div>
-
-              {/* Direita: Toggle Temporal (Padrão, Mais Antigos, Inclusão Mais Recente) */}
-              <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs self-start lg:self-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTemporalSortMode('neutral');
-                    setSortBy('roi');
-                  }}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    temporalSortMode === 'neutral'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title={advancedContextTab === 'alugar' ? "Ordenar por Custo Benefício / Mais Barato que a Calculadora" : "Ordenar por Padrão (Maior ROI decrescente com desempate por Lucro Líquido Real)"}
-                >
-                  <span>{advancedContextTab === 'alugar' ? '📊 Padrão (Mais Barato)' : '📈 Padrão (Maior ROI)'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setTemporalSortMode('urgent')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                    temporalSortMode === 'urgent'
-                      ? 'bg-rose-600 text-white shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title={mode === 'portais' || advancedContextTab === 'alugar' ? "Anúncios publicados há mais tempo primeiro (maior margem para negociar)" : "Próximas praças e encerramentos iminentes"}
-                >
-                  <Flame className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{mode === 'portais' || advancedContextTab === 'alugar' ? 'Mais Antigos' : 'Próximas Praças'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setTemporalSortMode('newest')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                    temporalSortMode === 'newest'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Anúncios e oportunidades recém adicionados ao sistema"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
-                  <span>Inclusão Mais Recente</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Linha 2: Estratégias organizadas à esquerda + Mapa no canto direito na mesma linha */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-2 border-t border-slate-800/80 w-full">
-              
-              {/* Esquerda: 4 Botões de Estratégia organizados e alinhados por modalidade */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-mono uppercase text-slate-400 font-bold mr-1">ESTRATÉGIA:</span>
-                
-                {/* 1. ESTRATÉGIAS PARA LOCAÇÃO RESIDENCIAL */}
-                {advancedContextTab === 'alugar' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, superCheap: !prev.superCheap }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.superCheap
-                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Imóveis onde o aluguel pedido está significativamente abaixo do valor real apurado pela calculadora"
-                    >
-                      <span>🟢 Super Barato</span>
-                      {strategyFilters.superCheap && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, lowestRent: !prev.lowestRent }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.lowestRent
-                          ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Ordenar pelo menor valor absoluto de aluguel por mês"
-                    >
-                      <span>📉 Menor Aluguel</span>
-                      {strategyFilters.lowestRent && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, lowestRentSqm: !prev.lowestRentSqm }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.lowestRentSqm
-                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Ordenar pelo menor valor de aluguel por metro quadrado (R$/m² mês)"
-                    >
-                      <span>📐 Menor R$/m² Mês</span>
-                      {strategyFilters.lowestRentSqm && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, bestRentDiscount: !prev.bestRentDiscount }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.bestRentDiscount
-                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Ordenar imóveis pelo maior desconto percentual do aluguel pedido em relação ao valor real que o imóvel vale (com base no veredito da Calculadora)"
-                    >
-                      <span>🏷️ Maior Desconto no Aluguel</span>
-                      {strategyFilters.bestRentDiscount && <Check className="w-3 h-3 text-white" />}
-                    </button>
-                  </>
-                ) : mode === 'portais' ? (
-                  /* 2. ESTRATÉGIAS PARA FLIP HOUSE (Portais de Compra e Venda Particular) */
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, discount: !prev.discount }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.discount
-                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Imóveis com maior deságio em relação ao valor de mercado do ITBI municipal"
-                    >
-                      <span>🏷️ Maior Desconto</span>
-                      {strategyFilters.discount && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, profit: !prev.profit }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.profit
-                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Maior projeção de lucro líquido após reforma e revenda rápida (Flip)"
-                    >
-                      <span>💰 Maior Lucro Flip</span>
-                      {strategyFilters.profit && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, lowestSqm: !prev.lowestSqm }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.lowestSqm
-                          ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Menor preço pedido por metro quadrado útil"
-                    >
-                      <span>📉 Menor Preço/m²</span>
-                      {strategyFilters.lowestSqm && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, under250k: !prev.under250k }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.under250k
-                          ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                      title="Filtrar imóveis com preço total de até R$ 250.000 (Giro Rápido Popular)"
-                    >
-                      <span>⚡ Até R$ 250k</span>
-                      {strategyFilters.under250k && <Check className="w-3 h-3 text-white" />}
-                    </button>
-                  </>
-                ) : (
-                  /* 3. ESTRATÉGIAS PARA LEILÕES JUDICIAIS E CAIXA (Garimpo) */
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, liquidity: !prev.liquidity }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.liquidity
-                          ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                    >
-                      <span>💧 Maior Liquidez</span>
-                      {strategyFilters.liquidity && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, roi: !prev.roi }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.roi
-                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                    >
-                      <span>📈 Maior ROI</span>
-                      {strategyFilters.roi && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, profit: !prev.profit }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.profit
-                          ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                    >
-                      <span>💰 Maior Lucro Real</span>
-                      {strategyFilters.profit && <Check className="w-3 h-3 text-white" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStrategyFilters(prev => ({ ...prev, spread: !prev.spread }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                        strategyFilters.spread
-                          ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
-                          : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-750'
-                      }`}
-                    >
-                      <span>📐 Maior Spread por m²</span>
-                      {strategyFilters.spread && <Check className="w-3 h-3 text-white" />}
-                    </button>
-                  </>
-                )}
-
-                {(strategyFilters.liquidity || strategyFilters.roi || strategyFilters.profit || strategyFilters.spread || strategyFilters.discount || strategyFilters.lowestSqm || strategyFilters.under250k || strategyFilters.superCheap || strategyFilters.lowestRent || strategyFilters.lowestRentSqm || strategyFilters.bestRentDiscount) && (
-                  <button
-                    type="button"
-                    onClick={() => setStrategyFilters({
-                      liquidity: false,
-                      roi: false,
-                      profit: false,
-                      spread: false,
-                      discount: false,
-                      lowestSqm: false,
-                      under250k: false,
-                      superCheap: false,
-                      lowestRent: false,
-                      lowestRentSqm: false,
-                      bestRentDiscount: false,
-                    })}
-                    className="text-[11px] text-slate-400 hover:text-rose-400 font-bold cursor-pointer transition-colors ml-1"
-                  >
-                    Limpar
-                  </button>
-                )}
-              </div>
-
-              {/* Direita: Botão Mapa no canto direito exatamente na mesma linha da estratégia */}
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setIsGeneralMapModalOpen(true)}
-                  className="text-xs text-emerald-300 hover:text-white font-bold px-3.5 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 transition-all cursor-pointer border border-emerald-500/40 shadow-xs flex items-center gap-1.5"
-                  title="Abrir todos os imóveis filtrados no Mapa Georreferenciado"
-                >
-                  <MapIcon className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Mapa ({filteredAndSortedAuctions.length})</span>
-                </button>
-              </div>
-
-            </div>
-          </div>
-
-          {/* MAPA EXPANSÍVEL INTEGRADO */}
-          <AnimatePresence>
-            {isMapExpanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden rounded-2xl border border-slate-800 shadow-2xl bg-slate-900"
-              >
-                <div className="h-[480px] w-full relative">
-                  <PropertyMap
-                    itbiStats={itbiStats}
-                    onUpdateProperty={onUpdateProperty}
-                    auctions={auctions}
-                    initialFilteredAuctions={filteredAndSortedAuctions}
-                    initialSelectedPropertyId={hoveredPropertyId || undefined}
-                    onSelectPropertyFromMap={(id) => {
-                      const found = auctions.find(a => a.id === id);
-                      if (found) setSimulatingAuction(found);
-                    }}
-                    onClose={() => setIsMapExpanded(false)}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
+          ) : (
+            <>
           {/* LISTA / GRID DE CARDS DE OPORTUNIDADES */}
           {filteredAndSortedAuctions.length === 0 ? (
             <div className="bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3">
@@ -2946,7 +1888,7 @@ export default function Dashboard({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <AnimatePresence mode="popLayout">
                 {filteredAndSortedAuctions.slice(0, visibleCount).map((auc, idx) => {
                   const isPortal = auc.origin === 'portal';
@@ -3691,15 +2633,7 @@ export default function Dashboard({
                         </>
                         )}
 
-                        {/* Calibragem Rua vs Raio (se disponível) */}
-                        {auc.streetRadiusCalibrated && auc.itbiSurroundingAvgSqm && auc.itbiStreetAvgSqm && (
-                          <div className="border border-slate-800 bg-slate-950/40 px-3 py-1.5 rounded-lg text-[10px] text-slate-300 flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <strong className="text-slate-200">Calibragem rua–raio:</strong>
-                            <span>Rua R$ {auc.itbiStreetAvgSqm.toLocaleString('pt-BR')}/m² vs raio R$ {auc.itbiSurroundingAvgSqm.toLocaleString('pt-BR')}/m².</span>
-                          </div>
-                        )}
-
-                        {/* MÓDULO 2: Benchmark de Mercado dos Portais na Rua (Morada Virtual) */}
+                        {/* MÓDULO 2: Benchmark de Mercado dos Portais na Rua */}
                         {(() => {
                           const isRioDeJaneiroCity = (auc.state || 'RJ').toUpperCase() === 'RJ' && 
                             (auc.city || 'Rio de Janeiro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('rio');
@@ -3838,7 +2772,9 @@ export default function Dashboard({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedMapProperty(auc);
+                              setFocusedMapPropId(auc.id);
+                              setViewMode('map');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
                             className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 px-3 py-0.5 rounded-full font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
                             title="Localizar imóvel no Mapa Georreferenciado"
@@ -3934,6 +2870,8 @@ export default function Dashboard({
             </div>
           )}
 
+            </>
+          )}
         </main>
       </div>
 
@@ -4073,51 +3011,6 @@ export default function Dashboard({
           </div>
         )}
 
-        {/* MODAL: MAPA FOCADO NO IMÓVEL SELECIONADO ("Ver no Mapa" no Card) */}
-        {selectedMapProperty && (
-          <div className="fixed inset-0 z-50 w-screen h-screen bg-[#020617] flex flex-col animate-in fade-in duration-150">
-            <div className="relative w-full h-full bg-slate-900 overflow-hidden flex flex-col">
-              <PropertyMap
-                auctions={auctions}
-                itbiStats={itbiStats}
-                onUpdateProperty={onUpdateProperty}
-                initialSelectedPropertyId={selectedMapProperty.id}
-                onSelectPropertyFromMap={(id) => {
-                  const found = auctions.find(a => a.id === id);
-                  if (found) {
-                    setSelectedMapProperty(null);
-                    setSimulatingAuction(found);
-                  }
-                }}
-                onClose={() => setSelectedMapProperty(null)}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* MODAL: MAPA GERAL EM TELA CHEIA (Expandir no Sidebar ou no Feed) */}
-        {isGeneralMapModalOpen && (
-          <div className="fixed inset-0 z-50 w-screen h-screen bg-[#020617] flex flex-col animate-in fade-in duration-150">
-            <div className="relative w-full h-full bg-slate-900 overflow-hidden flex flex-col">
-              <PropertyMap
-                auctions={auctions}
-                itbiStats={itbiStats}
-                onUpdateProperty={onUpdateProperty}
-                initialFilteredAuctions={filteredAndSortedAuctions}
-                initialSelectedPropertyId={hoveredPropertyId || undefined}
-                onSelectPropertyFromMap={(id) => {
-                  const found = auctions.find(a => a.id === id);
-                  if (found) {
-                    setIsGeneralMapModalOpen(false);
-                    setSimulatingAuction(found);
-                  }
-                }}
-                onClose={() => setIsGeneralMapModalOpen(false)}
-              />
-            </div>
-          </div>
-        )}
-      
         {/* MODAL: FILTROS AVANÇADOS (ESTILO QUINTOANDAR) */}
         <AdvancedFiltersModal
           isOpen={isAdvancedModalOpen}

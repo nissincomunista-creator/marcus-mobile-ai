@@ -17459,5 +17459,15 @@
       }
     ],
     "updatedAt": "2026-11-23T02:29:17.365Z"
+  },
+  "rj_rio de janeiro_sao francisco xavier_licinio cardoso": {
+    "street": "RUA LICINIO CARDOSO",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/sao-francisco-xavier/rua-licinio-cardoso",
+    "canonicalTitle": "Rua Licinio Cardoso, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-23T03:55:05.208Z",
+    "notFound": true
   }
 }

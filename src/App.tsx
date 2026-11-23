@@ -125,7 +125,7 @@ export default function App() {
     }
   }, [theme]);
 
-  const [activeTab, setActiveTab] = useState<'garimpo' | 'portais' | 'calculadora' | 'itbi' | 'mapa' | 'capital' | 'perfil'>('garimpo');
+  const [activeTab, setActiveTab] = useState<'garimpo' | 'portais' | 'calculadora' | 'itbi' | 'mapa' | 'perfil'>('garimpo');
   const [auctions, setAuctions] = useState<AuctionProperty[]>([]);
   const [itbiStats, setItbiStats] = useState<any[]>([]);
   const [itbiCount, setItbiCount] = useState<number>(0);
@@ -150,7 +150,7 @@ export default function App() {
   const [isTourOpen, setIsTourOpen] = useState(false);
 
   const handleNavigateTourTab = useCallback((tab: 'garimpo' | 'portais' | 'calculadora' | 'capital' | 'perfil') => {
-    setActiveTab(tab);
+    setActiveTab(tab === 'capital' ? 'garimpo' : tab);
     setSelectedAuctionId(null);
   }, []);
 
@@ -884,10 +884,10 @@ export default function App() {
         <header className="px-4 sm:px-6 py-2.5 border-b border-slate-800/60">
           <div className="max-w-[1780px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative">
           
-          {/* Left: Logo & Discrete Sync Indicator */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          {/* Left: Logo + Assessoria Pericial & Flip Imobiliário */}
+          <div className="flex items-center justify-between gap-4 w-full flex-wrap">
             <div 
-              className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group select-none" 
+              className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group select-none shrink-0" 
               onClick={() => {
                 setSelectedAuctionId(null);
                 setActiveTab('garimpo');
@@ -895,256 +895,131 @@ export default function App() {
             >
               <img 
                 src="/marcus_logo.png" 
-                alt="Marcus Assessoria Imobiliária" 
+                alt="Assessoria Pericial & Flip Imobiliário" 
                 className="w-9 h-9 rounded-xl object-cover border border-emerald-500/40 shadow-md ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform" 
               />
               <div className="flex flex-col justify-center">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-base sm:text-lg font-black text-white tracking-wider">MARCUS</span>
-                  <span className="text-[11px] text-slate-300 font-bold tracking-wide uppercase underline underline-offset-4 decoration-slate-400">
-                    INTELIGÊNCIA EM LEILÕES
-                  </span>
-                </div>
-                <div className="text-[10px] text-slate-400 font-medium tracking-tight -mt-0.5">
-                  Assessoria Pericial & Flip Imobiliário
-                </div>
+                <span className="text-xs sm:text-sm font-bold text-slate-100 tracking-tight leading-tight">
+                  Assessoria Pericial &amp; Flip Imobiliário
+                </span>
               </div>
             </div>
 
-            {/* Unified Verification & Discrete Sync Live Indicator */}
-            <button
-              type="button"
-              onClick={async () => {
-                if (openingSyncPhase === 'ready' && !openingCatalogApplied) {
-                  await applyOpeningCatalog();
-                } else if (activeTab === 'portais') {
-                  await handleGarimparPortais(
-                    selectedCityFilter || undefined,
-                    undefined,
-                    selectedNeighborhoodFilter ? [selectedNeighborhoodFilter] : undefined,
-                    'venda'
-                  );
-                } else {
-                  // Atualiza a base da Caixa e recarrega os dados do mercado
-                  await handleSyncCaixaAuto();
-                }
-              }}
-              disabled={isLoading || applyingOpeningCatalog || isMining}
-              title="Clique para sincronizar e verificar todas as fontes agora"
-              className="flex items-center space-x-2 px-2.5 sm:px-3 py-1 rounded-full bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 text-[10.5px] sm:text-[11px] font-mono text-slate-400 hover:text-slate-200 shadow-inner transition-all cursor-pointer group"
-            >
-              <span className={`w-2 h-2 rounded-full shrink-0 ${
-                isLoading || applyingOpeningCatalog || isMining
-                  ? 'bg-amber-400 animate-ping'
-                  : 'bg-emerald-400 animate-pulse'
-              }`} />
-              
-              <span className="flex items-center gap-1.5">
-                {isLoading || applyingOpeningCatalog || isMining ? (
-                  <span className="text-amber-300 flex items-center gap-1">
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                    <span>{isMining ? 'Garimpando portais…' : 'Verificando fontes…'}</span>
+            {/* Center/Right: Garimpar Leilões + Flip House + (Calculadora, ITBI, Perfil) */}
+            <div data-tour="header-nav" className="flex flex-wrap items-center gap-2 sm:gap-3 justify-end ml-auto">
+              {/* Garimpar Leilões & Flip House */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  onClick={() => {
+                    setActiveTab('garimpo');
+                    setSelectedAuctionId(null);
+                  }}
+                  className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                    activeTab === 'garimpo'
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/40 ring-2 ring-emerald-400/30'
+                      : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Garimpar Leilões</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/30 text-white">
+                    {auctions.filter(a => a.origin !== 'portal').length}
                   </span>
-                ) : (
-                  <span className="flex items-center gap-1">
-                    <span className="text-emerald-400 font-semibold">Verificado</span>
-                    <span className="text-slate-500">•</span>
-                    <span>Atualizado às <strong className="text-slate-200 font-bold">{lastSyncTime}</strong></span>
-                    <RefreshCw className="w-2.5 h-2.5 text-slate-500 group-hover:text-emerald-400 group-hover:rotate-180 transition-transform ml-0.5" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('portais');
+                    setSelectedAuctionId(null);
+                  }}
+                  className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
+                    activeTab === 'portais'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-400 shadow-orange-950/50 ring-2 ring-amber-400/40'
+                      : 'bg-gradient-to-r from-amber-950/50 to-orange-950/50 text-amber-300 border-amber-600/40 hover:from-amber-900/70 hover:to-orange-900/70 hover:text-white'
+                  }`}
+                >
+                  <span className="text-xs">🔥</span>
+                  <span>Flip House</span>
+                  <span className="text-[10px] bg-black/40 text-amber-200 font-mono px-1.5 py-0.2 rounded-full border border-amber-400/30">
+                    {auctions.filter(a => a.origin === 'portal').length}
                   </span>
-                )}
-              </span>
-
-              <span className="text-slate-600">|</span>
-              <span className="text-emerald-400 font-bold">{auctions.length} {activeTab === 'portais' ? 'imóveis' : 'lotes'}</span>
-            </button>
-          </div>
-
-          {/* Right: Slim Nav Tabs, Profile Badge & Theme Toggle */}
-          <div data-tour="header-nav" className="flex flex-wrap items-center gap-1.5 justify-end">
-            
-            <button
-              id="tab-calculadora"
-              onClick={() => {
-                setActiveTab('calculadora');
-                setSelectedAuctionId(null);
-              }}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
-                activeTab === 'calculadora'
-                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
-              }`}
-            >
-              <Calculator className="w-3.5 h-3.5" />
-              <span>Calculadora</span>
-            </button>
-
-            <button
-              id="tab-itbi"
-              onClick={() => {
-                setActiveTab('itbi');
-                setSelectedAuctionId(null);
-              }}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
-                activeTab === 'itbi'
-                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>ITBI</span>
-            </button>
-
-            <button
-              id="tab-capital"
-              onClick={() => {
-                setActiveTab('capital');
-                setSelectedAuctionId(null);
-              }}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
-                activeTab === 'capital'
-                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
-              }`}
-            >
-              <DollarSign className="w-3.5 h-3.5" />
-              <span>Capital</span>
-            </button>
-
-            <button
-              id="tab-perfil"
-              onClick={() => {
-                setActiveTab('perfil');
-                setSelectedAuctionId(null);
-              }}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
-                activeTab === 'perfil'
-                  ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
-                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>Perfil</span>
-            </button>
-
-            {/* Mobile / PWA App Install */}
-            <button
-              onClick={() => setIsInstallModalOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-slate-800 text-emerald-300 border border-emerald-500/30 hover:bg-slate-700 transition-all flex items-center space-x-1 cursor-pointer"
-              title="Instalar no celular / Escanear QR Code"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden xl:inline">Celular</span>
-            </button>
-
-            {/* Tutorial */}
-            <button
-              onClick={() => setIsTourOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-slate-800 text-blue-300 border border-blue-500/30 hover:bg-slate-700 transition-all flex items-center space-x-1 cursor-pointer"
-              title="Tutorial Guiado"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden xl:inline">Tutorial</span>
-            </button>
-
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              className="p-1.5 rounded-xl font-bold text-xs bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-750 transition-all cursor-pointer"
-              title={theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
-            </button>
-
-            {/* Server / Admin Matriz */}
-            {user?.role === 'admin' && (
-              <button
-                onClick={() => setIsHostModalOpen(true)}
-                className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-amber-950/40 text-amber-300 border border-amber-500/40 hover:bg-amber-900/50 transition-all flex items-center space-x-1 cursor-pointer"
-                title="Central da Matriz - Gerenciar Licenças"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Matriz</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              </button>
-            )}
-
-            {/* User Operator Badge */}
-            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
-              <div className="w-5 h-5 rounded-full bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 font-bold flex items-center justify-center text-[10px]">
-                {(user?.name || 'M').charAt(0).toUpperCase()}
+                </button>
               </div>
-              <span className="font-semibold text-slate-200 text-[11px] truncate max-w-[90px]">{user?.name || 'Marcus'}</span>
-            </div>
 
-            {/* Sair */}
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition-all cursor-pointer border border-transparent hover:border-rose-900/30"
-              title="Sair"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+              <span className="hidden sm:inline-block h-5 w-px bg-slate-800" />
+
+              {/* Right corner tools: Calculadora, ITBI, Perfil + Theme & Logout */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  id="tab-calculadora"
+                  onClick={() => {
+                    setActiveTab('calculadora');
+                    setSelectedAuctionId(null);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
+                    activeTab === 'calculadora'
+                      ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
+                  }`}
+                >
+                  <Calculator className="w-3.5 h-3.5" />
+                  <span>Calculadora</span>
+                </button>
+
+                <button
+                  id="tab-itbi"
+                  onClick={() => {
+                    setActiveTab('itbi');
+                    setSelectedAuctionId(null);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
+                    activeTab === 'itbi'
+                      ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
+                  }`}
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  <span>ITBI</span>
+                </button>
+
+                <button
+                  id="tab-perfil"
+                  onClick={() => {
+                    setActiveTab('perfil');
+                    setSelectedAuctionId(null);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
+                    activeTab === 'perfil'
+                      ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Perfil</span>
+                </button>
+
+                {/* Theme Toggle */}
+                <button
+                  onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                  className="p-1.5 rounded-xl font-bold text-xs bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-750 transition-all cursor-pointer"
+                  title={theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
+                >
+                  {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+                </button>
+
+                {/* Sair */}
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition-all cursor-pointer border border-transparent hover:border-rose-900/30"
+                  title="Sair"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
-
-      {/* Sub-header de Destaque: Alternância Rápida entre Leilões e Portais Flip */}
-      <div className="bg-slate-900/90 px-4 sm:px-6 py-2">
-        <div className="max-w-[1780px] mx-auto flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setActiveTab('garimpo');
-                setSelectedAuctionId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 transition-all cursor-pointer border ${
-                activeTab === 'garimpo'
-                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/40 ring-2 ring-emerald-400/30'
-                  : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
-              }`}
-            >
-              <Building2 className="w-4 h-4 text-emerald-300" />
-              <span>🏛️ Garimpar Leilões</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-950/60 text-slate-300">
-                {auctions.filter(a => a.origin !== 'portal').length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('portais');
-                setSelectedAuctionId(null);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition-all cursor-pointer border shadow-lg ${
-                activeTab === 'portais'
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-400 shadow-orange-950/50 ring-2 ring-amber-400/40 scale-[1.02]'
-                  : 'bg-gradient-to-r from-amber-950/50 to-orange-950/50 text-amber-300 border-amber-600/40 hover:from-amber-900/70 hover:to-orange-900/70 hover:text-white'
-              }`}
-            >
-              <span className="text-base">🔥</span>
-              <span>Flip House</span>
-              <span className="text-[10px] bg-black/40 text-amber-200 font-mono px-1.5 py-0.2 rounded-full border border-amber-400/30">
-                {auctions.filter(a => a.origin === 'portal').length}
-              </span>
-            </button>
-          </div>
-
-          {activeTab === 'portais' ? (
-            <div className="flex items-center gap-2 text-xs text-amber-300/80">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden md:inline font-medium">Anúncios reais de Venda Particular (Zap, Viva Real, QuintoAndar, Imovelweb)</span>
-            </div>
-          ) : activeTab === 'garimpo' ? (
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="hidden lg:inline">Base pericial:</span>
-              <span className="font-mono text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                {itbiCount.toLocaleString('pt-BR')} ITBIs Oficiais
-              </span>
-            </div>
-          ) : null}
-        </div>
-      </div>
       </div>
 
       {/* MODAL: MODO SERVIDOR & COMPARTILHAMENTO DE ACESSO */}
@@ -1429,7 +1304,18 @@ export default function App() {
                       onOpenLinkModal={() => setIsLinkModalOpen(true)}
                       itbiStats={itbiStats}
                       onClearAll={handleClearAllAuctions}
-                      onOpenCapitalMatcher={() => setActiveTab('capital')}
+                      syncStatus={{
+                        lastSyncTime,
+                        isSyncing: isLoading || applyingOpeningCatalog || isMining,
+                        totalLots: auctions.length,
+                        onRefresh: async () => {
+                          if (openingSyncPhase === 'ready' && !openingCatalogApplied) {
+                            await applyOpeningCatalog();
+                          } else {
+                            await handleSyncCaixaAuto();
+                          }
+                        }
+                      }}
                     />
                   </ErrorBoundary>
                 ) : (
@@ -1556,7 +1442,18 @@ export default function App() {
                       onOpenLinkModal={() => setIsLinkModalOpen(true)}
                       itbiStats={itbiStats}
                       onClearAll={handleClearAllAuctions}
-                      onOpenCapitalMatcher={() => setActiveTab('capital')}
+                      syncStatus={{
+                        lastSyncTime,
+                        isSyncing: isLoading || applyingOpeningCatalog || isMining,
+                        totalLots: auctions.length,
+                        onRefresh: async () => {
+                          if (openingSyncPhase === 'ready' && !openingCatalogApplied) {
+                            await applyOpeningCatalog();
+                          } else {
+                            await handleSyncCaixaAuto();
+                          }
+                        }
+                      }}
                     />
                   </ErrorBoundary>
                 ) : (
@@ -1686,33 +1583,6 @@ export default function App() {
                   onDeleteTransaction={handleDeleteItbiTransaction}
                   onClearAllTransactions={handleClearAllItbi}
                 />
-              </motion.div>
-            )}
-
-            {/* TAB CONTENT: Capital Allocation Matcher */}
-            {activeTab === 'capital' && (
-              <motion.div
-                key="capital-view"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
-              >
-                <ErrorBoundary fallbackTitle="Erro ao carregar Alocação por Capital">
-                  <CapitalInvestmentMatcher
-                    auctions={auctions}
-                    itbiStats={itbiStats}
-                    onUpdateProperty={handleUpdatePropertyDirectly}
-                    onSelectProperty={(auc) => {
-                      setSelectedAuctionId(auc.id);
-                      setActiveTab('garimpo');
-                    }}
-                    onSimulateProperty={(auc) => {
-                      setSelectedAuctionId(auc.id);
-                      setActiveTab('garimpo');
-                    }}
-                  />
-                </ErrorBoundary>
               </motion.div>
             )}
 

@@ -144,7 +144,12 @@ export function upsertRio3DBuildingsLayer(
   // Keep OpenFreeMap flat building footprints unobtrusive and avoid OSM 3D collisions
   for (const layer of styleLayers) {
     const idLower = layer.id.toLowerCase();
-    if (idLower.includes('building') && idLower !== 'rio-edificacoes-3d' && idLower !== 'rio-edificacoes-itbi-flat') {
+    if (
+      idLower.includes('building') &&
+      idLower !== 'rio-edificacoes-3d' &&
+      idLower !== 'rio-edificacoes-itbi-flat' &&
+      !idLower.startsWith('auctions-buildings')
+    ) {
       try {
         if (layer.type === 'fill-extrusion') {
           map.setLayoutProperty(layer.id, 'visibility', 'none');
