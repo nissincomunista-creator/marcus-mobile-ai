@@ -21,6 +21,7 @@ import csvParser from 'csv-parser';
 import iconv from 'iconv-lite';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
+import readline from 'readline';
 import zlib from 'zlib';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
@@ -1550,8 +1551,9 @@ function loadStore(): DataStore {
     });
   }
 
-  // If ITBI transactions are empty, attempt auto-import from Excel
-  if (!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) {
+  // If ITBI transactions are empty AND we don't have a standalone itbi_store.json.gz to stream later, attempt auto-import from Excel
+  const GZ_ITBI_STANDALONE = path.join(process.cwd(), 'itbi_store.json.gz');
+  if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && !fs.existsSync(GZ_ITBI_STANDALONE)) {
     console.log('Base de ITBI vazia no JSON. Tentando importar dados da planilha Excel do Desktop...');
     try {
       execSync('python import_excel.py', { stdio: 'inherit' });
@@ -1593,6 +1595,44 @@ function loadStore(): DataStore {
 
 let itbiLoadingPromise: Promise<void> | null = null;
 
+function internLoadedItbiRow(raw: any, stringPool: Map<string, string>) {
+  const intern = (v: any) => {
+    if (typeof v !== 'string' || !v) return v;
+    let cached = stringPool.get(v);
+    if (cached === undefined) {
+      stringPool.set(v, v);
+      cached = v;
+    }
+    return cached;
+  };
+  if (!raw || typeof raw !== 'object') return raw;
+  const o: any = {
+    id: raw.id,
+    neighborhood: intern(raw.neighborhood),
+    propertyType: intern(raw.propertyType),
+    sizeSqm: raw.sizeSqm,
+    transactionValue: raw.transactionValue,
+    date: intern(raw.date),
+    unitValueSqm: raw.unitValueSqm,
+    state: intern(raw.state),
+    city: intern(raw.city),
+    street: intern(raw.street),
+    number: raw.number,
+    complement: raw.complement,
+    description: intern(raw.description || 'RESIDENCIAL'),
+    sourceFile: intern(raw.sourceFile),
+    sourceRow: raw.sourceRow,
+    sourceVerified: raw.sourceVerified,
+    isCompraEVenda: raw.isCompraEVenda,
+    isFiduciario: raw.isFiduciario,
+    normalizedTotalValue: raw.normalizedTotalValue,
+    transactionLocationLat: raw.transactionLocationLat,
+    transactionLocationLng: raw.transactionLocationLng,
+    transactionLocationPrecision: intern(raw.transactionLocationPrecision),
+  };
+  return o;
+}
+
 function ensureItbiLoaded(): Promise<void> {
   if (typeof store !== 'undefined' && store && store.itbiTransactions && store.itbiTransactions.length > 0) {
     return Promise.resolve();
@@ -1603,12 +1643,36 @@ function ensureItbiLoaded(): Promise<void> {
     const GZ_ITBI_PATH = path.join(process.cwd(), 'itbi_store.json.gz');
     if (fs.existsSync(GZ_ITBI_PATH)) {
       try {
-        console.log('[Store] Carregando transações municipais ITBI de itbi_store.json.gz...');
-        const compressed = fs.readFileSync(GZ_ITBI_PATH);
-        let decompressed: Buffer | null = zlib.gunzipSync(compressed);
-        const jsonStr = decompressed.toString('utf-8');
-        decompressed = null;
-        const itbi = JSON.parse(jsonStr);
+        console.log('[Store] Carregando transações municipais ITBI via stream de itbi_store.json.gz...');
+        const stringPool = new Map<string, string>();
+        const itbi: ItbiTransaction[] = [];
+        const stream = fs.createReadStream(GZ_ITBI_PATH).pipe(zlib.createGunzip());
+        const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+        let isJsonArrayFormat = false;
+        const rawChunks: string[] = [];
+        for await (const rawLine of rl) {
+          const line = rawLine.trim();
+          if (!line) continue;
+          if (!isJsonArrayFormat && line.startsWith('[')) {
+            isJsonArrayFormat = true;
+            rawChunks.push(line);
+            continue;
+          }
+          if (isJsonArrayFormat) {
+            rawChunks.push(line);
+            continue;
+          }
+          const parsed = JSON.parse(line);
+          itbi.push(internLoadedItbiRow(parsed, stringPool));
+        }
+        if (isJsonArrayFormat) {
+          const arr = JSON.parse(rawChunks.join('\n'));
+          rawChunks.length = 0;
+          for (let i = 0; i < arr.length; i++) {
+            itbi.push(internLoadedItbiRow(arr[i], stringPool));
+          }
+        }
+        stringPool.clear();
         if (typeof store !== 'undefined' && store) {
           store.itbiTransactions = itbi;
           configureNeighborhoods(store.itbiTransactions);
@@ -4138,7 +4202,7 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
   )).map(a => {
     const isRio = (a.state || '').toUpperCase() === 'RJ' || String(a.city || '').toLowerCase().includes('rio de janeiro');
     const ipp = isRio
-      ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title })
+      ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }, { preloadedOnly: true })
       : null;
     const ippPatch = ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)
       ? { lat: ipp.lat, lng: ipp.lng, status_geocodificacao: ipp.matchedNumber ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA' }

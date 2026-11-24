@@ -238,7 +238,7 @@ export function resolveRioIppLocation(params: {
   state?: string;
   description?: string;
   title?: string;
-}): RioIppResolution | null {
+}, options?: { preloadedOnly?: boolean }): RioIppResolution | null {
   const cityNorm = normalizeText(params.city);
   const stateNorm = normalizeText(params.state);
   if (cityNorm && !cityNorm.includes('RIO DE JANEIRO')) return null;
@@ -249,6 +249,9 @@ export function resolveRioIppLocation(params: {
     if (pre && Number.isFinite(pre.lat) && Number.isFinite(pre.lng)) {
       return pre;
     }
+  }
+  if (options?.preloadedOnly) {
+    return null;
   }
 
   const nb = normalizeBairro(params.neighborhood);

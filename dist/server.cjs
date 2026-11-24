@@ -15342,7 +15342,7 @@ function loadDoorsForCl(cl) {
   }
   return shard[cl] || [];
 }
-function resolveRioIppLocation(params) {
+function resolveRioIppLocation(params, options) {
   const cityNorm = normalizeText(params.city);
   const stateNorm = normalizeText(params.state);
   if (cityNorm && !cityNorm.includes("RIO DE JANEIRO")) return null;
@@ -15352,6 +15352,9 @@ function resolveRioIppLocation(params) {
     if (pre && Number.isFinite(pre.lat) && Number.isFinite(pre.lng)) {
       return pre;
     }
+  }
+  if (options?.preloadedOnly) {
+    return null;
   }
   const nb = normalizeBairro(params.neighborhood);
   const memoKey = params.id ? `id:${params.id}:${normalizeText(params.address)}:${nb}` : `addr:${cityNorm}:${nb}:${normalizeText(params.address)}:${normalizeText(params.title)}`;
@@ -15835,6 +15838,7 @@ var import_fs5 = __toESM(require("fs"), 1);
 var import_csv_parser = __toESM(require("csv-parser"), 1);
 var import_stream = require("stream");
 var import_promises = require("stream/promises");
+var import_readline = __toESM(require("readline"), 1);
 var import_zlib = __toESM(require("zlib"), 1);
 var import_vite = require("vite");
 var import_genai3 = require("@google/genai");
@@ -21079,7 +21083,8 @@ function loadStore() {
       }
     });
   }
-  if (!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) {
+  const GZ_ITBI_STANDALONE = import_path4.default.join(process.cwd(), "itbi_store.json.gz");
+  if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && !import_fs5.default.existsSync(GZ_ITBI_STANDALONE)) {
     console.log("Base de ITBI vazia no JSON. Tentando importar dados da planilha Excel do Desktop...");
     try {
       (0, import_child_process.execSync)("python import_excel.py", { stdio: "inherit" });
@@ -21116,6 +21121,43 @@ function loadStore() {
   return storeData;
 }
 var itbiLoadingPromise = null;
+function internLoadedItbiRow(raw, stringPool) {
+  const intern = (v) => {
+    if (typeof v !== "string" || !v) return v;
+    let cached = stringPool.get(v);
+    if (cached === void 0) {
+      stringPool.set(v, v);
+      cached = v;
+    }
+    return cached;
+  };
+  if (!raw || typeof raw !== "object") return raw;
+  const o = {
+    id: raw.id,
+    neighborhood: intern(raw.neighborhood),
+    propertyType: intern(raw.propertyType),
+    sizeSqm: raw.sizeSqm,
+    transactionValue: raw.transactionValue,
+    date: intern(raw.date),
+    unitValueSqm: raw.unitValueSqm,
+    state: intern(raw.state),
+    city: intern(raw.city),
+    street: intern(raw.street),
+    number: raw.number,
+    complement: raw.complement,
+    description: intern(raw.description || "RESIDENCIAL"),
+    sourceFile: intern(raw.sourceFile),
+    sourceRow: raw.sourceRow,
+    sourceVerified: raw.sourceVerified,
+    isCompraEVenda: raw.isCompraEVenda,
+    isFiduciario: raw.isFiduciario,
+    normalizedTotalValue: raw.normalizedTotalValue,
+    transactionLocationLat: raw.transactionLocationLat,
+    transactionLocationLng: raw.transactionLocationLng,
+    transactionLocationPrecision: intern(raw.transactionLocationPrecision)
+  };
+  return o;
+}
 function ensureItbiLoaded() {
   if (typeof store !== "undefined" && store && store.itbiTransactions && store.itbiTransactions.length > 0) {
     return Promise.resolve();
@@ -21125,12 +21167,36 @@ function ensureItbiLoaded() {
     const GZ_ITBI_PATH = import_path4.default.join(process.cwd(), "itbi_store.json.gz");
     if (import_fs5.default.existsSync(GZ_ITBI_PATH)) {
       try {
-        console.log("[Store] Carregando transa\xE7\xF5es municipais ITBI de itbi_store.json.gz...");
-        const compressed = import_fs5.default.readFileSync(GZ_ITBI_PATH);
-        let decompressed = import_zlib.default.gunzipSync(compressed);
-        const jsonStr = decompressed.toString("utf-8");
-        decompressed = null;
-        const itbi = JSON.parse(jsonStr);
+        console.log("[Store] Carregando transa\xE7\xF5es municipais ITBI via stream de itbi_store.json.gz...");
+        const stringPool = /* @__PURE__ */ new Map();
+        const itbi = [];
+        const stream = import_fs5.default.createReadStream(GZ_ITBI_PATH).pipe(import_zlib.default.createGunzip());
+        const rl = import_readline.default.createInterface({ input: stream, crlfDelay: Infinity });
+        let isJsonArrayFormat = false;
+        const rawChunks = [];
+        for await (const rawLine of rl) {
+          const line = rawLine.trim();
+          if (!line) continue;
+          if (!isJsonArrayFormat && line.startsWith("[")) {
+            isJsonArrayFormat = true;
+            rawChunks.push(line);
+            continue;
+          }
+          if (isJsonArrayFormat) {
+            rawChunks.push(line);
+            continue;
+          }
+          const parsed = JSON.parse(line);
+          itbi.push(internLoadedItbiRow(parsed, stringPool));
+        }
+        if (isJsonArrayFormat) {
+          const arr = JSON.parse(rawChunks.join("\n"));
+          rawChunks.length = 0;
+          for (let i = 0; i < arr.length; i++) {
+            itbi.push(internLoadedItbiRow(arr[i], stringPool));
+          }
+        }
+        stringPool.clear();
         if (typeof store !== "undefined" && store) {
           store.itbiTransactions = itbi;
           configureNeighborhoods(store.itbiTransactions);
@@ -23227,7 +23293,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
       (a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state)
     )).map((a) => {
       const isRio = (a.state || "").toUpperCase() === "RJ" || String(a.city || "").toLowerCase().includes("rio de janeiro");
-      const ipp = isRio ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }) : null;
+      const ipp = isRio ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }, { preloadedOnly: true }) : null;
       const ippPatch = ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng) ? { lat: ipp.lat, lng: ipp.lng, status_geocodificacao: ipp.matchedNumber ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA" } : {};
       if (catalogEligible(a)) return Object.keys(ippPatch).length ? { ...a, ...ippPatch } : a;
       const safeStreetPortal = isRio && a.streetPortalAvgSqm && a.streetPortalAvgSqm < 1500 ? void 0 : a.streetPortalAvgSqm;
