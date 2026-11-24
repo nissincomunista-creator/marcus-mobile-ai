@@ -265,17 +265,20 @@ export default function App() {
 
         const aucData = await aucRes.json();
         setAuctions(Array.isArray(aucData) ? aucData : []);
-        // Sincronização automática em background da Caixa a cada abertura do app
-        void authFetch('/api/garimpar/caixa-auto', {
+        // Sincronização automática completa na abertura do app:
+        // Caixa + Leiloeiros Judiciais/Extrajudiciais + Auditoria de lotes vendidos/encerrados
+        void authFetch('/api/sync/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ states: ['RJ', 'MG'] })
-        }).then(async (cRes) => {
-          if (cRes.ok) {
-            console.log('[Caixa Auto-Start] Base da Caixa atualizada com sucesso na abertura.');
-            await refreshMarketData({ silent: true });
+          body: JSON.stringify({ reason: 'app-open' })
+        }).then(async (syncRes) => {
+          if (!syncRes.ok) return;
+          const initStatus = await syncRes.json().catch(() => null);
+          if (initStatus?.started || initStatus?.running) {
+            await pollSyncStatusUntilDone(600000);
+            await refreshMarketData({ silent: true, force: true });
           }
-        }).catch((cErr) => console.warn('[Caixa Auto-Start] Falha silenciosa no sync Caixa da abertura:', cErr));
+        }).catch((syncErr) => console.warn('[Auto-Sync] Falha silenciosa na sincronização de abertura:', syncErr));
         void authFetch('/api/itbi').then(async itbiRes => {
           if (!itbiRes.ok) throw new Error(`HTTP ${itbiRes.status}`);
           return itbiRes.json();
@@ -440,29 +443,19 @@ export default function App() {
   const handleSyncAll = async () => {
     setIsMining(true);
     try {
-      try {
-        await authFetch('/api/garimpar/caixa-auto', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ states: ['RJ', 'MG'] })
-        });
-      } catch (caixaErr) {
-        console.warn('[Sync All] Caixa erro silencioso:', caixaErr);
-      }
-
-      const payload: any = { states: ['MG', 'RJ', 'SP'] };
-      if (selectedStateFilter) payload.state = selectedStateFilter;
-      if (selectedCityFilter) payload.city = selectedCityFilter;
-
-      await authFetch('/api/garimpar/extrajudiciais-auto', {
+      const res = await authFetch('/api/sync/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ reason: 'manual' })
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error || 'Falha ao iniciar sincronização completa.');
+      }
 
-      await pollSyncStatusUntilDone();
+      await pollSyncStatusUntilDone(600000);
       await refreshMarketData({ force: true });
-      alert('Sincronização completa de todos os leiloeiros e Caixa concluída com sucesso!');
+      alert('Sincronização completa de Caixa, leiloeiros cadastrados e retirada de lotes vendidos/encerrados concluída com sucesso!');
     } catch (e: any) {
       alert('Erro na sincronização completa: ' + e.message);
     } finally {
@@ -923,12 +916,18 @@ export default function App() {
                   }}
                   className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border ${
                     activeTab === 'garimpo'
-                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/40 ring-2 ring-emerald-400/30'
-                      : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
+                      ? 'btn-solid-white bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                      : theme === 'light'
+                        ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:text-slate-900'
+                        : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
                   }`}
                 >
                   <span>Garimpar Leilões</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/30 text-white">
+                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    activeTab === 'garimpo' || theme !== 'light'
+                      ? 'bg-black/25 text-white'
+                      : 'bg-slate-200 text-slate-800'
+                  }`}>
                     {auctions.filter(a => a.origin !== 'portal').length}
                   </span>
                 </button>
@@ -938,16 +937,22 @@ export default function App() {
                     setActiveTab('portais');
                     setSelectedAuctionId(null);
                   }}
-                  className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
+                  className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border shadow-xs ${
                     activeTab === 'portais'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-400 shadow-orange-950/50 ring-2 ring-amber-400/40'
+                      ? 'btn-solid-white bg-amber-600 text-white border-amber-500 shadow-sm'
                       : theme === 'light'
-                        ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                        ? 'bg-amber-50/70 text-amber-800 border-amber-300/80 hover:bg-amber-100'
                         : 'bg-gradient-to-r from-amber-950/50 to-orange-950/50 text-amber-300 border-amber-600/40 hover:from-amber-900/70 hover:to-orange-900/70 hover:text-white'
                   }`}
                 >
                   <span>Flip House</span>
-                  <span className="text-[10px] bg-black/40 text-amber-200 font-mono px-1.5 py-0.2 rounded-full border border-amber-400/30">
+                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    activeTab === 'portais'
+                      ? 'bg-black/20 text-white'
+                      : theme === 'light'
+                        ? 'bg-amber-200/70 text-amber-900 border border-amber-300/60'
+                        : 'bg-black/40 text-amber-200 border border-amber-400/30'
+                  }`}>
                     {auctions.filter(a => a.origin === 'portal').length}
                   </span>
                 </button>

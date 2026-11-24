@@ -1811,9 +1811,9 @@ export default function PropertyMap({
                           )}
                         </div>
 
-                        {/* Título e Endereço sem negrito (negrito apenas nos valores de Lucro Real e Preço Sugerido) */}
+                        {/* Título em negrito (peso 700), descritivos 400/600, preços 800 tracking-tight */}
                         <div className="space-y-0.5">
-                          <h4 className="text-[13.5px] font-normal text-white leading-snug line-clamp-2 hover:text-indigo-400 transition-colors">
+                          <h4 className="text-[13.5px] font-bold text-white leading-snug line-clamp-2 hover:text-indigo-400 transition-colors">
                             {auc.title}
                           </h4>
                           <p className="text-[11px] font-normal text-slate-400 truncate">
@@ -1858,15 +1858,15 @@ export default function PropertyMap({
                         <div className="space-y-1.5 pt-1 text-left">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5">
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Lance Mínimo</span>
-                              <span className="text-[11.5px] font-normal text-white font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Lance Mínimo</span>
+                              <span className="text-[11.5px] font-extrabold tracking-tight text-white font-mono block truncate">
                                 {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Propostas'}
                               </span>
                             </div>
 
                             <div className="relative group/cost cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Custo Total Est.</span>
-                              <span className="text-[11.5px] font-normal text-slate-200 font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Custo Total Est.</span>
+                              <span className="text-[11.5px] font-extrabold tracking-tight text-slate-200 font-mono block truncate">
                                 {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
                               </span>
                               <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
@@ -1882,9 +1882,9 @@ export default function PropertyMap({
                             </div>
 
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Lucro Real Est.</span>
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Lucro Real Est.</span>
                               <span
-                                className={`text-[12px] font-bold font-mono block truncate ${
+                                className={`text-[12px] font-extrabold tracking-tight font-mono block truncate ${
                                   auc.calculatedProfit === undefined && !flipPrice
                                     ? 'text-slate-400'
                                     : (auc.calculatedProfit ?? (flipPrice - totalCost)) >= 0
@@ -1899,8 +1899,8 @@ export default function PropertyMap({
                             </div>
 
                             <div className="relative group/itbi cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Gabarito ITBI</span>
-                              <span className="text-[11.5px] font-normal text-slate-200 font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Gabarito ITBI</span>
+                              <span className="text-[11.5px] font-extrabold tracking-tight text-slate-200 font-mono block truncate">
                                 {!auc.estimatedValue && !auc.itbiStreetAvgSqm
                                   ? 'Sem dados'
                                   : auc.estimatedValue
@@ -1928,22 +1928,22 @@ export default function PropertyMap({
 
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5">
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Avaliação Edital</span>
-                              <span className="text-[11.5px] font-normal text-slate-300 font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Avaliação Edital</span>
+                              <span className="text-[11.5px] font-extrabold tracking-tight text-slate-300 font-mono block truncate">
                                 {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
                               </span>
                             </div>
 
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">ROI Projetado</span>
-                              <span className="text-[11.5px] font-normal font-mono text-slate-200 block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">ROI Projetado</span>
+                              <span className="text-[11.5px] font-semibold font-mono text-slate-200 block truncate">
                                 {roiVal === undefined ? 'Sob consulta' : `${roiVal.toLocaleString('pt-BR')}%`}
                               </span>
                             </div>
 
                             <div className="relative group/liq cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Liquidez</span>
-                              <span className="text-[11.5px] font-normal font-mono text-slate-200 block truncate">{effScore}/10</span>
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Liquidez</span>
+                              <span className="text-[11.5px] font-semibold font-mono text-slate-200 block truncate">{effScore}/10</span>
                               <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
                                 <div className="text-[10.5px] font-semibold text-slate-200 mb-1">Indicador de Liquidez ({effScore}/10)</div>
                                 <div className="text-[9px] text-slate-300 space-y-1 font-sans">
@@ -1954,8 +1954,8 @@ export default function PropertyMap({
                             </div>
 
                             <div className="relative group/flip cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Preço Sugerido</span>
-                              <span className="text-[12px] font-bold text-white font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Preço Sugerido</span>
+                              <span className="text-[12px] font-extrabold tracking-tight text-white font-mono block truncate">
                                 {!flipPrice ? 'Sem dados' : formatBRL(flipPrice)}
                               </span>
                               <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/flip:opacity-100 transition-opacity z-50 text-left">

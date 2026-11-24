@@ -54,7 +54,7 @@ function assessAvailability(previous, url, httpStatus, html, now = (/* @__PURE__
   const visibleText = $("body").text().replace(/\s+/g, " ").trim();
   if (/verifique que voc[eê] [eé] humano|verify you are human|checking your browser/i.test(visibleText)) return { ...previous, ...base, state: previous?.state || "unknown", reason: "Consulta bloqueada por desafio de acesso" };
   const isOnlyCookieNotice = visibleText.length < 300 && /cookie|pol[íi]tica de privacidade|consentir/i.test(visibleText);
-  if (/(?:este\s+|o\s+)?(?:lote|leil[aã]o)\s+(?:encontra-se|est[aá]|foi)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|(?:situa[cç][aã]o|status)\s*:\s*(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|vendido|retirado)|im[oó]vel\s+(?:j[aá]\s+)?(?:vendido|indispon[íi]vel)|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
+  if (/(?:este\s+|o\s+)?(?:lote|leil[aã]o)\s+(?:encontra-se|est[aá]|foi)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|(?:situa[cç][aã]o|status)\s*:\s*(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|vendido|retirado)|im[oó]vel\s+j[aá]\s+(?:vendido|arrematado|indispon[íi]vel)|(?:este|o)\s+im[oó]vel\s+(?:est[aá]|encontra-se|foi)\s+indispon[íi]vel|(?<!para\s+)(?<!ser[aá]\s+)(?<!seja\s+)im[oó]vel\s+vendido(?!\s+(?:na\s+condi[cç][aã]o|no\s+estado|em\s+car[aá]ter|conforme|pelo\s+estado))|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
     return finish("finalizado", "Lote encerrado, cancelado ou indispon\xEDvel no site do leiloeiro");
   }
   const unavailable = /^(?:(?:este|o)\s+)?(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+(?:n[aã]o\s+(?:foi\s+)?encontrad[oa]|n[aã]o\s+(?:(?:est[aá]|se encontra)\s+)?(?:mais\s+)?dispon[ií]vel\s*(?:para venda)?|indispon[ií]vel|removid[oa])[.!]?$/i;
@@ -1725,6 +1725,7 @@ function getPuppeteerLaunchOptions(extraArgs = []) {
   const combinedArgs = Array.from(/* @__PURE__ */ new Set([...baseArgs, ...extraArgs]));
   const options = {
     headless: true,
+    protocolTimeout: 9e4,
     args: combinedArgs
   };
   if (systemChrome) {
@@ -14150,9 +14151,9 @@ init_listedPortalApis();
 init_leilaoImovelScraper();
 var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 var propertyWords = /\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba|chacara|sitio|sobrado|kitnet|residencial|duplex)\b/;
-var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
+var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/Leiloes\/LoteDetalhes(?:\?|\/)|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
 var navigationPattern = /\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|categoria-produto\/imoveis|leiloes-imoveis|Leiloes\/Pesquisar|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?/i;
-var skipPattern = /login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|fale-conosco|quem-somos|como-comprar|como-vender|indique|validar-documento|habilitacao|regulamento|duvidas|faq|\/home(?:\/|$)|\/venda-direta(?:\/|$)|\.pdf(?:\?|$)/i;
+var skipPattern = /login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|fale-conosco|quem-somos|como-comprar|como-vender|indique|validar-documento|habilitacao|regulamento|duvidas|faq|\/home(?:\/|$)|\/venda-direta(?:\/|$)|\/auditorio\/\d+\/\d+\/batch|\.pdf(?:\?|$)/i;
 var bankIds = /* @__PURE__ */ new Set(["bb", "emgea", "santander", "vitrinebradesco"]);
 var isBlockedLeilaoImovelResponse = (portalId, error) => portalId === "leilaoimovel" && /HTTP\s+403\b/i.test(error instanceof Error ? error.message : String(error));
 var wait2 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -14393,34 +14394,59 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
   };
   save();
   let browserPromise = null;
+  let activeRenderPages = 0;
+  const renderWaiters = [];
+  const maxConcurrentRenders = process.env.RENDER === "true" ? 1 : 3;
+  const acquireRenderSlot = async () => {
+    if (activeRenderPages >= maxConcurrentRenders) await new Promise((resolve) => renderWaiters.push(resolve));
+    activeRenderPages++;
+  };
+  const releaseRenderSlot = () => {
+    activeRenderPages = Math.max(0, activeRenderPages - 1);
+    const next = renderWaiters.shift();
+    if (next) next();
+  };
   const rendered = async (url) => {
-    browserPromise ||= launchPuppeteer(import_puppeteer4.default, { headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
-    const browser = await browserPromise;
-    const isLeilaoImovel = new URL(url).hostname.endsWith("leilaoimovel.com.br");
-    for (let attempt = 0; attempt < (isLeilaoImovel ? 2 : 1); attempt++) {
-      const page = await browser.newPage();
-      try {
-        await page.setUserAgent(UA);
-        await page.setExtraHTTPHeaders({ "Accept-Language": "pt-BR,pt;q=0.9" });
-        const r = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
-        if (r && r.status() >= 400) {
-          if (isLeilaoImovel && r.status() === 403 && attempt === 0) {
-            await wait2(1500);
-            continue;
+    await acquireRenderSlot();
+    try {
+      browserPromise ||= launchPuppeteer(import_puppeteer4.default, { headless: true, protocolTimeout: 9e4, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      const browser = await browserPromise;
+      const isLeilaoImovel = new URL(url).hostname.endsWith("leilaoimovel.com.br");
+      for (let attempt = 0; attempt < (isLeilaoImovel ? 2 : 1); attempt++) {
+        const page = await browser.newPage();
+        try {
+          await page.setRequestInterception(true);
+          page.on("request", (req) => {
+            const rt = req.resourceType();
+            if (rt === "image" || rt === "media" || rt === "font" || rt === "stylesheet") req.abort().catch(() => {
+            });
+            else req.continue().catch(() => {
+            });
+          });
+          await page.setUserAgent(UA);
+          await page.setExtraHTTPHeaders({ "Accept-Language": "pt-BR,pt;q=0.9" });
+          const r = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
+          if (r && r.status() >= 400) {
+            if (isLeilaoImovel && r.status() === 403 && attempt === 0) {
+              await wait2(1500);
+              continue;
+            }
+            throw Error(`HTTP ${r.status()}`);
           }
-          throw Error(`HTTP ${r.status()}`);
+          await page.waitForNetworkIdle({ idleTime: 600, timeout: 8e3 }).catch(() => {
+          });
+          const html = await page.content();
+          if (/<title>Just a moment|Access Denied/i.test(html)) throw Error("Acesso bloqueado pela fonte");
+          return { html, url: page.url() };
+        } finally {
+          await page.close().catch(() => {
+          });
         }
-        await page.waitForNetworkIdle({ idleTime: 600, timeout: 1e4 }).catch(() => {
-        });
-        const html = await page.content();
-        if (/<title>Just a moment|Access Denied/i.test(html)) throw Error("Acesso bloqueado pela fonte");
-        return { html, url: page.url() };
-      } finally {
-        await page.close().catch(() => {
-        });
       }
+      throw Error("Leil\xE3o Im\xF3vel bloqueou a p\xE1gina ap\xF3s duas tentativas via navegador.");
+    } finally {
+      releaseRenderSlot();
     }
-    throw Error("Leil\xE3o Im\xF3vel bloqueou a p\xE1gina ap\xF3s duas tentativas via navegador.");
   };
   const decodeHtml = (bytes, contentType) => {
     const sniff = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, 3e3));
@@ -14440,7 +14466,11 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
     const parsedUrl = new URL(url);
     const legacyPage = /Principal\.asp/i.test(parsedUrl.pathname) && parsedUrl.searchParams.has("pag");
     const postFields = legacyPage ? new URLSearchParams({ pag: parsedUrl.searchParams.get("pag"), acaoDest: "", pesq: "" }) : void 0;
-    const r = await fetch(url, { method: legacyPage ? "POST" : "GET", body: postFields, headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "pt-BR,pt;q=0.9" }, signal: AbortSignal.timeout(25e3) });
+    let r = await fetch(url, { method: legacyPage ? "POST" : "GET", body: postFields, headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "pt-BR,pt;q=0.9" }, signal: AbortSignal.timeout(25e3) });
+    if (r.status === 429) {
+      await wait2(3e3);
+      r = await fetch(url, { method: legacyPage ? "POST" : "GET", body: postFields, headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "pt-BR,pt;q=0.9" }, signal: AbortSignal.timeout(25e3) });
+    }
     if (!r.ok) throw Error(`HTTP ${r.status}`);
     const bytes = await r.arrayBuffer();
     return { html: decodeHtml(bytes, r.headers.get("content-type")), url: r.url };
@@ -14741,8 +14771,9 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       }
     }
   };
+  const portalConcurrency = process.env.RENDER === "true" ? 3 : 6;
   try {
-    await Promise.all(Array.from({ length: Math.min(8, configs.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(portalConcurrency, configs.length) }, worker));
     report.status = report.sources.every((s) => s.status === "completed") ? "completed" : "partial";
   } catch (error) {
     report.status = "failed";
@@ -22771,6 +22802,7 @@ var authMiddleware = (req, res, next) => {
 };
 var listedSyncRunning = null;
 var availabilityRunning = null;
+var lastListedSyncCompletedAt = 0;
 var openingSyncStage = null;
 var caixaDirectRunning = false;
 var catalogRevision = Date.now();
@@ -22970,6 +23002,7 @@ function startListedSync(reason, ids, targetOrigin) {
       }
     } catch {
     }
+    lastListedSyncCompletedAt = Date.now();
     return report;
   }).catch(async (error) => {
     console.error("[Listed Sync] Falha:", error);
@@ -22995,7 +23028,13 @@ app.post("/api/sync/start", authMiddleware, (req, res) => {
   if (Array.isArray(req.body?.ids) && !requestedIds?.length) {
     return res.status(400).json({ error: "Nenhuma fonte v\xE1lida foi informada." });
   }
-  const started = startListedSync(req.body.reason === "app-open" ? "app-open" : "manual", requestedIds);
+  const isAppOpen = req.body?.reason === "app-open";
+  const withinCooldown = isAppOpen && lastListedSyncCompletedAt > 0 && Date.now() - lastListedSyncCompletedAt < 30 * 60 * 1e3;
+  if (withinCooldown) {
+    void startAvailabilityCheck();
+    return res.status(202).json({ started: false, running: Boolean(listedSyncRunning || caixaDirectRunning || availabilityRunning), cooldown: true, report: readListedSyncStatus() });
+  }
+  const started = startListedSync(isAppOpen ? "app-open" : "manual", requestedIds);
   res.status(202).json({ started, running: Boolean(listedSyncRunning || caixaDirectRunning), report: readListedSyncStatus() });
 });
 app.post("/api/auth/register", (req, res) => {

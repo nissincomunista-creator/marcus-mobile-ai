@@ -69,7 +69,9 @@ export default function PropertyThumbnail({
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      className={`relative ${dimClasses} rounded-2xl overflow-hidden shrink-0 border border-slate-800 bg-slate-950 shadow-md group ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative ${dimClasses} rounded-2xl overflow-hidden isolate shrink-0 bg-slate-950 group ${
+        size === 'cover' ? '' : 'border border-slate-800 shadow-md'
+      } ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {currentUrl ? (
         <>

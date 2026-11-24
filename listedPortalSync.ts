@@ -24,9 +24,9 @@ export interface FullSyncReport {
 }
 const UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 const propertyWords=/\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba|chacara|sitio|sobrado|kitnet|residencial|duplex)\b/;
-const directPattern=/\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|Leiloes\/LoteDetalhes|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
+const directPattern=/\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/Leiloes\/LoteDetalhes(?:\?|\/)|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
 const navigationPattern=/\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|categoria-produto\/imoveis|leiloes-imoveis|Leiloes\/Pesquisar|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?/i;
-const skipPattern=/login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|fale-conosco|quem-somos|como-comprar|como-vender|indique|validar-documento|habilitacao|regulamento|duvidas|faq|\/home(?:\/|$)|\/venda-direta(?:\/|$)|\.pdf(?:\?|$)/i;
+const skipPattern=/login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|fale-conosco|quem-somos|como-comprar|como-vender|indique|validar-documento|habilitacao|regulamento|duvidas|faq|\/home(?:\/|$)|\/venda-direta(?:\/|$)|\/auditorio\/\d+\/\d+\/batch|\.pdf(?:\?|$)/i;
 const bankIds=new Set(['bb','emgea','santander','vitrinebradesco']);
 const isBlockedLeilaoImovelResponse=(portalId:string,error:unknown)=>portalId==='leilaoimovel'&&/HTTP\s+403\b/i.test(error instanceof Error?error.message:String(error));
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -187,15 +187,15 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
  const report:FullSyncReport={id:new Date().toISOString().replace(/[:.]/g,'-'),status:'running',reason,startedAt:new Date().toISOString(),targets:SYNC_TARGETS,sources:configs.map(p=>({id:p.id,name:p.name,status:'queued',pages:0,discovered:0,fetched:0,accepted:0,imported:0,updated:0,pending:0,errors:[]}))};
  const dir=path.join('sync-audits','runs',report.id);fs.mkdirSync(dir,{recursive:true});
  const save=()=>{fs.writeFileSync(path.join(dir,'report.json'),JSON.stringify(report,null,2));fs.writeFileSync('sync-audits/latest-listed-sync.json',JSON.stringify(report,null,2));};save();
- let browserPromise:Promise<any>|null=null;
+ let browserPromise:Promise<any>|null=null; let activeRenderPages=0; const renderWaiters:Array<()=>void>=[]; const maxConcurrentRenders=process.env.RENDER==='true'?1:3; const acquireRenderSlot=async()=>{if(activeRenderPages>=maxConcurrentRenders)await new Promise<void>(resolve=>renderWaiters.push(resolve));activeRenderPages++;}; const releaseRenderSlot=()=>{activeRenderPages=Math.max(0,activeRenderPages-1);const next=renderWaiters.shift();if(next)next();};
  const rendered=async(url:string)=>{
-   browserPromise ||= launchPuppeteer(puppeteer, {headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});const browser=await browserPromise;
+   await acquireRenderSlot(); try{ browserPromise ||= launchPuppeteer(puppeteer, {headless:true,protocolTimeout:90000,args:['--no-sandbox','--disable-dev-shm-usage']});const browser=await browserPromise;
   const isLeilaoImovel=new URL(url).hostname.endsWith('leilaoimovel.com.br');
   for(let attempt=0;attempt<(isLeilaoImovel?2:1);attempt++){
    const page=await browser.newPage();
-   try{await page.setUserAgent(UA);await page.setExtraHTTPHeaders({'Accept-Language':'pt-BR,pt;q=0.9'});const r=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});if(r&&r.status()>=400){if(isLeilaoImovel&&r.status()===403&&attempt===0){await wait(1500);continue;}throw Error(`HTTP ${r.status()}`);}await page.waitForNetworkIdle({idleTime:600,timeout:10000}).catch(()=>{});const html=await page.content();if(/<title>Just a moment|Access Denied/i.test(html))throw Error('Acesso bloqueado pela fonte');return {html,url:page.url()};}finally{await page.close().catch(()=>{});}
+   try{await page.setRequestInterception(true);page.on('request',(req:any)=>{const rt=req.resourceType();if(rt==='image'||rt==='media'||rt==='font'||rt==='stylesheet')req.abort().catch(()=>{});else req.continue().catch(()=>{});});await page.setUserAgent(UA);await page.setExtraHTTPHeaders({'Accept-Language':'pt-BR,pt;q=0.9'});const r=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});if(r&&r.status()>=400){if(isLeilaoImovel&&r.status()===403&&attempt===0){await wait(1500);continue;}throw Error(`HTTP ${r.status()}`);}await page.waitForNetworkIdle({idleTime:600,timeout:8000}).catch(()=>{});const html=await page.content();if(/<title>Just a moment|Access Denied/i.test(html))throw Error('Acesso bloqueado pela fonte');return {html,url:page.url()};}finally{await page.close().catch(()=>{});}
   }
-  throw Error('Leilão Imóvel bloqueou a página após duas tentativas via navegador.');
+  throw Error('Leilão Imóvel bloqueou a página após duas tentativas via navegador.'); }finally{releaseRenderSlot();}
  };
   const decodeHtml=(bytes:ArrayBuffer,contentType:string|null)=>{
    const sniff=new TextDecoder('utf-8',{fatal:false}).decode(bytes.slice(0,3000));
@@ -206,7 +206,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   const load=async(url:string,render=false)=>{
    if(render)return rendered(url);
    const parsedUrl=new URL(url);const legacyPage=/Principal\.asp/i.test(parsedUrl.pathname)&&parsedUrl.searchParams.has('pag');const postFields=legacyPage?new URLSearchParams({pag:parsedUrl.searchParams.get('pag')!,acaoDest:'',pesq:''}):undefined;
-   const r=await fetch(url,{method:legacyPage?'POST':'GET',body:postFields,headers:{'User-Agent':UA,'Accept':'text/html,application/xhtml+xml','Accept-Language':'pt-BR,pt;q=0.9'},signal:AbortSignal.timeout(25000)});
+   let r=await fetch(url,{method:legacyPage?'POST':'GET',body:postFields,headers:{'User-Agent':UA,'Accept':'text/html,application/xhtml+xml','Accept-Language':'pt-BR,pt;q=0.9'},signal:AbortSignal.timeout(25000)});if(r.status===429){await wait(3000);r=await fetch(url,{method:legacyPage?'POST':'GET',body:postFields,headers:{'User-Agent':UA,'Accept':'text/html,application/xhtml+xml','Accept-Language':'pt-BR,pt;q=0.9'},signal:AbortSignal.timeout(25000)});}
    if(!r.ok)throw Error(`HTTP ${r.status}`);
    const bytes=await r.arrayBuffer();
    return {html:decodeHtml(bytes,r.headers.get('content-type')),url:r.url};
@@ -387,7 +387,8 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   // Keep the machine responsive while the opening sync is running. Each
   // portal can still use two detail requests, so three portal workers cap the
   // total at six detail pages instead of twelve competing for memory/CPU.
-  try{await Promise.all(Array.from({length:Math.min(8,configs.length)},worker));report.status=report.sources.every(s=>s.status==='completed')?'completed':'partial';}
+  const portalConcurrency = process.env.RENDER === 'true' ? 3 : 6;
+  try{await Promise.all(Array.from({length:Math.min(portalConcurrency,configs.length)},worker));report.status=report.sources.every(s=>s.status==='completed')?'completed':'partial';}
  catch(error){report.status='failed';throw error;}
  finally{if(browserPromise){const browser=await browserPromise.catch(()=>null);if(browser)await browser.close().catch(()=>{});}report.finishedAt=new Date().toISOString();save();}
  return report;

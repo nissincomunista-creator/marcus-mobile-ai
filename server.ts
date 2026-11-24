@@ -3605,6 +3605,7 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
 // One server-owned run at a time, shared by boot, app opening and manual requests.
 let listedSyncRunning: Promise<unknown> | null = null;
 let availabilityRunning: Promise<void> | null = null;
+let lastListedSyncCompletedAt = 0;
 let openingSyncStage: 'preparing' | 'caixa' | 'leiloeiros' | null = null;
 let caixaDirectRunning = false;
 let catalogRevision = Date.now();
@@ -3792,6 +3793,7 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
         fs.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
       }
     } catch {}
+    lastListedSyncCompletedAt = Date.now();
     return report;
   }).catch(async error => {
     console.error('[Listed Sync] Falha:', error);
@@ -3812,7 +3814,13 @@ app.post('/api/sync/start', authMiddleware, (req, res) => {
   if (Array.isArray(req.body?.ids) && !requestedIds?.length) {
     return res.status(400).json({ error: 'Nenhuma fonte válida foi informada.' });
   }
-  const started = startListedSync(req.body.reason === 'app-open' ? 'app-open' : 'manual', requestedIds);
+  const isAppOpen = req.body?.reason === 'app-open';
+  const withinCooldown = isAppOpen && lastListedSyncCompletedAt > 0 && (Date.now() - lastListedSyncCompletedAt) < 30 * 60 * 1000;
+  if (withinCooldown) {
+    void startAvailabilityCheck();
+    return res.status(202).json({ started: false, running: Boolean(listedSyncRunning || caixaDirectRunning || availabilityRunning), cooldown: true, report: readListedSyncStatus() });
+  }
+  const started = startListedSync(isAppOpen ? 'app-open' : 'manual', requestedIds);
   res.status(202).json({started, running:Boolean(listedSyncRunning||caixaDirectRunning), report:readListedSyncStatus()});
 });
 

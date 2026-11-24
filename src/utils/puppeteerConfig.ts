@@ -59,6 +59,7 @@ export function getPuppeteerLaunchOptions(extraArgs: string[] = []): LaunchOptio
 
   const options: LaunchOptions = {
     headless: true,
+    protocolTimeout: 90000,
     args: combinedArgs
   };
 

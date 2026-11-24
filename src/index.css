@@ -144,8 +144,8 @@ body.light-theme .map-side-card {
 
 body.light-theme .auction-card:hover,
 body.light-theme .map-side-card:hover {
-  border-color: #64748b !important;
-  box-shadow: 0 6px 20px -4px rgba(17, 24, 39, 0.08) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  box-shadow: 0 8px 24px -4px rgba(17, 24, 39, 0.09), 0 2px 6px -1px rgba(17, 24, 39, 0.04) !important;
 }
 
 body.light-theme .auction-card .font-mono,
