@@ -70,7 +70,7 @@ export function buildSatelliteStyle(): maplibregl.StyleSpecification {
 
 export function getBuildingColorExpression(metric: RioBuildingMetric, isLightTheme = false): any {
   const defaultNeutral = isLightTheme ? '#cbd5e1' : '#262d3a';
-  const missingNeutral = isLightTheme ? '#dbe3ec' : '#2a303c';
+  const missingNeutral = isLightTheme ? '#cbd5e1' : '#475569';
   if (metric === 'auctions') {
     return defaultNeutral;
   }
@@ -80,15 +80,13 @@ export function getBuildingColorExpression(metric: RioBuildingMetric, isLightThe
       ['<=', ['coalesce', ['get', 'liq'], 0], 0],
       missingNeutral,
       [
-        'interpolate',
-        ['linear'],
+        'step',
         ['get', 'liq'],
-        1, '#f43f5e',
-        3, '#f59e0b',
-        5, '#4ade80',
-        7, '#16a34a',
-        9, '#1e3a8a',
-        10, '#1e3a8a',
+        '#A7F3D0', // 1 (Pontual)
+        2, '#6EE7B7', // 2 - 3 (Baixa)
+        4, '#10B981', // 4 - 5 (Média)
+        6, '#059669', // 6 - 8 (Boa)
+        9, '#047857', // 9 - 10 (Alta)
       ],
     ];
   }
@@ -102,16 +100,16 @@ export function getBuildingColorExpression(metric: RioBuildingMetric, isLightThe
         'interpolate',
         ['linear'],
         ['get', 'spr'],
-        -25, '#f43f5e',
-        -10, '#f59e0b',
-        0, '#4ade80',
-        15, '#16a34a',
-        25, '#1e3a8a',
+        -20, '#EF4444', // <= -20% (Abaixo da média)
+        -10, '#F97316', // -10% a -20%
+        0, '#94A3B8',   // Na média (±5%)
+        10, '#38BDF8',  // +10% a +20%
+        20, '#2563EB',  // > +20% (Acima da média)
       ],
     ];
   }
 
-  // Default: R$/m² ITBI blue gradient (< 2.7k light blue up to > 18k dark blue)
+  // Default: R$/m² ITBI sequential blue gradient (< 2.7k light blue up to > 18k vibrant royal blue #2563EB)
   return [
     'case',
     ['<=', ['coalesce', ['get', 'm2'], 0], 0],
@@ -119,13 +117,13 @@ export function getBuildingColorExpression(metric: RioBuildingMetric, isLightThe
     [
       'step',
       ['get', 'm2'],
-      '#7dd3fc', // < 2.700
-      2700, '#38bdf8', // 2.7k - 4.5k
-      4500, '#0ea5e9', // 4.5k - 6.8k
-      6800, '#0284c7', // 6.8k - 9.5k
-      9500, '#2563eb', // 9.5k - 12.5k
-      12500, '#1d4ed8', // 12.5k - 18k
-      18000, '#1e3a8a', // > 18k
+      '#BAE6FD', // < 2.700
+      2700, '#7DD3FC', // 2.7k - 4.5k
+      4500, '#38BDF8', // 4.5k - 6.8k
+      6800, '#0EA5E9', // 6.8k - 9.5k
+      9500, '#0284C7', // 9.5k - 12.5k
+      12500, '#3B82F6', // 12.5k - 18k
+      18000, '#2563EB', // > 18k
     ],
   ];
 }

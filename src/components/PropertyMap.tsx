@@ -183,7 +183,7 @@ const METRIC_LEGENDS: Record<
   auctions: {
     title: 'Imóveis em Leilão 3D',
     subtitle: 'Cor por tipologia no endereço IPP',
-    description: 'Use R$/m², Liquidez e Valorização acima para estudar o preço da rua, giro de vendas e potencial de cada região.',
+    description: 'Use R$/m², Liquidez e Spread acima para estudar o preço da rua, giro de vendas e potencial de cada região.',
     stops: [
       { color: '#22c55e', label: 'Casa / Sobrado' },
       { color: '#38bdf8', label: 'Apartamento' },
@@ -196,42 +196,42 @@ const METRIC_LEGENDS: Record<
   m2: {
     title: 'ITBI R$/m² por Prédio',
     subtitle: 'Mediana oficial IPP + ITBI',
-    description: 'Azul claro nos valores menores (< 2,7 mil) escurecendo gradualmente até os mais valorizados (> 18 mil).',
+    description: 'Azul claro nos valores menores (< 2,7 mil) intensificando gradualmente até o azul vibrante nos imóveis acima de 18 mil/m².',
     stops: [
-      { color: '#1e3a8a', label: '> 18 mil' },
-      { color: '#1d4ed8', label: '12,5k – 18k' },
-      { color: '#2563eb', label: '9,5k – 12,5k' },
-      { color: '#0284c7', label: '6,8k – 9,5k' },
-      { color: '#0ea5e9', label: '4,5k – 6,8k' },
-      { color: '#38bdf8', label: '2,7k – 4,5k' },
-      { color: '#7dd3fc', label: '< 2,7 mil' },
-      { color: '#2a303c', label: 'Sem histórico' },
+      { color: '#2563EB', label: '> 18 mil' },
+      { color: '#3B82F6', label: '12,5k – 18k' },
+      { color: '#0284C7', label: '9,5k – 12,5k' },
+      { color: '#0EA5E9', label: '6,8k – 9,5k' },
+      { color: '#38BDF8', label: '4,5k – 6,8k' },
+      { color: '#7DD3FC', label: '2,7k – 4,5k' },
+      { color: '#BAE6FD', label: '< 2,7 mil' },
+      { color: '#475569', label: 'Sem histórico' },
     ],
   },
   liq: {
     title: 'Liquidez por Edificação',
     subtitle: 'Volume de escrituras ITBI',
-    description: 'Vermelho em baixa liquidez (1), amarelo (2–3), verde na faixa média/boa (4–8) e azul escuro na máxima liquidez (9–10).',
+    description: 'Escala em verde esmeralda: verde-água claro em giro pontual (1) intensificando até verde profundo nos prédios de alta liquidez (9–10).',
     stops: [
-      { color: '#1e3a8a', label: '9 – 10 (Alta)' },
-      { color: '#16a34a', label: '6 – 8 (Boa)' },
-      { color: '#4ade80', label: '4 – 5 (Média)' },
-      { color: '#f59e0b', label: '2 – 3 (Baixa)' },
-      { color: '#f43f5e', label: '1 (Pontual)' },
-      { color: '#2a303c', label: 'Sem histórico' },
+      { color: '#047857', label: '9 – 10 (Alta)' },
+      { color: '#059669', label: '6 – 8 (Boa)' },
+      { color: '#10B981', label: '4 – 5 (Média)' },
+      { color: '#6EE7B7', label: '2 – 3 (Baixa)' },
+      { color: '#A7F3D0', label: '1 (Pontual)' },
+      { color: '#475569', label: 'Sem histórico' },
     ],
   },
   spr: {
-    title: 'Valorização vs Bairro (%)',
+    title: 'Spread vs Bairro (%)',
     subtitle: 'Edifício comparado à média local',
-    description: 'Vermelho abaixo da média, amarelo moderado, verde claro na média, verde acima e azul escuro mais valorizado (> +20%).',
+    description: 'Vermelho-coral e laranja para spread negativo abaixo da média, cinza neutro na média (±5%) e azul-celeste ao azul-royal acima (+20%).',
     stops: [
-      { color: '#1e3a8a', label: '> +20% (Mais valorizado)' },
-      { color: '#16a34a', label: '+10% a +20%' },
-      { color: '#4ade80', label: 'Na média (±5%)' },
-      { color: '#f59e0b', label: '-10% a -20%' },
-      { color: '#f43f5e', label: '≤ -20% (Abaixo da média)' },
-      { color: '#2a303c', label: 'Sem histórico' },
+      { color: '#2563EB', label: '> +20% (Acima da média)' },
+      { color: '#38BDF8', label: '+10% a +20%' },
+      { color: '#94A3B8', label: 'Na média (±5%)' },
+      { color: '#F97316', label: '-10% a -20%' },
+      { color: '#EF4444', label: '≤ -20% (Abaixo da média)' },
+      { color: '#475569', label: 'Sem histórico' },
     ],
   },
 };
@@ -2106,7 +2106,7 @@ export default function PropertyMap({
                       ['auctions', 'Leilões'],
                       ['m2', 'R$/m²'],
                       ['liq', 'Liquidez'],
-                      ['spr', 'Valoriz.'],
+                      ['spr', 'Spread'],
                     ] as const
                   ).map(([metricKey, label]) => (
                     <button
@@ -2127,7 +2127,7 @@ export default function PropertyMap({
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-mono">
                   {currentLegend.stops.map((stop) => {
                     const swatchColor =
-                      theme === 'light' && (stop.color === '#262d3a' || stop.color === '#2a303c')
+                      theme === 'light' && (stop.color === '#262d3a' || stop.color === '#475569')
                         ? '#cbd5e1'
                         : stop.color;
                     return (
