@@ -89,6 +89,16 @@ function buildStreetKeys(raw?: string) {
   return { full: expanded, core };
 }
 
+function phoneticStreetCore(core: string): string {
+  return core
+    .replace(/CK/g, 'K')
+    .replace(/PH/g, 'F')
+    .replace(/([A-Z])\1+/g, '$1')
+    .replace(/Z/g, 'S')
+    .replace(/Y/g, 'I')
+    .replace(/TH/g, 'T');
+}
+
 function normalizeBairro(raw?: string): string {
   return normalizeText(raw).replace(/\bJARDIM\b/g, 'JD').replace(/\bVILA\b/g, 'VL');
 }
@@ -154,6 +164,10 @@ function memoSet(key: string, val: RioIppResolution | null) {
     if (oldest !== undefined) resolvedMemo.delete(oldest);
   }
   resolvedMemo.set(key, val);
+}
+
+export function clearRioIppMemo() {
+  resolvedMemo.clear();
 }
 
 export function releaseRioIppScratchCaches() {
@@ -266,6 +280,17 @@ export function resolveRioIppLocation(params: {
     if (!cls.length) {
       addAll(idx.fullMap[full]);
       if (!cls.length) addAll(idx.coreMap[core]);
+    }
+    if (!cls.length && nb && core.includes(' ')) {
+      const targetPhonetic = phoneticStreetCore(core);
+      const nbSuffix = `|${nb}`;
+      for (const [k, v] of Object.entries(idx.coreBairro)) {
+        if (!k.endsWith(nbSuffix)) continue;
+        const candidateCore = k.slice(0, -nbSuffix.length);
+        if (phoneticStreetCore(candidateCore) === targetPhonetic) {
+          addAll(v);
+        }
+      }
     }
     if (!cls.length) continue;
 

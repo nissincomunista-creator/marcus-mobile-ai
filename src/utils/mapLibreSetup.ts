@@ -83,12 +83,12 @@ export function getBuildingColorExpression(metric: RioBuildingMetric, isLightThe
         'interpolate',
         ['linear'],
         ['get', 'liq'],
-        1, '#334155',
-        3, '#1d4ed8',
-        5, '#0284c7',
-        7, '#06b6d4',
-        9, '#10b981',
-        10, '#34d399',
+        1, '#f43f5e',
+        3, '#f59e0b',
+        5, '#4ade80',
+        7, '#16a34a',
+        9, '#1e3a8a',
+        10, '#1e3a8a',
       ],
     ];
   }
@@ -104,14 +104,14 @@ export function getBuildingColorExpression(metric: RioBuildingMetric, isLightThe
         ['get', 'spr'],
         -25, '#f43f5e',
         -10, '#f59e0b',
-        0, '#3b82f6',
-        12, '#06b6d4',
-        25, '#10b981',
+        0, '#4ade80',
+        15, '#16a34a',
+        25, '#1e3a8a',
       ],
     ];
   }
 
-  // Default: R$/m² ITBI blue gradient (< 2.7k to > 12.5k, neutral when no ITBI history)
+  // Default: R$/m² ITBI blue gradient (< 2.7k light blue up to > 18k dark blue)
   return [
     'case',
     ['<=', ['coalesce', ['get', 'm2'], 0], 0],
@@ -119,13 +119,13 @@ export function getBuildingColorExpression(metric: RioBuildingMetric, isLightThe
     [
       'step',
       ['get', 'm2'],
-      '#1e3a8a', // < 2.700
-      2700, '#1d4ed8', // 2.7k - 4.5k
-      4500, '#2563eb', // 4.5k - 6.8k
+      '#7dd3fc', // < 2.700
+      2700, '#38bdf8', // 2.7k - 4.5k
+      4500, '#0ea5e9', // 4.5k - 6.8k
       6800, '#0284c7', // 6.8k - 9.5k
-      9500, '#0ea5e9', // 9.5k - 12.5k
-      12500, '#38bdf8', // 12.5k - 18k
-      18000, '#7dd3fc', // > 18k
+      9500, '#2563eb', // 9.5k - 12.5k
+      12500, '#1d4ed8', // 12.5k - 18k
+      18000, '#1e3a8a', // > 18k
     ],
   ];
 }

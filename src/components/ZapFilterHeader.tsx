@@ -259,7 +259,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
     return 'Leilões';
   })();
 
-  const pillSize = embeddedInMap ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-1.5 text-xs';
+  const pillSize = embeddedInMap ? 'px-3.5 py-2 text-xs' : 'px-4 py-2 text-[13px]';
   const pillBase = `${pillSize} rounded-full font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap`;
   const pillActive = 'bg-indigo-500/15 text-indigo-200 border-indigo-400/70';
   const pillIdle = 'bg-transparent text-slate-200 border-slate-700 hover:border-slate-500 hover:bg-slate-800/40';
@@ -1021,12 +1021,12 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
   return (
     <div
       ref={barRef}
-      className="sticky top-[56px] sm:top-[60px] z-30 sticky-bar-surface bg-[#111622]/95 backdrop-blur-md py-2 -mx-3 sm:-mx-5 px-3 sm:px-5 space-y-2.5"
+      className="sticky top-[56px] -mt-[1px] z-30 sticky-bar-surface bg-[#111622] border-b border-slate-800/70 pt-2.5 pb-2 -mx-3 sm:-mx-5 px-3 sm:px-5 space-y-2.5"
     >
       {/* LINHA 1 LIMPA ESTILO ZAP IMÓVEIS: Localização (esq) | Filtros centralizados e afastados (centro) | Abrir no Mapa colado à direita */}
       <div className="flex flex-wrap items-center justify-between gap-3 py-0.5">
         <div className="shrink-0">{locationButton}</div>
-        <div className="flex flex-wrap items-center justify-center gap-2 flex-1 min-w-0 px-2 lg:px-6">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 flex-1 min-w-0 px-3 lg:px-8">
           {filterPills}
         </div>
         <button
@@ -1035,19 +1035,19 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             onResetFocusedMapProp();
             setViewMode('map');
           }}
-          className={`${pillSize} ml-auto rounded-full font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/60 shadow-sm flex items-center gap-1.5 cursor-pointer transition-all shrink-0`}
+          className="ml-auto w-[148px] h-9 px-3.5 rounded-full font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/60 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0 whitespace-nowrap"
         >
-          <MapIcon className="w-3.5 h-3.5" />
+          <MapIcon className="w-3.5 h-3.5 shrink-0" />
           <span>Abrir no Mapa</span>
         </button>
       </div>
 
-      {/* LINHA 2 FINA (sem linha divisória): Contagem + Atualizar (esq) | Ordenar por (dir) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-1 text-xs">
+      {/* LINHA 2 FINA (sem linha divisória): Contagem + Atualizar (esq) | Ordenar por mesmo padrão/tamanho (dir) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-0.5 text-xs">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-slate-200 text-sm">
+          <span className="font-extrabold text-slate-200 text-sm">
             {matchingCount}{' '}
-            <span className="font-normal text-slate-400">
+            <span className="font-semibold text-slate-400">
               {mode === 'portais' && advancedContextTab === 'alugar'
                 ? 'imóveis para alugar'
                 : 'imóveis encontrados'}
@@ -1058,7 +1058,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             type="button"
             onClick={onSyncNow}
             disabled={isMining}
-            className="px-3 py-1 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+            className="btn-light-outline px-3 py-1 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             <RefreshCw className={`w-3 h-3 ${isMining ? 'animate-spin text-amber-400' : 'text-emerald-400'}`} />
             <span>{isMining ? 'Atualizando...' : 'Atualizar'}</span>
@@ -1071,12 +1071,12 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             <button
               type="button"
               onClick={() => togglePopover('sort')}
-              className="px-3.5 py-1.5 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="btn-light-outline w-[148px] h-9 px-3.5 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
             >
-              <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
+              <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
               <span>Ordenar por</span>
               <ChevronDown
-                className={`w-3.5 h-3.5 opacity-75 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`}
+                className={`w-3.5 h-3.5 opacity-75 shrink-0 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`}
               />
             </button>
 

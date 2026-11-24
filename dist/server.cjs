@@ -15241,6 +15241,9 @@ function buildStreetKeys(raw) {
   const core = noType.filter((t) => !STOPWORDS.has(t)).join(" ") || expanded;
   return { full: expanded, core };
 }
+function phoneticStreetCore(core) {
+  return core.replace(/CK/g, "K").replace(/PH/g, "F").replace(/([A-Z])\1+/g, "$1").replace(/Z/g, "S").replace(/Y/g, "I").replace(/TH/g, "T");
+}
 function normalizeBairro(raw) {
   return normalizeText(raw).replace(/\bJARDIM\b/g, "JD").replace(/\bVILA\b/g, "VL");
 }
@@ -15281,6 +15284,9 @@ function memoSet(key, val) {
     if (oldest !== void 0) resolvedMemo.delete(oldest);
   }
   resolvedMemo.set(key, val);
+}
+function clearRioIppMemo() {
+  resolvedMemo.clear();
 }
 function releaseRioIppScratchCaches() {
   doorShardCache.clear();
@@ -15371,6 +15377,17 @@ function resolveRioIppLocation(params) {
     if (!cls.length) {
       addAll(idx.fullMap[full]);
       if (!cls.length) addAll(idx.coreMap[core]);
+    }
+    if (!cls.length && nb && core.includes(" ")) {
+      const targetPhonetic = phoneticStreetCore(core);
+      const nbSuffix = `|${nb}`;
+      for (const [k, v] of Object.entries(idx.coreBairro)) {
+        if (!k.endsWith(nbSuffix)) continue;
+        const candidateCore = k.slice(0, -nbSuffix.length);
+        if (phoneticStreetCore(candidateCore) === targetPhonetic) {
+          addAll(v);
+        }
+      }
     }
     if (!cls.length) continue;
     const numInt = opt.numInt;
@@ -23477,6 +23494,103 @@ app.get("/api/map/locations", authMiddleware, (req, res) => {
     }
   }
   return sendLocs(mapLocationsCache);
+});
+app.post("/api/map/refresh-pending", authMiddleware, async (req, res) => {
+  try {
+    clearRioIppMemo();
+    let extractedCount = 0;
+    let resolvedBefore = 0;
+    let resolvedAfter = 0;
+    const candidateProps = deduplicateAuctions(
+      store.auctions.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state))
+    ).filter(catalogVisible);
+    const pendingToScan = [];
+    for (const a of candidateProps) {
+      const beforeLoc = getOfficialPropertyLocation(a);
+      if (beforeLoc.status === "located") {
+        resolvedBefore++;
+        continue;
+      }
+      pendingToScan.push(a);
+    }
+    const streetPattern = /\b((?:Rua|Avenida|Av\.?|Estrada|Estr\.?|Travessa|Alameda|Pra[çc]a|Rodovia|Largo|Praia)\s+[A-ZÀ-ÿ0-9.'°ºª\-\s]{4,70}?)\s*(?:,\s*|\s+)(?:n[º°o.]?\s*)?(\d{1,5})(?:\b|,|\s)/i;
+    for (const a of pendingToScan) {
+      const rawAddr = String(a.address || "").trim();
+      const missingOrSn = !rawAddr || /\b(N\.?\s*SN|S\/N|SEM\s+NUMERO)\b/i.test(rawAddr) || !/\d{1,5}/.test(rawAddr);
+      if (!missingOrSn) continue;
+      const textPool = `${a.title || ""}
+${a.description || ""}`;
+      const m = textPool.match(streetPattern);
+      if (m && m[1] && m[2]) {
+        const candidateStreet = m[1].trim();
+        const candidateNum = m[2].trim();
+        if (!/\b(?:PAL|LOTE|QUADRA|C[ÓO]D|MATR[ÍI]CULA|PROCESSO|EDITAL)\b/i.test(candidateStreet)) {
+          const nextAddress = rawAddr && /\b(?:N\.?\s*SN|S\/N|SEM\s+NUMERO)\b/i.test(rawAddr) ? rawAddr.replace(/\b(?:N\.?\s*SN|S\/N|SEM\s+NUMERO)\b/i, `N. ${candidateNum}`) : `${candidateStreet}, N. ${candidateNum}`;
+          if (nextAddress !== rawAddr) {
+            a.address = nextAddress;
+            extractedCount++;
+          }
+        }
+      }
+    }
+    if (process.env.RENDER !== "true") {
+      ensureOfficialLocationCoverage(pendingToScan);
+      await geocodePendingPropertyLocations(pendingToScan.slice(0, 12));
+    }
+    clearRioIppMemo();
+    const locations = candidateProps.map((a) => {
+      const p = getOfficialPropertyLocation(a);
+      if (p.status === "located") resolvedAfter++;
+      return {
+        id: p.id,
+        status: p.status,
+        reason: p.reason,
+        lat: p.lat,
+        lng: p.lng,
+        precision: p.precision,
+        source: p.source,
+        sourceUrl: p.sourceUrl,
+        matchedStreet: p.matchedStreet,
+        matchedNumber: p.matchedNumber,
+        matchedCity: p.matchedCity,
+        matchedLocality: p.matchedLocality,
+        spreadMeters: p.spreadMeters,
+        buildingOid: p.buildingOid,
+        buildingHeight: p.buildingHeight,
+        ippMethod: p.ippMethod,
+        geocoderProvider: p.geocoderProvider,
+        geocoderPrecision: p.geocoderPrecision,
+        cnefeId: p.cnefeId,
+        geocodeLevel: p.geocodeLevel,
+        complements: p.complements,
+        resolutionEvidence: p.resolutionEvidence,
+        address: p.address,
+        city: p.city,
+        state: p.state,
+        neighborhood: p.neighborhood
+      };
+    });
+    releaseRioIppScratchCaches();
+    mapLocationsCache = null;
+    if (extractedCount > 0 || resolvedAfter > resolvedBefore) {
+      catalogRevision++;
+      persistedCatalogInvalidated = true;
+      if (process.env.RENDER !== "true") {
+        void saveStoreAsync(store);
+      }
+    }
+    return res.json({
+      ok: true,
+      extractedCount,
+      resolvedBefore,
+      resolvedAfter,
+      resolvedCount: Math.max(0, resolvedAfter - resolvedBefore),
+      locations
+    });
+  } catch (error) {
+    console.error("[Mapa] Erro em POST /api/map/refresh-pending:", error);
+    return res.status(500).json({ error: error?.message || "Erro ao atualizar endere\xE7os pendentes" });
+  }
 });
 app.get("/api/auctions/bbox", (req, res) => {
   const minLat = parseFloat(req.query.minLat);

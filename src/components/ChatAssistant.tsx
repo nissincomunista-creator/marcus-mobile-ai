@@ -151,15 +151,15 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
 
   return (
     <div className="fixed bottom-6 right-6 z-50 font-sans flex flex-col items-center gap-2">
-      {/* Subtle Back-to-Top Arrow above AI Chat */}
+      {/* Visible Back-to-Top Arrow above AI Chat (hidden outside cards list by App.tsx) */}
       <button
         type="button"
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         title="Voltar ao topo"
         aria-label="Voltar ao topo"
-        className="w-8 h-8 rounded-full bg-slate-900/75 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/70 shadow-md backdrop-blur-sm flex items-center justify-center cursor-pointer transition-all opacity-75 hover:opacity-100"
+        className="btn-solid-white w-9 h-9 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/50 shadow-lg flex items-center justify-center cursor-pointer transition-all"
       >
-        <ArrowUp className="w-3.5 h-3.5" />
+        <ArrowUp className="w-4 h-4 stroke-[2.5]" />
       </button>
 
       {/* Floating Trigger Button */}

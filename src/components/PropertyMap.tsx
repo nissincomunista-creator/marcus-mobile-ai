@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { AuctionProperty } from '../types.ts';
 import {
   MapPin, Compass, ExternalLink, X, ShieldAlert, Building2,
-  Sparkles, ChevronRight, ChevronLeft, ListFilter, Box, Eye, EyeOff, List, Bookmark
+  Sparkles, ChevronRight, ChevronLeft, ListFilter, Box, Eye, EyeOff, List, Bookmark, RefreshCw
 } from 'lucide-react';
 import { getPropertyCoordinates } from '../utils/geoCoords.ts';
 import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
@@ -139,39 +139,39 @@ const METRIC_LEGENDS: Record<
   m2: {
     title: 'ITBI R$/m² por Prédio',
     subtitle: 'Mediana oficial IPP + ITBI',
-    description: 'Compare quais ruas e prédios são mais valorizados ou mais acessíveis pela mediana real de escrituras ITBI.',
+    description: 'Azul claro nos valores menores (< 2,7 mil) escurecendo gradualmente até os mais valorizados (> 18 mil).',
     stops: [
-      { color: '#7dd3fc', label: '> 18 mil' },
-      { color: '#38bdf8', label: '12,5k – 18k' },
-      { color: '#0ea5e9', label: '9,5k – 12,5k' },
+      { color: '#1e3a8a', label: '> 18 mil' },
+      { color: '#1d4ed8', label: '12,5k – 18k' },
+      { color: '#2563eb', label: '9,5k – 12,5k' },
       { color: '#0284c7', label: '6,8k – 9,5k' },
-      { color: '#2563eb', label: '4,5k – 6,8k' },
-      { color: '#1d4ed8', label: '2,7k – 4,5k' },
-      { color: '#1e3a8a', label: '< 2,7 mil' },
+      { color: '#0ea5e9', label: '4,5k – 6,8k' },
+      { color: '#38bdf8', label: '2,7k – 4,5k' },
+      { color: '#7dd3fc', label: '< 2,7 mil' },
       { color: '#2a303c', label: 'Sem histórico' },
     ],
   },
   liq: {
     title: 'Liquidez por Edificação',
     subtitle: 'Volume de escrituras ITBI',
-    description: 'Identifica onde há maior volume e velocidade real de compra e venda registrada no entorno.',
+    description: 'Vermelho em baixa liquidez (1), amarelo (2–3), verde na faixa média/boa (4–8) e azul escuro na máxima liquidez (9–10).',
     stops: [
-      { color: '#34d399', label: '9 – 10 (Alta)' },
-      { color: '#06b6d4', label: '6 – 8 (Boa)' },
-      { color: '#0284c7', label: '4 – 5 (Média)' },
-      { color: '#1d4ed8', label: '2 – 3 (Baixa)' },
-      { color: '#334155', label: '1 (Pontual)' },
+      { color: '#1e3a8a', label: '9 – 10 (Alta)' },
+      { color: '#16a34a', label: '6 – 8 (Boa)' },
+      { color: '#4ade80', label: '4 – 5 (Média)' },
+      { color: '#f59e0b', label: '2 – 3 (Baixa)' },
+      { color: '#f43f5e', label: '1 (Pontual)' },
       { color: '#2a303c', label: 'Sem histórico' },
     ],
   },
   spr: {
     title: 'Valorização vs Bairro (%)',
     subtitle: 'Edifício comparado à média local',
-    description: 'Escala de preço frente à média do bairro: vermelho indica prédio abaixo da média e verde mais valorizado.',
+    description: 'Vermelho abaixo da média, amarelo moderado, verde claro na média, verde acima e azul escuro mais valorizado (> +20%).',
     stops: [
-      { color: '#10b981', label: '> +20% (Mais valorizado)' },
-      { color: '#06b6d4', label: '+10% a +20%' },
-      { color: '#3b82f6', label: 'Na média (±5%)' },
+      { color: '#1e3a8a', label: '> +20% (Mais valorizado)' },
+      { color: '#16a34a', label: '+10% a +20%' },
+      { color: '#4ade80', label: 'Na média (±5%)' },
       { color: '#f59e0b', label: '-10% a -20%' },
       { color: '#f43f5e', label: '≤ -20% (Abaixo da média)' },
       { color: '#2a303c', label: 'Sem histórico' },
@@ -216,7 +216,15 @@ export default function PropertyMap({
   );
   const [buildingClusterModal, setBuildingClusterModal] = useState<{ address: string; properties: AuctionProperty[] } | null>(null);
   const [selectedBuildingInfo, setSelectedBuildingInfo] = useState<BuildingInspectorData | null>(null);
+  const [clickedAuctionBuildingMetrics, setClickedAuctionBuildingMetrics] = useState<{
+    m2: number;
+    liq: number;
+    tx: number;
+    spr: number | null;
+  } | null>(null);
   const [showPendingDrawer, setShowPendingDrawer] = useState<boolean>(false);
+  const [isRefreshingPending, setIsRefreshingPending] = useState<boolean>(false);
+  const [pendingRefreshMsg, setPendingRefreshMsg] = useState<string>('');
   const [resolvedCoordinates, setResolvedCoordinates] = useState<Record<string, [number, number]>>({});
   const [locationError, setLocationError] = useState(false);
   const [locationsLoaded, setLocationsLoaded] = useState(false);
@@ -691,6 +699,29 @@ export default function PropertyMap({
 
           setSelectedBuildingInfo(null);
           setIsSidebarCollapsed(false);
+
+          // Sample matching IPP vector tile building metrics at click coordinates
+          try {
+            const ippLayersAtPoint = existingLayer(['rio-edificacoes-3d']);
+            if (ippLayersAtPoint.length) {
+              const ippAtClick = map.queryRenderedFeatures(e.point, { layers: ippLayersAtPoint })[0];
+              if (ippAtClick?.properties) {
+                const ip = ippAtClick.properties;
+                setClickedAuctionBuildingMetrics({
+                  m2: Number(ip.m2) || 0,
+                  liq: Number(ip.liq) || 0,
+                  tx: Number(ip.tx) || 0,
+                  spr: ip.spr != null ? Number(ip.spr) : null,
+                });
+              } else {
+                setClickedAuctionBuildingMetrics(null);
+              }
+            } else {
+              setClickedAuctionBuildingMetrics(null);
+            }
+          } catch {
+            setClickedAuctionBuildingMetrics(null);
+          }
 
           if (cluster && cluster.properties.length > 1) {
             const firstId = cluster.properties[0]?.id || props.propId || '';
@@ -1250,6 +1281,27 @@ export default function PropertyMap({
     };
   }, []);
 
+  const applyLocationsPayload = useCallback(
+    (locations: any[]) => {
+      const next: Record<string, [number, number]> = {};
+      const records: Record<string, any> = {};
+      const currentById = new Map(auctions.map((a) => [a.id, a]));
+      for (const location of locations) {
+        const current = currentById.get(location.id);
+        if (current) records[location.id] = location;
+        if (current) {
+          const point = getPropertyCoordinates({ ...current, mapLocation: location } as AuctionProperty, { strictRio: true });
+          if (point) next[location.id] = point;
+        }
+      }
+      setResolvedCoordinates(next);
+      setLocationRecords(records);
+      setLocationsLoaded(true);
+      setLocationError(false);
+    },
+    [auctions]
+  );
+
   // Fetch verified coordinates
   useEffect(() => {
     let cancelled = false;
@@ -1266,21 +1318,7 @@ export default function PropertyMap({
         })
         .then((locations: any[]) => {
           if (cancelled || !Array.isArray(locations)) return;
-          const next: Record<string, [number, number]> = {};
-          const records: Record<string, any> = {};
-          const currentById = new Map(auctions.map((a) => [a.id, a]));
-          for (const location of locations) {
-            const current = currentById.get(location.id);
-            if (current) records[location.id] = location;
-            if (current) {
-              const point = getPropertyCoordinates({ ...current, mapLocation: location } as AuctionProperty, { strictRio: true });
-              if (point) next[location.id] = point;
-            }
-          }
-          setResolvedCoordinates(next);
-          setLocationRecords(records);
-          setLocationsLoaded(true);
-          setLocationError(false);
+          applyLocationsPayload(locations);
         })
         .catch((err) => {
           if (!cancelled) {
@@ -1295,7 +1333,39 @@ export default function PropertyMap({
       controller.abort();
       if (timer) clearTimeout(timer);
     };
-  }, [auctions, initialSelectedPropertyId, initialFilteredAuctions]);
+  }, [auctions, initialSelectedPropertyId, initialFilteredAuctions, applyLocationsPayload]);
+
+  const handleRefreshPending = useCallback(async () => {
+    if (isRefreshingPending) return;
+    setIsRefreshingPending(true);
+    setPendingRefreshMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      const res = await fetch('/api/map/refresh-pending', { method: 'POST', headers });
+      const data = await res.json().catch(() => ({}));
+      if (Array.isArray(data.locations)) {
+        applyLocationsPayload(data.locations);
+      } else {
+        const locRes = await fetch('/api/map/locations', { headers });
+        const locs = await locRes.json().catch(() => null);
+        if (Array.isArray(locs)) applyLocationsPayload(locs);
+      }
+      if (typeof data.resolvedCount === 'number' && data.resolvedCount > 0) {
+        setPendingRefreshMsg(`${data.resolvedCount} endereço(s) confirmado(s) e plotado(s) no mapa!`);
+      } else {
+        setPendingRefreshMsg('Varredura concluída nas descrições e base oficial IPP/CNEFE.');
+      }
+    } catch (err) {
+      console.warn('Falha ao atualizar pendentes:', err);
+      setPendingRefreshMsg('Não foi possível concluir a varredura agora.');
+    } finally {
+      setIsRefreshingPending(false);
+    }
+  }, [isRefreshingPending, applyLocationsPayload]);
 
   // Initial fitBounds
   useEffect(() => {
@@ -1466,17 +1536,17 @@ export default function PropertyMap({
       </div>
 
       <div className="relative flex-1 w-full h-full flex flex-col lg:flex-row overflow-hidden">
-        {/* COLUNA ESQUERDA: Fichas no Enquadramento em 2 colunas estilo Zap Imóveis */}
+        {/* COLUNA DIREITA: Fichas no Enquadramento em 1 coluna (padrão anterior) */}
         <div
           id="map-side-panel"
-          className={`lg:order-1 h-full bg-slate-950/95 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col z-20 relative transition-all duration-200 ${
+          className={`lg:order-2 h-full bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col z-20 relative transition-all duration-200 ${
             activeTab === 'map'
               ? 'hidden'
               : activeTab === 'list'
                 ? 'w-full'
                 : isSidebarCollapsed
                   ? 'hidden'
-                  : 'w-full lg:w-[46%] xl:w-[44%]'
+                  : 'w-full lg:w-[440px] xl:w-[460px]'
           }`}
         >
           <div className="px-3 py-2.5 border-b border-slate-800 bg-slate-900/70 flex items-center justify-between gap-2">
@@ -1514,9 +1584,9 @@ export default function PropertyMap({
               type="button"
               onClick={() => setIsSidebarCollapsed(true)}
               className="btn-light-outline hidden lg:flex items-center justify-center p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 cursor-pointer shrink-0 transition-colors"
-              title="Minimizar painel para a esquerda"
+              title="Minimizar painel para a direita"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
@@ -1528,7 +1598,7 @@ export default function PropertyMap({
                 <p className="text-[11px] text-slate-500">Mova o mapa ou ajuste os filtros para explorar mais regiões.</p>
               </div>
             ) : (
-              <div className={`grid gap-3.5 items-start ${activeTab === 'list' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+              <div className={activeTab === 'list' ? 'grid gap-3.5 items-start grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'space-y-3'}>
                 {displayedList.map((auc) => {
                   const isSelected = auc.id === selectedPropId;
                   const costs = auctionCosts(auc);
@@ -1556,12 +1626,12 @@ export default function PropertyMap({
                           : 'border-transparent hover:border-slate-700/60'
                       }`}
                     >
-                      {/* Foto edge-to-edge alinhada à borda superior do card */}
-                      <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-t-2xl">
+                      {/* Foto arredondada por inteiro igual Zap Imóveis */}
+                      <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-2xl">
                         <PropertyThumbnail
                           property={auc}
                           size="cover"
-                          className="!w-full !h-full !rounded-none !rounded-t-2xl !border-0"
+                          className="!w-full !h-full !rounded-2xl !border-0"
                         />
                         <div className="absolute top-2 left-2.5 pointer-events-none">
                           {auc.origin === 'caixa' ? (
@@ -1825,14 +1895,14 @@ export default function PropertyMap({
                         </div>
                       </div>
 
-                      {/* Botão Simular Viabilidade compacto igual Contatar do Zap Imóveis */}
+                      {/* Botão Simular Viabilidade padrão original */}
                       <div className="px-2.5 pb-2.5">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setSimulatingProperty(auc);
                           }}
-                          className="btn-solid-white w-full h-9 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 active:scale-[0.99] text-white font-bold text-xs rounded-full transition-all cursor-pointer flex items-center justify-center shadow-sm"
+                          className="btn-solid-white w-full h-9 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-full transition-colors cursor-pointer flex items-center justify-center shadow-sm border border-indigo-400/40"
                         >
                           <span>Simular Viabilidade</span>
                         </button>
@@ -1854,9 +1924,9 @@ export default function PropertyMap({
           </div>
         </div>
 
-        {/* COLUNA DIREITA: Mapa Georreferenciado Interativo (maior área) */}
+        {/* COLUNA ESQUERDA: Mapa Georreferenciado Interativo (maior área) */}
         <div
-          className={`lg:order-2 relative h-full transition-all duration-200 ${
+          className={`lg:order-1 relative h-full transition-all duration-200 ${
             activeTab === 'list'
               ? 'hidden'
               : activeTab === 'map' || isSidebarCollapsed
@@ -1870,10 +1940,10 @@ export default function PropertyMap({
             <button
               type="button"
               onClick={() => setIsSidebarCollapsed(false)}
-              className="btn-light-outline hidden lg:flex items-center gap-1.5 absolute top-3 left-3 z-20 px-3 py-2 rounded-xl bg-slate-950/95 hover:bg-slate-900 text-slate-100 border border-slate-700 shadow-2xl backdrop-blur-md text-xs font-bold cursor-pointer transition-all"
+              className="btn-light-outline hidden lg:flex items-center gap-1.5 absolute top-3 right-14 z-20 px-3 py-2 rounded-xl bg-slate-950/95 hover:bg-slate-900 text-slate-100 border border-slate-700 shadow-2xl backdrop-blur-md text-xs font-bold cursor-pointer transition-all"
               title="Expandir painel lateral de imóveis"
             >
-              <ChevronRight className="w-4 h-4 text-sky-400" />
+              <ChevronLeft className="w-4 h-4 text-sky-400" />
               <span>{selectedBairroKey ? formatBairroTitle(selectedBairroKey) : 'Imóveis'}</span>
               <span className="font-mono text-[10px] bg-sky-950 text-sky-300 px-1.5 py-0.5 rounded border border-sky-700/60">
                 {orderedList.length}
@@ -1998,48 +2068,58 @@ export default function PropertyMap({
               </div>
 
               {(() => {
-                const estVal =
-                  selectedProp.estimatedValue ||
-                  (selectedProp.itbiUnitValueAvg && selectedProp.sizeSqm
-                    ? Math.round(selectedProp.itbiUnitValueAvg * selectedProp.sizeSqm)
-                    : 0);
-                const flipVal = Number(selectedProp.vendaBaixaPrice) || 0;
-                const liq = !selectedProp.itbiStreetCount || selectedProp.itbiStreetCount === 0
-                  ? 0
-                  : Math.min(selectedProp.liquidityScore ?? 0, assessDataQuality(selectedProp).liquidityCeiling);
-                const profit = selectedProp.calculatedProfit;
-                const roi = selectedProp.calculatedRoi;
+                const buildingM2 =
+                  clickedAuctionBuildingMetrics && clickedAuctionBuildingMetrics.m2 > 0
+                    ? clickedAuctionBuildingMetrics.m2
+                    : Number((selectedProp as any).itbiBuildingAvgSqm) || 0;
+                const streetM2 = Number(selectedProp.itbiStreetAvgSqm || selectedProp.itbiUnitValueAvg || 0);
+                const streetTx = Number(selectedProp.itbiStreetCount || clickedAuctionBuildingMetrics?.tx || 0);
+                const liqScore =
+                  clickedAuctionBuildingMetrics && clickedAuctionBuildingMetrics.liq > 0
+                    ? clickedAuctionBuildingMetrics.liq
+                    : !selectedProp.itbiStreetCount || selectedProp.itbiStreetCount === 0
+                      ? null
+                      : Math.min(selectedProp.liquidityScore ?? 0, assessDataQuality(selectedProp).liquidityCeiling);
+                const sprFromBldg =
+                  clickedAuctionBuildingMetrics && clickedAuctionBuildingMetrics.spr !== null
+                    ? Math.round(clickedAuctionBuildingMetrics.spr)
+                    : null;
+                const sprFromStreet =
+                  sprFromBldg !== null
+                    ? sprFromBldg
+                    : streetM2 > 0 && Number(selectedProp.itbiNeighborhoodAvgSqm) > 0
+                      ? Math.round(
+                          ((streetM2 - Number(selectedProp.itbiNeighborhoodAvgSqm)) /
+                            Number(selectedProp.itbiNeighborhoodAvgSqm)) *
+                            100
+                        )
+                      : null;
+
                 return (
-                  <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-800 text-[11px] font-mono">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2 border-t border-slate-800 text-[10.5px] font-mono">
                     <div>
-                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">Lance Mínimo</span>
-                      <span className="font-bold text-white">
-                        {selectedProp.auctionPrice > 0 ? formatBRL(selectedProp.auctionPrice) : 'Propostas'}
-                      </span>
+                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">ITBI/m² Prédio</span>
+                      <span className="font-bold text-white">{buildingM2 > 0 ? formatBRL(buildingM2) : '-'}</span>
                     </div>
                     <div>
-                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">Gabarito ITBI</span>
-                      <span className="font-bold text-slate-200">{estVal > 0 ? formatBRL(estVal) : 'Sem dados'}</span>
+                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">ITBI/m² Rua</span>
+                      <span className="font-bold text-slate-200">{streetM2 > 0 ? formatBRL(streetM2) : '-'}</span>
                     </div>
                     <div>
-                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">Flip Rápido 60d</span>
-                      <span className="font-bold text-slate-200">{flipVal > 0 ? formatBRL(flipVal) : 'Sob consulta'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">Lucro Líquido</span>
-                      <span className={`font-black ${profit === undefined ? 'text-slate-400' : profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {profit === undefined ? 'Sob consulta' : formatBRL(profit)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">ROI Projetado</span>
+                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">Liquidez</span>
                       <span className="font-bold text-slate-200">
-                        {roi === undefined ? 'Sob consulta' : `${roi.toLocaleString('pt-BR')}%`}
+                        {liqScore !== null ? `${liqScore}/10 (${streetTx}tx)` : '-'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">Liquidez Local</span>
-                      <span className="font-bold text-slate-200">{liq}/10</span>
+                      <span className="text-[8.5px] text-slate-400 block uppercase font-semibold">Spread</span>
+                      <span className="font-bold text-slate-200">
+                        {sprFromStreet !== null
+                          ? sprFromStreet > 0
+                            ? `+${sprFromStreet}%`
+                            : `${sprFromStreet}%`
+                          : '-'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -2261,14 +2341,39 @@ export default function PropertyMap({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowPendingDrawer(false)}
-                className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-colors cursor-pointer"
-                title="Fechar"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleRefreshPending}
+                  disabled={isRefreshingPending}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-xl border border-indigo-400/40 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Reprocessar endereços, extrair numeração das descrições e cruzar novamente com IPP/CNEFE"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingPending ? 'animate-spin' : ''}`} />
+                  <span>{isRefreshingPending ? 'Atualizando...' : 'Atualizar'}</span>
+                </button>
+                <button
+                  onClick={() => setShowPendingDrawer(false)}
+                  className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-colors cursor-pointer"
+                  title="Fechar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
+
+            {pendingRefreshMsg && (
+              <div className="px-5 py-2 bg-indigo-950/70 border-b border-indigo-800/50 text-xs text-indigo-200 font-medium flex items-center justify-between gap-2">
+                <span>{pendingRefreshMsg}</span>
+                <button
+                  type="button"
+                  onClick={() => setPendingRefreshMsg('')}
+                  className="text-indigo-300 hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 custom-scrollbar bg-slate-950/40">
               {pendingReviewProps.length === 0 ? (

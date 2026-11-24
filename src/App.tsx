@@ -144,6 +144,13 @@ export default function App() {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [sortBy, setSortBy] = useState('spread');
   const [selectedOriginFilter, setSelectedOriginFilter] = useState<'todos' | 'caixa' | 'caixa_radar' | 'judicial' | 'extrajudicial' | 'portal'>('todos');
+  const [isDashboardMapOpen, setIsDashboardMapOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'garimpo' && activeTab !== 'portais') {
+      setIsDashboardMapOpen(false);
+    }
+  }, [activeTab]);
 
   // Modal toggle state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -880,8 +887,8 @@ export default function App() {
     <div className={`min-h-screen font-sans flex flex-col justify-between transition-colors duration-200 ${theme === 'light' ? 'bg-white text-slate-900' : 'bg-[#111622] text-slate-100'}`}>
       
       {/* 1. Header Toolbar & Sub-header Fixed Container: Unificado, sem sobreposição no scroll */}
-      <div className="sticky top-0 z-40 bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md">
-        <header className="px-4 sm:px-6 py-2.5 border-b border-slate-800/60">
+      <div className="sticky top-0 z-40 bg-slate-900 dark:bg-slate-900 border-b border-slate-800">
+        <header className="px-4 sm:px-6 py-2.5">
           <div className="max-w-[1780px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative">
           
           {/* Left: Logo + Assessoria Pericial & Flip Imobiliário */}
@@ -1231,7 +1238,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* 2. Main Content Board */}
-      <main className="max-w-[1720px] mx-auto px-3 sm:px-5 py-4 flex-1 w-full">
+      <main className={`max-w-[1720px] mx-auto px-3 sm:px-5 ${activeTab === 'garimpo' || activeTab === 'portais' ? 'pt-0 pb-4' : 'py-4'} flex-1 w-full`}>
         
         {/* RPC Server connection failure alert banner */}
         {rpcError && (
@@ -1273,6 +1280,7 @@ export default function App() {
                       onSelectAuction={(id) => setSelectedAuctionId(id)}
                       onDeleteAuction={handleDeleteAuction}
                       onOpenAddModal={() => {}}
+                      onMapViewChange={setIsDashboardMapOpen}
                       selectedNeighborhoodFilter={selectedNeighborhoodFilter}
                       setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
                       selectedCityFilter={selectedCityFilter}
@@ -1412,6 +1420,7 @@ export default function App() {
                       onSelectAuction={(id) => setSelectedAuctionId(id)}
                       onDeleteAuction={handleDeleteAuction}
                       onOpenAddModal={() => {}}
+                      onMapViewChange={setIsDashboardMapOpen}
                       selectedNeighborhoodFilter={selectedNeighborhoodFilter}
                       setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
                       selectedCityFilter={selectedCityFilter}
@@ -1638,8 +1647,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 5. AI Chat Assistant Widget */}
-      <ChatAssistant auctions={auctions} selectedAuctionId={selectedAuctionId} />
+      {/* 5. AI Chat Assistant & Voltar ao Topo (visível apenas nas fichas de Garimpo/Flip, nunca no Mapa/Outras abas) */}
+      {(activeTab === 'garimpo' || activeTab === 'portais') && !activeSelectedAuction && !isDashboardMapOpen && (
+        <ChatAssistant auctions={auctions} selectedAuctionId={selectedAuctionId} />
+      )}
 
       {/* 6. Mobile App Install Modal */}
       <InstallAppModal
