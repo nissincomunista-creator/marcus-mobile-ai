@@ -423,18 +423,30 @@ export function computeBidirectionalBenchmarks(
 
   const isResidentialCasa = /casa|sobrado/i.test(targetPropType || '');
   const isResidentialApto = /apart|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || '');
-  const normNeigh = (targetNeighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  const isDenseVerticalZone = ['copacabana', 'ipanema', 'leblon', 'flamengo', 'botafogo', 'lagoa', 'leme', 'gavea', 'jardim botanico'].includes(normNeigh);
+  const orthoNeighKey = (s?: string) =>
+    String(s || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/z/g, 's')
+      .replace(/y/g, 'i')
+      .replace(/ph/g, 'f')
+      .replace(/th/g, 't')
+      .replace(/w/g, 'v')
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
+  const normNeigh = orthoNeighKey(targetNeighborhood);
+  const isDenseVerticalZone = ['copacabana', 'ipanema', 'leblon', 'flamengo', 'botafogo', 'lagoa', 'leme', 'gavea', 'jardimbotanico'].includes(normNeigh);
   const casaToAptoFactor = isDenseVerticalZone ? 1.0 : 0.85;
   const isAltApartmentTx = (t: ItbiTransaction) => /apart|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || '');
   const isRadiusCandidateValid = (t: ItbiTransaction) => isVoluntaryMarketSale(t) && isValValid(getTxVal(t));
 
   // 1. Nível Bairro Macro (Ponderação Adaptativa NBR 14.653)
-  const allBValsExact = typeTxs.filter(t => isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && String(t.neighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === normNeigh)));
+  const allBValsExact = typeTxs.filter(t => isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && orthoNeighKey(t.neighborhood) === normNeigh)));
   let allBVals = allBValsExact;
   if (isResidentialCasa && allBValsExact.length < 7) {
     const altBTxs = sourceTxs
-      .filter(t => isAltApartmentTx(t) && isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && String(t.neighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === normNeigh)))
+      .filter(t => isAltApartmentTx(t) && isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && orthoNeighKey(t.neighborhood) === normNeigh)))
       .map(t => ({ ...t, unitValueSqm: Math.round(t.unitValueSqm * casaToAptoFactor) }));
     if (altBTxs.length > 0) {
       allBVals = [...allBValsExact, ...altBTxs];

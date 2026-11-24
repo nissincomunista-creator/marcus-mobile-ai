@@ -30,7 +30,12 @@ function normalizeBairroKey(raw?: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/\s+/g, ' ')
+    .replace(/z/g, 's')
+    .replace(/y/g, 'i')
+    .replace(/ph/g, 'f')
+    .replace(/th/g, 't')
+    .replace(/w/g, 'v')
+    .replace(/[^a-z0-9]/g, '')
     .trim();
 }
 

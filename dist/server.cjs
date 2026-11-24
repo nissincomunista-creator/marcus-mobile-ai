@@ -939,7 +939,10 @@ function internalCep(cep) {
 }
 function enrichLocation(draft) {
   const direct = neighborhoodEvidence(draft);
-  if (direct) return { ...draft, neighborhood: direct.value };
+  if (direct) {
+    if (draft.neighborhood && ortho(direct.value) === ortho(draft.neighborhood)) return draft;
+    return { ...draft, neighborhood: direct.value };
+  }
   const text = [draft.address, draft.description].filter(Boolean).join(" ");
   const cep = text.match(/\b(\d{5})-?(\d{3})\b/);
   const row = cep ? internalCep(cep[1] + cep[2]) : void 0;
@@ -950,7 +953,7 @@ function enrichLocation(draft) {
   }
   return { ...draft, neighborhood: "" };
 }
-var import_node_fs2, normalize2, catalogs, extra, distance;
+var import_node_fs2, normalize2, catalogs, extra, distance, ortho;
 var init_location = __esm({
   "auctionPipeline/location.ts"() {
     import_node_fs2 = __toESM(require("node:fs"), 1);
@@ -967,6 +970,7 @@ var init_location = __esm({
       }
       return row[b.length];
     };
+    ortho = (s) => normalize2(s).replace(/z/g, "s").replace(/y/g, "i").replace(/ph/g, "f").replace(/th/g, "t").replace(/w/g, "v");
   }
 });
 
@@ -11795,18 +11799,23 @@ function extractDisplayedCurrentBid(text) {
 function extractAuctionRoundsAndPrices(text, todayParam) {
   if (!text) return { activePrice: 0, priceVerified: false };
   const today = todayParam || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-  const explicitBids = [...text.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
-  if (!extractDisplayedCurrentBid(text) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(text)) return { activePrice: 0, priceVerified: false };
-  const markers = [...text.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
+  const bidText = text.replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, " ").replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, " ");
+  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
+  if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(bidText)) return { activePrice: 0, priceVerified: false };
+  const markers = [...bidText.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
   const unique = (values) => {
     const v = [...new Set(values.filter((n) => n > 0))];
     return v.length === 1 ? v[0] : 0;
   };
-  const bids = (block) => [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
+  const bids = (block) => {
+    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1])).filter((n) => n > 0);
+    if (strict.length > 0 && new Set(strict).size === 1) return strict;
+    return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
+  };
   const round = (n) => {
     const entries = markers.filter((m) => Number(m[1] || (/primeir/i.test(m[2]) ? 1 : 2)) === n).map((m) => {
       const index = markers.indexOf(m);
-      const block = text.slice(m.index + m[0].length, markers[index + 1]?.index ?? text.length).slice(0, 350);
+      const block = bidText.slice(m.index + m[0].length, markers[index + 1]?.index ?? bidText.length).slice(0, 350);
       const date = (block.match(/^\s*:?\s*(?:dia\s*)?(\d{1,2}\/\d{1,2}\/\d{2,4})/i) || block.match(/T[eé]rmino\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i))?.[1];
       const labelled = bids(block);
       const bare = block.match(/^\s*:?\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s+(?:às\s*)?\d{1,2}:\d{2})?\s*[-–:]?\s*)?R\$\s*([\d.]+(?:,\d{2})?)/i);
@@ -11819,9 +11828,9 @@ function extractAuctionRoundsAndPrices(text, todayParam) {
   const generalDates = extractAuctionDates(text);
   const firstAuctionPrice = one.price, secondAuctionPrice = two.price;
   const firstAuctionDate = one.date || generalDates.first, secondAuctionDate = two.date || generalDates.second;
-  const current = extractDisplayedCurrentBid(text);
-  const headerBid = markers.length && new Set(explicitBids).size === 1 ? unique(bids(text.slice(0, markers[0].index))) : 0;
-  const genericPrice = markers.length ? 0 : unique([...bids(text), ...[...text.matchAll(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]))]);
+  const current = extractDisplayedCurrentBid(bidText);
+  const headerBid = markers.length && new Set(explicitBids).size === 1 ? unique(bids(bidText.slice(0, markers[0].index))) : 0;
+  const genericPrice = markers.length ? 0 : unique([...bids(bidText), ...[...bidText.matchAll(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]))]);
   let activePrice = 0, activeDate = "";
   if (firstAuctionDate && firstAuctionDate >= today) {
     activePrice = firstAuctionPrice || genericPrice || headerBid;
@@ -16238,15 +16247,16 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const maxSize = Math.round(size * 1.33);
   const isResidentialCasa = /casa|sobrado/i.test(targetPropType || "");
   const isResidentialApto = /apart|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || "");
-  const normNeigh = (targetNeighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-  const isDenseVerticalZone = ["copacabana", "ipanema", "leblon", "flamengo", "botafogo", "lagoa", "leme", "gavea", "jardim botanico"].includes(normNeigh);
+  const orthoNeighKey = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/z/g, "s").replace(/y/g, "i").replace(/ph/g, "f").replace(/th/g, "t").replace(/w/g, "v").replace(/[^a-z0-9]/g, "").trim();
+  const normNeigh = orthoNeighKey(targetNeighborhood);
+  const isDenseVerticalZone = ["copacabana", "ipanema", "leblon", "flamengo", "botafogo", "lagoa", "leme", "gavea", "jardimbotanico"].includes(normNeigh);
   const casaToAptoFactor = isDenseVerticalZone ? 1 : 0.85;
   const isAltApartmentTx = (t) => /apart|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || "");
   const isRadiusCandidateValid = (t) => isVoluntaryMarketSale(t) && isValValid(getTxVal(t));
-  const allBValsExact = typeTxs.filter((t) => isValValid(getTxVal(t)) && (targetNeighborhood === void 0 || !!targetNeighborhood && String(t.neighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === normNeigh));
+  const allBValsExact = typeTxs.filter((t) => isValValid(getTxVal(t)) && (targetNeighborhood === void 0 || !!targetNeighborhood && orthoNeighKey(t.neighborhood) === normNeigh));
   let allBVals = allBValsExact;
   if (isResidentialCasa && allBValsExact.length < 7) {
-    const altBTxs = sourceTxs.filter((t) => isAltApartmentTx(t) && isValValid(getTxVal(t)) && (targetNeighborhood === void 0 || !!targetNeighborhood && String(t.neighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === normNeigh)).map((t) => ({ ...t, unitValueSqm: Math.round(t.unitValueSqm * casaToAptoFactor) }));
+    const altBTxs = sourceTxs.filter((t) => isAltApartmentTx(t) && isValValid(getTxVal(t)) && (targetNeighborhood === void 0 || !!targetNeighborhood && orthoNeighKey(t.neighborhood) === normNeigh)).map((t) => ({ ...t, unitValueSqm: Math.round(t.unitValueSqm * casaToAptoFactor) }));
     if (altBTxs.length > 0) {
       allBVals = [...allBValsExact, ...altBTxs];
     }
@@ -19915,7 +19925,7 @@ function normalizeString2(str) {
 }
 function cleanNeighborhood(neigh) {
   if (!neigh) return "";
-  return normalizeString2(neigh).replace(/[^a-z0-9]/g, "").trim();
+  return normalizeString2(neigh).replace(/z/g, "s").replace(/y/g, "i").replace(/ph/g, "f").replace(/th/g, "t").replace(/w/g, "v").replace(/[^a-z0-9]/g, "").trim();
 }
 function cleanStreetName2(street) {
   if (!street) return "";
@@ -20944,7 +20954,7 @@ function loadStore() {
     }
     return true;
   });
-  const STORE_CALIBRATION_VERSION = "v26_casa_cross_typology_auto_radius";
+  const STORE_CALIBRATION_VERSION = "v27_mega_bid_recovery_canon_neighborhood";
   const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
   const isMemoryConstrainedRender = process.env.RENDER === "true";
   if (needsRecalibration && isMemoryConstrainedRender) {
@@ -20997,15 +21007,26 @@ function loadStore() {
           }
         }
       }
-      if (!(a.auctionPrice > 0) && a.priceVerified !== false) {
+      if (!(a.auctionPrice > 0) && (a.description || a.title)) {
         const rounds = extractAuctionRoundsAndPrices((a.description || "") + " " + (a.title || ""), today);
-        if (rounds.activePrice > 0) {
+        if (rounds.activePrice > 0 && rounds.priceVerified) {
           a.auctionPrice = rounds.activePrice;
           a.priceVerified = true;
           if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
           if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
           if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
           if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
+          if (rounds.appraisal && !(a.estimatedValue && a.estimatedValue > 0)) {
+            a.evaluationPrice = a.evaluationPrice || rounds.appraisal;
+          }
+          const declared = declaredAuctionLocation(a);
+          const cityMatchesDeclared = !declared || normalize2(declared.city) === normalize2(a.city || "") && declared.state === (a.state || "RJ");
+          const isCaixa = a.origin === "caixa" || a.origin === "caixa_radar" || a.id && a.id.includes("caixa");
+          if (a.ingestionStatus === "quarentena_extracao" && cityMatchesDeclared && Number(a.sizeSqm) > 0 && a.sizeVerified === true && Boolean(a.neighborhood) && Boolean(a.address && (isCaixa || /\d/.test(a.address)))) {
+            a.ingestionStatus = void 0;
+            a.precisa_revisao = false;
+            a.requer_auditoria_endereco = false;
+          }
         }
       }
     });
@@ -21114,7 +21135,7 @@ function ensureItbiLoaded() {
 }
 var auctionCatalogResponseCache = null;
 var AUCTION_RESPONSE_CACHE_PATH = import_path4.default.join(process.cwd(), ".cache", "auction-catalog-response-v7.json.gz");
-var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v15-portais-clean";
+var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v16-mega-canon";
 var persistedCatalogInvalidated = false;
 function auctionResponseCacheSignature() {
   try {
@@ -21712,6 +21733,17 @@ function buildItbiIndexes(txs, calibrationAuctions = []) {
   globalCityTransactionSpatialIndex = cityTransactionSpatialIndex;
   globalNeighborhoodRecentSales = neighborhoodRecentSales;
   globalNeighborhoodDeltaT = neighborhoodDeltaTMap;
+  globalCanonicalNeighborhoodMap.clear();
+  for (const [key, rows] of neighMap) {
+    const rawSample = rows[0]?.neighborhood;
+    if (!rawSample) continue;
+    const lowerWords = /* @__PURE__ */ new Set(["de", "da", "do", "dos", "das", "e"]);
+    const formatted = rawSample.trim().replace(/\s+/g, " ").split(" ").map((w, idx) => {
+      const lw = w.toLowerCase();
+      return idx > 0 && lowerWords.has(lw) ? lw : lw.charAt(0).toUpperCase() + lw.slice(1);
+    }).join(" ");
+    globalCanonicalNeighborhoodMap.set(key, formatted);
+  }
   return { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType };
 }
 function estimateNotaryFees(price, origin, state = "SP") {
@@ -21760,9 +21792,19 @@ function estimateNotaryFees(price, origin, state = "SP") {
 }
 var neighDistinctStreetsCache = /* @__PURE__ */ new Map();
 var neighStreetResolutionCache = /* @__PURE__ */ new Map();
+var globalCanonicalNeighborhoodMap = /* @__PURE__ */ new Map();
 function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType) {
   const state = (auc.state || "SP").toLowerCase();
   let neigh = cleanNeighborhood(auc.neighborhood);
+  const normCityEarly = normalizeString2(auc.city || "");
+  const itbiCanonicalNeigh = globalCanonicalNeighborhoodMap.get(`${state}|${normCityEarly}|${neigh}`);
+  if (itbiCanonicalNeigh) {
+    auc.neighborhood = itbiCanonicalNeigh;
+  }
+  if (auc.divergentNeighborhoodNotice && auc.originalListedNeighborhood && cleanNeighborhood(auc.originalListedNeighborhood) === neigh) {
+    auc.divergentNeighborhoodNotice = void 0;
+    auc.originalListedNeighborhood = void 0;
+  }
   const propType = auc.propertyType;
   const cat = getTypologyCategory(propType);
   const origin = auc.origin || "judicial";
@@ -21866,7 +21908,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   const sourceLabel = auc.origin === "caixa" || auc.origin === "caixa_radar" ? "Caixa" : "Edital";
   const formatDivergentNotice = (realNeigh, origNeigh) => {
     const cleanOrig = origNeigh?.trim();
-    if (cleanOrig && cleanOrig.toLowerCase() !== realNeigh.toLowerCase()) {
+    if (cleanOrig && cleanNeighborhood(cleanOrig) !== cleanNeighborhood(realNeigh)) {
       return `Bairro Real: ${realNeigh} (${sourceLabel} listou ${cleanOrig})`;
     }
     return void 0;
@@ -23202,7 +23244,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     if (!skipRenderColdRebuild) {
       res.setHeader("X-Catalog-Recalculation", "pending");
     }
-    if (!auctionCatalogResponseCache || skipRenderColdRebuild) {
+    if (!auctionCatalogResponseCache || isForceRefresh || !lastKnownPayload || skipRenderColdRebuild) {
       auctionCatalogResponseCache = {
         auctionsRef: store.auctions,
         transactionsRef: store.itbiTransactions,
@@ -23212,7 +23254,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
         payload: fastPayload
       };
     }
-    sendAuctionResponse(req, res, fastPayload, auctionCatalogResponseCache);
+    sendAuctionResponse(req, res, fastPayload, isForceRefresh || !lastKnownPayload ? auctionCatalogResponseCache : auctionCatalogResponseCache);
     if (skipRenderColdRebuild) return;
     if (!res.writableFinished) {
       await new Promise((resolve) => {

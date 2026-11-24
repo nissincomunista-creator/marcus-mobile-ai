@@ -525,16 +525,25 @@ export function extractDisplayedCurrentBid(text:string):number {
 export function extractAuctionRoundsAndPrices(text: string, todayParam?: string): AuctionPriceAnalysis {
   if (!text) return { activePrice: 0, priceVerified: false };
   const today = todayParam || new Date().toISOString().slice(0, 10);
-  const explicitBids = [...text.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
-  if (!extractDisplayedCurrentBid(text) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(text)) return {activePrice:0,priceVerified:false};
+  // Remove Santander/bank financing footnotes (e.g. "*Imóveis a partir de R$ 90.000,00 com financiamento...")
+  // so promotional minimum credit thresholds never collide with the actual starting auction bid.
+  const bidText = text
+    .replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, ' ')
+    .replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, ' ');
+  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
+  if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(bidText)) return {activePrice:0,priceVerified:false};
 
   // Isolate each round: nearby amounts can belong to another round, fees or appraisal.
-  const markers = [...text.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
+  const markers = [...bidText.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
   const unique = (values: number[]) => { const v=[...new Set(values.filter(n=>n>0))];return v.length===1?v[0]:0; };
-  const bids = (block:string) => [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
+  const bids = (block:string) => {
+    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1])).filter(n=>n>0);
+    if (strict.length > 0 && new Set(strict).size === 1) return strict;
+    return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
+  };
   const round = (n:number) => {
     const entries=markers.filter(m=>Number(m[1] || (/primeir/i.test(m[2])?1:2))===n).map(m=>{
-      const index=markers.indexOf(m);const block=text.slice(m.index!+m[0].length,markers[index+1]?.index ?? text.length).slice(0,350);
+      const index=markers.indexOf(m);const block=bidText.slice(m.index!+m[0].length,markers[index+1]?.index ?? bidText.length).slice(0,350);
       const date=(block.match(/^\s*:?\s*(?:dia\s*)?(\d{1,2}\/\d{1,2}\/\d{2,4})/i) || block.match(/T[eé]rmino\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i))?.[1];
       const labelled=bids(block);const bare=block.match(/^\s*:?\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s+(?:às\s*)?\d{1,2}:\d{2})?\s*[-–:]?\s*)?R\$\s*([\d.]+(?:,\d{2})?)/i);
       return {price:unique(labelled.length?labelled:bare?[parseBrazilianMoney(bare[1])]:[]),date:date?normalizeDateStr(date):undefined};
@@ -546,9 +555,9 @@ export function extractAuctionRoundsAndPrices(text: string, todayParam?: string)
   const firstAuctionPrice=one.price,secondAuctionPrice=two.price;
   const firstAuctionDate=one.date||generalDates.first,secondAuctionDate=two.date||generalDates.second;
   // The current/next bid explicitly displayed by the source prevails over the starting bid.
-  const current=extractDisplayedCurrentBid(text);
-  const headerBid=markers.length&&new Set(explicitBids).size===1?unique(bids(text.slice(0,markers[0].index))):0;
-  const genericPrice=markers.length?0:unique([...bids(text),...[...text.matchAll(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]))]);
+  const current=extractDisplayedCurrentBid(bidText);
+  const headerBid=markers.length&&new Set(explicitBids).size===1?unique(bids(bidText.slice(0,markers[0].index))):0;
+  const genericPrice=markers.length?0:unique([...bids(bidText),...[...bidText.matchAll(/Em\s+leil[aã]o\s+pelo\s+valor\s+de\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]))]);
   let activePrice=0,activeDate='';
   if(firstAuctionDate && firstAuctionDate>=today){activePrice=firstAuctionPrice||genericPrice||headerBid;activeDate=firstAuctionDate;}
   else if(secondAuctionDate && secondAuctionDate>=today){activePrice=secondAuctionPrice||genericPrice||headerBid;activeDate=secondAuctionDate;}

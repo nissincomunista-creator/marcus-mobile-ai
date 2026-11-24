@@ -670,17 +670,63 @@ export default function Dashboard({
       list = list.filter(a => normalizeText(a.city || '').includes(normCity) || normCity.includes(normalizeText(a.city || '')));
     }
 
-    const map = new Map<string, number>();
-    list.forEach(a => {
-      if (!a.neighborhood) return;
-      const formatted = a.neighborhood.trim().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '').join(' ');
-      map.set(formatted, (map.get(formatted) || 0) + 1);
+    const canonicalKey = (raw: string) =>
+      String(raw || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/z/g, 's')
+        .replace(/y/g, 'i')
+        .replace(/ph/g, 'f')
+        .replace(/th/g, 't')
+        .replace(/w/g, 'v')
+        .replace(/[^a-z0-9]/g, '')
+        .trim();
+
+    const formatDisplay = (raw: string) => {
+      const lowerWords = new Set(['de', 'da', 'do', 'dos', 'das', 'e']);
+      return raw
+        .trim()
+        .replace(/\s+/g, ' ')
+        .split(' ')
+        .map((w, idx) => {
+          const clean = w.toLowerCase();
+          if (!clean) return '';
+          if (idx > 0 && lowerWords.has(clean)) return clean;
+          return clean.charAt(0).toUpperCase() + clean.slice(1);
+        })
+        .join(' ');
+    };
+
+    const itbiPreferred = new Map<string, string>();
+    (itbiStats || []).forEach((s: any) => {
+      if (!s?.neighborhood) return;
+      if (selectedStateFilter && s.state && s.state.toUpperCase() !== selectedStateFilter.toUpperCase()) return;
+      const k = canonicalKey(s.neighborhood);
+      if (k && !itbiPreferred.has(k)) {
+        itbiPreferred.set(k, formatDisplay(s.neighborhood));
+      }
     });
 
-    return Array.from(map.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [auctions, checkOriginMatch, advancedContextTab, selectedStateFilter, selectedCityFilter]);
+    const map = new Map<string, { name: string; count: number }>();
+    list.forEach(a => {
+      if (!a.neighborhood) return;
+      const k = canonicalKey(a.neighborhood);
+      if (!k) return;
+      const preferred = itbiPreferred.get(k);
+      const formatted = preferred || formatDisplay(a.neighborhood);
+      const prev = map.get(k);
+      if (!prev) {
+        map.set(k, { name: formatted, count: 1 });
+      } else {
+        const hasAccents = (s: string) => /[^\u0000-\u007f]/.test(s);
+        const bestName = preferred || (hasAccents(formatted) && !hasAccents(prev.name) ? formatted : prev.name);
+        map.set(k, { name: bestName, count: prev.count + 1 });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  }, [auctions, itbiStats, checkOriginMatch, advancedContextTab, selectedStateFilter, selectedCityFilter]);
 
   // Filtered neighborhoods based on sidebar search
   const visibleNeighborhoods = useMemo(() => {
@@ -922,11 +968,15 @@ export default function Dashboard({
     }
 
     if (selectedNeighborhoods.length > 0) {
-      const normSelected = selectedNeighborhoods.map(normalizeText);
-      result = result.filter(a => normSelected.includes(normalizeText(a.neighborhood || '')));
+      const orthoKey = (s: string) =>
+        normalizeText(s).replace(/z/g, 's').replace(/y/g, 'i').replace(/ph/g, 'f').replace(/th/g, 't').replace(/w/g, 'v').replace(/[^a-z0-9]/g, '');
+      const normSelected = selectedNeighborhoods.map(orthoKey);
+      result = result.filter(a => normSelected.includes(orthoKey(a.neighborhood || '')));
     } else if (selectedNeighborhoodFilter) {
-      const normSingle = normalizeText(selectedNeighborhoodFilter);
-      result = result.filter(a => normalizeText(a.neighborhood || '') === normSingle);
+      const orthoKey = (s: string) =>
+        normalizeText(s).replace(/z/g, 's').replace(/y/g, 'i').replace(/ph/g, 'f').replace(/th/g, 't').replace(/w/g, 'v').replace(/[^a-z0-9]/g, '');
+      const normSingle = orthoKey(selectedNeighborhoodFilter);
+      result = result.filter(a => orthoKey(a.neighborhood || '') === normSingle);
     }
 
     if (selectedTypeFilter) {

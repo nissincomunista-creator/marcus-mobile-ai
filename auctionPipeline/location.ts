@@ -35,8 +35,13 @@ export function neighborhoodEvidence(input:{city:string;state?:string;neighborho
 export function internalCep(cep:string):{logradouro?:string;bairro?:string;cidade?:string;uf?:string}|undefined {
  try{const db=JSON.parse(fs.readFileSync('cep_cache.json','utf8'));const row=db[cep.replace(/\D/g,'')];return row;}catch{return undefined;}
 }
+const ortho=(s:string)=>normalize(s).replace(/z/g,'s').replace(/y/g,'i').replace(/ph/g,'f').replace(/th/g,'t').replace(/w/g,'v');
 export function enrichLocation<T extends {city:string;state?:string;neighborhood?:string;title?:string;address?:string;description?:string}>(draft:T):T {
- const direct=neighborhoodEvidence(draft);if(direct)return {...draft,neighborhood:direct.value};
+ const direct=neighborhoodEvidence(draft);
+ if(direct){
+  if(draft.neighborhood && ortho(direct.value)===ortho(draft.neighborhood))return draft;
+  return {...draft,neighborhood:direct.value};
+ }
  const text=[draft.address,draft.description].filter(Boolean).join(' ');const cep=text.match(/\b(\d{5})-?(\d{3})\b/);const row=cep?internalCep(cep[1]+cep[2]):undefined;
  if(row&&normalize(row.cidade||'')===normalize(draft.city)&&(!draft.state||row.uf===draft.state)){
   const enriched={...draft,neighborhood:row.bairro,address:draft.address||row.logradouro};const verified=neighborhoodEvidence(enriched);if(verified)return {...enriched,neighborhood:verified.value};

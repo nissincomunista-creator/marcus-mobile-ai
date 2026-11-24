@@ -85,6 +85,11 @@ function normalizeString(str: string | null | undefined): string {
 function cleanNeighborhood(neigh: string | null | undefined): string {
   if (!neigh) return '';
   return normalizeString(neigh)
+    .replace(/z/g, 's')
+    .replace(/y/g, 'i')
+    .replace(/ph/g, 'f')
+    .replace(/th/g, 't')
+    .replace(/w/g, 'v')
     .replace(/[^a-z0-9]/g, '')
     .trim();
 }
@@ -1421,7 +1426,7 @@ function loadStore(): DataStore {
           }
           return true;
         });
-      const STORE_CALIBRATION_VERSION = 'v26_casa_cross_typology_auto_radius';
+      const STORE_CALIBRATION_VERSION = 'v27_mega_bid_recovery_canon_neighborhood';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -1475,15 +1480,36 @@ function loadStore(): DataStore {
               }
             }
           }
-          if (!(a.auctionPrice > 0) && a.priceVerified !== false) {
+          if (!(a.auctionPrice > 0) && (a.description || a.title)) {
             const rounds = extractAuctionRoundsAndPrices((a.description || '') + ' ' + (a.title || ''), today);
-            if (rounds.activePrice > 0) {
+            if (rounds.activePrice > 0 && rounds.priceVerified) {
               a.auctionPrice = rounds.activePrice;
               a.priceVerified = true;
               if (rounds.firstAuctionPrice) a.firstAuctionPrice = rounds.firstAuctionPrice;
               if (rounds.secondAuctionPrice) a.secondAuctionPrice = rounds.secondAuctionPrice;
               if (rounds.firstAuctionDate) a.firstAuctionDate = rounds.firstAuctionDate;
               if (rounds.secondAuctionDate) a.secondAuctionDate = rounds.secondAuctionDate;
+              if (rounds.appraisal && !(a.estimatedValue && a.estimatedValue > 0)) {
+                a.evaluationPrice = a.evaluationPrice || rounds.appraisal;
+              }
+              const declared = declaredAuctionLocation(a);
+              const cityMatchesDeclared = !declared || (
+                normalizeAuctionPlace(declared.city) === normalizeAuctionPlace(a.city || '') &&
+                declared.state === (a.state || 'RJ')
+              );
+              const isCaixa = a.origin === 'caixa' || a.origin === 'caixa_radar' || (a.id && a.id.includes('caixa'));
+              if (
+                a.ingestionStatus === 'quarentena_extracao' &&
+                cityMatchesDeclared &&
+                Number(a.sizeSqm) > 0 &&
+                a.sizeVerified === true &&
+                Boolean(a.neighborhood) &&
+                Boolean(a.address && (isCaixa || /\d/.test(a.address)))
+              ) {
+                a.ingestionStatus = undefined;
+                a.precisa_revisao = false;
+                a.requer_auditoria_endereco = false;
+              }
             }
           }
         });
@@ -1610,7 +1636,7 @@ let auctionCatalogResponseCache: {
   gz?: Buffer;
 } | null = null;
 const AUCTION_RESPONSE_CACHE_PATH = path.join(process.cwd(), '.cache', 'auction-catalog-response-v7.json.gz');
-const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v15-portais-clean';
+const AUCTION_RESPONSE_CACHE_VERSION = 'auction-catalog-v16-mega-canon';
 let persistedCatalogInvalidated = false;
 
 function auctionResponseCacheSignature() {
@@ -2297,6 +2323,22 @@ function buildItbiIndexes(txs: ItbiTransaction[], calibrationAuctions: AuctionPr
   globalCityTransactionSpatialIndex = cityTransactionSpatialIndex;
   globalNeighborhoodRecentSales = neighborhoodRecentSales;
   globalNeighborhoodDeltaT = neighborhoodDeltaTMap;
+  globalCanonicalNeighborhoodMap.clear();
+  for (const [key, rows] of neighMap) {
+    const rawSample = rows[0]?.neighborhood;
+    if (!rawSample) continue;
+    const lowerWords = new Set(['de', 'da', 'do', 'dos', 'das', 'e']);
+    const formatted = rawSample
+      .trim()
+      .replace(/\s+/g, ' ')
+      .split(' ')
+      .map((w, idx) => {
+        const lw = w.toLowerCase();
+        return idx > 0 && lowerWords.has(lw) ? lw : lw.charAt(0).toUpperCase() + lw.slice(1);
+      })
+      .join(' ');
+    globalCanonicalNeighborhoodMap.set(key, formatted);
+  }
   return { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType };
 }
 
@@ -2357,6 +2399,7 @@ function estimateNotaryFees(price: number, origin: string, state = 'SP'): { nota
 
 const neighDistinctStreetsCache = new Map<string, string[]>();
 const neighStreetResolutionCache = new Map<string, string>();
+const globalCanonicalNeighborhoodMap = new Map<string, string>();
 
 function recalculateAuctionWithIndex(
   auc: AuctionProperty,
@@ -2374,6 +2417,15 @@ function recalculateAuctionWithIndex(
 ): AuctionProperty {
   const state = (auc.state || 'SP').toLowerCase();
   let neigh = cleanNeighborhood(auc.neighborhood);
+  const normCityEarly = normalizeString(auc.city || '');
+  const itbiCanonicalNeigh = globalCanonicalNeighborhoodMap.get(`${state}|${normCityEarly}|${neigh}`);
+  if (itbiCanonicalNeigh) {
+    auc.neighborhood = itbiCanonicalNeigh;
+  }
+  if (auc.divergentNeighborhoodNotice && auc.originalListedNeighborhood && cleanNeighborhood(auc.originalListedNeighborhood) === neigh) {
+    auc.divergentNeighborhoodNotice = undefined;
+    auc.originalListedNeighborhood = undefined;
+  }
   const propType = auc.propertyType;
   const cat = getTypologyCategory(propType);
   const origin = auc.origin || 'judicial';
@@ -2506,7 +2558,7 @@ function recalculateAuctionWithIndex(
   const sourceLabel = (auc.origin === 'caixa' || auc.origin === 'caixa_radar') ? 'Caixa' : 'Edital';
   const formatDivergentNotice = (realNeigh: string, origNeigh?: string): string | undefined => {
     const cleanOrig = origNeigh?.trim();
-    if (cleanOrig && cleanOrig.toLowerCase() !== realNeigh.toLowerCase()) {
+    if (cleanOrig && cleanNeighborhood(cleanOrig) !== cleanNeighborhood(realNeigh)) {
       return `Bairro Real: ${realNeigh} (${sourceLabel} listou ${cleanOrig})`;
     }
     return undefined;
@@ -4123,7 +4175,7 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
   if (!skipRenderColdRebuild) {
     res.setHeader('X-Catalog-Recalculation', 'pending');
   }
-  if (!auctionCatalogResponseCache || skipRenderColdRebuild) {
+  if (!auctionCatalogResponseCache || isForceRefresh || !lastKnownPayload || skipRenderColdRebuild) {
     auctionCatalogResponseCache = {
       auctionsRef: store.auctions,
       transactionsRef: store.itbiTransactions,
@@ -4133,7 +4185,7 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
       payload: fastPayload
     };
   }
-  sendAuctionResponse(req, res, fastPayload, auctionCatalogResponseCache);
+  sendAuctionResponse(req, res, fastPayload, isForceRefresh || !lastKnownPayload ? auctionCatalogResponseCache : auctionCatalogResponseCache);
   if (skipRenderColdRebuild) return;
   if (!res.writableFinished) {
     await new Promise<void>(resolve => {
