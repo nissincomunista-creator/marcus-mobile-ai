@@ -49,7 +49,7 @@ async function main() {
   console.log(`[Script] Recálculo concluído em ${duration}s!`);
 
   storeData.auctions = recalculatedAuctions;
-  storeData.calibrationVersion = 'v24_purge_radius_outliers_parity_ssot';
+  storeData.calibrationVersion = 'v28_itbi_2024_2026_10_oct';
 
   const targetAfter = storeData.auctions.find((a: any) => a.id === 'auc-caixa-1444415849155');
   if (targetAfter) {

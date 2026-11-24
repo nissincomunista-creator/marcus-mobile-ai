@@ -6,6 +6,8 @@ import re
 import openpyxl
 
 possible_paths = [
+    r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-8.xlsx",
+    r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-8.xlsx",
     r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-7-1.xlsx",
     r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-7-1.xlsx",
     r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-5.xlsx",
@@ -14,8 +16,15 @@ possible_paths = [
     r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-4 (1).xlsx",
     r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_2025_diante-4.xlsx",
     r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_2025_diante-4.xlsx",
-    r"C:\Users\Marcus\OneDrive\Desktop\ITBI_TRANSACOES_2025_diante-4.xlsx"
 ]
+
+historical_paths = [
+    r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES\ITBI_TRANSACOES_PERIODO_2019_2024.xlsx",
+    r"C:\Users\Marcus\Downloads\ITBI_TRANSACOES_PERIODO_2019_2024.xlsx",
+]
+
+MIN_ACTIVE_RIO_YEAR = 2024
+MAP_ITBI_GZ_PATH = "map_itbi_2019_2026.json.gz"
 
 json_path = "data_store.json"
 gz_path = "data_store.json.gz"
@@ -94,52 +103,26 @@ def canonical_street(val):
     s = re.sub(r'[^a-z0-9]', '', s)
     return s
 
-def import_data():
-    excel_path = None
-    for path in possible_paths:
-        if os.path.exists(path):
-            excel_path = path
-            break
-            
-    if not excel_path:
-        print(f"Error: No ITBI Excel file found. Checked paths: {possible_paths}")
-        return False
-        
+def parse_excel_sheet(excel_path, id_prefix="itbi-rj"):
     print(f"Reading Excel file from: {excel_path}...")
-    
-    # Sync to Desktop folder if we read from Downloads
-    desktop_folder = r"C:\Users\Marcus\OneDrive\Desktop\ITBI DAS CIDADES"
-    desktop_dest = os.path.join(desktop_folder, os.path.basename(excel_path))
-    if os.path.abspath(excel_path).lower() != os.path.abspath(desktop_dest).lower():
-        try:
-            os.makedirs(desktop_folder, exist_ok=True)
-            shutil.copy2(excel_path, desktop_dest)
-            print(f"Synced latest sheet to Desktop: {desktop_dest}")
-        except Exception as copy_err:
-            print(f"Notice: Could not copy to desktop folder: {copy_err}")
-
     try:
         wb = openpyxl.load_workbook(excel_path, read_only=True, data_only=True)
         ws = wb.active
     except Exception as e:
-        print(f"Error opening Excel with openpyxl: {e}")
-        return False
+        print(f"Error opening Excel {excel_path} with openpyxl: {e}")
+        return []
 
     row_iter = ws.iter_rows(values_only=True)
     try:
         raw_headers = next(row_iter)
     except StopIteration:
-        print("Error: Empty Excel sheet")
-        return False
+        print(f"Error: Empty Excel sheet in {excel_path}")
+        return []
 
     headers = [clean_excel_str(c).lower() for c in raw_headers]
-    print(f"Identified headers: {headers}")
+    print(f"Identified headers in {os.path.basename(excel_path)}: {headers}")
 
-    col_map = {}
-    for idx, h in enumerate(headers):
-        col_map[h] = idx
-
-    # Resolve indices
+    col_map = {h: idx for idx, h in enumerate(headers)}
     logr_idx = col_map.get('logradouro', col_map.get('nm_logradouro'))
     num_idx = col_map.get('numero', col_map.get('nu_numero'))
     compl_idx = col_map.get('complemento', col_map.get('ds_complemento'))
@@ -153,10 +136,10 @@ def import_data():
     mes_idx = col_map.get('mes')
 
     if bairro_idx is None:
-        print("Error: Could not identify neighborhood column in Excel.")
-        return False
+        print(f"Error: Could not identify neighborhood column in {excel_path}.")
+        return []
 
-    transactions = []
+    parsed_rows = []
     skipped_nan = 0
     row_count = 0
 
@@ -168,13 +151,10 @@ def import_data():
             continue
 
         bairro_str = clean_excel_str(raw_bairro).upper()
-
-        # Values with strict numeric/currency casting
         val = parse_monetary_or_decimal(row[val_idx]) if val_idx is not None else 0.0
         m2 = parse_monetary_or_decimal(row[m2_idx]) if m2_idx is not None else 0.0
         area = parse_monetary_or_decimal(row[area_idx]) if area_idx is not None else 0.0
 
-        # Recover missing metrics
         if val <= 0 and m2 > 0 and area > 0:
             val = round(m2 * area, 2)
         if m2 <= 0 and val > 0 and area > 0:
@@ -186,25 +166,22 @@ def import_data():
             skipped_nan += 1
             continue
 
-        # Filtro de Sanidade Anti-Outlier em Bairros Periféricos
         if bairro_str in PERIPHERAL_BAIRROS and m2 > 7000:
             skipped_nan += 1
             continue
 
-        # Property type
         raw_tipo = row[tipo_idx] if tipo_idx is not None else ''
         raw_desc = row[desc_idx] if desc_idx is not None else ''
         prop_type = determine_property_type(raw_tipo, raw_desc)
 
-        # Date
         ano = row[ano_idx] if ano_idx is not None else None
         mes = row[mes_idx] if mes_idx is not None else None
         try:
-            if ano and mes:
-                date_str = f"{int(ano)}-{int(mes):02d}-01"
-            else:
-                date_str = "2025-01-01"
+            year_int = int(clean_excel_str(ano)) if ano else 2025
+            month_int = int(clean_excel_str(mes)) if mes else 1
+            date_str = f"{year_int}-{month_int:02d}-01"
         except Exception:
+            year_int = 2025
             date_str = "2025-01-01"
 
         raw_street = row[logr_idx] if logr_idx is not None else ''
@@ -216,8 +193,8 @@ def import_data():
         compl_str = clean_excel_str(raw_compl)
         desc_str = clean_excel_str(raw_desc)
 
-        transactions.append({
-            "id": f"itbi-rj-{row_count}",
+        parsed_rows.append({
+            "id": f"{id_prefix}-{year_int}-{row_count}",
             "neighborhood": bairro_str,
             "propertyType": prop_type,
             "sizeSqm": round(area, 2),
@@ -231,6 +208,7 @@ def import_data():
             "complement": compl_str,
             "description": desc_str,
             "_core": canonical_street(street_str),
+            "_year": year_int,
             "sourceFile": os.path.basename(excel_path),
             "sourceRow": row_count + 1,
             "sourceVerified": True,
@@ -238,9 +216,33 @@ def import_data():
             "isFiduciario": not is_voluntary_market_sale(val)
         })
 
-    print(f"Total rows examined: {row_count}")
-    print(f"Skipped {skipped_nan} empty or invalid rows.")
-    print(f"Successfully processed {len(transactions)} valid Rio de Janeiro transactions.")
+    print(f"Examined {row_count} rows (skipped {skipped_nan}) -> {len(parsed_rows)} valid from {os.path.basename(excel_path)}.")
+    return parsed_rows
+
+
+def import_data():
+    excel_path = next((p for p in possible_paths if os.path.exists(p)), None)
+    if not excel_path:
+        print(f"Error: No ITBI Excel file found. Checked paths: {possible_paths}")
+        return False
+
+    recent_txs = parse_excel_sheet(excel_path, id_prefix="itbi-rj")
+    hist_path = next((p for p in historical_paths if os.path.exists(p)), None)
+    hist_txs = parse_excel_sheet(hist_path, id_prefix="itbi-rj-hist") if hist_path else []
+
+    # Active valuation store keeps Jan/2024 - present (~3 years) to prevent 2019-2023 price skew & Render OOM
+    recent_years_in_primary = {t["_year"] for t in recent_txs}
+    hist_for_active = [t for t in hist_txs if t["_year"] >= MIN_ACTIVE_RIO_YEAR and t["_year"] not in recent_years_in_primary]
+    transactions = hist_for_active + recent_txs
+
+    # Combined 2019-2026 Rio ITBI feed for offline 3D Map PMTiles generation (static tiles, zero Node RAM)
+    all_map_transactions = [t for t in hist_txs if t["_year"] not in recent_years_in_primary] + recent_txs
+    for t in all_map_transactions:
+        t.pop("_year", None)
+    for t in transactions:
+        t.pop("_year", None)
+
+    print(f"Active Valuation Rio ITBI (>= {MIN_ACTIVE_RIO_YEAR}): {len(transactions)} | Full 2019-2026 Map Feed: {len(all_map_transactions)}")
 
     # Load existing store to preserve auctions, users, sessions, Niterói & Juiz de Fora transactions
     store_data = {}
@@ -299,9 +301,9 @@ def import_data():
 
     print(f"Hydrated {hydrated_count} Rio de Janeiro transactions with coordinates.")
 
-    # Merge transactions and update calibration version to trigger automatic index recalibration
+    # Merge transactions and reset calibration version to trigger automatic index recalibration
     store_data["itbiTransactions"] = transactions + existing_non_rj
-    store_data["calibrationVersion"] = "v24_purge_radius_outliers_parity_ssot"
+    store_data["calibrationVersion"] = "needs_v28_recalibration"
 
     try:
         print(f"Writing updated {json_path} ({len(store_data['itbiTransactions'])} total transactions)...")
@@ -320,6 +322,12 @@ def import_data():
         with open(itbi_gz_path, 'wb') as f_itbi:
             f_itbi.write(itbi_bytes)
         print(f"{itbi_gz_path} updated successfully ({len(itbi_bytes)} bytes)!")
+
+        print(f"Compressing full 2019-2026 map ITBI feed into {MAP_ITBI_GZ_PATH}...")
+        map_bytes = gzip.compress(json.dumps(all_map_transactions, ensure_ascii=False).encode('utf-8'))
+        with open(MAP_ITBI_GZ_PATH, 'wb') as f_map:
+            f_map.write(map_bytes)
+        print(f"{MAP_ITBI_GZ_PATH} updated successfully ({len(map_bytes)} bytes)!")
 
         # Verify Princesa Isabel 500
         p500 = [t for t in transactions if 'princesa isabel' in t['street'].lower() and t['number'] == '500']

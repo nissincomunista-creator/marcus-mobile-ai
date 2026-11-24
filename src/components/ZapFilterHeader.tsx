@@ -259,10 +259,10 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
     return 'Leilões';
   })();
 
-  const pillSize = embeddedInMap ? 'px-3.5 py-2 text-xs' : 'px-4 py-2 text-[13px]';
-  const pillBase = `${pillSize} rounded-full font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap`;
-  const pillActive = 'bg-indigo-500/15 text-indigo-200 border-indigo-400/70';
-  const pillIdle = 'bg-transparent text-slate-200 border-slate-700 hover:border-slate-500 hover:bg-slate-800/40';
+  const pillSize = embeddedInMap ? 'px-3.5 py-2 text-[13px]' : 'px-4 py-2 text-[13.5px]';
+  const pillBase = `${pillSize} rounded-full font-bold tracking-tight border transition-all flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap`;
+  const pillActive = 'bg-indigo-600/20 text-indigo-200 border-indigo-400/80 shadow-xs';
+  const pillIdle = 'bg-transparent text-slate-200 border-slate-700/80 hover:border-indigo-400/70 hover:bg-indigo-500/10 hover:text-indigo-200';
 
   const PROPERTY_TYPES: { value: string; label: string }[] = [
     { value: '', label: 'Todos os Tipos' },

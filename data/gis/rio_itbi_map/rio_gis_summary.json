@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T21:08:19.202Z",
+  "generatedAt": "2026-11-24T12:32:52.844Z",
   "sourceLayers": {
     "edificacoes": "IPP CadLog/Edificacoes_2019 (FeatureServer/0) -> EPSG:4326",
     "numerosPorta": "IPP CadLog/Numero_de_porta (FeatureServer/0) -> EPSG:4326",
@@ -7,25 +7,25 @@
     "edificacoes2013ReferenceId": "124f1607b57d4292af5c0dfc2ff8572c_0"
   },
   "itbiStats": {
-    "rioTotalRows": 86946,
-    "validValueRows": 85889,
-    "skippedInvalidValue": 1057,
-    "matchedByIppClnp": 47236,
-    "matchedByExactXy": 7717,
-    "unmatchedAddress": 30936,
-    "uniqueDoorGroups": 23303
+    "rioTotalRows": 334476,
+    "validValueRows": 328441,
+    "skippedInvalidValue": 6035,
+    "matchedByIppClnp": 215298,
+    "matchedByExactXy": 0,
+    "unmatchedAddress": 113143,
+    "uniqueDoorGroups": 49546
   },
   "spatialJoin": {
     "buildingsScanned": 2358979,
-    "buildingsExported": 2174260,
-    "matchedBuildings": 21144,
-    "linkedDoorGroups": 23080,
-    "linkedTransactions": 53759,
-    "cityMedianSqm": 6241
+    "buildingsExported": 2174316,
+    "matchedBuildings": 48379,
+    "linkedDoorGroups": 49462,
+    "linkedTransactions": 212526,
+    "cityMedianSqm": 6154
   },
   "pmtiles": {
     "path": "public/tiles/rio_edificacoes.pmtiles",
-    "sizeMB": 82.64,
+    "sizeMB": 85.09,
     "numTiles": 1380,
     "minZoom": 12,
     "maxZoom": 15,

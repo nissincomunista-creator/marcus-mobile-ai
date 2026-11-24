@@ -18,7 +18,8 @@ const SUMMARY_JSON_PATH = path.join(GIS_DIR, 'rio_gis_summary.json');
 
 const TRECHOS_FILE = path.join(RAW_DIR, 'trechos_logradouros.ndjson');
 const PORTAS_FILE = path.join(RAW_DIR, 'numeros_porta.ndjson');
-const ITBI_FILE = path.resolve('itbi_store.json.gz');
+const MAP_ITBI_FILE = path.resolve('map_itbi_2019_2026.json.gz');
+const ITBI_FILE = fs.existsSync(MAP_ITBI_FILE) ? MAP_ITBI_FILE : path.resolve('itbi_store.json.gz');
 
 const FIRST_TOKEN_ABBR = {
   R: 'RUA',
@@ -395,8 +396,9 @@ function buildDoorGroupsFromItbi(trechosIdx, portasIdx) {
   const allRows = Array.isArray(raw) ? raw : (raw.transactions || Object.values(raw).flat());
   const rioRows = allRows.filter((r) => (r.city || '').toLowerCase().includes('rio de janeiro'));
 
-  // Compute neighborhood medians across valid Rio ITBI samples
-  const bairroSamples = new Map();
+  // Compute neighborhood medians across recent Rio ITBI samples (>= 2024; fallback all years if missing)
+  const bairroRecentSamples = new Map();
+  const bairroAllSamples = new Map();
   let validValuesCount = 0;
   for (const r of rioRows) {
     const valSqm = Number(r.unitValueSqm);
@@ -404,19 +406,23 @@ function buildDoorGroupsFromItbi(trechosIdx, portasIdx) {
     validValuesCount++;
     const nb = normalizeBairro(r.neighborhood || '');
     if (!nb) continue;
-    let arr = bairroSamples.get(nb);
-    if (!arr) {
-      arr = [];
-      bairroSamples.set(nb, arr);
+    const txYear = Number(String(r.date || '').slice(0, 4)) || 2025;
+    if (txYear >= 2024) {
+      let arrR = bairroRecentSamples.get(nb);
+      if (!arrR) { arrR = []; bairroRecentSamples.set(nb, arrR); }
+      arrR.push(valSqm);
     }
-    arr.push(valSqm);
+    let arrA = bairroAllSamples.get(nb);
+    if (!arrA) { arrA = []; bairroAllSamples.set(nb, arrA); }
+    arrA.push(valSqm);
   }
 
   const bairroMedians = new Map();
-  for (const [nb, vals] of bairroSamples.entries()) {
-    bairroMedians.set(nb, calcMedian(vals));
+  for (const [nb, vals] of bairroAllSamples.entries()) {
+    const rec = bairroRecentSamples.get(nb);
+    bairroMedians.set(nb, calcMedian(rec && rec.length >= 5 ? rec : vals));
   }
-  const cityMedianSqm = calcMedian(Array.from(bairroSamples.values()).flat());
+  const cityMedianSqm = calcMedian(Array.from(bairroRecentSamples.size ? bairroRecentSamples.values() : bairroAllSamples.values()).flat());
 
   const doorGroupsMap = new Map();
   let matchedByIpp = 0;
@@ -455,11 +461,14 @@ function buildDoorGroupsFromItbi(trechosIdx, portasIdx) {
         bairro: resolved.bairro,
         normBairro: normalizeBairro(resolved.bairro || tx.neighborhood || ''),
         values: [],
+        recentValues: [],
         txCount: 0,
         bestMatch: null, // { cellKey, objectid, rank, dist, area }
       };
       doorGroupsMap.set(groupKey, grp);
     }
+    const txYear = Number(String(tx.date || '').slice(0, 4)) || 2025;
+    if (txYear >= 2024) grp.recentValues.push(valSqm);
     grp.values.push(valSqm);
     grp.txCount++;
   }
@@ -591,6 +600,7 @@ async function spatialJoinBuildings(doorGroups) {
     if (!agg) {
       agg = {
         values: [],
+        recentValues: [],
         txCount: 0,
         labels: new Set(),
         bairro: g.bairro,
@@ -600,6 +610,7 @@ async function spatialJoinBuildings(doorGroups) {
       buildingItbiMap.set(oid, agg);
     }
     agg.values.push(...g.values);
+    if (Array.isArray(g.recentValues) && g.recentValues.length) agg.recentValues.push(...g.recentValues);
     agg.txCount += g.txCount;
     if (g.label) agg.labels.add(g.label);
     if (!agg.bairro && g.bairro) {
@@ -616,10 +627,11 @@ async function spatialJoinBuildings(doorGroups) {
 }
 
 function enrichMetricForBuilding(agg, bairroMedians, cityMedianSqm) {
-  const m2 = Math.round(calcMedian(agg.values));
+  const m2Pool = agg.recentValues && agg.recentValues.length ? agg.recentValues : agg.values;
+  const m2 = Math.round(calcMedian(m2Pool));
   const refMed = bairroMedians.get(agg.normBairro) || cityMedianSqm || m2;
   const spr = refMed > 0 ? Math.round(((m2 - refMed) / refMed) * 100) : 0;
-  const liq = Math.min(10, Math.max(1, Math.round(2.3 * Math.log2(agg.txCount + 1) + 2)));
+  const liq = Math.min(10, Math.max(1, Math.round(2.1 * Math.log2(agg.txCount + 1) + 1.5)));
   const addrArr = Array.from(agg.labels).slice(0, 3);
   return {
     m2,

@@ -20971,7 +20971,7 @@ function loadStore() {
     }
     return true;
   });
-  const STORE_CALIBRATION_VERSION = "v27_mega_bid_recovery_canon_neighborhood";
+  const STORE_CALIBRATION_VERSION = "v28_itbi_2024_2026_10_oct";
   const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
   const isMemoryConstrainedRender = process.env.RENDER === "true";
   if (needsRecalibration && isMemoryConstrainedRender) {
@@ -21717,7 +21717,7 @@ function buildItbiIndexes(txs, calibrationAuctions = []) {
     const city = t.city || (state === "rj" ? "Rio de Janeiro" : state === "mg" ? "Juiz de Fora" : "S\xE3o Paulo");
     neighCityMap.set(`${state}|${neigh}`, city);
   }
-  const recentSalesCutoff = Date.now() - 24 * 30.4375 * 24 * 60 * 60 * 1e3;
+  const recentSalesCutoff = Date.now() - 36 * 30.4375 * 24 * 60 * 60 * 1e3;
   const neighborhoodRecentSales = /* @__PURE__ */ new Map();
   const neighborhoodDeltaTMap = /* @__PURE__ */ new Map();
   for (const [key, rows] of neighMap) {

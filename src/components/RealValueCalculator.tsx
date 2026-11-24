@@ -2716,7 +2716,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             <button
               onClick={applyAnalysisToCard}
               disabled={isLoadingTransactions || !hasRealMicroData}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-black text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all shadow-md cursor-pointer border border-emerald-300/30 shrink-0"
+              className="btn-light-outline bg-transparent hover:bg-emerald-500/10 disabled:opacity-45 text-emerald-700 dark:text-emerald-300 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all cursor-pointer border-2 border-emerald-500/60 shrink-0"
               title="Atualiza o card com o preço sugerido para flip exibido no simulador"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -2726,22 +2726,22 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           <button
             onClick={handleSaveAnalysisToProfile}
             disabled={isSavingAnalysis}
-            className="bg-slate-800 hover:bg-slate-700 text-amber-300 font-black text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all shadow-md cursor-pointer border border-amber-500/30 shrink-0"
+            className="btn-light-outline bg-transparent hover:bg-slate-800/40 text-slate-800 dark:text-slate-200 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all cursor-pointer border border-slate-400 dark:border-slate-700 shrink-0"
             title="Salva esta análise completa na sua aba de Perfil para acompanhamento de ROI e comparativos"
           >
             {isSavingAnalysis ? (
-              <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+              <RefreshCw className="w-4 h-4 animate-spin" />
             ) : savedSuccess ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             ) : (
-              <Bookmark className="w-4 h-4 text-amber-400" />
+              <Bookmark className="w-4 h-4" />
             )}
-            <span>{savedSuccess ? 'Análise Salva no Perfil!' : '💾 Salvar Análise no Perfil'}</span>
+            <span>{savedSuccess ? 'Análise Salva no Perfil!' : 'Salvar Análise no Perfil'}</span>
           </button>
 
           <button
             onClick={() => setIsExecutiveReportOpen(true)}
-            className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-black text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all shadow-md hover:shadow-indigo-500/25 cursor-pointer border border-indigo-400/40 shrink-0"
+            className="btn-solid-white bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all shadow-sm cursor-pointer border border-indigo-500 shrink-0"
             title="Abre o Laudo Técnico de Avaliação Mercadológica (PTAM) para impressão e exportação em PDF"
           >
             <FileText className="w-4 h-4" />
@@ -2750,10 +2750,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         </div>
       </div>
 
-      {/* Etapa 1 Badge */}
-      <div className="flex items-center gap-2 pt-2">
-        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1.5 shadow-xs">
-          <span>ETAPA 1 DE 4</span> • <span>Pré-Análise & Custos de Entrada (Comparativo 1-a-1)</span>
+      {/* Etapa 1 Heading Limpo */}
+      <div className="flex items-center gap-2 pt-2 border-b border-slate-300 dark:border-slate-800 pb-1.5">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+          ETAPA 1 DE 4 • Pré-Análise &amp; Custos de Entrada (Comparativo 1-a-1)
         </span>
       </div>
 
@@ -2764,7 +2764,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         <div data-tour="calc-characteristics" className="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3.5 w-full">
           
           <div className="space-y-3">
-            <h3 className="font-bold text-xs text-white uppercase tracking-widest font-mono pb-1.5 border-b border-slate-800 flex items-center space-x-1.5">
+            <h3 className="font-bold text-xs text-white uppercase tracking-wider pb-1.5 border-b border-slate-800 flex items-center space-x-1.5">
               <Building className="w-4 h-4 text-white" />
               <span>1. Características do Imóvel</span>
             </h3>
@@ -2772,7 +2772,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             {/* Select State & City */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Estado (UF):</label>
+                <label className="block text-slate-400 font-bold mb-0.5 uppercase text-[10px]">Estado (UF):</label>
                 <select
                   value={selectedState}
                   onChange={(e) => {
@@ -2791,7 +2791,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Cidade:</label>
+                <label className="block text-slate-400 font-bold mb-0.5 uppercase text-[10px]">Cidade:</label>
                 <select
                   value={selectedCity}
                   onChange={(e) => {
@@ -2816,7 +2816,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             {/* Autocomplete Neighborhood */}
             <div className="relative">
               <div className="flex items-center justify-between mb-0.5">
-                <label className="block text-slate-400 font-semibold font-mono uppercase text-[9px]">Bairro (Digite para Buscar):</label>
+                <label className="block text-slate-400 font-bold uppercase text-[10px]">Bairro (Digite para Buscar):</label>
                 {prefillData?.divergentNeighborhoodNotice && (
                   <span className="text-[9.5px] bg-amber-950/80 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1 shadow-xs">
                     <span>⚠️</span>
@@ -2931,7 +2931,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
             {/* Street Number / Complement */}
             <div>
-              <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Número / Apto / Bloco (Opcional):</label>
+              <label className="block text-slate-400 font-bold mb-0.5 uppercase text-[10px]">Número / Apto / Bloco (Opcional):</label>
               <input
                 type="text"
                 placeholder="Ex: 572, Apto 302"
@@ -2944,7 +2944,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             {/* Property Type & Size */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Tipo do Imóvel:</label>
+                <label className="block text-slate-400 font-bold mb-0.5 uppercase text-[10px]">Tipo do Imóvel:</label>
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
@@ -2959,16 +2959,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px] flex items-center justify-between">
+                <label className="block text-slate-400 font-bold mb-0.5 uppercase text-[10px] flex items-center justify-between">
                   <span>Área Privativa (m²):</span>
-                  {isJuizDeFora && <span className="text-indigo-400 font-normal lowercase">NBR 14.653</span>}
+                  {isJuizDeFora && <span className="text-slate-400 font-normal lowercase">NBR 14.653</span>}
                 </label>
                 <input
                   type="number"
                   value={sizeSqm || ''}
                   placeholder="Ex: 60"
                   onChange={(e) => setSizeSqm(e.target.value === '' ? 0 : Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200 font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200"
                 />
               </div>
             </div>
@@ -2976,7 +2976,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             {/* Bedrooms & Parking */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Quartos:</label>
+                <label className="block text-slate-400 font-bold mb-0.5 uppercase text-[10px]">Quartos:</label>
                 <select
                   value={bedrooms}
                   onChange={(e) => setBedrooms(Number(e.target.value))}
@@ -2990,7 +2990,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-0.5 font-mono uppercase text-[9px]">Vagas de Garagem:</label>
+                <label className="block text-slate-400 font-bold mb-0.5 uppercase text-[10px]">Vagas de Garagem:</label>
                 <select
                   value={parkingSpaces}
                   onChange={(e) => setParkingSpaces(Number(e.target.value))}
@@ -3007,7 +3007,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             {/* Custom Adjusted Value */}
             <div>
               <div className="flex justify-between items-center mb-0.5">
-                <label className="block text-slate-400 font-semibold font-mono uppercase text-[9px]">Preço Ajustado / Negociado (Opcional):</label>
+                <label className="block text-slate-400 font-bold uppercase text-[10px]">Preço Ajustado / Negociado (Opcional):</label>
                 {customValue !== '' && (
                   <button
                     onClick={() => setCustomValue('')}
@@ -3111,7 +3111,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
               {/* Bid Input */}
               <div className="space-y-1">
-                <label className="block text-[9.5px] text-slate-400 uppercase font-mono font-bold tracking-wider">
+                <label className="block text-[10px] text-slate-400 uppercase font-bold tracking-wide">
                   Lance de Arremate / Preço de Compra:
                 </label>
                 <div className="flex items-center bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 focus-within:border-slate-600 transition-all">
@@ -3160,47 +3160,47 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
               {/* Acquisition Mode Selector Toggle (Directly below Bid Input - Judicial, Extrajudicial, Caixa) */}
               <div className="space-y-1.5">
-                <label className="block text-[9px] text-slate-400 uppercase font-mono font-bold tracking-wider">
+                <label className="block text-[10px] text-slate-400 uppercase font-bold tracking-wide">
                   Regra de Aquisição:
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
                   <button
                     type="button"
                     onClick={() => setAcquisitionMode('judicial')}
-                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer border ${
                       acquisitionMode === 'judicial'
-                        ? 'bg-indigo-600 text-white shadow font-black'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                        : 'bg-transparent text-slate-400 border-transparent hover:border-slate-600 hover:text-slate-200'
                     }`}
                   >
                     <Scale className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[9px] sm:text-[9.5px] truncate">1. Judicial (25%)</span>
+                    <span className="text-[10.5px] truncate">1. Judicial (25%)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setAcquisitionMode('extrajudicial')}
-                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer border ${
                       acquisitionMode === 'extrajudicial'
-                        ? 'bg-purple-600 text-white shadow font-black'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                        : 'bg-transparent text-slate-400 border-transparent hover:border-slate-600 hover:text-slate-200'
                     }`}
                   >
                     <Coins className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[9px] sm:text-[9.5px] truncate">2. Extrajudicial (30%)</span>
+                    <span className="text-[10.5px] truncate">2. Extrajudicial (30%)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setAcquisitionMode('caixa')}
-                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer border ${
                       acquisitionMode === 'caixa'
-                        ? 'bg-emerald-600 text-white shadow font-black'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'btn-solid-white bg-emerald-600 text-white border-emerald-500 shadow-xs'
+                        : 'bg-transparent text-slate-400 border-transparent hover:border-slate-600 hover:text-slate-200'
                     }`}
                   >
                     <Building2 className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[9px] sm:text-[9.5px] truncate">3. Caixa (5%)</span>
+                    <span className="text-[10.5px] truncate">3. Caixa (5%)</span>
                   </button>
 
                   <button
@@ -3212,45 +3212,44 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       setCondoDebtInput(0);
                       setLegalCostInput(0);
                     }}
-                    className={`py-1.5 px-1.5 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-lg font-bold flex items-center justify-center space-x-1 transition-all cursor-pointer border ${
                       acquisitionMode === 'flip'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow font-black ring-1 ring-amber-400/50'
-                        : 'text-slate-400 hover:text-amber-300'
+                        ? 'btn-solid-white bg-amber-600 text-white border-amber-500 shadow-xs'
+                        : 'bg-transparent text-slate-400 border-transparent hover:border-slate-600 hover:text-slate-200'
                     }`}
                   >
-                    <span className="text-xs">🔥</span>
-                    <span className="text-[9px] sm:text-[9.5px] truncate">4. Flip Particular (20%)</span>
+                    <span className="text-[10.5px] truncate">4. Flip Particular (20%)</span>
                   </button>
                 </div>
               </div>
 
               {/* Payment Method Selector Toggle (Directly below Acquisition Mode, styled like 1-a-1 toggle) */}
-              <div className="flex items-center justify-between pt-0.5 pb-1">
-                <label className="text-[9px] text-slate-400 uppercase font-mono font-bold tracking-wider">
+              <div className="flex items-center justify-between gap-2 pt-0.5 pb-1">
+                <label className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">
                   Condição de Pagamento:
                 </label>
-                <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800">
+                <div className="inline-flex p-0.5 bg-slate-950 rounded-lg border border-slate-800 gap-1">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('a_vista')}
-                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded text-[11px] font-bold transition-all cursor-pointer border ${
                       paymentMethod === 'a_vista'
-                        ? 'bg-indigo-600 text-white shadow-xs font-black'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                        : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200'
                     }`}
                   >
-                    💵 À Vista (100%)
+                    À Vista (100%)
                   </button>
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('financiado')}
-                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded text-[11px] font-bold transition-all cursor-pointer border ${
                       paymentMethod === 'financiado'
-                        ? 'bg-emerald-600 text-white shadow-xs font-black'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'btn-solid-white bg-emerald-600 text-white border-emerald-500 shadow-xs'
+                        : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200'
                     }`}
                   >
-                    🏦 Financiamento ({downpaymentRatePct}% Entrada)
+                    Financiamento ({downpaymentRatePct}% Entrada)
                   </button>
                 </div>
               </div>
@@ -3618,10 +3617,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         </div>
       </div>
 
-      {/* Etapa 2 Badge */}
-      <div className="flex items-center gap-2 pt-4">
-        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-xs">
-          <span>ETAPA 2 DE 4</span> • <span>Simulador de Viabilidade: Locação vs Flip (Revenda)</span>
+      {/* Etapa 2 Heading Limpo */}
+      <div className="flex items-center gap-2 pt-4 border-b border-slate-300 dark:border-slate-800 pb-1.5">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+          ETAPA 2 DE 4 • Simulador de Viabilidade: Locação vs Flip (Revenda)
         </span>
       </div>
 
@@ -3981,10 +3980,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
       </div>
           
-      {/* Etapa 3 Badge */}
-      <div className="flex items-center gap-2 pt-4">
-        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
-          <span>ETAPA 3 DE 4</span> • <span>Auditoria Técnica da Matrícula & Edital (Due Diligence Jurídica)</span>
+      {/* Etapa 3 Heading Limpo */}
+      <div className="flex items-center gap-2 pt-4 border-b border-slate-300 dark:border-slate-800 pb-1.5">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+          ETAPA 3 DE 4 • Auditoria Técnica da Matrícula &amp; Edital (Due Diligence Jurídica)
         </span>
       </div>
           
@@ -4042,7 +4041,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <FileText className="w-4 h-4 text-indigo-400" />
                   <span className="text-xs font-black text-slate-200 uppercase font-mono">1. Certidão de Matrícula (R.I.)</span>
                 </div>
-                <label className="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-indigo-800/60 cursor-pointer transition-all flex items-center space-x-1">
+                <label className="bg-transparent hover:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg border-2 border-indigo-500/50 cursor-pointer transition-all flex items-center space-x-1">
                   <Upload className="w-3 h-3" />
                   <span>Anexar PDF / Imagem</span>
                   <input
@@ -4109,7 +4108,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <Scale className="w-4 h-4 text-amber-400" />
                   <span className="text-xs font-black text-slate-200 uppercase font-mono">2. Edital do Leilão & Processo</span>
                 </div>
-                <label className="bg-amber-950 hover:bg-amber-900 text-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-amber-800/60 cursor-pointer transition-all flex items-center space-x-1">
+                <label className="bg-transparent hover:bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg border-2 border-amber-500/50 cursor-pointer transition-all flex items-center space-x-1">
                   <Upload className="w-3 h-3" />
                   <span>Anexar Edital (PDF/TXT)</span>
                   <input
@@ -4183,29 +4182,29 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 type="button"
                 onClick={handleFetchCaixaDocs}
                 disabled={isFetchingCaixaDocs}
-                className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs py-3 px-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md cursor-pointer disabled:opacity-60"
+                className="w-full bg-transparent hover:bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold text-xs py-3 px-3 rounded-xl flex items-center justify-center space-x-2 transition-all border-2 border-amber-500/70 cursor-pointer disabled:opacity-60"
               >
                 {isFetchingCaixaDocs ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>Baixando Matrícula & Edital Oficial do Leiloeiro...</span>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Baixando Matrícula &amp; Edital Oficial do Leiloeiro...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-slate-950" />
-                    <span>⚡ Baixar Matrícula & Edital Oficial Automaticamente</span>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Baixar Matrícula &amp; Edital Oficial Automaticamente</span>
                   </>
                 )}
               </button>
             )}
 
-            {/* Action Buttons: Analisar Matrícula & Analisar Edital */}
+            {/* Action Buttons: Analisar Matrícula & Analisar Edital (sem preenchimento colorido, borda espessa) */}
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => executeRealMatriculaAnalysis(matriculaText, uploadedFileName)}
                 disabled={isAuditingMatricula}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-indigo-400/30"
+                className="bg-transparent hover:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-bold text-xs py-3 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50 border-2 border-indigo-500/70"
               >
                 {isAuditingMatricula ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -4219,7 +4218,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 type="button"
                 onClick={() => executeRealEditalAnalysis(editalText, editalFileName)}
                 disabled={isAuditingMatricula || isAuditingEdital}
-                className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-3 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-amber-400/30"
+                className="bg-transparent hover:bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold text-xs py-3 px-3 rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50 border-2 border-amber-500/70"
               >
                 {isAuditingEdital ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -4275,21 +4274,21 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   </div>
 
                   {matriculaAuditResult.gravames && matriculaAuditResult.gravames.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {(matriculaAuditResult.gravames || []).map((gr, idx) => (
-                        <div key={idx} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className="font-mono text-[11px] font-black text-amber-400 bg-amber-950/60 border border-amber-800/50 px-1.5 py-0.5 rounded">
+                        <div key={idx} className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+                          <div className="flex justify-between items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-200 border border-slate-700 px-2 py-0.5 rounded bg-transparent">
                               {gr.code || 'Gravame'}
                             </span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono bg-slate-950 text-slate-300 border border-slate-800">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-transparent text-slate-300 border border-slate-700">
                               Risco {gr.severity || 'Médio'}
                             </span>
                           </div>
-                          <p className="font-bold text-slate-200 text-[11.5px]">{gr.type}</p>
-                          <div className="text-[10.5px] text-indigo-300 bg-indigo-950/40 p-1.5 rounded-lg border border-indigo-800/30 leading-relaxed font-mono">
-                            ⚖️ <strong>Solução:</strong> {gr.legalSolution}
-                          </div>
+                          <p className="font-bold text-slate-200 text-xs">{gr.type}</p>
+                          <p className="text-[11px] text-slate-300 leading-relaxed pt-1 border-t border-slate-800">
+                            <span className="font-bold">Solução:</span> {gr.legalSolution}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -4392,14 +4391,14 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
       </div>
           
-      {/* Tabs navigation for detailed views below main board */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-1.5 shadow-sm flex space-x-1.5 mt-8">
+      {/* Tabs navigation for detailed views below main board (sem fundo colorido, apenas texto + contorno limpo) */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-1.5 shadow-sm flex space-x-2 mt-8">
         <button
           onClick={() => setActiveTab('local')}
-          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+          className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer bg-transparent border-2 ${
             activeTab === 'local'
-              ? 'bg-indigo-600 text-white shadow-sm border border-indigo-500/40 font-black'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              ? 'text-indigo-700 dark:text-indigo-300 border-indigo-500/70'
+              : 'text-slate-500 dark:text-slate-400 border-transparent hover:border-slate-300 dark:hover:border-slate-700 hover:text-indigo-600'
           }`}
         >
           <Database className="w-4 h-4" />
@@ -4408,10 +4407,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
 
         <button
           onClick={() => setActiveTab('online')}
-          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+          className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer bg-transparent border-2 ${
             activeTab === 'online'
-              ? 'bg-emerald-600 text-white shadow-sm border border-emerald-500/40 font-black'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              ? 'text-emerald-700 dark:text-emerald-300 border-emerald-500/70'
+              : 'text-slate-500 dark:text-slate-400 border-transparent hover:border-slate-300 dark:hover:border-slate-700 hover:text-emerald-600'
           }`}
         >
           <Globe className="w-4 h-4" />
@@ -4419,10 +4418,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         </button>
       </div>
 
-      {/* Etapa 4 Badge */}
-      <div className="flex items-center gap-2 pt-4">
-        <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase font-mono tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1.5 shadow-xs">
-          <span>ETAPA 4 DE 4</span> • <span>Base Local de ITBI (Análise Precisa de Mercado & Histórico de Escrituras)</span>
+      {/* Etapa 4 Heading Limpo */}
+      <div className="flex items-center gap-2 pt-4 border-b border-slate-300 dark:border-slate-800 pb-1.5">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+          ETAPA 4 DE 4 • Base Local de ITBI (Análise Precisa de Mercado &amp; Histórico de Escrituras)
         </span>
       </div>
 
@@ -4447,12 +4446,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <BarChart3 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-slate-100 text-sm flex items-center gap-2 flex-wrap">
+                    <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2 flex-wrap">
                       <span>Análise Precisa de Mercado (Transações Reais de ITBI)</span>
-                      <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-500/30">
+                      <span className="text-[10px] bg-transparent text-slate-300 font-bold px-2.5 py-0.5 rounded-lg border border-slate-700">
                         Corte Bidirecional NBR 14.653 • Balizamento Raio ±25%
                       </span>
-                      <span className="text-[9px] bg-indigo-500/20 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/30">
+                      <span className="text-[10px] bg-transparent text-slate-300 font-bold px-2.5 py-0.5 rounded-lg border border-slate-700">
                         {exactBuildingStats ? 'Nível: Prédio Exato' : exactStreetStats ? 'Nível: Mesma Rua' : 'Nível: Entorno / Bairro'}
                       </span>
                     </h3>
@@ -4476,25 +4475,25 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
                     <button
                       onClick={() => setTxSizeFilter('similar')}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                      className={`px-3 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
                         txSizeFilter === 'similar'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                          : 'bg-transparent border-transparent text-slate-400 hover:border-slate-600 hover:text-slate-200'
                       }`}
                       title="Calcula com base em imóveis de metragens similares (±33%)"
                     >
-                      <span>🎯 Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
+                      <span>Áreas Similares ({calculatedStats.minSimilarSize}m²-{calculatedStats.maxSimilarSize}m²)</span>
                     </button>
                     <button
                       onClick={() => setTxSizeFilter('all')}
-                      className={`px-3 py-1 rounded-lg text-[10px] font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                      className={`px-3 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
                         txSizeFilter === 'all'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                          : 'bg-transparent border-transparent text-slate-400 hover:border-slate-600 hover:text-slate-200'
                       }`}
                       title="Calcula com base em todas as metragens do mercado"
                     >
-                      <span>🌐 Todas as Metragens</span>
+                      <span>Todas as Metragens</span>
                     </button>
                   </div>
                 )}
@@ -4674,16 +4673,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 </div>
               </div>
 
-              {/* Synthesis Summary Metric Cards */}
+              {/* 5 Cards de Síntese Pós-Cálculo (títulos maiores em negrito e visual neutro; cor apenas em alertas/negativos) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 pt-2">
                 {/* CARD 1: Valor Unitário / Valor Médio */}
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] text-slate-400 font-mono uppercase flex items-center gap-1.5 font-bold">
-                      {isLoadingTransactions && <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] text-slate-200 uppercase flex items-center gap-1.5 font-bold">
+                      {isLoadingTransactions && <Loader2 className="w-3 h-3 animate-spin" />}
                       <span>{isJuizDeFora ? '1. Valor Médio Transacionado' : '1. Valor Unitário Saneado'}</span>
                     </span>
-                    <span className="text-[8.5px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.2 rounded font-mono font-bold">
+                    <span className="text-[9px] bg-transparent text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded font-bold shrink-0">
                       {isJuizDeFora ? 'Compra e Venda' : (txSizeFilter === 'similar' ? 'Área Similar' : 'Todas Áreas')}
                     </span>
                   </div>
@@ -4691,48 +4690,48 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {sanitizedUnitValueSqm > 0 ? (
                       <>
-                        <span className="text-base font-black text-white font-mono">
+                        <span className="text-base font-bold text-white">
                           R$ {sanitizedUnitValueSqm.toLocaleString('pt-BR')}/m²
                         </span>
-                        <span className="text-[11px] font-bold text-slate-300 font-mono">
+                        <span className="text-[11px] font-bold text-slate-300">
                           • ({sizeSqm > 0 ? `${sizeSqm}m² = ${formatBRL(sizeSqm * sanitizedUnitValueSqm)}` : 'Informe a área'})
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-sm font-black text-amber-400 font-mono">
+                        <span className="text-sm font-bold text-amber-400">
                           Sem amostragem na via
                         </span>
-                        <span className="text-[10px] text-slate-400 font-sans">
+                        <span className="text-[10px] text-slate-400">
                           {isJuizDeFora ? '(Sem escrituras de Compra e Venda na rua ou prédio)' : '(Sem escrituras na rua ou prédio)'}
                         </span>
                       </>
                     )}
                   </div>
                   
-                  <div className="pt-1 border-t border-slate-900 space-y-0.5">
+                  <div className="pt-1 border-t border-slate-800 space-y-0.5">
                     {sanitizedUnitValueSqm > 0 ? (
                       <>
-                        <span className="text-[9.5px] text-emerald-400 font-sans block font-semibold">
+                        <span className="text-[10px] text-slate-300 block font-semibold">
                           {calculatedStats.source} {calculatedStats.outliersCount > 0 ? `(${calculatedStats.outliersCount} distorção expurgada)` : ''}
                         </span>
-                        <div className="text-[9px] text-slate-400 font-mono flex flex-wrap gap-x-2">
+                        <div className="text-[9.5px] text-slate-400 flex flex-wrap gap-x-2">
                           {isJuizDeFora ? (
                             <>
-                              <span>Base 60m²: <strong className="text-slate-300">R$ {(bidiBenchmark?.m2BaseRua || calculatedStats.rawAvgSqm).toLocaleString('pt-BR')}/m²</strong></span>
-                              <span>• Fator Escala NBR: <strong className="text-indigo-300">{(bidiBenchmark?.fatorEscala || 1.0).toFixed(3)}</strong></span>
-                              <span>• Compra e Venda: <strong className="text-emerald-400">{bidiBenchmark?.compraEVendaCount ?? calculatedStats.count} tx</strong></span>
+                              <span>Base 60m²: <strong className="text-slate-200">R$ {(bidiBenchmark?.m2BaseRua || calculatedStats.rawAvgSqm).toLocaleString('pt-BR')}/m²</strong></span>
+                              <span>• Fator Escala NBR: <strong className="text-slate-200">{(bidiBenchmark?.fatorEscala || 1.0).toFixed(3)}</strong></span>
+                              <span>• Compra e Venda: <strong className="text-slate-200">{bidiBenchmark?.compraEVendaCount ?? calculatedStats.count} tx</strong></span>
                             </>
                           ) : (
                             <>
-                              <span>Média Geral: <strong className="text-slate-300">R$ {calculatedStats.rawAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
-                              <span>• Similar: <strong className="text-indigo-300">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                              <span>Média Geral: <strong className="text-slate-200">R$ {calculatedStats.rawAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                              <span>• Similar: <strong className="text-slate-200">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
                             </>
                           )}
                         </div>
                       </>
                     ) : (
-                      <span className="text-[9.5px] text-slate-400 font-sans block leading-tight">
+                      <span className="text-[9.5px] text-slate-400 block leading-tight">
                         NBR 14.653 veda arbitramento de valor unitário sem amostragem fática na via ou edifício.
                       </span>
                     )}
@@ -4740,76 +4739,76 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 </div>
 
                 {/* CARD 2: Média do Valor da Mesma Rua */}
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
-                  <span className="text-[9px] text-slate-400 font-mono uppercase flex items-center gap-1.5 font-bold">
-                    {isLoadingTransactions && <Loader2 className="w-3 h-3 text-indigo-400 animate-spin" />}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                  <span className="text-[11px] text-slate-200 uppercase flex items-center gap-1.5 font-bold">
+                    {isLoadingTransactions && <Loader2 className="w-3 h-3 animate-spin" />}
                     <span>{isJuizDeFora ? '2. Preço Médio da Mesma Rua' : '2. Média da Mesma Rua'}</span>
                   </span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {exactStreetStats ? (
                       <>
-                        <span className="text-base font-black text-indigo-400 font-mono">
+                        <span className="text-base font-bold text-white">
                           R$ {exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m²
                         </span>
-                        <span className="text-[11px] font-bold text-slate-300 font-mono">
+                        <span className="text-[11px] font-bold text-slate-300">
                           • ({sizeSqm > 0 ? `Total: ${formatBRL(sizeSqm * exactStreetStats.avgSqm)}` : `${exactStreetStats.count} tx`})
                         </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-sm font-black text-slate-400 font-mono">
+                        <span className="text-sm font-bold text-slate-400">
                           - Sem dados na rua
                         </span>
-                        <span className="text-[10px] text-slate-500 font-sans">
+                        <span className="text-[10px] text-slate-500">
                           (Balizado pelo Bairro)
                         </span>
                       </>
                     )}
                   </div>
 
-                  <div className="pt-1 border-t border-slate-900 space-y-0.5">
-                    <div className="text-[9.5px] text-slate-300 font-sans">
+                  <div className="pt-1 border-t border-slate-800 space-y-0.5">
+                    <div className="text-[10px] text-slate-300">
                       {exactStreetStats ? `Baseado em ${exactStreetStats.count} transações ${isJuizDeFora ? 'de Compra e Venda' : ''} na via` : `Sem escrituras registradas nesta via no ITBI.`}
                     </div>
                     {exactStreetStats && !isJuizDeFora && (
-                      <div className="text-[9px] text-slate-400 font-mono flex flex-wrap gap-x-2">
-                        <span>Similar: <strong className="text-indigo-300">R$ {exactStreetStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
-                        <span>• Geral: <strong className="text-slate-300">R$ {exactStreetStats.allAreasAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                      <div className="text-[9.5px] text-slate-400 flex flex-wrap gap-x-2">
+                        <span>Similar: <strong className="text-slate-200">R$ {exactStreetStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                        <span>• Geral: <strong className="text-slate-200">R$ {exactStreetStats.allAreasAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* CARD 3: Ruas do Entorno */}
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
-                  <span className="text-[9px] text-violet-300 font-mono uppercase block font-bold">
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                  <span className="text-[11px] text-slate-200 uppercase block font-bold">
                     {nearbyStreetData.card3Title}
                   </span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {(nearbyStats?.avgSqm || 0) > 0 ? (
                       <>
-                        <span className="text-base font-black text-violet-400 font-mono">
+                        <span className="text-base font-bold text-white">
                           R$ {(nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
                         </span>
                         {sizeSqm > 0 && (
-                          <span className="text-[11px] font-bold text-slate-300 font-mono">
+                          <span className="text-[11px] font-bold text-slate-300">
                             • ({formatBRL(sizeSqm * (nearbyStats?.avgSqm || 0))})
                           </span>
                         )}
                       </>
                     ) : (
-                      <span className="text-sm font-black text-slate-400 font-mono">{isLoadingTransactions ? 'Buscando transações do entorno…' : radiusAnchorPrecision === 'missing' ? 'Endereço ainda sem coordenada confirmada' : nearbyStreetTxs.length > 0 ? 'Amostras encontradas; sem comparáveis para precificação' : 'Sem transações geolocalizadas neste raio'}</span>
+                      <span className="text-sm font-bold text-slate-400">{isLoadingTransactions ? 'Buscando transações do entorno…' : radiusAnchorPrecision === 'missing' ? 'Endereço ainda sem coordenada confirmada' : nearbyStreetTxs.length > 0 ? 'Amostras encontradas; sem comparáveis para precificação' : 'Sem transações geolocalizadas neste raio'}</span>
                     )}
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] text-slate-400">
+                  <div className="flex flex-col gap-0.5 pt-1 border-t border-slate-800">
+                    <span className="text-[10px] text-slate-300">
                       {nearbyStats?.count || 0} transações {isJuizDeFora ? 'de Compra e Venda' : 'apuradas'}
                     </span>
-                    <span className="text-[9px] text-violet-300/80 font-mono">
+                    <span className="text-[9.5px] text-slate-400">
                       {nearbyStreetData.item3Label || nearbyStreetData.radiusLabel}
                     </span>
                     {itbiWeightedStats?.isOutlierBrakeApplied && (
-                      <div className="mt-1 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[9.5px] text-amber-300 font-mono flex items-center gap-1.5">
+                      <div className="mt-1 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[9.5px] text-amber-300 flex items-center gap-1.5">
                         <span>🛡️</span>
                         <span className="font-semibold">Freio Ativado: Amostra isolada com desvio severo bloqueada; ponderação segura sobre Rua e Bairro</span>
                       </div>
@@ -4818,23 +4817,23 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 </div>
 
                 {/* CARD 4: Média Geral do Bairro */}
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-1.5">
-                  <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">4. Média Geral do Bairro</span>
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                  <span className="text-[11px] text-slate-200 uppercase block font-bold">4. Média Geral do Bairro</span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-base font-black text-amber-400 font-mono">
+                    <span className="text-base font-bold text-white">
                       R$ {(neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10.5px] text-slate-300 font-bold">
                       {sizeSqm > 0 ? `• (${formatBRL(sizeSqm * (neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0))})` : '• ref. contextual'}
                     </span>
                   </div>
 
-                  <div className="pt-1 border-t border-slate-900 space-y-0.5">
-                    <div className="text-[9.5px] text-slate-300 font-sans">
+                  <div className="pt-1 border-t border-slate-800 space-y-0.5">
+                    <div className="text-[10px] text-slate-300">
                       {neighborhoodStats ? `${neighborhoodStats.count} transações ${isJuizDeFora ? 'de Compra e Venda' : ''} no ITBI oficial de ${selectedNeighborhood}` : `Média cadastral oficial do ITBI`}
                     </div>
-                    <div className="text-[9px] text-slate-400 font-mono">
-                      <span>Bairro: <strong className="text-amber-300">{selectedNeighborhood || 'Bairro'}</strong></span>
+                    <div className="text-[9.5px] text-slate-400">
+                      <span>Bairro: <strong className="text-slate-200">{selectedNeighborhood || 'Bairro'}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -4845,50 +4844,50 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     ? 'bg-rose-950/20 border-rose-500/50'
                     : hasBenchmarkCalibration
                       ? 'bg-amber-950/20 border-amber-500/50'
-                    : 'bg-slate-950 border-slate-850'
+                    : 'bg-slate-950 border-slate-800'
                 }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] text-slate-400 font-mono uppercase block font-bold">5. Preço Sugerido p/ Revenda (Flip Rápido)</span>
-                    <span className={`text-[8px] px-2 py-0.5 rounded border font-mono font-bold ${
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] text-slate-200 uppercase block font-bold">5. Preço Sugerido p/ Revenda</span>
+                    <span className={`text-[9px] px-2 py-0.5 rounded border font-bold shrink-0 ${
                       (!hasRealMicroData || suggestedQuickSaleTotal === 0)
                         ? 'bg-rose-950/80 text-rose-300 border-rose-800/50'
                         : hasBenchmarkCalibration
                           ? 'bg-amber-950/80 text-amber-300 border-amber-800/50'
-                        : 'bg-emerald-950/80 text-emerald-300 border-emerald-800/40'
+                        : 'bg-transparent text-slate-300 border-slate-700'
                     }`}>
-                      {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? 'Média ponderada incompleta' : bidiBenchmark?.calibrationKind === 'radius_neighborhood' ? 'Calibrado por raio e bairro' : bidiBenchmark?.calibrationKind === 'few_local_samples' ? 'Calibrado: poucas amostras' : 'Giro em até 60 dias'}
+                      {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? 'Incompleta' : bidiBenchmark?.calibrationKind === 'radius_neighborhood' ? 'Calibrado por raio' : bidiBenchmark?.calibrationKind === 'few_local_samples' ? 'Poucas amostras' : 'Giro em até 60 dias'}
                     </span>
                   </div>
 
                   {(!hasRealMicroData || suggestedQuickSaleTotal === 0) ? (
                     <div className="py-2 space-y-1">
-                        <span className="text-sm font-black text-amber-300 font-mono block">
+                      <span className="text-sm font-bold text-amber-300 block">
                         Poucos dados de ITBI para precificação
                       </span>
-                      <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
+                      <p className="text-[9.5px] text-slate-300 leading-relaxed">
                         {`A média usa prédio (40%), rua (35%), raio selecionado (15%) e bairro (10%). Sem amostras locais, o programa só libera estimativa calibrada quando há pelo menos 5 vendas válidas no raio e 7 no bairro; abaixo disso, não calcula gabarito nem Flip.`}
                       </p>
                     </div>
                   ) : (
                     <>
                       <div className="flex flex-wrap items-baseline gap-1.5">
-                        <span className="text-base font-black text-emerald-400 font-mono">
+                        <span className="text-base font-bold text-white">
                           {formatBRL(suggestedQuickSaleTotal)}
                         </span>
-                        <span className="text-[11px] font-bold text-slate-300 font-mono">
+                        <span className="text-[11px] font-bold text-slate-300">
                           • R$ {suggestedQuickSaleSqm.toLocaleString('pt-BR')}/m²
                         </span>
                       </div>
 
                       {bidiBenchmark?.buildingSafetyValveApplied && (
-                        <div className="text-[9.5px] bg-amber-950/40 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-800/40 font-mono flex items-center justify-between">
+                        <div className="text-[9.5px] bg-amber-950/40 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-800/40 flex items-center justify-between">
                           <span>🛡️ Válvula de Segurança (-5%)</span>
-                          <span className="text-[9px] text-amber-400/80">Sem amostragem no próprio condomínio</span>
+                          <span className="text-[9px] text-amber-400/80">Sem amostragem no condomínio</span>
                         </div>
                       )}
 
                       {prefillData?.isCommunityRisk && (
-                        <div className="text-[9.5px] bg-rose-950/40 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-800/40 font-mono flex items-center justify-between gap-2">
+                        <div className="text-[9.5px] bg-rose-950/40 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-800/40 flex items-center justify-between gap-2">
                           <span>⛔ Redutor Área de Risco (-15%)</span>
                           <span className="text-[9px] text-rose-300/80 truncate">{prefillData.communityName || 'Comunidade / Proximidade'}</span>
                         </div>
@@ -4906,16 +4905,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       )}
 
                       {buildingAgeData.detectedYear !== null ? (
-                        <div className="text-[9px] bg-slate-900 text-slate-300 px-2 py-1 rounded border border-slate-800 font-mono flex items-center justify-between">
-                          <span>🏗️ Ano: {buildingAgeData.detectedYear} ({buildingAgeData.age} anos)</span>
-                          <strong className={buildingAgeData.depreciationPct > 0 ? "text-amber-300" : "text-emerald-400"}>
-                            Depreciação: {buildingAgeData.depreciationPct > 0 ? `-${buildingAgeData.depreciationPct}%` : '0% (Conservado)'}
+                        <div className="text-[9.5px] bg-slate-900 text-slate-300 px-2 py-1 rounded border border-slate-800 flex items-center justify-between">
+                          <span>Ano: {buildingAgeData.detectedYear} ({buildingAgeData.age} anos)</span>
+                          <strong className={buildingAgeData.depreciationPct > 0 ? "text-amber-300" : "text-slate-200"}>
+                            Depreciação: {buildingAgeData.depreciationPct > 0 ? `-${buildingAgeData.depreciationPct}%` : '0%'}
                           </strong>
                         </div>
                       ) : (
-                        <div className="text-[9px] bg-slate-900/90 text-slate-400 px-2 py-0.5 rounded border border-slate-800 flex items-center justify-between gap-1">
-                          <span className="flex items-center gap-1 font-sans">
-                            📅 Ano do Prédio:
+                        <div className="text-[9.5px] bg-slate-900/90 text-slate-400 px-2 py-0.5 rounded border border-slate-800 flex items-center justify-between gap-1">
+                          <span className="flex items-center gap-1">
+                            Ano do Prédio:
                             <input
                               type="number"
                               placeholder="Ex: 2015"
@@ -4923,29 +4922,29 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                               max={new Date().getFullYear()}
                               value={manualBuildingYear || ''}
                               onChange={(e) => setManualBuildingYear(e.target.value ? parseInt(e.target.value, 10) : null)}
-                              className="w-14 px-1 py-0.2 bg-slate-950 border border-slate-700 rounded text-white font-mono text-[9px] text-center focus:border-indigo-500 focus:outline-none"
+                              className="w-14 px-1 py-0.2 bg-slate-950 border border-slate-700 rounded text-white text-[9.5px] text-center focus:border-indigo-500 focus:outline-none"
                             />
                           </span>
-                          <span className="text-[8px] text-slate-500 font-mono">
+                          <span className="text-[8.5px] text-slate-500">
                             {manualBuildingYear ? `${new Date().getFullYear() - manualBuildingYear} anos` : 'Não especificado'}
                           </span>
                         </div>
                       )}
                       
-                      <div className="pt-1.5 border-t border-slate-900 space-y-1">
-                        <div className="text-[9px] text-slate-400 font-sans flex items-center justify-between">
-                          <span>{isJuizDeFora ? 'Piso Transacionado Homogeneizado:' : 'Piso Transacionado (ITBI 4 Níveis):'}</span>
-                          <strong className="text-emerald-400 font-mono">
+                      <div className="pt-1.5 border-t border-slate-800 space-y-1">
+                        <div className="text-[9.5px] text-slate-400 flex items-center justify-between">
+                          <span>{isJuizDeFora ? 'Piso Homogeneizado:' : 'Piso Transacionado (4 Níveis):'}</span>
+                          <strong className="text-slate-200">
                             R$ {(bidiBenchmark?.mediaCorteReal || itbiWeightedStats.itbiCompositeSqm).toLocaleString('pt-BR')}/m² {sizeSqm > 0 ? `(${formatBRL((bidiBenchmark?.mediaCorteReal || itbiWeightedStats.itbiCompositeSqm) * sizeSqm)})` : ''}
                           </strong>
                         </div>
                         {!isJuizDeFora && (
-                          <div className="text-[9px] text-slate-400 font-sans flex items-center justify-between">
+                          <div className="text-[9.5px] text-slate-400 flex items-center justify-between">
                             <span>Teto Balizador Portais:</span>
-                            <strong className="text-cyan-300 font-mono">R$ {portalBenchmarkSqm.toLocaleString('pt-BR')}/m²</strong>
+                            <strong className="text-slate-200">R$ {portalBenchmarkSqm.toLocaleString('pt-BR')}/m²</strong>
                           </div>
                         )}
-                        <span className="text-[8px] text-slate-500 block font-mono">
+                        <span className="text-[8.5px] text-slate-500 block">
                           {isJuizDeFora ? 'Preço médio de Compra e Venda com deságio de 10% para liquidez em até 60 dias' : '100% ITBI Oficial dos 4 Níveis com deságio de 10% para liquidez imediata em até 60 dias'}
                         </span>
                       </div>
@@ -5090,19 +5089,18 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap justify-end ml-auto shrink-0">
                     {/* Botão de Filtro de Tipologia */}
                     <button
                       type="button"
                       onClick={() => setTxTypeFilter(prev => prev === 'all' ? 'current' : 'all')}
-                      className={`px-2.5 py-1 rounded-lg text-[9px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                      className={`min-w-[148px] h-8 px-3 rounded-lg text-[10.5px] font-bold border transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                         txTypeFilter === 'current'
-                          ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300 font-semibold shadow-xs ring-1 ring-emerald-500/30'
-                          : 'bg-slate-950 border-slate-850 text-slate-400 hover:bg-slate-800'
+                          ? 'bg-emerald-600/20 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-transparent border-slate-400 dark:border-slate-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10'
                       }`}
                       title={txTypeFilter === 'current' ? `Filtrando apenas por ${propertyType || 'Tipologia'}s. Clique para ver todas as tipologias negociadas na rua.` : 'Mostrando todas as tipologias da via. Clique para filtrar apenas pela tipologia atual.'}
                     >
-                      <span>{propertyType?.toLowerCase().includes('casa') ? '🏠' : propertyType?.toLowerCase().includes('comercial') ? '🏬' : propertyType?.toLowerCase().includes('terreno') ? '🌲' : '🏢'}</span>
                       <span>{txTypeFilter === 'current' ? `Apenas ${propertyType || 'Tipologia'}s` : 'Todas as Tipologias'}</span>
                     </button>
 
@@ -5111,16 +5109,16 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       <button
                         type="button"
                         onClick={() => setTxSizeFilter(prev => prev === 'all' ? 'similar' : 'all')}
-                        className={`px-2.5 py-1 rounded-lg text-[9px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                        className={`min-w-[148px] h-8 px-3 rounded-lg text-[10.5px] font-bold border transition-colors cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                           txSizeFilter === 'similar'
-                            ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300 font-semibold shadow-xs'
-                            : 'bg-slate-950 border-slate-850 text-slate-400 hover:bg-slate-800'
+                            ? 'bg-indigo-600/20 border-indigo-500 text-indigo-700 dark:text-indigo-300'
+                            : 'bg-transparent border-slate-400 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10'
                         }`}
                       >
-                        <span>{txSizeFilter === 'similar' ? '🎯 Área Similar (±33%)' : '🌐 Todas as Áreas'}</span>
+                        <span>{txSizeFilter === 'similar' ? 'Área Similar (±33%)' : 'Todas as Áreas'}</span>
                       </button>
                     ) : (
-                      <span className="text-[9px] bg-indigo-950/80 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-800/40">
+                      <span className="min-w-[148px] h-8 px-3 rounded-lg text-[10.5px] font-bold border border-slate-400 dark:border-slate-700 bg-transparent text-indigo-700 dark:text-indigo-300 flex items-center justify-center whitespace-nowrap">
                         {cleanStreetTxs.filter(t => t.isCompraEVenda === true).length} Compra e Venda
                       </span>
                     )}
@@ -5261,38 +5259,44 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 self-start sm:self-auto">
-                    <span className="text-[10px] text-slate-400 font-mono mr-1">Raio:</span>
+                  <div className="flex items-center gap-2 ml-auto shrink-0 self-end sm:self-auto justify-end">
+                    <span className="text-[10.5px] font-bold text-slate-400 mr-0.5">Raio:</span>
                     <button
                       onClick={() => setRadiusKm(0.5)}
-                      className={`px-2 py-1 text-[10px] rounded font-mono font-bold transition-colors flex flex-col items-center cursor-pointer ${
-                        radiusKm === 0.5 ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      className={`w-[108px] py-1.5 px-2 text-[10.5px] rounded-lg font-bold border transition-colors flex flex-col items-center justify-center cursor-pointer ${
+                        radiusKm === 0.5
+                          ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                          : 'bg-transparent border-slate-400 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10'
                       }`}
                     >
                       <span>500m (Padrão)</span>
-                      <span className="text-[8.5px] font-normal opacity-90">
+                      <span className="text-[9px] font-normal opacity-90">
                         {radiusAverages.r500 ? (isJuizDeFora ? formatBRL(radiusAverages.r500) : `R$ ${radiusAverages.r500.toLocaleString('pt-BR')}/m²`) : 'Sem dados'}
                       </span>
                     </button>
                     <button
                       onClick={() => setRadiusKm(1.0)}
-                      className={`px-2 py-1 text-[10px] rounded font-mono font-bold transition-colors flex flex-col items-center cursor-pointer ${
-                        radiusKm === 1.0 ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      className={`w-[108px] py-1.5 px-2 text-[10.5px] rounded-lg font-bold border transition-colors flex flex-col items-center justify-center cursor-pointer ${
+                        radiusKm === 1.0
+                          ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                          : 'bg-transparent border-slate-400 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10'
                       }`}
                     >
                       <span>1.0 km</span>
-                      <span className="text-[8.5px] font-normal opacity-90">
+                      <span className="text-[9px] font-normal opacity-90">
                         {radiusAverages.r1000 ? (isJuizDeFora ? formatBRL(radiusAverages.r1000) : `R$ ${radiusAverages.r1000.toLocaleString('pt-BR')}/m²`) : 'Sem dados'}
                       </span>
                     </button>
                     <button
                       onClick={() => setRadiusKm(2.0)}
-                      className={`px-2 py-1 text-[10px] rounded font-mono font-bold transition-colors flex flex-col items-center cursor-pointer ${
-                        radiusKm === 2.0 ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      className={`w-[108px] py-1.5 px-2 text-[10.5px] rounded-lg font-bold border transition-colors flex flex-col items-center justify-center cursor-pointer ${
+                        radiusKm === 2.0
+                          ? 'btn-solid-white bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                          : 'bg-transparent border-slate-400 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10'
                       }`}
                     >
                       <span>2.0 km</span>
-                      <span className="text-[8.5px] font-normal opacity-90">
+                      <span className="text-[9px] font-normal opacity-90">
                         {radiusAverages.r2000 ? (isJuizDeFora ? formatBRL(radiusAverages.r2000) : `R$ ${radiusAverages.r2000.toLocaleString('pt-BR')}/m²`) : 'Sem dados'}
                       </span>
                     </button>

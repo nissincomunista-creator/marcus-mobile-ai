@@ -1811,9 +1811,9 @@ export default function PropertyMap({
                           )}
                         </div>
 
-                        {/* Título (único em negrito) & Endereço sem negrito */}
+                        {/* Título e Endereço sem negrito (negrito apenas nos valores de Lucro Real e Preço Sugerido) */}
                         <div className="space-y-0.5">
-                          <h4 className="text-[13.5px] font-bold text-white leading-snug line-clamp-2 hover:text-indigo-400 transition-colors">
+                          <h4 className="text-[13.5px] font-normal text-white leading-snug line-clamp-2 hover:text-indigo-400 transition-colors">
                             {auc.title}
                           </h4>
                           <p className="text-[11px] font-normal text-slate-400 truncate">
@@ -1884,7 +1884,7 @@ export default function PropertyMap({
                             <div className="min-w-0">
                               <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Lucro Real Est.</span>
                               <span
-                                className={`text-[11.5px] font-normal font-mono block truncate ${
+                                className={`text-[12px] font-bold font-mono block truncate ${
                                   auc.calculatedProfit === undefined && !flipPrice
                                     ? 'text-slate-400'
                                     : (auc.calculatedProfit ?? (flipPrice - totalCost)) >= 0

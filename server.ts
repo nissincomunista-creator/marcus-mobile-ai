@@ -1426,7 +1426,7 @@ function loadStore(): DataStore {
           }
           return true;
         });
-      const STORE_CALIBRATION_VERSION = 'v27_mega_bid_recovery_canon_neighborhood';
+      const STORE_CALIBRATION_VERSION = 'v28_itbi_2024_2026_10_oct';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -2287,7 +2287,7 @@ function buildItbiIndexes(txs: ItbiTransaction[], calibrationAuctions: AuctionPr
     neighCityMap.set(`${state}|${neigh}`, city);
   }
 
-  const recentSalesCutoff = Date.now() - 24 * 30.4375 * 24 * 60 * 60 * 1000;
+  const recentSalesCutoff = Date.now() - 36 * 30.4375 * 24 * 60 * 60 * 1000;
   const neighborhoodRecentSales = new Map<string, number>();
   const neighborhoodDeltaTMap = new Map<string, number>();
   for (const [key, rows] of neighMap) {

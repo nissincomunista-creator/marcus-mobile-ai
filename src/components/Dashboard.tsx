@@ -2136,7 +2136,7 @@ export default function Dashboard({
                         {/* Título em negrito; demais linhas sem negrito para leitura limpa estilo Zap Imóveis */}
                         <div className="space-y-0.5">
                           <h3
-                            className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug hover:text-slate-200 transition-colors cursor-pointer break-words"
+                            className="text-sm sm:text-base font-normal text-white line-clamp-2 leading-snug hover:text-slate-200 transition-colors cursor-pointer break-words"
                             style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                             onClick={() => setSimulatingAuction(auc)}
                             title={auc.title}
@@ -2294,7 +2294,7 @@ export default function Dashboard({
                               </div>
                               <div>
                                 <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide">Lucro Estimado</span>
-                                <span className={`text-[13.5px] font-normal font-mono leading-tight block mt-0.5 ${
+                                <span className={`text-[14px] font-bold font-mono leading-tight block mt-0.5 ${
                                   lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
                                   lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
                                 }`}>
@@ -2350,7 +2350,7 @@ export default function Dashboard({
 
                               <div className="min-w-0">
                                 <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide truncate">Lucro Real Est.</span>
-                                <span className={`text-[13.5px] font-normal font-mono block truncate leading-tight mt-0.5 ${
+                                <span className={`text-[14px] font-bold font-mono block truncate leading-tight mt-0.5 ${
                                   lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
                                   lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
                                 }`}>

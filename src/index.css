@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Nunito Sans', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Nunito Sans', 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Roboto', Arial, Helvetica, sans-serif;
+  --font-display: 'Roboto', Arial, Helvetica, sans-serif;
+  --font-mono: 'Roboto', Arial, Helvetica, sans-serif;
+}
+
+.font-mono {
+  font-family: 'Roboto', Arial, Helvetica, sans-serif !important;
+  font-variant-numeric: tabular-nums;
 }
 
 html {
@@ -165,11 +170,25 @@ body.light-theme div[class*="bg-slate-900"].border {
   box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -2px rgba(15, 23, 42, 0.06) !important;
 }
 
-/* Header e Sticky Filter Bar no modo claro */
+/* Header e Sticky Filter Bar no modo claro (botões de filtro com hover Zap Imóveis) */
 body.light-theme header,
 body.light-theme .sticky-bar-surface {
   background-color: #ffffff !important;
   border-color: #e5e7eb !important;
+}
+body.light-theme .sticky-bar-surface button.bg-transparent {
+  color: #1a1d23 !important;
+  border-color: #cfd4dd !important;
+}
+body.light-theme .sticky-bar-surface button.bg-transparent:hover {
+  background-color: #eef2ff !important;
+  color: #3730a3 !important;
+  border-color: #818cf8 !important;
+}
+body.light-theme .sticky-bar-surface button[class*="bg-indigo-600"] {
+  background-color: #e0e7ff !important;
+  color: #312e81 !important;
+  border-color: #6366f1 !important;
 }
 
 /* Tipografia fiel ao Zap Imóveis no modo claro: títulos e valores escuros, subtítulos cinza suave */
@@ -199,8 +218,7 @@ body.light-theme .text-slate-500 {
 
 body.light-theme .text-slate-400.uppercase,
 body.light-theme .text-slate-500.uppercase {
-  color: #6b7280 !important;
-  font-weight: 700;
+  color: #5e6a82 !important;
 }
 
 /* Inputs, Selects e Textareas no modo claro com borda nítida e escura */
@@ -306,15 +324,17 @@ body.light-theme .btn-solid-white * {
   color: #ffffff !important;
 }
 
-/* Contraste nítido para botões sutis/contornados no modo claro */
+/* Contraste nítido para botões sutis/contornados no modo claro (padrão Zap Imóveis: contorno sutil, tint no hover) */
 body.light-theme .btn-light-outline {
-  background-color: #ffffff !important;
-  color: #1f2937 !important;
-  border-color: #d1d5db !important;
+  background-color: transparent !important;
+  color: #1a1d23 !important;
+  border-color: #cfd4dd !important;
+  font-weight: 700;
 }
 body.light-theme .btn-light-outline:hover {
-  background-color: #f9fafb !important;
-  border-color: #9ca3af !important;
+  background-color: #eef2ff !important;
+  color: #3730a3 !important;
+  border-color: #818cf8 !important;
 }
 body.light-theme .btn-light-tint-sky {
   background-color: #eff6ff !important;
