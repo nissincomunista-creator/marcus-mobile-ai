@@ -1267,6 +1267,7 @@ export default function App() {
                   <ErrorBoundary fallbackTitle="Erro ao carregar o Painel de Garimpo">
                     <Dashboard
                       mode="auctions"
+                      theme={theme}
                       auctions={auctions}
                       selectedAuctionId={selectedAuctionId}
                       onSelectAuction={(id) => setSelectedAuctionId(id)}
@@ -1405,6 +1406,7 @@ export default function App() {
                   <ErrorBoundary fallbackTitle="Erro ao carregar o Painel dos Portais Flip">
                     <Dashboard
                       mode="portais"
+                      theme={theme}
                       auctions={auctions}
                       selectedAuctionId={selectedAuctionId}
                       onSelectAuction={(id) => setSelectedAuctionId(id)}
@@ -1596,6 +1598,7 @@ export default function App() {
                 transition={{ duration: 0.15 }}
               >
                 <PropertyMap
+                  theme={theme}
                   itbiStats={itbiStats}
                   onUpdateProperty={handleUpdatePropertyDirectly}
                   auctions={auctions}

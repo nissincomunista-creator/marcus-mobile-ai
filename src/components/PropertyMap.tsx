@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { AuctionProperty } from '../types.ts';
 import {
   MapPin, Compass, ExternalLink, X, ShieldAlert, Building2,
-  Sparkles, ChevronRight, ChevronLeft, ListFilter, Box, Eye, EyeOff, List
+  Sparkles, ChevronRight, ChevronLeft, ListFilter, Box, Eye, EyeOff, List, Bookmark
 } from 'lucide-react';
 import { getPropertyCoordinates } from '../utils/geoCoords.ts';
 import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
@@ -12,8 +12,10 @@ import PropertyThumbnail from './PropertyThumbnail.tsx';
 import RealValueCalculator from './RealValueCalculator.tsx';
 import { cleanDivergentNotice } from '../utils/auctionLocation.ts';
 import { assessDataQuality } from '../utils/dataQuality.ts';
+import { auctionCosts } from '../utils/flipCalculation.ts';
 import {
   OPENFREEMAP_DARK_STYLE,
+  OPENFREEMAP_LIGHT_STYLE,
   RioBuildingMetric,
   ensureMapLibrePMTilesProtocol,
   getBuildingColorExpression,
@@ -80,6 +82,7 @@ function buildExpandedHullPolygon(lngLatPoints: [number, number][]): [number, nu
 }
 
 interface PropertyMapProps {
+  theme?: 'light' | 'dark';
   auctions: AuctionProperty[];
   itbiStats?: any[];
   onUpdateProperty?: (updates: Partial<AuctionProperty>) => Promise<void> | void;
@@ -172,6 +175,7 @@ const METRIC_LEGENDS: Record<
 };
 
 export default function PropertyMap({
+  theme = 'dark',
   auctions,
   itbiStats = [],
   onUpdateProperty,
@@ -608,7 +612,7 @@ export default function PropertyMap({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: OPENFREEMAP_DARK_STYLE,
+      style: theme === 'light' ? OPENFREEMAP_LIGHT_STYLE : OPENFREEMAP_DARK_STYLE,
       center: initialCenter,
       zoom: initialZoom,
       pitch: is3DMode ? 48 : 0,
@@ -877,6 +881,17 @@ export default function PropertyMap({
   }, [activeTab, isSidebarCollapsed, updateViewportCounter]);
 
   const prevIs3DRef = useRef(is3DMode);
+  const prevThemeRef = useRef(theme);
+
+  // Switch between light (Positron) and dark OpenFreeMap style seamlessly
+  useEffect(() => {
+    if (prevThemeRef.current === theme) return;
+    prevThemeRef.current = theme;
+    const map = mapRef.current;
+    if (!map) return;
+    styleReadyRef.current = false;
+    map.setStyle(theme === 'light' ? OPENFREEMAP_LIGHT_STYLE : OPENFREEMAP_DARK_STYLE);
+  }, [theme]);
 
   // Focus & fit bounds when user picks a specific Bairro
   useEffect(() => {
@@ -906,7 +921,7 @@ export default function PropertyMap({
       duration: 500,
     });
     if (styleReadyRef.current && map.getLayer('rio-edificacoes-3d')) {
-      upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88 });
+      upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88, isLightTheme: theme === 'light' });
     }
     if (styleReadyRef.current && map.getLayer('auctions-buildings-3d')) {
       map.setPaintProperty(
@@ -929,16 +944,16 @@ export default function PropertyMap({
     const map = mapRef.current;
     if (!map || !styleReadyRef.current) return;
     if (map.getLayer('rio-edificacoes-3d')) {
-      map.setPaintProperty('rio-edificacoes-3d', 'fill-extrusion-color', getBuildingColorExpression(activeMetric));
+      map.setPaintProperty('rio-edificacoes-3d', 'fill-extrusion-color', getBuildingColorExpression(activeMetric, theme === 'light'));
     }
-  }, [activeMetric]);
+  }, [activeMetric, theme]);
 
   // Re-attach Rio 3D buildings layer & auction WebGL layers whenever style loads or data updates
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !styleReadyRef.current) return;
 
-    upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88 });
+    upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88, isLightTheme: theme === 'light' });
 
     // Bairro highlight overlay (glow perimeter polygon around selected bairro lots)
     const hullData = selectedBairroHullGeoJsonRef.current;
@@ -1000,7 +1015,7 @@ export default function PropertyMap({
         map.setPaintProperty(
           'auctions-buildings-3d',
           'fill-extrusion-color',
-          ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], '#334155']
+          ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], theme === 'light' ? '#94a3b8' : '#334155']
         );
       }
       if (map.getLayer('auctions-buildings-outline')) {
@@ -1018,7 +1033,7 @@ export default function PropertyMap({
           type: 'fill-extrusion',
           source: 'auctions-buildings-source',
           paint: {
-            'fill-extrusion-color': ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], '#334155'],
+            'fill-extrusion-color': ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], theme === 'light' ? '#94a3b8' : '#334155'],
             'fill-extrusion-height': auctionHeightExpr,
             'fill-extrusion-base': 0,
             'fill-extrusion-opacity': 0.96,
@@ -1132,7 +1147,7 @@ export default function PropertyMap({
     }
 
     updateViewportCounter();
-  }, [auctionGeoJson, auctionBuildingsGeoJson, selectedBairroHullGeoJson, styleVersion, showAuctionsLayer, is3DMode, updateViewportCounter]);
+  }, [auctionGeoJson, auctionBuildingsGeoJson, selectedBairroHullGeoJson, styleVersion, showAuctionsLayer, is3DMode, theme, updateViewportCounter]);
 
   // Factions overlay inside MapLibre
   const effectiveShowFactions = showFactionsExternal ?? showFactionsLayer;
@@ -1397,8 +1412,8 @@ export default function PropertyMap({
             onClick={() => setIs3DMode((v) => !v)}
             className={`px-2.5 py-1 rounded-xl text-xs font-bold font-mono transition-colors cursor-pointer border flex items-center gap-1 ${
               is3DMode
-                ? 'bg-sky-600/20 text-sky-300 border-sky-500/60'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                ? 'btn-light-tint-sky bg-sky-600/20 text-sky-300 border-sky-500/60'
+                : 'btn-light-outline bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
             }`}
             title="Alternar extrusão 3D pelas alturas oficiais (IPP ALTURA)"
           >
@@ -1446,8 +1461,397 @@ export default function PropertyMap({
       </div>
 
       <div className="relative flex-1 w-full h-full flex flex-col lg:flex-row overflow-hidden">
+        {/* COLUNA ESQUERDA: Fichas no Enquadramento em 2 colunas estilo Zap Imóveis */}
         <div
-          className={`relative h-full transition-all duration-200 ${
+          id="map-side-panel"
+          className={`lg:order-1 h-full bg-slate-950/95 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col z-20 relative transition-all duration-200 ${
+            activeTab === 'map'
+              ? 'hidden'
+              : activeTab === 'list'
+                ? 'w-full'
+                : isSidebarCollapsed
+                  ? 'hidden'
+                  : 'w-full lg:w-[46%] xl:w-[44%]'
+          }`}
+        >
+          <div className="px-3 py-2.5 border-b border-slate-800 bg-slate-900/70 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="relative flex-1 min-w-0">
+                <select
+                  value={selectedBairroKey}
+                  onChange={(e) => setSelectedBairroKey(e.target.value)}
+                  aria-label="Selecionar bairro"
+                  className="w-full bg-slate-950 text-slate-100 text-xs font-bold pl-2.5 pr-7 py-2 rounded-xl border border-slate-700 hover:border-sky-500/70 focus:border-sky-400 focus:outline-none cursor-pointer truncate"
+                >
+                  <option value="">
+                    Todos os Bairros ({orderedList.length} no enquadramento)
+                  </option>
+                  {neighborhoodOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label} ({opt.count})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedBairroKey && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedBairroKey('')}
+                  className="btn-light-outline px-2 py-2 rounded-xl bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-700/60 text-xs font-bold cursor-pointer shrink-0 flex items-center gap-1"
+                  title="Limpar filtro de bairro e voltar ao enquadramento"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(true)}
+              className="btn-light-outline hidden lg:flex items-center justify-center p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 cursor-pointer shrink-0 transition-colors"
+              title="Minimizar painel para a esquerda"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div ref={sidebarListRef} className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+            {displayedList.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-xs space-y-2">
+                <MapPin className="w-8 h-8 mx-auto text-slate-600 opacity-60" />
+                <p className="font-bold text-slate-400">Nenhum imóvel neste enquadramento</p>
+                <p className="text-[11px] text-slate-500">Mova o mapa ou ajuste os filtros para explorar mais regiões.</p>
+              </div>
+            ) : (
+              <div className={`grid gap-3.5 items-start ${activeTab === 'list' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+                {displayedList.map((auc) => {
+                  const isSelected = auc.id === selectedPropId;
+                  const costs = auctionCosts(auc);
+                  const totalCost =
+                    costs.bid + costs.auctioneer + costs.itbi + costs.registry + costs.repair + costs.legal + costs.iptu + costs.condo + costs.custoCarregamento;
+                  const flipPrice = auc.vendaBaixaPrice || 0;
+                  const divNotice = cleanDivergentNotice(auc.divergentNeighborhoodNotice);
+                  const divMatch = divNotice ? divNotice.match(/^(Bairro\s*Real\s*:\s*)([^(]+)(.*)$/i) : null;
+                  const effScore =
+                    !auc.itbiStreetCount || auc.itbiStreetCount === 0
+                      ? 0
+                      : Math.min(auc.liquidityScore ?? 0, assessDataQuality(auc).liquidityCeiling);
+                  const streetCount = auc.itbiStreetCount || 0;
+                  const roiVal = auc.calculatedRoi;
+                  const portalSqm = Number((auc as any).moradaM2 || (auc as any).moradaVirtualM2 || auc.m2MercadoPortal || auc.streetPortalAvgSqm || 0);
+
+                  return (
+                    <div
+                      key={auc.id}
+                      id={`side-card-${auc.id}`}
+                      onClick={() => handleCardClick(auc)}
+                      className={`map-side-card bg-transparent rounded-2xl border transition-all duration-200 cursor-pointer overflow-visible flex flex-col justify-between ${
+                        isSelected
+                          ? 'border-indigo-500 ring-1 ring-indigo-500/40 shadow-md'
+                          : 'border-transparent hover:border-slate-700/60'
+                      }`}
+                    >
+                      {/* Foto edge-to-edge alinhada à borda superior do card */}
+                      <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-t-2xl">
+                        <PropertyThumbnail
+                          property={auc}
+                          size="cover"
+                          className="!w-full !h-full !rounded-none !rounded-t-2xl !border-0"
+                        />
+                        <div className="absolute top-2 left-2.5 pointer-events-none">
+                          {auc.origin === 'caixa' ? (
+                            <span className="inline-block bg-white/95 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs">
+                              Imóveis Caixa
+                            </span>
+                          ) : auc.origin === 'judicial' ? (
+                            <span className="inline-block bg-white/95 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs">
+                              Leilão Judicial
+                            </span>
+                          ) : (
+                            <span
+                              className="text-[10.5px] font-extrabold tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]"
+                              style={{ color: '#ffffff' }}
+                            >
+                              {auc.origin === 'portal'
+                                ? (auc.portalName || 'Portal')
+                                : (auc.auctioneerName || auc.leiloeiro || 'Leilão Extrajudicial')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="px-2.5 pt-2 pb-2.5 space-y-1.5">
+                        {/* Linha 1: tipologia/área/quartos + Salvar */}
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="text-[11px] text-slate-400 truncate min-w-0 flex-1">
+                            {[
+                              auc.propertyType,
+                              auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : '',
+                              auc.bedrooms ? `${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : '',
+                            ].filter(Boolean).join(', ')}
+                          </div>
+                          {onUpdateProperty && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateProperty({ id: auc.id, saved: !auc.saved });
+                              }}
+                              className={`p-1 rounded-lg border transition-colors cursor-pointer shrink-0 ${
+                                auc.saved
+                                  ? 'bg-amber-500/25 text-amber-500 border-amber-400/50'
+                                  : 'bg-amber-500/10 text-amber-500/80 hover:bg-amber-500/20 border-amber-500/30'
+                              }`}
+                              title={auc.saved ? 'Remover dos salvos' : 'Salvar oportunidade'}
+                            >
+                              <Bookmark className={`w-3.5 h-3.5 ${auc.saved ? 'fill-current' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Título & Endereço */}
+                        <div className="space-y-0.5">
+                          <h4 className="text-[13px] font-bold text-white leading-snug line-clamp-2 hover:text-indigo-400 transition-colors">
+                            {auc.title}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 truncate">
+                            {auc.address || 'Endereço'} ({auc.neighborhood} - {auc.state || 'RJ'})
+                          </p>
+                          {divNotice && (
+                            <div className="text-[10px] text-slate-400">
+                              {divMatch ? (
+                                <>
+                                  <span>{divMatch[1]}</span>
+                                  <strong className="font-extrabold uppercase text-white">{divMatch[2].trim()}</strong>
+                                  {divMatch[3] ? <span> {divMatch[3].trim()}</span> : null}
+                                </>
+                              ) : (
+                                divNotice
+                              )}
+                            </div>
+                          )}
+                          {(auc.isCommunityRisk || auc.nearbyCommunityName) && (
+                            <div className="pt-0.5">
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${
+                                  auc.isCommunityRisk
+                                    ? 'bg-rose-950/90 text-rose-300 border-rose-700/60'
+                                    : 'bg-amber-950/70 text-amber-300 border-amber-700/50'
+                                }`}
+                              >
+                                <span>{auc.isCommunityRisk ? '⛔' : '⚠️'}</span>
+                                <span className="truncate">
+                                  {auc.isCommunityRisk ? 'Área de risco: ' : 'Próx.: '}
+                                  {auc.isCommunityRisk ? auc.communityName : auc.nearbyCommunityName}
+                                  {(auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM) === 0
+                                    ? ' (dentro)'
+                                    : ` (~${(auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM) || 0}m)`}
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Métricas limpas (ZERO bordas/caixas, ZERO ícones ℹ️, com cursor ? + tooltip no hover) */}
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 pt-1 text-left">
+                          <div>
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">Lance Mínimo</span>
+                            <span className="text-xs font-bold text-white font-mono">
+                              {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}
+                            </span>
+                          </div>
+
+                          <div className="relative group/cost cursor-help">
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">Custo Total Est.</span>
+                            <span className="text-xs font-medium text-slate-200 font-mono">
+                              {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
+                            </span>
+                            <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
+                              <div className="font-bold text-slate-200 border-b border-slate-800 pb-1">Composição do Custo</div>
+                              <div className="flex justify-between"><span>Lance:</span><strong>{formatBRL(costs.bid)}</strong></div>
+                              {costs.auctioneer > 0 && <div className="flex justify-between"><span>Leiloeiro (5%):</span><strong>{formatBRL(costs.auctioneer)}</strong></div>}
+                              <div className="flex justify-between"><span>ITBI &amp; RGI:</span><strong>{formatBRL(costs.itbi + costs.registry)}</strong></div>
+                              <div className="flex justify-between"><span>Reforma (5%):</span><strong>{formatBRL(costs.repair)}</strong></div>
+                              {costs.legal > 0 && <div className="flex justify-between"><span>Desocupação/Custas:</span><strong>{formatBRL(costs.legal)}</strong></div>}
+                              {costs.custoCarregamento > 0 && <div className="flex justify-between"><span>Carregamento (1,5%):</span><strong>{formatBRL(costs.custoCarregamento)}</strong></div>}
+                              <div className="flex justify-between border-t border-slate-800 pt-1 font-bold"><span>Total:</span><strong>{formatBRL(totalCost)}</strong></div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">Lucro Líquido</span>
+                            <span
+                              className={`text-xs font-bold font-mono ${
+                                auc.calculatedProfit === undefined && !flipPrice
+                                  ? 'text-slate-400'
+                                  : (auc.calculatedProfit ?? (flipPrice - totalCost)) >= 0
+                                    ? 'text-emerald-400'
+                                    : 'text-rose-400'
+                              }`}
+                            >
+                              {auc.calculatedProfit === undefined && !flipPrice
+                                ? 'Sob consulta'
+                                : formatBRL(auc.calculatedProfit ?? (flipPrice - totalCost))}
+                            </span>
+                          </div>
+
+                          <div className="relative group/itbi cursor-help">
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">Gabarito ITBI</span>
+                            <span className="text-xs font-semibold text-slate-200 font-mono">
+                              {!auc.estimatedValue && !auc.itbiStreetAvgSqm
+                                ? 'Sem dados'
+                                : auc.estimatedValue
+                                  ? formatBRL(auc.estimatedValue)
+                                  : auc.itbiUnitValueAvg
+                                    ? formatBRL(auc.itbiUnitValueAvg * auc.sizeSqm)
+                                    : '-'}
+                            </span>
+                            <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/itbi:opacity-100 transition-opacity z-50 text-left">
+                              <div className="text-[10.5px] font-bold text-slate-200 mb-1">Gabarito Oficial de ITBI</div>
+                              <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
+                                Média pericial de escrituras públicas de cartório registradas nesta via e bairro (NBR 14.653).
+                              </p>
+                              <div className="mt-1.5 pt-1 border-t border-slate-800 text-[9px] font-mono text-slate-400 flex justify-between">
+                                <span>Unitário:</span>
+                                <strong className="text-slate-100">
+                                  {auc.itbiIsAbsolutePricing
+                                    ? formatBRL(auc.itbiAbsoluteAvgPrice || auc.estimatedValue || 0)
+                                    : `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²`}
+                                </strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">ROI Estimado</span>
+                            <span className="text-xs font-semibold font-mono text-slate-200">
+                              {roiVal === undefined ? 'Sob consulta' : `${roiVal.toLocaleString('pt-BR')}%`}
+                            </span>
+                          </div>
+
+                          <div>
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">Avaliação Edital</span>
+                            <span className="text-xs font-medium text-slate-300 font-mono">
+                              {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
+                            </span>
+                          </div>
+
+                          <div className="relative group/liq cursor-help">
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">Liquidez</span>
+                            <span className="text-xs font-semibold font-mono text-slate-200">{effScore}/10</span>
+                            <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
+                              <div className="text-[10.5px] font-bold text-slate-200 mb-1">Indicador de Liquidez ({effScore}/10)</div>
+                              <div className="text-[9px] text-slate-300 space-y-1 font-sans">
+                                <div className="flex justify-between pb-0.5"><span>Amostras na Via:</span><strong>{streetCount} tx</strong></div>
+                                <div className="flex justify-between"><span>ROI Projetado:</span><strong>{roiVal ?? 0}%</strong></div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="relative group/flip cursor-help">
+                            <span className="text-[9px] text-slate-400 block uppercase font-semibold">Flip Rápido (60d)</span>
+                            <span className="text-xs font-bold text-slate-200 font-mono">
+                              {!flipPrice ? 'Sem amostragem' : formatBRL(flipPrice)}
+                            </span>
+                            <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/flip:opacity-100 transition-opacity z-50 text-left">
+                              <div className="text-[10.5px] font-bold text-slate-200 mb-1">Preço Sugerido p/ Revenda (60d)</div>
+                              <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
+                                100% ITBI (4 Níveis) com deságio de 10% para liquidez acelerada em até 60 dias.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] text-slate-400 space-y-0.5 pt-0.5">
+                          <div>
+                            ITBI:{' '}
+                            <strong className="text-slate-200">
+                              {auc.itbiIsDerivedSqm
+                                ? auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg
+                                  ? `${formatBRL(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg)}/m²`
+                                  : 'Sem dados'
+                                : auc.itbiIsAbsolutePricing
+                                  ? auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem dados'
+                                  : auc.itbiStreetAvgSqm
+                                    ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²`
+                                    : auc.itbiUnitValueAvg
+                                      ? `${formatBRL(auc.itbiUnitValueAvg)}/m²`
+                                      : 'Sem dados'}
+                            </strong>
+                            {portalSqm > 0 && portalSqm <= 75000 && (
+                              <span className="ml-2">
+                                • Portais: <strong className="text-slate-200">{formatBRL(portalSqm)}/m²</strong>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Linha de ações: Ocupado (esq) | Acessar Leilão sutil antes de Focar (dir) */}
+                        <div className="pt-1 flex items-center justify-between gap-1.5 text-[10.5px] text-slate-400">
+                          <span className="truncate">{auc.occupied ? 'Ocupado' : 'Desocupado'}</span>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {auc.auctionLink && (
+                              <a
+                                href={auc.auctionLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="btn-light-outline px-2.5 py-1 bg-transparent hover:bg-slate-800/40 text-slate-200 rounded-full border border-slate-700 text-[10.5px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                                title="Acessar edital / Caixa oficial"
+                              >
+                                {auc.origin === 'caixa' ? 'Acessar Leilão' : 'Edital'}
+                              </a>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardClick(auc);
+                              }}
+                              className="btn-light-outline px-2.5 py-1 bg-transparent hover:bg-slate-800/40 text-slate-200 rounded-full border border-slate-700 text-[10.5px] font-semibold transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                              title="Focar no mapa"
+                            >
+                              <MapPin className="w-3 h-3 text-emerald-500" />
+                              <span>Focar</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botão Simular Viabilidade compacto igual Contatar do Zap Imóveis */}
+                      <div className="px-2.5 pb-2.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSimulatingProperty(auc);
+                          }}
+                          className="btn-solid-white w-full h-9 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 active:scale-[0.99] text-white font-bold text-xs rounded-full transition-all cursor-pointer flex items-center justify-center shadow-sm"
+                        >
+                          <span>Simular Viabilidade</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {displayedList.length < orderedList.length && (
+              <button
+                type="button"
+                onClick={() => setVisibleCardCount((count) => count + 100)}
+                className="btn-light-outline mt-3 w-full rounded-xl bg-slate-800 p-3 text-xs font-bold text-white hover:bg-slate-700 cursor-pointer border border-slate-700"
+              >
+                Mostrar mais fichas ({displayedList.length} de {orderedList.length})
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* COLUNA DIREITA: Mapa Georreferenciado Interativo (maior área) */}
+        <div
+          className={`lg:order-2 relative h-full transition-all duration-200 ${
             activeTab === 'list'
               ? 'hidden'
               : activeTab === 'map' || isSidebarCollapsed
@@ -1455,16 +1859,16 @@ export default function PropertyMap({
                 : 'w-full lg:flex-1'
           }`}
         >
-          <div ref={mapContainerRef} className="w-full h-full z-0 bg-slate-950" />
+          <div ref={mapContainerRef} className={`w-full h-full z-0 ${theme === 'light' ? 'bg-slate-100' : 'bg-slate-950'}`} />
 
           {isSidebarCollapsed && (
             <button
               type="button"
               onClick={() => setIsSidebarCollapsed(false)}
-              className="hidden lg:flex items-center gap-1.5 absolute top-3 right-12 z-20 px-3 py-2 rounded-xl bg-slate-950/95 hover:bg-slate-900 text-slate-100 border border-slate-700 shadow-2xl backdrop-blur-md text-xs font-bold cursor-pointer transition-all"
+              className="btn-light-outline hidden lg:flex items-center gap-1.5 absolute top-3 left-3 z-20 px-3 py-2 rounded-xl bg-slate-950/95 hover:bg-slate-900 text-slate-100 border border-slate-700 shadow-2xl backdrop-blur-md text-xs font-bold cursor-pointer transition-all"
               title="Expandir painel lateral de imóveis"
             >
-              <ChevronLeft className="w-4 h-4 text-sky-400" />
+              <ChevronRight className="w-4 h-4 text-sky-400" />
               <span>{selectedBairroKey ? formatBairroTitle(selectedBairroKey) : 'Imóveis'}</span>
               <span className="font-mono text-[10px] bg-sky-950 text-sky-300 px-1.5 py-0.5 rounded border border-sky-700/60">
                 {orderedList.length}
@@ -1472,7 +1876,7 @@ export default function PropertyMap({
             </button>
           )}
 
-          {/* Legenda Interativa Inferior Esquerda (Métricas MapaImóveisRio + Toggle Lotes) */}
+          {/* Legenda Interativa Inferior Esquerda (Bolinhas no lugar dos quadrados) */}
           <div className="absolute bottom-3 left-3 z-20 bg-slate-950/95 border border-slate-800 backdrop-blur-xl rounded-2xl shadow-2xl p-2.5 w-60 sm:w-64 text-slate-200">
             <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-800">
               <div className="min-w-0">
@@ -1515,15 +1919,21 @@ export default function PropertyMap({
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-mono">
-                  {currentLegend.stops.map((stop) => (
-                    <div key={stop.label} className="flex items-center gap-1.5 truncate">
-                      <span
-                        className="w-2.5 h-2.5 rounded-xs shrink-0 border border-white/15"
-                        style={{ backgroundColor: stop.color }}
-                      />
-                      <span className="text-slate-300 truncate">{stop.label}</span>
-                    </div>
-                  ))}
+                  {currentLegend.stops.map((stop) => {
+                    const swatchColor =
+                      theme === 'light' && (stop.color === '#262d3a' || stop.color === '#2a303c')
+                        ? '#cbd5e1'
+                        : stop.color;
+                    return (
+                      <div key={stop.label} className="flex items-center gap-1.5 truncate">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/15 dark:border-white/20"
+                          style={{ backgroundColor: swatchColor }}
+                        />
+                        <span className="text-slate-300 truncate">{stop.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="pt-1.5 border-t border-slate-800 flex items-start justify-between gap-2">
@@ -1756,395 +2166,6 @@ export default function PropertyMap({
               )}
             </div>
           ) : null}
-        </div>
-
-        <div
-          className={`h-full bg-slate-950/95 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col z-20 relative transition-all duration-200 ${
-            activeTab === 'map'
-              ? 'hidden'
-              : activeTab === 'list'
-                ? 'w-full'
-                : isSidebarCollapsed
-                  ? 'hidden'
-                  : 'w-full lg:w-[440px] xl:w-[470px]'
-          }`}
-        >
-          <div className="p-3 border-b border-slate-800 bg-slate-900/70 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="relative flex-1 min-w-0">
-                <select
-                  value={selectedBairroKey}
-                  onChange={(e) => setSelectedBairroKey(e.target.value)}
-                  aria-label="Selecionar bairro"
-                  className="w-full bg-slate-950 text-slate-100 text-xs font-bold pl-2.5 pr-7 py-2 rounded-xl border border-slate-700 hover:border-sky-500/70 focus:border-sky-400 focus:outline-none cursor-pointer truncate"
-                >
-                  <option value="">
-                    Todos os Bairros ({orderedList.length} no enquadramento)
-                  </option>
-                  {neighborhoodOptions.map((opt) => (
-                    <option key={opt.key} value={opt.key}>
-                      {opt.label} ({opt.count})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {selectedBairroKey && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedBairroKey('')}
-                  className="px-2 py-2 rounded-xl bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-700/60 text-xs font-bold cursor-pointer shrink-0 flex items-center gap-1"
-                  title="Limpar filtro de bairro e voltar ao enquadramento"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsSidebarCollapsed(true)}
-              className="hidden lg:flex items-center justify-center p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 cursor-pointer shrink-0 transition-colors"
-              title="Minimizar painel para a direita"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div ref={sidebarListRef} className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-            {displayedList.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-xs space-y-2">
-                <MapPin className="w-8 h-8 mx-auto text-slate-600 opacity-60" />
-                <p className="font-bold text-slate-400">Nenhum imóvel neste enquadramento</p>
-                <p className="text-[11px] text-slate-500">Mova o mapa ou ajuste os filtros para explorar mais regiões.</p>
-              </div>
-            ) : (
-              displayedList.map((auc) => {
-                const isSelected = auc.id === selectedPropId;
-                const totalCost =
-                  auc.auctionPrice + (auc.pendingDebts || 0) + (auc.estimatedRepair || 0) + (auc.otherCosts || 0);
-                const isFeatured = assessDataQuality(auc).canBeFeatured;
-
-                return (
-                  <div
-                    key={auc.id}
-                    id={`side-card-${auc.id}`}
-                    onClick={() => handleCardClick(auc)}
-                    className={`bg-slate-900/90 rounded-2xl border transition-all cursor-pointer overflow-visible relative ${
-                      isSelected
-                        ? 'border-indigo-500 ring-2 ring-indigo-500/50 shadow-xl shadow-indigo-950/50 bg-slate-900'
-                        : 'border-slate-800 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="p-3.5 space-y-2.5">
-                      <div className="flex gap-2.5 items-start justify-between">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex flex-wrap items-center gap-1">
-                            <span className="bg-slate-800 text-slate-200 text-[10.5px] font-semibold px-2 py-0.5 rounded border border-slate-700">
-                              {auc.propertyType} •{' '}
-                              {auc.sizeSqm > 0 ? `${auc.sizeApproximate ? '≈ ' : ''}${auc.sizeSqm} m²` : 'Área não confirmada'}
-                              {auc.bedrooms ? ` • ${auc.bedrooms} qto${auc.bedrooms > 1 ? 's' : ''}` : ''}
-                              {auc.parkingSpaces ? ` • ${auc.parkingSpaces} vg${auc.parkingSpaces > 1 ? 's' : ''}` : ''}
-                            </span>
-
-                            {auc.isCommunityRisk && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/60 font-mono inline-flex items-center gap-1">
-                                ⛔ {auc.communityName ? `${auc.communityName}` : 'Comunidade'}{' '}
-                                {auc.factionName ? `(${auc.factionName})` : ''}
-                              </span>
-                            )}
-
-                            {!auc.isCommunityRisk && auc.nearbyCommunityName && (
-                              <span
-                                className="text-[9.5px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-800/50 inline-flex items-center gap-1 cursor-help"
-                                title={`Localizado a ~${auc.nearbyCommunityDistanceM || 300}m da comunidade ${auc.nearbyCommunityName}. Sem desvalorização forçada.`}
-                              >
-                                ⚠️ Próx. {auc.nearbyCommunityName} (~{auc.nearbyCommunityDistanceM || 300}m)
-                              </span>
-                            )}
-
-                            {isFeatured && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                ★ Top ROI
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="space-y-0.5">
-                            <h4 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 hover:text-indigo-300 transition-colors">
-                              {auc.title}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 flex items-center gap-1 line-clamp-1">
-                              <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
-                              <span>
-                                {auc.address || 'Endereço'} ({auc.neighborhood} - {auc.state || 'RJ'})
-                              </span>
-                            </p>
-                            {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
-                              <div className="pt-0.5">
-                                <span
-                                  className="text-[9px] bg-amber-950/80 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono font-bold inline-flex items-center gap-1"
-                                  title="Bairro cadastrado no edital difere do endereço real no mapa/cartório"
-                                >
-                                  <span>⚠️</span>
-                                  <span>{cleanDivergentNotice(auc.divergentNeighborhoodNotice)}</span>
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="shrink-0 pt-0.5">
-                          <PropertyThumbnail property={auc} size="sm" />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80 items-stretch">
-                        <div className="flex flex-col justify-center">
-                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Lance Mínimo</span>
-                          <span className="text-xs font-black text-white font-mono mt-0.5">
-                            {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Aberto a Propostas'}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col justify-center">
-                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Custo Total</span>
-                          <span className="text-xs font-black text-slate-300 font-mono mt-0.5">
-                            {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col justify-center">
-                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Lucro Líquido</span>
-                          <span
-                            className={`text-xs font-black font-mono mt-0.5 ${
-                              auc.calculatedProfit === undefined && !auc.vendaBaixaPrice
-                                ? 'text-slate-400'
-                                : (auc.calculatedProfit ?? ((auc.vendaBaixaPrice || 0) - totalCost)) >= 0
-                                  ? 'text-emerald-400'
-                                  : 'text-rose-400'
-                            }`}
-                          >
-                            {auc.calculatedProfit === undefined && !auc.vendaBaixaPrice
-                              ? 'Sob consulta'
-                              : formatBRL(auc.calculatedProfit ?? ((auc.vendaBaixaPrice || 0) - totalCost))}
-                          </span>
-                        </div>
-
-                        <div className="relative group/itbi bg-slate-950/50 p-1.5 rounded-lg border border-slate-800 flex flex-col justify-center cursor-help">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[8.5px] text-slate-400 block uppercase font-bold truncate">Gabarito ITBI</span>
-                            <span className="text-[8px] text-slate-500 font-mono">ℹ️</span>
-                          </div>
-                          <span className="text-xs font-black text-slate-200 font-mono block mt-0.5">
-                            {!auc.estimatedValue && !auc.itbiStreetAvgSqm ? (
-                              <span className="text-slate-400 font-mono text-[10px]">Sem amostragem</span>
-                            ) : auc.estimatedValue ? (
-                              formatBRL(auc.estimatedValue)
-                            ) : auc.itbiUnitValueAvg ? (
-                              formatBRL(auc.itbiUnitValueAvg * auc.sizeSqm)
-                            ) : (
-                              '-'
-                            )}
-                          </span>
-
-                          <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/itbi:opacity-100 transition-opacity z-50 text-left">
-                            <div className="text-[10.5px] font-bold text-slate-200 mb-1">Gabarito Oficial de ITBI</div>
-                            <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
-                              Média pericial de escrituras públicas de cartório registradas nesta rua e bairro (NBR 14.653 com Chauvenet).
-                            </p>
-                            <div className="mt-1.5 pt-1 border-t border-slate-800 text-[9px] font-mono text-slate-400 flex justify-between">
-                              <span>
-                                {auc.itbiIsDerivedSqm
-                                  ? 'Unitário Homogeneizado:'
-                                  : auc.itbiIsAbsolutePricing
-                                    ? 'Preço Médio ITBI:'
-                                    : 'Unitário:'}
-                              </span>
-                              <strong className="text-slate-100">
-                                {auc.itbiIsAbsolutePricing
-                                  ? formatBRL(auc.itbiAbsoluteAvgPrice || auc.estimatedValue || 0)
-                                  : `R$ ${(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg || 0).toLocaleString('pt-BR')}/m²`}
-                              </strong>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80 items-stretch text-left">
-                        <div className="flex flex-col justify-center">
-                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold">ROI Estimado</span>
-                          <span className="text-xs font-black font-mono mt-0.5 text-slate-200">
-                            {auc.calculatedRoi === undefined
-                              ? 'Sob consulta'
-                              : `${auc.calculatedRoi.toLocaleString('pt-BR')}%`}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col justify-center">
-                          <span className="text-[8.5px] text-slate-400 block uppercase font-bold">Avaliação Caixa</span>
-                          <span className="text-xs font-black text-slate-300 font-mono mt-0.5">
-                            {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
-                          </span>
-                        </div>
-
-                        <div className="relative group/liq bg-slate-950/40 p-1.5 rounded-lg border border-slate-800 flex flex-col justify-center cursor-help">
-                          {(() => {
-                            const effScore =
-                              !auc.itbiStreetCount || auc.itbiStreetCount === 0
-                                ? 0
-                                : Math.min(auc.liquidityScore ?? 0, assessDataQuality(auc).liquidityCeiling);
-                            const streetCount = auc.itbiStreetCount || 0;
-                            const roi = auc.calculatedRoi || 0;
-                            return (
-                              <>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[8.5px] text-slate-400 font-medium block">Liquidez</span>
-                                  <span className="text-[8px] text-slate-400 font-mono">ℹ️</span>
-                                </div>
-                                <span className="text-xs sm:text-sm font-black font-mono mt-0.5 text-slate-200">
-                                  {effScore}/10
-                                </span>
-
-                                <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
-                                  <div className="text-[10.5px] font-bold text-slate-200 mb-1">
-                                    Indicador de Liquidez ({effScore}/10)
-                                  </div>
-                                  <div className="text-[9px] text-slate-300 space-y-1 font-sans">
-                                    <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                                      <span>Amostras na Via:</span>
-                                      <strong className="font-mono text-slate-200">{streetCount} tx</strong>
-                                    </div>
-                                    <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                                      <span>Margem de Retorno:</span>
-                                      <strong className="font-mono text-slate-200">ROI {roi}%</strong>
-                                    </div>
-                                  </div>
-                                </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-
-                        <div className="relative group/flip bg-slate-950/50 p-1.5 rounded-lg border border-slate-800 flex flex-col justify-center cursor-help">
-                          <div className="flex items-center justify-between">
-                            <span
-                              className="text-[8.5px] text-slate-400 block uppercase font-bold truncate"
-                              title="Flip Rápido (60d)"
-                            >
-                              Flip Rápido
-                            </span>
-                            <span className="text-[8px] text-slate-500 font-mono">ℹ️</span>
-                          </div>
-                          <span className="text-xs font-black text-slate-200 font-mono block mt-0.5">
-                            {!auc.vendaBaixaPrice ? (
-                              <span className="text-slate-400 font-mono text-[10px]">Sem amostragem</span>
-                            ) : (
-                              formatBRL(auc.vendaBaixaPrice)
-                            )}
-                          </span>
-
-                          <div className="absolute bottom-full right-0 mb-2 w-60 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/flip:opacity-100 transition-opacity z-50 text-left">
-                            <div className="text-[10.5px] font-bold text-slate-200 mb-1">
-                              Preço Sugerido p/ Revenda (60d)
-                            </div>
-                            <p className="text-[9.5px] text-slate-300 leading-relaxed font-sans">
-                              100% ITBI (4 Níveis) com deságio de 10% para liquidez acelerada em até 60 dias.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-800/80 text-[10px] font-mono text-slate-400">
-                        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                          🏛️ ITBI:{' '}
-                          {auc.itbiIsDerivedSqm
-                            ? auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg
-                              ? `${formatBRL(auc.itbiStreetAvgSqm || auc.itbiUnitValueAvg)}/m² (${formatBRL(auc.estimatedValue || 0)})`
-                              : 'Sem dados'
-                            : auc.itbiIsAbsolutePricing
-                              ? auc.estimatedValue
-                                ? `${formatBRL(auc.estimatedValue)} (Preço Médio)`
-                                : 'Sem dados'
-                              : auc.itbiStreetAvgSqm
-                                ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²`
-                                : auc.itbiUnitValueAvg
-                                  ? `${formatBRL(auc.itbiUnitValueAvg)}/m²`
-                                  : 'Sem dados'}
-                        </span>
-                        {(() => {
-                          const portalSqm = Number((auc as any).moradaM2 || (auc as any).moradaVirtualM2 || auc.m2MercadoPortal || auc.streetPortalAvgSqm || 0);
-                          if (!(portalSqm > 0 && portalSqm <= 75000)) return null;
-                          return (
-                            <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-indigo-300 flex items-center gap-1">
-                              <span>🌐 Portais Imobiliários:</span>
-                              <span className="font-bold text-slate-100">
-                                {formatBRL(portalSqm)}/m²
-                              </span>
-                              {auc.valorSugeridoPortal ? (
-                                <span className="text-cyan-300">({formatBRL(auc.valorSugeridoPortal)})</span>
-                              ) : null}
-                            </span>
-                          );
-                        })()}
-                        <span className="px-1.5 py-0.5 rounded border bg-slate-800/80 text-slate-300 border-slate-700">
-                          {auc.occupied ? 'Ocupado' : 'Desocupado'}
-                        </span>
-                      </div>
-
-                      <div className="pt-1.5 flex flex-wrap items-center gap-2">
-                        {auc.auctionLink && (
-                          <a
-                            href={auc.auctionLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-2.5 py-1.5 bg-sky-500/20 hover:bg-sky-500/35 text-sky-200 rounded-xl border border-sky-400/50 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-                            title="Acessar edital / Caixa oficial"
-                          >
-                            <Building2 className="w-3 h-3 text-sky-300" />
-                            <span>{auc.origin === 'caixa' ? 'Caixa' : 'Edital'}</span>
-                          </a>
-                        )}
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCardClick(auc);
-                          }}
-                          className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl border border-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-                          title="Focar no mapa"
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Focar</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSimulatingProperty(auc);
-                          }}
-                          className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs py-1.5 px-2.5 rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-600/30"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-white" />
-                          <span>Simular Viabilidade</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            {displayedList.length < orderedList.length && (
-              <button
-                type="button"
-                onClick={() => setVisibleCardCount((count) => count + 100)}
-                className="w-full rounded-xl bg-slate-800 p-3 text-sm font-bold text-white hover:bg-slate-700 cursor-pointer"
-              >
-                Mostrar mais fichas ({displayedList.length} de {orderedList.length})
-              </button>
-            )}
-          </div>
         </div>
       </div>
 

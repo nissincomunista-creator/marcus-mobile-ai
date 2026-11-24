@@ -987,9 +987,9 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
           <button
             type="button"
             onClick={() => setViewMode('list')}
-            className="px-3.5 py-1.5 rounded-full bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+            className="btn-light-outline px-3.5 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-100 border border-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            <List className="w-3.5 h-3.5 text-indigo-300" />
+            <List className="w-3.5 h-3.5 text-indigo-400" />
             <span>Abrir em Lista ({matchingCount})</span>
           </button>
 
@@ -1019,24 +1019,27 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
   }
 
   return (
-    <div ref={barRef} className="space-y-3 relative z-30">
-      {/* LINHA 1 LIMPA ESTILO ZAP IMÓVEIS: Localização + Filtros mais à esquerda + Abrir no Mapa destacado ao lado com maior espaçamento */}
-      <div className="flex flex-wrap items-center justify-between gap-4 py-1">
-        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-          <div className="shrink-0">{locationButton}</div>
+    <div
+      ref={barRef}
+      className="sticky top-[56px] sm:top-[60px] z-30 sticky-bar-surface bg-[#111622]/95 backdrop-blur-md py-2 -mx-3 sm:-mx-5 px-3 sm:px-5 space-y-2.5"
+    >
+      {/* LINHA 1 LIMPA ESTILO ZAP IMÓVEIS: Localização (esq) | Filtros centralizados e afastados (centro) | Abrir no Mapa colado à direita */}
+      <div className="flex flex-wrap items-center justify-between gap-3 py-0.5">
+        <div className="shrink-0">{locationButton}</div>
+        <div className="flex flex-wrap items-center justify-center gap-2 flex-1 min-w-0 px-2 lg:px-6">
           {filterPills}
-          <button
-            type="button"
-            onClick={() => {
-              onResetFocusedMapProp();
-              setViewMode('map');
-            }}
-            className={`${pillSize} xl:ml-4 rounded-full font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/60 shadow-md shadow-emerald-950/30 flex items-center gap-1.5 cursor-pointer transition-all shrink-0`}
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-            <span>Abrir no Mapa</span>
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            onResetFocusedMapProp();
+            setViewMode('map');
+          }}
+          className={`${pillSize} ml-auto rounded-full font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/60 shadow-sm flex items-center gap-1.5 cursor-pointer transition-all shrink-0`}
+        >
+          <MapIcon className="w-3.5 h-3.5" />
+          <span>Abrir no Mapa</span>
+        </button>
       </div>
 
       {/* LINHA 2 FINA (sem linha divisória): Contagem + Atualizar (esq) | Ordenar por (dir) */}

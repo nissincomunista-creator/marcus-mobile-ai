@@ -13,6 +13,7 @@ export function getTypologyColor(propertyType?: string): string {
 }
 
 export const OPENFREEMAP_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
+export const OPENFREEMAP_LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
 let protocolRegistered = false;
 
@@ -67,15 +68,17 @@ export function buildSatelliteStyle(): maplibregl.StyleSpecification {
   };
 }
 
-export function getBuildingColorExpression(metric: RioBuildingMetric): any {
+export function getBuildingColorExpression(metric: RioBuildingMetric, isLightTheme = false): any {
+  const defaultNeutral = isLightTheme ? '#cbd5e1' : '#262d3a';
+  const missingNeutral = isLightTheme ? '#dbe3ec' : '#2a303c';
   if (metric === 'auctions') {
-    return '#262d3a';
+    return defaultNeutral;
   }
   if (metric === 'liq') {
     return [
       'case',
       ['<=', ['coalesce', ['get', 'liq'], 0], 0],
-      '#2a303c',
+      missingNeutral,
       [
         'interpolate',
         ['linear'],
@@ -94,7 +97,7 @@ export function getBuildingColorExpression(metric: RioBuildingMetric): any {
     return [
       'case',
       ['!', ['has', 'spr']],
-      '#2a303c',
+      missingNeutral,
       [
         'interpolate',
         ['linear'],
@@ -108,11 +111,11 @@ export function getBuildingColorExpression(metric: RioBuildingMetric): any {
     ];
   }
 
-  // Default: R$/m² ITBI blue gradient (< 2.7k to > 12.5k, #2a303c when no ITBI history)
+  // Default: R$/m² ITBI blue gradient (< 2.7k to > 12.5k, neutral when no ITBI history)
   return [
     'case',
     ['<=', ['coalesce', ['get', 'm2'], 0], 0],
-    '#2a303c',
+    missingNeutral,
     [
       'step',
       ['get', 'm2'],
@@ -130,7 +133,7 @@ export function getBuildingColorExpression(metric: RioBuildingMetric): any {
 export function upsertRio3DBuildingsLayer(
   map: maplibregl.Map,
   metric: RioBuildingMetric,
-  options?: { opacity?: number; show3D?: boolean }
+  options?: { opacity?: number; show3D?: boolean; isLightTheme?: boolean }
 ) {
   let style: any;
   try {
@@ -171,7 +174,7 @@ export function upsertRio3DBuildingsLayer(
 
   // Insert 3D buildings below road/neighborhood symbol labels for clean cartography
   const beforeSymbolLayer = styleLayers.find((l) => l.type === 'symbol')?.id;
-  const colorExpr = getBuildingColorExpression(metric);
+  const colorExpr = getBuildingColorExpression(metric, Boolean(options?.isLightTheme));
   const show3D = options?.show3D !== false;
   const opacity = options?.opacity ?? 0.88;
 

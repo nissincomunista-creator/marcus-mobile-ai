@@ -66,6 +66,7 @@ export function calculateSpreadSqm(auc: AuctionProperty): number {
 
 interface DashboardProps {
   mode?: 'auctions' | 'portais';
+  theme?: 'light' | 'dark';
   auctions: AuctionProperty[];
   selectedAuctionId: string | null;
   onSelectAuction: (id: string) => void;
@@ -114,6 +115,7 @@ interface DashboardProps {
 
 export default function Dashboard({
   mode = 'auctions',
+  theme = 'dark',
   auctions,
   selectedAuctionId,
   onSelectAuction,
@@ -1855,8 +1857,9 @@ export default function Dashboard({
                 <ZapFilterHeader {...zapFilterProps} />
 
                 {viewMode === 'map' && (
-                  <div className="fixed inset-0 z-50 w-screen h-screen bg-[#020617] flex flex-col animate-in fade-in duration-150">
+                  <div className={`fixed inset-0 z-50 w-screen h-screen flex flex-col animate-in fade-in duration-150 ${theme === 'light' ? 'bg-white' : 'bg-[#020617]'}`}>
                     <PropertyMap
+                      theme={theme}
                       auctions={auctions}
                       itbiStats={itbiStats}
                       onUpdateProperty={onUpdateProperty}
@@ -1961,32 +1964,33 @@ export default function Dashboard({
                           : 'border-transparent hover:border-slate-700/60'
                       }`}
                     >
-                      {/* Foto em formato widescreen 16:9 arredondado estilo Zap Imóveis */}
-                      <div className="p-2.5 pb-0">
-                        <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-2xl group/img">
-                          <PropertyThumbnail
-                            property={auc}
-                            size="cover"
-                            className="!w-full !h-full !rounded-2xl !border-0"
-                            onClick={() => setSelectedLightboxProperty(auc)}
-                          />
-                          <div className="absolute top-2 left-2.5 pointer-events-none">
-                            {auc.origin === 'caixa' ? (
-                              <span className="inline-block bg-white/90 text-blue-700 text-[10.5px] font-bold px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-xs">
-                                Imóveis Caixa
-                              </span>
-                            ) : auc.origin === 'judicial' ? (
-                              <span className="inline-block bg-white/90 text-purple-700 text-[10.5px] font-bold px-2 py-0.5 rounded-lg shadow-xs backdrop-blur-xs">
-                                Leilão Judicial
-                              </span>
-                            ) : (
-                              <span className="text-white text-[11px] font-extrabold tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]">
-                                {auc.origin === 'portal'
-                                  ? (auc.portalName || 'Portal')
-                                  : (auc.auctioneerName || auc.leiloeiro || 'Leilão Extrajudicial')}
-                              </span>
-                            )}
-                          </div>
+                      {/* Foto edge-to-edge ocupando exatamente toda a largura e cantos superiores do card */}
+                      <div className="relative w-full aspect-[16/9] bg-slate-950 overflow-hidden rounded-t-2xl group/img">
+                        <PropertyThumbnail
+                          property={auc}
+                          size="cover"
+                          className="!w-full !h-full !rounded-none !rounded-t-2xl !border-0"
+                          onClick={() => setSelectedLightboxProperty(auc)}
+                        />
+                        <div className="absolute top-2.5 left-3 pointer-events-none">
+                          {auc.origin === 'caixa' ? (
+                            <span className="inline-block bg-white/95 text-blue-700 text-[10.5px] font-bold px-2.5 py-0.5 rounded-lg shadow-xs backdrop-blur-xs">
+                              Imóveis Caixa
+                            </span>
+                          ) : auc.origin === 'judicial' ? (
+                            <span className="inline-block bg-white/95 text-purple-700 text-[10.5px] font-bold px-2.5 py-0.5 rounded-lg shadow-xs backdrop-blur-xs">
+                              Leilão Judicial
+                            </span>
+                          ) : (
+                            <span
+                              className="text-[11px] font-extrabold tracking-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)]"
+                              style={{ color: '#ffffff' }}
+                            >
+                              {auc.origin === 'portal'
+                                ? (auc.portalName || 'Portal')
+                                : (auc.auctioneerName || auc.leiloeiro || 'Leilão Extrajudicial')}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -2033,7 +2037,7 @@ export default function Dashboard({
                         </div>
 
                         {auc.transactionType === 'aluguel' ? (
-                          <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
+                          <div className="text-[11px] text-slate-300 pb-1">
                             <div className="font-bold uppercase tracking-wide text-white">
                               {auc.vereditoLocacao === 'barato'
                                 ? `Aluguel Abaixo da Média (-${Math.abs(auc.aluguelDiferencaPct || 0)}%)`
@@ -2057,7 +2061,7 @@ export default function Dashboard({
                           const diff = valEst - preco;
                           const pct = (valEst > 0 && diff > 0) ? Math.round((diff / valEst) * 100) : (auc.descontoMercadoPct || 0);
                           return (
-                            <div className="text-[11px] text-slate-300 border-b border-slate-800/60 pb-1.5">
+                            <div className="text-[11px] text-slate-300 pb-1">
                               <div className="font-bold uppercase tracking-wide text-slate-200">
                                 Abaixo do Valor de Mercado (-{pct}%)
                               </div>
@@ -2150,7 +2154,7 @@ export default function Dashboard({
 
                         {/* Grid Financeiro (sem bordas/caixas internas, cores somente em Lucro) */}
                         {auc.transactionType === 'aluguel' ? (
-                          <div className="space-y-1.5 pt-1.5 border-t border-slate-800/50">
+                          <div className="space-y-1.5 pt-1">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                               <div>
                                 <span className="text-[9px] text-slate-400 block uppercase font-bold">Aluguel Pedido</span>
@@ -2183,7 +2187,7 @@ export default function Dashboard({
                             </div>
                           </div>
                         ) : auc.origin === 'portal' ? (
-                          <div className="space-y-1.5 pt-1.5 border-t border-slate-800/50">
+                          <div className="space-y-1.5 pt-1">
                             <div className="grid grid-cols-3 gap-2">
                               <div>
                                 <span className="text-[9px] text-slate-400 block uppercase font-bold">Preço Anunciado</span>
@@ -2207,7 +2211,7 @@ export default function Dashboard({
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 pt-1.5 border-t border-slate-800/50">
+                            <div className="grid grid-cols-3 gap-2 pt-1">
                               <div>
                                 <span className="text-[9px] text-slate-400 block uppercase font-bold">M² Ref. Bairro</span>
                                 <span className="text-xs font-normal text-slate-200 font-mono">
@@ -2242,7 +2246,7 @@ export default function Dashboard({
                           </div>
                         ) : (
                           <>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t border-slate-800/50">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1 flex-wrap">
                                   <span className="text-[9px] text-slate-400 uppercase font-bold">Lance Mínimo</span>
@@ -2313,7 +2317,7 @@ export default function Dashboard({
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 border-t border-slate-800/50">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                               <div className="min-w-0">
                                 <span className="text-[9px] text-slate-400 block uppercase font-bold truncate">Avaliação Edital</span>
                                 <span className="text-xs font-normal text-slate-200 font-mono block truncate">
@@ -2362,8 +2366,8 @@ export default function Dashboard({
                           </>
                         )}
 
-                        {/* Linha única: Ocupado / Financiamento à esquerda e Ver no Mapa à direita */}
-                        <div className="pt-1.5 border-t border-slate-800/50 flex items-center justify-between gap-2 text-[11px] text-slate-300">
+                        {/* Linha única: Ocupado / Financiamento à esquerda e Acessar Leilão + Ver no Mapa à direita */}
+                        <div className="pt-1.5 flex items-center justify-between gap-2 text-[11px] text-slate-300">
                           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 min-w-0">
                             {auc.origin !== 'portal' && (
                               <>
@@ -2374,43 +2378,46 @@ export default function Dashboard({
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFocusedMapPropId(auc.id);
-                              setViewMode('map');
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-full font-bold cursor-pointer transition-colors shrink-0"
-                            title="Localizar imóvel no Mapa Georreferenciado"
-                          >
-                            Ver no Mapa
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {auc.auctionLink && (
+                              <a
+                                href={auc.auctionLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="btn-light-outline text-[11px] bg-transparent hover:bg-slate-800/40 text-slate-200 px-3 py-1 rounded-full font-semibold border border-slate-700 transition-colors cursor-pointer whitespace-nowrap"
+                              >
+                                {auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}
+                              </a>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFocusedMapPropId(auc.id);
+                                setViewMode('map');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-full font-bold cursor-pointer transition-colors shrink-0"
+                              title="Localizar imóvel no Mapa Georreferenciado"
+                            >
+                              Ver no Mapa
+                            </button>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Footer empilhado centralizado (Acessar Leilão em cima, Simular Viabilidade embaixo) */}
-                      <div className="px-3 pb-3 pt-1 space-y-2">
-                        {auc.auctionLink && (
-                          <a
-                            href={auc.auctionLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2 px-4 text-xs font-extrabold text-white bg-sky-500 hover:bg-sky-400 rounded-full transition-all border border-sky-400/50 shadow-sm flex items-center justify-center text-center"
-                          >
-                            <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
-                          </a>
-                        )}
-
+                      {/* Footer compacto altura botão Contatar Zap Imóveis (h-9 / py-2 text-xs) */}
+                      <div className="px-3 pb-3 pt-0.5">
                         <button
                           onClick={() => setSimulatingAuction(auc)}
-                          className={`w-full py-2 px-4 text-white font-extrabold text-xs rounded-full transition-all border shadow-sm flex items-center justify-center cursor-pointer active:scale-[0.99] ${
+                          className={`btn-solid-white w-full h-9 px-4 text-white font-bold text-xs rounded-full transition-all border border-transparent shadow-sm flex items-center justify-center cursor-pointer active:scale-[0.99] ${
                             auc.transactionType === 'aluguel'
-                              ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400/50'
+                              ? 'bg-emerald-600 hover:bg-emerald-500'
                               : auc.origin === 'portal'
-                                ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 border-amber-400/50'
-                                : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 border-indigo-400/40'
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500'
+                                : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500'
                           }`}
                         >
                           <span>
