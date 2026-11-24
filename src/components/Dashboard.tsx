@@ -1955,10 +1955,10 @@ export default function Dashboard({
                       transition={{ duration: 0.2 }}
                       onMouseEnter={() => setHoveredPropertyId(auc.id)}
                       onMouseLeave={() => setHoveredPropertyId(null)}
-                      className={`auction-card bg-slate-900/70 border rounded-2xl transition-all duration-200 overflow-hidden flex flex-col justify-between ${
+                      className={`auction-card bg-transparent border rounded-2xl transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                         isSelected
-                          ? 'border-slate-500 ring-1 ring-slate-500/50'
-                          : 'border-slate-800/35 hover:border-slate-700/60'
+                          ? 'border-slate-500/80 ring-1 ring-slate-500/40'
+                          : 'border-transparent hover:border-slate-700/60'
                       }`}
                     >
                       {/* Foto em formato widescreen 16:9 arredondado estilo Zap Imóveis */}
@@ -2020,10 +2020,10 @@ export default function Dashboard({
                                 e.stopPropagation();
                                 onUpdateProperty({ id: auc.id, saved: !auc.saved });
                               }}
-                              className={`p-1 rounded-full transition-colors cursor-pointer shrink-0 ${
+                              className={`p-1.5 rounded-xl border transition-colors cursor-pointer shrink-0 ${
                                 auc.saved
-                                  ? 'text-indigo-300 bg-indigo-500/15'
-                                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                                  ? 'bg-amber-500/25 text-amber-300 border-amber-400/50'
+                                  : 'bg-amber-500/10 text-amber-300/85 hover:text-amber-200 hover:bg-amber-500/20 border-amber-500/30'
                               }`}
                               title={auc.saved ? 'Remover dos salvos' : 'Salvar oportunidade no perfil'}
                             >
@@ -2093,11 +2093,21 @@ export default function Dashboard({
                               return `${addr} (${auc.neighborhood || ''} - ${auc.city || ''}/${auc.state || 'RJ'})`;
                             })()}
                           </div>
-                          {cleanDivergentNotice(auc.divergentNeighborhoodNotice) && (
-                            <div className="text-[10.5px] text-slate-400 font-mono italic">
-                              {cleanDivergentNotice(auc.divergentNeighborhoodNotice)}
-                            </div>
-                          )}
+                          {(() => {
+                            const divNotice = cleanDivergentNotice(auc.divergentNeighborhoodNotice);
+                            if (!divNotice) return null;
+                            const m = divNotice.match(/^(Bairro\s*Real\s*:\s*)([^(]+)(.*)$/i);
+                            if (m) {
+                              return (
+                                <div className="text-[10.5px] text-slate-400 font-mono">
+                                  <span>{m[1]}</span>
+                                  <strong className="font-extrabold uppercase text-white">{m[2].trim()}</strong>
+                                  {m[3] ? <span> {m[3].trim()}</span> : null}
+                                </div>
+                              );
+                            }
+                            return <div className="text-[10.5px] text-slate-400 font-mono">{divNotice}</div>;
+                          })()}
                           {auc.origin === 'portal' ? (
                             <div className="text-[10.5px] text-slate-400 font-mono">
                               Publicação: <strong className="text-slate-200">{formatPublicationDateDisplay(auc)}</strong>
@@ -2111,6 +2121,31 @@ export default function Dashboard({
                               )}
                             </div>
                           )}
+                          {(auc.isCommunityRisk || auc.nearbyCommunityName) && (() => {
+                            const communityName = auc.isCommunityRisk ? auc.communityName : auc.nearbyCommunityName;
+                            const faction = auc.isCommunityRisk ? auc.factionName : auc.nearbyFactionName;
+                            const distance = auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM;
+                            if (!communityName) return null;
+                            return (
+                              <div className="pt-0.5">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold border ${
+                                    auc.isCommunityRisk
+                                      ? 'bg-rose-950/90 text-rose-300 border-rose-700/60'
+                                      : 'bg-amber-950/70 text-amber-300 border-amber-700/50'
+                                  }`}
+                                >
+                                  <span>{auc.isCommunityRisk ? '⛔' : '⚠️'}</span>
+                                  <span>
+                                    {auc.isCommunityRisk ? 'Área de risco: ' : 'Próx.: '}
+                                    {communityName}
+                                    {faction ? ` (${faction})` : ''}
+                                    {distance === 0 ? ' (dentro)' : ` (~${distance || 0}m)`}
+                                  </span>
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Grid Financeiro (sem bordas/caixas internas, cores somente em Lucro) */}
@@ -2334,17 +2369,6 @@ export default function Dashboard({
                                 {auc.allowsInstallments && <span>✓ Parcelamento</span>}
                               </>
                             )}
-                            {(() => {
-                              const communityName = auc.isCommunityRisk ? auc.communityName : auc.nearbyCommunityName;
-                              const faction = auc.isCommunityRisk ? auc.factionName : auc.nearbyFactionName;
-                              const distance = auc.isCommunityRisk ? auc.communityDistanceM : auc.nearbyCommunityDistanceM;
-                              if (!communityName) return null;
-                              return (
-                                <span className="text-[10.5px] text-slate-400">
-                                  {auc.isCommunityRisk ? 'Área de risco' : 'Próx.'}: {communityName}{faction ? ` (${faction})` : ''} {distance === 0 ? 'dentro' : `~${distance || 0}m`}
-                                </span>
-                              );
-                            })()}
                           </div>
 
                           <button
@@ -2364,13 +2388,13 @@ export default function Dashboard({
                       </div>
 
                       {/* Footer empilhado centralizado (Acessar Leilão em cima, Simular Viabilidade embaixo) */}
-                      <div className="px-3 pb-3 pt-1 space-y-1.5">
+                      <div className="px-3 pb-3 pt-1 space-y-2">
                         {auc.auctionLink && (
                           <a
                             href={auc.auctionLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full py-2 px-3 text-xs font-semibold text-slate-200 hover:text-white bg-transparent hover:bg-slate-800/70 rounded-xl transition-colors border border-slate-800 flex items-center justify-center text-center"
+                            className="w-full py-2 px-4 text-xs font-extrabold text-white bg-sky-500 hover:bg-sky-400 rounded-full transition-all border border-sky-400/50 shadow-sm flex items-center justify-center text-center"
                           >
                             <span>{auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}</span>
                           </a>
@@ -2378,12 +2402,12 @@ export default function Dashboard({
 
                         <button
                           onClick={() => setSimulatingAuction(auc)}
-                          className={`w-full py-2.5 px-3 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-[0.99] ${
+                          className={`w-full py-2 px-4 text-white font-extrabold text-xs rounded-full transition-all border shadow-sm flex items-center justify-center cursor-pointer active:scale-[0.99] ${
                             auc.transactionType === 'aluguel'
-                              ? 'bg-emerald-600 hover:bg-emerald-500'
+                              ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400/50'
                               : auc.origin === 'portal'
-                                ? 'bg-amber-600 hover:bg-amber-500'
-                                : 'bg-indigo-600 hover:bg-indigo-500'
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 border-amber-400/50'
+                                : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 border-indigo-400/40'
                           }`}
                         >
                           <span>

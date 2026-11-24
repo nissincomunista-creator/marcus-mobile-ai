@@ -99,11 +99,11 @@ export function getBuildingColorExpression(metric: RioBuildingMetric): any {
         'interpolate',
         ['linear'],
         ['get', 'spr'],
-        -25, '#10b981',
-        -10, '#06b6d4',
+        -25, '#f43f5e',
+        -10, '#f59e0b',
         0, '#3b82f6',
-        12, '#f59e0b',
-        25, '#f43f5e',
+        12, '#06b6d4',
+        25, '#10b981',
       ],
     ];
   }

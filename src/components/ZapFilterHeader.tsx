@@ -11,6 +11,7 @@ import {
   RefreshCw,
   ArrowUpDown,
   Map as MapIcon,
+  List,
 } from 'lucide-react';
 import { BRAZIL_STATES, VALID_ITBI_CITIES_BY_STATE } from '../types.ts';
 
@@ -239,7 +240,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
     if (selectedStateFilter) {
       return `Estado: ${selectedStateFilter}`;
     }
-    return 'Localização (Estado / Cidade / Bairros)';
+    return 'Localização';
   })();
 
   const originLabel = (() => {
@@ -258,7 +259,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
     return 'Leilões';
   })();
 
-  const pillSize = embeddedInMap ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-[13px]';
+  const pillSize = embeddedInMap ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-1.5 text-xs';
   const pillBase = `${pillSize} rounded-full font-semibold border transition-all flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap`;
   const pillActive = 'bg-indigo-500/15 text-indigo-200 border-indigo-400/70';
   const pillIdle = 'bg-transparent text-slate-200 border-slate-700 hover:border-slate-500 hover:bg-slate-800/40';
@@ -275,7 +276,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
   const filterPills = (
     <div
       className={`flex flex-wrap items-center gap-2 ${
-        embeddedInMap ? 'justify-start' : 'flex-1 justify-center'
+        embeddedInMap ? 'justify-start' : 'justify-start'
       }`}
     >
       {/* 1. LEILÕES (ou PORTAIS) */}
@@ -678,27 +679,28 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
         </button>
 
         {openPopover === 'quartos' && (
-          <div className="absolute left-0 top-full mt-2 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-[60] space-y-2 animate-in fade-in zoom-in-95 duration-150">
-            <div className="text-[11px] font-bold text-slate-300">Quantidade de Quartos</div>
-            <div className="grid grid-cols-5 gap-1.5">
-              {[null, 1, 2, 3, 4].map((n) => (
-                <button
-                  key={n ?? 'any'}
-                  type="button"
-                  onClick={() => {
-                    setBedroomsFilter(n);
-                    setOpenPopover(null);
-                  }}
-                  className={`py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
-                    bedroomsFilter === n
-                      ? 'bg-indigo-600 text-white border-indigo-400'
-                      : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
-                  }`}
-                >
-                  {n === null ? 'Todos' : `${n}+`}
-                </button>
-              ))}
+          <div className="absolute left-0 top-full mt-2 w-48 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2.5 z-[60] space-y-1 animate-in fade-in zoom-in-95 duration-150">
+            <div className="text-[11px] font-bold text-slate-400 uppercase px-2 pb-1 border-b border-slate-800">
+              Quartos
             </div>
+            {[null, 1, 2, 3, 4].map((n) => (
+              <button
+                key={n ?? 'any'}
+                type="button"
+                onClick={() => {
+                  setBedroomsFilter(n);
+                  setOpenPopover(null);
+                }}
+                className={`w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
+                  bedroomsFilter === n
+                    ? 'bg-indigo-600/20 text-white font-bold'
+                    : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <span>{n === null ? 'Todos' : `${n}+ ${n === 1 ? 'Quarto' : 'Quartos'}`}</span>
+                {bedroomsFilter === n && <Check className="w-3.5 h-3.5 text-indigo-300" />}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -717,27 +719,28 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
         </button>
 
         {openPopover === 'vagas' && (
-          <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-[60] space-y-2 animate-in fade-in zoom-in-95 duration-150">
-            <div className="text-[11px] font-bold text-slate-300">Vagas de Garagem</div>
-            <div className="grid grid-cols-5 gap-1.5">
-              {[null, 1, 2, 3, 4].map((n) => (
-                <button
-                  key={n ?? 'any'}
-                  type="button"
-                  onClick={() => {
-                    setParkingFilter(n);
-                    setOpenPopover(null);
-                  }}
-                  className={`py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
-                    parkingFilter === n
-                      ? 'bg-indigo-600 text-white border-indigo-400'
-                      : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
-                  }`}
-                >
-                  {n === null ? 'Todas' : `${n}+`}
-                </button>
-              ))}
+          <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2.5 z-[60] space-y-1 animate-in fade-in zoom-in-95 duration-150">
+            <div className="text-[11px] font-bold text-slate-400 uppercase px-2 pb-1 border-b border-slate-800">
+              Vagas de Garagem
             </div>
+            {[null, 1, 2, 3, 4].map((n) => (
+              <button
+                key={n ?? 'any'}
+                type="button"
+                onClick={() => {
+                  setParkingFilter(n);
+                  setOpenPopover(null);
+                }}
+                className={`w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
+                  parkingFilter === n
+                    ? 'bg-indigo-600/20 text-white font-bold'
+                    : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <span>{n === null ? 'Todas' : `${n}+ ${n === 1 ? 'Vaga' : 'Vagas'}`}</span>
+                {parkingFilter === n && <Check className="w-3.5 h-3.5 text-indigo-300" />}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -980,40 +983,64 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
           {filterPills}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowMapFactions((prev) => !prev)}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shrink-0 ${
-            showMapFactions
-              ? 'bg-rose-950/90 text-rose-300 border-rose-500'
-              : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
-          }`}
-          title="Camada de controle de facções RJ (dadosderiscos.com.br)"
-        >
-          <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-          <span>Risco &amp; Facções RJ</span>
-          <span
-            className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
-              showMapFactions ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'
-            }`}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className="px-3.5 py-1.5 rounded-full bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            {showMapFactions ? 'ON' : 'OFF'}
-          </span>
-        </button>
+            <List className="w-3.5 h-3.5 text-indigo-300" />
+            <span>Abrir em Lista ({matchingCount})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowMapFactions((prev) => !prev)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shrink-0 ${
+              showMapFactions
+                ? 'bg-rose-950/90 text-rose-300 border-rose-500'
+                : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
+            }`}
+            title="Camada de controle de facções RJ (dadosderiscos.com.br)"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+            <span>Risco &amp; Facções RJ</span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                showMapFactions ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'
+              }`}
+            >
+              {showMapFactions ? 'ON' : 'OFF'}
+            </span>
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div ref={barRef} className="space-y-3 relative z-30">
-      {/* LINHA 1 LIMPA ESTILO ZAP IMÓVEIS: Localização à esquerda + Botões centralizados */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 py-1">
-        <div className="shrink-0">{locationButton}</div>
-        {filterPills}
+      {/* LINHA 1 LIMPA ESTILO ZAP IMÓVEIS: Localização + Filtros mais à esquerda + Abrir no Mapa destacado ao lado com maior espaçamento */}
+      <div className="flex flex-wrap items-center justify-between gap-4 py-1">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+          <div className="shrink-0">{locationButton}</div>
+          {filterPills}
+          <button
+            type="button"
+            onClick={() => {
+              onResetFocusedMapProp();
+              setViewMode('map');
+            }}
+            className={`${pillSize} xl:ml-4 rounded-full font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/60 shadow-md shadow-emerald-950/30 flex items-center gap-1.5 cursor-pointer transition-all shrink-0`}
+          >
+            <MapIcon className="w-3.5 h-3.5" />
+            <span>Abrir no Mapa</span>
+          </button>
+        </div>
       </div>
 
-      {/* LINHA 2 FINA: Contagem (esq) | Abrir no Mapa (sem cor) + Ordenar por (dir) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/70 text-xs">
+      {/* LINHA 2 FINA (sem linha divisória): Contagem + Atualizar (esq) | Ordenar por (dir) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-1 text-xs">
         <div className="flex items-center gap-3">
           <span className="font-bold text-slate-200 text-sm">
             {matchingCount}{' '}
@@ -1028,7 +1055,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             type="button"
             onClick={onSyncNow}
             disabled={isMining}
-            className="text-[11px] font-semibold text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+            className="px-3 py-1 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             <RefreshCw className={`w-3 h-3 ${isMining ? 'animate-spin text-amber-400' : 'text-emerald-400'}`} />
             <span>{isMining ? 'Atualizando...' : 'Atualizar'}</span>
@@ -1036,18 +1063,6 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
-          <button
-            type="button"
-            onClick={() => {
-              onResetFocusedMapProp();
-              setViewMode('map');
-            }}
-            className="px-3.5 py-1.5 rounded-full bg-transparent hover:bg-slate-800/60 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
-          >
-            <MapIcon className="w-3.5 h-3.5 opacity-80" />
-            <span>Abrir no Mapa</span>
-          </button>
-
           {/* ORDENAR POR */}
           <div className="relative">
             <button
@@ -1065,10 +1080,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
             {openPopover === 'sort' && (
               <div className="absolute right-0 top-full mt-2 w-60 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3.5 z-[60] space-y-2 animate-in fade-in zoom-in-95 duration-150">
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Ordenar por</span>
-                  </span>
+                  <span className="text-xs font-bold text-white">Ordenar por</span>
                   <button
                     type="button"
                     onClick={() => setOpenPopover(null)}
@@ -1090,7 +1102,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                       temporalSortMode === 'neutral' ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
-                    <span>📈 Padrão</span>
+                    <span>Padrão</span>
                     {temporalSortMode === 'neutral' && <Check className="w-3.5 h-3.5 text-indigo-300" />}
                   </button>
                   <button
@@ -1103,7 +1115,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                       temporalSortMode === 'urgent' ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
-                    <span>{mode === 'portais' ? '⏳ Mais Antigos' : '⏳ Próximas Praças'}</span>
+                    <span>{mode === 'portais' ? 'Mais Antigos' : 'Próximas Praças'}</span>
                     {temporalSortMode === 'urgent' && <Check className="w-3.5 h-3.5 text-indigo-300" />}
                   </button>
                   <button
@@ -1116,7 +1128,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                       temporalSortMode === 'newest' ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
-                    <span>✨ Inclusão Mais Recente</span>
+                    <span>Inclusão Mais Recente</span>
                     {temporalSortMode === 'newest' && <Check className="w-3.5 h-3.5 text-indigo-300" />}
                   </button>
                 </div>
@@ -1125,16 +1137,16 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                   <div className="text-[10px] font-mono uppercase text-slate-400 font-bold">Estratégia</div>
                   {(mode === 'portais'
                     ? ([
-                        ['discount', '🏷️ Maior Desconto ITBI'],
-                        ['profit', '💰 Maior Lucro Flip'],
-                        ['lowestSqm', '📐 Menor Preço/m²'],
-                        ['under250k', '💸 Até R$ 250k'],
+                        ['discount', 'Maior Desconto ITBI'],
+                        ['profit', 'Maior Lucro Flip'],
+                        ['lowestSqm', 'Menor Preço/m²'],
+                        ['under250k', 'Até R$ 250k'],
                       ] as const)
                     : ([
-                        ['liquidity', '💧 Maior Liquidez'],
-                        ['roi', '📈 Maior ROI'],
-                        ['profit', '💰 Maior Lucro Real'],
-                        ['spread', '📐 Maior Spread/m²'],
+                        ['liquidity', 'Maior Liquidez'],
+                        ['roi', 'Maior ROI'],
+                        ['profit', 'Maior Lucro Real'],
+                        ['spread', 'Maior Spread/m²'],
                       ] as const)
                   ).map(([key, label]) => (
                     <label

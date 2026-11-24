@@ -877,7 +877,7 @@ export default function App() {
   // Modo Livre: acesso direto sem exigência de senha por hora
 
   return (
-    <div className={`min-h-screen font-sans flex flex-col justify-between transition-colors duration-200 ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-[#090A0F] text-slate-100'}`}>
+    <div className={`min-h-screen font-sans flex flex-col justify-between transition-colors duration-200 ${theme === 'light' ? 'bg-white text-slate-900' : 'bg-[#111622] text-slate-100'}`}>
       
       {/* 1. Header Toolbar & Sub-header Fixed Container: Unificado, sem sobreposição no scroll */}
       <div className="sticky top-0 z-40 bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md">
@@ -920,7 +920,6 @@ export default function App() {
                       : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
                   }`}
                 >
-                  <Building2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                   <span>Garimpar Leilões</span>
                   <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-black/30 text-white">
                     {auctions.filter(a => a.origin !== 'portal').length}
@@ -935,10 +934,11 @@ export default function App() {
                   className={`min-w-[168px] justify-center px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border shadow-sm ${
                     activeTab === 'portais'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white border-amber-400 shadow-orange-950/50 ring-2 ring-amber-400/40'
-                      : 'bg-gradient-to-r from-amber-950/50 to-orange-950/50 text-amber-300 border-amber-600/40 hover:from-amber-900/70 hover:to-orange-900/70 hover:text-white'
+                      : theme === 'light'
+                        ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                        : 'bg-gradient-to-r from-amber-950/50 to-orange-950/50 text-amber-300 border-amber-600/40 hover:from-amber-900/70 hover:to-orange-900/70 hover:text-white'
                   }`}
                 >
-                  <span className="text-xs">🔥</span>
                   <span>Flip House</span>
                   <span className="text-[10px] bg-black/40 text-amber-200 font-mono px-1.5 py-0.2 rounded-full border border-amber-400/30">
                     {auctions.filter(a => a.origin === 'portal').length}

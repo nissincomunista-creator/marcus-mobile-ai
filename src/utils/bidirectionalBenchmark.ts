@@ -118,6 +118,48 @@ export function computeMedian(vals: number[]): number {
 }
 
 /**
+ * Saneamento estatístico robusto (NBR 14.653):
+ * Combina Tukey IQR (Q1 - 1.75*IQR .. Q3 + 1.75*IQR), banda da mediana e Chauvenet/2.2σ
+ * para impedir que valores muito fora da curva contaminem a média ou o desvio padrão.
+ */
+function sanitizeSqmOutliers(values: number[], sigmaMultiplier = 2.2): number[] {
+  if (values.length <= 1) return values;
+  let cleaned = [...values];
+
+  if (cleaned.length >= 4) {
+    const sorted = [...cleaned].sort((a, b) => a - b);
+    const q1 = sorted[Math.floor(sorted.length * 0.25)];
+    const q3 = sorted[Math.floor(sorted.length * 0.75)];
+    const iqr = q3 - q1;
+    const median = computeMedian(sorted);
+    const lowIqr = Math.max(600, q1 - 1.75 * iqr);
+    const highIqr = Math.max(q3 + 1.75 * iqr, 2500);
+    const step1 = sorted.filter(v =>
+      v >= lowIqr &&
+      v <= highIqr &&
+      (median <= 0 || (v >= median * 0.50 && v <= median * 1.50))
+    );
+    if (step1.length >= 3) {
+      cleaned = step1;
+    } else {
+      const iqrOnly = sorted.filter(v => v >= lowIqr && v <= highIqr);
+      if (iqrOnly.length >= 3) cleaned = iqrOnly;
+    }
+  }
+
+  if (cleaned.length >= 2) {
+    const mean = cleaned.reduce((a, b) => a + b, 0) / cleaned.length;
+    const variance = cleaned.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / cleaned.length;
+    const std = Math.sqrt(variance);
+    const threshold = Math.max(std * sigmaMultiplier, 500);
+    const step2 = cleaned.filter(v => Math.abs(v - mean) <= threshold);
+    if (step2.length >= 2) return step2;
+  }
+
+  return cleaned;
+}
+
+/**
  * Motor Pericial de Corte Bidirecional de Outliers (NBR 14.653)
  * 1. Média preliminar da rua antes de cortar.
  * 2. Balizamento com a média do raio (ruas do entorno).
@@ -389,9 +431,7 @@ export function computeBidirectionalBenchmarks(
   const bVals = bWorkingTxs.map(t => getTxVal(t));
 
   const bPrelim = bVals.reduce((a, b) => a + b, 0) / Math.max(1, bVals.length);
-  const bVariance = bVals.reduce((acc, v) => acc + Math.pow(v - bPrelim, 2), 0) / Math.max(1, bVals.length);
-  const bStd = Math.sqrt(bVariance);
-  const bValid = bVals.filter(v => Math.abs(v - bPrelim) <= 2.2 * bStd);
+  const bValid = sanitizeSqmOutliers(bVals, 2.2);
   const bSaneadaRaw = bValid.length > 0 ? Math.round(bValid.reduce((a, b) => a + b, 0) / bValid.length) : Math.round(bPrelim);
   const bAreaMedia = bWorkingTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / Math.max(1, bWorkingTxs.length);
   const isBLargeArea = size > 1.5 * bAreaMedia;
@@ -404,6 +444,7 @@ export function computeBidirectionalBenchmarks(
   let effectiveRadiusKm = normalizeRadiusKm(radiusKm);
   let raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm)
     .filter(isVoluntaryMarketSale)
+    .filter(t => !targetCore || cleanStreetCore(t.street) !== targetCore)
     .filter(t => !targetPropType || t.propertyType === targetPropType);
 
   // REGRA PERICIAL DO USUÁRIO: AUTO-AJUSTE / FREIO DE RAIO (0.5 km -> 1.0 km)
@@ -418,6 +459,7 @@ export function computeBidirectionalBenchmarks(
     if (isOutlier500 || raioTxs.length === 0) {
       const raio1kmTxs = selectRadiusTransactions(radiusTransactions || typeTxs, 1.0)
         .filter(isVoluntaryMarketSale)
+        .filter(t => !targetCore || cleanStreetCore(t.street) !== targetCore)
         .filter(t => !targetPropType || t.propertyType === targetPropType);
       const rawR1000Vals = raio1kmTxs.map(t => getTxVal(t)).filter(isValValid);
       const r1000Prelim = rawR1000Vals.length > 0 ? rawR1000Vals.reduce((a, b) => a + b, 0) / rawR1000Vals.length : 0;
@@ -451,7 +493,7 @@ export function computeBidirectionalBenchmarks(
   const refCorteRaio = Math.round(raioPrelim || bSaneada);
   const raioCorteMin = raioStd > 0 ? Math.round(raioPrelim - (2 * raioStd)) : Math.round(raioPrelim);
   const raioCorteMax = raioStd > 0 ? Math.round(raioPrelim + (2 * raioStd)) : Math.round(raioPrelim);
-  const raioValid = raioVals.filter(v => raioStd === 0 || Math.abs(v - raioPrelim) <= 2 * raioStd);
+  const raioValid = sanitizeSqmOutliers(raioVals, 2.0);
   const raioSaneadaRaw = raioValid.length > 0
     ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length)
     : (hasVerifiedRadius ? Math.round(refCorteRaio) : 0);
@@ -532,7 +574,7 @@ export function computeBidirectionalBenchmarks(
     const deviation = Math.sqrt(ruaVals.reduce((sum, value) => sum + (value - ruaPrelim) ** 2, 0) / ruaVals.length);
     ruaCorteMin = Math.max(800, Math.round(ruaPrelim - 2.2 * deviation));
     ruaCorteMax = Math.round(ruaPrelim + 2.2 * deviation);
-    ruaValid = ruaVals.filter(v => v >= ruaCorteMin && v <= ruaCorteMax);
+    ruaValid = sanitizeSqmOutliers(ruaVals, 2.2);
     if (ruaValid.length === 0) ruaValid = ruaVals;
     ruaSaneadaRaw = Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length);
   } else if (ruaVals.length === 1) {
@@ -669,7 +711,7 @@ export function computeBidirectionalBenchmarks(
     const pAnchor = ruaSaneada > 0 ? ruaSaneada : (raioSaneada > 0 ? raioSaneada : bSaneada);
     predioCorteMin = Math.round(pAnchor * 0.55);
     predioCorteMax = Math.round(pAnchor * 1.45);
-    if (predioVals[0] <= predioCorteMax) {
+    if (pAnchor <= 0 || (predioVals[0] >= predioCorteMin && predioVals[0] <= predioCorteMax)) {
       predioValid = [predioVals[0]];
       predioSaneadaRaw = predioVals[0];
     } else {

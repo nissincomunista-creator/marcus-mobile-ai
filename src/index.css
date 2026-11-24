@@ -14,7 +14,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: #020617;
+  background-color: #111622;
   color: #f1f5f9;
   transition: background-color 0.2s ease, color 0.2s ease;
   overflow-x: hidden;
@@ -38,8 +38,14 @@ textarea.bg-slate-100 {
    MODO CLARO (LIGHT THEME) PROFISSIONAL, COESO & ELEGANTE
    ========================================================================== */
 body.light-theme {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
+}
+
+body.light-theme .auction-card {
+  background-color: transparent !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  box-shadow: none !important;
 }
 
 /* Planos de fundo de cartões e painéis principais no modo claro */
@@ -111,18 +117,24 @@ body.light-theme .border-slate-700\/40 {
   border-color: #cbd5e1 !important; /* Cinza slate-300 nítido contra o fundo */
 }
 
-/* Cards de Oportunidades com contorno bem evidente e elevação */
-body.light-theme .auction-card,
+/* Cards de Oportunidades estilo Zap Imóveis: borda quase invisível, realçada ao passar o mouse */
+body.light-theme .auction-card {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
+body.light-theme .auction-card:hover {
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Popovers, dropdowns e painéis no modo claro continuam com fundo branco sólido e contorno nítido */
 body.light-theme div[class*="bg-slate-900"].border {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
-  border-width: 1.5px !important;
-  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04) !important;
-}
-
-body.light-theme .auction-card:hover,
-body.light-theme div[class*="bg-slate-900"].border:hover {
-  border-color: #94a3b8 !important; /* Slate-400 no hover */
+  border-width: 1px !important;
   box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -2px rgba(15, 23, 42, 0.06) !important;
 }
 

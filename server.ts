@@ -1421,7 +1421,7 @@ function loadStore(): DataStore {
           }
           return true;
         });
-      const STORE_CALIBRATION_VERSION = 'v24_purge_radius_outliers_parity_ssot';
+      const STORE_CALIBRATION_VERSION = 'v25_radius_ssot_outlier_sync';
       const needsRecalibration = (storeData as any).calibrationVersion !== STORE_CALIBRATION_VERSION;
       const isMemoryConstrainedRender = process.env.RENDER === 'true';
       if (needsRecalibration && isMemoryConstrainedRender) {
@@ -2944,20 +2944,19 @@ function recalculateAuctionWithIndex(
 
       let radiusTxs: ItbiTransaction[] = [];
       if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
-        let found = findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 0.5, neigh);
-
-        // Alinhamento estrito SSOT com /api/itbi/transactions e Simulador:
-        // Priorizar transações da tipologia exata do lote para evitar contaminação cruzada (ex: casa com aptos)
-        if (auc.propertyType) {
-          const exactRadius = found.filter(t => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase());
-          if (exactRadius.length >= 5) {
-            found = exactRadius;
-          } else {
-            const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(auc.propertyType || '');
-            if (isResidentialTarget) {
-              found = found.filter(t => /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || ''));
-            }
-          }
+        // Busca em 0.5 km (e expande para 1.0 km se < 3 amostras), igual ao motor bidirecional (SSOT)
+        const filterPoolByType = (rows: ItbiTransaction[]) => {
+          if (!auc.propertyType) return rows;
+          const exactRadius = rows.filter(t => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase());
+          if (exactRadius.length >= 5) return exactRadius;
+          const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(auc.propertyType || '');
+          return isResidentialTarget
+            ? rows.filter(t => /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || ''))
+            : rows;
+        };
+        let found = filterPoolByType(findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 0.5));
+        if (found.length < 3) {
+          found = filterPoolByType(findTransactionsInRadius(`${state}|${normCity}`, locLat!, locLng!, 1.0));
         }
         radiusTxs = found;
       }

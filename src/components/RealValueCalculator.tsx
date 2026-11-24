@@ -593,8 +593,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     // calculator's final 60-day flip value back to the property card.
     let timerId: any = null;
     if (prefillData.auctionLink && !hasPrefilledRegistryText) {
+      // Unlock initial ITBI sync immediately so card & simulator stay in parity even if external doc lookup is slow,
+      // then still fetch the registry PDF in the background.
+      setInitialSourceDocsCheckComplete(true);
       timerId = setTimeout(() => {
-        void handleFetchCaixaDocs().finally(() => setInitialSourceDocsCheckComplete(true));
+        void handleFetchCaixaDocs();
       }, 800);
     } else {
       setInitialSourceDocsCheckComplete(true);

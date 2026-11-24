@@ -16034,6 +16034,37 @@ function computeMedian(vals) {
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
+function sanitizeSqmOutliers(values, sigmaMultiplier = 2.2) {
+  if (values.length <= 1) return values;
+  let cleaned = [...values];
+  if (cleaned.length >= 4) {
+    const sorted = [...cleaned].sort((a, b) => a - b);
+    const q1 = sorted[Math.floor(sorted.length * 0.25)];
+    const q3 = sorted[Math.floor(sorted.length * 0.75)];
+    const iqr = q3 - q1;
+    const median2 = computeMedian(sorted);
+    const lowIqr = Math.max(600, q1 - 1.75 * iqr);
+    const highIqr = Math.max(q3 + 1.75 * iqr, 2500);
+    const step1 = sorted.filter(
+      (v) => v >= lowIqr && v <= highIqr && (median2 <= 0 || v >= median2 * 0.5 && v <= median2 * 1.5)
+    );
+    if (step1.length >= 3) {
+      cleaned = step1;
+    } else {
+      const iqrOnly = sorted.filter((v) => v >= lowIqr && v <= highIqr);
+      if (iqrOnly.length >= 3) cleaned = iqrOnly;
+    }
+  }
+  if (cleaned.length >= 2) {
+    const mean = cleaned.reduce((a, b) => a + b, 0) / cleaned.length;
+    const variance = cleaned.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / cleaned.length;
+    const std = Math.sqrt(variance);
+    const threshold = Math.max(std * sigmaMultiplier, 500);
+    const step2 = cleaned.filter((v) => Math.abs(v - mean) <= threshold);
+    if (step2.length >= 2) return step2;
+  }
+  return cleaned;
+}
 function getTxIntegralValue(tx) {
   if (typeof tx.normalizedTotalValue === "number" && tx.normalizedTotalValue > 0) {
     return tx.normalizedTotalValue;
@@ -16212,9 +16243,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const bWorkingTxs = isBCenarioA ? similarBTxs : allBVals;
   const bVals = bWorkingTxs.map((t) => getTxVal(t));
   const bPrelim = bVals.reduce((a, b) => a + b, 0) / Math.max(1, bVals.length);
-  const bVariance = bVals.reduce((acc, v) => acc + Math.pow(v - bPrelim, 2), 0) / Math.max(1, bVals.length);
-  const bStd = Math.sqrt(bVariance);
-  const bValid = bVals.filter((v) => Math.abs(v - bPrelim) <= 2.2 * bStd);
+  const bValid = sanitizeSqmOutliers(bVals, 2.2);
   const bSaneadaRaw = bValid.length > 0 ? Math.round(bValid.reduce((a, b) => a + b, 0) / bValid.length) : Math.round(bPrelim);
   const bAreaMedia = bWorkingTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / Math.max(1, bWorkingTxs.length);
   const isBLargeArea = size > 1.5 * bAreaMedia;
@@ -16222,14 +16251,14 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const bSaneada = isBLargeArea || !isBCenarioA ? Math.round(bSaneadaRaw * bFator) : bSaneadaRaw;
   const bExpurgados = bVals.length - bValid.length;
   let effectiveRadiusKm = normalizeRadiusKm(radiusKm);
-  let raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm).filter(isVoluntaryMarketSale).filter((t) => !targetPropType || t.propertyType === targetPropType);
+  let raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm).filter(isVoluntaryMarketSale).filter((t) => !targetCore || cleanStreetCore(t.street) !== targetCore).filter((t) => !targetPropType || t.propertyType === targetPropType);
   let isRadiusAutoAdjusted = false;
   if (effectiveRadiusKm <= 0.5 && raioTxs.length < 3 && bSaneada > 0) {
     const rawR500Vals = raioTxs.map((t) => getTxVal(t)).filter(isValValid);
     const r500Prelim = rawR500Vals.length > 0 ? rawR500Vals.reduce((a, b) => a + b, 0) / rawR500Vals.length : 0;
     const isOutlier500 = r500Prelim > 0 && (r500Prelim > bSaneada * 1.35 || r500Prelim < bSaneada * 0.65);
     if (isOutlier500 || raioTxs.length === 0) {
-      const raio1kmTxs = selectRadiusTransactions(radiusTransactions || typeTxs, 1).filter(isVoluntaryMarketSale).filter((t) => !targetPropType || t.propertyType === targetPropType);
+      const raio1kmTxs = selectRadiusTransactions(radiusTransactions || typeTxs, 1).filter(isVoluntaryMarketSale).filter((t) => !targetCore || cleanStreetCore(t.street) !== targetCore).filter((t) => !targetPropType || t.propertyType === targetPropType);
       const rawR1000Vals = raio1kmTxs.map((t) => getTxVal(t)).filter(isValValid);
       const r1000Prelim = rawR1000Vals.length > 0 ? rawR1000Vals.reduce((a, b) => a + b, 0) / rawR1000Vals.length : 0;
       const is1kmConsistent = r1000Prelim > 0 && Math.abs(r1000Prelim - bSaneada) / bSaneada <= 0.35;
@@ -16254,7 +16283,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const refCorteRaio = Math.round(raioPrelim || bSaneada);
   const raioCorteMin = raioStd > 0 ? Math.round(raioPrelim - 2 * raioStd) : Math.round(raioPrelim);
   const raioCorteMax = raioStd > 0 ? Math.round(raioPrelim + 2 * raioStd) : Math.round(raioPrelim);
-  const raioValid = raioVals.filter((v) => raioStd === 0 || Math.abs(v - raioPrelim) <= 2 * raioStd);
+  const raioValid = sanitizeSqmOutliers(raioVals, 2);
   const raioSaneadaRaw = raioValid.length > 0 ? Math.round(raioValid.reduce((a, b) => a + b, 0) / raioValid.length) : hasVerifiedRadius ? Math.round(refCorteRaio) : 0;
   const raioAreaMedia = raioWorkingTxs.reduce((acc, t) => acc + (t.sizeSqm || size), 0) / Math.max(1, raioWorkingTxs.length);
   const isRaioLargeArea = hasVerifiedRadius && size > 1.5 * raioAreaMedia;
@@ -16310,7 +16339,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     const deviation = Math.sqrt(ruaVals.reduce((sum, value) => sum + (value - ruaPrelim) ** 2, 0) / ruaVals.length);
     ruaCorteMin = Math.max(800, Math.round(ruaPrelim - 2.2 * deviation));
     ruaCorteMax = Math.round(ruaPrelim + 2.2 * deviation);
-    ruaValid = ruaVals.filter((v) => v >= ruaCorteMin && v <= ruaCorteMax);
+    ruaValid = sanitizeSqmOutliers(ruaVals, 2.2);
     if (ruaValid.length === 0) ruaValid = ruaVals;
     ruaSaneadaRaw = Math.round(ruaValid.reduce((a, b) => a + b, 0) / ruaValid.length);
   } else if (ruaVals.length === 1) {
@@ -16412,7 +16441,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
     const pAnchor = ruaSaneada > 0 ? ruaSaneada : raioSaneada > 0 ? raioSaneada : bSaneada;
     predioCorteMin = Math.round(pAnchor * 0.55);
     predioCorteMax = Math.round(pAnchor * 1.45);
-    if (predioVals[0] <= predioCorteMax) {
+    if (pAnchor <= 0 || predioVals[0] >= predioCorteMin && predioVals[0] <= predioCorteMax) {
       predioValid = [predioVals[0]];
       predioSaneadaRaw = predioVals[0];
     } else {
@@ -20844,7 +20873,7 @@ function loadStore() {
     }
     return true;
   });
-  const STORE_CALIBRATION_VERSION = "v24_purge_radius_outliers_parity_ssot";
+  const STORE_CALIBRATION_VERSION = "v25_radius_ssot_outlier_sync";
   const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
   const isMemoryConstrainedRender = process.env.RENDER === "true";
   if (needsRecalibration && isMemoryConstrainedRender) {
@@ -22096,17 +22125,16 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       }
       let radiusTxs = [];
       if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
-        let found = findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 0.5, neigh);
-        if (auc.propertyType) {
-          const exactRadius = found.filter((t) => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase());
-          if (exactRadius.length >= 5) {
-            found = exactRadius;
-          } else {
-            const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(auc.propertyType || "");
-            if (isResidentialTarget) {
-              found = found.filter((t) => /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || ""));
-            }
-          }
+        const filterPoolByType = (rows) => {
+          if (!auc.propertyType) return rows;
+          const exactRadius = rows.filter((t) => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase());
+          if (exactRadius.length >= 5) return exactRadius;
+          const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(auc.propertyType || "");
+          return isResidentialTarget ? rows.filter((t) => /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || "")) : rows;
+        };
+        let found = filterPoolByType(findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 0.5));
+        if (found.length < 3) {
+          found = filterPoolByType(findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 1));
         }
         radiusTxs = found;
       }
