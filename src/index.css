@@ -58,18 +58,28 @@ body.light-theme .bg-slate-900\/40 {
   background-color: #ffffff !important;
 }
 
-/* Blocos internos no modo claro */
+/* Fundos internos no modo claro (inclui classes de simulador e graficos escuros) */
 body.light-theme .bg-slate-950,
 body.light-theme .bg-slate-950\/95,
 body.light-theme .bg-slate-950\/90,
+body.light-theme .bg-slate-950\/85,
 body.light-theme .bg-slate-950\/80,
 body.light-theme .bg-slate-950\/70,
 body.light-theme .bg-slate-950\/60,
 body.light-theme .bg-slate-950\/50,
 body.light-theme .bg-slate-950\/45,
-body.light-theme .bg-slate-950\/40 {
-  background-color: #ffffff !important;
-  border-color: #e5e7eb !important;
+body.light-theme .bg-slate-950\/40,
+body.light-theme .bg-slate-950\/30,
+body.light-theme .bg-\[\#0b1220\] {
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Backdrop borrado escuro mantido também no modo claro para modais/simuladores */
+body.light-theme .drawer-backdrop {
+  background-color: rgba(15, 23, 42, 0.52) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 
 body.light-theme .bg-slate-850,
@@ -80,17 +90,17 @@ body.light-theme .bg-slate-800\/70,
 body.light-theme .bg-slate-800\/60,
 body.light-theme .bg-slate-800\/50,
 body.light-theme .bg-slate-800\/40 {
-  background-color: #f3f4f6 !important;
+  background-color: #f1f5f9 !important;
 }
 
 body.light-theme .bg-slate-800\/30,
 body.light-theme .bg-slate-800\/20,
 body.light-theme .bg-slate-700\/30,
 body.light-theme .bg-slate-700\/20 {
-  background-color: #e5e7eb !important;
+  background-color: #e2e8f0 !important;
 }
 
-/* Bordas limpas no modo claro */
+/* Bordas mais nítidas e escuras no tema claro (painéis, células e divisores) */
 body.light-theme .border-white,
 body.light-theme .border-white\/90,
 body.light-theme .border-white\/80,
@@ -111,8 +121,11 @@ body.light-theme .border-slate-700,
 body.light-theme .border-slate-700\/80,
 body.light-theme .border-slate-700\/60,
 body.light-theme .border-slate-700\/50,
-body.light-theme .border-slate-700\/40 {
-  border-color: #d1d5db !important;
+body.light-theme .border-slate-700\/40,
+body.light-theme .divide-slate-850 > :not(:last-child),
+body.light-theme .divide-slate-800 > :not(:last-child),
+body.light-theme .divide-emerald-900\/30 > :not(:last-child) {
+  border-color: #94a3b8 !important;
 }
 
 /* Cards de Oportunidades (Lista e Mapa Enquadramento) estilo Zap Imóveis: puros e sem borda em repouso */
@@ -126,7 +139,7 @@ body.light-theme .map-side-card {
 
 body.light-theme .auction-card:hover,
 body.light-theme .map-side-card:hover {
-  border-color: #d1d5db !important;
+  border-color: #64748b !important;
   box-shadow: 0 6px 20px -4px rgba(17, 24, 39, 0.08) !important;
 }
 
@@ -190,34 +203,69 @@ body.light-theme .text-slate-500.uppercase {
   font-weight: 700;
 }
 
-/* Inputs, Selects e Textareas no modo claro com borda nítida */
+/* Inputs, Selects e Textareas no modo claro com borda nítida e escura */
 body.light-theme input,
 body.light-theme select,
 body.light-theme textarea {
   background-color: #ffffff !important;
   color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  border-color: #94a3b8 !important;
   border-width: 1.5px !important;
 }
 
 body.light-theme input:focus,
 body.light-theme select:focus,
 body.light-theme textarea:focus {
-  border-color: #6366f1 !important;
-  outline: 2px solid rgba(99, 102, 241, 0.2) !important;
+  border-color: #4f46e5 !important;
+  outline: 2px solid rgba(79, 70, 229, 0.18) !important;
 }
 
 body.light-theme input::placeholder,
 body.light-theme textarea::placeholder {
-  color: #94a3b8 !important;
+  color: #64748b !important;
 }
 
+/* Contraste nítido de cores de texto e badges no modo claro (evita texto claro em fundo claro ou escuro em escuro) */
+body.light-theme .text-emerald-100,
+body.light-theme .text-emerald-200,
+body.light-theme .text-emerald-300,
 body.light-theme .text-emerald-400,
-body.light-theme .text-emerald-300 {
-  color: #16a34a !important;
+body.light-theme .text-emerald-400\/80 {
+  color: #15803d !important;
 }
 body.light-theme .text-emerald-500 {
-  color: #15803d !important;
+  color: #166534 !important;
+}
+body.light-theme .text-amber-100,
+body.light-theme .text-amber-200,
+body.light-theme .text-amber-300,
+body.light-theme .text-amber-400,
+body.light-theme .text-amber-400\/80 {
+  color: #92400e !important;
+}
+body.light-theme .text-indigo-100,
+body.light-theme .text-indigo-200,
+body.light-theme .text-indigo-300,
+body.light-theme .text-indigo-400,
+body.light-theme .text-indigo-400\/80 {
+  color: #3730a3 !important;
+}
+body.light-theme .text-blue-200,
+body.light-theme .text-blue-300,
+body.light-theme .text-blue-400,
+body.light-theme .text-sky-200,
+body.light-theme .text-sky-300,
+body.light-theme .text-sky-400,
+body.light-theme .text-cyan-200,
+body.light-theme .text-cyan-300,
+body.light-theme .text-cyan-400 {
+  color: #1d4ed8 !important;
+}
+body.light-theme .text-rose-200,
+body.light-theme .text-rose-300,
+body.light-theme .text-rose-300\/80,
+body.light-theme .text-rose-400 {
+  color: #be123c !important;
 }
 
 /* Botões com fundo sólido ou gradiente colorido continuam sempre com escrita branca legível */
@@ -277,53 +325,74 @@ body.light-theme .btn-light-tint-sky svg {
   color: #0284c7 !important;
 }
 
-/* Tags, Pills e Badges no modo claro */
-body.light-theme .bg-indigo-950\/40,
-body.light-theme .bg-indigo-950\/50,
-body.light-theme .bg-indigo-950\/60 {
+/* Tags, Pills, Tabelas e Badges no modo claro com alto contraste e bordas visíveis */
+body.light-theme [class*="bg-indigo-950"],
+body.light-theme [class*="bg-indigo-900"] {
   background-color: #e0e7ff !important;
-  color: #3730a3 !important;
-  border-color: #c7d2fe !important;
+  color: #312e81 !important;
+  border-color: #818cf8 !important;
 }
 
-body.light-theme .bg-emerald-950\/40,
-body.light-theme .bg-emerald-950\/50,
-body.light-theme .bg-emerald-950\/60 {
-  background-color: #d1fae5 !important;
-  color: #065f46 !important;
-  border-color: #a7f3d0 !important;
+body.light-theme [class*="bg-emerald-950"],
+body.light-theme [class*="bg-emerald-900"] {
+  background-color: #dcfce7 !important;
+  color: #14532d !important;
+  border-color: #4ade80 !important;
 }
 
-body.light-theme .bg-blue-950\/40,
-body.light-theme .bg-blue-950\/50,
-body.light-theme .bg-blue-950\/60 {
+body.light-theme [class*="bg-blue-950"],
+body.light-theme [class*="bg-blue-900"],
+body.light-theme [class*="bg-sky-950"],
+body.light-theme [class*="bg-sky-900"] {
   background-color: #dbeafe !important;
-  color: #1e40af !important;
-  border-color: #bfdbfe !important;
+  color: #1e3a8a !important;
+  border-color: #60a5fa !important;
 }
 
-body.light-theme .bg-amber-950\/40,
-body.light-theme .bg-amber-950\/50,
-body.light-theme .bg-amber-950\/60 {
+body.light-theme [class*="bg-amber-950"],
+body.light-theme [class*="bg-amber-900"] {
   background-color: #fef3c7 !important;
-  color: #92400e !important;
-  border-color: #fde68a !important;
+  color: #78350f !important;
+  border-color: #f59e0b !important;
 }
 
-body.light-theme .bg-purple-950\/40,
-body.light-theme .bg-purple-950\/50,
-body.light-theme .bg-purple-950\/60 {
+body.light-theme [class*="bg-purple-950"],
+body.light-theme [class*="bg-purple-900"] {
   background-color: #f3e8ff !important;
-  color: #6b21a8 !important;
-  border-color: #e9d5ff !important;
+  color: #581c87 !important;
+  border-color: #c084fc !important;
 }
 
-body.light-theme .bg-rose-950\/40,
-body.light-theme .bg-rose-950\/50,
-body.light-theme .bg-rose-950\/60 {
+body.light-theme [class*="bg-rose-950"],
+body.light-theme [class*="bg-rose-900"] {
   background-color: #ffe4e6 !important;
-  color: #9f1239 !important;
-  border-color: #fecdd3 !important;
+  color: #881337 !important;
+  border-color: #fb7185 !important;
+}
+
+body.light-theme .border-emerald-900\/50,
+body.light-theme .border-emerald-900\/40,
+body.light-theme .border-emerald-900\/60,
+body.light-theme .border-emerald-800\/50,
+body.light-theme .border-emerald-800\/40,
+body.light-theme .border-emerald-700\/50 {
+  border-color: #4ade80 !important;
+}
+
+body.light-theme .border-amber-800\/60,
+body.light-theme .border-amber-800\/50,
+body.light-theme .border-amber-800\/40,
+body.light-theme .border-amber-600\/60 {
+  border-color: #f59e0b !important;
+}
+
+/* Gráficos SVG com traço branco ficam nítidos sobre fundo claro */
+body.light-theme svg path[stroke="#ffffff"],
+body.light-theme svg circle[stroke="#ffffff"] {
+  stroke: #1e293b !important;
+}
+body.light-theme svg circle[fill="#ffffff"] {
+  fill: #1e293b !important;
 }
 
 /* Drop shadows suaves para cards em fundo claro */

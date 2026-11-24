@@ -955,7 +955,7 @@ export default function App() {
 
               <span className="hidden sm:inline-block h-5 w-px bg-slate-800" />
 
-              {/* Right corner tools: Calculadora, ITBI, Perfil + Theme & Logout */}
+              {/* Right corner tools: Calculadora, ITBI, Perfil (transparentes só contorno + letra) + Theme & Logout */}
               <div className="flex items-center gap-1.5">
                 <button
                   id="tab-calculadora"
@@ -963,10 +963,14 @@ export default function App() {
                     setActiveTab('calculadora');
                     setSelectedAuctionId(null);
                   }}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
+                  className={`px-3 py-1.5 rounded-xl font-medium text-xs transition-all flex items-center space-x-1.5 cursor-pointer border bg-transparent ${
                     activeTab === 'calculadora'
-                      ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
-                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
+                      ? theme === 'light'
+                        ? 'text-slate-900 border-slate-700'
+                        : 'text-white border-slate-300'
+                      : theme === 'light'
+                        ? 'text-slate-700 border-slate-400 hover:border-slate-600 hover:text-slate-950'
+                        : 'text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
                   }`}
                 >
                   <Calculator className="w-3.5 h-3.5" />
@@ -979,10 +983,14 @@ export default function App() {
                     setActiveTab('itbi');
                     setSelectedAuctionId(null);
                   }}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
+                  className={`px-3 py-1.5 rounded-xl font-medium text-xs transition-all flex items-center space-x-1.5 cursor-pointer border bg-transparent ${
                     activeTab === 'itbi'
-                      ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
-                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
+                      ? theme === 'light'
+                        ? 'text-slate-900 border-slate-700'
+                        : 'text-white border-slate-300'
+                      : theme === 'light'
+                        ? 'text-slate-700 border-slate-400 hover:border-slate-600 hover:text-slate-950'
+                        : 'text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
                   }`}
                 >
                   <Database className="w-3.5 h-3.5" />
@@ -995,10 +1003,14 @@ export default function App() {
                     setActiveTab('perfil');
                     setSelectedAuctionId(null);
                   }}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer border ${
+                  className={`px-3 py-1.5 rounded-xl font-medium text-xs transition-all flex items-center space-x-1.5 cursor-pointer border bg-transparent ${
                     activeTab === 'perfil'
-                      ? 'bg-slate-900 text-white border-slate-800 shadow-sm dark:bg-slate-100 dark:text-slate-900 dark:border-slate-200'
-                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700/80 dark:hover:text-white'
+                      ? theme === 'light'
+                        ? 'text-slate-900 border-slate-700'
+                        : 'text-white border-slate-300'
+                      : theme === 'light'
+                        ? 'text-slate-700 border-slate-400 hover:border-slate-600 hover:text-slate-950'
+                        : 'text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
                   }`}
                 >
                   <User className="w-3.5 h-3.5" />
@@ -1281,6 +1293,7 @@ export default function App() {
                       onDeleteAuction={handleDeleteAuction}
                       onOpenAddModal={() => {}}
                       onMapViewChange={setIsDashboardMapOpen}
+                      onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                       selectedNeighborhoodFilter={selectedNeighborhoodFilter}
                       setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
                       selectedCityFilter={selectedCityFilter}
@@ -1421,6 +1434,7 @@ export default function App() {
                       onDeleteAuction={handleDeleteAuction}
                       onOpenAddModal={() => {}}
                       onMapViewChange={setIsDashboardMapOpen}
+                      onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                       selectedNeighborhoodFilter={selectedNeighborhoodFilter}
                       setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
                       selectedCityFilter={selectedCityFilter}
@@ -1608,6 +1622,7 @@ export default function App() {
               >
                 <PropertyMap
                   theme={theme}
+                  onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                   itbiStats={itbiStats}
                   onUpdateProperty={handleUpdatePropertyDirectly}
                   auctions={auctions}

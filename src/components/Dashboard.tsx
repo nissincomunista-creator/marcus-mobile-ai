@@ -106,6 +106,7 @@ interface DashboardProps {
   onClearAll?: () => void;
   onOpenCapitalMatcher?: () => void;
   onMapViewChange?: (isMapOpen: boolean) => void;
+  onToggleTheme?: () => void;
   syncStatus?: {
     lastSyncTime: string;
     isSyncing: boolean;
@@ -156,6 +157,7 @@ export default function Dashboard({
   onClearAll,
   onOpenCapitalMatcher,
   onMapViewChange,
+  onToggleTheme,
   syncStatus
 }: DashboardProps) {
   // Sidebar state
@@ -1918,6 +1920,7 @@ export default function Dashboard({
                   <div className={`fixed inset-0 z-50 w-screen h-screen flex flex-col animate-in fade-in duration-150 ${theme === 'light' ? 'bg-white' : 'bg-[#020617]'}`}>
                     <PropertyMap
                       theme={theme}
+                      onToggleTheme={onToggleTheme}
                       auctions={auctions}
                       itbiStats={itbiStats}
                       onUpdateProperty={onUpdateProperty}
@@ -2056,7 +2059,7 @@ export default function Dashboard({
                         {/* Linha imediatamente abaixo da foto: descrição (esq) | modalidade sem hífen + Salvar (dir) */}
                         <div className="flex items-center justify-between gap-2">
                           <div
-                            className="text-xs font-bold text-slate-300 leading-snug truncate min-w-0 flex-1"
+                            className="text-xs font-normal text-slate-300 leading-snug truncate min-w-0 flex-1"
                             title={auc.areaAudit?.selected?.excerpt || 'Metragem sem confirmação na fonte'}
                           >
                             {[
@@ -2071,7 +2074,7 @@ export default function Dashboard({
                             {auc.origin !== 'portal' && (() => {
                               const badge = getSaleModeBadge(auc);
                               return badge?.label ? (
-                                <span className="text-[11px] italic font-bold text-slate-200 whitespace-nowrap">
+                                <span className="text-[11px] italic font-normal text-slate-200 whitespace-nowrap">
                                   {badge.label}
                                 </span>
                               ) : null;
@@ -2130,10 +2133,10 @@ export default function Dashboard({
                           );
                         })() : null}
 
-                        {/* Título e Endereço (tudo em negrito com contraste limpo estilo Zap Imóveis) */}
+                        {/* Título em negrito; demais linhas sem negrito para leitura limpa estilo Zap Imóveis */}
                         <div className="space-y-0.5">
                           <h3
-                            className="text-sm sm:text-base font-extrabold text-white line-clamp-2 leading-snug hover:text-slate-200 transition-colors cursor-pointer break-words"
+                            className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug hover:text-slate-200 transition-colors cursor-pointer break-words"
                             style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                             onClick={() => setSimulatingAuction(auc)}
                             title={auc.title}
@@ -2141,7 +2144,7 @@ export default function Dashboard({
                             {auc.title}
                           </h3>
                           <div
-                            className="text-xs font-bold text-slate-300 truncate break-words"
+                            className="text-xs font-normal text-slate-400 truncate break-words"
                             style={{ overflowWrap: 'anywhere' }}
                           >
                             {(() => {
@@ -2161,25 +2164,25 @@ export default function Dashboard({
                             const m = divNotice.match(/^(Bairro\s*Real\s*:\s*)([^(]+)(.*)$/i);
                             if (m) {
                               return (
-                                <div className="text-[10.5px] font-bold text-slate-400">
+                                <div className="text-[10.5px] font-normal text-slate-400">
                                   <span>{m[1]}</span>
-                                  <strong className="font-extrabold uppercase text-white">{m[2].trim()}</strong>
+                                  <span className="uppercase text-white">{m[2].trim()}</span>
                                   {m[3] ? <span> {m[3].trim()}</span> : null}
                                 </div>
                               );
                             }
-                            return <div className="text-[10.5px] font-bold text-slate-400">{divNotice}</div>;
+                            return <div className="text-[10.5px] font-normal text-slate-400">{divNotice}</div>;
                           })()}
                           {auc.origin === 'portal' ? (
-                            <div className="text-[10.5px] font-bold text-slate-400">
-                              Publicação: <strong className="font-extrabold text-slate-200">{formatPublicationDateDisplay(auc)}</strong>
+                            <div className="text-[10.5px] font-normal text-slate-400">
+                              Publicação: <span className="text-slate-200">{formatPublicationDateDisplay(auc)}</span>
                             </div>
                           ) : (
-                            <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[10.5px] font-bold text-slate-400">
-                              <span>Origem: <strong className="font-extrabold text-slate-200">{getAuctionPortalDisplayName(auc)}</strong></span>
-                              <span>1ª Praça: <strong className="font-extrabold text-slate-200">{formatAuctionDate(auc.firstAuctionDate || auc.auctionDate)}</strong></span>
+                            <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[10.5px] font-normal text-slate-400">
+                              <span>Origem: <span className="text-slate-200">{getAuctionPortalDisplayName(auc)}</span></span>
+                              <span>1ª Praça: <span className="text-slate-200">{formatAuctionDate(auc.firstAuctionDate || auc.auctionDate)}</span></span>
                               {auc.secondAuctionDate && (
-                                <span>2ª Praça: <strong className="font-extrabold text-slate-200">{formatAuctionDate(auc.secondAuctionDate)}</strong></span>
+                                <span>2ª Praça: <span className="text-slate-200">{formatAuctionDate(auc.secondAuctionDate)}</span></span>
                               )}
                             </div>
                           )}
@@ -2248,22 +2251,22 @@ export default function Dashboard({
                           <div className="space-y-2 pt-1.5">
                             <div className="grid grid-cols-3 gap-2">
                               <div>
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide">Preço Anunciado</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono leading-tight block mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide">Preço Anunciado</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono leading-tight block mt-0.5">
                                   {formatBRL(auc.precoAnunciado || auc.auctionPrice)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide">Custo Total Est.</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono leading-tight block mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide">Custo Total Est.</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono leading-tight block mt-0.5">
                                   {formatBRL(totalCost)}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide leading-tight">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide leading-tight">
                                   {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
                                 </span>
-                                <span className="text-[14px] font-extrabold text-white font-mono leading-tight block mt-0.5">
+                                <span className="text-[14px] font-bold text-white font-mono leading-tight block mt-0.5">
                                   {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
                                 </span>
                               </div>
@@ -2271,8 +2274,8 @@ export default function Dashboard({
 
                             <div className="grid grid-cols-3 gap-2 pt-1">
                               <div>
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide">M² Ref. Bairro</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono leading-tight block mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide">M² Ref. Bairro</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono leading-tight block mt-0.5">
                                   {(() => {
                                     const itbiStat = itbiStats?.find(s =>
                                       normalizeText(s.neighborhood) === normalizeText(auc.neighborhood) &&
@@ -2284,14 +2287,14 @@ export default function Dashboard({
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide">ROI Projetado</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono leading-tight block mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide">ROI Projetado</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono leading-tight block mt-0.5">
                                   {roi !== undefined ? (roi > 0 ? `+${roi}%` : `${roi}%`) : 'Sob análise'}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide">Lucro Estimado</span>
-                                <span className={`text-[14px] font-extrabold font-mono leading-tight block mt-0.5 ${
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide">Lucro Estimado</span>
+                                <span className={`text-[13.5px] font-normal font-mono leading-tight block mt-0.5 ${
                                   lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
                                   lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
                                 }`}>
@@ -2307,47 +2310,47 @@ export default function Dashboard({
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2.5 gap-y-2 pt-1.5">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1 flex-wrap">
-                                  <span className="text-[9.5px] text-slate-400 uppercase font-bold tracking-wide">Lance Mínimo</span>
+                                  <span className="text-[9.5px] text-slate-400 uppercase font-normal tracking-wide">Lance Mínimo</span>
                                   {auc.firstAuctionPrice && auc.secondAuctionPrice ? (
-                                    <span className="text-[9.5px] font-extrabold text-slate-200">
+                                    <span className="text-[9.5px] font-normal text-slate-300">
                                       {auc.auctionPrice === auc.firstAuctionPrice ? '1º Leilão' : '2º Leilão'}
                                     </span>
                                   ) : null}
                                 </div>
-                                <span className="text-[14px] font-extrabold text-white font-mono block truncate leading-tight mt-0.5">
+                                <span className="text-[13.5px] font-normal text-white font-mono block truncate leading-tight mt-0.5">
                                   {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Lance não confirmado'}
                                 </span>
                                 {auc.firstAuctionPrice && auc.secondAuctionPrice && (
-                                  <span className="text-[9px] font-bold text-slate-500 font-mono block leading-tight mt-0.5">
+                                  <span className="text-[9px] font-normal text-slate-500 font-mono block leading-tight mt-0.5">
                                     1º: {formatBRL(auc.firstAuctionPrice)} | 2º: {formatBRL(auc.secondAuctionPrice)}
                                   </span>
                                 )}
                               </div>
 
                               <div className="relative group/cost cursor-help min-w-0">
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide truncate">Custo Total Est.</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono block truncate leading-tight mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide truncate">Custo Total Est.</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono block truncate leading-tight mt-0.5">
                                   {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
                                 </span>
-                                <span className="text-[9px] font-bold text-slate-500 font-mono leading-tight block mt-0.5">
+                                <span className="text-[9px] font-normal text-slate-500 font-mono leading-tight block mt-0.5">
                                   ITBI (3%) + RGI (2%) + Ref. (5%)
                                 </span>
                                 <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
-                                  <div className="font-bold text-slate-200 border-b border-slate-800 pb-1">Composição do Custo Total</div>
-                                  <div className="flex justify-between"><span>Lance Mínimo:</span><strong>{costs.bid > 0 ? formatBRL(costs.bid) : 'Lance não confirmado'}</strong></div>
-                                  {costs.auctioneer > 0 && <div className="flex justify-between"><span>Comissão Leiloeiro (5%):</span><strong>{formatBRL(costs.auctioneer)}</strong></div>}
-                                  <div className="flex justify-between"><span>ITBI (3%) &amp; RGI/Cartório:</span><strong>{formatBRL(costs.itbi + costs.registry)}</strong></div>
-                                  <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(costs.repair)}</strong></div>
-                                  {costs.legal > 0 && <div className="flex justify-between"><span>Desocupação / Custas (5%):</span><strong>{formatBRL(costs.legal)}</strong></div>}
-                                  {(costs.iptu + costs.condo) > 0 && <div className="flex justify-between"><span>Dívidas IPTU / Cond.:</span><strong>{formatBRL(costs.iptu + costs.condo)}</strong></div>}
-                                  {costs.custoCarregamento > 0 && <div className="flex justify-between"><span>Carregamento (1,5% Gab.):</span><strong>{formatBRL(costs.custoCarregamento)}</strong></div>}
-                                  <div className="flex justify-between border-t border-slate-800 pt-1 font-bold text-slate-100"><span>Custo Total Est.:</span><strong>{formatBRL(totalCost)}</strong></div>
+                                  <div className="font-semibold text-slate-200 border-b border-slate-800 pb-1">Composição do Custo Total</div>
+                                  <div className="flex justify-between"><span>Lance Mínimo:</span><span>{costs.bid > 0 ? formatBRL(costs.bid) : 'Lance não confirmado'}</span></div>
+                                  {costs.auctioneer > 0 && <div className="flex justify-between"><span>Comissão Leiloeiro (5%):</span><span>{formatBRL(costs.auctioneer)}</span></div>}
+                                  <div className="flex justify-between"><span>ITBI (3%) &amp; RGI/Cartório:</span><span>{formatBRL(costs.itbi + costs.registry)}</span></div>
+                                  <div className="flex justify-between"><span>Reforma Est. (5%):</span><span>{formatBRL(costs.repair)}</span></div>
+                                  {costs.legal > 0 && <div className="flex justify-between"><span>Desocupação / Custas (5%):</span><span>{formatBRL(costs.legal)}</span></div>}
+                                  {(costs.iptu + costs.condo) > 0 && <div className="flex justify-between"><span>Dívidas IPTU / Cond.:</span><span>{formatBRL(costs.iptu + costs.condo)}</span></div>}
+                                  {costs.custoCarregamento > 0 && <div className="flex justify-between"><span>Carregamento (1,5% Gab.):</span><span>{formatBRL(costs.custoCarregamento)}</span></div>}
+                                  <div className="flex justify-between border-t border-slate-800 pt-1 text-slate-100"><span>Custo Total Est.:</span><span>{formatBRL(totalCost)}</span></div>
                                 </div>
                               </div>
 
                               <div className="min-w-0">
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide truncate">Lucro Real Est.</span>
-                                <span className={`text-[14px] font-extrabold font-mono block truncate leading-tight mt-0.5 ${
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide truncate">Lucro Real Est.</span>
+                                <span className={`text-[13.5px] font-normal font-mono block truncate leading-tight mt-0.5 ${
                                   lucroReal !== undefined && lucroReal > 0 ? 'text-emerald-400' :
                                   lucroReal !== undefined && lucroReal < 0 ? 'text-rose-400' : 'text-slate-400'
                                 }`}>
@@ -2356,19 +2359,19 @@ export default function Dashboard({
                                     : 'Sob análise'}
                                 </span>
                                 {spreadSqm > 0 && (
-                                  <span className="text-[9px] font-bold font-mono text-slate-500 block leading-tight mt-0.5">
+                                  <span className="text-[9px] font-normal font-mono text-slate-500 block leading-tight mt-0.5">
                                     Spread: {formatBRL(spreadSqm)}/m²
                                   </span>
                                 )}
                               </div>
 
                               <div className="relative group/itbi cursor-help min-w-0">
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide truncate">Gabarito ITBI</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono block truncate leading-tight mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide truncate">Gabarito ITBI</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono block truncate leading-tight mt-0.5">
                                   {auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem amostras'}
                                 </span>
                                 {auc.isAreaHomogeneizada && (
-                                  <span className="text-[9px] font-bold font-mono text-slate-500 block leading-tight mt-0.5">
+                                  <span className="text-[9px] font-normal font-mono text-slate-500 block leading-tight mt-0.5">
                                     Escala NBR: {auc.fatorEscala ? auc.fatorEscala.toFixed(3) : '1.000'}
                                   </span>
                                 )}
@@ -2377,15 +2380,15 @@ export default function Dashboard({
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2.5 gap-y-2 pt-1.5">
                               <div className="min-w-0">
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide truncate">Avaliação Edital</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono block truncate leading-tight mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide truncate">Avaliação Edital</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono block truncate leading-tight mt-0.5">
                                   {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
                                 </span>
                               </div>
 
                               <div className="min-w-0">
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide truncate">ROI Projetado</span>
-                                <span className="text-[14px] font-extrabold text-white font-mono block truncate leading-tight mt-0.5">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide truncate">ROI Projetado</span>
+                                <span className="text-[13.5px] font-normal text-white font-mono block truncate leading-tight mt-0.5">
                                   {roi !== undefined ? (roi > 0 ? `+${roi}%` : `${roi}%`) : 'Sob análise'}
                                 </span>
                               </div>
@@ -2398,25 +2401,25 @@ export default function Dashboard({
                                 const finalLiquidity = !hasStreetData ? 0 : Math.min(auc.liquidityScore ?? 0, effectiveCeiling);
                                 return (
                                   <div className="min-w-0">
-                                    <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide truncate">Liquidez</span>
-                                    <span className="text-[14px] font-extrabold text-white font-mono block leading-tight mt-0.5">{finalLiquidity}/10</span>
+                                    <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide truncate">Liquidez</span>
+                                    <span className="text-[13.5px] font-normal text-white font-mono block leading-tight mt-0.5">{finalLiquidity}/10</span>
                                   </div>
                                 );
                               })()}
 
                               <div className="min-w-0">
-                                <span className="text-[9.5px] text-slate-400 block uppercase font-bold tracking-wide leading-tight">
+                                <span className="text-[9.5px] text-slate-400 block uppercase font-normal tracking-wide leading-tight">
                                   {flipPrice > 0 ? 'Preço Sugerido Flip' : 'Valor Estimado'}
                                 </span>
-                                <span className="text-[14px] font-extrabold text-white font-mono block truncate leading-tight mt-0.5">
+                                <span className="text-[14px] font-bold text-white font-mono block truncate leading-tight mt-0.5">
                                   {formatBRL(flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0))}
                                 </span>
                                 {(() => {
                                   const preco = auc.auctionPrice || 0;
                                   const valEst = flipPrice > 0 ? flipPrice : (auc.valorMercadoEstimado || auc.estimatedValue || 0);
                                   const diffPct = (valEst > 0 && preco > 0) ? Math.round(((valEst - preco) / valEst) * 100) : 0;
-                                  if (diffPct > 0) return <span className="text-[9px] font-bold font-mono text-slate-500 block leading-tight mt-0.5">Deságio Flip: -{diffPct}%</span>;
-                                  if (diffPct < 0) return <span className="text-[9px] font-bold font-mono text-slate-500 block leading-tight mt-0.5">Acima do Flip: +{Math.abs(diffPct)}%</span>;
+                                  if (diffPct > 0) return <span className="text-[9px] font-normal font-mono text-slate-500 block leading-tight mt-0.5">Deságio Flip: -{diffPct}%</span>;
+                                  if (diffPct < 0) return <span className="text-[9px] font-normal font-mono text-slate-500 block leading-tight mt-0.5">Acima do Flip: +{Math.abs(diffPct)}%</span>;
                                   return null;
                                 })()}
                               </div>
@@ -2425,7 +2428,7 @@ export default function Dashboard({
                         )}
 
                         {/* Linha única: Ocupado / Financiamento à esquerda e Acessar Leilão + Ver no Mapa à direita */}
-                        <div className="pt-1.5 flex items-center justify-between gap-2 text-[11px] font-bold text-slate-300">
+                        <div className="pt-1.5 flex items-center justify-between gap-2 text-[11px] font-normal text-slate-300">
                           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 min-w-0">
                             {auc.origin !== 'portal' && (
                               <>
@@ -2443,7 +2446,7 @@ export default function Dashboard({
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="btn-light-outline text-[11px] bg-transparent hover:bg-slate-800/40 text-slate-200 px-3 py-1 rounded-full font-bold border border-slate-700 transition-colors cursor-pointer whitespace-nowrap"
+                                className="btn-light-outline text-[11px] bg-transparent hover:bg-slate-800/40 text-slate-200 px-3 py-1 rounded-full font-normal border border-slate-700 transition-colors cursor-pointer whitespace-nowrap"
                               >
                                 {auc.transactionType === 'aluguel' ? 'Ver Anúncio' : auc.origin === 'portal' ? 'Ver Anúncio' : 'Acessar Leilão'}
                               </a>
@@ -2457,7 +2460,7 @@ export default function Dashboard({
                                 setViewMode('map');
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
-                              className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-full font-bold cursor-pointer transition-colors shrink-0"
+                              className="text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-full font-medium cursor-pointer transition-colors shrink-0"
                               title="Localizar imóvel no Mapa Georreferenciado"
                             >
                               Ver no Mapa
@@ -2466,16 +2469,16 @@ export default function Dashboard({
                         </div>
                       </div>
 
-                      {/* Footer padrão original do botão Simular Viabilidade (sem animação de escala) */}
+                      {/* Footer cor sólida padrão original do app (bg-indigo-600) */}
                       <div className="px-3 pb-3 pt-0.5">
                         <button
                           onClick={() => setSimulatingAuction(auc)}
-                          className={`btn-solid-white w-full h-9 px-4 text-white font-bold text-xs rounded-full transition-colors border shadow-sm flex items-center justify-center cursor-pointer ${
+                          className={`btn-solid-white w-full h-9 px-4 text-white font-semibold text-xs rounded-full transition-colors border shadow-sm flex items-center justify-center cursor-pointer ${
                             auc.transactionType === 'aluguel'
-                              ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400/40'
+                              ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500'
                               : auc.origin === 'portal'
-                                ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 border-amber-400/40'
-                                : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 border-indigo-400/40'
+                                ? 'bg-amber-600 hover:bg-amber-500 border-amber-500'
+                                : 'bg-indigo-600 hover:bg-indigo-500 border-indigo-500'
                           }`}
                         >
                           <span>
@@ -2512,7 +2515,7 @@ export default function Dashboard({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSimulatingAuction(null)}
-              className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs cursor-pointer"
+              className="drawer-backdrop absolute inset-0 bg-slate-950/70 backdrop-blur-xs cursor-pointer"
             />
             <motion.div
               initial={{ x: '100%' }}

@@ -162,7 +162,7 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
         <ArrowUp className="w-4 h-4 stroke-[2.5]" />
       </button>
 
-      {/* Floating Trigger Button */}
+      {/* Floating Trigger Button (mesmo tamanho w-9 h-9 da seta para cima) */}
       <motion.button
         onClick={() => {
           setIsOpen(!isOpen);
@@ -170,15 +170,17 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
         }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center cursor-pointer transition-all duration-300 border border-blue-400/20"
+        className="btn-solid-white relative w-9 h-9 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 border border-indigo-400/50"
+        title="Assistente IA"
+        aria-label="Abrir assistente IA"
       >
-        {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
+        {isOpen ? <X className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
         
         {/* Animated Notification Dot */}
         {hasNewNotification && !isOpen && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[10px] text-white font-bold items-center justify-center">1</span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500 text-[9px] text-white font-bold items-center justify-center">1</span>
           </span>
         )}
       </motion.button>
