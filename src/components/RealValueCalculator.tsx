@@ -1142,28 +1142,6 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     });
   }, [rawTransactions, selectedStreet]);
 
-  // Item 3 is the exact circle selected by the analyst. It never expands to
-  // another radius and never substitutes a bairro aggregate.
-  const nearbyStreetData = useMemo(() => {
-    const targetStreetKey = canonicalStreet(selectedStreet);
-    const txs = selectRadiusTransactions(radiusTransactions, radiusKm)
-      .filter(isVoluntaryMarketSale)
-      .filter(tx => !targetStreetKey || canonicalStreet(tx.street) !== targetStreetKey);
-    const label = `Ruas do Entorno (${radiusKm.toFixed(1)} km)`;
-    return {
-      txs,
-      effectiveRadiusKm: radiusKm,
-      isAutoAdjusted: false,
-      radiusLabel: `${label} — ${txs.length} transações geolocalizadas`,
-      item3Label: `3. ${label} — ${txs.length} tx`,
-      card3Title: `3. ${label}`,
-      fallbackLevel: (radiusKm <= 0.5 ? '0.5km' : radiusKm <= 1 ? '1.0km' : '2.0km') as '0.5km' | '1.0km' | '2.0km'
-    };
-  }, [radiusTransactions, radiusKm, selectedStreet]);
-
-
-  const nearbyStreetTxs = nearbyStreetData.txs;
-
 // Helper to extract clean numerical numbers for street number comparison
   const cleanNumber = (numStr: string | undefined | null) => {
     if (!numStr) return '';
@@ -1316,6 +1294,33 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
       radiusTransactions
     );
   }, [rawTransactions, radiusTransactions, selectedStreet, streetNumber, sizeSqm, txSizeFilter, radiusKm, propertyType, selectedNeighborhood, jfAreaModel]);
+
+  // Item 3 acompanha a expansão automática progressiva do motor bidirecional (0.5 -> 1.0 -> 2.0 km)
+  // quando o círculo de 500m tem amostragem insuficiente ou fora da curva, respeitando seleção manual > 0.5km.
+  const nearbyStreetData = useMemo(() => {
+    const targetStreetKey = canonicalStreet(selectedStreet);
+    const effectiveKm =
+      radiusKm <= 0.5 && bidiBenchmark?.raio?.effectiveRadiusKm
+        ? bidiBenchmark.raio.effectiveRadiusKm
+        : radiusKm;
+    const isAutoAdjusted = effectiveKm > radiusKm;
+    const txs = selectRadiusTransactions(radiusTransactions, effectiveKm)
+      .filter(isVoluntaryMarketSale)
+      .filter(tx => !targetStreetKey || canonicalStreet(tx.street) !== targetStreetKey);
+    const suffix = isAutoAdjusted ? ' - Auto-ajustado' : '';
+    const label = `Ruas do Entorno (${effectiveKm.toFixed(1)} km${suffix})`;
+    return {
+      txs,
+      effectiveRadiusKm: effectiveKm,
+      isAutoAdjusted,
+      radiusLabel: `${label} — ${txs.length} transações geolocalizadas`,
+      item3Label: `3. ${label} — ${txs.length} tx`,
+      card3Title: `3. ${label}`,
+      fallbackLevel: (effectiveKm <= 0.5 ? '0.5km' : effectiveKm <= 1 ? '1.0km' : '2.0km') as '0.5km' | '1.0km' | '2.0km'
+    };
+  }, [radiusTransactions, radiusKm, selectedStreet, bidiBenchmark]);
+
+  const nearbyStreetTxs = nearbyStreetData.txs;
 
   // 1. Dedicated neighborhood stats calculated from all ITBI transactions of this neighborhood
   const neighborhoodStats = useMemo(() => {
@@ -4879,6 +4884,13 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         <div className="text-[9.5px] bg-amber-950/40 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-800/40 font-mono flex items-center justify-between">
                           <span>🛡️ Válvula de Segurança (-5%)</span>
                           <span className="text-[9px] text-amber-400/80">Sem amostragem no próprio condomínio</span>
+                        </div>
+                      )}
+
+                      {prefillData?.isCommunityRisk && (
+                        <div className="text-[9.5px] bg-rose-950/40 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-800/40 font-mono flex items-center justify-between gap-2">
+                          <span>⛔ Redutor Área de Risco (-15%)</span>
+                          <span className="text-[9px] text-rose-300/80 truncate">{prefillData.communityName || 'Comunidade / Proximidade'}</span>
                         </div>
                       )}
 

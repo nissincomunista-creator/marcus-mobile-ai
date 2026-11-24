@@ -421,8 +421,25 @@ export function computeBidirectionalBenchmarks(
   const minSize = Math.max(15, Math.round(size * 0.67));
   const maxSize = Math.round(size * 1.33);
 
+  const isResidentialCasa = /casa|sobrado/i.test(targetPropType || '');
+  const isResidentialApto = /apart|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || '');
+  const normNeigh = (targetNeighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const isDenseVerticalZone = ['copacabana', 'ipanema', 'leblon', 'flamengo', 'botafogo', 'lagoa', 'leme', 'gavea', 'jardim botanico'].includes(normNeigh);
+  const casaToAptoFactor = isDenseVerticalZone ? 1.0 : 0.85;
+  const isAltApartmentTx = (t: ItbiTransaction) => /apart|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || '');
+  const isRadiusCandidateValid = (t: ItbiTransaction) => isVoluntaryMarketSale(t) && isValValid(getTxVal(t));
+
   // 1. Nível Bairro Macro (Ponderação Adaptativa NBR 14.653)
-  const allBVals = typeTxs.filter(t => isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && String(t.neighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === targetNeighborhood.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())));
+  const allBValsExact = typeTxs.filter(t => isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && String(t.neighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === normNeigh)));
+  let allBVals = allBValsExact;
+  if (isResidentialCasa && allBValsExact.length < 7) {
+    const altBTxs = sourceTxs
+      .filter(t => isAltApartmentTx(t) && isValValid(getTxVal(t)) && (targetNeighborhood === undefined || (!!targetNeighborhood && String(t.neighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === normNeigh)))
+      .map(t => ({ ...t, unitValueSqm: Math.round(t.unitValueSqm * casaToAptoFactor) }));
+    if (altBTxs.length > 0) {
+      allBVals = [...allBValsExact, ...altBTxs];
+    }
+  }
   if (!allBVals.length && !radiusTransactions?.length) return null;
 
   const similarBTxs = allBVals.filter(t => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
@@ -441,40 +458,107 @@ export function computeBidirectionalBenchmarks(
   const bSaneada = (isBLargeArea || !isBCenarioA) ? Math.round(bSaneadaRaw * bFator) : bSaneadaRaw;
   const bExpurgados = bVals.length - bValid.length;
 
+  // Verifica antecipadamente se há amostragem local na mesma via para calibrar o mínimo exigido no raio
+  const exactStreetCountEarly = targetCore
+    ? typeTxs.filter(t => cleanStreetCore(t.street) === targetCore && isValValid(getTxVal(t))).length
+    : 0;
+  const minRadiusRequired = exactStreetCountEarly === 0 ? 5 : 3;
+
+  // Pré-computa pool radial único até 2.0 km (evita recomputar cleanStreetCore repetidamente por km)
+  const radiusRawPool20 = selectRadiusTransactions(radiusTransactions || sourceTxs, 2.0)
+    .filter(isRadiusCandidateValid)
+    .filter(t => !targetCore || cleanStreetCore(t.street) !== targetCore);
+  const radiusExact20 = radiusRawPool20.filter(t => !targetPropType || t.propertyType === targetPropType);
+  const radiusAlt20 = isResidentialCasa
+    ? radiusRawPool20
+        .filter(t => isAltApartmentTx(t))
+        .map(t => ({ ...t, unitValueSqm: Math.round(t.unitValueSqm * casaToAptoFactor) }))
+    : [];
+
+  const selectRadiusPool = (km: number, allowCasaCrossTypology: boolean): ItbiTransaction[] => {
+    const withinKm = (t: ItbiTransaction) =>
+      typeof t.distanceKm === 'number' ? t.distanceKm <= km : true;
+    const exactRows = km >= 2.0 ? radiusExact20 : radiusExact20.filter(withinKm);
+    if (!allowCasaCrossTypology || !isResidentialCasa) return exactRows;
+    const altRows = km >= 2.0 ? radiusAlt20 : radiusAlt20.filter(withinKm);
+    return [...exactRows, ...altRows];
+  };
+
+  const isRadiusConsistentWithBairro = (rows: ItbiTransaction[]) => {
+    if (rows.length < minRadiusRequired) return false;
+    if (bSaneada <= 0) return true;
+    const vals = rows.map(t => getTxVal(t)).filter(isValValid);
+    const prelim = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    return prelim > 0 && prelim <= bSaneada * 1.35 && prelim >= bSaneada * 0.65;
+  };
+
   let effectiveRadiusKm = normalizeRadiusKm(radiusKm);
-  let raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm)
-    .filter(isVoluntaryMarketSale)
-    .filter(t => !targetCore || cleanStreetCore(t.street) !== targetCore)
-    .filter(t => !targetPropType || t.propertyType === targetPropType);
-
-  // REGRA PERICIAL DO USUÁRIO: AUTO-AJUSTE / FREIO DE RAIO (0.5 km -> 1.0 km)
-  // Quando o raio de 0.5 km tiver menos que a quantidade mínima (< 3 transações) e o valor ficar fora da curva
-  // (> 35% de desvio do bairro ou da rua), auto-expande para 1.0 km se houver amostragem convergente.
+  let raioTxs = selectRadiusPool(effectiveRadiusKm, false);
   let isRadiusAutoAdjusted = false;
-  if (effectiveRadiusKm <= 0.5 && raioTxs.length < 3 && bSaneada > 0) {
-    const rawR500Vals = raioTxs.map(t => getTxVal(t)).filter(isValValid);
-    const r500Prelim = rawR500Vals.length > 0 ? rawR500Vals.reduce((a, b) => a + b, 0) / rawR500Vals.length : 0;
-    const isOutlier500 = r500Prelim > 0 && (r500Prelim > bSaneada * 1.35 || r500Prelim < bSaneada * 0.65);
 
-    if (isOutlier500 || raioTxs.length === 0) {
-      const raio1kmTxs = selectRadiusTransactions(radiusTransactions || typeTxs, 1.0)
-        .filter(isVoluntaryMarketSale)
-        .filter(t => !targetCore || cleanStreetCore(t.street) !== targetCore)
-        .filter(t => !targetPropType || t.propertyType === targetPropType);
-      const rawR1000Vals = raio1kmTxs.map(t => getTxVal(t)).filter(isValValid);
-      const r1000Prelim = rawR1000Vals.length > 0 ? rawR1000Vals.reduce((a, b) => a + b, 0) / rawR1000Vals.length : 0;
-      const is1kmConsistent = r1000Prelim > 0 && Math.abs(r1000Prelim - bSaneada) / bSaneada <= 0.35;
-
-      if (raio1kmTxs.length >= 3 && is1kmConsistent) {
+  // REGRA PERICIAL DO USUÁRIO: AUTO-AJUSTE PROGRESSIVO DE RAIO (0.5 km -> 1.0 km -> 2.0 km)
+  // + Fator cruzado Casa/Apartamento (0.85 NBR 14.653-2) quando Casas na vizinhança forem escassas.
+  if (effectiveRadiusKm <= 0.5 && !isRadiusConsistentWithBairro(raioTxs)) {
+    const r10Exact = selectRadiusPool(1.0, false);
+    if (isRadiusConsistentWithBairro(r10Exact)) {
+      effectiveRadiusKm = 1.0;
+      raioTxs = r10Exact;
+      isRadiusAutoAdjusted = true;
+    } else {
+      const r20Exact = selectRadiusPool(2.0, false);
+      if (isRadiusConsistentWithBairro(r20Exact)) {
+        effectiveRadiusKm = 2.0;
+        raioTxs = r20Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (r10Exact.length >= minRadiusRequired) {
         effectiveRadiusKm = 1.0;
-        raioTxs = raio1kmTxs;
+        raioTxs = r10Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (r20Exact.length >= minRadiusRequired) {
+        effectiveRadiusKm = 2.0;
+        raioTxs = r20Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (isResidentialCasa) {
+        const r05Mixed = selectRadiusPool(0.5, true);
+        if (isRadiusConsistentWithBairro(r05Mixed) || r05Mixed.length >= minRadiusRequired) {
+          effectiveRadiusKm = 0.5;
+          raioTxs = r05Mixed;
+          isRadiusAutoAdjusted = false;
+        } else {
+          const r10Mixed = selectRadiusPool(1.0, true);
+          if (r10Mixed.length >= minRadiusRequired) {
+            effectiveRadiusKm = 1.0;
+            raioTxs = r10Mixed;
+            isRadiusAutoAdjusted = true;
+          } else {
+            const r20Mixed = selectRadiusPool(2.0, true);
+            if (r20Mixed.length > 0) {
+              effectiveRadiusKm = 2.0;
+              raioTxs = r20Mixed;
+              isRadiusAutoAdjusted = true;
+            }
+          }
+        }
+      } else if (r20Exact.length > raioTxs.length) {
+        effectiveRadiusKm = 2.0;
+        raioTxs = r20Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (r10Exact.length > raioTxs.length) {
+        effectiveRadiusKm = 1.0;
+        raioTxs = r10Exact;
         isRadiusAutoAdjusted = true;
       }
+    }
+  } else if (isResidentialCasa && raioTxs.length < minRadiusRequired) {
+    const mixedCurrent = selectRadiusPool(effectiveRadiusKm, true);
+    if (mixedCurrent.length > raioTxs.length) {
+      raioTxs = mixedCurrent;
     }
   }
 
   const hasVerifiedRadius = raioTxs.length > 0;
-  const radiusLabel = `3. Ruas do Entorno (${effectiveRadiusKm} km${isRadiusAutoAdjusted ? ' - Auto-ajustado' : ''}) - ${raioTxs.length} tx`;
+  const formattedRadiusKm = Number.isInteger(effectiveRadiusKm) ? `${effectiveRadiusKm}.0` : `${effectiveRadiusKm}`;
+  const radiusLabel = `3. Ruas do Entorno (${formattedRadiusKm} km${isRadiusAutoAdjusted ? ' - Auto-ajustado' : ''}) - ${raioTxs.length} tx`;
   const fallbackLevel: '0.5km' | '1.0km' | '2.0km' | 'bairro' =
     effectiveRadiusKm <= 0.5 ? '0.5km' : effectiveRadiusKm <= 1 ? '1.0km' : '2.0km';
 
@@ -595,9 +679,6 @@ export function computeBidirectionalBenchmarks(
   let crossTypologyOrigin = '';
   let crossFatorEscala = 1.0;
 
-  const isResidentialCasa = /casa|sobrado/i.test(targetPropType || '');
-  const isResidentialApto = /apart|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || '');
-
   // Homogeneização de Tipologia Cruzada na Mesma Rua (NBR 14653-2):
   // Ativa se a via tiver < 3 amostras da tipologia alvo (ruaValid.length < 3), mas >= 3 amostras de outra tipologia residencial na mesma rua:
   if ((isResidentialCasa || isResidentialApto) && ruaValid.length < 3 && targetCore) {
@@ -632,8 +713,6 @@ export function computeBidirectionalBenchmarks(
         // Fator NBR 14653-2:
         // CASA avaliando amostras de APARTAMENTO: m2_apto_convertido = mediana_m2_apartamentos * 0.85
         // APARTAMENTO avaliando amostras de CASA: m2_casa_convertida = mediana_m2_casas * 1.15
-        const normNeigh = (targetNeighborhood || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-        const isDenseVerticalZone = ['copacabana', 'ipanema', 'leblon', 'flamengo', 'botafogo', 'lagoa', 'leme', 'gavea', 'jardim botanico'].includes(normNeigh);
         const typologyFactor = isDenseVerticalZone ? 1.0 : (isResidentialCasa ? 0.85 : 1.15);
         const m2AltConvertido = medianaM2Alt * typologyFactor;
 

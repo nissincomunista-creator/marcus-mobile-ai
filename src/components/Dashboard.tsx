@@ -2271,12 +2271,15 @@ export default function Dashboard({
                                   ITBI (3%) + RGI (2%) + Ref. (5%)
                                 </span>
                                 <div className="absolute bottom-full left-0 mb-2 w-64 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
-                                  <div className="font-bold text-slate-200 border-b border-slate-800 pb-1">Composição do Custo</div>
-                                  <div className="flex justify-between"><span>Lance:</span><strong>{costs.bid > 0 ? formatBRL(costs.bid) : 'Lance não confirmado'}</strong></div>
+                                  <div className="font-bold text-slate-200 border-b border-slate-800 pb-1">Composição do Custo Total</div>
+                                  <div className="flex justify-between"><span>Lance Mínimo:</span><strong>{costs.bid > 0 ? formatBRL(costs.bid) : 'Lance não confirmado'}</strong></div>
                                   {costs.auctioneer > 0 && <div className="flex justify-between"><span>Comissão Leiloeiro (5%):</span><strong>{formatBRL(costs.auctioneer)}</strong></div>}
-                                  <div className="flex justify-between"><span>ITBI &amp; RGI:</span><strong>{formatBRL(costs.itbi + costs.registry)}</strong></div>
+                                  <div className="flex justify-between"><span>ITBI (3%) &amp; RGI/Cartório:</span><strong>{formatBRL(costs.itbi + costs.registry)}</strong></div>
                                   <div className="flex justify-between"><span>Reforma Est. (5%):</span><strong>{formatBRL(costs.repair)}</strong></div>
-                                  <div className="flex justify-between border-t border-slate-800 pt-1 font-bold text-slate-100"><span>Total:</span><strong>{formatBRL(totalCost)}</strong></div>
+                                  {costs.legal > 0 && <div className="flex justify-between"><span>Desocupação / Custas (5%):</span><strong>{formatBRL(costs.legal)}</strong></div>}
+                                  {(costs.iptu + costs.condo) > 0 && <div className="flex justify-between"><span>Dívidas IPTU / Cond.:</span><strong>{formatBRL(costs.iptu + costs.condo)}</strong></div>}
+                                  {costs.custoCarregamento > 0 && <div className="flex justify-between"><span>Carregamento (1,5% Gab.):</span><strong>{formatBRL(costs.custoCarregamento)}</strong></div>}
+                                  <div className="flex justify-between border-t border-slate-800 pt-1 font-bold text-slate-100"><span>Custo Total Est.:</span><strong>{formatBRL(totalCost)}</strong></div>
                                 </div>
                               </div>
 

@@ -16236,7 +16236,21 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const size = targetSize > 0 ? targetSize : 60;
   const minSize = Math.max(15, Math.round(size * 0.67));
   const maxSize = Math.round(size * 1.33);
-  const allBVals = typeTxs.filter((t) => isValValid(getTxVal(t)) && (targetNeighborhood === void 0 || !!targetNeighborhood && String(t.neighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === targetNeighborhood.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()));
+  const isResidentialCasa = /casa|sobrado/i.test(targetPropType || "");
+  const isResidentialApto = /apart|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || "");
+  const normNeigh = (targetNeighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const isDenseVerticalZone = ["copacabana", "ipanema", "leblon", "flamengo", "botafogo", "lagoa", "leme", "gavea", "jardim botanico"].includes(normNeigh);
+  const casaToAptoFactor = isDenseVerticalZone ? 1 : 0.85;
+  const isAltApartmentTx = (t) => /apart|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || "");
+  const isRadiusCandidateValid = (t) => isVoluntaryMarketSale(t) && isValValid(getTxVal(t));
+  const allBValsExact = typeTxs.filter((t) => isValValid(getTxVal(t)) && (targetNeighborhood === void 0 || !!targetNeighborhood && String(t.neighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === normNeigh));
+  let allBVals = allBValsExact;
+  if (isResidentialCasa && allBValsExact.length < 7) {
+    const altBTxs = sourceTxs.filter((t) => isAltApartmentTx(t) && isValValid(getTxVal(t)) && (targetNeighborhood === void 0 || !!targetNeighborhood && String(t.neighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === normNeigh)).map((t) => ({ ...t, unitValueSqm: Math.round(t.unitValueSqm * casaToAptoFactor) }));
+    if (altBTxs.length > 0) {
+      allBVals = [...allBValsExact, ...altBTxs];
+    }
+  }
   if (!allBVals.length && !radiusTransactions?.length) return null;
   const similarBTxs = allBVals.filter((t) => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
   const isBCenarioA = similarBTxs.length >= 4 && sizeMode !== "all";
@@ -16250,27 +16264,88 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const bFator = isBLargeArea ? Math.pow(bAreaMedia / size, 0.2) : !isBCenarioA ? Math.pow(bAreaMedia / size, 0.15) : 1;
   const bSaneada = isBLargeArea || !isBCenarioA ? Math.round(bSaneadaRaw * bFator) : bSaneadaRaw;
   const bExpurgados = bVals.length - bValid.length;
+  const exactStreetCountEarly = targetCore ? typeTxs.filter((t) => cleanStreetCore(t.street) === targetCore && isValValid(getTxVal(t))).length : 0;
+  const minRadiusRequired = exactStreetCountEarly === 0 ? 5 : 3;
+  const radiusRawPool20 = selectRadiusTransactions(radiusTransactions || sourceTxs, 2).filter(isRadiusCandidateValid).filter((t) => !targetCore || cleanStreetCore(t.street) !== targetCore);
+  const radiusExact20 = radiusRawPool20.filter((t) => !targetPropType || t.propertyType === targetPropType);
+  const radiusAlt20 = isResidentialCasa ? radiusRawPool20.filter((t) => isAltApartmentTx(t)).map((t) => ({ ...t, unitValueSqm: Math.round(t.unitValueSqm * casaToAptoFactor) })) : [];
+  const selectRadiusPool = (km, allowCasaCrossTypology) => {
+    const withinKm = (t) => typeof t.distanceKm === "number" ? t.distanceKm <= km : true;
+    const exactRows = km >= 2 ? radiusExact20 : radiusExact20.filter(withinKm);
+    if (!allowCasaCrossTypology || !isResidentialCasa) return exactRows;
+    const altRows = km >= 2 ? radiusAlt20 : radiusAlt20.filter(withinKm);
+    return [...exactRows, ...altRows];
+  };
+  const isRadiusConsistentWithBairro = (rows) => {
+    if (rows.length < minRadiusRequired) return false;
+    if (bSaneada <= 0) return true;
+    const vals = rows.map((t) => getTxVal(t)).filter(isValValid);
+    const prelim = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    return prelim > 0 && prelim <= bSaneada * 1.35 && prelim >= bSaneada * 0.65;
+  };
   let effectiveRadiusKm = normalizeRadiusKm(radiusKm);
-  let raioTxs = selectRadiusTransactions(radiusTransactions || typeTxs, effectiveRadiusKm).filter(isVoluntaryMarketSale).filter((t) => !targetCore || cleanStreetCore(t.street) !== targetCore).filter((t) => !targetPropType || t.propertyType === targetPropType);
+  let raioTxs = selectRadiusPool(effectiveRadiusKm, false);
   let isRadiusAutoAdjusted = false;
-  if (effectiveRadiusKm <= 0.5 && raioTxs.length < 3 && bSaneada > 0) {
-    const rawR500Vals = raioTxs.map((t) => getTxVal(t)).filter(isValValid);
-    const r500Prelim = rawR500Vals.length > 0 ? rawR500Vals.reduce((a, b) => a + b, 0) / rawR500Vals.length : 0;
-    const isOutlier500 = r500Prelim > 0 && (r500Prelim > bSaneada * 1.35 || r500Prelim < bSaneada * 0.65);
-    if (isOutlier500 || raioTxs.length === 0) {
-      const raio1kmTxs = selectRadiusTransactions(radiusTransactions || typeTxs, 1).filter(isVoluntaryMarketSale).filter((t) => !targetCore || cleanStreetCore(t.street) !== targetCore).filter((t) => !targetPropType || t.propertyType === targetPropType);
-      const rawR1000Vals = raio1kmTxs.map((t) => getTxVal(t)).filter(isValValid);
-      const r1000Prelim = rawR1000Vals.length > 0 ? rawR1000Vals.reduce((a, b) => a + b, 0) / rawR1000Vals.length : 0;
-      const is1kmConsistent = r1000Prelim > 0 && Math.abs(r1000Prelim - bSaneada) / bSaneada <= 0.35;
-      if (raio1kmTxs.length >= 3 && is1kmConsistent) {
+  if (effectiveRadiusKm <= 0.5 && !isRadiusConsistentWithBairro(raioTxs)) {
+    const r10Exact = selectRadiusPool(1, false);
+    if (isRadiusConsistentWithBairro(r10Exact)) {
+      effectiveRadiusKm = 1;
+      raioTxs = r10Exact;
+      isRadiusAutoAdjusted = true;
+    } else {
+      const r20Exact = selectRadiusPool(2, false);
+      if (isRadiusConsistentWithBairro(r20Exact)) {
+        effectiveRadiusKm = 2;
+        raioTxs = r20Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (r10Exact.length >= minRadiusRequired) {
         effectiveRadiusKm = 1;
-        raioTxs = raio1kmTxs;
+        raioTxs = r10Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (r20Exact.length >= minRadiusRequired) {
+        effectiveRadiusKm = 2;
+        raioTxs = r20Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (isResidentialCasa) {
+        const r05Mixed = selectRadiusPool(0.5, true);
+        if (isRadiusConsistentWithBairro(r05Mixed) || r05Mixed.length >= minRadiusRequired) {
+          effectiveRadiusKm = 0.5;
+          raioTxs = r05Mixed;
+          isRadiusAutoAdjusted = false;
+        } else {
+          const r10Mixed = selectRadiusPool(1, true);
+          if (r10Mixed.length >= minRadiusRequired) {
+            effectiveRadiusKm = 1;
+            raioTxs = r10Mixed;
+            isRadiusAutoAdjusted = true;
+          } else {
+            const r20Mixed = selectRadiusPool(2, true);
+            if (r20Mixed.length > 0) {
+              effectiveRadiusKm = 2;
+              raioTxs = r20Mixed;
+              isRadiusAutoAdjusted = true;
+            }
+          }
+        }
+      } else if (r20Exact.length > raioTxs.length) {
+        effectiveRadiusKm = 2;
+        raioTxs = r20Exact;
+        isRadiusAutoAdjusted = true;
+      } else if (r10Exact.length > raioTxs.length) {
+        effectiveRadiusKm = 1;
+        raioTxs = r10Exact;
         isRadiusAutoAdjusted = true;
       }
     }
+  } else if (isResidentialCasa && raioTxs.length < minRadiusRequired) {
+    const mixedCurrent = selectRadiusPool(effectiveRadiusKm, true);
+    if (mixedCurrent.length > raioTxs.length) {
+      raioTxs = mixedCurrent;
+    }
   }
   const hasVerifiedRadius = raioTxs.length > 0;
-  const radiusLabel = `3. Ruas do Entorno (${effectiveRadiusKm} km${isRadiusAutoAdjusted ? " - Auto-ajustado" : ""}) - ${raioTxs.length} tx`;
+  const formattedRadiusKm = Number.isInteger(effectiveRadiusKm) ? `${effectiveRadiusKm}.0` : `${effectiveRadiusKm}`;
+  const radiusLabel = `3. Ruas do Entorno (${formattedRadiusKm} km${isRadiusAutoAdjusted ? " - Auto-ajustado" : ""}) - ${raioTxs.length} tx`;
   const fallbackLevel = effectiveRadiusKm <= 0.5 ? "0.5km" : effectiveRadiusKm <= 1 ? "1.0km" : "2.0km";
   const raioValidSource = raioTxs.filter((t) => isValValid(getTxVal(t)));
   const raioSimilarTxs = raioValidSource.filter((t) => t.sizeSqm >= minSize && t.sizeSqm <= maxSize);
@@ -16358,8 +16433,6 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   let isCrossTypologyApplied = false;
   let crossTypologyOrigin = "";
   let crossFatorEscala = 1;
-  const isResidentialCasa = /casa|sobrado/i.test(targetPropType || "");
-  const isResidentialApto = /apart|cobertura|flat|loft|kitnet|conjugado/i.test(targetPropType || "");
   if ((isResidentialCasa || isResidentialApto) && ruaValid.length < 3 && targetCore) {
     const altStreetTxs = sourceTxs.filter((t) => {
       if (cleanStreetCore(t.street) !== targetCore) return false;
@@ -16386,8 +16459,6 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
       if (sanitizedAltTxs.length >= 3) {
         const sanitizedAltVals = sanitizedAltTxs.map((t) => getTxVal(t));
         const medianaM2Alt = computeMedian(sanitizedAltVals);
-        const normNeigh = (targetNeighborhood || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-        const isDenseVerticalZone = ["copacabana", "ipanema", "leblon", "flamengo", "botafogo", "lagoa", "leme", "gavea", "jardim botanico"].includes(normNeigh);
         const typologyFactor = isDenseVerticalZone ? 1 : isResidentialCasa ? 0.85 : 1.15;
         const m2AltConvertido = medianaM2Alt * typologyFactor;
         let m2RuaComposto = m2AltConvertido;
@@ -20873,7 +20944,7 @@ function loadStore() {
     }
     return true;
   });
-  const STORE_CALIBRATION_VERSION = "v25_radius_ssot_outlier_sync";
+  const STORE_CALIBRATION_VERSION = "v26_casa_cross_typology_auto_radius";
   const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
   const isMemoryConstrainedRender = process.env.RENDER === "true";
   if (needsRecalibration && isMemoryConstrainedRender) {
@@ -20939,7 +21010,13 @@ function loadStore() {
       }
     });
     const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
-    storeData.auctions = storeData.auctions.map((auc) => recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType));
+    const totalCalibrationCount = storeData.auctions.length;
+    storeData.auctions = storeData.auctions.map((auc, idx) => {
+      if (idx > 0 && idx % 2e3 === 0) {
+        console.log(`[Store] Progresso calibragem: ${idx}/${totalCalibrationCount} lotes...`);
+      }
+      return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType);
+    });
     storeData.calibrationVersion = STORE_CALIBRATION_VERSION;
     storeData.jfCalibrationVersion = "jf_v30_four_tier_per_sqm";
     saveStore(storeData);
@@ -22089,7 +22166,12 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     const aucStreetCore = cleanStreetCore(benchmarkStreet || "");
     const altStreetTxs = isTargetResidential && aucStreetCore ? neighborhoodTxs.filter((t) => cleanStreetCore(t.street) === aucStreetCore && /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || "")) : [];
     const cityTxs = globalCityTransactionsMap.get(`${state}|${normCity}`) || (isJuizDeForaAuc ? jfCityMap?.get(`${state}|${normCity}`) || [] : neighborhoodTxs);
-    const nTxs = isJuizDeForaAuc ? cityTxs : sameTypeTxs.length >= 3 ? Array.from(/* @__PURE__ */ new Set([...sameTypeTxs, ...altStreetTxs])) : neighborhoodTxs;
+    const isCasaAuction = /casa|sobrado/i.test(auc.propertyType || "");
+    const altNeighborhoodTxs = isCasaAuction && sameTypeTxs.length < 7 ? neighborhoodTxs.filter((t) => /apart|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || "")) : [];
+    const nTxs = isJuizDeForaAuc ? cityTxs : sameTypeTxs.length >= 7 ? Array.from(/* @__PURE__ */ new Set([...sameTypeTxs, ...altStreetTxs])) : Array.from(/* @__PURE__ */ new Set([...sameTypeTxs, ...altStreetTxs, ...altNeighborhoodTxs]));
+    if (nTxs.length === 0 && neighborhoodTxs.length > 0) {
+      nTxs.push(...neighborhoodTxs);
+    }
     if (nTxs.length > 0) {
       neighborhoodSalesLast24Months = globalNeighborhoodRecentSales.get(key) || 0;
       const officialAuctionLocation = getOfficialPropertyLocation(auc);
@@ -22125,18 +22207,38 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       }
       let radiusTxs = [];
       if (Number.isFinite(locLat) && Number.isFinite(locLng)) {
-        const filterPoolByType = (rows) => {
-          if (!auc.propertyType) return rows;
-          const exactRadius = rows.filter((t) => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase());
-          if (exactRadius.length >= 5) return exactRadius;
-          const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(auc.propertyType || "");
-          return isResidentialTarget ? rows.filter((t) => /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || "")) : rows;
+        const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(auc.propertyType || "");
+        const isValidRadiusTx = (t) => typeof t.unitValueSqm === "number" && t.unitValueSqm >= 800 && t.unitValueSqm <= 8e4 && (!aucStreetCore || cleanStreetCore(t.street) !== aucStreetCore);
+        const exactFilter = (rows) => auc.propertyType ? rows.filter((t) => t.propertyType?.toLowerCase() === auc.propertyType?.toLowerCase()) : rows;
+        const neighVals = nTxs.filter((t) => typeof t.unitValueSqm === "number" && t.unitValueSqm >= 800 && t.unitValueSqm <= 8e4);
+        const approxNeighAvg = neighVals.length > 0 ? neighVals.reduce((s, t) => s + t.unitValueSqm, 0) / neighVals.length : 0;
+        const isConsistentFast = (rows) => {
+          const validRows = rows.filter(isValidRadiusTx);
+          if (validRows.length < 5) return false;
+          if (approxNeighAvg <= 0) return true;
+          const avg = validRows.reduce((s, t) => s + t.unitValueSqm, 0) / validRows.length;
+          return avg <= approxNeighAvg * 1.4 && avg >= approxNeighAvg * 0.6;
         };
-        let found = filterPoolByType(findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 0.5));
-        if (found.length < 3) {
-          found = filterPoolByType(findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 1));
+        const raw05 = findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 0.5);
+        const exact05 = exactFilter(raw05);
+        if (isConsistentFast(exact05)) {
+          radiusTxs = exact05;
+        } else {
+          const raw10 = findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 1);
+          const exact10 = exactFilter(raw10);
+          if (isConsistentFast(exact10)) {
+            radiusTxs = exact10;
+          } else {
+            const raw20 = findTransactionsInRadius(`${state}|${normCity}`, locLat, locLng, 2);
+            const exact20 = exactFilter(raw20);
+            if ((exact05.filter(isValidRadiusTx).length < 5 || exact20.filter(isValidRadiusTx).length < 8) && isResidentialTarget) {
+              const broad20 = raw20.filter((t) => /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(t.propertyType || ""));
+              radiusTxs = broad20.length > exact20.length ? broad20 : exact20;
+            } else {
+              radiusTxs = exact20;
+            }
+          }
         }
-        radiusTxs = found;
       }
       bidi = computeBidirectionalBenchmarks(
         nTxs,
@@ -23880,7 +23982,8 @@ app.get("/api/itbi/transactions", async (req, res) => {
           }).filter((tx) => Number(tx.distanceKm) <= searchRadiusKm);
         };
         let candidates = queryRadialPool(2, false);
-        if (candidates.length < 8 && isResidentialTarget) {
+        const exact05kmCount = candidates.filter((tx) => Number(tx.distanceKm) <= 0.5).length;
+        if ((candidates.length < 8 || exact05kmCount < 5) && isResidentialTarget) {
           const broad = queryRadialPool(2, true);
           if (broad.length > candidates.length) {
             candidates = broad;
