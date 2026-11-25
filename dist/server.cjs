@@ -1590,6 +1590,11 @@ function auditOfficialArea(input) {
     const ctx = text.slice(Math.max(0, (m.index ?? 0) - 55), m.index ?? 0);
     add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), !land && /terreno|fra[cç][aã]o\s+ideal|loteamento|gleba|condom[ií]nio/i.test(ctx) ? "land" : "unspecified", ctx.trim().slice(-25) + " " + m[0]);
   }
+  for (const m of text.matchAll(new RegExp("totalizando\\s+(?:aproximadamente\\s+)?" + amount + "\\s*(" + unit + ")", "gi"))) {
+    const ctx = text.slice(Math.max(0, (m.index ?? 0) - 110), m.index ?? 0);
+    const isBuildingCtx = /edifica[cç][aã]o|constru[ií]d|privativ|coberta/i.test(ctx);
+    if (!/vaga|garagem|box|fra[cç][aã]o\s+ideal|[aá]rea\s+comum|terreno|condom[ií]nio/i.test(ctx) && (isBuildingCtx || !/frente\s+e\s+fundos/i.test(ctx))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), isBuildingCtx ? "built" : "unspecified", ctx.trim().slice(-30) + " " + m[0]);
+  }
   for (const m of text.matchAll(new RegExp("(?:apartamento|apto\\.?|casa|sala|unidade(?:\\s+aut[o\xF4]noma)?)\\s+com\\s+(?:aproximadamente\\s+)?" + amount + "\\s*(m[\xB22]|m\\.q\\.|metros?\\s+quadrados?)", "gi"))) add(numeric(m[1]), "unspecified", m[0]);
   for (const m of text.matchAll(new RegExp("\\b(privativa|priv\\.|constru[i\xED]da|constr\\.|edificada|terreno|terr\\.)(?:\\s*\\([^)]*\\))?\\s*(?:estimada|aproximada|de)?\\s*[:=]?\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[2]) * (/ha|hectare/i.test(m[3]) ? 1e4 : 1), /^priv/i.test(m[1]) ? "private" : /^terr/i.test(m[1]) ? "land" : "built", m[0]);
   for (const m of input.title.matchAll(new RegExp(amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "title", m[0]);
@@ -12065,6 +12070,7 @@ __export(listedPortalApis_exports, {
   collectRioLinks: () => collectRioLinks,
   collectSantanderApi: () => collectSantanderApi,
   collectSoldApi: () => collectSoldApi,
+  collectSuaPlataformaApi: () => collectSuaPlataformaApi,
   collectSuperbidOffers: () => collectSuperbidOffers,
   collectSuporteApi: () => collectSuporteApi,
   mariaFilomenaLotToDraft: () => mariaFilomenaLotToDraft,
@@ -12697,6 +12703,206 @@ async function collectMariaFilomenaApi(dir, onPage) {
     onPage,
     { probeTimeoutMs: 3e4 }
   );
+}
+async function collectSuaPlataformaApi(config, dir, onPage, options) {
+  const cleanBase = config.baseUrl.replace(/\/$/, "");
+  const candidates = [cleanBase];
+  if (cleanBase.startsWith("https://") && !cleanBase.includes("://www.")) {
+    candidates.push(cleanBase.replace("https://", "https://www."));
+  }
+  const timeoutMs = options?.probeTimeoutMs ?? 7e3;
+  let activeBase = "";
+  let cookies = "";
+  let token2 = "";
+  for (const base of candidates) {
+    try {
+      const res = await fetch(`${base}/`, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      if (!/ApiEngine|\/Core\/V1\/js\/Ajax\/Ajax_Leiloes|suaplataformadeleilao|TemplateGetLotes/i.test(html)) {
+        return false;
+      }
+      activeBase = res.url ? new URL(res.url).origin : base;
+      const setCookies = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [res.headers.get("set-cookie")].filter(Boolean);
+      cookies = setCookies.map((c) => c.split(";")[0]).filter(Boolean).join("; ");
+      token2 = html.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/i)?.[1] || "";
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!activeBase) return false;
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Content-Type": "application/json; charset=utf-8",
+    "X-Requested-With": "XMLHttpRequest",
+    "Referer": `${activeBase}/busca/`,
+    ...cookies ? { Cookie: cookies } : {},
+    ...token2 ? { __RequestVerificationToken: token2 } : {}
+  };
+  const firstRes = await fetch(`${activeBase}/ApiEngine/GetLotes/1/100`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ Pagina: 1, QtdPorPagina: 100 }),
+    signal: AbortSignal.timeout(15e3)
+  }).catch(() => null);
+  if (!firstRes || !firstRes.ok) return false;
+  let firstJson = null;
+  try {
+    firstJson = await firstRes.json();
+  } catch {
+    return false;
+  }
+  if (!firstJson || !Array.isArray(firstJson.Lotes)) return false;
+  const isPropertyRow = (lot) => {
+    const label = `${lot.Categoria || ""} ${lot.SubCategoria || ""} ${lot.Lote || ""}`;
+    if (/\b(?:ve[íi]culo|carro|moto|caminh[aã]o|[oô]nibus|sucata|trator|aeronave|embarca[cç][aã]o|eletro|mobili[aá]rio|joias?|vestu[aá]rio|honda|fiat|volkswagen|chevrolet|ford|toyota|hyundai|renault|scania|mercedes)\b/i.test(label) && !/\b(?:im[oó]ve(?:l|is)|apartamento|apto|casa|terreno|galp[aã]o|pr[eé]dio|cobertura|sala|loja|residenc|comerc|urbano|rural)\b/i.test(label)) {
+      return false;
+    }
+    return lot.IconeCategoria === "casa" || /\b(?:residencia(?:l|is)|im[oó]ve(?:l|is)|apartamento|apto|casa|terreno|comercia(?:l|is)|sala|loja|pr[eé]dio|galp[aã]o|urbanos?|rurais?|rural|fazenda|s[ií]tio|ch[aá]cara|cobertura|sobrado|garagem)\b/i.test(label);
+  };
+  const parseIsoDate = (raw) => {
+    const s = String(raw || "");
+    if (!/^\d{4}-\d{2}-\d{2}/.test(s) || s.startsWith("1900-") || s.startsWith("0001-")) return "";
+    return s.slice(0, 10);
+  };
+  const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  for (let page = 1; page <= 20; page++) {
+    const data = page === 1 ? firstJson : await fetch(`${activeBase}/ApiEngine/GetLotes/${page}/100`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ Pagina: page, QtdPorPagina: 100 }),
+      signal: AbortSignal.timeout(2e4)
+    }).then((r) => r.ok ? r.json() : null).catch(() => null);
+    const lotes = Array.isArray(data?.Lotes) ? data.Lotes : [];
+    if (!lotes.length) break;
+    import_node_fs4.default.writeFileSync(import_node_path3.default.join(dir, `${config.id}-dg-api-${page}.json`), JSON.stringify(data));
+    let activeOnPage = 0;
+    const drafts = [];
+    for (const lot of lotes) {
+      const rt = Array.isArray(lot.GetLoteRealTime) && lot.GetLoteRealTime[0] || lot;
+      const statusStr = `${rt.StatusLote || ""} ${rt.Lote_SubStatus || ""} ${rt.Lote_SubStatus_Label || ""}`.trim();
+      const closed = /encerrad|arrematad|cancelad|suspens|sustad|finalizad|retirad|prejudicad/i.test(statusStr);
+      const active = /aberto|andamento|em\s*breve|aguardando|proposta/i.test(statusStr) || !closed && Number(lot.ID_Leiloes_Status) === 1;
+      if (active && !closed) activeOnPage++;
+      if (!active || closed || !isPropertyRow(lot)) continue;
+      const locEvidence = `${lot.Lote || ""}
+${lot.Leilao || ""}
+${String(lot.URLlote || "").replace(/[/-]+/g, " ")}`;
+      const loc = sourceAuctionLocation(locEvidence);
+      if (!loc || !allowedSyncLocation(loc.city, loc.state)) continue;
+      const relUrl = String(lot.URLlote || `lote/imovel/${lot.ID_Leiloes_Lote}/`).replace(/^\//, "");
+      const auctionLink = `${activeBase}/${relUrl}`;
+      let descText = "";
+      try {
+        const infoRes = await fetch(`${activeBase}/ApiEngine/GetInfoLote/${lot.ID_Leiloes_Lote}`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ ID_Leiloes_Lote: lot.ID_Leiloes_Lote }),
+          signal: AbortSignal.timeout(12e3)
+        });
+        if (infoRes.ok) {
+          const infoJson = await infoRes.json();
+          const rawHtmlDesc = String(infoJson?.Lista?.[0]?.Descricao || "");
+          if (rawHtmlDesc) {
+            const $ = cheerio2.load(rawHtmlDesc);
+            $("br").replaceWith("\n");
+            $("p,li,div,h1,h2,h3,h4,tr").each((_, el) => {
+              $(el).append("\n");
+            });
+            descText = $("body").text().replace(/[\t \u00a0]+/g, " ").replace(/\n\s*\n/g, "\n").trim();
+          }
+        }
+      } catch {
+      }
+      const p1 = Number(rt.ValorMinimoLancePrimeiraPraca || 0);
+      const p2 = Number(rt.ValorMinimoLanceSegundaPraca || 0);
+      const nextBid = Number(rt.ProximoLance || rt.ProximoLanceAVista || 0);
+      const d1 = parseIsoDate(rt.DataHoraEncerramentoPrimeiraPraca || rt.DataHoraAberturaPrimeiraPraca);
+      const d2 = parseIsoDate(rt.DataHoraEncerramentoSegundaPraca || rt.DataHoraAberturaSegundaPraca);
+      const praca = Number(rt.PracaAtual || lot.PracaAtual || 1);
+      const auctionPrice = praca === 2 && p2 > 0 ? nextBid > 0 ? nextBid : p2 : d1 && d1 >= today && (nextBid || p1) > 0 ? nextBid || p1 : d2 && d2 >= today && p2 > 0 ? p2 : nextBid || p1 || p2;
+      const auctionDate = praca === 2 && d2 ? d2 : d1 && d1 >= today ? d1 : d2 || d1 || "";
+      const evalVal = Number(rt.ValorAvaliacao || lot.ValorAvaliacao || 0);
+      const modStr = String(lot.LabelModalidade || "").trim();
+      const origin = rt.IsExtraJudicial || /extrajudicial|venda direta|particular/i.test(modStr) ? "extrajudicial" : rt.IsJudicial || /judicial/i.test(modStr) ? "judicial" : "extrajudicial";
+      const combinedText = [
+        modStr || (origin === "judicial" ? "Judicial" : "Extrajudicial"),
+        lot.Leilao ? `${lot.Leilao}` : "",
+        lot.Lote ? `${lot.Lote}` : "",
+        lot.Comitente ? `Comitente: ${lot.Comitente}` : "",
+        lot.NumeroProcesso ? `Processo: ${lot.NumeroProcesso}` : "",
+        lot.Vara ? `${lot.Vara}` : "",
+        p1 > 0 ? `1\xBA Leil\xE3o: ${d1 ? d1.split("-").reverse().join("/") + " - " : ""}R$ ${p1.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "",
+        p2 > 0 ? `2\xBA Leil\xE3o: ${d2 ? d2.split("-").reverse().join("/") + " - " : ""}R$ ${p2.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "",
+        descText
+      ].filter(Boolean).join("\n");
+      const fotoName = Array.isArray(lot.Fotos) && lot.Fotos[0]?.Foto ? String(lot.Fotos[0].Foto) : "";
+      const imageUrl = fotoName ? `${activeBase}/imagens-complete/605x487/${fotoName}` : "";
+      const rawAddress = extractAddress(combinedText, "");
+      const baseDraft = {
+        portalId: config.id,
+        auctioneerName: config.name,
+        title: String(lot.Lote || lot.Leilao || "Im\xF3vel em Leil\xE3o").trim(),
+        address: rawAddress,
+        neighborhood: "",
+        city: loc.city,
+        state: loc.state,
+        propertyType: "Apartamento",
+        sizeSqm: 0,
+        auctionPrice,
+        auctionDate,
+        auctionLink,
+        imageUrl,
+        description: combinedText.slice(0, 12e3),
+        origin,
+        originVerified: Boolean(modStr || lot.NumeroProcesso || rt.IsJudicial || rt.IsExtraJudicial),
+        sourceVerified: true,
+        locationScopeVerified: true,
+        priceVerified: auctionPrice > 0,
+        ...evalVal > 0 ? { estimatedValue: evalVal } : {},
+        ...p1 > 0 ? { firstAuctionPrice: p1 } : {},
+        ...p2 > 0 ? { secondAuctionPrice: p2 } : {},
+        ...d1 ? { firstAuctionDate: d1 } : {},
+        ...d2 ? { secondAuctionDate: d2 } : {}
+      };
+      const parsed = parseOfficialLotDetail(baseDraft, {
+        text: combinedText,
+        title: baseDraft.title,
+        image: imageUrl,
+        structuredAddresses: rawAddress ? [rawAddress] : [],
+        structuredSizes: [],
+        officialFinancials: {
+          ...auctionPrice > 0 ? { auctionPrice, priceVerified: true } : {},
+          ...evalVal > 0 ? { estimatedValue: evalVal } : {},
+          ...auctionDate ? { auctionDate } : {},
+          ...d1 ? { firstAuctionDate: d1 } : {},
+          ...d2 ? { secondAuctionDate: d2 } : {},
+          ...p1 > 0 ? { firstAuctionPrice: p1 } : {},
+          ...p2 > 0 ? { secondAuctionPrice: p2 } : {}
+        },
+        availability: {
+          url: auctionLink,
+          checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          state: "active",
+          status: "ativo",
+          reason: "Ativo na API oficial SuaPlataformaDeLeilao"
+        }
+      }, auctionLink);
+      drafts.push({
+        ...parsed,
+        origin,
+        originVerified: true,
+        ...rt.IsVendaDireta ? { saleMode: "Venda Direta" } : {}
+      });
+    }
+    await onPage(drafts, lotes.length);
+    if (activeOnPage === 0) break;
+  }
+  return true;
 }
 var import_node_fs4, import_node_path3, import_puppeteer, cheerio2, EMGEA_API_DEFAULT, dateOnly;
 var init_listedPortalApis = __esm({
@@ -16085,6 +16291,12 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
         };
         const isSuporteJson = await collectSuporteApi({ id: config.id, name: config.name, baseUrl: config.baseUrl }, dir, onSuportePage, { probeTimeoutMs: config.suporteApi ? 15e3 : 5e3 });
         if (isSuporteJson) {
+          confirmedEmpty = progress.discovered === 0;
+          progress.status = "completed";
+          continue;
+        }
+        const isSuaPlataforma = await collectSuaPlataformaApi({ id: config.id, name: config.name, baseUrl: config.baseUrl }, dir, onSuportePage, { probeTimeoutMs: 6e3 });
+        if (isSuaPlataforma) {
           confirmedEmpty = progress.discovered === 0;
           progress.status = "completed";
           continue;
@@ -27348,25 +27560,77 @@ app.post("/api/morada/batch-enrich", authMiddleware, async (req, res) => {
 function getSimulatedChatReply(message, property, isRateLimited = false) {
   let reply = "";
   const msgLower = message.toLowerCase();
-  const suffix = isRateLimited ? " (Aviso: Sua chave Gemini atingiu o limite de requisi\xE7\xF5es por minuto, respondendo no modo de simula\xE7\xE3o tempor\xE1rio)." : " (Simula\xE7\xE3o - configure a chave GEMINI_API_KEY para respostas reais da IA)";
-  if (property) {
+  const suffix = isRateLimited ? " (Aviso: Sua chave Gemini atingiu o limite de requisi\xE7\xF5es por minuto, respondendo no modo de simula\xE7\xE3o tempor\xE1rio)." : " (Modo t\xE9cnico local \u2014 configure GEMINI_API_KEY para an\xE1lise livre com IA)";
+  const isMapStudy = /mapa|spread|valoriza[cç][aã]o|liquidez|calor|camada|3d|fac[cç][aã]o|facc/i.test(msgLower) && (!property || /como|usar|mapa|spread|camada/i.test(msgLower));
+  const isPricingOrComp = /m[eé]trica|precific|poucos dados|amostra|compensa[cç]|calibrag|homogeneiz|espec[ií]fic|trava|v[aá]lvula|deprecia|des[aá]gio|4 n[ií]veis/i.test(msgLower);
+  const isExtraction = /extra[cç][aã]o|extrai|coleta|leiloeir|nexus|caixa|quarentena|pendente|ipp|geocod|matr[ií]cula/i.test(msgLower);
+  const isRankingOrList = /listad|listag|ranque|ranking|orden|oportunidade|sob an[aá]lise|flip/i.test(msgLower) && !property;
+  if (property && !isMapStudy && !isPricingOrComp && !isExtraction) {
     if (msgLower.includes("lucro") || msgLower.includes("roi") || msgLower.includes("retorno") || msgLower.includes("valor")) {
-      reply = `Com base nos dados do lote em **${property.neighborhood}**, o lance m\xEDnimo de **R$ ${property.auctionPrice.toLocaleString("pt-BR")}** contra o valor estimado de mercado de **R$ ${property.estimatedValue.toLocaleString("pt-BR")}** resulta em um lucro bruto projetado de **R$ ${(property.calculatedProfit || 0).toLocaleString("pt-BR")}** com ROI de **${property.calculatedRoi || 0}%**.${suffix}`;
+      reply = `Com base nos dados do lote em **${property.neighborhood}**, o lance m\xEDnimo de **R$ ${(property.auctionPrice || 0).toLocaleString("pt-BR")}** contra o valor estimado de mercado de **R$ ${(property.estimatedValue || 0).toLocaleString("pt-BR")}** resulta em um lucro bruto projetado de **R$ ${(property.calculatedProfit || 0).toLocaleString("pt-BR")}** com ROI de **${property.calculatedRoi || 0}%**.${suffix}`;
     } else if (msgLower.includes("viabil") || msgLower.includes("itbi") || msgLower.includes("pre\xE7o") || msgLower.includes("m2")) {
-      reply = `O valor do m\xB2 neste leil\xE3o \xE9 de **R$ ${Math.round(property.auctionPrice / property.sizeSqm).toLocaleString("pt-BR")}/m\xB2**. Comparando com a m\xE9dia real de ITBI no bairro de **R$ ${property.itbiUnitValueAvg?.toLocaleString("pt-BR") || "---"}/m\xB2**, o desconto de seguran\xE7a \xE9 bastante expressivo. Isso valida a viabilidade de margem.${suffix}`;
+      const m2Bid = property.sizeSqm ? Math.round(property.auctionPrice / property.sizeSqm).toLocaleString("pt-BR") : "---";
+      reply = `O valor do m\xB2 neste leil\xE3o \xE9 de **R$ ${m2Bid}/m\xB2**. Comparando com a m\xE9dia real de ITBI no bairro/rua de **R$ ${property.itbiUnitValueAvg?.toLocaleString("pt-BR") || "---"}/m\xB2**, avaliamos a margem considerando ITBI (3%), cart\xF3rio (~2%), comiss\xE3o (5%), assessoria (5%), reforma (5%) e corretagem na venda (6%).${suffix}`;
     } else if (msgLower.includes("risco") || msgLower.includes("divida") || msgLower.includes("ocupado") || msgLower.includes("desocup")) {
-      reply = `Este im\xF3vel tem risco classificado como **${property.riskLevel}**. Ele est\xE1 **${property.occupied ? "OCUPADO" : "DESOCUPADO"}** e possui **R$ ${property.pendingDebts.toLocaleString("pt-BR")}** de d\xEDvidas acumuladas. ${property.occupied ? "A ocupa\xE7\xE3o exigir\xE1 a\xE7\xE3o de imiss\xE3o de posse (m\xE9dia de 6 a 12 meses)." : "Estar desocupado agiliza muito o processo de venda e reduz riscos jur\xEDdicos."}${suffix}`;
+      reply = `Este im\xF3vel tem risco classificado como **${property.riskLevel}**. Ele est\xE1 **${property.occupied ? "OCUPADO" : "DESOCUPADO"}** e possui **R$ ${(property.pendingDebts || 0).toLocaleString("pt-BR")}** de d\xEDvidas acumuladas. ${property.occupied ? "A ocupa\xE7\xE3o exigir\xE1 a\xE7\xE3o de imiss\xE3o de posse (m\xE9dia de 6 a 12 meses)." : "Estar desocupado agiliza muito o processo de venda e reduz riscos jur\xEDdicos."}${suffix}`;
     } else {
-      reply = `An\xE1lise do lote "${property.title}": com **${property.sizeSqm}m\xB2**, lance m\xEDnimo de **R$ ${property.auctionPrice.toLocaleString("pt-BR")}** e lucro estimado de **R$ ${(property.calculatedProfit || 0).toLocaleString("pt-BR")}**. Como posso te ajudar com d\xFAvidas de reformas, custos extras ou viabilidade?${suffix}`;
+      reply = `An\xE1lise do lote "${property.title}": com **${property.sizeSqm || 0}m\xB2**, lance m\xEDnimo de **R$ ${(property.auctionPrice || 0).toLocaleString("pt-BR")}** e lucro estimado de **R$ ${(property.calculatedProfit || 0).toLocaleString("pt-BR")}**. Como posso te ajudar com d\xFAvidas de reformas, custos extras ou funcionamento do app?${suffix}`;
     }
+    return reply;
+  }
+  const sections = [];
+  if (isExtraction) {
+    sections.push(
+      `**1. Extra\xE7\xE3o Oficial & Higieniza\xE7\xE3o de Oportunidades**
+- **Fontes integradas**: varredura direta da Caixa Econ\xF4mica Federal (RJ/MG), portais imobili\xE1rios (Flip House) e mais de **900 leiloeiros oficiais** do diret\xF3rio Nexus via APIs dedicadas (Mega Leil\xF5es, Santander, EMGEA, Bradesco, Superbid/Sold, Pestana, Suporte Inform\xE1tica, SuaPlataformaDeLeilao/ApiEngine) e coleta SSR/Chromium.
+- **Valida\xE7\xE3o e quarentena**: o pipeline extrai endere\xE7o, matr\xEDcula, \xE1rea \xFAtil/constru\xEDda (evitando confundir terreno de condom\xEDnio com \xE1rea privativa), datas e valores de 1\xAA/2\xAA pra\xE7a. Lotes encerrados em cl\xE1usulas reais s\xE3o removidos automaticamente e ofertas repetidas da mesma matr\xEDcula s\xE3o consolidadas mantendo o menor lance v\xE1lido.
+- **Geocodifica\xE7\xE3o de precis\xE3o (strictRio)**: cruzamento exato por porta na base oficial **IPP Rio** (e Nominatim/Photon fora do Rio), com corre\xE7\xE3o autom\xE1tica de erros de grafia e bloqueio de centroides gen\xE9ricos sem endere\xE7o.`
+    );
+  }
+  if (isPricingOrComp) {
+    sections.push(
+      `**2. M\xE9trica de Precifica\xE7\xE3o (4 N\xEDveis ITBI + Portais) & Compensa\xE7\xF5es**
+- **Hierarquia em 4 N\xEDveis Oficiais de ITBI** (escrituras reais pagas na prefeitura, com corte de outliers): **1. Mesmo Pr\xE9dio/N\xBA**, **2. Mesma Rua**, **3. Ruas do Entorno (0,5 a 1,5 km autoajust\xE1vel)** e **4. M\xE9dia do Bairro**, sempre confrontados com a **5\xAA refer\xEAncia (m\xE9dia de an\xFAncios em Portais Imobili\xE1rios)**.
+- **Compensa\xE7\xF5es e Travas de Seguran\xE7a**:
+  \u2022 *\xC1reas Similares (\xB133%) e Escala*: evita comparar um conjugado de 25 m\xB2 com um apartamento de 180 m\xB2 e aplica ajuste de escala por metragem.
+  \u2022 *Trava de Poucos Dados (< 5 ou < 7 vendas locais)*: ativa a calibra\xE7\xE3o conservadora ("Poucas amostras"), aplica o Piso Transacionado, reduz o **Score de Liquidez (0\u201310)** e bloqueia superavalia\xE7\xE3o.
+  \u2022 *V\xE1lvula de Seguran\xE7a Pr\xE9dio vs Rua*: impede que 1 \xFAnica escritura at\xEDpica no edif\xEDcio distor\xE7a o valor real da rua.
+  \u2022 *Im\xF3veis com caracter\xEDsticas espec\xEDficas (Casas, Comerciais, Terrenos, Pr\xE9dios Antigos)*: aplica fator de deprecia\xE7\xE3o por idade, separa estritamente a tipologia (n\xE3o mistura Casa com Apartamento sem crit\xE9rio) e exibe **"Sob an\xE1lise"** quando n\xE3o h\xE1 confirma\xE7\xE3o segura de metragem, lance ou amostra.`
+    );
+  }
+  if (isRankingOrList || /analis|roi|calcul|planilha|viabilidade/i.test(msgLower)) {
+    sections.push(
+      `**3. An\xE1lise de Viabilidade, Listagem e Ranqueamento**
+- **Custo Total Real de Aquisi\xE7\xE3o**: soma Lance M\xEDnimo + ITBI (3%) + RGI/Cart\xF3rio (~2%) + Comiss\xE3o do Leiloeiro (5%, isento na Caixa) + Assessoria Jur\xEDdica (5%) + Reforma Estimada (5%) + Despesas/Carregamento mensal + Corretagem na revenda (6%).
+- **Listagem & Quarentena**: im\xF3veis com pre\xE7o, \xE1rea e bairro confirmados entram prontos com ROI, Lucro L\xEDquido e Pre\xE7o Sugerido Flip; im\xF3veis oficiais ativos que omitiram metragem/pre\xE7o no edital ficam vis\xEDveis como **"Sob an\xE1lise"** sem receber avalia\xE7\xE3o especulativa.
+- **Ranqueamento**: os cards e a fila podem ser ordenados por **Maior ROI (%)**, **Maior Lucro Real (R$)**, **Maior Liquidez (0\u201310)**, **Maior Des\xE1gio**, **Menor Lance** ou proximidade da pra\xE7a, cruzando ainda alertas de \xE1reas de risco/fac\xE7\xF5es.`
+    );
+  }
+  if (isMapStudy) {
+    sections.push(
+      `**4. Como Usar o Mapa Georreferenciado (Valoriza\xE7\xE3o / Spread, Liquidez e ITBI R$/m\xB2)**
+Na legenda no canto inferior esquerdo do Mapa voc\xEA alterna entre 4 camadas estrat\xE9gicas:
+- **Leil\xF5es**: mostra os lotes ativos geolocalizados por tipologia (Casa verde, Apartamento azul, Comercial amarelo, Terreno roxo) e alerta de \xE1reas de risco (\`Risco & Fac\xE7\xF5es RJ\`).
+- **ITBI R$/m\xB2 (escala azul sequencial)**: mapeia o valor real escriturado por pr\xE9dio/rua (azul claro < R$ 2,7 mil/m\xB2 at\xE9 azul intenso > R$ 18 mil/m\xB2), revelando ruas subvalorizadas coladas em eixos nobres.
+- **Liquidez (escala verde/esmeralda)**: indica a densidade de giro (quantidade de compras e vendas reais de ITBI naquela rua). Quanto mais intenso o verde, maior a velocidade de venda em at\xE9 60 dias.
+- **Spread (Spread vs Bairro %)**: compara o R$/m\xB2 de cada edif\xEDcio/rua contra a m\xE9dia oficial do bairro, destacando onde est\xE1 o maior potencial de arbitragem e valoriza\xE7\xE3o relativa tanto para arremate quanto para Flip House.`
+    );
+  }
+  if (sections.length > 0) {
+    return sections.join("\n\n") + `
+
+_${suffix.trim()}_`;
+  }
+  if (msgLower.includes("margem") || msgLower.includes("melhor") || msgLower.includes("bairro")) {
+    reply = `Para obter as melhores margens de arbitragem, d\xEA prefer\xEAncia a bairros e ruas com boa **Liquidez** no Mapa (escala verde/esmeralda) e **Spread** positivo. Ordene os cards por **ROI** ou **Lucro Real** e confira os 4 N\xEDveis de ITBI na Calculadora.${suffix}`;
   } else {
-    if (msgLower.includes("margem") || msgLower.includes("melhor") || msgLower.includes("bairro")) {
-      reply = `Para obter as melhores margens de arbitragem, d\xEA prefer\xEAncia a bairros que possuam um bom volume de transa\xE7\xF5es de ITBI cadastradas no sistema. Isso garante que a base de compara\xE7\xE3o do valor de mercado seja real e confi\xE1vel. Ordene o Dashboard por ROI para ver as maiores oportunidades atuais.${suffix}`;
-    } else if (msgLower.includes("roi") || msgLower.includes("calcul") || msgLower.includes("planilha")) {
-      reply = `Nosso c\xE1lculo de ROI de caixa soma o valor de lance do leil\xE3o, comiss\xE3o do leiloeiro (5%), estimativa de reforma, d\xEDvidas judiciais/condom\xEDnio e custos cartoriais. A rentabilidade (ROI) \xE9 calculada comparando o custo total de aquisi\xE7\xE3o contra o valor de mercado estimado pela base municipal de ITBI.${suffix}`;
-    } else {
-      reply = `Ol\xE1! Sou o assistente virtual do Garimpeiro de Leil\xF5es. Selecione um im\xF3vel espec\xEDfico no menu do chat para fazer perguntas de viabilidade direcionadas, ou fa\xE7a uma pergunta geral sobre o mercado de leil\xF5es e nossa base municipal de ITBI.${suffix}`;
-    }
+    reply = `Ol\xE1! Posso te explicar **como funciona o nosso app** em detalhes ou analisar um lote espec\xEDfico:
+- **Extra\xE7\xE3o & Higieniza\xE7\xE3o** (Caixa, Flip House e +900 leiloeiros Nexus + IPP Rio)
+- **M\xE9trica de Precifica\xE7\xE3o** (4 N\xEDveis ITBI + Portais + travas para poucos dados e im\xF3veis espec\xEDficos)
+- **An\xE1lise, Listagem e Ranqueamento** (custos reais, ROI e estado "Sob an\xE1lise")
+- **Mapa Estrat\xE9gico** (como estudar **ITBI R$/m\xB2**, **Liquidez** e **Spread vs Bairro**)
+
+Pergunte sobre qualquer um desses t\xF3picos ou selecione um im\xF3vel acima!${suffix}`;
   }
   return reply;
 }
@@ -27758,10 +28022,37 @@ app.post("/api/chat", async (req, res) => {
         }
       }
     });
-    let contextPrompt = `Voc\xEA \xE9 um assistente virtual especialista em leil\xF5es de im\xF3veis e investimentos imobili\xE1rios no Brasil (Real Estate Arbitrage). Seu papel \xE9 ajudar o investidor a analisar oportunidades e responder perguntas com precis\xE3o, profissionalismo e de forma direta.
+    let contextPrompt = `Voc\xEA \xE9 um assistente virtual especialista em leil\xF5es de im\xF3veis e investimentos imobili\xE1rios no Brasil (Real Estate Arbitrage) integrado ao aplicativo **Assessoria Pericial & Flip Imobili\xE1rio (Marcus Assessoria)**. Seu papel \xE9 explicar com precis\xE3o t\xE9cnica tanto a viabilidade de lotes espec\xEDficos quanto o funcionamento interno exato da plataforma.
     
-    Voc\xEA deve responder em portugu\xEAs do Brasil (pt-BR). Mantenha suas respostas relativamente concisas, por\xE9m ricas em insights financeiros e jur\xEDdicos. Use t\xF3picos em Markdown para estruturar suas respostas quando apropriado.
-    
+    Voc\xEA deve responder em portugu\xEAs do Brasil (pt-BR). Mantenha suas respostas objetivas, bem estruturadas em t\xF3picos Markdown e fi\xE9is \xE0 arquitetura real do aplicativo abaixo:
+
+    === ARQUITETURA E FUNCIONAMENTO DO APLICATIVO ===
+    1. EXTRA\xC7\xC3O E HIGIENIZA\xC7\xC3O DOS IM\xD3VEIS E OPORTUNIDADES:
+       - Fontes oficiais integradas: Caixa Econ\xF4mica Federal (RJ e MG via lista oficial), portais imobili\xE1rios para **Flip House** e **mais de 900 leiloeiros oficiais** do diret\xF3rio Nexus, por meio de APIs estruturadas (Mega Leil\xF5es, Santander, EMGEA, Vitrine Bradesco, Superbid/Sold, Pestana, Suporte Inform\xE1tica, SuaPlataformaDeLeilao/ApiEngine) e coletores SSR/Chromium.
+       - Auditoria de evid\xEAncia: cada lote passa por extra\xE7\xE3o de metragem oficial (com auditoria anti-conflito que ignora terreno de condom\xEDnio em apartamentos), endere\xE7o completo (excluindo endere\xE7os/e-mails de leiloeiros/vendedores e editais), matr\xEDcula/RGI e datas/valores de 1\xAA e 2\xAA pra\xE7a.
+       - Ciclo de vida e deduplica\xE7\xE3o: lotes encerrados/arrematados s\xE3o retirados (com filtro para n\xE3o confundir cl\xE1usulas contratuais gen\xE9ricas como "im\xF3vel vendido como ocupado"), ofertas repetidas da mesma matr\xEDcula s\xE3o unificadas exibindo a melhor oferta ativa, e im\xF3veis geocodificados no Rio passam pela base oficial por porta **IPP Rio** (trava strictRio, sem centroides falsos).
+
+    2. LISTAGEM, ESTADOS E RANQUEAMENTO DAS OPORTUNIDADES:
+       - Separa\xE7\xE3o entre **Pronto para An\xE1lise (ativo)** e **Em Revis\xE3o ("Sob an\xE1lise")**: lotes com pre\xE7o, \xE1rea e bairro confirmados recebem c\xE1lculo completo de gabarito ITBI, Lucro Real Estimado, ROI e Pre\xE7o Sugerido de Flip/Revenda. Lotes oficiais ativos sem metragem, endere\xE7o ou pre\xE7o confirmados na fonte entram no cat\xE1logo como "Sob an\xE1lise" sem receber estimativa especulativa.
+       - Custos considerados na an\xE1lise de viabilidade: Lance M\xEDnimo + ITBI (3%) + RGI/Cart\xF3rio (~2%) + Comiss\xE3o do Leiloeiro (5%, isento na Caixa) + Assessoria Jur\xEDdica (5%) + Reforma Estimada (5%) + Carregamento mensal (condom\xEDnio/IPTU/financiamento) + Corretagem na revenda (6%).
+       - Ranqueamento e Filtros: permite ordenar por **ROI Projetado (%)**, **Lucro Real Estimado (R$)**, **Score de Liquidez (0\u201310)**, **Des\xE1gio**, **Menor Lance** ou data de pra\xE7a, filtrando ainda por modalidade (Judicial, Extrajudicial, Caixa, Flip House), ocupa\xE7\xE3o, financiamento/parcelamento e alertas de proximidade a \xE1reas de risco/fac\xE7\xF5es.
+
+    3. M\xC9TRICA DE PRECIFICA\xC7\xC3O (4 N\xCDVEIS OFICIAIS DE ITBI + PORTAIS) E COMPENSA\xC7\xD5ES:
+       - Hierarquia de refer\xEAncia: **N\xEDvel 1 (Mesmo Pr\xE9dio / N\xBA exato)**, **N\xEDvel 2 (Mesma Rua)**, **N\xEDvel 3 (Ruas do Entorno com raio din\xE2mico autoajust\xE1vel de 0,5 km a 1,5 km)** e **N\xEDvel 4 (M\xE9dia Geral do Bairro)** utilizando escrituras reais de ITBI (com saneamento estat\xEDstico de outliers), cruzados com o **N\xEDvel 5 (M\xE9dia de an\xFAncios nos Portais Imobili\xE1rios na rua/bairro)**.
+       - Compensa\xE7\xF5es para poucos dados e caracter\xEDsticas espec\xEDficas:
+         * **\xC1reas Similares (\xB133%) e Homogeneiza\xE7\xE3o/Escala**: compara im\xF3veis de porte equivalente e ajusta distor\xE7\xF5es entre metragens muito diferentes.
+         * **Trava de Baixa Amostragem ("Poucas amostras")**: quando h\xE1 menos de 5\u20137 transa\xE7\xF5es locais compar\xE1veis, reduz o Score de Liquidez proporcionalmente, usa Piso Transacionado mais conservador e freia desvios bruscos para evitar superavalia\xE7\xE3o.
+         * **V\xE1lvula de Seguran\xE7a Pr\xE9dio vs Rua**: evita que poucas escrituras at\xEDpicas em um mesmo n\xFAmero distor\xE7am o valor m\xE9dio da via.
+         * **Deprecia\xE7\xE3o por Idade do Pr\xE9dio e Tipologia Estrita**: aplica ajuste et\xE1rio na curva de valoriza\xE7\xE3o e n\xE3o mistura livremente Casas, Apartamentos, Lojas/Salas Comerciais e Terrenos; quando faltam dados suficientes da mesma tipologia na regi\xE3o, sinaliza cautela ou "Sob an\xE1lise".
+         * **Des\xE1gio de Liquidez Imediata**: o Pre\xE7o Sugerido para Giro em at\xE9 60 dias aplica margem estrat\xE9gica de liquidez em rela\xE7\xE3o ao valor cheio de mercado.
+
+    4. COMO USAR O MAPA GEORREFERENCIADO (VALORIZA\xC7\xC3O / SPREAD, LIQUIDEZ E ITBI R$/m\xB2):
+       - Na legenda do mapa (canto inferior esquerdo) h\xE1 4 abas tem\xE1ticas (com suporte a visualiza\xE7\xE3o 3D dos edif\xEDcios IPP):
+         * **Leil\xF5es**: exibe os lotes ativos com cores por tipologia (Casa verde, Apartamento azul, Comercial amarelo, Terreno roxo) e camada opcional "Risco & Fac\xE7\xF5es RJ".
+         * **ITBI R$/m\xB2 (escala azul sequencial)**: mostra o valor real escriturado de cada edif\xEDcio/rua (azul claro < R$ 2,7 mil/m\xB2 at\xE9 azul intenso > R$ 18 mil/m\xB2). Excelente para detectar ruas descontadas vizinhas a polos mais caros.
+         * **Liquidez (escala verde/esmeralda)**: mede o giro/frequ\xEAncia real de compras e vendas registradas (ITBI) na rua/edif\xEDcio \u2014 regi\xF5es verde-escuras vendem mais r\xE1pido (alta absor\xE7\xE3o para Flip).
+         * **Spread (Spread vs Bairro %)**: compara o R$/m\xB2 de cada edif\xEDcio/rua contra a m\xE9dia oficial do bairro, revelando micro-zonas com maior pr\xEAmio ou potencial de arbitragem e valoriza\xE7\xE3o relativa.
+
     `;
     if (property) {
       contextPrompt += `O investidor selecionou o seguinte im\xF3vel espec\xEDfico para a conversa atual:

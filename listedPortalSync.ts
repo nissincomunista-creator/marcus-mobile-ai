@@ -10,7 +10,7 @@ import { AUCTIONEER_PORTALS, canonicalAuctionLink, parseOfficialLotDetail, extra
 import { SYNC_SOURCE_IDS, SYNC_TARGETS, allowedSyncLocation, normalizeAuctionText as norm } from './src/utils/auctionSyncScope.ts';
 import { sourceAuctionLocation, sourceNeighborhoodLocation, sourceTargetCityLocation } from './src/utils/auctionGeography.ts';
 import { CITY_ZONES } from './src/utils/cityZones.ts';
-import { collectBankApi, collectSoldApi, collectPestanaApi, collectRioLinks, collectMariaFilomenaApi, collectSuporteApi, collectDoulheTresLinks, collectSuperbidOffers, collectSantanderApi } from './listedPortalApis.ts';
+import { collectBankApi, collectSoldApi, collectPestanaApi, collectRioLinks, collectMariaFilomenaApi, collectSuporteApi, collectSuaPlataformaApi, collectDoulheTresLinks, collectSuperbidOffers, collectSantanderApi } from './listedPortalApis.ts';
 import { scrapeLeilaoImovel } from './scrapers/leilaoImovelScraper.ts';
 
 export interface PortalRun {
@@ -353,6 +353,8 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
    const onSuportePage=async(rows:ScrapedAuctionDraft[],total:number)=>{navigated=true;progress.pages++;progress.discovered+=total;progress.fetched+=total;progress.accepted+=rows.length;batches.push(...rows.map(row=>({...row,sourceEvidencePath:preserveSource(row.auctionLink,'<pre>'+JSON.stringify(row)+'</pre>')})));await flush();save();};
    const isSuporteJson=await collectSuporteApi({id:config.id,name:config.name,baseUrl:config.baseUrl},dir,onSuportePage,{probeTimeoutMs:config.suporteApi?15000:5000});
    if(isSuporteJson){confirmedEmpty=progress.discovered===0;progress.status='completed';continue;}
+   const isSuaPlataforma=await collectSuaPlataformaApi({id:config.id,name:config.name,baseUrl:config.baseUrl},dir,onSuportePage,{probeTimeoutMs:6000});
+   if(isSuaPlataforma){confirmedEmpty=progress.discovered===0;progress.status='completed';continue;}
    const isSuportePortal=Boolean((config as any).suporteApi)||new Set(['rioleiloes','deonizialeiloes_com_br','giordanoleiloes_com_br','alessandroteixeiraleiloes_com_br','hdleiloes_com_br','jrleiloes_com_br','fabioleiloes_com_br','carloferrarileiloes_com_br','rigolonleiloes_com_br','joserodovalholeiloes_com_br']).has(config.id);if(isSuportePortal){
     try{
      await collectRioLinks(dir,async(links)=>{navigated=true;progress.pages++;for(const link of links)details.set(link.url,link.text);progress.discovered=details.size;save();},config.baseUrl,config.id);

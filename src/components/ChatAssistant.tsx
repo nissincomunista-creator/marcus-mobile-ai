@@ -455,10 +455,22 @@ export default function ChatAssistant({ auctions, selectedAuctionId }: ChatAssis
                     📈 Melhores Margens
                   </button>
                   <button 
-                    onClick={() => handleQuickQuestion('Como funciona o cálculo de ROI de caixa na planilha?')}
+                    onClick={() => handleQuickQuestion('Como funciona a extração, análise e ranqueamento das oportunidades no app?')}
                     className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2 py-1 rounded-md transition-colors cursor-pointer"
                   >
-                    🧮 Explicação de ROI
+                    🤖 Extração & Ranking
+                  </button>
+                  <button 
+                    onClick={() => handleQuickQuestion('Como funciona a métrica de precificação e as compensações para poucos dados ou imóveis específicos?')}
+                    className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                  >
+                    🔬 Precificação & Travas
+                  </button>
+                  <button 
+                    onClick={() => handleQuickQuestion('Como usar o mapa para estudar áreas de valorização, liquidez e spread?')}
+                    className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2 py-1 rounded-md transition-colors cursor-pointer"
+                  >
+                    🗺️ Mapa: Spread & Liquidez
                   </button>
                 </>
               )}

@@ -6793,26 +6793,74 @@ function getSimulatedChatReply(message: string, property: any, isRateLimited = f
   const msgLower = message.toLowerCase();
   const suffix = isRateLimited 
     ? ' (Aviso: Sua chave Gemini atingiu o limite de requisições por minuto, respondendo no modo de simulação temporário).' 
-    : ' (Simulação - configure a chave GEMINI_API_KEY para respostas reais da IA)';
+    : ' (Modo técnico local — configure GEMINI_API_KEY para análise livre com IA)';
 
-  if (property) {
+  const isMapStudy = /mapa|spread|valoriza[cç][aã]o|liquidez|calor|camada|3d|fac[cç][aã]o|facc/i.test(msgLower) && (!property || /como|usar|mapa|spread|camada/i.test(msgLower));
+  const isPricingOrComp = /m[eé]trica|precific|poucos dados|amostra|compensa[cç]|calibrag|homogeneiz|espec[ií]fic|trava|v[aá]lvula|deprecia|des[aá]gio|4 n[ií]veis/i.test(msgLower);
+  const isExtraction = /extra[cç][aã]o|extrai|coleta|leiloeir|nexus|caixa|quarentena|pendente|ipp|geocod|matr[ií]cula/i.test(msgLower);
+  const isRankingOrList = /listad|listag|ranque|ranking|orden|oportunidade|sob an[aá]lise|flip/i.test(msgLower) && !property;
+
+  if (property && !isMapStudy && !isPricingOrComp && !isExtraction) {
     if (msgLower.includes('lucro') || msgLower.includes('roi') || msgLower.includes('retorno') || msgLower.includes('valor')) {
-      reply = `Com base nos dados do lote em **${property.neighborhood}**, o lance mínimo de **R$ ${property.auctionPrice.toLocaleString('pt-BR')}** contra o valor estimado de mercado de **R$ ${property.estimatedValue.toLocaleString('pt-BR')}** resulta em um lucro bruto projetado de **R$ ${(property.calculatedProfit || 0).toLocaleString('pt-BR')}** com ROI de **${property.calculatedRoi || 0}%**.${suffix}`;
+      reply = `Com base nos dados do lote em **${property.neighborhood}**, o lance mínimo de **R$ ${(property.auctionPrice || 0).toLocaleString('pt-BR')}** contra o valor estimado de mercado de **R$ ${(property.estimatedValue || 0).toLocaleString('pt-BR')}** resulta em um lucro bruto projetado de **R$ ${(property.calculatedProfit || 0).toLocaleString('pt-BR')}** com ROI de **${property.calculatedRoi || 0}%**.${suffix}`;
     } else if (msgLower.includes('viabil') || msgLower.includes('itbi') || msgLower.includes('preço') || msgLower.includes('m2')) {
-      reply = `O valor do m² neste leilão é de **R$ ${Math.round(property.auctionPrice / property.sizeSqm).toLocaleString('pt-BR')}/m²**. Comparando com a média real de ITBI no bairro de **R$ ${property.itbiUnitValueAvg?.toLocaleString('pt-BR') || '---'}/m²**, o desconto de segurança é bastante expressivo. Isso valida a viabilidade de margem.${suffix}`;
+      const m2Bid = property.sizeSqm ? Math.round(property.auctionPrice / property.sizeSqm).toLocaleString('pt-BR') : '---';
+      reply = `O valor do m² neste leilão é de **R$ ${m2Bid}/m²**. Comparando com a média real de ITBI no bairro/rua de **R$ ${property.itbiUnitValueAvg?.toLocaleString('pt-BR') || '---'}/m²**, avaliamos a margem considerando ITBI (3%), cartório (~2%), comissão (5%), assessoria (5%), reforma (5%) e corretagem na venda (6%).${suffix}`;
     } else if (msgLower.includes('risco') || msgLower.includes('divida') || msgLower.includes('ocupado') || msgLower.includes('desocup')) {
-      reply = `Este imóvel tem risco classificado como **${property.riskLevel}**. Ele está **${property.occupied ? 'OCUPADO' : 'DESOCUPADO'}** e possui **R$ ${property.pendingDebts.toLocaleString('pt-BR')}** de dívidas acumuladas. ${property.occupied ? 'A ocupação exigirá ação de imissão de posse (média de 6 a 12 meses).' : 'Estar desocupado agiliza muito o processo de venda e reduz riscos jurídicos.'}${suffix}`;
+      reply = `Este imóvel tem risco classificado como **${property.riskLevel}**. Ele está **${property.occupied ? 'OCUPADO' : 'DESOCUPADO'}** e possui **R$ ${(property.pendingDebts || 0).toLocaleString('pt-BR')}** de dívidas acumuladas. ${property.occupied ? 'A ocupação exigirá ação de imissão de posse (média de 6 a 12 meses).' : 'Estar desocupado agiliza muito o processo de venda e reduz riscos jurídicos.'}${suffix}`;
     } else {
-      reply = `Análise do lote "${property.title}": com **${property.sizeSqm}m²**, lance mínimo de **R$ ${property.auctionPrice.toLocaleString('pt-BR')}** e lucro estimado de **R$ ${(property.calculatedProfit || 0).toLocaleString('pt-BR')}**. Como posso te ajudar com dúvidas de reformas, custos extras ou viabilidade?${suffix}`;
+      reply = `Análise do lote "${property.title}": com **${property.sizeSqm || 0}m²**, lance mínimo de **R$ ${(property.auctionPrice || 0).toLocaleString('pt-BR')}** e lucro estimado de **R$ ${(property.calculatedProfit || 0).toLocaleString('pt-BR')}**. Como posso te ajudar com dúvidas de reformas, custos extras ou funcionamento do app?${suffix}`;
     }
+    return reply;
+  }
+
+  const sections: string[] = [];
+  if (isExtraction) {
+    sections.push(
+      `**1. Extração Oficial & Higienização de Oportunidades**\n` +
+      `- **Fontes integradas**: varredura direta da Caixa Econômica Federal (RJ/MG), portais imobiliários (Flip House) e mais de **900 leiloeiros oficiais** do diretório Nexus via APIs dedicadas (Mega Leilões, Santander, EMGEA, Bradesco, Superbid/Sold, Pestana, Suporte Informática, SuaPlataformaDeLeilao/ApiEngine) e coleta SSR/Chromium.\n` +
+      `- **Validação e quarentena**: o pipeline extrai endereço, matrícula, área útil/construída (evitando confundir terreno de condomínio com área privativa), datas e valores de 1ª/2ª praça. Lotes encerrados em cláusulas reais são removidos automaticamente e ofertas repetidas da mesma matrícula são consolidadas mantendo o menor lance válido.\n` +
+      `- **Geocodificação de precisão (strictRio)**: cruzamento exato por porta na base oficial **IPP Rio** (e Nominatim/Photon fora do Rio), com correção automática de erros de grafia e bloqueio de centroides genéricos sem endereço.`
+    );
+  }
+  if (isPricingOrComp) {
+    sections.push(
+      `**2. Métrica de Precificação (4 Níveis ITBI + Portais) & Compensações**\n` +
+      `- **Hierarquia em 4 Níveis Oficiais de ITBI** (escrituras reais pagas na prefeitura, com corte de outliers): **1. Mesmo Prédio/Nº**, **2. Mesma Rua**, **3. Ruas do Entorno (0,5 a 1,5 km autoajustável)** e **4. Média do Bairro**, sempre confrontados com a **5ª referência (média de anúncios em Portais Imobiliários)**.\n` +
+      `- **Compensações e Travas de Segurança**:\n` +
+      `  • *Áreas Similares (±33%) e Escala*: evita comparar um conjugado de 25 m² com um apartamento de 180 m² e aplica ajuste de escala por metragem.\n` +
+      `  • *Trava de Poucos Dados (< 5 ou < 7 vendas locais)*: ativa a calibração conservadora ("Poucas amostras"), aplica o Piso Transacionado, reduz o **Score de Liquidez (0–10)** e bloqueia superavaliação.\n` +
+      `  • *Válvula de Segurança Prédio vs Rua*: impede que 1 única escritura atípica no edifício distorça o valor real da rua.\n` +
+      `  • *Imóveis com características específicas (Casas, Comerciais, Terrenos, Prédios Antigos)*: aplica fator de depreciação por idade, separa estritamente a tipologia (não mistura Casa com Apartamento sem critério) e exibe **"Sob análise"** quando não há confirmação segura de metragem, lance ou amostra.`
+    );
+  }
+  if (isRankingOrList || /analis|roi|calcul|planilha|viabilidade/i.test(msgLower)) {
+    sections.push(
+      `**3. Análise de Viabilidade, Listagem e Ranqueamento**\n` +
+      `- **Custo Total Real de Aquisição**: soma Lance Mínimo + ITBI (3%) + RGI/Cartório (~2%) + Comissão do Leiloeiro (5%, isento na Caixa) + Assessoria Jurídica (5%) + Reforma Estimada (5%) + Despesas/Carregamento mensal + Corretagem na revenda (6%).\n` +
+      `- **Listagem & Quarentena**: imóveis com preço, área e bairro confirmados entram prontos com ROI, Lucro Líquido e Preço Sugerido Flip; imóveis oficiais ativos que omitiram metragem/preço no edital ficam visíveis como **"Sob análise"** sem receber avaliação especulativa.\n` +
+      `- **Ranqueamento**: os cards e a fila podem ser ordenados por **Maior ROI (%)**, **Maior Lucro Real (R$)**, **Maior Liquidez (0–10)**, **Maior Deságio**, **Menor Lance** ou proximidade da praça, cruzando ainda alertas de áreas de risco/facções.`
+    );
+  }
+  if (isMapStudy) {
+    sections.push(
+      `**4. Como Usar o Mapa Georreferenciado (Valorização / Spread, Liquidez e ITBI R$/m²)**\n` +
+      `Na legenda no canto inferior esquerdo do Mapa você alterna entre 4 camadas estratégicas:\n` +
+      `- **Leilões**: mostra os lotes ativos geolocalizados por tipologia (Casa verde, Apartamento azul, Comercial amarelo, Terreno roxo) e alerta de áreas de risco (` + '`Risco & Facções RJ`' + `).\n` +
+      `- **ITBI R$/m² (escala azul sequencial)**: mapeia o valor real escriturado por prédio/rua (azul claro < R$ 2,7 mil/m² até azul intenso > R$ 18 mil/m²), revelando ruas subvalorizadas coladas em eixos nobres.\n` +
+      `- **Liquidez (escala verde/esmeralda)**: indica a densidade de giro (quantidade de compras e vendas reais de ITBI naquela rua). Quanto mais intenso o verde, maior a velocidade de venda em até 60 dias.\n` +
+      `- **Spread (Spread vs Bairro %)**: compara o R$/m² de cada edifício/rua contra a média oficial do bairro, destacando onde está o maior potencial de arbitragem e valorização relativa tanto para arremate quanto para Flip House.`
+    );
+  }
+
+  if (sections.length > 0) {
+    return sections.join('\n\n') + `\n\n_${suffix.trim()}_`;
+  }
+
+  if (msgLower.includes('margem') || msgLower.includes('melhor') || msgLower.includes('bairro')) {
+    reply = `Para obter as melhores margens de arbitragem, dê preferência a bairros e ruas com boa **Liquidez** no Mapa (escala verde/esmeralda) e **Spread** positivo. Ordene os cards por **ROI** ou **Lucro Real** e confira os 4 Níveis de ITBI na Calculadora.${suffix}`;
   } else {
-    if (msgLower.includes('margem') || msgLower.includes('melhor') || msgLower.includes('bairro')) {
-      reply = `Para obter as melhores margens de arbitragem, dê preferência a bairros que possuam um bom volume de transações de ITBI cadastradas no sistema. Isso garante que a base de comparação do valor de mercado seja real e confiável. Ordene o Dashboard por ROI para ver as maiores oportunidades atuais.${suffix}`;
-    } else if (msgLower.includes('roi') || msgLower.includes('calcul') || msgLower.includes('planilha')) {
-      reply = `Nosso cálculo de ROI de caixa soma o valor de lance do leilão, comissão do leiloeiro (5%), estimativa de reforma, dívidas judiciais/condomínio e custos cartoriais. A rentabilidade (ROI) é calculada comparando o custo total de aquisição contra o valor de mercado estimado pela base municipal de ITBI.${suffix}`;
-    } else {
-      reply = `Olá! Sou o assistente virtual do Garimpeiro de Leilões. Selecione um imóvel específico no menu do chat para fazer perguntas de viabilidade direcionadas, ou faça uma pergunta geral sobre o mercado de leilões e nossa base municipal de ITBI.${suffix}`;
-    }
+    reply = `Olá! Posso te explicar **como funciona o nosso app** em detalhes ou analisar um lote específico:\n- **Extração & Higienização** (Caixa, Flip House e +900 leiloeiros Nexus + IPP Rio)\n- **Métrica de Precificação** (4 Níveis ITBI + Portais + travas para poucos dados e imóveis específicos)\n- **Análise, Listagem e Ranqueamento** (custos reais, ROI e estado "Sob análise")\n- **Mapa Estratégico** (como estudar **ITBI R$/m²**, **Liquidez** e **Spread vs Bairro**)\n\nPergunte sobre qualquer um desses tópicos ou selecione um imóvel acima!${suffix}`;
   }
   return reply;
 }
@@ -7245,10 +7293,37 @@ app.post('/api/chat', async (req, res) => {
       }
     });
 
-    let contextPrompt = `Você é um assistente virtual especialista em leilões de imóveis e investimentos imobiliários no Brasil (Real Estate Arbitrage). Seu papel é ajudar o investidor a analisar oportunidades e responder perguntas com precisão, profissionalismo e de forma direta.
+    let contextPrompt = `Você é um assistente virtual especialista em leilões de imóveis e investimentos imobiliários no Brasil (Real Estate Arbitrage) integrado ao aplicativo **Assessoria Pericial & Flip Imobiliário (Marcus Assessoria)**. Seu papel é explicar com precisão técnica tanto a viabilidade de lotes específicos quanto o funcionamento interno exato da plataforma.
     
-    Você deve responder em português do Brasil (pt-BR). Mantenha suas respostas relativamente concisas, porém ricas em insights financeiros e jurídicos. Use tópicos em Markdown para estruturar suas respostas quando apropriado.
-    
+    Você deve responder em português do Brasil (pt-BR). Mantenha suas respostas objetivas, bem estruturadas em tópicos Markdown e fiéis à arquitetura real do aplicativo abaixo:
+
+    === ARQUITETURA E FUNCIONAMENTO DO APLICATIVO ===
+    1. EXTRAÇÃO E HIGIENIZAÇÃO DOS IMÓVEIS E OPORTUNIDADES:
+       - Fontes oficiais integradas: Caixa Econômica Federal (RJ e MG via lista oficial), portais imobiliários para **Flip House** e **mais de 900 leiloeiros oficiais** do diretório Nexus, por meio de APIs estruturadas (Mega Leilões, Santander, EMGEA, Vitrine Bradesco, Superbid/Sold, Pestana, Suporte Informática, SuaPlataformaDeLeilao/ApiEngine) e coletores SSR/Chromium.
+       - Auditoria de evidência: cada lote passa por extração de metragem oficial (com auditoria anti-conflito que ignora terreno de condomínio em apartamentos), endereço completo (excluindo endereços/e-mails de leiloeiros/vendedores e editais), matrícula/RGI e datas/valores de 1ª e 2ª praça.
+       - Ciclo de vida e deduplicação: lotes encerrados/arrematados são retirados (com filtro para não confundir cláusulas contratuais genéricas como "imóvel vendido como ocupado"), ofertas repetidas da mesma matrícula são unificadas exibindo a melhor oferta ativa, e imóveis geocodificados no Rio passam pela base oficial por porta **IPP Rio** (trava strictRio, sem centroides falsos).
+
+    2. LISTAGEM, ESTADOS E RANQUEAMENTO DAS OPORTUNIDADES:
+       - Separação entre **Pronto para Análise (ativo)** e **Em Revisão ("Sob análise")**: lotes com preço, área e bairro confirmados recebem cálculo completo de gabarito ITBI, Lucro Real Estimado, ROI e Preço Sugerido de Flip/Revenda. Lotes oficiais ativos sem metragem, endereço ou preço confirmados na fonte entram no catálogo como "Sob análise" sem receber estimativa especulativa.
+       - Custos considerados na análise de viabilidade: Lance Mínimo + ITBI (3%) + RGI/Cartório (~2%) + Comissão do Leiloeiro (5%, isento na Caixa) + Assessoria Jurídica (5%) + Reforma Estimada (5%) + Carregamento mensal (condomínio/IPTU/financiamento) + Corretagem na revenda (6%).
+       - Ranqueamento e Filtros: permite ordenar por **ROI Projetado (%)**, **Lucro Real Estimado (R$)**, **Score de Liquidez (0–10)**, **Deságio**, **Menor Lance** ou data de praça, filtrando ainda por modalidade (Judicial, Extrajudicial, Caixa, Flip House), ocupação, financiamento/parcelamento e alertas de proximidade a áreas de risco/facções.
+
+    3. MÉTRICA DE PRECIFICAÇÃO (4 NÍVEIS OFICIAIS DE ITBI + PORTAIS) E COMPENSAÇÕES:
+       - Hierarquia de referência: **Nível 1 (Mesmo Prédio / Nº exato)**, **Nível 2 (Mesma Rua)**, **Nível 3 (Ruas do Entorno com raio dinâmico autoajustável de 0,5 km a 1,5 km)** e **Nível 4 (Média Geral do Bairro)** utilizando escrituras reais de ITBI (com saneamento estatístico de outliers), cruzados com o **Nível 5 (Média de anúncios nos Portais Imobiliários na rua/bairro)**.
+       - Compensações para poucos dados e características específicas:
+         * **Áreas Similares (±33%) e Homogeneização/Escala**: compara imóveis de porte equivalente e ajusta distorções entre metragens muito diferentes.
+         * **Trava de Baixa Amostragem ("Poucas amostras")**: quando há menos de 5–7 transações locais comparáveis, reduz o Score de Liquidez proporcionalmente, usa Piso Transacionado mais conservador e freia desvios bruscos para evitar superavaliação.
+         * **Válvula de Segurança Prédio vs Rua**: evita que poucas escrituras atípicas em um mesmo número distorçam o valor médio da via.
+         * **Depreciação por Idade do Prédio e Tipologia Estrita**: aplica ajuste etário na curva de valorização e não mistura livremente Casas, Apartamentos, Lojas/Salas Comerciais e Terrenos; quando faltam dados suficientes da mesma tipologia na região, sinaliza cautela ou "Sob análise".
+         * **Deságio de Liquidez Imediata**: o Preço Sugerido para Giro em até 60 dias aplica margem estratégica de liquidez em relação ao valor cheio de mercado.
+
+    4. COMO USAR O MAPA GEORREFERENCIADO (VALORIZAÇÃO / SPREAD, LIQUIDEZ E ITBI R$/m²):
+       - Na legenda do mapa (canto inferior esquerdo) há 4 abas temáticas (com suporte a visualização 3D dos edifícios IPP):
+         * **Leilões**: exibe os lotes ativos com cores por tipologia (Casa verde, Apartamento azul, Comercial amarelo, Terreno roxo) e camada opcional "Risco & Facções RJ".
+         * **ITBI R$/m² (escala azul sequencial)**: mostra o valor real escriturado de cada edifício/rua (azul claro < R$ 2,7 mil/m² até azul intenso > R$ 18 mil/m²). Excelente para detectar ruas descontadas vizinhas a polos mais caros.
+         * **Liquidez (escala verde/esmeralda)**: mede o giro/frequência real de compras e vendas registradas (ITBI) na rua/edifício — regiões verde-escuras vendem mais rápido (alta absorção para Flip).
+         * **Spread (Spread vs Bairro %)**: compara o R$/m² de cada edifício/rua contra a média oficial do bairro, revelando micro-zonas com maior prêmio ou potencial de arbitragem e valorização relativa.
+
     `;
 
     if (property) {

@@ -589,3 +589,229 @@ export async function collectMariaFilomenaApi(
   );
 }
 
+export async function collectSuaPlataformaApi(
+  config: { id: string; name: string; baseUrl: string },
+  dir: string,
+  onPage: (rows: ScrapedAuctionDraft[], total: number) => Promise<void>,
+  options?: { probeTimeoutMs?: number }
+): Promise<boolean> {
+  const cleanBase = config.baseUrl.replace(/\/$/, '');
+  const candidates = [cleanBase];
+  if (cleanBase.startsWith('https://') && !cleanBase.includes('://www.')) {
+    candidates.push(cleanBase.replace('https://', 'https://www.'));
+  }
+
+  const timeoutMs = options?.probeTimeoutMs ?? 7000;
+  let activeBase = '';
+  let cookies = '';
+  let token = '';
+
+  for (const base of candidates) {
+    try {
+      const res = await fetch(`${base}/`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      if (!/ApiEngine|\/Core\/V1\/js\/Ajax\/Ajax_Leiloes|suaplataformadeleilao|TemplateGetLotes/i.test(html)) {
+        return false;
+      }
+      activeBase = res.url ? new URL(res.url).origin : base;
+      const setCookies = typeof (res.headers as any).getSetCookie === 'function'
+        ? (res.headers as any).getSetCookie()
+        : [res.headers.get('set-cookie')].filter(Boolean);
+      cookies = setCookies.map((c: string) => c.split(';')[0]).filter(Boolean).join('; ');
+      token = html.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/i)?.[1] || '';
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!activeBase) return false;
+
+  const headers: Record<string, string> = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Content-Type': 'application/json; charset=utf-8',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Referer': `${activeBase}/busca/`,
+    ...(cookies ? { Cookie: cookies } : {}),
+    ...(token ? { __RequestVerificationToken: token } : {}),
+  };
+
+  const firstRes = await fetch(`${activeBase}/ApiEngine/GetLotes/1/100`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ Pagina: 1, QtdPorPagina: 100 }),
+    signal: AbortSignal.timeout(15000)
+  }).catch(() => null);
+  if (!firstRes || !firstRes.ok) return false;
+  let firstJson: any = null;
+  try { firstJson = await firstRes.json(); } catch { return false; }
+  if (!firstJson || !Array.isArray(firstJson.Lotes)) return false;
+
+  const isPropertyRow = (lot: any) => {
+    const label = `${lot.Categoria || ''} ${lot.SubCategoria || ''} ${lot.Lote || ''}`;
+    if (/\b(?:ve[íi]culo|carro|moto|caminh[aã]o|[oô]nibus|sucata|trator|aeronave|embarca[cç][aã]o|eletro|mobili[aá]rio|joias?|vestu[aá]rio|honda|fiat|volkswagen|chevrolet|ford|toyota|hyundai|renault|scania|mercedes)\b/i.test(label) &&
+        !/\b(?:im[oó]ve(?:l|is)|apartamento|apto|casa|terreno|galp[aã]o|pr[eé]dio|cobertura|sala|loja|residenc|comerc|urbano|rural)\b/i.test(label)) {
+      return false;
+    }
+    return lot.IconeCategoria === 'casa' || /\b(?:residencia(?:l|is)|im[oó]ve(?:l|is)|apartamento|apto|casa|terreno|comercia(?:l|is)|sala|loja|pr[eé]dio|galp[aã]o|urbanos?|rurais?|rural|fazenda|s[ií]tio|ch[aá]cara|cobertura|sobrado|garagem)\b/i.test(label);
+  };
+
+  const parseIsoDate = (raw: any) => {
+    const s = String(raw || '');
+    if (!/^\d{4}-\d{2}-\d{2}/.test(s) || s.startsWith('1900-') || s.startsWith('0001-')) return '';
+    return s.slice(0, 10);
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  for (let page = 1; page <= 20; page++) {
+    const data = page === 1
+      ? firstJson
+      : await fetch(`${activeBase}/ApiEngine/GetLotes/${page}/100`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ Pagina: page, QtdPorPagina: 100 }),
+          signal: AbortSignal.timeout(20000)
+        }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const lotes: any[] = Array.isArray(data?.Lotes) ? data.Lotes : [];
+    if (!lotes.length) break;
+    fs.writeFileSync(path.join(dir, `${config.id}-dg-api-${page}.json`), JSON.stringify(data));
+
+    let activeOnPage = 0;
+    const drafts: ScrapedAuctionDraft[] = [];
+
+    for (const lot of lotes) {
+      const rt = (Array.isArray(lot.GetLoteRealTime) && lot.GetLoteRealTime[0]) || lot;
+      const statusStr = `${rt.StatusLote || ''} ${rt.Lote_SubStatus || ''} ${rt.Lote_SubStatus_Label || ''}`.trim();
+      const closed = /encerrad|arrematad|cancelad|suspens|sustad|finalizad|retirad|prejudicad/i.test(statusStr);
+      const active = /aberto|andamento|em\s*breve|aguardando|proposta/i.test(statusStr) || (!closed && Number(lot.ID_Leiloes_Status) === 1);
+      if (active && !closed) activeOnPage++;
+      if (!active || closed || !isPropertyRow(lot)) continue;
+
+      const locEvidence = `${lot.Lote || ''}\n${lot.Leilao || ''}\n${String(lot.URLlote || '').replace(/[/-]+/g, ' ')}`;
+      const loc = sourceAuctionLocation(locEvidence);
+      if (!loc || !allowedSyncLocation(loc.city, loc.state)) continue;
+
+      const relUrl = String(lot.URLlote || `lote/imovel/${lot.ID_Leiloes_Lote}/`).replace(/^\//, '');
+      const auctionLink = `${activeBase}/${relUrl}`;
+
+      let descText = '';
+      try {
+        const infoRes = await fetch(`${activeBase}/ApiEngine/GetInfoLote/${lot.ID_Leiloes_Lote}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ ID_Leiloes_Lote: lot.ID_Leiloes_Lote }),
+          signal: AbortSignal.timeout(12000)
+        });
+        if (infoRes.ok) {
+          const infoJson: any = await infoRes.json();
+          const rawHtmlDesc = String(infoJson?.Lista?.[0]?.Descricao || '');
+          if (rawHtmlDesc) {
+            const $ = cheerio.load(rawHtmlDesc);
+            $('br').replaceWith('\n');
+            $('p,li,div,h1,h2,h3,h4,tr').each((_, el) => { $(el).append('\n'); });
+            descText = $('body').text().replace(/[\t \u00a0]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
+          }
+        }
+      } catch { /* fallback to listing fields */ }
+
+      const p1 = Number(rt.ValorMinimoLancePrimeiraPraca || 0);
+      const p2 = Number(rt.ValorMinimoLanceSegundaPraca || 0);
+      const nextBid = Number(rt.ProximoLance || rt.ProximoLanceAVista || 0);
+      const d1 = parseIsoDate(rt.DataHoraEncerramentoPrimeiraPraca || rt.DataHoraAberturaPrimeiraPraca);
+      const d2 = parseIsoDate(rt.DataHoraEncerramentoSegundaPraca || rt.DataHoraAberturaSegundaPraca);
+      const praca = Number(rt.PracaAtual || lot.PracaAtual || 1);
+      const auctionPrice = praca === 2 && p2 > 0
+        ? (nextBid > 0 ? nextBid : p2)
+        : (d1 && d1 >= today && (nextBid || p1) > 0 ? (nextBid || p1) : (d2 && d2 >= today && p2 > 0 ? p2 : (nextBid || p1 || p2)));
+      const auctionDate = praca === 2 && d2 ? d2 : (d1 && d1 >= today ? d1 : (d2 || d1 || ''));
+      const evalVal = Number(rt.ValorAvaliacao || lot.ValorAvaliacao || 0);
+      const modStr = String(lot.LabelModalidade || '').trim();
+      const origin: 'extrajudicial' | 'judicial' = rt.IsExtraJudicial || /extrajudicial|venda direta|particular/i.test(modStr)
+        ? 'extrajudicial'
+        : (rt.IsJudicial || /judicial/i.test(modStr) ? 'judicial' : 'extrajudicial');
+
+      const combinedText = [
+        modStr || (origin === 'judicial' ? 'Judicial' : 'Extrajudicial'),
+        lot.Leilao ? `${lot.Leilao}` : '',
+        lot.Lote ? `${lot.Lote}` : '',
+        lot.Comitente ? `Comitente: ${lot.Comitente}` : '',
+        lot.NumeroProcesso ? `Processo: ${lot.NumeroProcesso}` : '',
+        lot.Vara ? `${lot.Vara}` : '',
+        p1 > 0 ? `1º Leilão: ${d1 ? d1.split('-').reverse().join('/') + ' - ' : ''}R$ ${p1.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '',
+        p2 > 0 ? `2º Leilão: ${d2 ? d2.split('-').reverse().join('/') + ' - ' : ''}R$ ${p2.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '',
+        descText
+      ].filter(Boolean).join('\n');
+
+      const fotoName = Array.isArray(lot.Fotos) && lot.Fotos[0]?.Foto ? String(lot.Fotos[0].Foto) : '';
+      const imageUrl = fotoName ? `${activeBase}/imagens-complete/605x487/${fotoName}` : '';
+      const rawAddress = extractAddress(combinedText, '');
+
+      const baseDraft: ScrapedAuctionDraft = {
+        portalId: config.id,
+        auctioneerName: config.name,
+        title: String(lot.Lote || lot.Leilao || 'Imóvel em Leilão').trim(),
+        address: rawAddress,
+        neighborhood: '',
+        city: loc.city,
+        state: loc.state,
+        propertyType: 'Apartamento',
+        sizeSqm: 0,
+        auctionPrice,
+        auctionDate,
+        auctionLink,
+        imageUrl,
+        description: combinedText.slice(0, 12000),
+        origin,
+        originVerified: Boolean(modStr || lot.NumeroProcesso || rt.IsJudicial || rt.IsExtraJudicial),
+        sourceVerified: true,
+        locationScopeVerified: true,
+        priceVerified: auctionPrice > 0,
+        ...(evalVal > 0 ? { estimatedValue: evalVal } : {}),
+        ...(p1 > 0 ? { firstAuctionPrice: p1 } : {}),
+        ...(p2 > 0 ? { secondAuctionPrice: p2 } : {}),
+        ...(d1 ? { firstAuctionDate: d1 } : {}),
+        ...(d2 ? { secondAuctionDate: d2 } : {}),
+      };
+
+      const parsed = parseOfficialLotDetail(baseDraft, {
+        text: combinedText,
+        title: baseDraft.title,
+        image: imageUrl,
+        structuredAddresses: rawAddress ? [rawAddress] : [],
+        structuredSizes: [],
+        officialFinancials: {
+          ...(auctionPrice > 0 ? { auctionPrice, priceVerified: true } : {}),
+          ...(evalVal > 0 ? { estimatedValue: evalVal } : {}),
+          ...(auctionDate ? { auctionDate } : {}),
+          ...(d1 ? { firstAuctionDate: d1 } : {}),
+          ...(d2 ? { secondAuctionDate: d2 } : {}),
+          ...(p1 > 0 ? { firstAuctionPrice: p1 } : {}),
+          ...(p2 > 0 ? { secondAuctionPrice: p2 } : {}),
+        },
+        availability: {
+          url: auctionLink,
+          checkedAt: new Date().toISOString(),
+          state: 'active',
+          status: 'ativo',
+          reason: 'Ativo na API oficial SuaPlataformaDeLeilao'
+        }
+      }, auctionLink);
+
+      drafts.push({
+        ...parsed,
+        origin,
+        originVerified: true,
+        ...(rt.IsVendaDireta ? { saleMode: 'Venda Direta' } : {})
+      });
+    }
+
+    await onPage(drafts, lotes.length);
+    if (activeOnPage === 0) break;
+  }
+
+  return true;
+}
+
