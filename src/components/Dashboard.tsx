@@ -106,6 +106,8 @@ interface DashboardProps {
   onClearAll?: () => void;
   onOpenCapitalMatcher?: () => void;
   onMapViewChange?: (isMapOpen: boolean) => void;
+  externalViewMode?: 'list' | 'map';
+  onExternalViewModeChange?: (mode: 'list' | 'map') => void;
   onToggleTheme?: () => void;
   syncStatus?: {
     lastSyncTime: string;
@@ -157,6 +159,8 @@ export default function Dashboard({
   onClearAll,
   onOpenCapitalMatcher,
   onMapViewChange,
+  externalViewMode,
+  onExternalViewModeChange,
   onToggleTheme,
   syncStatus
 }: DashboardProps) {
@@ -473,13 +477,13 @@ export default function Dashboard({
     lowestRentSqm: false,
     bestRentDiscount: false,
   });
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  useEffect(() => {
-    onMapViewChange?.(viewMode === 'map');
-    return () => {
-      onMapViewChange?.(false);
-    };
-  }, [viewMode, onMapViewChange]);
+  const [internalViewMode, setInternalViewMode] = useState<'list' | 'map'>('list');
+  const viewMode = externalViewMode ?? internalViewMode;
+  const setViewMode = useCallback((mode: 'list' | 'map') => {
+    setInternalViewMode(mode);
+    onExternalViewModeChange?.(mode);
+    onMapViewChange?.(mode === 'map');
+  }, [onExternalViewModeChange, onMapViewChange]);
   const [focusedMapPropId, setFocusedMapPropId] = useState<string | null>(null);
   const [showMapFactions, setShowMapFactions] = useState<boolean>(false);
 
@@ -1832,7 +1836,7 @@ export default function Dashboard({
   ]);
 
   return (
-    <div id="dashboard-tab" className="space-y-4">
+    <div id="dashboard-tab" className={viewMode === 'map' ? 'flex-1 min-h-0 flex flex-col w-full' : 'space-y-4'}>
       {/* Toast de Busca Salva */}
       <AnimatePresence>
         {saveToastVisible && (
@@ -1848,9 +1852,9 @@ export default function Dashboard({
         )}
       </AnimatePresence>
 
-      {/* Main Full-Width View: Zap-Style Filter Header + Lista + Fullscreen Mapa */}
-      <div className="space-y-3">
-        <main className="w-full space-y-3">
+      {/* Main Full-Width View: Zap-Style Filter Header + Lista + Mapa Integrado abaixo do Navbar Principal */}
+      <div className={viewMode === 'map' ? 'flex-1 min-h-0 flex flex-col w-full' : 'space-y-3'}>
+        <main className={viewMode === 'map' ? 'w-full flex-1 min-h-0 flex flex-col' : 'w-full space-y-3'}>
           {(() => {
             const zapFilterProps = {
               mode,
@@ -1922,10 +1926,10 @@ export default function Dashboard({
 
             return (
               <>
-                <ZapFilterHeader {...zapFilterProps} />
+                {viewMode === 'list' && <ZapFilterHeader {...zapFilterProps} />}
 
                 {viewMode === 'map' && (
-                  <div className={`fixed inset-0 z-50 w-screen h-screen flex flex-col animate-in fade-in duration-150 ${theme === 'light' ? 'bg-white' : 'bg-[#020617]'}`}>
+                  <div className={`w-full flex-1 min-h-0 flex flex-col animate-in fade-in duration-150 ${theme === 'light' ? 'bg-white' : 'bg-[#020617]'}`}>
                     <PropertyMap
                       theme={theme}
                       onToggleTheme={onToggleTheme}
@@ -1950,7 +1954,7 @@ export default function Dashboard({
             );
           })()}
 
-          <>
+          {viewMode === 'list' && (<>
           {/* LISTA / GRID DE CARDS DE OPORTUNIDADES */}
           {filteredAndSortedAuctions.length === 0 ? (
             <div className="bg-slate-900 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3">
@@ -2501,7 +2505,7 @@ export default function Dashboard({
             </div>
           )}
 
-            </>
+          </>)}
         </main>
       </div>
 
@@ -2517,7 +2521,7 @@ export default function Dashboard({
       {/* Drawer do Simulador de Viabilidade e Calculadora RealValueCalculator */}
       <AnimatePresence>
         {simulatingAuction && (
-          <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+          <div className="fixed inset-0 z-[70] overflow-hidden flex justify-end">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

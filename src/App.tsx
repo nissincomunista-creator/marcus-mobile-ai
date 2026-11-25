@@ -876,11 +876,13 @@ export default function App() {
 
   // Modo Livre: acesso direto sem exigência de senha por hora
 
+  const isMapFullscreen = isDashboardMapOpen && (activeTab === 'garimpo' || activeTab === 'portais');
+
   return (
-    <div className={`min-h-screen font-sans flex flex-col justify-between transition-colors duration-200 ${theme === 'light' ? 'bg-white text-slate-900' : 'bg-[#111622] text-slate-100'}`}>
+    <div className={`${isMapFullscreen ? 'h-screen overflow-hidden' : 'min-h-screen justify-between'} font-sans flex flex-col transition-colors duration-200 ${theme === 'light' ? 'bg-white text-slate-900' : 'bg-[#111622] text-slate-100'}`}>
       
-      {/* 1. Header Toolbar & Sub-header Fixed Container: Unificado, sem sobreposição no scroll */}
-      <div className="sticky top-0 z-40 bg-slate-900 dark:bg-slate-900 border-b border-slate-800">
+      {/* 1. Header Toolbar & Sub-header Fixed Container: Sempre visível inclusive no Mapa */}
+      <div className="sticky top-0 z-[60] shrink-0 bg-slate-900 dark:bg-slate-900 border-b border-slate-800">
         <header className="px-4 sm:px-6 py-2.5">
           <div className="max-w-[1780px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative">
           
@@ -1255,7 +1257,10 @@ export default function App() {
       </AnimatePresence>
 
       {/* 2. Main Content Board */}
-      <main className={`max-w-[1720px] mx-auto px-3 sm:px-5 ${activeTab === 'garimpo' || activeTab === 'portais' ? 'pt-0 pb-4' : 'py-4'} flex-1 w-full`}>
+      <main className={isMapFullscreen
+        ? 'w-full flex-1 min-h-0 flex flex-col p-0 overflow-hidden'
+        : `max-w-[1720px] mx-auto px-3 sm:px-5 ${activeTab === 'garimpo' || activeTab === 'portais' ? 'pt-0 pb-4' : 'py-4'} flex-1 w-full`
+      }>
         
         {/* RPC Server connection failure alert banner */}
         {rpcError && (
@@ -1285,7 +1290,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-6"
+                className={isMapFullscreen ? 'flex-1 min-h-0 flex flex-col w-full' : 'space-y-6'}
               >
                 {!activeSelectedAuction ? (
                   <ErrorBoundary fallbackTitle="Erro ao carregar o Painel de Garimpo">
@@ -1298,6 +1303,8 @@ export default function App() {
                       onDeleteAuction={handleDeleteAuction}
                       onOpenAddModal={() => {}}
                       onMapViewChange={setIsDashboardMapOpen}
+                      externalViewMode={isDashboardMapOpen ? 'map' : 'list'}
+                      onExternalViewModeChange={(mode) => setIsDashboardMapOpen(mode === 'map')}
                       onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                       selectedNeighborhoodFilter={selectedNeighborhoodFilter}
                       setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
@@ -1426,7 +1433,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-6"
+                className={isMapFullscreen ? 'flex-1 min-h-0 flex flex-col w-full' : 'space-y-6'}
               >
                 {!activeSelectedAuction ? (
                   <ErrorBoundary fallbackTitle="Erro ao carregar o Painel dos Portais Flip">
@@ -1439,6 +1446,8 @@ export default function App() {
                       onDeleteAuction={handleDeleteAuction}
                       onOpenAddModal={() => {}}
                       onMapViewChange={setIsDashboardMapOpen}
+                      externalViewMode={isDashboardMapOpen ? 'map' : 'list'}
+                      onExternalViewModeChange={(mode) => setIsDashboardMapOpen(mode === 'map')}
                       onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                       selectedNeighborhoodFilter={selectedNeighborhoodFilter}
                       setSelectedNeighborhoodFilter={setSelectedNeighborhoodFilter}
@@ -1644,16 +1653,18 @@ export default function App() {
       </main>
 
       {/* 3. Footer credits */}
-      <footer className="bg-slate-900 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-400">
-        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-          <p>© 2026 Garimpeiro de Leilões - Decisões Inteligentes baseadas no ITBI Real Municipal.</p>
-          <div className="flex justify-center space-x-3.5 text-slate-500">
-            <span>Privacidade</span>
-            <span>•</span>
-            <span>Manual do Investidor</span>
+      {!isMapFullscreen && (
+        <footer className="bg-slate-900 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-400">
+          <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+            <p>© 2026 Garimpeiro de Leilões - Decisões Inteligentes baseadas no ITBI Real Municipal.</p>
+            <div className="flex justify-center space-x-3.5 text-slate-500">
+              <span>Privacidade</span>
+              <span>•</span>
+              <span>Manual do Investidor</span>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* Modal: Link Analyzer */}
       <AnimatePresence>

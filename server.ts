@@ -3621,8 +3621,12 @@ let lastListedSyncCompletedAt = (() => {
     const latestPath = path.join(process.cwd(), 'sync-audits', 'latest-listed-sync.json');
     if (fs.existsSync(latestPath)) {
       const rep = JSON.parse(fs.readFileSync(latestPath, 'utf8'));
-      const ts = Date.parse(rep?.finishedAt || '');
+      const ts = Date.parse(rep?.finishedAt || rep?.startedAt || '');
       if (Number.isFinite(ts) && ts > 0) return ts;
+    }
+    if (fs.existsSync(STORE_PATH)) {
+      const stat = fs.statSync(STORE_PATH);
+      if (stat.size > 1_000_000) return stat.mtimeMs;
     }
   } catch {}
   return 0;
@@ -3847,12 +3851,11 @@ app.post('/api/sync/start', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'Nenhuma fonte válida foi informada.' });
   }
   const isAppOpen = req.body?.reason === 'app-open';
-  const withinCooldown = isAppOpen && lastListedSyncCompletedAt > 0 && (Date.now() - lastListedSyncCompletedAt) < 30 * 60 * 1000;
+  const withinCooldown = isAppOpen && lastListedSyncCompletedAt > 0 && (Date.now() - lastListedSyncCompletedAt) < 6 * 60 * 60 * 1000;
   if (withinCooldown) {
-    void startAvailabilityCheck();
     return res.status(202).json({ started: false, running: Boolean(listedSyncRunning || caixaDirectRunning || availabilityRunning), cooldown: true, report: readListedSyncStatus() });
   }
-  const started = startListedSync(isAppOpen ? 'app-open' : 'manual', requestedIds, undefined, { skipCaixa: Boolean(req.body?.skipCaixa), skipPriority: Boolean(req.body?.skipPriority) });
+  const started = startListedSync(isAppOpen ? 'app-open' : 'manual', requestedIds, undefined, { skipCaixa: Boolean(req.body?.skipCaixa), skipPriority: isAppOpen || Boolean(req.body?.skipPriority) });
   res.status(202).json({started, running:Boolean(listedSyncRunning||caixaDirectRunning), report:readListedSyncStatus()});
 });
 

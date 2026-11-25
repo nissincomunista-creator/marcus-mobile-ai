@@ -24590,8 +24590,12 @@ var lastListedSyncCompletedAt = (() => {
     const latestPath = import_path4.default.join(process.cwd(), "sync-audits", "latest-listed-sync.json");
     if (import_fs5.default.existsSync(latestPath)) {
       const rep = JSON.parse(import_fs5.default.readFileSync(latestPath, "utf8"));
-      const ts = Date.parse(rep?.finishedAt || "");
+      const ts = Date.parse(rep?.finishedAt || rep?.startedAt || "");
       if (Number.isFinite(ts) && ts > 0) return ts;
+    }
+    if (import_fs5.default.existsSync(STORE_PATH)) {
+      const stat = import_fs5.default.statSync(STORE_PATH);
+      if (stat.size > 1e6) return stat.mtimeMs;
     }
   } catch {
   }
@@ -24834,12 +24838,11 @@ app.post("/api/sync/start", authMiddleware, (req, res) => {
     return res.status(400).json({ error: "Nenhuma fonte v\xE1lida foi informada." });
   }
   const isAppOpen = req.body?.reason === "app-open";
-  const withinCooldown = isAppOpen && lastListedSyncCompletedAt > 0 && Date.now() - lastListedSyncCompletedAt < 30 * 60 * 1e3;
+  const withinCooldown = isAppOpen && lastListedSyncCompletedAt > 0 && Date.now() - lastListedSyncCompletedAt < 6 * 60 * 60 * 1e3;
   if (withinCooldown) {
-    void startAvailabilityCheck();
     return res.status(202).json({ started: false, running: Boolean(listedSyncRunning || caixaDirectRunning || availabilityRunning), cooldown: true, report: readListedSyncStatus() });
   }
-  const started = startListedSync(isAppOpen ? "app-open" : "manual", requestedIds, void 0, { skipCaixa: Boolean(req.body?.skipCaixa), skipPriority: Boolean(req.body?.skipPriority) });
+  const started = startListedSync(isAppOpen ? "app-open" : "manual", requestedIds, void 0, { skipCaixa: Boolean(req.body?.skipCaixa), skipPriority: isAppOpen || Boolean(req.body?.skipPriority) });
   res.status(202).json({ started, running: Boolean(listedSyncRunning || caixaDirectRunning), report: readListedSyncStatus() });
 });
 app.post("/api/auth/register", (req, res) => {

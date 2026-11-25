@@ -3873,7 +3873,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     -R$ {sc.holdingCost.toLocaleString('pt-BR')} custos
                   </span>
                   <div className="text-right">
-                    <span className={`text-xs font-black mr-2 ${sc.netProfit >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                    <span className={`text-xs font-black mr-2 ${sc.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {sc.netProfit >= 0 ? '+' : ''}{formatBRL(sc.netProfit)}
                     </span>
                     <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-lg bg-slate-800 text-white border border-slate-700">
@@ -4693,7 +4693,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         <span className="text-base font-extrabold tracking-tight text-white">
                           R$ {sanitizedUnitValueSqm.toLocaleString('pt-BR')}/m²
                         </span>
-                        <span className="text-[11px] font-semibold text-emerald-300">
+                        <span className="text-[11px] font-semibold text-slate-300">
                           • ({sizeSqm > 0 ? `${sizeSqm}m² = ${formatBRL(sizeSqm * sanitizedUnitValueSqm)}` : 'Informe a área'})
                         </span>
                       </>
@@ -4712,7 +4712,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <div className="pt-1 border-t border-slate-800 space-y-0.5">
                     {sanitizedUnitValueSqm > 0 ? (
                       <>
-                        <span className="text-[10px] text-emerald-400 block font-semibold">
+                        <span className="text-[10px] text-slate-300 block font-semibold">
                           {calculatedStats.source} {calculatedStats.outliersCount > 0 ? `(${calculatedStats.outliersCount} distorção expurgada)` : ''}
                         </span>
                         <div className="text-[9.5px] text-slate-400 flex flex-wrap gap-x-2">
@@ -4725,7 +4725,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                           ) : (
                             <>
                               <span>Média Geral: <strong className="text-slate-200">R$ {calculatedStats.rawAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
-                              <span>• Similar: <strong className="text-emerald-400">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                              <span>• Similar: <strong className="text-slate-200">R$ {calculatedStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
                             </>
                           )}
                         </div>
@@ -4747,10 +4747,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {exactStreetStats ? (
                       <>
-                        <span className="text-base font-extrabold tracking-tight text-blue-400">
+                        <span className="text-base font-extrabold tracking-tight text-white">
                           R$ {exactStreetStats.avgSqm.toLocaleString('pt-BR')}/m²
                         </span>
-                        <span className="text-[11px] font-semibold text-blue-300">
+                        <span className="text-[11px] font-semibold text-slate-300">
                           • ({sizeSqm > 0 ? `Total: ${formatBRL(sizeSqm * exactStreetStats.avgSqm)}` : `${exactStreetStats.count} tx`})
                         </span>
                       </>
@@ -4772,7 +4772,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     </div>
                     {exactStreetStats && !isJuizDeFora && (
                       <div className="text-[9.5px] text-slate-400 flex flex-wrap gap-x-2">
-                        <span>Similar: <strong className="text-blue-400">R$ {exactStreetStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
+                        <span>Similar: <strong className="text-slate-200">R$ {exactStreetStats.similarAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
                         <span>• Geral: <strong className="text-slate-200">R$ {exactStreetStats.allAreasAvgSqm.toLocaleString('pt-BR')}/m²</strong></span>
                       </div>
                     )}
@@ -4787,11 +4787,11 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {(nearbyStats?.avgSqm || 0) > 0 ? (
                       <>
-                        <span className="text-base font-extrabold tracking-tight text-purple-400">
+                        <span className="text-base font-extrabold tracking-tight text-white">
                           R$ {(nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
                         </span>
                         {sizeSqm > 0 && (
-                          <span className="text-[11px] font-semibold text-purple-300">
+                          <span className="text-[11px] font-semibold text-slate-300">
                             • ({formatBRL(sizeSqm * (nearbyStats?.avgSqm || 0))})
                           </span>
                         )}
@@ -4804,7 +4804,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                     <span className="text-[10px] text-slate-300">
                       {nearbyStats?.count || 0} transações {isJuizDeFora ? 'de Compra e Venda' : 'apuradas'}
                     </span>
-                    <span className="text-[9.5px] text-purple-300">
+                    <span className="text-[9.5px] text-slate-400">
                       {nearbyStreetData.item3Label || nearbyStreetData.radiusLabel}
                     </span>
                     {itbiWeightedStats?.isOutlierBrakeApplied && (
@@ -4820,10 +4820,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-amber-900/40 space-y-1.5">
                   <span className="text-[11px] text-amber-400 uppercase block font-bold">4. Média Geral do Bairro</span>
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-base font-extrabold tracking-tight text-amber-400">
+                    <span className="text-base font-extrabold tracking-tight text-white">
                       R$ {(neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0).toLocaleString('pt-BR')}/m²
                     </span>
-                    <span className="text-[10.5px] text-amber-300 font-semibold">
+                    <span className="text-[10.5px] text-slate-300 font-semibold">
                       {sizeSqm > 0 ? `• (${formatBRL(sizeSqm * (neighborhoodStats?.avgSqm || nearbyStats?.avgSqm || 0))})` : '• ref. contextual'}
                     </span>
                   </div>
@@ -4833,7 +4833,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       {neighborhoodStats ? `${neighborhoodStats.count} transações ${isJuizDeFora ? 'de Compra e Venda' : ''} no ITBI oficial de ${selectedNeighborhood}` : `Média cadastral oficial do ITBI`}
                     </div>
                     <div className="text-[9.5px] text-slate-400">
-                      <span>Bairro: <strong className="text-amber-400">{selectedNeighborhood || 'Bairro'}</strong></span>
+                      <span>Bairro: <strong className="text-slate-200">{selectedNeighborhood || 'Bairro'}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -4877,10 +4877,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                   ) : (
                     <>
                       <div className="flex flex-wrap items-baseline gap-1.5">
-                        <span className="text-base font-extrabold tracking-tight text-emerald-400">
+                        <span className="text-base font-extrabold tracking-tight text-white">
                           {formatBRL(suggestedQuickSaleTotal)}
                         </span>
-                        <span className="text-[11px] font-semibold text-emerald-300">
+                        <span className="text-[11px] font-semibold text-slate-300">
                           • R$ {suggestedQuickSaleSqm.toLocaleString('pt-BR')}/m²
                         </span>
                       </div>

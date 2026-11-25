@@ -1550,7 +1550,7 @@ export default function PropertyMap({
   const currentLegend = METRIC_LEGENDS[activeMetric];
 
   return (
-    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose ? 'h-[100dvh]' : 'h-[calc(100dvh-4.5rem)] lg:h-[calc(100vh-5rem)] rounded-2xl border border-slate-800'}`}>
+    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose ? 'flex-1 min-h-0 h-full' : 'h-[calc(100dvh-4.5rem)] lg:h-[calc(100vh-5rem)] rounded-2xl border border-slate-800'}`}>
       <div className="bg-slate-950/95 border-b border-slate-800 px-3 sm:px-6 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-2 z-20">
         <div className="flex items-center space-x-2">
           <div className="p-1.5 sm:p-2 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">

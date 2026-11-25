@@ -14,7 +14,7 @@ export type OfficialLocation = Address & {
   matchedStreet?: string; matchedNumber?: string; matchedLocality?: string;
   cnefeId?: string; geocodeLevel?: number; spreadMeters?: number;
   geocoderProvider?: 'nominatim' | 'photon';
-  geocoderPrecision?: 'rooftop';
+  geocoderPrecision?: 'rooftop' | 'street';
   matchedCity?: string;
   geocodeAttemptedAt?: string;
   geocodeAlgorithmVersion?: number;
