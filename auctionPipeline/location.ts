@@ -23,10 +23,18 @@ export function neighborhoodEvidence(input:{city:string;state?:string;neighborho
  const addressHits=specificHits(names,addressText);
  if(addressHits.length===1)return {value:addressHits[0],method:'endereco-enum'};
  if(addressHits.length>1)return undefined;
- const text=[input.title,input.address,input.description].filter(Boolean).join(' ');const declared=input.description?.match(/bairro\s*[:\-]\s*([^\n,;]+)/i)?.[1]||'';
+ const declared=input.description?.match(/bairro\s*[:\-]\s*([^\n,;]+)/i)?.[1]||'';
  const candidates=[declared,input.neighborhood||''].map(value=>value.replace(/^bairro\s*[:\-]?\s*/i,''));
  for(const value of candidates){const exact=names.find(n=>normalize(n)===normalize(value));if(exact)return {value:exact,method:'enum-exato'};}
- const hits=names.filter(n=>(' '+normalize(text)+' ').includes(' '+normalize(n)+' '));
+ const stripFreguesia=(s:string)=>s.replace(/\b(?:n[ao]|d[ao]|em)\s+freguesia\s+(?:d[eoa]s?\s+)?/gi,' ');
+ if(input.title){
+  const cleanTitle=normalize(stripFreguesia(input.title));
+  const titleCat=specificHits(catalogNames,cleanTitle);if(titleCat.length===1)return {value:titleCat[0],method:'titulo-enum'};
+  const titleAll=specificHits(names,cleanTitle);if(titleAll.length===1)return {value:titleAll[0],method:'titulo-enum'};
+ }
+ const lotDesc=(input.description||'').split(/\n\s*Edital do leil[aã]o\b|\bEDITAL DE LEIL[ÃA]O\b|\bDO VENDEDOR\b|\bINFORMA[CÇ][ÕO]ES SOBRE O LEIL[ÃA]O/i)[0]||'';
+ const text=[input.title,input.address,lotDesc].filter(Boolean).join(' ');
+ const hits=names.filter(n=>(' '+normalize(stripFreguesia(text))+' ').includes(' '+normalize(n)+' '));
  const specific=hits.filter(n=>!hits.some(other=>normalize(other)!==normalize(n)&&normalize(other).includes(normalize(n))));
  if(specific.length===1)return {value:specific[0],method:'texto-enum'};
  for(const value of candidates.filter(v=>normalize(v).length>=6)){const hits=names.filter(n=>distance(normalize(n),normalize(value))<=1);if(hits.length===1)return {value:hits[0],method:'enum-fuzzy-distancia-1'};}

@@ -54,7 +54,7 @@ function assessAvailability(previous, url, httpStatus, html, now = (/* @__PURE__
   const visibleText = $("body").text().replace(/\s+/g, " ").trim();
   if (/verifique que voc[eê] [eé] humano|verify you are human|checking your browser/i.test(visibleText)) return { ...previous, ...base, state: previous?.state || "unknown", reason: "Consulta bloqueada por desafio de acesso" };
   const isOnlyCookieNotice = visibleText.length < 300 && /cookie|pol[íi]tica de privacidade|consentir/i.test(visibleText);
-  if (/(?:este\s+|o\s+)?(?:lote|leil[aã]o)\s+(?:encontra-se|est[aá]|foi)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|(?:situa[cç][aã]o|status)\s*:\s*(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|vendido|retirado)|im[oó]vel\s+j[aá]\s+(?:vendido|arrematado|indispon[íi]vel)|(?:este|o)\s+im[oó]vel\s+(?:est[aá]|encontra-se|foi)\s+indispon[íi]vel|(?<!para\s+)(?<!ser[aá]\s+)(?<!seja\s+)im[oó]vel\s+vendido(?!\s+(?:na\s+condi[cç][aã]o|no\s+estado|em\s+car[aá]ter|conforme|pelo\s+estado))|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
+  if (/(?:este\s+|o\s+)?(?:lote|leil[aã]o)\s+(?:encontra-se|est[aá]|foi)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|(?:situa[cç][aã]o|status)\s*:\s*(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|vendido|retirado)|im[oó]vel\s+j[aá]\s+(?:foi\s+)?(?:vendido|arrematado|indispon[íi]vel)|(?:este|o)\s+im[oó]vel\s+(?:est[aá]|encontra-se|foi)\s+(?:vendido|arrematado|indispon[íi]vel)|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
     return finish("finalizado", "Lote encerrado, cancelado ou indispon\xEDvel no site do leiloeiro");
   }
   const unavailable = /^(?:(?:este|o)\s+)?(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+(?:n[aã]o\s+(?:foi\s+)?encontrad[oa]|n[aã]o\s+(?:(?:est[aá]|se encontra)\s+)?(?:mais\s+)?dispon[ií]vel\s*(?:para venda)?|indispon[ií]vel|removid[oa])[.!]?$/i;
@@ -64,7 +64,7 @@ function assessAvailability(previous, url, httpStatus, html, now = (/* @__PURE__
   if (/^(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+n[aã]o\s+encontrad[oa][.!]?$/i.test(heading)) return finish("expirado_link_invalido", "P\xE1gina oficial informa an\xFAncio n\xE3o encontrado");
   if ($("body.page-detail.finalized").length) return finish("finalizado", "Lote finalizado no detalhe oficial");
   const statusText = [heading, ...$('[class*="status"],[id*="status"],[class*="situacao"],[data-status],.price .header,.badge,.alert').map((_, e) => $(e).text().replace(/\s+/g, " ").trim()).get()];
-  const closed = /^(?:(?:status|situa[cç][aã]o)\s*:?\s*)?(?:(?:este\s+)?(?:lote|leil[aã]o)\s+(?:est[aá]\s+)?)?(?:arrematad[oa]|encerrad[oa]|cancelad[oa]|suspens[oa]|sustad[oa]|finalizad[oa]|vendid[oa]|retirad[oa])(?:\s+(?:judicialmente|pelo vendedor))?[.!]?$/i;
+  const closed = /^(?:(?:status|situa[cç][aã]o)\s*:?\s*)?(?:(?:este\s+)?(?:lote|leil[aã]o|im[oó]vel)\s+(?:(?:est[aá]|foi)\s+)?)?(?:arrematad[oa]|encerrad[oa]|cancelad[oa]|suspens[oa]|sustad[oa]|finalizad[oa]|vendid[oa]|retirad[oa])(?:\s+(?:judicialmente|pelo vendedor))?[.!]?$/i;
   $("span,strong,b,h2,h3,p,div").each((_, e) => {
     if ($(e).children().length === 0) {
       const t = $(e).text().replace(/\s+/g, " ").trim();
@@ -916,14 +916,23 @@ function neighborhoodEvidence(input) {
   const addressHits = specificHits(names, addressText);
   if (addressHits.length === 1) return { value: addressHits[0], method: "endereco-enum" };
   if (addressHits.length > 1) return void 0;
-  const text = [input.title, input.address, input.description].filter(Boolean).join(" ");
   const declared = input.description?.match(/bairro\s*[:\-]\s*([^\n,;]+)/i)?.[1] || "";
   const candidates = [declared, input.neighborhood || ""].map((value) => value.replace(/^bairro\s*[:\-]?\s*/i, ""));
   for (const value of candidates) {
     const exact = names.find((n) => normalize2(n) === normalize2(value));
     if (exact) return { value: exact, method: "enum-exato" };
   }
-  const hits = names.filter((n) => (" " + normalize2(text) + " ").includes(" " + normalize2(n) + " "));
+  const stripFreguesia = (s) => s.replace(/\b(?:n[ao]|d[ao]|em)\s+freguesia\s+(?:d[eoa]s?\s+)?/gi, " ");
+  if (input.title) {
+    const cleanTitle = normalize2(stripFreguesia(input.title));
+    const titleCat = specificHits(catalogNames, cleanTitle);
+    if (titleCat.length === 1) return { value: titleCat[0], method: "titulo-enum" };
+    const titleAll = specificHits(names, cleanTitle);
+    if (titleAll.length === 1) return { value: titleAll[0], method: "titulo-enum" };
+  }
+  const lotDesc = (input.description || "").split(/\n\s*Edital do leil[aã]o\b|\bEDITAL DE LEIL[ÃA]O\b|\bDO VENDEDOR\b|\bINFORMA[CÇ][ÕO]ES SOBRE O LEIL[ÃA]O/i)[0] || "";
+  const text = [input.title, input.address, lotDesc].filter(Boolean).join(" ");
+  const hits = names.filter((n) => (" " + normalize2(stripFreguesia(text)) + " ").includes(" " + normalize2(n) + " "));
   const specific = hits.filter((n) => !hits.some((other) => normalize2(other) !== normalize2(n) && normalize2(other).includes(normalize2(n))));
   if (specific.length === 1) return { value: specific[0], method: "texto-enum" };
   for (const value of candidates.filter((v) => normalize2(v).length >= 6)) {
@@ -1576,20 +1585,35 @@ function auditOfficialArea(input) {
   for (const m of text.matchAll(new RegExp("(" + label + ")\\s*(?:aproximad[ao](?:mente)?|de)?\\s*[:=]?\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[2]) * (/ha|hectare/i.test(m[3]) ? 1e4 : 1), kind(m[1]), m[0]);
   for (const m of text.matchAll(new RegExp(amount + "\\s*(" + unit + ")\\s+de\\s+(" + label + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), kind(m[3]), m[0]);
   for (const m of text.matchAll(new RegExp("[a\xE1]rea\\s+de\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "unspecified", m[0]);
-  for (const m of text.matchAll(new RegExp("(?:possui|mede|medindo)\\s+(?:aproximadamente\\s+)?" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "unspecified", m[0]);
+  const land = /Terreno|Gleba|Fazenda/i.test(input.propertyType);
+  for (const m of text.matchAll(new RegExp("(?:possui|mede|medindo)\\s+(?:aproximadamente\\s+)?" + amount + "\\s*(" + unit + ")", "gi"))) {
+    const ctx = text.slice(Math.max(0, (m.index ?? 0) - 55), m.index ?? 0);
+    add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), !land && /terreno|fra[cç][aã]o\s+ideal|loteamento|gleba|condom[ií]nio/i.test(ctx) ? "land" : "unspecified", ctx.trim().slice(-25) + " " + m[0]);
+  }
   for (const m of text.matchAll(new RegExp("(?:apartamento|apto\\.?|casa|sala|unidade(?:\\s+aut[o\xF4]noma)?)\\s+com\\s+(?:aproximadamente\\s+)?" + amount + "\\s*(m[\xB22]|m\\.q\\.|metros?\\s+quadrados?)", "gi"))) add(numeric(m[1]), "unspecified", m[0]);
   for (const m of text.matchAll(new RegExp("\\b(privativa|priv\\.|constru[i\xED]da|constr\\.|edificada|terreno|terr\\.)(?:\\s*\\([^)]*\\))?\\s*(?:estimada|aproximada|de)?\\s*[:=]?\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[2]) * (/ha|hectare/i.test(m[3]) ? 1e4 : 1), /^priv/i.test(m[1]) ? "private" : /^terr/i.test(m[1]) ? "land" : "built", m[0]);
   for (const m of input.title.matchAll(new RegExp(amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "title", m[0]);
   for (const value of input.structuredSizes || []) add(value, "structured", "\xC1rea publicada nos dados estruturados do lote");
-  const land = /Terreno|Gleba|Fazenda/i.test(input.propertyType);
   const ranks = land ? ["land", "total", "unspecified", "structured", "title"] : ["private", "usable", "built", "structured", "unspecified", "title", "total"];
+  const refValues = candidates.filter((c) => c.kind === "title" || c.kind === "structured").map((c) => c.value);
+  const approxEq = (a, b) => Math.abs(a - b) / Math.max(a, b, 1) <= 0.015;
   let selected;
   let conflict = false;
   for (const rank of ranks) {
     const group = candidates.filter((c) => c.kind === rank);
     if (!group.length) continue;
-    const unique = new Set(group.map((c) => c.value));
-    if (unique.size > 1) {
+    const unique = [...new Set(group.map((c) => c.value))];
+    if (unique.length > 1) {
+      const matched = unique.filter((v) => refValues.some((r) => approxEq(v, r)));
+      if (matched.length === 1) {
+        selected = group.find((c) => c.value === matched[0]);
+        break;
+      }
+      const max = Math.max(...unique), min = Math.min(...unique);
+      if ((max - min) / Math.max(max, 1) <= 0.015) {
+        selected = group[0];
+        break;
+      }
       conflict = true;
       break;
     }
@@ -12706,7 +12730,7 @@ function parseType(text, title, desc) {
 function isPropertyLotEvidence(text) {
   const normalized = normalizeStr(text);
   const headline = normalized.split("\n")[0];
-  const propertyWords2 = /\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex|agencia|agência|lote\s+(?:de\s+)?terreno|loteamento|fracao\s+ideal)\b/;
+  const propertyWords2 = /\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex|agencia|agência|lote\s+(?:de\s+)?(?:terreno|urbano|rural|residencial|comercial|industrial)|imovel\s+(?:urbano|rural)|vaga\s+de\s+garagem|box\s+de\s+garagem|loteamento|fracao\s+ideal)\b/;
   const nonPropertyHeadline = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|sucata|ferramenta|ferramentas|pecas\s+automotivas|fiat\s+palio|vw\s+gol|chevrolet|honda\s+civic|pajero)\b/;
   if (propertyWords2.test(headline) && !nonPropertyHeadline.test(headline)) return true;
   const lead = normalized.slice(0, 350);
@@ -12716,7 +12740,7 @@ function isPropertyLotEvidence(text) {
 }
 function detectBankOrJudicial(text) {
   const norm = normalizeStr(text);
-  if (/(?:^|\n|\s)(?:leilao\s+)?judicial(?:\s|\n|$)|\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}/i.test(norm)) return { origin: "judicial" };
+  if (/(?:^|\n|\s)(?:leilao|modalidade|natureza)\s*:?\s*judicial\b|\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}|\bvara\s+(?:civel|federal|do\s+trabalho|de\s+familia|de\s+execucoes)/i.test(norm)) return { origin: "judicial" };
   if (/\bextrajudicial\b|aliena[cç][aã]o fiduci[aá]ria|consolidacao\s+da\s+propriedade|credor\s+fiduciario|\b9\.?514\b/.test(norm)) return { origin: "extrajudicial" };
   if (norm.includes("santander")) return { origin: "extrajudicial", bank: "Santander" };
   if (norm.includes("itau") || norm.includes("ita\xFA")) return { origin: "extrajudicial", bank: "Ita\xFA" };
@@ -12757,19 +12781,22 @@ function extractAddress(text, fallback) {
   const cleanInput = unsquishText(text || "");
   const lines = cleanInput.split(/\r?\n|\s{2,}/).map((line) => line.trim()).filter(Boolean);
   const labeledLine = lines.find(
-    (line) => /\bendere[cç]o\b/i.test(line) && !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|telefone|\btel\.?\b/i.test(line) && /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line)
+    (line) => /\b(?:endere[cç]o|localiza[cç][aã]o)\b/i.test(line) && !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|telefone|\btel\.?\b|no\s+mapa\s+pode\s+ser\s+aproximada|@/i.test(line) && /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line) && !/\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)
   );
   if (labeledLine) {
-    const labeledAddress = labeledLine.replace(/^.*?\bendere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?\s*:?\s*/i, "").split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+/g, " ").trim();
-    if (labeledAddress.length >= 8) return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
+    const labeledAddress = labeledLine.replace(/^.*?\b(?:endere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?|localiza[cç][aã]o)\s*:?\s*/i, "").split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+/g, " ").trim();
+    if (labeledAddress.length >= 8 && !/[@]|eletr[oô]nico\s*:/i.test(labeledAddress) && /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(labeledAddress)) {
+      return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
+    }
   }
   const addressCandidates = lines.map((line, index) => {
+    if (/@|\bendere[cç]o\s+eletr[oô]nico\b|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)) return null;
     if (!/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
     const context = `${lines[index - 1] || ""} ${line}`;
     let score = 0;
-    if (/im[oó]vel|\bbem\b|auto\s+de\s+avalia[cç][aã]o|auto\s+de\s+penhora|situad[oa]|localizad[oa]|objeto\s+do\s+leil[aã]o|matr[ií]cula/i.test(context)) score += 8;
+    if (/im[oó]vel|\bbem\b|localiza[cç][aã]o|auto\s+de\s+avalia[cç][aã]o|auto\s+de\s+penhora|situad[oa]|localizad[oa]|objeto\s+do\s+leil[aã]o|matr[ií]cula/i.test(context)) score += 8;
     if (/n[ºo°]?\s*\d+|,\s*\d+/.test(line)) score += 3;
-    if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|telefone|\btel\.?\b|sala\s+40[234]/i.test(context)) score -= 10;
+    if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|jucesp|creci|telefone|\btel\.?\b|sala\s+40[234]/i.test(context)) score -= 15;
     return { line, score, index };
   }).filter((candidate) => !!candidate).sort((a, b) => b.score - a.score || a.index - b.index);
   const addressLine = addressCandidates[0]?.line;
@@ -12837,8 +12864,8 @@ function extractDisplayedCurrentBid(text) {
 function extractAuctionRoundsAndPrices(text, todayParam) {
   if (!text) return { activePrice: 0, priceVerified: false };
   const today = todayParam || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-  const bidText = text.replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, " ").replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, " ");
-  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
+  const bidText = text.replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, " ").replace(/\bparcelas?\s+a\s+partir\s+de(?:\s*\*?)?\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?/gi, " ").replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, " ");
+  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo)|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
   if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(bidText)) return { activePrice: 0, priceVerified: false };
   const markers = [...bidText.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
   const unique = (values) => {
@@ -12846,9 +12873,9 @@ function extractAuctionRoundsAndPrices(text, todayParam) {
     return v.length === 1 ? v[0] : 0;
   };
   const bids = (block) => {
-    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1])).filter((n) => n > 0);
+    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1])).filter((n) => n > 0);
     if (strict.length > 0 && new Set(strict).size === 1) return strict;
-    return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
+    return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
   };
   const round = (n) => {
     const entries = markers.filter((m) => Number(m[1] || (/primeir/i.test(m[2]) ? 1 : 2)) === n).map((m) => {
@@ -13172,7 +13199,8 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const areaAudit = auditOfficialArea({ text: combinedText, title: detailData.title, propertyType: parseType(detailData.title || draft.title), url: detailUrl, structuredSizes: detailData.structuredSizes, extractedValue: extractedSize });
   const detailedSize = areaAudit.selected?.value || 0;
   const structuredAddress = detailData.structuredAddresses.map((value) => extractAddress(value, "")).find((value) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
-  const textAddress = extractAddress(combinedText, "") || extractAddress(matriculaText, "");
+  const addressTextSection = combinedText.split(/\n\s*Edital do leil[aã]o\b|\bINFORMA[CÇ][ÕO]ES SOBRE O LEIL[ÃA]O E SOBRE O LEILOEIRO\b|\bDO VENDEDOR\b/i)[0] || combinedText;
+  const textAddress = extractAddress(addressTextSection, "") || extractAddress(combinedText, "") || extractAddress(matriculaText, "");
   const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : "") || structuredAddress;
   const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   const roundAnalysis = extractAuctionRoundsAndPrices(combinedText, today);
@@ -14351,11 +14379,12 @@ ${draft.description || ""}`)) {
       continue;
     }
     let lastKnownDate = draft.secondAuctionDate || draft.firstAuctionDate || draft.auctionDate;
+    const isDirectSale = /venda\s+direta|proposta\s+continuada|venda\s+online\s+cont|aguardando\s+data/i.test(`${draft.saleMode || ""} ${draft.title || ""} ${(draft.description || "").slice(0, 600)}`);
     if (!isConfiguredAuctionLink(draft.auctionLink)) {
       pendingReview.push({ draft, reason: "unverified_link" });
       continue;
     }
-    const calculationReady = Boolean(draft.sizeVerified && draft.sizeSqm > 0 && draft.priceVerified && draft.auctionPrice > 0 && lastKnownDate && draft.neighborhood && draft.address && hasAuditableAddress(draft.address));
+    const calculationReady = Boolean(draft.sizeVerified && draft.sizeSqm > 0 && draft.priceVerified && draft.auctionPrice > 0 && (lastKnownDate || isDirectSale) && draft.neighborhood && draft.address && hasAuditableAddress(draft.address));
     if (!calculationReady) pendingReview.push({ draft, reason: validation.reasons.length ? validation.reasons.join(",") : !draft.priceVerified || draft.auctionPrice <= 0 ? "unconfirmed_price" : !draft.sizeVerified || draft.sizeSqm <= 0 ? "unconfirmed_area" : !draft.neighborhood ? "unconfirmed_neighborhood" : "incomplete_address_or_date" });
     const addressCity = extractDeclaredCity(draft.address, draft.state);
     if (addressCity && normalizeStr(addressCity) !== normalizeStr(draft.city)) {
@@ -15809,7 +15838,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
   let browserPromise = null;
   let activeRenderPages = 0;
   const renderWaiters = [];
-  const maxConcurrentRenders = process.env.RENDER === "true" ? 2 : 8;
+  const maxConcurrentRenders = process.env.RENDER === "true" ? 2 : 4;
   const acquireRenderSlot = async () => {
     if (activeRenderPages >= maxConcurrentRenders) {
       let settled = false;
@@ -15833,12 +15862,13 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
   const rendered = async (url) => {
     await acquireRenderSlot();
     try {
-      browserPromise ||= launchPuppeteer(import_puppeteer4.default, { headless: true, protocolTimeout: 6e4, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      browserPromise ||= launchPuppeteer(import_puppeteer4.default, { headless: true, protocolTimeout: 12e4, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
       const browser = await browserPromise;
       const isLeilaoImovel = new URL(url).hostname.endsWith("leilaoimovel.com.br");
       for (let attempt = 0; attempt < (isLeilaoImovel ? 2 : 1); attempt++) {
-        const page = await browser.newPage();
+        let page = null;
         try {
+          page = await browser.newPage();
           await page.setRequestInterception(true);
           page.on("request", (req) => {
             const rt = req.resourceType();
@@ -15849,7 +15879,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
           });
           await page.setUserAgent(UA);
           await page.setExtraHTTPHeaders({ "Accept-Language": "pt-BR,pt;q=0.9" });
-          const r = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 2e4 });
+          const r = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45e3 });
           if (r && r.status() >= 400) {
             if (isLeilaoImovel && r.status() === 403 && attempt === 0) {
               await wait2(1500);
@@ -15862,8 +15892,17 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
           const html = await page.content();
           if (/<title>Just a moment|Access Denied/i.test(html)) throw Error("Acesso bloqueado pela fonte");
           return { html, url: page.url() };
+        } catch (err) {
+          if (/protocolTimeout|Target\.createTarget|Target closed|Session closed/i.test(String(err?.message || ""))) {
+            const stale = browserPromise;
+            browserPromise = null;
+            stale?.then((b) => b?.close?.().catch(() => {
+            })).catch(() => {
+            });
+          }
+          throw err;
         } finally {
-          await page.close().catch(() => {
+          await page?.close?.().catch(() => {
           });
         }
       }
@@ -15918,7 +15957,8 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       } else if (config.id === "freitas") {
         listingQueue.push(...[1, 2, 3, 4, 5].map((p) => `${cleanBase}/Leiloes/PesquisarLotes?Nome=&Categoria=2&TipoLoteId=0&FaixaValor=0&Pagina=${p}`), `${cleanBase}/Leiloes/Pesquisar?Categoria=2`);
       } else if (config.searchUrl && !listingQueue.includes(cleanBase) && !config.searchUrl.startsWith(`${cleanBase}/lotes/imovel`)) {
-        listingQueue.push(cleanBase);
+        if (/\/rura(?:l|is)\b/i.test(config.searchUrl)) listingQueue.unshift(cleanBase);
+        else listingQueue.push(cleanBase);
       }
       const seenPages = /* @__PURE__ */ new Set();
       const details = /* @__PURE__ */ new Map();
@@ -15927,7 +15967,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       const portalStartedAt = Date.now();
       const isUnlimitedSource = HIGH_PRIORITY_IDS.has(config.id) || Boolean(config.suporteApi);
       const maxPortalPages = HIGH_PRIORITY_IDS.has(config.id) ? 60 : 20;
-      const portalSoftDeadlineMs = HIGH_PRIORITY_IDS.has(config.id) ? 18e4 : 45e3;
+      const portalSoftDeadlineMs = HIGH_PRIORITY_IDS.has(config.id) ? 18e4 : 9e4;
       let renderCalls = 0;
       const maxListingRenders = isUnlimitedSource ? 16 : 6;
       let navigated = false;
@@ -16088,8 +16128,8 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
               response = await load7(requested, true);
             }
             let page = parseSourcePage(response.html, response.url);
-            const isSpaShell = /<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?|<app-root\b|self\.__next_f/i.test(response.html);
-            if ((!page.links.some((link) => directPattern.test(link.url)) || isSpaShell) && renderCalls < maxListingRenders && !/LotListSearch|PesquisarLotes|SearchLotResult/i.test(requested)) {
+            const isSpaShell = /<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?(?:\s[^>]*)?>\s*<\/div>|<app-root\b|self\.__next_f|\$\{\s*lote\./i.test(response.html) || page.text.length < 250 && /<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?/i.test(response.html);
+            if ((!page.links.some((link) => directPattern.test(link.url)) && !/\/rura(?:l|is)\b/i.test(requested) && listingQueue.length === 0 || isSpaShell) && renderCalls < maxListingRenders && !/LotListSearch|PesquisarLotes|SearchLotResult/i.test(requested)) {
               renderCalls++;
               response = await load7(requested, true);
               page = parseSourcePage(response.html, response.url);
@@ -16145,7 +16185,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
               }
               let page = parseSourcePage(response.html, response.url);
               progress.fetched++;
-              const isDetailSpa = /<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?|<app-root\b/i.test(response.html);
+              const isDetailSpa = /<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?(?:\s[^>]*)?>\s*<\/div>|<app-root\b/i.test(response.html) || page.text.length < 250 && /<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?/i.test(response.html);
               if (isSuportePortal || config.id === "sold" || config.id === "mariafilomena" || page.text.length < 80 || isDetailSpa) {
                 response = await load7(url, true);
                 page = parseSourcePage(response.html, response.url);

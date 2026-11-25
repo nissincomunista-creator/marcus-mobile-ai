@@ -30,7 +30,7 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  const visibleText=$('body').text().replace(/\s+/g,' ').trim();
  if(/verifique que voc[eê] [eé] humano|verify you are human|checking your browser/i.test(visibleText))return {...previous,...base,state:previous?.state||'unknown',reason:'Consulta bloqueada por desafio de acesso'};
  const isOnlyCookieNotice = visibleText.length < 300 && /cookie|pol[íi]tica de privacidade|consentir/i.test(visibleText);
- if (/(?:este\s+|o\s+)?(?:lote|leil[aã]o)\s+(?:encontra-se|est[aá]|foi)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|(?:situa[cç][aã]o|status)\s*:\s*(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|vendido|retirado)|im[oó]vel\s+j[aá]\s+(?:vendido|arrematado|indispon[íi]vel)|(?:este|o)\s+im[oó]vel\s+(?:est[aá]|encontra-se|foi)\s+indispon[íi]vel|(?<!para\s+)(?<!ser[aá]\s+)(?<!seja\s+)im[oó]vel\s+vendido(?!\s+(?:na\s+condi[cç][aã]o|no\s+estado|em\s+car[aá]ter|conforme|pelo\s+estado))|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
+ if (/(?:este\s+|o\s+)?(?:lote|leil[aã]o)\s+(?:encontra-se|est[aá]|foi)\s+(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|retirado)|(?:situa[cç][aã]o|status)\s*:\s*(?:encerrado|arrematado|cancelado|suspenso|sustado|finalizado|vendido|retirado)|im[oó]vel\s+j[aá]\s+(?:foi\s+)?(?:vendido|arrematado|indispon[íi]vel)|(?:este|o)\s+im[oó]vel\s+(?:est[aá]|encontra-se|foi)\s+(?:vendido|arrematado|indispon[íi]vel)|leil[aã]o\s+n[aã]o\s+encontrado/i.test(visibleText)) {
   return finish('finalizado', 'Lote encerrado, cancelado ou indisponível no site do leiloeiro');
  }
  const unavailable=/^(?:(?:este|o)\s+)?(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+(?:n[aã]o\s+(?:foi\s+)?encontrad[oa]|n[aã]o\s+(?:(?:est[aá]|se encontra)\s+)?(?:mais\s+)?dispon[ií]vel\s*(?:para venda)?|indispon[ií]vel|removid[oa])[.!]?$/i;
@@ -40,7 +40,7 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  if(/^(?:im[oó]vel|lote|an[uú]ncio|p[aá]gina)\s+n[aã]o\s+encontrad[oa][.!]?$/i.test(heading))return finish('expirado_link_invalido','Página oficial informa anúncio não encontrado');
  if($('body.page-detail.finalized').length)return finish('finalizado','Lote finalizado no detalhe oficial');
  const statusText=[heading,...$('[class*="status"],[id*="status"],[class*="situacao"],[data-status],.price .header,.badge,.alert').map((_,e)=>$(e).text().replace(/\s+/g,' ').trim()).get()];
- const closed=/^(?:(?:status|situa[cç][aã]o)\s*:?\s*)?(?:(?:este\s+)?(?:lote|leil[aã]o)\s+(?:est[aá]\s+)?)?(?:arrematad[oa]|encerrad[oa]|cancelad[oa]|suspens[oa]|sustad[oa]|finalizad[oa]|vendid[oa]|retirad[oa])(?:\s+(?:judicialmente|pelo vendedor))?[.!]?$/i;
+ const closed=/^(?:(?:status|situa[cç][aã]o)\s*:?\s*)?(?:(?:este\s+)?(?:lote|leil[aã]o|im[oó]vel)\s+(?:(?:est[aá]|foi)\s+)?)?(?:arrematad[oa]|encerrad[oa]|cancelad[oa]|suspens[oa]|sustad[oa]|finalizad[oa]|vendid[oa]|retirad[oa])(?:\s+(?:judicialmente|pelo vendedor))?[.!]?$/i;
  // Scan short visible text blocks as well; legal clauses and instructions are not status labels.
  $('span,strong,b,h2,h3,p,div').each((_,e)=>{if($(e).children().length===0){const t=$(e).text().replace(/\s+/g,' ').trim();if(t.length<100)statusText.push(t);}});
  if(statusText.some(t=>closed.test(t)))return finish('finalizado','Encerramento explícito no DOM do lote');

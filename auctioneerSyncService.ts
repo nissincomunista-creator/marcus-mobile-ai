@@ -352,7 +352,7 @@ function isPropertyLotEvidence(text: string): boolean {
   const normalized = normalizeStr(text);
   // Furniture and cars mentioned inside a house inspection are not separate lots.
   const headline = normalized.split('\n')[0];
-  const propertyWords = /\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex|agencia|agência|lote\s+(?:de\s+)?terreno|loteamento|fracao\s+ideal)\b/;
+  const propertyWords = /\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex|agencia|agência|lote\s+(?:de\s+)?(?:terreno|urbano|rural|residencial|comercial|industrial)|imovel\s+(?:urbano|rural)|vaga\s+de\s+garagem|box\s+de\s+garagem|loteamento|fracao\s+ideal)\b/;
   const nonPropertyHeadline = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|sucata|ferramenta|ferramentas|pecas\s+automotivas|fiat\s+palio|vw\s+gol|chevrolet|honda\s+civic|pajero)\b/;
   if (propertyWords.test(headline) && !nonPropertyHeadline.test(headline)) return true;
   const lead = normalized.slice(0, 350);
@@ -363,7 +363,7 @@ function isPropertyLotEvidence(text: string): boolean {
 
 function detectBankOrJudicial(text: string): { origin: 'extrajudicial' | 'judicial'; bank?: string } {
   const norm = normalizeStr(text);
-  if (/(?:^|\n|\s)(?:leilao\s+)?judicial(?:\s|\n|$)|\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}/i.test(norm)) return { origin: 'judicial' };
+  if (/(?:^|\n|\s)(?:leilao|modalidade|natureza)\s*:?\s*judicial\b|\bprocesso\s*(?:n[ºo°.]*)?\s*:?\s*\d{7}-\d{2}|\bvara\s+(?:civel|federal|do\s+trabalho|de\s+familia|de\s+execucoes)/i.test(norm)) return { origin: 'judicial' };
   if (/\bextrajudicial\b|aliena[cç][aã]o fiduci[aá]ria|consolidacao\s+da\s+propriedade|credor\s+fiduciario|\b9\.?514\b/.test(norm)) return { origin: 'extrajudicial' };
   if (norm.includes('santander')) return { origin: 'extrajudicial', bank: 'Santander' };
   if (norm.includes('itau') || norm.includes('itaú')) return { origin: 'extrajudicial', bank: 'Itaú' };
@@ -417,26 +417,34 @@ export function extractAddress(text: string, fallback: string): string {
   const cleanInput = unsquishText(text || '');
   const lines = cleanInput.split(/\r?\n|\s{2,}/).map(line => line.trim()).filter(Boolean);
   const labeledLine = lines.find(line =>
-    /\bendere[cç]o\b/i.test(line) &&
-    !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|telefone|\btel\.?\b/i.test(line) &&
-    /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line)
+    /\b(?:endere[cç]o|localiza[cç][aã]o)\b/i.test(line) &&
+    !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|telefone|\btel\.?\b|no\s+mapa\s+pode\s+ser\s+aproximada|@/i.test(line) &&
+    /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line) &&
+    !/\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)
   );
   if (labeledLine) {
     const labeledAddress = labeledLine
-      .replace(/^.*?\bendere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?\s*:?\s*/i, '')
+      .replace(/^.*?\b(?:endere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?|localiza[cç][aã]o)\s*:?\s*/i, '')
       .split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0]
       .replace(/\s+/g, ' ')
       .trim();
-    if (labeledAddress.length >= 8) return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
+    if (
+      labeledAddress.length >= 8 &&
+      !/[@]|eletr[oô]nico\s*:/i.test(labeledAddress) &&
+      /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(labeledAddress)
+    ) {
+      return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
+    }
   }
   const addressCandidates = lines
     .map((line, index) => {
+      if (/@|\bendere[cç]o\s+eletr[oô]nico\b|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)) return null;
       if (!/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
       const context = `${lines[index - 1] || ''} ${line}`;
       let score = 0;
-      if (/im[oó]vel|\bbem\b|auto\s+de\s+avalia[cç][aã]o|auto\s+de\s+penhora|situad[oa]|localizad[oa]|objeto\s+do\s+leil[aã]o|matr[ií]cula/i.test(context)) score += 8;
+      if (/im[oó]vel|\bbem\b|localiza[cç][aã]o|auto\s+de\s+avalia[cç][aã]o|auto\s+de\s+penhora|situad[oa]|localizad[oa]|objeto\s+do\s+leil[aã]o|matr[ií]cula/i.test(context)) score += 8;
       if (/n[ºo°]?\s*\d+|,\s*\d+/.test(line)) score += 3;
-      if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|telefone|\btel\.?\b|sala\s+40[234]/i.test(context)) score -= 10;
+      if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|jucesp|creci|telefone|\btel\.?\b|sala\s+40[234]/i.test(context)) score -= 15;
       return { line, score, index };
     })
     .filter((candidate): candidate is { line: string; score: number; index: number } => !!candidate)
@@ -530,17 +538,18 @@ export function extractAuctionRoundsAndPrices(text: string, todayParam?: string)
   // so promotional minimum credit thresholds never collide with the actual starting auction bid.
   const bidText = text
     .replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, ' ')
+    .replace(/\bparcelas?\s+a\s+partir\s+de(?:\s*\*?)?\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?/gi, ' ')
     .replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, ' ');
-  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo))\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
+  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo)|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
   if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(bidText)) return {activePrice:0,priceVerified:false};
 
   // Isolate each round: nearby amounts can belong to another round, fees or appraisal.
   const markers = [...bidText.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
   const unique = (values: number[]) => { const v=[...new Set(values.filter(n=>n>0))];return v.length===1?v[0]:0; };
   const bids = (block:string) => {
-    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1])).filter(n=>n>0);
+    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1])).filter(n=>n>0);
     if (strict.length > 0 && new Set(strict).size === 1) return strict;
-    return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
+    return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
   };
   const round = (n:number) => {
     const entries=markers.filter(m=>Number(m[1] || (/primeir/i.test(m[2])?1:2))===n).map(m=>{
@@ -900,7 +909,8 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const structuredAddress = detailData.structuredAddresses
       .map((value: string) => extractAddress(value, ''))
       .find((value: string) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
-    const textAddress = extractAddress(combinedText, '') || extractAddress(matriculaText, '');
+    const addressTextSection = combinedText.split(/\n\s*Edital do leil[aã]o\b|\bINFORMA[CÇ][ÕO]ES SOBRE O LEIL[ÃA]O E SOBRE O LEILOEIRO\b|\bDO VENDEDOR\b/i)[0] || combinedText;
+    const textAddress = extractAddress(addressTextSection, '') || extractAddress(combinedText, '') || extractAddress(matriculaText, '');
     const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : '') || structuredAddress;
     const today = new Date().toISOString().slice(0, 10);
     const roundAnalysis = extractAuctionRoundsAndPrices(combinedText, today);
@@ -2606,11 +2616,12 @@ export function reconcileAuctionDrafts(
     if (!draft.sourceVerified) { pendingReview.push({draft, reason:'detail_unavailable'}); continue; }
     if (!draft.city || !draft.state || (state && draft.state !== state) || (city && normalizeStr(draft.city) !== normalizeStr(city))) { pendingReview.push({draft, reason:'unconfirmed_location'}); continue; }
     let lastKnownDate = draft.secondAuctionDate || draft.firstAuctionDate || draft.auctionDate;
+    const isDirectSale = /venda\s+direta|proposta\s+continuada|venda\s+online\s+cont|aguardando\s+data/i.test(`${draft.saleMode || ''} ${draft.title || ''} ${(draft.description || '').slice(0, 600)}`);
     if (!isConfiguredAuctionLink(draft.auctionLink)) { pendingReview.push({draft,reason:'unverified_link'}); continue; }
     // A confirmed official lot is never lost because a complementary field is
     // absent. It enters as pending, but cannot receive calculated ROI,
     // liquidity or recommendation until price, area and date are verified.
-    const calculationReady = Boolean(draft.sizeVerified && draft.sizeSqm > 0 && draft.priceVerified && draft.auctionPrice > 0 && lastKnownDate && draft.neighborhood && draft.address && hasAuditableAddress(draft.address));
+    const calculationReady = Boolean(draft.sizeVerified && draft.sizeSqm > 0 && draft.priceVerified && draft.auctionPrice > 0 && (lastKnownDate || isDirectSale) && draft.neighborhood && draft.address && hasAuditableAddress(draft.address));
     if (!calculationReady) pendingReview.push({draft,reason: validation.reasons.length ? validation.reasons.join(',') : !draft.priceVerified || draft.auctionPrice <= 0 ? 'unconfirmed_price' : !draft.sizeVerified || draft.sizeSqm <= 0 ? 'unconfirmed_area' : !draft.neighborhood ? 'unconfirmed_neighborhood' : 'incomplete_address_or_date'});
 
     const addressCity = extractDeclaredCity(draft.address, draft.state);

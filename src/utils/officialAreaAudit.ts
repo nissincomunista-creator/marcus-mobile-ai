@@ -21,7 +21,8 @@ export function auditOfficialArea(input: {text:string;title:string;propertyType:
  for(const m of text.matchAll(new RegExp('('+label+')\\s*(?:aproximad[ao](?:mente)?|de)?\\s*[:=]?\\s*'+amount+'\\s*('+unit+')','gi')))add(numeric(m[2])*(/ha|hectare/i.test(m[3])?10000:1),kind(m[1]),m[0]);
  for(const m of text.matchAll(new RegExp(amount+'\\s*('+unit+')\\s+de\\s+('+label+')','gi')))add(numeric(m[1])*(/ha|hectare/i.test(m[2])?10000:1),kind(m[3]),m[0]);
  for(const m of text.matchAll(new RegExp('[aá]rea\\s+de\\s*'+amount+'\\s*('+unit+')','gi')))add(numeric(m[1])*(/ha|hectare/i.test(m[2])?10000:1),'unspecified',m[0]);
- for(const m of text.matchAll(new RegExp('(?:possui|mede|medindo)\\s+(?:aproximadamente\\s+)?'+amount+'\\s*('+unit+')','gi')))add(numeric(m[1])*(/ha|hectare/i.test(m[2])?10000:1),'unspecified',m[0]);
+ const land=/Terreno|Gleba|Fazenda/i.test(input.propertyType);
+ for(const m of text.matchAll(new RegExp('(?:possui|mede|medindo)\\s+(?:aproximadamente\\s+)?'+amount+'\\s*('+unit+')','gi'))){const ctx=text.slice(Math.max(0,(m.index??0)-55),m.index??0);add(numeric(m[1])*(/ha|hectare/i.test(m[2])?10000:1),!land&&/terreno|fra[cç][aã]o\s+ideal|loteamento|gleba|condom[ií]nio/i.test(ctx)?'land':'unspecified',ctx.trim().slice(-25)+' '+m[0]);}
  // Explicit property measurements such as "Apartamento com 60m²" are evidence,
  // even when the description does not repeat the word "área".
  for(const m of text.matchAll(new RegExp('(?:apartamento|apto\\.?|casa|sala|unidade(?:\\s+aut[oô]noma)?)\\s+com\\s+(?:aproximadamente\\s+)?'+amount+'\\s*(m[²2]|m\\.q\\.|metros?\\s+quadrados?)','gi')))add(numeric(m[1]),'unspecified',m[0]);
@@ -29,10 +30,22 @@ export function auditOfficialArea(input: {text:string;title:string;propertyType:
  for(const m of input.title.matchAll(new RegExp(amount+'\\s*('+unit+')','gi')))add(numeric(m[1])*(/ha|hectare/i.test(m[2])?10000:1),'title',m[0]);
  for(const value of input.structuredSizes||[])add(value,'structured','Área publicada nos dados estruturados do lote');
 
- const land=/Terreno|Gleba|Fazenda/i.test(input.propertyType);
  const ranks=land?['land','total','unspecified','structured','title']:['private','usable','built','structured','unspecified','title','total'];
+ const refValues=candidates.filter(c=>c.kind==='title'||c.kind==='structured').map(c=>c.value);
+ const approxEq=(a:number,b:number)=>Math.abs(a-b)/Math.max(a,b,1)<=0.015;
  let selected:AreaEvidence|undefined;let conflict=false;
- for(const rank of ranks){const group=candidates.filter(c=>c.kind===rank);if(!group.length)continue;const unique=new Set(group.map(c=>c.value));if(unique.size>1){conflict=true;break;}selected=group[0];break;}
+ for(const rank of ranks){
+  const group=candidates.filter(c=>c.kind===rank);if(!group.length)continue;
+  const unique=[...new Set(group.map(c=>c.value))];
+  if(unique.length>1){
+   const matched=unique.filter(v=>refValues.some(r=>approxEq(v,r)));
+   if(matched.length===1){selected=group.find(c=>c.value===matched[0]);break;}
+   const max=Math.max(...unique),min=Math.min(...unique);
+   if((max-min)/Math.max(max,1)<=0.015){selected=group[0];break;}
+   conflict=true;break;
+  }
+  selected=group[0];break;
+ }
  if(selected?.kind==='total'&&!land)selected={...selected,approximate:true};
  const status=conflict?'conflict':!selected?'missing':selected.approximate?'approximate':'confirmed';
  return {status,sourceUrl:input.url,checkedAt:new Date().toISOString(),selected,candidates,extractedValue:input.extractedValue,disagrees:Boolean(selected&&input.extractedValue&&Math.abs(selected.value-input.extractedValue)>0.01)};
