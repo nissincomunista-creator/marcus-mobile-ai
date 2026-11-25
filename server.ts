@@ -1877,10 +1877,15 @@ async function saveStoreAsync(targetStore: DataStore) {
       yield `${JSON.stringify(key)}:`;
       if (Array.isArray(value)) {
         yield '[';
-        for (let index = 0; index < value.length; index++) {
-          if (index) yield ',';
-          yield JSON.stringify(value[index]) ?? 'null';
-          if (index % 500 === 499) await new Promise<void>(resolve => setImmediate(resolve));
+        const BATCH = 4000;
+        for (let i = 0; i < value.length; i += BATCH) {
+          const end = Math.min(i + BATCH, value.length);
+          const parts: string[] = new Array(end - i);
+          for (let j = i; j < end; j++) {
+            parts[j - i] = JSON.stringify(value[j]) ?? 'null';
+          }
+          yield (i > 0 ? ',' : '') + parts.join(',');
+          await new Promise<void>(resolve => setImmediate(resolve));
         }
         yield ']';
       } else {
@@ -1890,7 +1895,10 @@ async function saveStoreAsync(targetStore: DataStore) {
     yield '}';
   }
   const operation = (async () => {
-    await pipeline(Readable.from(chunks(), { objectMode: false }), fs.createWriteStream(temporary, { encoding: 'utf8' }));
+    await pipeline(
+      Readable.from(chunks(), { objectMode: false }),
+      fs.createWriteStream(temporary, { encoding: 'utf8', highWaterMark: 1024 * 1024 })
+    );
     try {
       await fs.promises.rename(temporary, STORE_PATH);
     } catch (renameErr: any) {
@@ -3712,7 +3720,7 @@ function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0],
     throw error;
   }
 }
-function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicial' | 'extrajudicial' | 'all') {
+function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicial' | 'extrajudicial' | 'all', options?: { skipCaixa?: boolean }) {
   if (listedSyncRunning || caixaDirectRunning) return false;
   openingSyncStage = 'preparing';
   const backup = 'sync-audits/backups/before-listed-sync-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
@@ -3725,7 +3733,7 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
     else await fs.promises.writeFile(backup, JSON.stringify(store), 'utf8');
     const auditStartedAt = new Date().toISOString();
     const availabilityRun = startAvailabilityCheck();
-    const shouldSyncCaixa = (!targetOrigin || targetOrigin === 'all') && (!ids || ids.length === 0 || ids.includes('caixa'));
+    const shouldSyncCaixa = !options?.skipCaixa && (!targetOrigin || targetOrigin === 'all') && (!ids || ids.length === 0 || ids.includes('caixa'));
     if (shouldSyncCaixa) {
       openingSyncStage='caixa';
       try {
@@ -3749,7 +3757,7 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
       : targetOrigin === 'extrajudicial' ? (['extrajudicial'] as const)
       : (['judicial', 'extrajudicial'] as const);
 
-    const priorityIds = new Set(['megaleiloes', 'frazao', 'biasi', 'portalzuk', 'rogeriomenezes', 'santander', 'isaias']);
+    const priorityIds = new Set(['frazao', 'biasi', 'portalzuk', 'rogeriomenezes', 'santander', 'isaias']);
     const shouldSyncPriority = !ids || ids.length === 0 || ids.some(id => priorityIds.has(id));
     if (shouldSyncPriority) {
       for (const org of originsToRun) {
@@ -3759,8 +3767,11 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
             if (priorityResult?.newAuctions?.length) {
               priorityResult.newAuctions.forEach(a => { a.userId = 'system'; a.lastSyncedAt = new Date().toISOString(); });
               store.auctions.unshift(...priorityResult.newAuctions);
+            }
+            if ((priorityResult?.newAuctions?.length || 0) > 0 || (priorityResult?.updated || 0) > 0) {
               catalogRevision++;
               persistedCatalogInvalidated = true;
+              auctionCatalogResponseCache = null;
             }
           } catch (priErr: any) {
             console.warn(`[Priority Sync] ${org} ${target.city}: ${priErr.message}`);
@@ -3785,6 +3796,14 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
     // Newly imported/replaced source records must be checked too.
     await startAvailabilityCheck(auditStartedAt);
     await saveStoreAsync(store);
+    if (process.env.RENDER !== 'true') {
+      try {
+        const slimStore = { ...store, itbiTransactions: [] };
+        await fs.promises.writeFile(path.join(process.cwd(), 'data_store.json.gz'), zlib.gzipSync(Buffer.from(JSON.stringify(slimStore))));
+      } catch (gzErr: any) {
+        console.warn('[Listed Sync] Falha ao atualizar data_store.json.gz:', gzErr?.message || gzErr);
+      }
+    }
     catalogRevision++;
     persistedCatalogInvalidated = true;
     auctionCatalogResponseCache = null;
@@ -3820,7 +3839,7 @@ app.post('/api/sync/start', authMiddleware, (req, res) => {
     void startAvailabilityCheck();
     return res.status(202).json({ started: false, running: Boolean(listedSyncRunning || caixaDirectRunning || availabilityRunning), cooldown: true, report: readListedSyncStatus() });
   }
-  const started = startListedSync(isAppOpen ? 'app-open' : 'manual', requestedIds);
+  const started = startListedSync(isAppOpen ? 'app-open' : 'manual', requestedIds, undefined, { skipCaixa: Boolean(req.body?.skipCaixa) });
   res.status(202).json({started, running:Boolean(listedSyncRunning||caixaDirectRunning), report:readListedSyncStatus()});
 });
 
@@ -7656,7 +7675,11 @@ async function syncCaixaDirect(targetStates: string[] = ['RJ', 'MG'], userId: st
     console.error(`[Caixa Auto-Sync] Erro na sessão Puppeteer da Caixa:`, err.message);
   } finally {
     if (browser) {
-      await browser.close().catch(() => {});
+      await Promise.race([
+        browser.close().catch(() => {}),
+        new Promise(resolve => setTimeout(resolve, 6000))
+      ]);
+      try { browser.process?.()?.kill('SIGKILL'); } catch {}
     }
   }
 

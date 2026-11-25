@@ -4075,7 +4075,7 @@
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-10-21T14:43:21.845Z",
+    "updatedAt": "2026-11-23T16:17:26.602Z",
     "notFound": true
   },
   "rj_rio de janeiro_tijuca_h": {
@@ -4169,7 +4169,7 @@
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-10-21T14:43:44.598Z",
+    "updatedAt": "2026-11-23T16:17:49.942Z",
     "notFound": true
   },
   "rj_rio de janeiro_tijuca_s": {
@@ -16483,7 +16483,7 @@
     "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-augusto-nunes",
     "canonicalTitle": "Rua Augusto Nunes, Rio de Janeiro, RJ",
     "cards": [],
-    "updatedAt": "2026-11-18T22:43:53.648Z",
+    "updatedAt": "2026-11-24T01:52:25.969Z",
     "notFound": true
   },
   "rj_rio de janeiro_vila isabel_p": {
@@ -16543,7 +16543,7 @@
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-11-18T22:48:35.028Z",
+    "updatedAt": "2026-11-23T23:49:23.489Z",
     "notFound": true
   },
   "rj_rio de janeiro_rocha_almirante ari parreiras": {
@@ -17265,10 +17265,18 @@
     "city": "Rio de Janeiro",
     "state": "RJ",
     "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-soldado-hilario-zanesco",
-    "canonicalTitle": "Rua Soldado Hilario Zanesco, Rio de Janeiro, RJ",
-    "cards": [],
-    "updatedAt": "2026-11-21T14:52:14.413Z",
-    "notFound": true
+    "canonicalTitle": "Rua Soldado Hilario Zanesco, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 1,2 milhão. · Para alugar, apartamentos de ~82 m² ficam na faixa de R$ 1.420 a R$ 14.400. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.708 anúncios | na região, 19% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9000,
+        "sampleCount": 1708,
+        "avgPrice": 1200000,
+        "rawMeta": "na região, 19% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 1,2 milhão. · Para alugar, apartamentos de ~82 m² ficam na faixa de R$ 1.420 a R$ 14.400. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.708 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T16:07:11.956Z"
   },
   "rj_rio de janeiro_vila da penha_apia": {
     "street": "RUA APIA",
@@ -17468,6 +17476,440 @@
     "canonicalTitle": "Rua Licinio Cardoso, Rio de Janeiro, RJ",
     "cards": [],
     "updatedAt": "2026-11-23T03:55:05.208Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_jacarepagua_dos bandeirantes": {
+    "street": "ESTRADA DOS BANDEIRANTES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/jacarepagua/estrada-dos-bandeirantes",
+    "canonicalTitle": "Estrada dos Bandeirantes, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 600 mil. · Para alugar, apartamentos de ~68 m² ficam na faixa de R$ 1.450 a R$ 6.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 3.656 anúncios | na região, 1% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 7264,
+        "sampleCount": 3656,
+        "avgPrice": 600000,
+        "rawMeta": "na região, 1% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 600 mil. · Para alugar, apartamentos de ~68 m² ficam na faixa de R$ 1.450 a R$ 6.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 3.656 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T07:13:39.389Z"
+  },
+  "rj_rio de janeiro_jacarepagua_etr dos bandeirantes": {
+    "street": "ETR DOS BANDEIRANTES",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-23T07:13:45.235Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_campo grande_do tingui": {
+    "street": "ESTRADA DO TINGUI",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/campo-grande/travessa-do-tingui",
+    "canonicalTitle": "Travessa do Tingui, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-23T16:01:55.780Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_campo grande_etr do tingui": {
+    "street": "ETR DO TINGUI",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/campo-grande/rua-do-petroleo",
+    "canonicalTitle": "Rua do Petroleo, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-23T16:02:05.794Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila isabel_jeronimo de lemos": {
+    "street": "RUA JERONIMO DE LEMOS",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-isabel/rua-jeronimo-de-lemos",
+    "canonicalTitle": "Rua Jerônimo de Lemos, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~91 m² ficam na faixa de R$ 1.506 a R$ 4.990. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.254 anúncios | na região, 33% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4928,
+        "sampleCount": 2254,
+        "avgPrice": 430000,
+        "rawMeta": "na região, 33% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~91 m² ficam na faixa de R$ 1.506 a R$ 4.990. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.254 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T16:11:11.518Z"
+  },
+  "rj_rio de janeiro_tijuca_e": {
+    "street": "rua e",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-23T16:18:04.851Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_enes": {
+    "street": "rua enes",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-enes-de-sousa",
+    "canonicalTitle": "Rua Enes de Sousa, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 700 mil. · Para alugar, apartamentos de ~100 m² ficam na faixa de R$ 2.293 a R$ 8.000. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 7.959 anúncios | na região, 11% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6532,
+        "sampleCount": 7959,
+        "avgPrice": 700000,
+        "rawMeta": "na região, 11% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 700 mil. · Para alugar, apartamentos de ~100 m² ficam na faixa de R$ 2.293 a R$ 8.000. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 7.959 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T16:18:11.835Z"
+  },
+  "rj_rio de janeiro_tijuca_enes de souza": {
+    "street": "RUA ENES DE SOUZA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-enes-de-sousa",
+    "canonicalTitle": "Rua Enes de Sousa, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 700 mil. · Para alugar, apartamentos de ~100 m² ficam na faixa de R$ 2.293 a R$ 8.000. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 7.959 anúncios | na região, 11% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 6532,
+        "sampleCount": 7959,
+        "avgPrice": 700000,
+        "rawMeta": "na região, 11% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 700 mil. · Para alugar, apartamentos de ~100 m² ficam na faixa de R$ 2.293 a R$ 8.000. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 7.959 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T16:18:12.860Z"
+  },
+  "rj_rio de janeiro_tijuca_ene": {
+    "street": "rua ene",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-23T16:18:19.625Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_en": {
+    "street": "rua en",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-23T16:18:19.805Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_vila isabel_doutor heleno brandao": {
+    "street": "RUA DOUTOR HELENO BRANDAO",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/vila-isabel/rua-doutor-heleno-brandao",
+    "canonicalTitle": "Rua Doutor Heleno Brandao, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~90 m² ficam na faixa de R$ 1.512 a R$ 4.980. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.255 anúncios | na região, 35% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4929,
+        "sampleCount": 2255,
+        "avgPrice": 430000,
+        "rawMeta": "na região, 35% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 430 mil. · Para alugar, apartamentos de ~90 m² ficam na faixa de R$ 1.512 a R$ 4.980. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.255 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-23T20:13:57.287Z"
+  },
+  "rj_rio de janeiro_vila isabel_provi": {
+    "street": "provi",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-23T23:50:58.962Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_penha_do caja": {
+    "street": "RUA DO CAJA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/penha/rua-do-caja",
+    "canonicalTitle": "Rua do Caja, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:07:14.241Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_penha_caja": {
+    "street": "RUA CAJA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/penha/rua-do-caja",
+    "canonicalTitle": "Rua do Caja, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:07:20.542Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_cosmos_framboesa": {
+    "street": "RUA FRAMBOESA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cosmos/rua-framboesa",
+    "canonicalTitle": "Rua Framboesa, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 146 mil. · Para alugar, apartamentos de ~44 m² ficam na faixa de R$ 610 a R$ 1.500. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 157 anúncios | na região, 63% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 2791,
+        "sampleCount": 157,
+        "avgPrice": 146000,
+        "rawMeta": "na região, 63% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 146 mil. · Para alugar, apartamentos de ~44 m² ficam na faixa de R$ 610 a R$ 1.500. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 157 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T00:14:04.587Z"
+  },
+  "rj_rio de janeiro_cosmos_framboesa antiga rua 01": {
+    "street": "RUA FRAMBOESA ANTIGA RUA 01",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/cosmos/rua-framboesa",
+    "canonicalTitle": "Rua Framboesa, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 146 mil. · Para alugar, apartamentos de ~44 m² ficam na faixa de R$ 610 a R$ 1.500. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 157 anúncios | na região, 63% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 2791,
+        "sampleCount": 157,
+        "avgPrice": 146000,
+        "rawMeta": "na região, 63% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 146 mil. · Para alugar, apartamentos de ~44 m² ficam na faixa de R$ 610 a R$ 1.500. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 157 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T00:14:04.995Z"
+  },
+  "rj_rio de janeiro_marechal hermes_santa rita de cassia": {
+    "street": "RUA SANTA RITA DE CASSIA",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/marechal-hermes/rua-santa-rita-de-cassia",
+    "canonicalTitle": "Rua Santa Rita de Cassia, Marechal Hermes, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:24:50.756Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_santa teresa_santo amaro": {
+    "street": "RUA SANTO AMARO",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/santa-teresa/rua-santo-amaro",
+    "canonicalTitle": "Rua Santo Amaro, Santa Teresa, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:26:27.267Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_gloria_r": {
+    "street": "r",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:34:06.575Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_gloria_s": {
+    "street": "rua s",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:34:09.726Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_gloria_santo amaro": {
+    "street": "RUA SANTO AMARO",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/gloria/rua-santo-amaro",
+    "canonicalTitle": "Rua Santo Amaro, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 878 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 2.800 a R$ 7.950. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 655 anúncios | na região, 50% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 11000,
+        "sampleCount": 655,
+        "avgPrice": 878000,
+        "rawMeta": "na região, 50% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 878 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 2.800 a R$ 7.950. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 655 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T00:34:31.115Z"
+  },
+  "rj_rio de janeiro_gloria_sa": {
+    "street": "rua sa",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/estrada-manuel-nogueira-de-sa",
+    "canonicalTitle": "Estrada Manuel Nogueira de Sa, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 1,2 milhão. · Para alugar, apartamentos de ~82 m² ficam na faixa de R$ 1.420 a R$ 14.400. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.708 anúncios | na região, 22% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 8999,
+        "sampleCount": 1708,
+        "avgPrice": 1200000,
+        "rawMeta": "na região, 22% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 1,2 milhão. · Para alugar, apartamentos de ~82 m² ficam na faixa de R$ 1.420 a R$ 14.400. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.708 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T00:34:30.625Z"
+  },
+  "rj_rio de janeiro_gloria_santo": {
+    "street": "rua santo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/gloria/rua-santo-amaro",
+    "canonicalTitle": "Rua Santo Amaro, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 878 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 2.800 a R$ 7.950. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 655 anúncios | na região, 50% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 11000,
+        "sampleCount": 655,
+        "avgPrice": 878000,
+        "rawMeta": "na região, 50% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 878 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 2.800 a R$ 7.950. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 655 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T00:34:30.693Z"
+  },
+  "rj_rio de janeiro_gloria_rua": {
+    "street": "rua",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/gloria/ladeira-da-gloria",
+    "canonicalTitle": "Ladeira da Glória, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 878 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 2.800 a R$ 7.950. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 655 anúncios | na região, 45% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 11000,
+        "sampleCount": 655,
+        "avgPrice": 878000,
+        "rawMeta": "na região, 45% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 878 mil. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 2.800 a R$ 7.950. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 655 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T00:34:31.145Z"
+  },
+  "rj_rio de janeiro_gloria_sant": {
+    "street": "rua sant",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-jorge-sant-anna",
+    "canonicalTitle": "Rua Jorge Sant Anna, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 1,2 milhão. · Para alugar, apartamentos de ~82 m² ficam na faixa de R$ 1.420 a R$ 14.400. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.708 anúncios | na região, 19% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 9000,
+        "sampleCount": 1708,
+        "avgPrice": 1200000,
+        "rawMeta": "na região, 19% acima da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 1,2 milhão. · Para alugar, apartamentos de ~82 m² ficam na faixa de R$ 1.420 a R$ 14.400. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 1.708 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T00:34:32.814Z"
+  },
+  "rj_rio de janeiro_gloria_san": {
+    "street": "rua san",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:34:34.108Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_gloria_ru": {
+    "street": "ru",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-24T00:34:44.135Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_braz de pina_m": {
+    "street": "m",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-24T02:03:12.129Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_braz de pina_ma": {
+    "street": "ma",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/bras-de-pina/avenida-do-braz-de-pina",
+    "canonicalTitle": "Avenida do Braz de Pina, Bras de Pina, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T02:04:02.444Z",
+    "notFound": true
+  },
+  "mg_juiz de fora_sao pedro_joaquim vicente guedes": {
+    "street": "Rua Joaquim Vicente Guedes",
+    "city": "Juiz de Fora",
+    "state": "MG",
+    "url": "/mg/juiz-de-fora/sao-pedro/rua-joaquim-moraes",
+    "canonicalTitle": "Rua Joaquim Moraes, Juiz de Fora/MG",
+    "leadText": "Metade dos anúncios de casa aqui pede até R$ 1,4 milhão. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 700 a R$ 1.650. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 194 anúncios | na região, 13% acima da média da cidade.",
+    "cards": [
+      {
+        "tipo": "CASA",
+        "m2": 4279,
+        "sampleCount": 194,
+        "avgPrice": 1400000,
+        "rawMeta": "na região, 13% acima da média da cidade. · Metade dos anúncios de casa aqui pede até R$ 1,4 milhão. · Para alugar, apartamentos de ~50 m² ficam na faixa de R$ 700 a R$ 1.650. O mais comum na região são imóveis de 3 quartos. · Preço pedido por m² em anúncios de venda · 194 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-24T11:48:48.159Z"
+  },
+  "rj_rio de janeiro_penha circular_flaminia": {
+    "street": "Rua Flamínia",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/penha-circular/rua-flaminia",
+    "canonicalTitle": "Rua Flaminia, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T16:01:45.794Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ramos_joao romariz": {
+    "street": "RUA JOAO ROMARIZ",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/ramos/rua-joao-romariz",
+    "canonicalTitle": "Rua João Romariz, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T19:29:36.691Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_todos os santos_silva rabelo": {
+    "street": "Rua Silva Rabelo",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/todos-os-santos/rua-paulo-silva-araujo",
+    "canonicalTitle": "Rua Paulo Silva Araujo, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-24T19:33:19.520Z",
     "notFound": true
   }
 }

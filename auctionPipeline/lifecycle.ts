@@ -25,7 +25,7 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  }
  const isSpaShell = /<div[^>]+id=["']?(?:root|__next|app|main-app)["']?|<app-root\b|__NEXT_DATA__|self\.__next_f|window\.__NUXT__|<script[^>]+type=["']module["'][^>]+src=|\/_next\/static\/|\/assets\/index-[a-z0-9_-]+\.js/i.test(html);
  const $=cheerio.load(html);
- $('script,style,noscript,nav,header,footer,aside,select,option,template,[hidden],[aria-hidden="true"],.modal,.cards,[class*="related"],[class*="recommend"]').remove();
+ $('script,style,noscript,nav,header,footer,aside,select,option,template,[hidden],[aria-hidden="true"],.modal,.cards,.card-instance,[class*="other-batches"],[class*="batches-carousel"],[class*="related"],[class*="recommend"]').remove();
  const heading=$('h1').first().text().trim();
  const visibleText=$('body').text().replace(/\s+/g,' ').trim();
  if(/verifique que voc[eê] [eé] humano|verify you are human|checking your browser/i.test(visibleText))return {...previous,...base,state:previous?.state||'unknown',reason:'Consulta bloqueada por desafio de acesso'};

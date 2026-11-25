@@ -6,7 +6,7 @@ import path from 'node:path';
 import * as cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
 import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
-import { AUCTIONEER_PORTALS, canonicalAuctionLink, parseOfficialLotDetail, extractAddress, type ScrapedAuctionDraft } from './auctioneerSyncService.ts';
+import { AUCTIONEER_PORTALS, canonicalAuctionLink, parseOfficialLotDetail, extractAddress, scrapeMegaLeiloes, type ScrapedAuctionDraft } from './auctioneerSyncService.ts';
 import { SYNC_SOURCE_IDS, SYNC_TARGETS, allowedSyncLocation, normalizeAuctionText as norm } from './src/utils/auctionSyncScope.ts';
 import { sourceAuctionLocation, sourceNeighborhoodLocation, sourceTargetCityLocation } from './src/utils/auctionGeography.ts';
 import { CITY_ZONES } from './src/utils/cityZones.ts';
@@ -30,10 +30,37 @@ const skipPattern=/login|entrar|cadastro|contato|politica|privacidade|termos|blo
 const bankIds=new Set(['bb','emgea','santander','vitrinebradesco']);
 const isBlockedLeilaoImovelResponse=(portalId:string,error:unknown)=>portalId==='leilaoimovel'&&/HTTP\s+403\b/i.test(error instanceof Error?error.message:String(error));
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
-const portalConfigs = AUCTIONEER_PORTALS.filter(p => p.enabled).sort((a: any, b: any) => {
-  const rank = (p: any) => !p.nexusSituacao ? 0 : p.nexusImoveis > 0 ? 1 : p.nexusSituacao === 'em_atualizacao' || p.nexusSituacao === 'agregador' ? 2 : 3;
-  return rank(a) - rank(b) || (b.nexusImoveis || 0) - (a.nexusImoveis || 0);
-});
+const HIGH_PRIORITY_IDS = new Set([
+  'megaleiloes', 'portalzuk', 'frazao', 'biasi', 'sold', 'pestana',
+  'santander', 'emgea', 'vitrinebradesco', 'rioleiloes', 'mariafilomena',
+  'rogeriomenezes', 'isaias', 'leilaoimovel', 'superbid'
+]);
+const portalConfigs = (() => {
+  const byDomain = new Map<string, (typeof AUCTIONEER_PORTALS)[number] & { nexusImoveis?: number; nexusSituacao?: string }>();
+  for (const p of AUCTIONEER_PORTALS) {
+    if (!p.enabled) continue;
+    const dom = (p.domain || '').replace(/^www\./i, '').toLowerCase();
+    const prev = byDomain.get(dom);
+    if (!prev) {
+      byDomain.set(dom, { ...p });
+    } else {
+      byDomain.set(dom, {
+        ...prev,
+        ...(!prev.searchUrl && p.searchUrl ? { searchUrl: p.searchUrl } : {}),
+        ...(p.suporteApi ? { suporteApi: true } : {}),
+        ...(p.nexusImoveis && !prev.nexusImoveis ? { nexusImoveis: p.nexusImoveis } : {}),
+        ...(p.nexusSituacao && !prev.nexusSituacao ? { nexusSituacao: p.nexusSituacao } : {}),
+      });
+    }
+  }
+  const rank = (p: any) =>
+    HIGH_PRIORITY_IDS.has(p.id) ? 0
+    : p.nexusSituacao === 'com_imoveis' ? 1
+    : p.suporteApi || p.nexusSituacao === 'agregador' || p.nexusSituacao === 'em_atualizacao' || !p.nexusSituacao ? 2
+    : p.nexusSituacao === 'outro_site' ? 3
+    : 4;
+  return [...byDomain.values()].sort((a: any, b: any) => rank(a) - rank(b) || (b.nexusImoveis || 0) - (a.nexusImoveis || 0) || a.name.localeCompare(b.name, 'pt-BR'));
+})();
 const sameHost=(a:string,b:string)=>new URL(a).hostname.replace(/^www\./,'')===new URL(b).hostname.replace(/^www\./,'');
 const sameHostOrAlias=(linkUrl:string,responseUrl:string,config?:typeof portalConfigs[number])=>{
  if(sameHost(linkUrl,responseUrl))return true;
@@ -155,7 +182,7 @@ export function parseSourcePage(html:string,url:string) {
  const documentLinks=$('a[href]').map((_,el)=>{const href=$(el).attr('href')||'';return /matr[ií]cula|edital/i.test($(el).text())||/\.pdf(?:\?|$)/i.test(href)?new URL(href,url).href:'';}).get().filter(Boolean);
  $('script,style,noscript,header,footer,nav,aside,[class*="related"],[class*="recommend"],[id*="Modal"],[id*="PolPriv"],[id*="Login"],[id*="Rodape"],.modal').remove();
  $('br').replaceWith('\n');$('p,div,h1,h2,h3,h4,li,tr,dt,dd').each((_,el)=>{$(el).append('\n');});
- const title=$('#divDescrLoteTexto').text().trim()||$('h1,h2,h3,h4').map((_,el)=>$(el).text().trim()).get().find(t=>propertyWords.test(norm(t)))||$('h1').first().text().trim()||$('title').text().trim();
+ const title=$('#divDescrLoteTexto').text().trim()||$('h1').map((_,el)=>$(el).text().trim()).get().find(t=>propertyWords.test(norm(t)))||$('h1').first().text().trim()||$('h2,h3,h4').map((_,el)=>$(el).text().trim()).get().find(t=>propertyWords.test(norm(t)))||$('title').text().trim();
  let text=$('body').text().replace(/[\t \u00a0]+/g,' ').replace(/\n\s*\n/g,'\n').trim();
  text=text.replace(/(?:Lote Anterior\s*)?(?:LOTE\s+\d{1,4}\s*){8,}/gi,' ').trim();
  if($('#divDescrLoteTexto').length){const visao=$('#divVisao1').text().replace(/[\t \u00a0]+/g,' ').replace(/\n\s*\n/g,'\n').trim();if(visao)text=visao;}
@@ -187,13 +214,25 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
  const report:FullSyncReport={id:new Date().toISOString().replace(/[:.]/g,'-'),status:'running',reason,startedAt:new Date().toISOString(),targets:SYNC_TARGETS,sources:configs.map(p=>({id:p.id,name:p.name,status:'queued',pages:0,discovered:0,fetched:0,accepted:0,imported:0,updated:0,pending:0,errors:[]}))};
  const dir=path.join('sync-audits','runs',report.id);fs.mkdirSync(dir,{recursive:true});
  const save=()=>{fs.writeFileSync(path.join(dir,'report.json'),JSON.stringify(report,null,2));fs.writeFileSync('sync-audits/latest-listed-sync.json',JSON.stringify(report,null,2));};save();
- let browserPromise:Promise<any>|null=null; let activeRenderPages=0; const renderWaiters:Array<()=>void>=[]; const maxConcurrentRenders=process.env.RENDER==='true'?1:3; const acquireRenderSlot=async()=>{if(activeRenderPages>=maxConcurrentRenders)await new Promise<void>(resolve=>renderWaiters.push(resolve));activeRenderPages++;}; const releaseRenderSlot=()=>{activeRenderPages=Math.max(0,activeRenderPages-1);const next=renderWaiters.shift();if(next)next();};
+ let browserPromise:Promise<any>|null=null; let activeRenderPages=0; const renderWaiters:Array<()=>void>=[]; const maxConcurrentRenders=process.env.RENDER==='true'?2:8;
+ const acquireRenderSlot=async()=>{
+  if(activeRenderPages>=maxConcurrentRenders){
+   let settled=false;
+   await new Promise<void>((resolve,reject)=>{
+    const onFree=()=>{if(!settled){settled=true;resolve();}};
+    // Wait cleanly in FIFO order without aborting HTTP portal discovery
+    renderWaiters.push(onFree);
+   });
+  }
+  activeRenderPages++;
+ };
+ const releaseRenderSlot=()=>{activeRenderPages=Math.max(0,activeRenderPages-1);const next=renderWaiters.shift();if(next)next();};
  const rendered=async(url:string)=>{
-   await acquireRenderSlot(); try{ browserPromise ||= launchPuppeteer(puppeteer, {headless:true,protocolTimeout:90000,args:['--no-sandbox','--disable-dev-shm-usage']});const browser=await browserPromise;
+   await acquireRenderSlot(); try{ browserPromise ||= launchPuppeteer(puppeteer, {headless:true,protocolTimeout:60000,args:['--no-sandbox','--disable-dev-shm-usage']});const browser=await browserPromise;
   const isLeilaoImovel=new URL(url).hostname.endsWith('leilaoimovel.com.br');
   for(let attempt=0;attempt<(isLeilaoImovel?2:1);attempt++){
    const page=await browser.newPage();
-   try{await page.setRequestInterception(true);page.on('request',(req:any)=>{const rt=req.resourceType();if(rt==='image'||rt==='media'||rt==='font'||rt==='stylesheet')req.abort().catch(()=>{});else req.continue().catch(()=>{});});await page.setUserAgent(UA);await page.setExtraHTTPHeaders({'Accept-Language':'pt-BR,pt;q=0.9'});const r=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});if(r&&r.status()>=400){if(isLeilaoImovel&&r.status()===403&&attempt===0){await wait(1500);continue;}throw Error(`HTTP ${r.status()}`);}await page.waitForNetworkIdle({idleTime:600,timeout:8000}).catch(()=>{});const html=await page.content();if(/<title>Just a moment|Access Denied/i.test(html))throw Error('Acesso bloqueado pela fonte');return {html,url:page.url()};}finally{await page.close().catch(()=>{});}
+   try{await page.setRequestInterception(true);page.on('request',(req:any)=>{const rt=req.resourceType();if(rt==='image'||rt==='media'||rt==='font'||rt==='stylesheet')req.abort().catch(()=>{});else req.continue().catch(()=>{});});await page.setUserAgent(UA);await page.setExtraHTTPHeaders({'Accept-Language':'pt-BR,pt;q=0.9'});const r=await page.goto(url,{waitUntil:'domcontentloaded',timeout:20000});if(r&&r.status()>=400){if(isLeilaoImovel&&r.status()===403&&attempt===0){await wait(1500);continue;}throw Error(`HTTP ${r.status()}`);}await page.waitForNetworkIdle({idleTime:500,timeout:4500}).catch(()=>{});const html=await page.content();if(/<title>Just a moment|Access Denied/i.test(html))throw Error('Acesso bloqueado pela fonte');return {html,url:page.url()};}finally{await page.close().catch(()=>{});}
   }
   throw Error('Leilão Imóvel bloqueou a página após duas tentativas via navegador.'); }finally{releaseRenderSlot();}
  };
@@ -206,12 +245,12 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   const load=async(url:string,render=false)=>{
    if(render)return rendered(url);
    const parsedUrl=new URL(url);const legacyPage=/Principal\.asp/i.test(parsedUrl.pathname)&&parsedUrl.searchParams.has('pag');const postFields=legacyPage?new URLSearchParams({pag:parsedUrl.searchParams.get('pag')!,acaoDest:'',pesq:''}):undefined;
-   let r=await fetch(url,{method:legacyPage?'POST':'GET',body:postFields,headers:{'User-Agent':UA,'Accept':'text/html,application/xhtml+xml','Accept-Language':'pt-BR,pt;q=0.9'},signal:AbortSignal.timeout(25000)});if(r.status===429){await wait(3000);r=await fetch(url,{method:legacyPage?'POST':'GET',body:postFields,headers:{'User-Agent':UA,'Accept':'text/html,application/xhtml+xml','Accept-Language':'pt-BR,pt;q=0.9'},signal:AbortSignal.timeout(25000)});}
+   let r=await fetch(url,{method:legacyPage?'POST':'GET',body:postFields,headers:{'User-Agent':UA,'Accept':'text/html,application/xhtml+xml','Accept-Language':'pt-BR,pt;q=0.9'},signal:AbortSignal.timeout(12000)});if(r.status===429){await wait(3000);r=await fetch(url,{method:legacyPage?'POST':'GET',body:postFields,headers:{'User-Agent':UA,'Accept':'text/html,application/xhtml+xml','Accept-Language':'pt-BR,pt;q=0.9'},signal:AbortSignal.timeout(12000)});}
    if(!r.ok)throw Error(`HTTP ${r.status}`);
    const bytes=await r.arrayBuffer();
    return {html:decodeHtml(bytes,r.headers.get('content-type')),url:r.url};
   };
-  const shouldRenderFallback=(error:unknown)=>!(/HTTP\s+(?:401|404|410)\b/i.test(error instanceof Error?error.message:String(error)));
+  const shouldRenderFallback=(error:unknown)=>!(/HTTP\s+(?:400|401|403|404|410|451|500|502|503|504)\b|ENOTFOUND|ECONNREFUSED|ECONNRESET|CERT_|UNABLE_TO_VERIFY|ERR_TLS|fetch failed/i.test(error instanceof Error?error.message:String(error)));
   const canRenderFallback=(portalId:string,error:unknown)=>shouldRenderFallback(error)||isBlockedLeilaoImovelResponse(portalId,error);
   let cursor=0;
  const worker=async()=>{while(cursor<configs.length){const index=cursor++;const config=configs[index];const progress=report.sources[index];progress.status='running';progress.startedAt=new Date().toISOString();save();console.log(`[Listed Sync] ${config.name}: iniciando`);
@@ -221,7 +260,11 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   else if(config.id==='freitas'){listingQueue.push(...[1,2,3,4,5].map(p=>`${cleanBase}/Leiloes/PesquisarLotes?Nome=&Categoria=2&TipoLoteId=0&FaixaValor=0&Pagina=${p}`),`${cleanBase}/Leiloes/Pesquisar?Categoria=2`);}
   else if(config.searchUrl && !listingQueue.includes(cleanBase) && !config.searchUrl.startsWith(`${cleanBase}/lotes/imovel`)){listingQueue.push(cleanBase);}
   const seenPages=new Set<string>();const details=new Map<string,string>();const seenDetails=new Set<string>();const batches:ScrapedAuctionDraft[]=[];
-  let renderCalls=0;const maxListingRenders=16;let navigated=false;const pageSignatures=new Set<string>();let confirmedEmpty=false;
+  const portalStartedAt=Date.now();
+  const isUnlimitedSource=HIGH_PRIORITY_IDS.has(config.id)||Boolean((config as any).suporteApi);
+  const maxPortalPages=HIGH_PRIORITY_IDS.has(config.id)?60:20;
+  const portalSoftDeadlineMs=HIGH_PRIORITY_IDS.has(config.id)?180_000:45_000;
+  let renderCalls=0;const maxListingRenders=isUnlimitedSource?16:6;let navigated=false;const pageSignatures=new Set<string>();let confirmedEmpty=false;
   let lastFlushAt=0;
   const flush=async()=>{if(!batches.length)return;const rows=batches.splice(0);lastFlushAt=Date.now();fs.appendFileSync(path.join(dir,config.id+'.jsonl'),rows.map(r=>JSON.stringify(r)).join('\n')+'\n');const audits=rows.filter(r=>r.areaAudit).map(r=>JSON.stringify({source:config.id,url:r.auctionLink,...r.areaAudit}));if(audits.length)fs.appendFileSync(path.join(dir,'area-audit.jsonl'),audits.join('\n')+'\n');const counts=await onDrafts(rows,progress);progress.imported+=counts.imported;progress.updated+=counts.updated;progress.pending+=counts.pending;save();};
   try{
@@ -273,6 +316,26 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
      progress.status='completed';
      continue;
     }
+    if(config.id==='megaleiloes'){
+     navigated=true;
+     for (const target of SYNC_TARGETS) {
+       const [exRows, judRows] = await Promise.all([
+         scrapeMegaLeiloes('extrajudicial', target.state, target.city),
+         scrapeMegaLeiloes('judicial', target.state, target.city),
+       ]);
+       const combined = [...exRows, ...judRows];
+       progress.pages++;
+       progress.discovered += combined.length;
+       progress.fetched += combined.length;
+       progress.accepted += combined.length;
+       if (combined.length) {
+         batches.push(...combined);
+         await flush();
+       }
+     }
+     progress.status = 'completed';
+     continue;
+    }
     if(['emgea','vitrinebradesco','pestana','mariafilomena','santander','sold','superbid'].includes(config.id)){
     const onPage=async(rows:ScrapedAuctionDraft[],total:number)=>{navigated=true;progress.pages++;progress.discovered+=total;progress.fetched+=total;progress.accepted+=rows.length;batches.push(...rows.map(row=>({...row,sourceEvidencePath:preserveSource(row.auctionLink,'<pre>'+JSON.stringify(row)+'</pre>')})));await flush();save();};
     if(config.id==='pestana')await collectPestanaApi(dir,onPage);
@@ -288,7 +351,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
      await collectRioLinks(dir,async(links)=>{navigated=true;progress.pages++;for(const link of links)details.set(link.url,link.text);progress.discovered=details.size;save();},config.baseUrl,config.id);
     }catch(error:any){if(config.id==='rioleiloes')throw error;}
    }
-   while(listingQueue.length && progress.pages<120){const requested=listingQueue.shift()!;const key=canonicalAuctionLink(requested);if(seenPages.has(key)||seenDetails.has(key))continue;seenPages.add(key);
+   while(listingQueue.length && progress.pages<maxPortalPages && Date.now()-portalStartedAt<portalSoftDeadlineMs){const requested=listingQueue.shift()!;const key=canonicalAuctionLink(requested);if(seenPages.has(key)||seenDetails.has(key))continue;seenPages.add(key);
      try{
       if(config.id==='leilaoimovel'&&progress.pages>0)await wait(1200);
       let response;try{response=await load(requested);}catch(error){if((renderCalls>=maxListingRenders&&!isBlockedLeilaoImovelResponse(config.id,error))||!canRenderFallback(config.id,error))throw error;renderCalls++;response=await load(requested,true);}
@@ -361,7 +424,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
       const initial:ScrapedAuctionDraft={portalId:sourcePortal.id,auctioneerName:sourcePortal.name,title:page.title,address:'',neighborhood:'',city:location.city,state:location.state,propertyType:'Apartamento',sizeSqm:0,auctionPrice:0,auctionDate:'',auctionLink:canonicalAuctionLink(response.url),description:page.text,origin:bankIds.has(sourcePortal.id)?'extrajudicial':'judicial',locationScopeVerified:true};
       page={...page,sourceEvidencePath:preserveSource(response.url,response.html)} as any;
       let draft=parseOfficialLotDetail(initial,page,response.url);
-      if(!draft.priceVerified || !draft.addressVerified || draft.areaAudit?.status==='missing') {
+      if((!draft.priceVerified && page.text.length < 300) || (isDetailSpa && (!draft.priceVerified || !draft.addressVerified))) {
        try { const renderedResponse=await load(url,true);const renderedPage=parseSourcePage(renderedResponse.html,renderedResponse.url);const checked=parseOfficialLotDetail(initial,{...renderedPage,sourceEvidencePath:preserveSource(renderedResponse.url,renderedResponse.html)},renderedResponse.url);if(checked.priceVerified||checked.areaAudit?.selected||checked.addressVerified){draft={...checked,...(!checked.priceVerified&&draft.priceVerified?{auctionPrice:draft.auctionPrice,priceVerified:true,firstAuctionPrice:draft.firstAuctionPrice,secondAuctionPrice:draft.secondAuctionPrice}:{}),...(!checked.sizeVerified&&draft.sizeVerified?{sizeSqm:draft.sizeSqm,sizeVerified:true,areaAudit:draft.areaAudit}:{})};page=renderedPage;} }
        catch(error:any){progress.errors.push({url,message:'Conferência de área no navegador: '+error.message});}
       }
@@ -375,8 +438,8 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
      // Detail pages are independent once discovered. A small per-portal pool
      // cuts long sequential scans without hammering any single auctioneer.
      let detailCursor=0;
-     const detailWorker=async()=>{while(detailCursor<pending.length){const item=pending[detailCursor++];await processDetail(item);}};
-      await Promise.all(Array.from({length:Math.min(2,pending.length)},detailWorker));
+     const detailWorker=async()=>{while(detailCursor<pending.length && Date.now()-portalStartedAt<portalSoftDeadlineMs){const item=pending[detailCursor++];await processDetail(item);}};
+      await Promise.all(Array.from({length:Math.min(3,pending.length)},detailWorker));
     await flush();save();
    }
    if(!progress.discovered&&!confirmedEmpty)progress.errors.push({url:config.baseUrl,message:'Nenhum lote identificado; a ausência de ofertas não foi confirmada.'});
@@ -387,7 +450,7 @@ export async function runListedPortalSync(reason:string,onDrafts:(rows:ScrapedAu
   // Keep the machine responsive while the opening sync is running. Each
   // portal can still use two detail requests, so three portal workers cap the
   // total at six detail pages instead of twelve competing for memory/CPU.
-  const portalConcurrency = process.env.RENDER === 'true' ? 3 : 6;
+  const portalConcurrency = process.env.RENDER === 'true' ? 4 : 10;
   try{await Promise.all(Array.from({length:Math.min(portalConcurrency,configs.length)},worker));report.status=report.sources.every(s=>s.status==='completed')?'completed':'partial';}
  catch(error){report.status='failed';throw error;}
  finally{if(browserPromise){const browser=await browserPromise.catch(()=>null);if(browser)await browser.close().catch(()=>{});}report.finishedAt=new Date().toISOString();save();}

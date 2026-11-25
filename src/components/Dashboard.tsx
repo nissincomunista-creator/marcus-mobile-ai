@@ -493,16 +493,17 @@ export default function Dashboard({
 
   const normalizeAuctioneerDisplay = useCallback((rawName?: string, link?: string): string => {
     const lk = (link || '').toLowerCase();
-    let name = (rawName || '').trim();
-    if (/^emgea$/i.test(name) || lk.includes('emgeaimoveis')) return 'EMGEA Imóveis';
-    if (/^fabiano\s+ayupp(?:\s+leiloeiro)?$/i.test(name) || lk.includes('fabianoayupp')) return 'Fabiano Ayupp';
-    if (lk.includes('sold.com.br') || /^sold(?:\s+leil[oõ]es)?$/i.test(name)) return 'Sold Leilões';
+    const name = (rawName || '').trim();
+    const normName = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (/^emgea$/i.test(normName) || lk.includes('emgeaimoveis')) return 'EMGEA Imóveis';
+    if (/^fabiano\s+ayupp(?:\s+leiloeiro)?$/i.test(normName) || lk.includes('fabianoayupp')) return 'Fabiano Ayupp';
+    if (lk.includes('sold.com.br') || /^sold(?:\s+leiloes)?$/i.test(normName)) return 'Sold Leilões';
+    if (lk.includes('megaleiloes') || /^mega\s*leiloes/.test(normName)) return 'Mega Leilões';
+    if (lk.includes('portalzuk') || /^portal\s*zuk/.test(normName)) return 'Portal Zuk';
+    if (lk.includes('biasileiloes') || /^biasi/.test(normName)) return 'Biasi Leilões';
+    if (lk.includes('frazaoleiloes') || lk.includes('frazao') || /^frazao/.test(normName)) return 'Frazão Leilões';
+    if (lk.includes('santanderimoveis') || /^santander/.test(normName)) return 'Santander Imóveis';
     if (!name && lk) {
-      if (lk.includes('portalzuk')) return 'Portal Zuk';
-      if (lk.includes('megaleiloes')) return 'Mega Leilões';
-      if (lk.includes('biasileiloes')) return 'Biasi Leilões';
-      if (lk.includes('frazaoleiloes') || lk.includes('frazao')) return 'Frazão Leilões';
-      if (lk.includes('santanderimoveis') || lk.includes('santander')) return 'Santander Imóveis';
       if (lk.includes('isaiasleiloes')) return 'Isaías Leilões';
       if (lk.includes('silasleiloeiro') || lk.includes('silas')) return 'Silas Leiloeiro';
       if (lk.includes('portellaleiloes')) return 'Portella Leilões';
@@ -530,11 +531,18 @@ export default function Dashboard({
     return name;
   }, []);
 
+  const isActiveAuctionRecord = useCallback((a: AuctionProperty) => {
+    if (a.availability?.state === 'closed' || a.availability?.state === 'removed' || a.sourceClosed === true) return false;
+    if (a.status && /arrematad|encerrad|cancelad|suspens|sustad|finalizad|vendid|retirad|expirad/i.test(a.status)) return false;
+    if (a.ingestionStatus === 'expirado_por_data' || a.ingestionStatus === 'finalizado') return false;
+    return true;
+  }, []);
+
   // Dynamic Extrajudicial Auctioneers derivation
   const activeExtrajudicialAuctioneers = useMemo(() => {
     const counts = new Map<string, number>();
     for (const a of auctions) {
-      if (a.origin === 'extrajudicial') {
+      if (a.origin === 'extrajudicial' && isActiveAuctionRecord(a)) {
         const name = normalizeAuctioneerDisplay(a.auctioneerName || a.leiloeiro, a.auctionLink);
         if (name && name !== 'Caixa Econômica Federal' && name !== 'Caixa') {
           counts.set(name, (counts.get(name) || 0) + 1);
@@ -549,13 +557,13 @@ export default function Dashboard({
       }
     }
     return list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [auctions, normalizeAuctioneerDisplay]);
+  }, [auctions, normalizeAuctioneerDisplay, isActiveAuctionRecord]);
 
   // Dynamic Judicial Auctioneers derivation
   const activeJudicialAuctioneers = useMemo(() => {
     const counts = new Map<string, number>();
     for (const a of auctions) {
-      if (a.origin === 'judicial') {
+      if (a.origin === 'judicial' && isActiveAuctionRecord(a)) {
         const name = normalizeAuctioneerDisplay(a.auctioneerName || a.leiloeiro, a.auctionLink);
         if (name && name !== 'Caixa Econômica Federal' && name !== 'Caixa') {
           counts.set(name, (counts.get(name) || 0) + 1);
@@ -570,7 +578,7 @@ export default function Dashboard({
       }
     }
     return list.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [auctions, normalizeAuctioneerDisplay]);
+  }, [auctions, normalizeAuctioneerDisplay, isActiveAuctionRecord]);
 
   // Portal counts for backwards compatibility
   const zukAuctionsCount = useMemo(() => {
@@ -612,10 +620,10 @@ export default function Dashboard({
     }
 
     if (selectedAuctioneerFilter) {
-      const q = selectedAuctioneerFilter.toLowerCase();
+      const q = normalizeText(selectedAuctioneerFilter);
       const qClean = q.replace(/[^a-z0-9]/g, '');
-      const displayName = normalizeAuctioneerDisplay(a.auctioneerName || a.leiloeiro, a.auctionLink).toLowerCase();
-      const aucName = (a.auctioneerName || a.leiloeiro || '').toLowerCase();
+      const displayName = normalizeText(normalizeAuctioneerDisplay(a.auctioneerName || a.leiloeiro, a.auctionLink));
+      const aucName = normalizeText(a.auctioneerName || a.leiloeiro || '');
       const aucLink = (a.auctionLink || '').toLowerCase();
       const srcLinks = (a.sourceLinks || []).join(' ').toLowerCase();
       const aucId = (a.id || '').toLowerCase();
