@@ -3,17 +3,33 @@ import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import * as cheerio from 'cheerio';
-import { parseOfficialLotDetail, type ScrapedAuctionDraft } from './auctioneerSyncService.ts';
+import { extractAddress, parseOfficialLotDetail, type ScrapedAuctionDraft } from './auctioneerSyncService.ts';
 import { allowedSyncLocation } from './src/utils/auctionSyncScope.ts';
 import { sourceAuctionLocation } from './src/utils/auctionGeography.ts';
 
-const API = 'https://yfvun6xbh1.execute-api.us-east-2.amazonaws.com/prod/emgea/property';
+const EMGEA_API_DEFAULT = 'https://yfvun6xbh1.execute-api.us-east-2.amazonaws.com/prod/emgea/property';
 const dateOnly = (value: string) => {
   if (!value) return '';
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0,10);
   const m=value.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
 };
+function inferEmgeaNeighborhood(row: any, city: string): string {
+  const explicit = String(row.endereco?.bairro || row.neighborhood || '').trim();
+  if (explicit) return explicit;
+  const full = String(row.endereco?.endereco_completo || '');
+  if (full && city) {
+    const escapedCity = city.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const m = full.match(new RegExp(`,\\s*([^,]+?)\\s*,\\s*${escapedCity}\\b`, 'i'));
+    if (m?.[1] && !/^(?:unidade|bloco|apto|sala|casa|quadra|lote)/i.test(m[1].trim())) {
+      return m[1].trim();
+    }
+  }
+  const titleParts = String(row.nome_imovel || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+  const tail = titleParts.at(-1) || '';
+  if (tail && !/residencial|comercial|apartamento|casa|terreno|loja|sala/i.test(tail)) return tail;
+  return '';
+}
 export function bankApiDraft(id:string, row:any):ScrapedAuctionDraft|null {
   const emgea=id==='emgea';
   const city=emgea?row.endereco?.cidade:row.city;
@@ -21,7 +37,10 @@ export function bankApiDraft(id:string, row:any):ScrapedAuctionDraft|null {
   if(!allowedSyncLocation(city,state))return null;
   const title=emgea?row.nome_imovel:row.name;
   const description=emgea?row.descricao:row.description;
-  const address=emgea?row.endereco?.endereco_completo:'';
+  const address=emgea
+    ? (row.endereco?.endereco_completo || '')
+    : (row.address || row.endereco?.endereco_completo || extractAddress(`${title || ''}\n${description || ''}`, '') || '');
+  const neighborhood=emgea?inferEmgeaNeighborhood(row,city):(row.neighborhood||'');
   const url=emgea?`https://www.emgeaimoveis.com.br/imovel/${state}/${city.replace(/ /g,'-')}/${row.id_banco}`:`https://vitrinebradesco.com.br/auctions/${row.slug}`;
   const dates=emgea?[{date:dateOnly(row.data_melhor_proposta||row.data_venda),price:Number(row.valores?.valor_venda)}]:!row.date_auction_1&&!row.date_auction_2?[{date:dateOnly(row.auction_date),price:Number(row.price)}]:[
     {date:dateOnly(row.date_auction_1),price:Number(row.min_auction_value_1)},
@@ -29,10 +48,10 @@ export function bankApiDraft(id:string, row:any):ScrapedAuctionDraft|null {
   const today=new Date().toISOString().slice(0,10);
   const next=dates.filter(d=>d.date>=today&&d.price>0).sort((a,b)=>a.date.localeCompare(b.date))[0];
   const selected=next||dates[dates.length-1];
-  const text=[title,description,address?`Endereço: ${address}`:'',`${city}/${state}`].filter(Boolean).join('\n');
-  const base:ScrapedAuctionDraft={portalId:id,auctioneerName:emgea?'EMGEA':'Vitrine Bradesco',title,address:address||'',neighborhood:row.neighborhood||'',city,state,propertyType:'Apartamento',sizeSqm:0,auctionPrice:0,auctionDate:'',auctionLink:url,origin:'extrajudicial',locationScopeVerified:true};
+  const text=[title,description,address?`Endereço: ${address}`:'',neighborhood?`Bairro: ${neighborhood}`:'',`${city}/${state}`].filter(Boolean).join('\n');
+  const base:ScrapedAuctionDraft={portalId:id,auctioneerName:emgea?'EMGEA':'Vitrine Bradesco',title,address:address||'',neighborhood,city,state,propertyType:'Apartamento',sizeSqm:0,auctionPrice:0,auctionDate:'',auctionLink:url,origin:'extrajudicial',locationScopeVerified:true};
   const draft=parseOfficialLotDetail(base,{text,title,image:emgea?row.foto_capa:(typeof row.images?.[0]==='string'?row.images[0]:''),structuredAddresses:address?[address]:[],structuredSizes:[],documentLinks:[]},url);
-  return {...draft,city,state,origin:'extrajudicial',originVerified:true,sourceVerified:true,sellerBank:emgea?'EMGEA':'Bradesco',
+  return {...draft,city,state,neighborhood:draft.neighborhood||neighborhood,origin:'extrajudicial',originVerified:true,sourceVerified:true,sellerBank:emgea?'EMGEA':'Bradesco',
     auctionPrice:selected?.price>0?selected.price:0,priceVerified:selected?.price>0,auctionDate:selected?.date||'',firstAuctionDate:dates[0]?.date||undefined,secondAuctionDate:dates[1]?.date||undefined,
     sourceClosed:emgea?row.status_da_venda!=='ativo':Boolean(dates.every(d=>d.date&&d.date<today)),
     estimatedValue:emgea&&Number(row.valores?.valor_avaliado)>0?Number(row.valores.valor_avaliado):draft.estimatedValue,
@@ -43,26 +62,59 @@ export function bankApiDraft(id:string, row:any):ScrapedAuctionDraft|null {
 // These are the same public inventory APIs requested by the portals themselves.
 // Save every response and verify page totals instead of accepting the first screen.
 export async function collectBankApi(id:string,dir:string,onPage:(rows:ScrapedAuctionDraft[],total:number)=>Promise<void>) {
-  let headers:Record<string,string>={};
+  const seen=new Set<string>();let maximum=1;
+  const processRecords=async(body:any,pageNum:number)=>{
+    const records=body?.data;
+    if(!Array.isArray(records))throw Error('Resposta da API sem inventário de imóveis');
+    fs.writeFileSync(path.join(dir,`${id}-api-${pageNum}.json`),JSON.stringify(body));
+    maximum=Number(id==='emgea'?body.pagination?.max_pages:body.total_pages)||1;
+    if(!records.length)return false;
+    const fresh=records.filter((row:any)=>{const key=String(row.id||row.guid||row.id_banco);if(seen.has(key))return false;seen.add(key);return true;});
+    if(fresh.length)await onPage(fresh.map((row:any)=>bankApiDraft(id,row)).filter(Boolean) as ScrapedAuctionDraft[],records.length);
+    return true;
+  };
+
   if(id==='emgea'){
     const browser=await launchPuppeteer(puppeteer, {headless:true,args:['--no-sandbox']});
-    try{const page=await browser.newPage();page.on('request',request=>{if(request.url().split('?')[0]===API)headers=request.headers();});
-      await page.goto('https://www.emgeaimoveis.com.br/busca',{waitUntil:'networkidle2',timeout:45000});
-      if(!headers['x-api-key'])throw Error('A página oficial não forneceu acesso à API pública de imóveis');
+    try{
+      const page=await browser.newPage();
+      await page.setRequestInterception(true);
+      let apiEndpoint=EMGEA_API_DEFAULT;
+      let apiKey='';
+      page.on('request',request=>{
+        const rt=request.resourceType();
+        if(['image','stylesheet','font','media'].includes(rt)){void request.abort();return;}
+        const u=request.url().split('?')[0];
+        if(/execute-api.*\/emgea\/property/i.test(u)&&request.headers()['x-api-key']){
+          apiEndpoint=u;
+          apiKey=request.headers()['x-api-key'];
+        }
+        void request.continue();
+      });
+      await page.goto('https://www.emgeaimoveis.com.br/busca',{waitUntil:'domcontentloaded',timeout:45000});
+      for(let i=0;i<50&&!apiKey;i++)await new Promise(r=>setTimeout(r,300));
+      if(!apiKey)throw Error('A página oficial EMGEA não forneceu acesso à API pública de imóveis');
+      for(let pageNum=1;pageNum<=maximum;pageNum++){
+        const res=await page.evaluate(async(url:string,key:string)=>{
+          const r=await fetch(url,{headers:{'x-api-key':key}});
+          const txt=await r.text();
+          return {ok:r.ok,status:r.status,txt};
+        },`${apiEndpoint}?page=${pageNum}`,apiKey);
+        if(!res.ok)throw Error(`${apiEndpoint}?page=${pageNum}: HTTP ${res.status}`);
+        const cont=await processRecords(JSON.parse(res.txt),pageNum);
+        if(!cont)break;
+      }
+      return;
     }finally{await browser.close();}
   }
-  const seen=new Set<string>();let maximum=1;let expected=0;
+
+  const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36','Origin':'https://vitrinebradesco.com.br','Referer':'https://vitrinebradesco.com.br/'};
   for(let page=1;page<=maximum;page++){
-    const url=id==='emgea'?`${API}?page=${page}`:`https://api.vitrinebradesco.com.br/v1/auctions?page=${page}&type=realstate`;
+    const url=`https://api.vitrinebradesco.com.br/v1/auctions?page=${page}&type=realstate`;
     const response=await fetch(url,{headers,signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error(`${url}: HTTP ${response.status}`);
-    const body=await response.json();const records=body.data;
-    if(!Array.isArray(records))throw Error('Resposta da API sem inventário de imóveis');
-    fs.writeFileSync(path.join(dir,`${id}-api-${page}.json`),JSON.stringify(body));
-    maximum=Number(id==='emgea'?body.pagination.max_pages:body.total_pages);expected=Number(body.pagination?.total_items||0);
-    if(!Number.isInteger(maximum)||maximum<1)throw Error('Paginação inconsistente na API oficial');
-    if(!records.length)break;
-    const fresh=records.filter((row:any)=>{const key=String(row.id||row.guid);if(seen.has(key))return false;seen.add(key);return true;});
-    if(fresh.length)await onPage(fresh.map((row:any)=>bankApiDraft(id,row)).filter(Boolean),records.length);
+    const body=await response.json();
+    const cont=await processRecords(body,page);
+    if(!cont)break;
   }
 }
 
@@ -281,60 +333,82 @@ export async function collectPestanaApi(dir:string,onPage:(rows:ScrapedAuctionDr
  }
 }
 
-export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
+export function suporteLotToDraft(
+  config: { id: string; name: string; baseUrl: string },
+  lot: any
+): ScrapedAuctionDraft | null {
   if (!lot) return null;
-  const rawTitle = lot.nm_titulo_lote || '';
-  const rawAuctionTitle = lot.nm_titulo_leilao || '';
+  const rawTitle = String(lot.nm_titulo_lote || lot.nm_lote || '').trim();
+  const rawAuctionTitle = String(lot.nm_titulo_leilao || '').trim();
   if (/simula[cç][aã]o|teste/i.test(rawTitle) || /simula[cç][aã]o|teste/i.test(rawAuctionTitle)) return null;
 
-  const city = lot.nm_cidade || '';
-  const state = (lot.nm_estado || '').toUpperCase();
+  if (lot.imovel_id === null && (lot.veiculo_id || lot.equipamento_id)) return null;
+  const subcatRaw = `${lot.nm_categoria || ''} ${lot.nm_subcategoria || ''}`.toLowerCase();
+  if (/\b(?:ve[ií]culo|carro|moto|caminh[aã]o|sucata|m[oó]vel|m[aá]quina|equipamento|eletro|onibus)\b/i.test(subcatRaw) &&
+      !/\b(?:im[oó]ve|casa|apartamento|terreno|sala|loja|galp[aã]o|ch[aá]cara|s[ií]tio)\b/i.test(subcatRaw)) {
+    return null;
+  }
+
+  const city = String(lot.nm_cidade || '').trim();
+  const state = String(lot.nm_estado || '').trim().toUpperCase();
   if (!allowedSyncLocation(city, state)) return null;
 
-  const descHtml = lot.nm_descricao || '';
+  const cleanBase = config.baseUrl.replace(/\/$/, '');
+  const descHtml = String(lot.nm_descricao || '');
   const $ = cheerio.load(descHtml);
   const descText = $('body').text().replace(/\s+/g, ' ').trim();
-  
+
   const title = rawTitle || descText.slice(0, 100);
-  const url = `https://www.leiloesmariafilomena.com.br/leilao/index/leilao_id/${lot.leilao_id}/lote/${lot.lote_id}`;
-  
+  const rawLink = String(lot.nm_link || '').trim();
+  let url = `${cleanBase}/leilao/index/leilao_id/${lot.leilao_id}/lote/${lot.lote_id}`;
+  if (rawLink) {
+    try { url = new URL(rawLink, cleanBase).href; } catch {}
+  }
+
   let propertyType: 'Apartamento' | 'Casa' | 'Comercial' | 'Terreno' = 'Apartamento';
-  const subcat = (lot.nm_subcategoria || '').toLowerCase();
-  if (subcat.includes('casa')) propertyType = 'Casa';
-  else if (subcat.includes('terreno') || subcat.includes('lote') || subcat.includes('chácara') || subcat.includes('sítio')) propertyType = 'Terreno';
-  else if (subcat.includes('comercial') || subcat.includes('sala') || subcat.includes('escritório') || subcat.includes('vaga') || subcat.includes('box')) propertyType = 'Comercial';
-  
-  const price = Number(lot.vl_lanceinicial || lot.vl_lanceminimo || 0);
-  const dateRaw = lot.dt_fechamento || '';
+  const typeText = `${subcatRaw} ${title}`.toLowerCase();
+  if (/\bcasa\b|\bsobrado\b/.test(typeText)) propertyType = 'Casa';
+  else if (/\bterreno\b|\blote\b|\bch[aá]cara\b|\bs[ií]tio\b|\bfazenda\b|\bgleba\b/.test(typeText)) propertyType = 'Terreno';
+  else if (/\bcomercial\b|\bsala\b|\bescrit[oó]rio\b|\bloja\b|\bgalp[aã]o\b|\bvaga\b|\bbox\b/.test(typeText)) propertyType = 'Comercial';
+
+  const price = Number(lot.vl_lanceinicial || lot.vl_lanceminimo || lot.vl_venda || lot.vl_valor || 0);
+  const secondPrice = Number(lot.vl_lanceinicialsegundoleilao || 0);
+  const dateRaw = String(lot.dt_fechamento || lot.dt_abertura || '');
   const dateOnlyStr = dateRaw ? dateRaw.slice(0, 10) : '';
-  
+
   const matriculaAnexo = (lot.anexos || []).find((a: any) => /matr[íi]cula/i.test(a.nm || ''));
   const matriculaUrl = matriculaAnexo?.nm_path_completo || '';
-  
   const matriculaMatch = descText.match(/Matr[íi]cula\s+(?:n[ºo°]\s*)?([0-9.]+)/i);
   const matriculaNumber = matriculaMatch ? matriculaMatch[1].replace(/\./g, '') : undefined;
-  
-  const isOccupied = /OCUPA[CÇ][AÃ]O:\s*OCUPADO/i.test(descText) ? true : /DESOCUPADO/i.test(descText) ? false : undefined;
-  
-  const allowsInstallments = /pagamento parcelado|parcelamento|saldo restante poderá ser realizado em até/i.test(descText);
-  const parcelasMatch = descText.match(/at[ée]\s*(\d+)\s*parcelas/i);
-  const maxInstallments = parcelasMatch ? Number(parcelasMatch[1]) : allowsInstallments ? 30 : 0;
-  
-  const entradaMatch = descText.match(/sinal(?:\s+correspondente\s+a)?\s*(\d+)%/i);
-  const minDownpaymentPercent = entradaMatch ? Number(entradaMatch[1]) : allowsInstallments ? 20 : 100;
-  
-  const addrMatch = descText.match(/situado\s+(?:na|no|à|ao)\s+([^,]+,\s*n[ºo°]?\s*[^,]+(?:,[^.]+)?)/i);
-  const address = addrMatch ? addrMatch[1].trim() : '';
-  
-  const bairroMatch = descText.match(/,\s*([A-ZÀ-ÿ\s]{3,30}),\s*(?:Rio de Janeiro|Niterói|São Gonçalo|Nova Iguaçu|Maricá)/i);
-  const neighborhood = bairroMatch ? bairroMatch[1].trim() : '';
 
-  const imageUrl = lot.fotos?.[0]?.nm_path_completo || '';
-  const origin: 'extrajudicial' | 'judicial' = (lot.nm_statusleilao || '').toLowerCase().includes('judicial') && !(lot.nm_statusleilao || '').toLowerCase().includes('extrajudicial') ? 'judicial' : 'extrajudicial';
+  const isOccupied = /OCUPA[CÇ][AÃ]O:\s*OCUPADO/i.test(descText) ? true : /DESOCUPADO/i.test(descText) ? false : undefined;
+  const allowsInstallments = Number(lot.nu_parcelas || 0) > 1 || /pagamento parcelado|parcelamento|saldo restante poderá ser realizado em até/i.test(descText);
+  const parcelasMatch = descText.match(/at[ée]\s*(\d+)\s*parcelas/i);
+  const maxInstallments = Number(lot.nu_parcelas || 0) > 0 ? Number(lot.nu_parcelas) : (parcelasMatch ? Number(parcelasMatch[1]) : allowsInstallments ? 30 : 0);
+  const entradaMatch = descText.match(/sinal(?:\s+correspondente\s+a)?\s*(\d+)%/i);
+  const minDownpaymentPercent = Number(lot.vl_percentualentrada || 0) > 0 ? Number(lot.vl_percentualentrada) : (entradaMatch ? Number(entradaMatch[1]) : allowsInstallments ? 20 : 100);
+
+  const addrMatch = descText.match(/situado\s+(?:na|no|à|ao)\s+([^,]+,\s*n[ºo°]?\s*[^,]+(?:,[^.]+)?)/i);
+  const address = String(lot.nm_endereco || '').trim()
+    || (addrMatch ? addrMatch[1].trim() : '')
+    || extractAddress(`${title}\n${descText}`, '')
+    || '';
+
+  const bairroMatch = descText.match(/,\s*([A-ZÀ-ÿ\s]{3,30}),\s*(?:Rio de Janeiro|Niterói|Juiz de Fora)/i);
+  const neighborhood = String(lot.nm_bairro || '').trim() || (bairroMatch ? bairroMatch[1].trim() : '');
+
+  const rawImg = String(lot.fotos?.[0]?.nm_path_completo || lot.nm_foto_capa || lot.foto || '').trim();
+  let imageUrl = rawImg;
+  if (rawImg && !/^https?:\/\//i.test(rawImg)) {
+    try { imageUrl = new URL(rawImg, cleanBase).href; } catch {}
+  }
+
+  const originText = String(lot.nm_statusleilao || lot.nm_tipo_leilao || rawAuctionTitle || descText).toLowerCase();
+  const origin: 'extrajudicial' | 'judicial' = originText.includes('judicial') && !originText.includes('extrajudicial') ? 'judicial' : 'extrajudicial';
 
   const base: ScrapedAuctionDraft = {
-    portalId: 'mariafilomena',
-    auctioneerName: 'Leilões Maria Filomena',
+    portalId: config.id,
+    auctioneerName: config.name,
     title,
     address,
     neighborhood,
@@ -344,6 +418,7 @@ export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
     sizeSqm: 0,
     auctionPrice: price,
     firstAuctionPrice: price,
+    secondAuctionPrice: secondPrice > 0 ? secondPrice : undefined,
     auctionDate: dateOnlyStr,
     firstAuctionDate: dateOnlyStr,
     auctionLink: url,
@@ -374,13 +449,15 @@ export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
       priceVerified: price > 0,
       auctionDate: dateOnlyStr,
       firstAuctionPrice: price,
-      firstAuctionDate: dateOnlyStr
+      firstAuctionDate: dateOnlyStr,
+      ...(secondPrice > 0 ? { secondAuctionPrice: secondPrice } : {})
     }
   }, url, '', matriculaUrl);
   return {
     ...parsed,
     city,
     state,
+    neighborhood: parsed.neighborhood || neighborhood,
     origin,
     originVerified: true,
     sourceVerified: true,
@@ -389,32 +466,126 @@ export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
   };
 }
 
+export function mariaFilomenaLotToDraft(lot: any): ScrapedAuctionDraft | null {
+  return suporteLotToDraft(
+    { id: 'mariafilomena', name: 'Leilões Maria Filomena', baseUrl: 'https://www.leiloesmariafilomena.com.br' },
+    lot
+  );
+}
+
+export async function collectSuporteApi(
+  config: { id: string; name: string; baseUrl: string },
+  dir: string,
+  onPage: (rows: ScrapedAuctionDraft[], total: number) => Promise<void>,
+  options?: { probeTimeoutMs?: number }
+): Promise<boolean> {
+  const candidates = [config.baseUrl.replace(/\/$/, '')];
+  if (!candidates[0].includes('://www.')) {
+    candidates.push(candidates[0].replace('://', '://www.'));
+  }
+
+  let activeBase = candidates[0];
+  let categoria = '3';
+  let firstData: any = null;
+
+  const fetchCat = async (base: string, cat: string, pg: number, timeoutMs: number) => {
+    const form = new URLSearchParams({ pg: String(pg), tipo: '', categoria: cat, estado: '', cidade: '' });
+    const response = await fetch(`${base}/core/api/get-lotes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': base,
+      },
+      body: form,
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!response.ok) return null;
+    const txt = await response.text();
+    if (!txt.trim().startsWith('{')) return null;
+    return JSON.parse(txt);
+  };
+
+  for (const base of candidates) {
+    const res = await fetchCat(base, '3', 1, options?.probeTimeoutMs ?? 8000).catch(() => null);
+    if (res && Array.isArray(res.items)) {
+      activeBase = base;
+      firstData = res;
+      break;
+    }
+  }
+  if (!firstData || !Array.isArray(firstData.items)) return false;
+
+  if (firstData.items.length === 0 && Number(firstData.totalPages || 0) === 0) {
+    const allCat = await fetchCat(activeBase, '', 1, options?.probeTimeoutMs ?? 8000).catch(() => null);
+    if (allCat && Array.isArray(allCat.items) && allCat.items.length > 0) {
+      categoria = '';
+      firstData = allCat;
+    }
+  }
+
+  let page = 1;
+  let totalPages = Math.min(50, Math.max(1, Number(firstData.totalPages) || 1));
+  while (page <= totalPages) {
+    const data = page === 1 ? firstData : await fetchCat(activeBase, categoria, page, 25000).catch(() => null);
+    if (!data || !Array.isArray(data.items)) break;
+    fs.writeFileSync(path.join(dir, `${config.id}-api-${page}.json`), JSON.stringify(data));
+    totalPages = Math.min(50, Math.max(totalPages, Number(data.totalPages) || 1));
+    const items = data.items;
+    const drafts: ScrapedAuctionDraft[] = [];
+    for (const lot of items) {
+      const draft = suporteLotToDraft({ ...config, baseUrl: activeBase }, lot);
+      if (draft) drafts.push(draft);
+    }
+    await onPage(drafts, items.length);
+    if (!items.length) break;
+    page++;
+  }
+  return true;
+}
+
+export async function collectDoulheTresLinks(
+  baseUrl: string,
+  timeoutMs = 6000
+): Promise<Array<{ url: string; text: string }> | null> {
+  const cleanBase = baseUrl.replace(/\/$/, '');
+  const tryUrl = async (b: string) => {
+    const r = await fetch(`${b}/api-publica/stale/dados-home-lotes/imobiliario/categorias/imoveis`, {
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return Array.isArray(j) ? { base: b, items: j } : null;
+  };
+  let found = await tryUrl(cleanBase).catch(() => null);
+  if (!found && !cleanBase.includes('://www.')) {
+    found = await tryUrl(cleanBase.replace('://', '://www.')).catch(() => null);
+  }
+  if (!found) return null;
+  const links: Array<{ url: string; text: string }> = [];
+  for (const item of found.items) {
+    if (!item?.id || !item?.id_leilao) continue;
+    const title = String(item.titulo || item.leilao?.titulo || '').trim();
+    const loc = sourceAuctionLocation(title);
+    if (loc && !allowedSyncLocation(loc.city, loc.state)) continue;
+    links.push({
+      url: `${found.base}/leiloes/${item.id_leilao}/lotes/${item.id}`,
+      text: `${title} R$ ${item.lance_inicial || item.lance_minimo || ''}`.trim()
+    });
+  }
+  return links;
+}
+
 export async function collectMariaFilomenaApi(
   dir: string,
   onPage: (rows: ScrapedAuctionDraft[], total: number) => Promise<void>
 ) {
-  let page = 1;
-  let totalPages = 1;
-  while (page <= totalPages) {
-    const form = new URLSearchParams({ pg: String(page), tipo: '', categoria: '3', estado: '', cidade: '' });
-    const response = await fetch('https://www.leiloesmariafilomena.com.br/core/api/get-lotes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: form,
-      signal: AbortSignal.timeout(30000)
-    });
-    if (!response.ok) throw Error(`Maria Filomena API: HTTP ${response.status}`);
-    const data = await response.json();
-    fs.writeFileSync(path.join(dir, `mariafilomena-api-${page}.json`), JSON.stringify(data));
-    totalPages = Number(data.totalPages) || 1;
-    const items = data.items || [];
-    const drafts: ScrapedAuctionDraft[] = [];
-    for (const lot of items) {
-      const draft = mariaFilomenaLotToDraft(lot);
-      if (draft) drafts.push(draft);
-    }
-    await onPage(drafts, items.length);
-    page++;
-  }
+  await collectSuporteApi(
+    { id: 'mariafilomena', name: 'Leilões Maria Filomena', baseUrl: 'https://www.leiloesmariafilomena.com.br' },
+    dir,
+    onPage,
+    { probeTimeoutMs: 30000 }
+  );
 }
 

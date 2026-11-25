@@ -9645,13 +9645,13 @@
     "notFound": true
   },
   "rj_rio de janeiro_meier_h": {
-    "street": "h",
+    "street": "rua h",
     "city": "Rio de Janeiro",
     "state": "RJ",
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-10-28T17:31:16.679Z",
+    "updatedAt": "2026-11-25T02:04:20.731Z",
     "notFound": true
   },
   "rj_rio de janeiro_meier_hermengarda": {
@@ -11861,13 +11861,13 @@
     "notFound": true
   },
   "rj_rio de janeiro_meier_her": {
-    "street": "her",
+    "street": "rua her",
     "city": "Rio de Janeiro",
     "state": "RJ",
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-11-02T01:41:03.772Z",
+    "updatedAt": "2026-11-25T02:05:52.793Z",
     "notFound": true
   },
   "rj_rio de janeiro_meier_f": {
@@ -11981,7 +11981,7 @@
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-11-02T02:45:48.940Z",
+    "updatedAt": "2026-11-25T02:04:08.484Z",
     "notFound": true
   },
   "rj_rio de janeiro_meier_v": {
@@ -12149,7 +12149,7 @@
     "url": "",
     "canonicalTitle": "",
     "cards": [],
-    "updatedAt": "2026-11-02T02:46:12.810Z",
+    "updatedAt": "2026-11-25T02:06:02.935Z",
     "notFound": true
   },
   "rj_rio de janeiro_meier_m": {
@@ -17910,6 +17910,352 @@
     "canonicalTitle": "Rua Paulo Silva Araujo, Rio de Janeiro, RJ",
     "cards": [],
     "updatedAt": "2026-11-24T19:33:19.520Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_meier_hermeng": {
+    "street": "rua hermeng",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-hermengarda",
+    "canonicalTitle": "Rua Hermengarda, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios | na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4468,
+        "sampleCount": 2103,
+        "avgPrice": 380000,
+        "rawMeta": "na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-25T02:05:46.567Z"
+  },
+  "rj_rio de janeiro_meier_hermengard": {
+    "street": "rua hermengard",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-hermengarda",
+    "canonicalTitle": "Rua Hermengarda, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios | na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4468,
+        "sampleCount": 2103,
+        "avgPrice": 380000,
+        "rawMeta": "na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-25T02:05:46.330Z"
+  },
+  "rj_rio de janeiro_meier_hermen": {
+    "street": "rua hermen",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-hermengarda",
+    "canonicalTitle": "Rua Hermengarda, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios | na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4468,
+        "sampleCount": 2103,
+        "avgPrice": 380000,
+        "rawMeta": "na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-25T02:05:46.159Z"
+  },
+  "rj_rio de janeiro_meier_herme": {
+    "street": "rua herme",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-hermengarda",
+    "canonicalTitle": "Rua Hermengarda, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios | na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4468,
+        "sampleCount": 2103,
+        "avgPrice": 380000,
+        "rawMeta": "na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-25T02:05:46.522Z"
+  },
+  "rj_rio de janeiro_meier_hermengar": {
+    "street": "rua hermengar",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-hermengarda",
+    "canonicalTitle": "Rua Hermengarda, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios | na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4468,
+        "sampleCount": 2103,
+        "avgPrice": 380000,
+        "rawMeta": "na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-25T02:05:46.475Z"
+  },
+  "rj_rio de janeiro_meier_hermenga": {
+    "street": "rua hermenga",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-hermengarda",
+    "canonicalTitle": "Rua Hermengarda, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios | na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4468,
+        "sampleCount": 2103,
+        "avgPrice": 380000,
+        "rawMeta": "na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-25T02:05:46.381Z"
+  },
+  "rj_rio de janeiro_meier_hermengr": {
+    "street": "rua hermengr",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/meier/rua-frederico-meier",
+    "canonicalTitle": "Rua Frederico Meier, Rio de Janeiro/RJ",
+    "leadText": "Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios | na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap).",
+    "cards": [
+      {
+        "tipo": "APARTAMENTO",
+        "m2": 4468,
+        "sampleCount": 2103,
+        "avgPrice": 380000,
+        "rawMeta": "na região, 41% abaixo da média da cidade. Subiu 5,8% em 12 meses na cidade (FipeZap). · Metade dos anúncios de apartamento aqui pede até R$ 380 mil. · Para alugar, apartamentos de ~76 m² ficam na faixa de R$ 1.076 a R$ 3.000. O mais comum na região são imóveis de 2 quartos. · Preço pedido por m² em anúncios de venda · 2.103 anúncios"
+      }
+    ],
+    "updatedAt": "2026-11-25T02:05:46.858Z"
+  },
+  "rj_rio de janeiro_tijuca_m": {
+    "street": "m",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:27:07.443Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_maracana_m": {
+    "street": "m",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:27:24.467Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_mar": {
+    "street": "mar",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/barra-da-tijuca/rua-brisa-do-mar",
+    "canonicalTitle": "Rua Brisa do Mar, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:01.930Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_ma": {
+    "street": "ma",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/estrada-velha-da-tijuca",
+    "canonicalTitle": "Velha da Tijuca, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:01.931Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_t_hermengarda": {
+    "street": "Rua Hermengarda",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:01.943Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_m_mariz": {
+    "street": "mariz",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-mariz-e-barros",
+    "canonicalTitle": "Rua Mariz e Barros, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:03.481Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_mariz": {
+    "street": "mariz",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-mariz-e-barros",
+    "canonicalTitle": "Rua Mariz e Barros, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:05.965Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_maracana_mar": {
+    "street": "mar",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/rio-de-janeiro/rua-vina-del-mar",
+    "canonicalTitle": "Rua Vina Del Mar, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:07.706Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_maracana_ma": {
+    "street": "ma",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/maracana/avenida-maracana",
+    "canonicalTitle": "Avenida Maracanã, Maracanã, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:07.708Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ma_mariz": {
+    "street": "mariz",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-mariz-e-barros",
+    "canonicalTitle": "Rua Mariz e Barros, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:07.710Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_mar_mariz": {
+    "street": "mariz",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/tijuca/rua-mariz-e-barros",
+    "canonicalTitle": "Rua Mariz e Barros, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:07.712Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuc_hermengarda": {
+    "street": "Rua Hermengarda",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:13.108Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tij_hermengarda": {
+    "street": "Rua Hermengarda",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:14.462Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tiju_hermengarda": {
+    "street": "Rua Hermengarda",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:14.463Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_mari": {
+    "street": "mari",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:15.345Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_maracana_mariz e barros": {
+    "street": "Rua Mariz e Barros",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/maracana/rua-mariz-e-barros",
+    "canonicalTitle": "Rua Mariz e Barros, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:20.630Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_maracana_mariz": {
+    "street": "mariz",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "/rj/rio-de-janeiro/maracana/rua-mariz-e-barros",
+    "canonicalTitle": "Rua Mariz e Barros, Rio de Janeiro, RJ",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:20.629Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_ti_hermengarda": {
+    "street": "Rua Hermengarda",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:20.632Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_mara_mariz": {
+    "street": "mariz",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:23.463Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_tijuca_hermengarda": {
+    "street": "Rua Hermengarda",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:23.465Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_maracana_maris": {
+    "street": "maris",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:26.626Z",
+    "notFound": true
+  },
+  "rj_rio de janeiro_maracana_mari": {
+    "street": "mari",
+    "city": "Rio de Janeiro",
+    "state": "RJ",
+    "url": "",
+    "canonicalTitle": "",
+    "cards": [],
+    "updatedAt": "2026-11-25T02:28:46.924Z",
     "notFound": true
   }
 }

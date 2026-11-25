@@ -485,20 +485,26 @@ export function getPropertyCoordinates(prop: AuctionProperty, options?: { strict
     }
   }
 
-  // Em modo estrito no Rio de Janeiro, rejeita centroides aproximados ou imóveis sem endereço válido se não houver match na cartografia IPP
+  // Em modo estrito no Rio de Janeiro, rejeita centroides aproximados ou imóveis sem endereço válido.
+  // Não bloqueia coordenadas já geocodificadas (`GEOCODE_NUMERO` / `INTERPOLACAO_RUA`) apenas por `precisa_revisao`
+  // financeiro/ITBI ou porque `mapLocation` ainda está `pending`.
   const normCityPre = normalizeGeoString(prop.city);
   const isRio = normCityPre.includes('rio de janeiro');
   if (options?.strictRio && isRio) {
     if (!hasDirectCoords) return null;
-    if (location?.status === 'pending') return null;
-    if (!(prop.address || '').trim()) return null;
-    if ((prop as any).precisa_revisao === true || (prop as any).status_geocodificacao === 'PENDENTE_REVISAO') {
+    const rawAddr = (prop.address || '').trim();
+    if (!rawAddr || /^(?:sem\s+endere[çc]o|n[ãa]o\s+informado|a\s+definir|-)$/i.test(rawAddr)) return null;
+    const geoStatus = String((prop as any).status_geocodificacao || '').toUpperCase();
+    const isVerifiedStreetOrNumber = geoStatus === 'GEOCODE_NUMERO' || geoStatus === 'INTERPOLACAO_RUA';
+    if (!isVerifiedStreetOrNumber && (geoStatus === 'PENDENTE_REVISAO' || geoStatus === 'CENTROIDE_BAIRRO')) {
       return null;
     }
-    // Ignora coordenadas idênticas aos centroides genéricos de bairros do Rio (~50m de tolerância)
-    for (const [bLat, bLng] of Object.values(RIO_DE_JANEIRO_BAIRROS)) {
-      if (Math.abs(pLat - bLat) < 0.0005 && Math.abs(pLng - bLng) < 0.0005) {
-        return null;
+    // Ignora coordenadas idênticas aos centroides genéricos de bairros do Rio (~50m de tolerância) quando não há match de rua/número
+    if (!isVerifiedStreetOrNumber) {
+      for (const [bLat, bLng] of Object.values(RIO_DE_JANEIRO_BAIRROS)) {
+        if (Math.abs(pLat - bLat) < 0.0005 && Math.abs(pLng - bLng) < 0.0005) {
+          return null;
+        }
       }
     }
     return [pLat, pLng];

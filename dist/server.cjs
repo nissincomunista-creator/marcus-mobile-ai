@@ -395,14 +395,18 @@ function getPropertyCoordinates(prop, options) {
   const isRio = normCityPre.includes("rio de janeiro");
   if (options?.strictRio && isRio) {
     if (!hasDirectCoords) return null;
-    if (location2?.status === "pending") return null;
-    if (!(prop.address || "").trim()) return null;
-    if (prop.precisa_revisao === true || prop.status_geocodificacao === "PENDENTE_REVISAO") {
+    const rawAddr = (prop.address || "").trim();
+    if (!rawAddr || /^(?:sem\s+endere[çc]o|n[ãa]o\s+informado|a\s+definir|-)$/i.test(rawAddr)) return null;
+    const geoStatus = String(prop.status_geocodificacao || "").toUpperCase();
+    const isVerifiedStreetOrNumber = geoStatus === "GEOCODE_NUMERO" || geoStatus === "INTERPOLACAO_RUA";
+    if (!isVerifiedStreetOrNumber && (geoStatus === "PENDENTE_REVISAO" || geoStatus === "CENTROIDE_BAIRRO")) {
       return null;
     }
-    for (const [bLat, bLng] of Object.values(RIO_DE_JANEIRO_BAIRROS)) {
-      if (Math.abs(pLat - bLat) < 5e-4 && Math.abs(pLng - bLng) < 5e-4) {
-        return null;
+    if (!isVerifiedStreetOrNumber) {
+      for (const [bLat, bLng] of Object.values(RIO_DE_JANEIRO_BAIRROS)) {
+        if (Math.abs(pLat - bLat) < 5e-4 && Math.abs(pLng - bLng) < 5e-4) {
+          return null;
+        }
       }
     }
     return [pLat, pLng];
@@ -12031,15 +12035,34 @@ var listedPortalApis_exports = {};
 __export(listedPortalApis_exports, {
   bankApiDraft: () => bankApiDraft,
   collectBankApi: () => collectBankApi,
+  collectDoulheTresLinks: () => collectDoulheTresLinks,
   collectMariaFilomenaApi: () => collectMariaFilomenaApi,
   collectPestanaApi: () => collectPestanaApi,
   collectRioLinks: () => collectRioLinks,
   collectSantanderApi: () => collectSantanderApi,
   collectSoldApi: () => collectSoldApi,
   collectSuperbidOffers: () => collectSuperbidOffers,
+  collectSuporteApi: () => collectSuporteApi,
   mariaFilomenaLotToDraft: () => mariaFilomenaLotToDraft,
-  pestanaApiDraft: () => pestanaApiDraft
+  pestanaApiDraft: () => pestanaApiDraft,
+  suporteLotToDraft: () => suporteLotToDraft
 });
+function inferEmgeaNeighborhood(row, city) {
+  const explicit = String(row.endereco?.bairro || row.neighborhood || "").trim();
+  if (explicit) return explicit;
+  const full = String(row.endereco?.endereco_completo || "");
+  if (full && city) {
+    const escapedCity = city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const m = full.match(new RegExp(`,\\s*([^,]+?)\\s*,\\s*${escapedCity}\\b`, "i"));
+    if (m?.[1] && !/^(?:unidade|bloco|apto|sala|casa|quadra|lote)/i.test(m[1].trim())) {
+      return m[1].trim();
+    }
+  }
+  const titleParts = String(row.nome_imovel || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const tail = titleParts.at(-1) || "";
+  if (tail && !/residencial|comercial|apartamento|casa|terreno|loja|sala/i.test(tail)) return tail;
+  return "";
+}
 function bankApiDraft(id, row) {
   const emgea = id === "emgea";
   const city = emgea ? row.endereco?.cidade : row.city;
@@ -12047,7 +12070,9 @@ function bankApiDraft(id, row) {
   if (!allowedSyncLocation(city, state)) return null;
   const title = emgea ? row.nome_imovel : row.name;
   const description = emgea ? row.descricao : row.description;
-  const address = emgea ? row.endereco?.endereco_completo : "";
+  const address = emgea ? row.endereco?.endereco_completo || "" : row.address || row.endereco?.endereco_completo || extractAddress(`${title || ""}
+${description || ""}`, "") || "";
+  const neighborhood = emgea ? inferEmgeaNeighborhood(row, city) : row.neighborhood || "";
   const url = emgea ? `https://www.emgeaimoveis.com.br/imovel/${state}/${city.replace(/ /g, "-")}/${row.id_banco}` : `https://vitrinebradesco.com.br/auctions/${row.slug}`;
   const dates = emgea ? [{ date: dateOnly(row.data_melhor_proposta || row.data_venda), price: Number(row.valores?.valor_venda) }] : !row.date_auction_1 && !row.date_auction_2 ? [{ date: dateOnly(row.auction_date), price: Number(row.price) }] : [
     { date: dateOnly(row.date_auction_1), price: Number(row.min_auction_value_1) },
@@ -12056,13 +12081,14 @@ function bankApiDraft(id, row) {
   const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   const next = dates.filter((d) => d.date >= today && d.price > 0).sort((a, b) => a.date.localeCompare(b.date))[0];
   const selected = next || dates[dates.length - 1];
-  const text = [title, description, address ? `Endere\xE7o: ${address}` : "", `${city}/${state}`].filter(Boolean).join("\n");
-  const base = { portalId: id, auctioneerName: emgea ? "EMGEA" : "Vitrine Bradesco", title, address: address || "", neighborhood: row.neighborhood || "", city, state, propertyType: "Apartamento", sizeSqm: 0, auctionPrice: 0, auctionDate: "", auctionLink: url, origin: "extrajudicial", locationScopeVerified: true };
+  const text = [title, description, address ? `Endere\xE7o: ${address}` : "", neighborhood ? `Bairro: ${neighborhood}` : "", `${city}/${state}`].filter(Boolean).join("\n");
+  const base = { portalId: id, auctioneerName: emgea ? "EMGEA" : "Vitrine Bradesco", title, address: address || "", neighborhood, city, state, propertyType: "Apartamento", sizeSqm: 0, auctionPrice: 0, auctionDate: "", auctionLink: url, origin: "extrajudicial", locationScopeVerified: true };
   const draft = parseOfficialLotDetail(base, { text, title, image: emgea ? row.foto_capa : typeof row.images?.[0] === "string" ? row.images[0] : "", structuredAddresses: address ? [address] : [], structuredSizes: [], documentLinks: [] }, url);
   return {
     ...draft,
     city,
     state,
+    neighborhood: draft.neighborhood || neighborhood,
     origin: "extrajudicial",
     originVerified: true,
     sourceVerified: true,
@@ -12078,42 +12104,69 @@ function bankApiDraft(id, row) {
   };
 }
 async function collectBankApi(id, dir, onPage) {
-  let headers = {};
-  if (id === "emgea") {
-    const browser = await launchPuppeteer(import_puppeteer.default, { headless: true, args: ["--no-sandbox"] });
-    try {
-      const page = await browser.newPage();
-      page.on("request", (request) => {
-        if (request.url().split("?")[0] === API) headers = request.headers();
-      });
-      await page.goto("https://www.emgeaimoveis.com.br/busca", { waitUntil: "networkidle2", timeout: 45e3 });
-      if (!headers["x-api-key"]) throw Error("A p\xE1gina oficial n\xE3o forneceu acesso \xE0 API p\xFAblica de im\xF3veis");
-    } finally {
-      await browser.close();
-    }
-  }
   const seen = /* @__PURE__ */ new Set();
   let maximum = 1;
-  let expected = 0;
-  for (let page = 1; page <= maximum; page++) {
-    const url = id === "emgea" ? `${API}?page=${page}` : `https://api.vitrinebradesco.com.br/v1/auctions?page=${page}&type=realstate`;
-    const response = await fetch(url, { headers, signal: AbortSignal.timeout(3e4) });
-    if (!response.ok) throw Error(`${url}: HTTP ${response.status}`);
-    const body = await response.json();
-    const records = body.data;
+  const processRecords = async (body, pageNum) => {
+    const records = body?.data;
     if (!Array.isArray(records)) throw Error("Resposta da API sem invent\xE1rio de im\xF3veis");
-    import_node_fs4.default.writeFileSync(import_node_path3.default.join(dir, `${id}-api-${page}.json`), JSON.stringify(body));
-    maximum = Number(id === "emgea" ? body.pagination.max_pages : body.total_pages);
-    expected = Number(body.pagination?.total_items || 0);
-    if (!Number.isInteger(maximum) || maximum < 1) throw Error("Pagina\xE7\xE3o inconsistente na API oficial");
-    if (!records.length) break;
+    import_node_fs4.default.writeFileSync(import_node_path3.default.join(dir, `${id}-api-${pageNum}.json`), JSON.stringify(body));
+    maximum = Number(id === "emgea" ? body.pagination?.max_pages : body.total_pages) || 1;
+    if (!records.length) return false;
     const fresh = records.filter((row) => {
-      const key = String(row.id || row.guid);
+      const key = String(row.id || row.guid || row.id_banco);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
     if (fresh.length) await onPage(fresh.map((row) => bankApiDraft(id, row)).filter(Boolean), records.length);
+    return true;
+  };
+  if (id === "emgea") {
+    const browser = await launchPuppeteer(import_puppeteer.default, { headless: true, args: ["--no-sandbox"] });
+    try {
+      const page = await browser.newPage();
+      await page.setRequestInterception(true);
+      let apiEndpoint = EMGEA_API_DEFAULT;
+      let apiKey = "";
+      page.on("request", (request) => {
+        const rt = request.resourceType();
+        if (["image", "stylesheet", "font", "media"].includes(rt)) {
+          void request.abort();
+          return;
+        }
+        const u = request.url().split("?")[0];
+        if (/execute-api.*\/emgea\/property/i.test(u) && request.headers()["x-api-key"]) {
+          apiEndpoint = u;
+          apiKey = request.headers()["x-api-key"];
+        }
+        void request.continue();
+      });
+      await page.goto("https://www.emgeaimoveis.com.br/busca", { waitUntil: "domcontentloaded", timeout: 45e3 });
+      for (let i = 0; i < 50 && !apiKey; i++) await new Promise((r) => setTimeout(r, 300));
+      if (!apiKey) throw Error("A p\xE1gina oficial EMGEA n\xE3o forneceu acesso \xE0 API p\xFAblica de im\xF3veis");
+      for (let pageNum = 1; pageNum <= maximum; pageNum++) {
+        const res = await page.evaluate(async (url, key) => {
+          const r = await fetch(url, { headers: { "x-api-key": key } });
+          const txt = await r.text();
+          return { ok: r.ok, status: r.status, txt };
+        }, `${apiEndpoint}?page=${pageNum}`, apiKey);
+        if (!res.ok) throw Error(`${apiEndpoint}?page=${pageNum}: HTTP ${res.status}`);
+        const cont = await processRecords(JSON.parse(res.txt), pageNum);
+        if (!cont) break;
+      }
+      return;
+    } finally {
+      await browser.close();
+    }
+  }
+  const headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "Origin": "https://vitrinebradesco.com.br", "Referer": "https://vitrinebradesco.com.br/" };
+  for (let page = 1; page <= maximum; page++) {
+    const url = `https://api.vitrinebradesco.com.br/v1/auctions?page=${page}&type=realstate`;
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(3e4) });
+    if (!response.ok) throw Error(`${url}: HTTP ${response.status}`);
+    const body = await response.json();
+    const cont = await processRecords(body, page);
+    if (!cont) break;
   }
 }
 async function collectSoldApi(dir, onPage) {
@@ -12400,46 +12453,69 @@ async function collectPestanaApi(dir, onPage) {
     if (cards.length !== requested.length) throw Error("Invent\xE1rio Pestana n\xE3o retornou todos os lotes anunciados");
   }
 }
-function mariaFilomenaLotToDraft(lot) {
+function suporteLotToDraft(config, lot) {
   if (!lot) return null;
-  const rawTitle = lot.nm_titulo_lote || "";
-  const rawAuctionTitle = lot.nm_titulo_leilao || "";
+  const rawTitle = String(lot.nm_titulo_lote || lot.nm_lote || "").trim();
+  const rawAuctionTitle = String(lot.nm_titulo_leilao || "").trim();
   if (/simula[cç][aã]o|teste/i.test(rawTitle) || /simula[cç][aã]o|teste/i.test(rawAuctionTitle)) return null;
-  const city = lot.nm_cidade || "";
-  const state = (lot.nm_estado || "").toUpperCase();
+  if (lot.imovel_id === null && (lot.veiculo_id || lot.equipamento_id)) return null;
+  const subcatRaw = `${lot.nm_categoria || ""} ${lot.nm_subcategoria || ""}`.toLowerCase();
+  if (/\b(?:ve[ií]culo|carro|moto|caminh[aã]o|sucata|m[oó]vel|m[aá]quina|equipamento|eletro|onibus)\b/i.test(subcatRaw) && !/\b(?:im[oó]ve|casa|apartamento|terreno|sala|loja|galp[aã]o|ch[aá]cara|s[ií]tio)\b/i.test(subcatRaw)) {
+    return null;
+  }
+  const city = String(lot.nm_cidade || "").trim();
+  const state = String(lot.nm_estado || "").trim().toUpperCase();
   if (!allowedSyncLocation(city, state)) return null;
-  const descHtml = lot.nm_descricao || "";
+  const cleanBase = config.baseUrl.replace(/\/$/, "");
+  const descHtml = String(lot.nm_descricao || "");
   const $ = cheerio2.load(descHtml);
   const descText = $("body").text().replace(/\s+/g, " ").trim();
   const title = rawTitle || descText.slice(0, 100);
-  const url = `https://www.leiloesmariafilomena.com.br/leilao/index/leilao_id/${lot.leilao_id}/lote/${lot.lote_id}`;
+  const rawLink = String(lot.nm_link || "").trim();
+  let url = `${cleanBase}/leilao/index/leilao_id/${lot.leilao_id}/lote/${lot.lote_id}`;
+  if (rawLink) {
+    try {
+      url = new URL(rawLink, cleanBase).href;
+    } catch {
+    }
+  }
   let propertyType = "Apartamento";
-  const subcat = (lot.nm_subcategoria || "").toLowerCase();
-  if (subcat.includes("casa")) propertyType = "Casa";
-  else if (subcat.includes("terreno") || subcat.includes("lote") || subcat.includes("ch\xE1cara") || subcat.includes("s\xEDtio")) propertyType = "Terreno";
-  else if (subcat.includes("comercial") || subcat.includes("sala") || subcat.includes("escrit\xF3rio") || subcat.includes("vaga") || subcat.includes("box")) propertyType = "Comercial";
-  const price = Number(lot.vl_lanceinicial || lot.vl_lanceminimo || 0);
-  const dateRaw = lot.dt_fechamento || "";
+  const typeText = `${subcatRaw} ${title}`.toLowerCase();
+  if (/\bcasa\b|\bsobrado\b/.test(typeText)) propertyType = "Casa";
+  else if (/\bterreno\b|\blote\b|\bch[aá]cara\b|\bs[ií]tio\b|\bfazenda\b|\bgleba\b/.test(typeText)) propertyType = "Terreno";
+  else if (/\bcomercial\b|\bsala\b|\bescrit[oó]rio\b|\bloja\b|\bgalp[aã]o\b|\bvaga\b|\bbox\b/.test(typeText)) propertyType = "Comercial";
+  const price = Number(lot.vl_lanceinicial || lot.vl_lanceminimo || lot.vl_venda || lot.vl_valor || 0);
+  const secondPrice = Number(lot.vl_lanceinicialsegundoleilao || 0);
+  const dateRaw = String(lot.dt_fechamento || lot.dt_abertura || "");
   const dateOnlyStr = dateRaw ? dateRaw.slice(0, 10) : "";
   const matriculaAnexo = (lot.anexos || []).find((a) => /matr[íi]cula/i.test(a.nm || ""));
   const matriculaUrl = matriculaAnexo?.nm_path_completo || "";
   const matriculaMatch = descText.match(/Matr[íi]cula\s+(?:n[ºo°]\s*)?([0-9.]+)/i);
   const matriculaNumber = matriculaMatch ? matriculaMatch[1].replace(/\./g, "") : void 0;
   const isOccupied = /OCUPA[CÇ][AÃ]O:\s*OCUPADO/i.test(descText) ? true : /DESOCUPADO/i.test(descText) ? false : void 0;
-  const allowsInstallments = /pagamento parcelado|parcelamento|saldo restante poderá ser realizado em até/i.test(descText);
+  const allowsInstallments = Number(lot.nu_parcelas || 0) > 1 || /pagamento parcelado|parcelamento|saldo restante poderá ser realizado em até/i.test(descText);
   const parcelasMatch = descText.match(/at[ée]\s*(\d+)\s*parcelas/i);
-  const maxInstallments = parcelasMatch ? Number(parcelasMatch[1]) : allowsInstallments ? 30 : 0;
+  const maxInstallments = Number(lot.nu_parcelas || 0) > 0 ? Number(lot.nu_parcelas) : parcelasMatch ? Number(parcelasMatch[1]) : allowsInstallments ? 30 : 0;
   const entradaMatch = descText.match(/sinal(?:\s+correspondente\s+a)?\s*(\d+)%/i);
-  const minDownpaymentPercent = entradaMatch ? Number(entradaMatch[1]) : allowsInstallments ? 20 : 100;
+  const minDownpaymentPercent = Number(lot.vl_percentualentrada || 0) > 0 ? Number(lot.vl_percentualentrada) : entradaMatch ? Number(entradaMatch[1]) : allowsInstallments ? 20 : 100;
   const addrMatch = descText.match(/situado\s+(?:na|no|à|ao)\s+([^,]+,\s*n[ºo°]?\s*[^,]+(?:,[^.]+)?)/i);
-  const address = addrMatch ? addrMatch[1].trim() : "";
-  const bairroMatch = descText.match(/,\s*([A-ZÀ-ÿ\s]{3,30}),\s*(?:Rio de Janeiro|Niterói|São Gonçalo|Nova Iguaçu|Maricá)/i);
-  const neighborhood = bairroMatch ? bairroMatch[1].trim() : "";
-  const imageUrl = lot.fotos?.[0]?.nm_path_completo || "";
-  const origin = (lot.nm_statusleilao || "").toLowerCase().includes("judicial") && !(lot.nm_statusleilao || "").toLowerCase().includes("extrajudicial") ? "judicial" : "extrajudicial";
+  const address = String(lot.nm_endereco || "").trim() || (addrMatch ? addrMatch[1].trim() : "") || extractAddress(`${title}
+${descText}`, "") || "";
+  const bairroMatch = descText.match(/,\s*([A-ZÀ-ÿ\s]{3,30}),\s*(?:Rio de Janeiro|Niterói|Juiz de Fora)/i);
+  const neighborhood = String(lot.nm_bairro || "").trim() || (bairroMatch ? bairroMatch[1].trim() : "");
+  const rawImg = String(lot.fotos?.[0]?.nm_path_completo || lot.nm_foto_capa || lot.foto || "").trim();
+  let imageUrl = rawImg;
+  if (rawImg && !/^https?:\/\//i.test(rawImg)) {
+    try {
+      imageUrl = new URL(rawImg, cleanBase).href;
+    } catch {
+    }
+  }
+  const originText = String(lot.nm_statusleilao || lot.nm_tipo_leilao || rawAuctionTitle || descText).toLowerCase();
+  const origin = originText.includes("judicial") && !originText.includes("extrajudicial") ? "judicial" : "extrajudicial";
   const base = {
-    portalId: "mariafilomena",
-    auctioneerName: "Leil\xF5es Maria Filomena",
+    portalId: config.id,
+    auctioneerName: config.name,
     title,
     address,
     neighborhood,
@@ -12449,6 +12525,7 @@ function mariaFilomenaLotToDraft(lot) {
     sizeSqm: 0,
     auctionPrice: price,
     firstAuctionPrice: price,
+    secondAuctionPrice: secondPrice > 0 ? secondPrice : void 0,
     auctionDate: dateOnlyStr,
     firstAuctionDate: dateOnlyStr,
     auctionLink: url,
@@ -12478,13 +12555,15 @@ function mariaFilomenaLotToDraft(lot) {
       priceVerified: price > 0,
       auctionDate: dateOnlyStr,
       firstAuctionPrice: price,
-      firstAuctionDate: dateOnlyStr
+      firstAuctionDate: dateOnlyStr,
+      ...secondPrice > 0 ? { secondAuctionPrice: secondPrice } : {}
     }
   }, url, "", matriculaUrl);
   return {
     ...parsed,
     city,
     state,
+    neighborhood: parsed.neighborhood || neighborhood,
     origin,
     originVerified: true,
     sourceVerified: true,
@@ -12492,32 +12571,110 @@ function mariaFilomenaLotToDraft(lot) {
     priceVerified: price > 0
   };
 }
-async function collectMariaFilomenaApi(dir, onPage) {
-  let page = 1;
-  let totalPages = 1;
-  while (page <= totalPages) {
-    const form = new URLSearchParams({ pg: String(page), tipo: "", categoria: "3", estado: "", cidade: "" });
-    const response = await fetch("https://www.leiloesmariafilomena.com.br/core/api/get-lotes", {
+function mariaFilomenaLotToDraft(lot) {
+  return suporteLotToDraft(
+    { id: "mariafilomena", name: "Leil\xF5es Maria Filomena", baseUrl: "https://www.leiloesmariafilomena.com.br" },
+    lot
+  );
+}
+async function collectSuporteApi(config, dir, onPage, options) {
+  const candidates = [config.baseUrl.replace(/\/$/, "")];
+  if (!candidates[0].includes("://www.")) {
+    candidates.push(candidates[0].replace("://", "://www."));
+  }
+  let activeBase = candidates[0];
+  let categoria = "3";
+  let firstData = null;
+  const fetchCat = async (base, cat, pg, timeoutMs) => {
+    const form = new URLSearchParams({ pg: String(pg), tipo: "", categoria: cat, estado: "", cidade: "" });
+    const response = await fetch(`${base}/core/api/get-lotes`, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0",
+        "Referer": base
+      },
       body: form,
-      signal: AbortSignal.timeout(3e4)
+      signal: AbortSignal.timeout(timeoutMs)
     });
-    if (!response.ok) throw Error(`Maria Filomena API: HTTP ${response.status}`);
-    const data = await response.json();
-    import_node_fs4.default.writeFileSync(import_node_path3.default.join(dir, `mariafilomena-api-${page}.json`), JSON.stringify(data));
-    totalPages = Number(data.totalPages) || 1;
-    const items = data.items || [];
+    if (!response.ok) return null;
+    const txt = await response.text();
+    if (!txt.trim().startsWith("{")) return null;
+    return JSON.parse(txt);
+  };
+  for (const base of candidates) {
+    const res = await fetchCat(base, "3", 1, options?.probeTimeoutMs ?? 8e3).catch(() => null);
+    if (res && Array.isArray(res.items)) {
+      activeBase = base;
+      firstData = res;
+      break;
+    }
+  }
+  if (!firstData || !Array.isArray(firstData.items)) return false;
+  if (firstData.items.length === 0 && Number(firstData.totalPages || 0) === 0) {
+    const allCat = await fetchCat(activeBase, "", 1, options?.probeTimeoutMs ?? 8e3).catch(() => null);
+    if (allCat && Array.isArray(allCat.items) && allCat.items.length > 0) {
+      categoria = "";
+      firstData = allCat;
+    }
+  }
+  let page = 1;
+  let totalPages = Math.min(50, Math.max(1, Number(firstData.totalPages) || 1));
+  while (page <= totalPages) {
+    const data = page === 1 ? firstData : await fetchCat(activeBase, categoria, page, 25e3).catch(() => null);
+    if (!data || !Array.isArray(data.items)) break;
+    import_node_fs4.default.writeFileSync(import_node_path3.default.join(dir, `${config.id}-api-${page}.json`), JSON.stringify(data));
+    totalPages = Math.min(50, Math.max(totalPages, Number(data.totalPages) || 1));
+    const items = data.items;
     const drafts = [];
     for (const lot of items) {
-      const draft = mariaFilomenaLotToDraft(lot);
+      const draft = suporteLotToDraft({ ...config, baseUrl: activeBase }, lot);
       if (draft) drafts.push(draft);
     }
     await onPage(drafts, items.length);
+    if (!items.length) break;
     page++;
   }
+  return true;
 }
-var import_node_fs4, import_node_path3, import_puppeteer, cheerio2, API, dateOnly;
+async function collectDoulheTresLinks(baseUrl, timeoutMs = 6e3) {
+  const cleanBase = baseUrl.replace(/\/$/, "");
+  const tryUrl = async (b) => {
+    const r = await fetch(`${b}/api-publica/stale/dados-home-lotes/imobiliario/categorias/imoveis`, {
+      headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return Array.isArray(j) ? { base: b, items: j } : null;
+  };
+  let found = await tryUrl(cleanBase).catch(() => null);
+  if (!found && !cleanBase.includes("://www.")) {
+    found = await tryUrl(cleanBase.replace("://", "://www.")).catch(() => null);
+  }
+  if (!found) return null;
+  const links = [];
+  for (const item of found.items) {
+    if (!item?.id || !item?.id_leilao) continue;
+    const title = String(item.titulo || item.leilao?.titulo || "").trim();
+    const loc = sourceAuctionLocation(title);
+    if (loc && !allowedSyncLocation(loc.city, loc.state)) continue;
+    links.push({
+      url: `${found.base}/leiloes/${item.id_leilao}/lotes/${item.id}`,
+      text: `${title} R$ ${item.lance_inicial || item.lance_minimo || ""}`.trim()
+    });
+  }
+  return links;
+}
+async function collectMariaFilomenaApi(dir, onPage) {
+  await collectSuporteApi(
+    { id: "mariafilomena", name: "Leil\xF5es Maria Filomena", baseUrl: "https://www.leiloesmariafilomena.com.br" },
+    dir,
+    onPage,
+    { probeTimeoutMs: 3e4 }
+  );
+}
+var import_node_fs4, import_node_path3, import_puppeteer, cheerio2, EMGEA_API_DEFAULT, dateOnly;
 var init_listedPortalApis = __esm({
   "listedPortalApis.ts"() {
     import_node_fs4 = __toESM(require("node:fs"), 1);
@@ -12528,7 +12685,7 @@ var init_listedPortalApis = __esm({
     init_auctioneerSyncService();
     init_auctionSyncScope();
     init_auctionGeography();
-    API = "https://yfvun6xbh1.execute-api.us-east-2.amazonaws.com/prod/emgea/property";
+    EMGEA_API_DEFAULT = "https://yfvun6xbh1.execute-api.us-east-2.amazonaws.com/prod/emgea/property";
     dateOnly = (value) => {
       if (!value) return "";
       if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
@@ -15362,8 +15519,8 @@ init_listedPortalApis();
 init_leilaoImovelScraper();
 var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 var propertyWords = /\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba|chacara|sitio|sobrado|kitnet|residencial|duplex)\b/;
-var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/Leiloes\/LoteDetalhes(?:\?|\/)|\/(?:detalhe|lote|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
-var navigationPattern = /\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|categoria-produto\/imoveis|leiloes-imoveis|Leiloes\/Pesquisar|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?/i;
+var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/Leiloes\/LoteDetalhes(?:\?|\/)|\/Sale\/Lot\/|\/(?:detalhe|lote|loteVendaDireta|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/leiloes\/\d+\/lotes?\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
+var navigationPattern = /\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|categoria-produto\/imoveis|leiloes-imoveis|Leiloes\/Pesquisar|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?|\/leilao\/\d+\//i;
 var skipPattern = /login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|fale-conosco|quem-somos|como-comprar|como-vender|indique|validar-documento|habilitacao|regulamento|duvidas|faq|\/home(?:\/|$)|\/venda-direta(?:\/|$)|\/auditorio\/\d+\/\d+\/batch|\.pdf(?:\?|$)/i;
 var bankIds = /* @__PURE__ */ new Set(["bb", "emgea", "santander", "vitrinebradesco"]);
 var isBlockedLeilaoImovelResponse = (portalId, error) => portalId === "leilaoimovel" && /HTTP\s+403\b/i.test(error instanceof Error ? error.message : String(error));
@@ -15470,7 +15627,8 @@ function sourceSeedUrls(id, base) {
   if (id === "biasi") return cityUrls((t) => `${base}/Sale/LotListSearch?start=0&limit=48&buscaImovel=true&estado=${t.state.toLowerCase()}&cidade=${t.slug}&bairro=todos-os-bairros&segmento=todos-os-segmentos`);
   if (id === "leiloei") return [base + "/busca/segmento/imoveis"];
   if (id === "pestana") return [base + "/leilao-de-imoveis"];
-  if (id === "frazao") return [...cityUrls((t) => `${base}/sale/searchLot?estado=${t.state}&cidade=${encodeURIComponent(t.city)}&pesquisaSimples=false`), ...cityUrls((t) => `${base}/Sale/SearchLotResult?uf=${t.state}&cidade=${encodeURIComponent(t.city)}&pagina=1`)];
+  if (id === "frazao") return [base, `${base}/judicial/leiloes`, `${base}/itau/leiloes`, `${base}/santander/leiloes`, ...cityUrls((t) => `${base}/sale/searchLot?estado=${t.state}&cidade=${encodeURIComponent(t.city)}&pesquisaSimples=false`), ...cityUrls((t) => `${base}/Sale/SearchLotResult?uf=${t.state}&cidade=${encodeURIComponent(t.city)}&pagina=1`)];
+  if (id === "d1lance" || id === "d1lanceleiloes_com_br") return [`${base}/navegar-pelo-mapa?tipo_filtro=imoveis`, base];
   if (id === "portalzuk") return [...cityUrls((t) => `${base}/leilao-de-imoveis/c/todos-imoveis/${t.state.toLowerCase()}/regiao/${t.slug}`), ...cityUrls((t) => `${base}/leilao-de-imoveis/c/todos-imoveis/${t.state.toLowerCase()}/regiao/${t.slug}?page=2`)];
   if (id === "jv") return cityUrls((t) => `${base}/lotes/imovel?tipo=imovel&address_uf=${t.state}&address_cidade_ibge=${t.ibge}`);
   if (id === "joaoemilio") return [...cityUrls((t) => `${base}/lotes/imovel?tipo=imovel&address_uf=${t.state}&address_cidade_ibge=${t.ibge}`), `${base}/leiloes`];
@@ -15525,6 +15683,15 @@ function parseSourcePage(html, url) {
       u.searchParams.set("pag", paging[1]);
       links.push({ url: u.href, text: paging[1], pagination: true });
     }
+    const gotoMatch = onclick.match(/goTo\(\s*['"]([^'"]+)['"]/i);
+    if (gotoMatch) {
+      try {
+        const u = new URL(gotoMatch[1], url);
+        const card = $(el).closest('[class*="lote"],[class*="leilao"],[class*="card"],[class*="shadow"],article,tr,li,.row');
+        links.push({ url: canonicalAuctionLink(u.href), text: (card.length ? card.text() : $(el).text()).replace(/\s+/g, " ").trim().slice(0, 3500), pagination: false });
+      } catch {
+      }
+    }
     for (const match of onclick.matchAll(/['"]([^'"]+\.(?:asp|php)(?:\?[^'"]*)?)['"]/gi)) {
       try {
         links.push({ url: canonicalAuctionLink(new URL(match[1], url).href), text: $(el).text().trim(), pagination: false });
@@ -15550,8 +15717,9 @@ function parseSourcePage(html, url) {
       const parts = [];
       for (const item of entries) {
         if (!item || typeof item !== "object") continue;
-        const itemLink = item.url || item.link || (item.slug ? new URL(`/oferta/${item.slug}`, url).href : "");
-        const summary = [item.titulo || item.title, item.descricao || item.description, item.endereco || item.address, item.bairro, item.cidade || item.city, item.uf || item.state, item.valor ? `R$ ${item.valor}` : ""].filter(Boolean).join(" - ");
+        const rawSlug = item.nm_slug ? `/${String(item.nm_slug).replace(/^\//, "")}` : "";
+        const itemLink = item.url || item.link || (rawSlug ? new URL(rawSlug, url).href : "") || (item.slug ? new URL(`/oferta/${item.slug}`, url).href : "");
+        const summary = [item.nm_titulo || item.titulo || item.title, item.descricao || item.description, item.localizacao?.nm_endereco || item.endereco || item.address, item.localizacao?.nm_bairro || item.bairro, item.localizacao?.nm_cidade || item.cidade || item.city, item.localizacao?.nm_estado || item.uf || item.state, item.valor ? `R$ ${item.valor}` : ""].filter(Boolean).join(" - ");
         if (itemLink) {
           try {
             links.push({ url: canonicalAuctionLink(new URL(itemLink, url).href), text: summary || "Im\xF3vel", pagination: false });
@@ -15865,6 +16033,22 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
           progress.status = "completed";
           continue;
         }
+        const onSuportePage = async (rows, total) => {
+          navigated = true;
+          progress.pages++;
+          progress.discovered += total;
+          progress.fetched += total;
+          progress.accepted += rows.length;
+          batches.push(...rows.map((row) => ({ ...row, sourceEvidencePath: preserveSource(row.auctionLink, "<pre>" + JSON.stringify(row) + "</pre>") })));
+          await flush();
+          save();
+        };
+        const isSuporteJson = await collectSuporteApi({ id: config.id, name: config.name, baseUrl: config.baseUrl }, dir, onSuportePage, { probeTimeoutMs: config.suporteApi ? 15e3 : 5e3 });
+        if (isSuporteJson) {
+          confirmedEmpty = progress.discovered === 0;
+          progress.status = "completed";
+          continue;
+        }
         const isSuportePortal = Boolean(config.suporteApi) || (/* @__PURE__ */ new Set(["rioleiloes", "deonizialeiloes_com_br", "giordanoleiloes_com_br", "alessandroteixeiraleiloes_com_br", "hdleiloes_com_br", "jrleiloes_com_br", "fabioleiloes_com_br", "carloferrarileiloes_com_br", "rigolonleiloes_com_br", "joserodovalholeiloes_com_br"])).has(config.id);
         if (isSuportePortal) {
           try {
@@ -15877,6 +16061,15 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
             }, config.baseUrl, config.id);
           } catch (error) {
             if (config.id === "rioleiloes") throw error;
+          }
+        } else {
+          const dtLinks = await collectDoulheTresLinks(config.baseUrl).catch(() => null);
+          if (dtLinks?.length) {
+            navigated = true;
+            progress.pages++;
+            for (const link of dtLinks) details.set(link.url, link.text);
+            progress.discovered = details.size;
+            save();
           }
         }
         while (listingQueue.length && progress.pages < maxPortalPages && Date.now() - portalStartedAt < portalSoftDeadlineMs) {
@@ -15919,8 +16112,8 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
               if (otherStateInUrl) continue;
               const inPropertyFeed = /im[oó]ve(?:l|is)|categoria=2|category=im|tipo_filtro=imoveis|ID_Categoria=|buscaImovel=true/i.test(response.url);
               const vehicleQuerySlug = /(?:veiculo|veiculos|carro|moto|caminhao|sucata)/i.test(link.url) && !/imoveis|imovel/i.test(link.url);
-              const vehicleLinkText = /\b(?:veiculo|veiculos|carro|moto|caminhao|trator|sucata|maquina|equipamento|moveis|eletro)\b/i.test(normalizeAuctionText(link.text));
-              const relevant = !vehicleQuerySlug && !vehicleLinkText && (propertyWords.test(normalizeAuctionText(link.text)) || /imoveis|imovel|tipo=imovel|categoria=2|category=im[oó]veis|buscaImovel=true/i.test(link.url) || inPropertyFeed && directPattern.test(link.url));
+              const vehicleLinkText = /\b(?:veiculo|veiculos|carro|moto|caminhao|trator|sucata|maquina|equipamento|moveis|eletro|chevrolet|fiat|volkswagen|ford|onix|uno|audi|pickup|automovel|motocicleta|honda|toyota|hyundai|renault)\b/i.test(normalizeAuctionText(link.text));
+              const relevant = !vehicleQuerySlug && !vehicleLinkText && (propertyWords.test(normalizeAuctionText(link.text)) || /imoveis|imovel|tipo=imovel|categoria=2|category=im[oó]veis|buscaImovel=true|leilao\.php\?idLeilao=|lote\.php\?idLote=/i.test(link.url) || inPropertyFeed && directPattern.test(link.url));
               if (directPattern.test(link.url) && !link.pagination) {
                 if (relevant && !seenDetails.has(link.url)) details.set(link.url, link.text);
                 continue;
@@ -16141,10 +16334,37 @@ function normalizeForMatch(value) {
 function streetCore(value) {
   return normalizeForMatch(value).replace(/^(rua|avenida|av|estrada|travessa|alameda|praca|rodovia|largo|beco|ladeira)\s+/, "").replace(/\b(antiga|novo|nova)\s+rua\s+\d+\b/g, "").replace(/\s+/g, " ").trim();
 }
+function streetEditDistance(a, b, maxDist = 2) {
+  if (a === b) return 0;
+  if (Math.abs(a.length - b.length) > maxDist) return maxDist + 1;
+  const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let val = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        val = Math.min(val, dp[i - 2][j - 2] + 1);
+      }
+      dp[i][j] = val;
+    }
+  }
+  return dp[a.length][b.length];
+}
 function hasStreetMatch(expectedStreet, candidateStreet) {
   const expected = streetCore(expectedStreet);
   const candidate = streetCore(candidateStreet);
-  return !!expected && expected === candidate;
+  if (!expected || !candidate) return false;
+  if (expected === candidate) return true;
+  if (expected.length >= 6 && (candidate.startsWith(expected) || expected.startsWith(candidate))) {
+    const ratio = Math.min(expected.length, candidate.length) / Math.max(expected.length, candidate.length);
+    if (ratio >= 0.72) return true;
+  }
+  const maxDist = Math.max(expected.length, candidate.length) >= 9 ? 2 : 1;
+  const dist = streetEditDistance(expected, candidate, maxDist);
+  const sim = 1 - dist / Math.max(expected.length, candidate.length);
+  return dist <= maxDist && sim >= 0.82;
 }
 function hasCityMatch(expectedCity, candidateCity, displayName) {
   const expected = normalizeForMatch(expectedCity);
@@ -16233,6 +16453,9 @@ function cleanQuery(str) {
 }
 function cleanBrazilianAddress(raw) {
   let text = (raw || "").trim();
+  if (/\b(?:r\$|valor\s+de|lance\s+m[ií]nimo|avalia[çc][aã]o)\b/i.test(text) || /^r\s+de\s+r\$/i.test(text)) {
+    return { street: "", number: "" };
+  }
   text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, "");
   text = text.replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, "").trim();
   let number = "";
@@ -16495,7 +16718,9 @@ var WORD_ABBR = {
   BAR: "BARAO",
   EMB: "EMBAIXADOR",
   PREF: "PREFEITO",
-  REV: "REVERENDO"
+  REV: "REVERENDO",
+  CMTE: "COMANDANTE",
+  DESEMB: "DESEMBARGADOR"
 };
 var TYPE_PREFIXES = /* @__PURE__ */ new Set([
   "RUA",
@@ -16531,6 +16756,54 @@ function normalizeText(str) {
   if (!str) return "";
   return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\bN\.?\s*SRA\.?\b/g, "NOSSA SENHORA").replace(/\bN\.?\s*S\.?\b/g, "NOSSA SENHORA").replace(/[^A-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
 }
+var NUM_WORDS_PT = {
+  "1": "PRIMEIRO",
+  "1O": "PRIMEIRO",
+  "2": "DOIS",
+  "3": "TRES",
+  "4": "QUATRO",
+  "5": "CINCO",
+  "6": "SEIS",
+  "7": "SETE",
+  "8": "OITO",
+  "9": "NOVE",
+  "10": "DEZ",
+  "11": "ONZE",
+  "12": "DOZE",
+  "13": "TREZE",
+  "14": "QUATORZE",
+  "15": "QUINZE",
+  "16": "DEZESSEIS",
+  "17": "DEZESSETE",
+  "18": "DEZOITO",
+  "19": "DEZENOVE",
+  "20": "VINTE",
+  "21": "VINTE UM",
+  "22": "VINTE DOIS",
+  "23": "VINTE TRES",
+  "24": "VINTE QUATRO",
+  "25": "VINTE CINCO",
+  "26": "VINTE SEIS",
+  "27": "VINTE SETE",
+  "28": "VINTE OITO",
+  "29": "VINTE NOVE",
+  "30": "TRINTA",
+  "31": "TRINTA UM"
+};
+var MONTHS_PT = /* @__PURE__ */ new Set([
+  "JANEIRO",
+  "FEVEREIRO",
+  "MARCO",
+  "ABRIL",
+  "MAIO",
+  "JUNHO",
+  "JULHO",
+  "AGOSTO",
+  "SETEMBRO",
+  "OUTUBRO",
+  "NOVEMBRO",
+  "DEZEMBRO"
+]);
 function expandStreetTokens(normStr) {
   if (!normStr) return "";
   const tokens = normStr.split(" ").filter(Boolean);
@@ -16539,8 +16812,14 @@ function expandStreetTokens(normStr) {
   const out = [];
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
-    if (i > 0 && WORD_ABBR[t]) out.push(...WORD_ABBR[t].split(" "));
-    else out.push(t);
+    const nextIsMonth = tokens[i + 1] && MONTHS_PT.has(tokens[i + 1]) || tokens[i + 1] === "DE" && tokens[i + 2] && MONTHS_PT.has(tokens[i + 2]);
+    if (nextIsMonth && NUM_WORDS_PT[t]) {
+      out.push(...NUM_WORDS_PT[t].split(" "));
+    } else if (i > 0 && WORD_ABBR[t]) {
+      out.push(...WORD_ABBR[t].split(" "));
+    } else {
+      out.push(t);
+    }
   }
   return out.join(" ");
 }
@@ -16553,10 +16832,33 @@ function buildStreetKeys(raw) {
   return { full: expanded, core };
 }
 function phoneticStreetCore(core) {
-  return core.replace(/CK/g, "K").replace(/PH/g, "F").replace(/([A-Z])\1+/g, "$1").replace(/Z/g, "S").replace(/Y/g, "I").replace(/TH/g, "T");
+  return core.replace(/([A-Z])\1+/g, "$1").replace(/PH/g, "F").replace(/[CT]H/g, (m) => m === "CH" ? "X" : "T").replace(/SH/g, "X").replace(/LH/g, "L").replace(/NH/g, "N").replace(/(?<![CLNX])H/g, "").replace(/CK/g, "K").replace(/QU([EI])/g, "K$1").replace(/GU([EI])/g, "G$1").replace(/G([EIY])/g, "J$1").replace(/XC|SC(?=[EIY])|SS|C(?=[EIY])/g, "S").replace(/Z/g, "S").replace(/Y/g, "I").replace(/W/g, "V").replace(/([A-Z])\1+/g, "$1").trim();
 }
+var BAIRRO_ALIASES = {
+  "BRAZ DE PINA": "BRAS DE PINA",
+  "IMPERIAL DE SAO CRISTOVAO": "SAO CRISTOVAO",
+  "OSWALDO CRUZ": "OSVALDO CRUZ",
+  "CAVALCANTI": "CAVALCANTE",
+  "QUINTINO": "QUINTINO BOCAIUVA",
+  "JD GUANABARA": "JARDIM GUANABARA",
+  "JD AMERICA": "JARDIM AMERICA",
+  "JD BOTANICO": "JARDIM BOTANICO",
+  "JD CARIOCA": "JARDIM CARIOCA",
+  "JD SULACAP": "JARDIM SULACAP",
+  "FREGUESIA JACAREPAGUA": "FREGUESIA",
+  "FRE DE JACAREPAGUA": "FREGUESIA",
+  "FREGUESIA JPA": "FREGUESIA",
+  "FREGUESIA ILHA DO GOVERNADOR": "FREGUESIA ILHA",
+  "FREGUESIA DE SANTA C": "SANTA CRUZ",
+  "FRE DE CAMPO GRANDE": "CAMPO GRANDE",
+  "VILA VALQUEIRE": "VL VALQUEIRE",
+  "VL KOSMOS": "VILA KOSMOS",
+  "VILA DA PENHA": "VL DA PENHA"
+};
 function normalizeBairro(raw) {
-  return normalizeText(raw).replace(/\bJARDIM\b/g, "JD").replace(/\bVILA\b/g, "VL");
+  const norm = normalizeText(raw).replace(/\bZ\b/g, "S");
+  if (BAIRRO_ALIASES[norm]) return BAIRRO_ALIASES[norm];
+  return norm.replace(/\bJARDIM\b/g, "JD").replace(/\bVILA\b/g, "VL");
 }
 function extractRioStreetAndNumber(rawAddr, rawTitle) {
   const candidates = [];
@@ -16565,28 +16867,52 @@ function extractRioStreetAndNumber(rawAddr, rawTitle) {
     candidates.push(String(rawTitle));
   }
   const parsedOptions = [];
+  const seenOpts = /* @__PURE__ */ new Set();
+  const pushOption = (street, numInt) => {
+    const cleanS = street.replace(/,\s*n[ºo°.]?\s*$/i, "").replace(/[-–,\s]+$/, "").trim();
+    if (cleanS.length < 3) return;
+    const key = `${cleanS.toUpperCase()}|${numInt}`;
+    if (seenOpts.has(key)) return;
+    seenOpts.add(key);
+    parsedOptions.push({ street: cleanS, numInt });
+  };
   for (const cand of candidates) {
     const parenMatch = cand.match(/\(([^)]+)\)/);
-    const cleaned = cand.replace(/\([^)]*\)/g, " ").replace(/\bCONF\.?\s*ITBI.*$/i, "").replace(/\bBAIRRO\s*:.*$/i, "").replace(/\bCEP\s*:?[\s\d-]+/gi, "").replace(/\bRio\s+de\s+Janeiro\s*[-/,]\s*RJ\b.*$/i, "").trim();
-    const numRegex = /(?:,\s*|\s+)(?:N[ºO°.]?\s*)(\d{1,5})\b|,\s*(\d{1,5})\b/i;
+    const cleaned = cand.replace(/\([^)]*\)/g, " ").replace(/([A-Za-zÀ-ú]{4,})[ée]dio\b/gi, "$1").replace(/\bCONF\.?\s*ITBI.*$/i, "").replace(/\bBAIRRO\s*:.*$/i, "").replace(/\bCEP\s*:?[\s\d-]+/gi, "").replace(/\bRio\s+de\s+Janeiro\s*[-/,]\s*RJ\b.*$/i, "").replace(/\s*-\s*-\s*/g, " - ").replace(/\s*-\s*LADO\s+(?:PAR|IMPAR)\b/gi, "").trim();
+    const numRegex = /(?:,\s*|\s+)(?:N[ºO°.]?\s*:?\s*)(\d{1,5})\b|,\s*(\d{1,5})\b|\s+(\d{1,5})(?=\s*(?:,|APTO|APT|BL|CASA|SALA|LOJA|TERRENO|$))/i;
     const numM = cleaned.match(numRegex);
-    let numInt = numM ? parseInt(numM[1] || numM[2], 10) : 0;
+    let numInt = numM ? parseInt(numM[1] || numM[2] || numM[3], 10) : 0;
     let streetPart = numM && numM.index != null ? cleaned.slice(0, numM.index) : cleaned.split(",")[0];
-    streetPart = streetPart.replace(/^(?:Pr[ée]dio\s+localizado\s+na|Apartamento\s+na|Casa\s+na|Im[óo]vel\s+na|Terreno\s+na|Sala\s+na|Loja\s+na)\s+/i, "").replace(/[,\-]+$/g, "").trim();
+    streetPart = streetPart.replace(/^(?:Pr[ée]dio\s+(?:comercial\s+)?(?:localizado|situado)\s+na|Apartamento\s+na|Casa\s+na|Im[óo]vel\s+na|Terreno\s+na|Sala\s+na|Loja\s+na)\s+/i, "").replace(/\b(?:LT|LOTE|QD|QUADRA|BL|BLOCO)\s*[\d\/\w-]*$/i, "").replace(/,\s*n[ºo°.]?\s*$/i, "").replace(/[,\-]+$/g, "").trim();
     if (!numInt) {
-      const explicitN = cand.match(/\bN[ºO°.]\s*(\d{1,5})\b/i);
+      const explicitN = cand.match(/\bN[ºO°.]\s*:?\s*(\d{1,5})\b/i);
       if (explicitN) numInt = parseInt(explicitN[1], 10);
     }
-    if (streetPart.length >= 3) parsedOptions.push({ street: streetPart, numInt });
+    const nestedStreet = streetPart.match(/(?:situad[oa]\s+n[ao]|localizad[oa]\s+n[ao]|\/\/)\s+(.+)$/i);
+    if (nestedStreet?.[1]) {
+      pushOption(nestedStreet[1], numInt);
+    }
+    const antigaIdx = streetPart.search(/\bANTIG[AO]\s+/i);
+    if (antigaIdx > 4) {
+      pushOption(streetPart.slice(0, antigaIdx), numInt);
+      pushOption(streetPart.slice(antigaIdx).replace(/^ANTIG[AO]\s+/i, ""), numInt);
+    }
+    pushOption(streetPart, numInt);
+    const embeddedMatch = cleaned.match(/\b((?:Rua|Avenida|Av\.?|Estrada|Estr\.?|Travessa|Praça|Praca|Largo|Alameda|Rodovia|Praia)\s+[A-Za-zÀ-ú0-9'\.\-\s]{3,55})(?:,\s*n?[ºo°.]?\s*(\d{1,5}))?/i);
+    if (embeddedMatch?.[1]) {
+      const embNum = embeddedMatch[2] ? parseInt(embeddedMatch[2], 10) : numInt;
+      pushOption(embeddedMatch[1], embNum);
+    }
     if (parenMatch?.[1] && parenMatch[1].length >= 5) {
       const altStreet = parenMatch[1].replace(/^ANTIG[AO]\s+/i, "").trim();
-      if (altStreet.length >= 4) parsedOptions.push({ street: altStreet, numInt });
+      if (altStreet.length >= 4) pushOption(altStreet, numInt);
     }
   }
   return parsedOptions;
 }
 var cachedAuctionLocs = null;
 var cachedStreetsIndex = null;
+var cachedFuzzyIndex = null;
 var doorShardCache = /* @__PURE__ */ new Map();
 var resolvedMemo = /* @__PURE__ */ new Map();
 function memoSet(key, val) {
@@ -16601,9 +16927,160 @@ function clearRioIppMemo() {
 }
 function releaseRioIppScratchCaches() {
   doorShardCache.clear();
+  cachedFuzzyIndex = null;
   if (process.env.RENDER === "true") {
     cachedStreetsIndex = null;
   }
+}
+var dpPrev = new Int32Array(256);
+var dpCurr = new Int32Array(256);
+var dpPrev2 = new Int32Array(256);
+function damerauLevenshtein(a, b, maxDist = 2) {
+  const la = a.length;
+  const lb = b.length;
+  if (Math.abs(la - lb) > maxDist) return maxDist + 1;
+  if (a === b) return 0;
+  if (la >= 250 || lb >= 250) return maxDist + 1;
+  for (let j = 0; j <= lb; j++) dpPrev[j] = j;
+  for (let i = 1; i <= la; i++) {
+    dpCurr[0] = i;
+    let rowMin = maxDist + 1;
+    const ai = a.charCodeAt(i - 1);
+    const aiPrev = i > 1 ? a.charCodeAt(i - 2) : -1;
+    for (let j = 1; j <= lb; j++) {
+      const bj = b.charCodeAt(j - 1);
+      const cost = ai === bj ? 0 : 1;
+      let val = dpPrev[j] + 1;
+      const ins = dpCurr[j - 1] + 1;
+      if (ins < val) val = ins;
+      const sub = dpPrev[j - 1] + cost;
+      if (sub < val) val = sub;
+      if (i > 1 && j > 1 && ai === b.charCodeAt(j - 2) && aiPrev === bj) {
+        const trans = dpPrev2[j - 2] + 1;
+        if (trans < val) val = trans;
+      }
+      dpCurr[j] = val;
+      if (val < rowMin) rowMin = val;
+    }
+    if (rowMin > maxDist) return maxDist + 1;
+    for (let j = 0; j <= lb; j++) {
+      dpPrev2[j] = dpPrev[j];
+      dpPrev[j] = dpCurr[j];
+    }
+  }
+  return dpPrev[lb];
+}
+function getFuzzyIndex(idx) {
+  if (cachedFuzzyIndex) return cachedFuzzyIndex;
+  const phoneticGlobal = /* @__PURE__ */ new Map();
+  const phoneticBairro = /* @__PURE__ */ new Map();
+  const byBairro = /* @__PURE__ */ new Map();
+  const globalByBucket = /* @__PURE__ */ new Map();
+  for (const [coreKey, cls] of Object.entries(idx.coreMap)) {
+    if (!coreKey || !cls.length) continue;
+    const phon = phoneticStreetCore(coreKey);
+    if (phon) {
+      const prev = phoneticGlobal.get(phon);
+      if (prev) {
+        for (const c of cls) if (!prev.includes(c)) prev.push(c);
+      } else {
+        phoneticGlobal.set(phon, [...cls]);
+      }
+    }
+    const entry = { core: coreKey, phon, tokens: coreKey.split(" "), cls };
+    const b1 = coreKey[0];
+    const list1 = globalByBucket.get(b1) || [];
+    list1.push(entry);
+    globalByBucket.set(b1, list1);
+    if (phon && phon[0] !== b1) {
+      const list2 = globalByBucket.get(phon[0]) || [];
+      list2.push(entry);
+      globalByBucket.set(phon[0], list2);
+    }
+  }
+  for (const [compositeKey, cls] of Object.entries(idx.coreBairro)) {
+    const sep = compositeKey.lastIndexOf("|");
+    if (sep <= 0) continue;
+    const cKey = compositeKey.slice(0, sep);
+    const bKey = compositeKey.slice(sep + 1);
+    const phon = phoneticStreetCore(cKey);
+    if (phon) {
+      const pk = `${phon}|${bKey}`;
+      const prev = phoneticBairro.get(pk);
+      if (prev) {
+        for (const c of cls) if (!prev.includes(c)) prev.push(c);
+      } else {
+        phoneticBairro.set(pk, [...cls]);
+      }
+    }
+    const list = byBairro.get(bKey) || [];
+    list.push({ core: cKey, phon, tokens: cKey.split(" "), cls });
+    byBairro.set(bKey, list);
+  }
+  cachedFuzzyIndex = { phoneticGlobal, phoneticBairro, byBairro, globalByBucket };
+  return cachedFuzzyIndex;
+}
+function findFuzzyStreetCls(core, nb, idx) {
+  if (!core || core.length < 4) return [];
+  const fz = getFuzzyIndex(idx);
+  const targetPhon = phoneticStreetCore(core);
+  if (nb && targetPhon) {
+    const hitNb = fz.phoneticBairro.get(`${targetPhon}|${nb}`);
+    if (hitNb?.length) return hitNb;
+  }
+  if (targetPhon.length >= 5) {
+    const hitGlob = fz.phoneticGlobal.get(targetPhon);
+    if (hitGlob?.length && hitGlob.length <= 6) return hitGlob;
+  }
+  const scanPool = (entries, strictSimilarity) => {
+    const qTokens = core.split(" ");
+    const maxDist = core.length >= 9 ? 2 : 1;
+    let bestScore = -1;
+    let bestCls = [];
+    for (const e of entries) {
+      if (e.core.length < 4) continue;
+      if (core.length >= 5 && e.core.startsWith(core) && e.core.length <= core.length + 12 || qTokens.length === 1 && qTokens[0].length >= 5 && e.tokens[0] === qTokens[0] || qTokens.length >= 2 && e.tokens.length === 1 && e.tokens[0].length >= 6 && qTokens[0] === e.tokens[0]) {
+        const sim = Math.min(core.length, e.core.length) / Math.max(core.length, e.core.length);
+        const prefixScore = 0.75 + sim * 0.2;
+        if (prefixScore > bestScore) {
+          bestScore = prefixScore;
+          bestCls = e.cls;
+        }
+      }
+      if (Math.abs(core.length - e.core.length) > maxDist && (!targetPhon || Math.abs(targetPhon.length - e.phon.length) > maxDist)) {
+        continue;
+      }
+      const dRaw = damerauLevenshtein(core, e.core, maxDist);
+      const dPhon = targetPhon && e.phon ? damerauLevenshtein(targetPhon, e.phon, maxDist) : maxDist + 1;
+      const dBest = Math.min(dRaw, dPhon);
+      if (dBest <= maxDist) {
+        const baseLen = Math.max(core.length, e.core.length);
+        const sim = 1 - dBest / baseLen;
+        if (sim >= strictSimilarity && sim > bestScore) {
+          bestScore = sim;
+          bestCls = e.cls;
+        }
+      }
+    }
+    return bestCls;
+  };
+  if (nb) {
+    const nbEntries = fz.byBairro.get(nb);
+    if (nbEntries?.length) {
+      const nbHit = scanPool(nbEntries, 0.78);
+      if (nbHit.length) return nbHit;
+    }
+  }
+  if (core.length >= 5) {
+    const bucket = fz.globalByBucket.get(core[0]) || [];
+    const hit1 = scanPool(bucket, 0.84);
+    if (hit1.length) return hit1;
+    if (targetPhon && targetPhon[0] !== core[0]) {
+      const bucket2 = fz.globalByBucket.get(targetPhon[0]) || [];
+      return scanPool(bucket2, 0.84);
+    }
+  }
+  return [];
 }
 function loadAuctionLocationsMap() {
   if (cachedAuctionLocs) return cachedAuctionLocs;
@@ -16641,7 +17118,7 @@ function loadDoorsForCl(cl) {
     if (!import_node_fs7.default.existsSync(file2)) return [];
     try {
       shard = JSON.parse(import_node_zlib.default.gunzipSync(import_node_fs7.default.readFileSync(file2)).toString("utf8"));
-      const maxShards = process.env.RENDER === "true" ? 2 : 4;
+      const maxShards = process.env.RENDER === "true" ? 4 : 16;
       if (doorShardCache.size >= maxShards) {
         const oldestKey = doorShardCache.keys().next().value;
         if (oldestKey !== void 0) doorShardCache.delete(oldestKey);
@@ -16692,18 +17169,26 @@ function resolveRioIppLocation(params, options) {
       addAll(idx.fullMap[full]);
       if (!cls.length) addAll(idx.coreMap[core]);
     }
-    if (!cls.length && nb && core.includes(" ")) {
-      const targetPhonetic = phoneticStreetCore(core);
-      const nbSuffix = `|${nb}`;
-      for (const [k, v] of Object.entries(idx.coreBairro)) {
-        if (!k.endsWith(nbSuffix)) continue;
-        const candidateCore = k.slice(0, -nbSuffix.length);
-        if (phoneticStreetCore(candidateCore) === targetPhonetic) {
-          addAll(v);
-        }
-      }
+    if (!cls.length) {
+      addAll(findFuzzyStreetCls(core, nb, idx));
     }
     if (!cls.length) continue;
+    const desiredType = full.split(" ")[0];
+    if (cls.length > 1 && TYPE_PREFIXES.has(desiredType)) {
+      cls.sort((a, b) => {
+        const ma = idx.clMeta[a];
+        const mb = idx.clMeta[b];
+        const aType = normalizeText(ma?.[0]).split(" ")[0] === desiredType ? 1 : 0;
+        const bType = normalizeText(mb?.[0]).split(" ")[0] === desiredType ? 1 : 0;
+        if (aType !== bType) return bType - aType;
+        if (nb) {
+          const aNb = normalizeBairro(ma?.[1]) === nb ? 1 : 0;
+          const bNb = normalizeBairro(mb?.[1]) === nb ? 1 : 0;
+          if (aNb !== bNb) return bNb - aNb;
+        }
+        return 0;
+      });
+    }
     const numInt = opt.numInt;
     if (numInt > 0) {
       for (const cl of cls.slice(0, 6)) {
@@ -16808,8 +17293,9 @@ function validOfficialLocation(r) {
   const hasCnefeEvidence = r.source === "IBGE_CNEFE_2022" && [1, 2].includes(r.geocodeLevel) && !!r.cnefeId && cnefeHouseMatches && blockMatches && Number.isFinite(r.spreadMeters) && r.spreadMeters >= 0 && r.spreadMeters <= 20;
   const requestedNumber = cleanBrazilianAddress(r.address || "").number;
   const hasExactGeocoderEvidence = r.source === "GEOCODE_NUMBER" && !requestedUnits.bloco && ["nominatim", "photon"].includes(String(r.geocoderProvider)) && r.geocoderPrecision === "rooftop" && !!requestedNumber && normalize4(requestedNumber) === normalize4(r.matchedNumber) && !!r.city && normalize4(r.city) === normalize4(r.matchedCity) && normalizeStreet(r.address) === normalizeStreet(r.matchedStreet);
+  const hasVerifiedStreetEvidence = r.source === "GEOCODE_STREET" && ["nominatim", "photon"].includes(String(r.geocoderProvider)) && r.geocoderPrecision === "street" && !!r.city && normalize4(r.city) === normalize4(r.matchedCity) && !!r.matchedStreet;
   const hasIppEvidence = r.source === "IPP_RIO_2019" && !!r.matchedStreet && (!r.matchedNumber || !requestedNumber || normalize4(requestedNumber) === normalize4(r.matchedNumber));
-  return r.status === "located" && (hasCnefeEvidence || hasExactGeocoderEvidence || hasIppEvidence) && (r.precision === "address" || hasIppEvidence && r.precision === "street") && !!r.matchedStreet && (!!r.matchedNumber || hasIppEvidence) && Number.isFinite(r.lat) && Number.isFinite(r.lng) && r.lat > -34 && r.lat < 6 && r.lng > -74 && r.lng < -32;
+  return r.status === "located" && (hasCnefeEvidence || hasExactGeocoderEvidence || hasVerifiedStreetEvidence || hasIppEvidence) && (r.precision === "address" || (hasIppEvidence || hasVerifiedStreetEvidence) && r.precision === "street") && !!r.matchedStreet && (!!r.matchedNumber || hasIppEvidence || hasVerifiedStreetEvidence) && Number.isFinite(r.lat) && Number.isFinite(r.lng) && r.lat > -34 && r.lat < 6 && r.lng > -74 && r.lng < -32;
 }
 var stamp = -1;
 var byAddress = /* @__PURE__ */ new Map();
@@ -16997,8 +17483,12 @@ async function geocodePendingPropertyLocations(properties) {
       const current = index === void 0 ? void 0 : rows[index];
       if (current && validOfficialLocation(current)) return false;
       if (current?.geocodeAttemptedAt && current.geocodeAlgorithmVersion === EXACT_GEOCODE_ALGORITHM_VERSION) return false;
+      const isRio = normalize4(property.city).includes("rio de janeiro");
+      if (isRio && resolveRioIppLocation({ id: property.id, address: property.address, neighborhood: property.neighborhood, city: property.city, state: property.state })) {
+        return false;
+      }
       const parsed = cleanBrazilianAddress(property.address || "");
-      return !!property.id && !!parsed.street && !!parsed.number && !!property.city && !!property.state;
+      return !!property.id && !!parsed.street && !!property.city && !!property.state;
     });
     if (!pending.length) return;
     let lastNetworkStart = 0;
@@ -17009,7 +17499,7 @@ async function geocodePendingPropertyLocations(properties) {
       const current = rows[index];
       const parsed = cleanBrazilianAddress(property.address || "");
       const cachedExact = getCachedCoords(property.address || "", property.neighborhood, property.city, property.state);
-      const needsNetworkLookup = cachedExact?.precision !== "rooftop";
+      const needsNetworkLookup = !cachedExact;
       const elapsed = Date.now() - lastNetworkStart;
       if (needsNetworkLookup && lastNetworkStart && elapsed < 1200) {
         await new Promise((resolve) => setTimeout(resolve, 1200 - elapsed));
@@ -17021,14 +17511,16 @@ async function geocodePendingPropertyLocations(properties) {
           neighborhood: property.neighborhood,
           city: property.city,
           state: property.state,
-          allowStreetFallback: false
+          allowStreetFallback: true
         });
       } catch (error) {
-        console.warn(`[Mapa] Geocodifica\xE7\xE3o exata falhou para ${property.id}:`, error);
+        console.warn(`[Mapa] Geocodifica\xE7\xE3o falhou para ${property.id}:`, error);
       }
       current.geocodeAttemptedAt = (/* @__PURE__ */ new Date()).toISOString();
       current.geocodeAlgorithmVersion = EXACT_GEOCODE_ALGORITHM_VERSION;
-      if (result?.precision === "rooftop" && normalize4(result.matchedNumber) === normalize4(parsed.number)) {
+      const isExactRooftop = result?.precision === "rooftop" && normalize4(result.matchedNumber) === normalize4(parsed.number);
+      const isVerifiedStreet = result?.precision === "street" && !!result.matchedStreet && normalize4(result.matchedCity) === normalize4(property.city);
+      if (result && (isExactRooftop || isVerifiedStreet)) {
         rows[index] = {
           ...current,
           ...property,
@@ -17036,11 +17528,11 @@ async function geocodePendingPropertyLocations(properties) {
           reason: void 0,
           lat: result.lat,
           lng: result.lng,
-          precision: "address",
-          source: "GEOCODE_NUMBER",
+          precision: isExactRooftop ? "address" : "street",
+          source: isExactRooftop ? "GEOCODE_NUMBER" : "GEOCODE_STREET",
           sourceUrl: result.source === "nominatim" ? "https://nominatim.openstreetmap.org/" : "https://photon.komoot.io/",
           geocoderProvider: result.source === "nominatim" || result.source === "photon" ? result.source : void 0,
-          geocoderPrecision: "rooftop",
+          geocoderPrecision: isExactRooftop ? "rooftop" : "street",
           matchedStreet: result.matchedStreet,
           matchedNumber: result.matchedNumber,
           matchedCity: result.matchedCity,
@@ -22640,6 +23132,9 @@ function sendAuctionResponse(req, res, payload, cacheEntry) {
     });
   }
   gzip.pipe(res);
+  res.once("close", () => {
+    if (!res.writableEnded) gzip.destroy();
+  });
   void writeStreamChunks(gzip);
 }
 var auctionCatalogRebuild = null;
@@ -24090,7 +24585,18 @@ var authMiddleware = (req, res, next) => {
 };
 var listedSyncRunning = null;
 var availabilityRunning = null;
-var lastListedSyncCompletedAt = 0;
+var lastListedSyncCompletedAt = (() => {
+  try {
+    const latestPath = import_path4.default.join(process.cwd(), "sync-audits", "latest-listed-sync.json");
+    if (import_fs5.default.existsSync(latestPath)) {
+      const rep = JSON.parse(import_fs5.default.readFileSync(latestPath, "utf8"));
+      const ts = Date.parse(rep?.finishedAt || "");
+      if (Number.isFinite(ts) && ts > 0) return ts;
+    }
+  } catch {
+  }
+  return 0;
+})();
 var openingSyncStage = null;
 var caixaDirectRunning = false;
 var catalogRevision = Date.now();
@@ -24244,7 +24750,7 @@ function startListedSync(reason, ids, targetOrigin, options) {
     );
     const originsToRun = targetOrigin === "judicial" ? ["judicial"] : targetOrigin === "extrajudicial" ? ["extrajudicial"] : ["judicial", "extrajudicial"];
     const priorityIds = /* @__PURE__ */ new Set(["frazao", "biasi", "portalzuk", "rogeriomenezes", "santander", "isaias"]);
-    const shouldSyncPriority = !ids || ids.length === 0 || ids.some((id) => priorityIds.has(id));
+    const shouldSyncPriority = !options?.skipPriority && (!ids || ids.length === 0 || ids.some((id) => priorityIds.has(id)));
     if (shouldSyncPriority) {
       for (const org of originsToRun) {
         for (const target of SYNC_TARGETS) {
@@ -24333,7 +24839,7 @@ app.post("/api/sync/start", authMiddleware, (req, res) => {
     void startAvailabilityCheck();
     return res.status(202).json({ started: false, running: Boolean(listedSyncRunning || caixaDirectRunning || availabilityRunning), cooldown: true, report: readListedSyncStatus() });
   }
-  const started = startListedSync(isAppOpen ? "app-open" : "manual", requestedIds, void 0, { skipCaixa: Boolean(req.body?.skipCaixa) });
+  const started = startListedSync(isAppOpen ? "app-open" : "manual", requestedIds, void 0, { skipCaixa: Boolean(req.body?.skipCaixa), skipPriority: Boolean(req.body?.skipPriority) });
   res.status(202).json({ started, running: Boolean(listedSyncRunning || caixaDirectRunning), report: readListedSyncStatus() });
 });
 app.post("/api/auth/register", (req, res) => {
@@ -24687,11 +25193,11 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     const runRebuild = async () => {
       try {
         const isRenderEnv = process.env.RENDER === "true";
-        if (isRenderEnv && !isForceRefresh) {
-          await new Promise((resolve) => setTimeout(resolve, 25e3));
+        if (!isForceRefresh) {
+          await new Promise((resolve) => setTimeout(resolve, isRenderEnv ? 25e3 : 6e3));
         }
         configureNeighborhoods(store.itbiTransactions);
-        const yieldTick = () => new Promise((resolve) => isRenderEnv ? setTimeout(resolve, 12) : setImmediate(resolve));
+        const yieldTick = () => new Promise((resolve) => setTimeout(resolve, isRenderEnv ? 12 : 4));
         const normalizedCatalog = [];
         for (let i = 0; i < store.auctions.length; i++) {
           if (i > 0 && i % 250 === 0) await yieldTick();
@@ -24753,7 +25259,10 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
             return recalculateAuction(a, store.itbiTransactions);
           })());
         }
-        const enriched = rebuilt.map((a) => {
+        const enriched = [];
+        for (let i = 0; i < rebuilt.length; i++) {
+          if (i > 0 && i % 40 === 0) await yieldTick();
+          let a = rebuilt[i];
           const isRio = (a.state || "").toUpperCase() === "RJ" || String(a.city || "").toLowerCase().includes("rio de janeiro");
           if (isRio && a.streetPortalAvgSqm !== void 0 && a.streetPortalAvgSqm < 1500) {
             a.streetPortalAvgSqm = void 0;
@@ -24770,19 +25279,19 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
               a.calculatedRoi = cost > 0 ? Number((profit / cost * 100).toFixed(2)) : 0;
             }
           }
-          const ipp = isRio ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }) : null;
+          const alreadyExactCoords = a.status_geocodificacao === "GEOCODE_NUMERO" && Number.isFinite(a.lat) && Number.isFinite(a.lng);
+          const ipp = isRio && !alreadyExactCoords ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }) : null;
           if (ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)) {
-            return {
+            a = {
               ...a,
               lat: ipp.lat,
               lng: ipp.lng,
               status_geocodificacao: ipp.matchedNumber ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA"
             };
-          }
-          if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
+          } else if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
             const cached = getCachedCoords(a.address, a.neighborhood, a.city, a.state);
             if (cached) {
-              return {
+              a = {
                 ...a,
                 lat: cached.lat,
                 lng: cached.lng,
@@ -24790,11 +25299,11 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
               };
             }
           }
-          return a;
-        }).map((a) => {
           const verifiedLocation = enrichLocation({ ...a, city: a.city || "" });
-          return verifiedLocation.neighborhood && verifiedLocation.neighborhood !== a.neighborhood ? { ...a, neighborhood: verifiedLocation.neighborhood } : a;
-        });
+          enriched.push(
+            verifiedLocation.neighborhood && verifiedLocation.neighborhood !== a.neighborhood ? { ...a, neighborhood: verifiedLocation.neighborhood } : a
+          );
+        }
         releaseRioIppScratchCaches();
         auctionCatalogResponseCache = {
           auctionsRef: store.auctions,
@@ -24942,9 +25451,19 @@ ${a.description || ""}`;
       await geocodePendingPropertyLocations(pendingToScan.slice(0, 12));
     }
     clearRioIppMemo();
+    let coordsUpdated = 0;
     const locations = candidateProps.map((a) => {
       const p = getOfficialPropertyLocation(a);
-      if (p.status === "located") resolvedAfter++;
+      if (p.status === "located") {
+        resolvedAfter++;
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lng) && (!Number.isFinite(a.lat) || !Number.isFinite(a.lng) || Math.abs((a.lat || 0) - p.lat) > 2e-4 || Math.abs((a.lng || 0) - p.lng) > 2e-4)) {
+          const target = store.auctions.find((item) => item.id === a.id) || a;
+          target.lat = p.lat;
+          target.lng = p.lng;
+          target.status_geocodificacao = p.precision === "address" ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA";
+          coordsUpdated++;
+        }
+      }
       return {
         id: p.id,
         status: p.status,
@@ -24976,7 +25495,7 @@ ${a.description || ""}`;
     });
     releaseRioIppScratchCaches();
     mapLocationsCache = null;
-    if (extractedCount > 0 || resolvedAfter > resolvedBefore) {
+    if (extractedCount > 0 || coordsUpdated > 0 || resolvedAfter > resolvedBefore) {
       catalogRevision++;
       persistedCatalogInvalidated = true;
       if (process.env.RENDER !== "true") {

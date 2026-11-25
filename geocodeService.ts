@@ -68,10 +68,38 @@ function hasLocationTextMatch(expected: string, candidate: string): boolean {
   return matches >= Math.min(2, tokens.length) && matches / tokens.length >= 0.65;
 }
 
+function streetEditDistance(a: string, b: string, maxDist = 2): number {
+  if (a === b) return 0;
+  if (Math.abs(a.length - b.length) > maxDist) return maxDist + 1;
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let val = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        val = Math.min(val, dp[i - 2][j - 2] + 1);
+      }
+      dp[i][j] = val;
+    }
+  }
+  return dp[a.length][b.length];
+}
+
 function hasStreetMatch(expectedStreet: string, candidateStreet: string): boolean {
   const expected = streetCore(expectedStreet);
   const candidate = streetCore(candidateStreet);
-  return !!expected && expected === candidate;
+  if (!expected || !candidate) return false;
+  if (expected === candidate) return true;
+  if (expected.length >= 6 && (candidate.startsWith(expected) || expected.startsWith(candidate))) {
+    const ratio = Math.min(expected.length, candidate.length) / Math.max(expected.length, candidate.length);
+    if (ratio >= 0.72) return true;
+  }
+  const maxDist = Math.max(expected.length, candidate.length) >= 9 ? 2 : 1;
+  const dist = streetEditDistance(expected, candidate, maxDist);
+  const sim = 1 - dist / Math.max(expected.length, candidate.length);
+  return dist <= maxDist && sim >= 0.82;
 }
 
 function hasCityMatch(expectedCity: string | undefined, candidateCity: string | undefined, displayName: string): boolean {
@@ -199,6 +227,9 @@ export function cleanQuery(str: string): string {
  */
 export function cleanBrazilianAddress(raw: string): { street: string; number: string } {
   let text = (raw || '').trim();
+  if (/\b(?:r\$|valor\s+de|lance\s+m[ií]nimo|avalia[çc][aã]o)\b/i.test(text) || /^r\s+de\s+r\$/i.test(text)) {
+    return { street: '', number: '' };
+  }
 
   // Strip CEP
   text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, '');

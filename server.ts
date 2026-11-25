@@ -1830,6 +1830,9 @@ function sendAuctionResponse(
     });
   }
   gzip.pipe(res);
+  res.once('close', () => {
+    if (!res.writableEnded) gzip.destroy();
+  });
   void writeStreamChunks(gzip);
 }
 
@@ -3613,7 +3616,17 @@ const authMiddleware = (req: express.Request, res: express.Response, next: expre
 // One server-owned run at a time, shared by boot, app opening and manual requests.
 let listedSyncRunning: Promise<unknown> | null = null;
 let availabilityRunning: Promise<void> | null = null;
-let lastListedSyncCompletedAt = 0;
+let lastListedSyncCompletedAt = (() => {
+  try {
+    const latestPath = path.join(process.cwd(), 'sync-audits', 'latest-listed-sync.json');
+    if (fs.existsSync(latestPath)) {
+      const rep = JSON.parse(fs.readFileSync(latestPath, 'utf8'));
+      const ts = Date.parse(rep?.finishedAt || '');
+      if (Number.isFinite(ts) && ts > 0) return ts;
+    }
+  } catch {}
+  return 0;
+})();
 let openingSyncStage: 'preparing' | 'caixa' | 'leiloeiros' | null = null;
 let caixaDirectRunning = false;
 let catalogRevision = Date.now();
@@ -3720,7 +3733,7 @@ function applyListedDrafts(drafts: Parameters<typeof reconcileAuctionDrafts>[0],
     throw error;
   }
 }
-function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicial' | 'extrajudicial' | 'all', options?: { skipCaixa?: boolean }) {
+function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicial' | 'extrajudicial' | 'all', options?: { skipCaixa?: boolean; skipPriority?: boolean }) {
   if (listedSyncRunning || caixaDirectRunning) return false;
   openingSyncStage = 'preparing';
   const backup = 'sync-audits/backups/before-listed-sync-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
@@ -3758,7 +3771,7 @@ function startListedSync(reason: string, ids?: string[], targetOrigin?: 'judicia
       : (['judicial', 'extrajudicial'] as const);
 
     const priorityIds = new Set(['frazao', 'biasi', 'portalzuk', 'rogeriomenezes', 'santander', 'isaias']);
-    const shouldSyncPriority = !ids || ids.length === 0 || ids.some(id => priorityIds.has(id));
+    const shouldSyncPriority = !options?.skipPriority && (!ids || ids.length === 0 || ids.some(id => priorityIds.has(id)));
     if (shouldSyncPriority) {
       for (const org of originsToRun) {
         for (const target of SYNC_TARGETS) {
@@ -3839,7 +3852,7 @@ app.post('/api/sync/start', authMiddleware, (req, res) => {
     void startAvailabilityCheck();
     return res.status(202).json({ started: false, running: Boolean(listedSyncRunning || caixaDirectRunning || availabilityRunning), cooldown: true, report: readListedSyncStatus() });
   }
-  const started = startListedSync(isAppOpen ? 'app-open' : 'manual', requestedIds, undefined, { skipCaixa: Boolean(req.body?.skipCaixa) });
+  const started = startListedSync(isAppOpen ? 'app-open' : 'manual', requestedIds, undefined, { skipCaixa: Boolean(req.body?.skipCaixa), skipPriority: Boolean(req.body?.skipPriority) });
   res.status(202).json({started, running:Boolean(listedSyncRunning||caixaDirectRunning), report:readListedSyncStatus()});
 });
 
@@ -4290,12 +4303,12 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
   const runRebuild = async () => {
     try {
       const isRenderEnv = process.env.RENDER === 'true';
-      if (isRenderEnv && !isForceRefresh) {
-        // Aguarda a carga inicial do app (/api/itbi, /api/map/locations, tiles) antes do recálculo pesado em 0.1 vCPU
-        await new Promise(resolve => setTimeout(resolve, 25000));
+      if (!isForceRefresh) {
+        // Aguarda a carga inicial do app (/api/itbi, /api/map/locations, tiles) antes do recálculo pesado em background
+        await new Promise(resolve => setTimeout(resolve, isRenderEnv ? 25000 : 6000));
       }
       configureNeighborhoods(store.itbiTransactions);
-      const yieldTick = () => new Promise<void>(resolve => (isRenderEnv ? setTimeout(resolve, 12) : setImmediate(resolve)));
+      const yieldTick = () => new Promise<void>(resolve => setTimeout(resolve, isRenderEnv ? 12 : 4));
       const normalizedCatalog: AuctionProperty[] = [];
       for (let i = 0; i < store.auctions.length; i++) {
         if (i > 0 && i % 250 === 0) await yieldTick();
@@ -4359,7 +4372,10 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
           return recalculateAuction(a, store.itbiTransactions);
         })());
       }
-      const enriched = rebuilt.map(a => {
+      const enriched: AuctionProperty[] = [];
+      for (let i = 0; i < rebuilt.length; i++) {
+        if (i > 0 && i % 40 === 0) await yieldTick();
+        let a = rebuilt[i];
         const isRio = (a.state || '').toUpperCase() === 'RJ' || String(a.city || '').toLowerCase().includes('rio de janeiro');
         if (isRio && a.streetPortalAvgSqm !== undefined && a.streetPortalAvgSqm < 1500) {
           a.streetPortalAvgSqm = undefined;
@@ -4376,21 +4392,21 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
             a.calculatedRoi = cost > 0 ? Number(((profit / cost) * 100).toFixed(2)) : 0;
           }
         }
-        const ipp = isRio
+        const alreadyExactCoords = (a as any).status_geocodificacao === 'GEOCODE_NUMERO' && Number.isFinite(a.lat) && Number.isFinite(a.lng);
+        const ipp = isRio && !alreadyExactCoords
           ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title })
           : null;
         if (ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)) {
-          return {
+          a = {
             ...a,
             lat: ipp.lat,
             lng: ipp.lng,
             status_geocodificacao: ipp.matchedNumber ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA',
           };
-        }
-        if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
+        } else if ((!a.lat || !a.lng || isNaN(a.lat)) && a.address) {
           const cached = getCachedCoords(a.address, a.neighborhood, a.city, a.state);
           if (cached) {
-            return {
+            a = {
               ...a,
               lat: cached.lat,
               lng: cached.lng,
@@ -4398,13 +4414,13 @@ app.get('/api/auctions', authMiddleware, async (req, res) => {
             };
           }
         }
-        return a;
-      }).map(a => {
         const verifiedLocation = enrichLocation({ ...a, city: a.city || '' });
-        return verifiedLocation.neighborhood && verifiedLocation.neighborhood !== a.neighborhood
-          ? { ...a, neighborhood: verifiedLocation.neighborhood }
-          : a;
-      });
+        enriched.push(
+          verifiedLocation.neighborhood && verifiedLocation.neighborhood !== a.neighborhood
+            ? { ...a, neighborhood: verifiedLocation.neighborhood }
+            : a
+        );
+      }
       releaseRioIppScratchCaches();
       auctionCatalogResponseCache = {
         auctionsRef: store.auctions,
@@ -4564,9 +4580,19 @@ app.post('/api/map/refresh-pending', authMiddleware, async (req, res) => {
     }
 
     clearRioIppMemo();
+    let coordsUpdated = 0;
     const locations = candidateProps.map(a => {
       const p = getOfficialPropertyLocation(a);
-      if (p.status === 'located') resolvedAfter++;
+      if (p.status === 'located') {
+        resolvedAfter++;
+        if (Number.isFinite(p.lat) && Number.isFinite(p.lng) && (!Number.isFinite(a.lat) || !Number.isFinite(a.lng) || Math.abs((a.lat || 0) - p.lat!) > 0.0002 || Math.abs((a.lng || 0) - p.lng!) > 0.0002)) {
+          const target = store.auctions.find(item => item.id === a.id) || a;
+          target.lat = p.lat!;
+          target.lng = p.lng!;
+          (target as any).status_geocodificacao = p.precision === 'address' ? 'GEOCODE_NUMERO' : 'INTERPOLACAO_RUA';
+          coordsUpdated++;
+        }
+      }
       return {
         id: p.id,
         status: p.status,
@@ -4599,7 +4625,7 @@ app.post('/api/map/refresh-pending', authMiddleware, async (req, res) => {
     releaseRioIppScratchCaches();
 
     mapLocationsCache = null;
-    if (extractedCount > 0 || resolvedAfter > resolvedBefore) {
+    if (extractedCount > 0 || coordsUpdated > 0 || resolvedAfter > resolvedBefore) {
       catalogRevision++;
       persistedCatalogInvalidated = true;
       if (process.env.RENDER !== 'true') {

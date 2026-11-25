@@ -1436,11 +1436,11 @@ export default function PropertyMap({
           applyLocationsPayload(locations);
         })
         .catch((err) => {
-          if (!cancelled) {
+          if (!cancelled && err?.name !== 'AbortError') {
             setLocationError(true);
             setLocationsLoaded(true);
+            console.warn('Falha ao carregar localizações verificadas', err);
           }
-          console.warn('Falha ao carregar localizações verificadas', err);
         });
     load();
     return () => {
@@ -1448,7 +1448,7 @@ export default function PropertyMap({
       controller.abort();
       if (timer) clearTimeout(timer);
     };
-  }, [auctions, initialSelectedPropertyId, initialFilteredAuctions, applyLocationsPayload]);
+  }, [auctions.length, applyLocationsPayload]);
 
   const handleRefreshPending = useCallback(async () => {
     if (isRefreshingPending) return;

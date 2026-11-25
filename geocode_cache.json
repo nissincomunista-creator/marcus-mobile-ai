@@ -1236,14 +1236,13 @@
     "matchedStreet": "Rua Visconde de Inhaúma"
   },
   "rua visconde de inhauma, centro, rio de janeiro - rj": {
-    "lat": -22.8999132,
-    "lng": -43.1805663,
-    "displayName": "Rio Paraná, 134, Rua Visconde de Inhaúma, Saara, Centro, Rio de Janeiro, Região Sudeste, 20091-901, Brasil",
-    "precision": "rooftop",
+    "lat": -22.8993432,
+    "lng": -43.1777977,
+    "displayName": "Rua Visconde de Inhaúma, Saara, Centro, Rio de Janeiro, Região Sudeste, 22091-020, Brasil",
+    "precision": "street",
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
-    "matchedStreet": "Rua Visconde de Inhaúma",
-    "matchedNumber": "134"
+    "matchedStreet": "Rua Visconde de Inhaúma"
   },
   "rua evaristo da veiga": {
     "lat": -22.9112626,
@@ -6368,9 +6367,9 @@
   "rua roma, piratininga, niteroi - rj": {
     "lat": -22.9353092,
     "lng": -43.0676918,
-    "displayName": "Rua Roma, Piratininga, Niterói, Rio de Janeiro, Brasil",
+    "displayName": "Rua Roma, Comunidade da Ciclovia, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24350-120, Brasil",
     "precision": "street",
-    "source": "photon",
+    "source": "nominatim",
     "matchedCity": "Niterói",
     "matchedStreet": "Rua Roma"
   },
@@ -10140,14 +10139,14 @@
     "matchedNumber": "3401"
   },
   "avenida embaixador abelardo bueno, barra da tijuca, rio de janeiro - rj": {
-    "lat": -22.9724948,
-    "lng": -43.39622,
-    "displayName": "Lumina Offices, 3300, Avenida Embaixador Abelardo Bueno, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22775-060, Brasil",
+    "lat": -22.9718846,
+    "lng": -43.3931634,
+    "displayName": "Condomínio Jóias da Barra, 3000, Avenida Embaixador Abelardo Bueno, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22775-060, Brasil",
     "precision": "rooftop",
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Avenida Embaixador Abelardo Bueno",
-    "matchedNumber": "3300"
+    "matchedNumber": "3000"
   },
   "avenida embaixador abelardo bueno|rio de janeiro|rj": {
     "lat": -22.9753504,
@@ -13844,14 +13843,13 @@
     "matchedNumber": "270"
   },
   "rua mauro portugal, , rio de janeiro - rj": {
-    "lat": -22.9150998,
-    "lng": -43.5467953,
-    "displayName": "Residencial Jerivá, 270, Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
-    "precision": "rooftop",
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
-    "matchedStreet": "Rua Mauro Portugal",
-    "matchedNumber": "270"
+    "matchedStreet": "Rua Mauro Portugal"
   },
   "rua mauro portugal 270 apto. 407, bloco 02|rio de janeiro|rj": {
     "lat": -22.9150998,
@@ -17833,14 +17831,13 @@
     "matchedNumber": "270"
   },
   "rua  mauro portugal, campo grande, rio de janeiro - rj": {
-    "lat": -22.9150998,
-    "lng": -43.5467953,
-    "displayName": "Residencial Jerivá, 270, Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
-    "precision": "rooftop",
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
     "source": "nominatim",
     "matchedCity": "Rio de Janeiro",
-    "matchedStreet": "Rua Mauro Portugal",
-    "matchedNumber": "270"
+    "matchedStreet": "Rua Mauro Portugal"
   },
   "rua  mauro portugal, n. 270, apto 509, bl 05|rio de janeiro|rj": {
     "lat": -22.9150998,
@@ -19892,5 +19889,957 @@
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Rua Piauí",
     "matchedNumber": "66"
+  },
+  "rua senador fernandes da cunha, nº 1002, apto. 105": {
+    "lat": -22.8911905,
+    "lng": -42.9890191,
+    "displayName": "Praça do Neco, Estrada Senador Fernandes da Cunha, 18, Rio do Ouro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha",
+    "matchedNumber": "18"
+  },
+  "rua senador fernandes da cunha, rio do ouro, niteroi - rj": {
+    "lat": -22.8911905,
+    "lng": -42.9890191,
+    "displayName": "Praça do Neco, Estrada Senador Fernandes da Cunha, 18, Rio do Ouro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha",
+    "matchedNumber": "18"
+  },
+  "rua senador fernandes da cunha, nº 1002, apto. 105|niteroi|rj": {
+    "lat": -22.8911905,
+    "lng": -42.9890191,
+    "displayName": "Praça do Neco, Estrada Senador Fernandes da Cunha, 18, Rio do Ouro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha",
+    "matchedNumber": "18"
+  },
+  "rua doutor paulo cesar, nº 87": {
+    "lat": -22.8986942,
+    "lng": -43.1100448,
+    "displayName": "Condomínio Vivenda de Icaraí, Rua Doutor Paulo César, 87, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César",
+    "matchedNumber": "87"
+  },
+  "rua doutor paulo cesar, santa rosa, niteroi - rj": {
+    "lat": -22.8986942,
+    "lng": -43.1100448,
+    "displayName": "Condomínio Vivenda de Icaraí, Rua Doutor Paulo César, 87, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César",
+    "matchedNumber": "87"
+  },
+  "rua doutor paulo cesar, nº 87|niteroi|rj": {
+    "lat": -22.8986942,
+    "lng": -43.1100448,
+    "displayName": "Condomínio Vivenda de Icaraí, Rua Doutor Paulo César, 87, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César",
+    "matchedNumber": "87"
+  },
+  "rua jarbas de lery santos, n 1685": {
+    "lat": -21.7564308,
+    "lng": -43.3502418,
+    "displayName": "Rua Jarbas de Lery Santos, 1685, Centro, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Jarbas de Lery Santos",
+    "matchedNumber": "1685"
+  },
+  "rua jarbas de lery santos, n, juiz de fora - mg": {
+    "lat": -21.7564308,
+    "lng": -43.3502418,
+    "displayName": "Rua Jarbas de Lery Santos, 1685, Centro, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Jarbas de Lery Santos",
+    "matchedNumber": "1685"
+  },
+  "rua jarbas de lery santos, n 1685|juiz de fora|mg": {
+    "lat": -21.7564308,
+    "lng": -43.3502418,
+    "displayName": "Rua Jarbas de Lery Santos, 1685, Centro, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Jarbas de Lery Santos",
+    "matchedNumber": "1685"
+  },
+  "r. doutor luiz antonio vieira penna, 872": {
+    "lat": -21.7791172,
+    "lng": -43.3512044,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, Mundo Novo, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "rua doutor luiz antonio vieira penna, mundo novo, juiz de fora - mg": {
+    "lat": -21.7791172,
+    "lng": -43.3512044,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, Mundo Novo, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "r. doutor luiz antonio vieira penna, 872|juiz de fora|mg": {
+    "lat": -21.7791172,
+    "lng": -43.3512044,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, Mundo Novo, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "r florianopolis, 484, ap 116, t i, res park nova california - pq jd da serra - juiz de fora/mg": {
+    "lat": -21.7967225,
+    "lng": -43.4006784,
+    "displayName": "Rua Florianópolis, Nova Califórnia, Juiz de Fora, Minas Gerais, Região Sudeste, 36039-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Florianópolis"
+  },
+  "r florianopolis, nova california, juiz de fora - mg": {
+    "lat": -21.7967225,
+    "lng": -43.4006784,
+    "displayName": "Rua Florianópolis, Nova Califórnia, Juiz de Fora, Minas Gerais, Região Sudeste, 36039-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Florianópolis"
+  },
+  "r florianopolis, 484, ap 116, t i, res park nova california - pq jd da serra - juiz de fora/mg|juiz de fora|mg": {
+    "lat": -21.7967225,
+    "lng": -43.4006784,
+    "displayName": "Rua Florianópolis, Nova Califórnia, Juiz de Fora, Minas Gerais, Região Sudeste, 36039-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Florianópolis"
+  },
+  "rua sao joao 11 sala 1020. edificio visconde do rio branco": {
+    "lat": -22.8911868,
+    "lng": -43.1232524,
+    "displayName": "Condomínio Visconde do Rio Branco, 11, Rua São João, Centro, Niterói, Rio de Janeiro, Região Sudeste, 24030-104, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua São João",
+    "matchedNumber": "11"
+  },
+  "rua sao joao, , niteroi - rj": {
+    "lat": -22.8911868,
+    "lng": -43.1232524,
+    "displayName": "Condomínio Visconde do Rio Branco, 11, Rua São João, Centro, Niterói, Rio de Janeiro, Região Sudeste, 24030-104, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua São João",
+    "matchedNumber": "11"
+  },
+  "rua sao joao 11 sala 1020. edificio visconde do rio branco|niteroi|rj": {
+    "lat": -22.8911868,
+    "lng": -43.1232524,
+    "displayName": "Condomínio Visconde do Rio Branco, 11, Rua São João, Centro, Niterói, Rio de Janeiro, Região Sudeste, 24030-104, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua São João",
+    "matchedNumber": "11"
+  },
+  "rua sao joao, 11": {
+    "lat": -22.8911868,
+    "lng": -43.1232524,
+    "displayName": "Condomínio Visconde do Rio Branco, 11, Rua São João, Centro, Niterói, Rio de Janeiro, Região Sudeste, 24030-104, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua São João",
+    "matchedNumber": "11"
+  },
+  "rua sao joao, 11|niteroi|rj": {
+    "lat": -22.8911868,
+    "lng": -43.1232524,
+    "displayName": "Condomínio Visconde do Rio Branco, 11, Rua São João, Centro, Niterói, Rio de Janeiro, Região Sudeste, 24030-104, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua São João",
+    "matchedNumber": "11"
+  },
+  "estrada washington luis, 520, sape": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada washington luis, sape, niteroi - rj": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada washington luis, 520, sape|niteroi|rj": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "rua oswaldo cruz, n 18": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua oswaldo cruz, , niteroi - rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua oswaldo cruz, n 18|niteroi|rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "r. osvaldo cruz, 18 icarai - niteroi/rj 24230-210": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua osvaldo cruz, icarai, niteroi - rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "r. osvaldo cruz, 18 icarai - niteroi/rj 24230-210|niteroi|rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua oswaldo cruz, n": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua oswaldo cruz, n|niteroi|rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "estrada francisco da cruz nunes, 777, piratininga, niteroi, rj": {
+    "lat": -22.9355021,
+    "lng": -43.0640221,
+    "displayName": "Estrada Francisco da Cruz Nunes, Comunidade do Bonsucesso, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24350-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, piratininga, niteroi - rj": {
+    "lat": -22.9355021,
+    "lng": -43.0640221,
+    "displayName": "Estrada Francisco da Cruz Nunes, Comunidade do Bonsucesso, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24350-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, 777, piratininga, niteroi, rj|niteroi|rj": {
+    "lat": -22.9355021,
+    "lng": -43.0640221,
+    "displayName": "Estrada Francisco da Cruz Nunes, Comunidade do Bonsucesso, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24350-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "avenida jornalista alberto francisco torres, icarai": {
+    "lat": -22.907611,
+    "lng": -43.1119452,
+    "displayName": "Avenida Jornalista Alberto Francisco Torres, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-005, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Jornalista Alberto Francisco Torres"
+  },
+  "avenida jornalista alberto francisco torres, icarai, icarai, niteroi - rj": {
+    "lat": -22.907611,
+    "lng": -43.1119452,
+    "displayName": "Avenida Jornalista Alberto Francisco Torres, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-005, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Jornalista Alberto Francisco Torres"
+  },
+  "avenida jornalista alberto francisco torres, icarai|niteroi|rj": {
+    "lat": -22.907611,
+    "lng": -43.1119452,
+    "displayName": "Avenida Jornalista Alberto Francisco Torres, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-005, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Jornalista Alberto Francisco Torres"
+  },
+  "rua riodades, 145, apto. 1007, bloco 04, parque eldorado, fonseca, niteroi, rj, 24130-247": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua riodades, fonseca, niteroi - rj": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua riodades, 145, apto. 1007, bloco 04, parque eldorado, fonseca, niteroi, rj, 24130-247|niteroi|rj": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua octavio malvaccini, n. 580, apto 106,": {
+    "lat": -21.7788604,
+    "lng": -43.3947415,
+    "displayName": "Rua Octávio Malvaccini, Novo Horizonte, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Octávio Malvaccini"
+  },
+  "rua octavio malvaccini, juiz de fora, juiz de fora - mg": {
+    "lat": -21.7788604,
+    "lng": -43.3947415,
+    "displayName": "Rua Octávio Malvaccini, Novo Horizonte, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Octávio Malvaccini"
+  },
+  "rua octavio malvaccini, n. 580, apto 106,|juiz de fora|mg": {
+    "lat": -21.7788604,
+    "lng": -43.3947415,
+    "displayName": "Rua Octávio Malvaccini, Novo Horizonte, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Octávio Malvaccini"
+  },
+  "avenida presidente juscelino kubitschek, nº 6263": {
+    "lat": -21.6972874,
+    "lng": -43.4268061,
+    "displayName": "Avenida Presidente Juscelino Kubitschek, Santa Cruz, Juiz de Fora, Minas Gerais, Região Sudeste, 36090-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Presidente Juscelino Kubitschek"
+  },
+  "avenida presidente juscelino kubitschek, n, juiz de fora - mg": {
+    "lat": -21.6972874,
+    "lng": -43.4268061,
+    "displayName": "Avenida Presidente Juscelino Kubitschek, Santa Cruz, Juiz de Fora, Minas Gerais, Região Sudeste, 36090-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Presidente Juscelino Kubitschek"
+  },
+  "avenida presidente juscelino kubitschek, nº 6263|juiz de fora|mg": {
+    "lat": -21.6972874,
+    "lng": -43.4268061,
+    "displayName": "Avenida Presidente Juscelino Kubitschek, Santa Cruz, Juiz de Fora, Minas Gerais, Região Sudeste, 36090-060, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Presidente Juscelino Kubitschek"
+  },
+  "rua noronha torrezao, n. 743, apto 301,": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, cubango, niteroi - rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, n. 743, apto 301,|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua riodades, n. 145, apto 1608, bl 04": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua riodades, n. 145, apto 1608, bl 04|niteroi|rj": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "estrada washington luis, n. 739, apto 102, lt 1a qd 6": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada washington luis, n. 739, apto 102, lt 1a qd 6|niteroi|rj": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "rua roma, n. 360, apto 106, bl 3  vg 75": {
+    "lat": -22.9353092,
+    "lng": -43.0676918,
+    "displayName": "Rua Roma, Comunidade da Ciclovia, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24350-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Roma"
+  },
+  "rua roma, n. 360, apto 106, bl 3  vg 75|niteroi|rj": {
+    "lat": -22.9353092,
+    "lng": -43.0676918,
+    "displayName": "Rua Roma, Comunidade da Ciclovia, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24350-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Roma"
+  },
+  "rua jornalista sebastiao santana, n. 110, apto 403, bl 403": {
+    "lat": -22.8977009,
+    "lng": -43.5523107,
+    "displayName": "Rua Jornalista Sebastiano Santana, Campo Grande, Rio de Janeiro, Região Sudeste, 23052-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Jornalista Sebastiano Santana"
+  },
+  "rua jornalista sebastiao santana, campo grande, rio de janeiro - rj": {
+    "lat": -22.8977009,
+    "lng": -43.5523107,
+    "displayName": "Rua Jornalista Sebastiano Santana, Campo Grande, Rio de Janeiro, Região Sudeste, 23052-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Jornalista Sebastiano Santana"
+  },
+  "rua jornalista sebastiao santana, n. 110, apto 403, bl 403|rio de janeiro|rj": {
+    "lat": -22.8977009,
+    "lng": -43.5523107,
+    "displayName": "Rua Jornalista Sebastiano Santana, Campo Grande, Rio de Janeiro, Região Sudeste, 23052-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Jornalista Sebastiano Santana"
+  },
+  "rua lady laura, n. 101, apto 502, bl1": {
+    "lat": -23.0173256,
+    "lng": -43.4827296,
+    "displayName": "Rua Lady Laura, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-590, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lady Laura"
+  },
+  "rua lady laura, recreio dos bandeirantes, rio de janeiro - rj": {
+    "lat": -23.0173256,
+    "lng": -43.4827296,
+    "displayName": "Rua Lady Laura, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-590, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lady Laura"
+  },
+  "rua lady laura, n. 101, apto 502, bl1|rio de janeiro|rj": {
+    "lat": -23.0173256,
+    "lng": -43.4827296,
+    "displayName": "Rua Lady Laura, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-590, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lady Laura"
+  },
+  "rua baicuru, n. 125, apto 404, bl 06 lt 01": {
+    "lat": -22.9122153,
+    "lng": -43.5647048,
+    "displayName": "Rua Baicuru, Campo Grande, Rio de Janeiro, Região Sudeste, 23045-055, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Baicuru"
+  },
+  "rua baicuru, campo grande, rio de janeiro - rj": {
+    "lat": -22.9122153,
+    "lng": -43.5647048,
+    "displayName": "Rua Baicuru, Campo Grande, Rio de Janeiro, Região Sudeste, 23045-055, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Baicuru"
+  },
+  "rua baicuru, n. 125, apto 404, bl 06 lt 01|rio de janeiro|rj": {
+    "lat": -22.9122153,
+    "lng": -43.5647048,
+    "displayName": "Rua Baicuru, Campo Grande, Rio de Janeiro, Região Sudeste, 23045-055, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Baicuru"
+  },
+  "rua beth lago, n. 295, casa 01": {
+    "lat": -23.0159199,
+    "lng": -43.481014,
+    "displayName": "Rua Beth Lago, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Beth Lago"
+  },
+  "rua beth lago, recreio dos bandeirantes, rio de janeiro - rj": {
+    "lat": -23.0159199,
+    "lng": -43.481014,
+    "displayName": "Rua Beth Lago, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Beth Lago"
+  },
+  "rua beth lago, n. 295, casa 01|rio de janeiro|rj": {
+    "lat": -23.0159199,
+    "lng": -43.481014,
+    "displayName": "Rua Beth Lago, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Beth Lago"
+  },
+  "rua  mauro portugal, n. 270, apto 501, bl  05": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua  mauro portugal, n. 270, apto 501, bl  05|rio de janeiro|rj": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua paula lima, nº 27": {
+    "lat": -21.7536762,
+    "lng": -43.353932,
+    "displayName": "Rua Paula Lima, Nossa Senhora Aparecida, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Paula Lima"
+  },
+  "rua paula lima, , juiz de fora - mg": {
+    "lat": -21.7536762,
+    "lng": -43.353932,
+    "displayName": "Rua Paula Lima, Nossa Senhora Aparecida, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Paula Lima"
+  },
+  "rua paula lima, nº 27|juiz de fora|mg": {
+    "lat": -21.7536762,
+    "lng": -43.353932,
+    "displayName": "Rua Paula Lima, Nossa Senhora Aparecida, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Paula Lima"
+  },
+  "rua general castrioto, nº 564": {
+    "lat": -22.8667003,
+    "lng": -43.1038696,
+    "displayName": "Rua General Castrioto, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Castrioto"
+  },
+  "rua general castrioto, , niteroi - rj": {
+    "lat": -22.8667003,
+    "lng": -43.1038696,
+    "displayName": "Rua General Castrioto, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Castrioto"
+  },
+  "rua general castrioto, nº 564|niteroi|rj": {
+    "lat": -22.8667003,
+    "lng": -43.1038696,
+    "displayName": "Rua General Castrioto, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Castrioto"
+  },
+  "rua conselheiro saraiva 28 centro": {
+    "lat": -22.8983615,
+    "lng": -43.1779565,
+    "displayName": "Rua Conselheiro Saraiva, Centro, Rio de Janeiro, Região Sudeste, 22091-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Conselheiro Saraiva"
+  },
+  "rua conselheiro saraiva, centro, rio de janeiro - rj": {
+    "lat": -22.8983615,
+    "lng": -43.1779565,
+    "displayName": "Rua Conselheiro Saraiva, Centro, Rio de Janeiro, Região Sudeste, 22091-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Conselheiro Saraiva"
+  },
+  "rua conselheiro saraiva 28 centro|rio de janeiro|rj": {
+    "lat": -22.8983615,
+    "lng": -43.1779565,
+    "displayName": "Rua Conselheiro Saraiva, Centro, Rio de Janeiro, Região Sudeste, 22091-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Conselheiro Saraiva"
+  },
+  "rua mauro portugal, nº 311, apto. 405": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua mauro portugal, nº 311, apto. 405|rio de janeiro|rj": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua mauro portugal, nº 270, apto. 506": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua mauro portugal, nº 270, apto. 506|rio de janeiro|rj": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua mauro portugal, nº 270, apto. 502": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua mauro portugal, nº 270, apto. 502|rio de janeiro|rj": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua mauro portugal, nº 270, apto. 107": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "rua mauro portugal, nº 270, apto. 107|rio de janeiro|rj": {
+    "lat": -22.9158927,
+    "lng": -43.5462279,
+    "displayName": "Rua Mauro Portugal, Campo Grande, Rio de Janeiro, Região Sudeste, 23017-125, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Mauro Portugal"
+  },
+  "estrada caetano monteiro, nº 1032, apto. 202": {
+    "lat": -22.9025102,
+    "lng": -43.0447539,
+    "displayName": "Estrada Caetano Monteiro, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "estrada caetano monteiro, , niteroi - rj": {
+    "lat": -22.9025102,
+    "lng": -43.0447539,
+    "displayName": "Estrada Caetano Monteiro, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "estrada caetano monteiro, nº 1032, apto. 202|niteroi|rj": {
+    "lat": -22.9025102,
+    "lng": -43.0447539,
+    "displayName": "Estrada Caetano Monteiro, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "rua general castrioto, n 564": {
+    "lat": -22.8667003,
+    "lng": -43.1038696,
+    "displayName": "Rua General Castrioto, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Castrioto"
+  },
+  "rua general castrioto, n 564|niteroi|rj": {
+    "lat": -22.8667003,
+    "lng": -43.1038696,
+    "displayName": "Rua General Castrioto, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Castrioto"
+  },
+  "rua doutor luiz palmier, n° 344, bloco 07, apto. 204, barreto": {
+    "lat": -22.8637626,
+    "lng": -43.0979257,
+    "displayName": "Rua Doutor Luiz Palmier, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-310, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Luiz Palmier"
+  },
+  "rua doutor luiz palmier, barreto, niteroi - rj": {
+    "lat": -22.8637626,
+    "lng": -43.0979257,
+    "displayName": "Rua Doutor Luiz Palmier, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-310, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Luiz Palmier"
+  },
+  "rua doutor luiz palmier, n° 344, bloco 07, apto. 204, barreto|niteroi|rj": {
+    "lat": -22.8637626,
+    "lng": -43.0979257,
+    "displayName": "Rua Doutor Luiz Palmier, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-310, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Luiz Palmier"
+  },
+  "rua doutor paulo cesar, n87": {
+    "lat": -22.8987333,
+    "lng": -43.1058911,
+    "displayName": "Rua Doutor Paulo César, Pé Pequeno, Niterói, Rio de Janeiro, Região Sudeste, 24240-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César"
+  },
+  "rua doutor paulo cesar, , niteroi - rj": {
+    "lat": -22.8987333,
+    "lng": -43.1058911,
+    "displayName": "Rua Doutor Paulo César, Pé Pequeno, Niterói, Rio de Janeiro, Região Sudeste, 24240-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César"
+  },
+  "rua doutor paulo cesar, n87|niteroi|rj": {
+    "lat": -22.8987333,
+    "lng": -43.1058911,
+    "displayName": "Rua Doutor Paulo César, Pé Pequeno, Niterói, Rio de Janeiro, Região Sudeste, 24240-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César"
+  },
+  "rua dom gerardo 35 centro": {
+    "lat": -22.8979651,
+    "lng": -43.1791418,
+    "displayName": "Rua Dom Gerardo, Centro, Rio de Janeiro, Região Sudeste, 20090-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Dom Gerardo"
+  },
+  "rua dom gerardo, centro, rio de janeiro - rj": {
+    "lat": -22.8979651,
+    "lng": -43.1791418,
+    "displayName": "Rua Dom Gerardo, Centro, Rio de Janeiro, Região Sudeste, 20090-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Dom Gerardo"
+  },
+  "rua dom gerardo 35 centro|rio de janeiro|rj": {
+    "lat": -22.8979651,
+    "lng": -43.1791418,
+    "displayName": "Rua Dom Gerardo, Centro, Rio de Janeiro, Região Sudeste, 20090-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Dom Gerardo"
+  },
+  "rua visconde de inhauma 50 centro": {
+    "lat": -22.8993432,
+    "lng": -43.1777977,
+    "displayName": "Rua Visconde de Inhaúma, Saara, Centro, Rio de Janeiro, Região Sudeste, 22091-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Visconde de Inhaúma"
+  },
+  "rua visconde de inhauma 50 centro|rio de janeiro|rj": {
+    "lat": -22.8993432,
+    "lng": -43.1777977,
+    "displayName": "Rua Visconde de Inhaúma, Saara, Centro, Rio de Janeiro, Região Sudeste, 22091-020, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Visconde de Inhaúma"
+  },
+  "avenida embaixador abelardo bueno 3000 - barra da tijuca rio de janeiro - rj brasil, barra da tijuca, rio de janeiro - rj": {
+    "lat": -22.9718846,
+    "lng": -43.3931634,
+    "displayName": "Condomínio Jóias da Barra, 3000, Avenida Embaixador Abelardo Bueno, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22775-060, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Embaixador Abelardo Bueno",
+    "matchedNumber": "3000"
+  },
+  "avenida embaixador abelardo bueno 3000 - barra da tijuca rio de janeiro - rj brasil, barra da tijuca, rio de janeiro - rj|rio de janeiro|rj": {
+    "lat": -22.9718846,
+    "lng": -43.3931634,
+    "displayName": "Condomínio Jóias da Barra, 3000, Avenida Embaixador Abelardo Bueno, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22775-060, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Embaixador Abelardo Bueno",
+    "matchedNumber": "3000"
   }
 }

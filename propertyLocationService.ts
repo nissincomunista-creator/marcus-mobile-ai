@@ -63,11 +63,15 @@ export function validOfficialLocation(r: OfficialLocation): boolean {
     !!requestedNumber && normalize(requestedNumber) === normalize(r.matchedNumber) &&
     !!r.city && normalize(r.city) === normalize(r.matchedCity) &&
     normalizeStreet(r.address) === normalizeStreet(r.matchedStreet);
+  const hasVerifiedStreetEvidence = r.source === 'GEOCODE_STREET' &&
+    ['nominatim', 'photon'].includes(String(r.geocoderProvider)) && r.geocoderPrecision === 'street' &&
+    !!r.city && normalize(r.city) === normalize(r.matchedCity) &&
+    !!r.matchedStreet;
   const hasIppEvidence = r.source === 'IPP_RIO_2019' && !!r.matchedStreet &&
     (!r.matchedNumber || !requestedNumber || normalize(requestedNumber) === normalize(r.matchedNumber));
-  return r.status === 'located' && (hasCnefeEvidence || hasExactGeocoderEvidence || hasIppEvidence) &&
-    (r.precision === 'address' || (hasIppEvidence && r.precision === 'street')) && !!r.matchedStreet &&
-    (!!r.matchedNumber || hasIppEvidence) &&
+  return r.status === 'located' && (hasCnefeEvidence || hasExactGeocoderEvidence || hasVerifiedStreetEvidence || hasIppEvidence) &&
+    (r.precision === 'address' || ((hasIppEvidence || hasVerifiedStreetEvidence) && r.precision === 'street')) && !!r.matchedStreet &&
+    (!!r.matchedNumber || hasIppEvidence || hasVerifiedStreetEvidence) &&
     Number.isFinite(r.lat) && Number.isFinite(r.lng) && r.lat! > -34 && r.lat! < 6 && r.lng! > -74 && r.lng! < -32;
 }
 let stamp = -1;
@@ -252,8 +256,12 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
       const current = index === undefined ? undefined : rows[index];
       if (current && validOfficialLocation(current)) return false;
       if (current?.geocodeAttemptedAt && current.geocodeAlgorithmVersion === EXACT_GEOCODE_ALGORITHM_VERSION) return false;
+      const isRio = normalize(property.city).includes('rio de janeiro');
+      if (isRio && resolveRioIppLocation({ id: property.id, address: property.address, neighborhood: property.neighborhood, city: property.city, state: property.state })) {
+        return false;
+      }
       const parsed = cleanBrazilianAddress(property.address || '');
-      return !!property.id && !!parsed.street && !!parsed.number && !!property.city && !!property.state;
+      return !!property.id && !!parsed.street && !!property.city && !!property.state;
     });
     if (!pending.length) return;
 
@@ -265,7 +273,7 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
       const current = rows[index];
       const parsed = cleanBrazilianAddress(property.address || '');
       const cachedExact = getCachedCoords(property.address || '', property.neighborhood, property.city, property.state);
-      const needsNetworkLookup = cachedExact?.precision !== 'rooftop';
+      const needsNetworkLookup = !cachedExact;
       const elapsed = Date.now() - lastNetworkStart;
       if (needsNetworkLookup && lastNetworkStart && elapsed < 1200) {
         await new Promise(resolve => setTimeout(resolve, 1200 - elapsed));
@@ -278,15 +286,17 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
           neighborhood: property.neighborhood,
           city: property.city,
           state: property.state,
-          allowStreetFallback: false
+          allowStreetFallback: true
         });
       } catch (error) {
-        console.warn(`[Mapa] Geocodificação exata falhou para ${property.id}:`, error);
+        console.warn(`[Mapa] Geocodificação falhou para ${property.id}:`, error);
       }
 
       current.geocodeAttemptedAt = new Date().toISOString();
       current.geocodeAlgorithmVersion = EXACT_GEOCODE_ALGORITHM_VERSION;
-      if (result?.precision === 'rooftop' && normalize(result.matchedNumber) === normalize(parsed.number)) {
+      const isExactRooftop = result?.precision === 'rooftop' && normalize(result.matchedNumber) === normalize(parsed.number);
+      const isVerifiedStreet = result?.precision === 'street' && !!result.matchedStreet && normalize(result.matchedCity) === normalize(property.city);
+      if (result && (isExactRooftop || isVerifiedStreet)) {
         rows[index] = {
           ...current,
           ...property,
@@ -294,11 +304,11 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
           reason: undefined,
           lat: result.lat,
           lng: result.lng,
-          precision: 'address',
-          source: 'GEOCODE_NUMBER',
+          precision: isExactRooftop ? 'address' : 'street',
+          source: isExactRooftop ? 'GEOCODE_NUMBER' : 'GEOCODE_STREET',
           sourceUrl: result.source === 'nominatim' ? 'https://nominatim.openstreetmap.org/' : 'https://photon.komoot.io/',
           geocoderProvider: result.source === 'nominatim' || result.source === 'photon' ? result.source : undefined,
-          geocoderPrecision: 'rooftop',
+          geocoderPrecision: isExactRooftop ? 'rooftop' : 'street',
           matchedStreet: result.matchedStreet,
           matchedNumber: result.matchedNumber,
           matchedCity: result.matchedCity,
