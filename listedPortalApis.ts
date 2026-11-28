@@ -815,3 +815,161 @@ export async function collectSuaPlataformaApi(
   return true;
 }
 
+const MAURO_MARCELLO_API = 'https://api.mauromarcello.lel.br/rest/v1';
+const MAURO_MARCELLO_KEY = 'sb_publishable_g4XnQtJJVYr0OuT19JB06w_VaURsLA9';
+
+export async function collectMauroMarcelloApi(
+  dir: string,
+  onPage: (rows: ScrapedAuctionDraft[], total: number) => Promise<void>
+): Promise<boolean> {
+  const headers = { apikey: MAURO_MARCELLO_KEY };
+  const [lots, phases, states, cities, categories] = await Promise.all([
+    fetch(`${MAURO_MARCELLO_API}/public_lots?select=*&status=in.(aberto,futuro)&limit=250`, { headers }).then(r => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/lot_phases?select=*&limit=500`, { headers }).then(r => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/states?select=*`, { headers }).then(r => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/cities?select=*&limit=500`, { headers }).then(r => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/categories?select=*`, { headers }).then(r => r.json()),
+  ]);
+  if (!Array.isArray(lots)) return false;
+
+  fs.writeFileSync(path.join(dir, 'mauromarcello_lel_br-api.json'), JSON.stringify({ lots, phases, states, cities, categories }));
+
+  const stateMap = new Map<string, string>((Array.isArray(states) ? states : []).map((s: any) => [String(s.id), String(s.code || '').toUpperCase()]));
+  const cityMap = new Map<string, string>((Array.isArray(cities) ? cities : []).map((c: any) => [String(c.id), String(c.name || '').trim()]));
+  const catMap = new Map<string, string>((Array.isArray(categories) ? categories : []).map((c: any) => [String(c.id), String(c.slug || c.name || '').toLowerCase()]));
+  const phasesByLot = new Map<string, any[]>();
+  for (const p of (Array.isArray(phases) ? phases : [])) {
+    const key = String(p.lot_id || '');
+    if (!phasesByLot.has(key)) phasesByLot.set(key, []);
+    phasesByLot.get(key)!.push(p);
+  }
+
+  const realEstateCats = new Set(['imoveis', 'imovel_residencial', 'imovel_comercial', 'imoveis_residenciais', 'imoveis_comerciais']);
+  const drafts: ScrapedAuctionDraft[] = [];
+  const today = new Date().toISOString().slice(0, 10);
+
+  for (const lot of lots) {
+    if (lot.hidden || lot.cancelled_at) continue;
+    const catSlug = catMap.get(String(lot.category_id)) || '';
+    const titleStr = String(lot.title || '').trim();
+    const isRealEstate = realEstateCats.has(catSlug) || /\b(?:apartamento|casa|terreno|loja|sala|galp[aã]o|cobertura|im[oó]vel|pr[eé]dio)\b/i.test(titleStr);
+    if (!isRealEstate || /\bsucata\b|\bkg\s+de\s+sucata\b|\bcomputador\b/i.test(titleStr)) continue;
+
+    const descPlain = cheerio.load(String(lot.description || '')).text().replace(/\s+/g, ' ').trim();
+    const rawAddr = String(lot.address || '').replace(/,\s*Brasil$/i, '').trim();
+    const combinedEvidence = `${titleStr} ${rawAddr} ${descPlain}`;
+    let city = cityMap.get(String(lot.city_id)) || '';
+    let state = stateMap.get(String(lot.state_id)) || '';
+    if (!city || !state) {
+      const detected = sourceAuctionLocation(combinedEvidence);
+      if (detected) {
+        city = city || detected.city;
+        state = state || detected.state;
+      }
+    }
+    if (!allowedSyncLocation(city, state)) continue;
+
+    const lotPhases = (phasesByLot.get(String(lot.id)) || [])
+      .slice()
+      .sort((a: any, b: any) => (Number(a.phase_order) || 0) - (Number(b.phase_order) || 0));
+    const p1 = lotPhases[0];
+    const p2 = lotPhases[1];
+    const d1 = p1?.end_date ? String(p1.end_date).slice(0, 10) : '';
+    const d2 = p2?.end_date ? String(p2.end_date).slice(0, 10) : '';
+    const val1 = Number(p1?.initial_value ?? p1?.announced_value ?? lot.evaluation_value ?? 0) || 0;
+    const val2 = Number(p2?.initial_value ?? p2?.announced_value ?? 0) || 0;
+    const upcomingPhases = lotPhases
+      .map((p: any) => ({
+        date: p.end_date ? String(p.end_date).slice(0, 10) : '',
+        price: Number(p.initial_value ?? p.announced_value ?? 0) || 0,
+      }))
+      .filter((p: any) => p.date && p.date >= today && p.price > 0)
+      .sort((a: any, b: any) => a.date.localeCompare(b.date));
+    const activePhase = upcomingPhases[0] || (d2 && val2 > 0 ? { date: d2, price: val2 } : { date: d1, price: val1 });
+
+    const slugOrId = String(lot.slug || lot.id || '').trim();
+    const auctionLink = `https://www.mauromarcello.lel.br/lote/${slugOrId}`;
+    const cleanStreetAddress = extractAddress(`${rawAddr}\n${descPlain}\n${titleStr}`, '') || rawAddr;
+    const origin = lot.judicial_process_number || lot.judicial_court || /\bjudicial\b/i.test(descPlain) ? 'judicial' : 'extrajudicial';
+    const evalVal = Number(lot.evaluation_value) || val1 || 0;
+    const combinedText = [
+      titleStr,
+      rawAddr ? `Endereço: ${rawAddr}` : '',
+      descPlain,
+      lot.judicial_process_number ? `Processo: ${lot.judicial_process_number}` : '',
+      lot.judicial_court ? `Vara: ${lot.judicial_court}` : '',
+      evalVal > 0 ? `Avaliação: R$ ${evalVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '',
+      d1 ? `1º Leilão: ${d1.split('-').reverse().join('/')} R$ ${val1.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '',
+      d2 ? `2º Leilão: ${d2.split('-').reverse().join('/')} R$ ${val2.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '',
+    ].filter(Boolean).join('\n');
+
+    const baseDraft: ScrapedAuctionDraft = {
+      portalId: 'mauromarcello_lel_br',
+      auctioneerName: 'Mauro Marcello',
+      title: titleStr,
+      address: cleanStreetAddress,
+      neighborhood: '',
+      city,
+      state,
+      propertyType: 'Apartamento',
+      sizeSqm: 0,
+      auctionPrice: activePhase.price,
+      auctionDate: activePhase.date,
+      auctionLink,
+      imageUrl: String(lot.featured_image_url || '').trim(),
+      description: combinedText.slice(0, 12000),
+      origin,
+      originVerified: true,
+      sourceVerified: true,
+      locationScopeVerified: true,
+      priceVerified: activePhase.price > 0,
+      ...(Number.isFinite(Number(lot.latitude)) && Number(lot.latitude) !== 0 ? { lat: Number(lot.latitude) } : {}),
+      ...(Number.isFinite(Number(lot.longitude)) && Number(lot.longitude) !== 0 ? { lng: Number(lot.longitude) } : {}),
+      ...(evalVal > 0 ? { estimatedValue: evalVal } : {}),
+      ...(val1 > 0 ? { firstAuctionPrice: val1 } : {}),
+      ...(val2 > 0 ? { secondAuctionPrice: val2 } : {}),
+      ...(d1 ? { firstAuctionDate: d1 } : {}),
+      ...(d2 ? { secondAuctionDate: d2 } : {}),
+    };
+
+    const parsed = parseOfficialLotDetail(baseDraft, {
+      text: combinedText,
+      title: titleStr,
+      image: baseDraft.imageUrl || '',
+      structuredAddresses: [rawAddr, cleanStreetAddress].filter(Boolean),
+      structuredSizes: [],
+      officialFinancials: {
+        ...(activePhase.price > 0 ? { auctionPrice: activePhase.price, priceVerified: true } : {}),
+        ...(evalVal > 0 ? { estimatedValue: evalVal } : {}),
+        ...(activePhase.date ? { auctionDate: activePhase.date } : {}),
+        ...(d1 ? { firstAuctionDate: d1 } : {}),
+        ...(d2 ? { secondAuctionDate: d2 } : {}),
+        ...(val1 > 0 ? { firstAuctionPrice: val1 } : {}),
+        ...(val2 > 0 ? { secondAuctionPrice: val2 } : {}),
+      },
+      availability: {
+        url: auctionLink,
+        checkedAt: new Date().toISOString(),
+        state: 'active',
+        status: 'ativo',
+        reason: 'Ativo na API oficial Mauro Marcello Leilões'
+      }
+    }, auctionLink);
+
+    drafts.push({
+      ...parsed,
+      origin,
+      originVerified: true,
+      city,
+      state,
+      ...(baseDraft.lat ? { lat: baseDraft.lat } : {}),
+      ...(baseDraft.lng ? { lng: baseDraft.lng } : {}),
+    });
+  }
+
+  if (drafts.length) {
+    await onPage(drafts, lots.length);
+  }
+  return true;
+}
+

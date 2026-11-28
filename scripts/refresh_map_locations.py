@@ -133,7 +133,7 @@ if __name__=='__main__':
    old=existing.get(row.get('id'))
    same_identity=old and all(norm(old.get(k,''))==norm(row.get(k,'')) for k in ('address','city','state','neighborhood'))
    if not same_identity:continue
-   if old.get('status')=='located' and old.get('source')=='GEOCODE_NUMBER':
+   if (old.get('status')=='located' and (old.get('source')=='GEOCODE_NUMBER' or row.get('status')!='located')):
     row.update(old)
    elif old.get('geocodeAttemptedAt'):
     row['geocodeAttemptedAt']=old['geocodeAttemptedAt']

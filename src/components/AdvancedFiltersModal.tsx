@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   SlidersHorizontal, 
@@ -130,7 +131,30 @@ export default function AdvancedFiltersModal({
 }: AdvancedFiltersModalProps) {
   const [isReturnAccordionOpen, setIsReturnAccordionOpen] = useState(true);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
+
+  const selectedTypesList = selectedType
+    ? selectedType.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+  const togglePropertyType = (id: string) => {
+    if (!id) {
+      setSelectedType('');
+      return;
+    }
+    const next = selectedTypesList.includes(id)
+      ? selectedTypesList.filter((item) => item !== id)
+      : [...selectedTypesList, id];
+    setSelectedType(next.join(','));
+  };
 
   const propertyTypes = [
     { id: '', label: 'Todos os Tipos', icon: Layers },
@@ -150,15 +174,24 @@ export default function AdvancedFiltersModal({
     { value: 4, label: '4+' }
   ];
 
-  return (
+  const modalNode = (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-hidden">
+      <div
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+        className="fixed inset-0 z-[260] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md overflow-hidden cursor-pointer"
+      >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          initial={{ opacity: 0, scale: 0.96, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ duration: 0.2 }}
-          className="bg-slate-900 border border-slate-750 rounded-3xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
+          exit={{ opacity: 0, scale: 0.96, y: 10 }}
+          transition={{ duration: 0.18 }}
+          className="bg-slate-900 border border-slate-750 rounded-3xl max-w-2xl w-full shadow-2xl flex flex-col max-h-[85vh] overflow-hidden cursor-default"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
           {/* HEADER DO MODAL (ESTILO QUINTOANDAR) */}
@@ -246,13 +279,13 @@ export default function AdvancedFiltersModal({
               </label>
               <div className="flex flex-wrap gap-2">
                 {propertyTypes.map((t) => {
-                  const isSelected = selectedType === t.id;
+                  const isSelected = t.id === '' ? selectedTypesList.length === 0 : selectedTypesList.includes(t.id);
                   const Icon = t.icon;
                   return (
                     <button
-                      key={t.id}
+                      key={t.id || 'all'}
                       type="button"
-                      onClick={() => setSelectedType(t.id)}
+                      onClick={() => togglePropertyType(t.id)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 border ${
                         isSelected
                           ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-950/50 ring-2 ring-indigo-400/30'
@@ -629,4 +662,6 @@ export default function AdvancedFiltersModal({
       </div>
     </AnimatePresence>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalNode, document.body) : modalNode;
 }

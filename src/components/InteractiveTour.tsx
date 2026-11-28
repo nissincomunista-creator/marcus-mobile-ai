@@ -195,11 +195,11 @@ export const TOUR_STEPS: TourStep[] = [
     moduleName: 'Módulo 2: Card Analítico do Imóvel',
     moduleBadge: 'Módulo 2 • Anatomia do Card de Leilão',
     moduleColor: 'amber',
-    title: 'Benchmark de Mercado: Zap e QuintoAndar',
+    title: 'Benchmark de Mercado: Portais Imobiliários',
     targetSelector: '[data-tour="card-portals"]',
     targetTab: 'garimpo',
     preferredPlacement: 'right',
-    description: 'Comparativo direto com os maiores portais imobiliários: Média de preço por m² anunciado na rua e comparativo lado a lado das médias ativas no Zap Imóveis e no QuintoAndar.',
+    description: 'Comparativo direto com anúncios ativos de mercado: Média de preço por m² anunciado na rua e comparativo consolidado das médias nos portais imobiliários.',
     investorBenefit: 'Permite calibrar a margem entre o valor de pedida de anúncios concorrentes e o valor de fechamento real de cartório.',
     actionHint: 'Use os portais como termômetro de concorrência e o ITBI como balizador de valor real de liquidez.',
     icon: Eye
@@ -336,7 +336,7 @@ export const TOUR_STEPS: TourStep[] = [
     preferredPlacement: 'top',
     description: 'Análise de mercado baseada exclusivamente nas escrituras públicas reais lavradas na Prefeitura: veja o Comparativo Visual de Valor m² (Prédio, Rua, Raio de 500m, Bairro e Portais), os cards com médias estatísticas e a tabela auditada de transações reais na mesma rua.',
     investorBenefit: 'Proteção total contra preços falsos de anúncios: o ITBI reflete o dinheiro real transacionado em cartório sob o rigor da NBR 14.653.',
-    actionHint: 'Utilize o botão \'Gerar Laudo Técnico PTAM (PDF)\' para exportar um dossiê pericial executivo pronto para apresentação a investidores.',
+    actionHint: 'Utilize o botão \'Gerar Dossiê 360° & PTAM (PDF)\' para exportar o dossiê territorial 360° completo + laudo PTAM resumido para apresentação a investidores.',
     icon: Building2
   },
 
@@ -410,7 +410,7 @@ export const TOUR_STEPS: TourStep[] = [
     targetSelector: '[data-tour="profile-analyses"]',
     targetTab: 'perfil',
     preferredPlacement: 'bottom',
-    description: 'Central permanente de inteligência do investidor: consulte todas as análises salvas da Calculadora, acesse os 4 balizadores de preço (Gabarito ITBI, Portais Zap/QuintoAndar, Flip Rápido e Caixa) e visualize ou baixe o Laudo Técnico PTAM em PDF a qualquer momento.',
+    description: 'Central permanente de inteligência do investidor: consulte todas as análises salvas da Calculadora, acesse os 4 balizadores de preço (Gabarito ITBI, Média dos Portais, Flip Rápido e Caixa) e visualize ou baixe o Laudo Técnico PTAM em PDF a qualquer momento.',
     investorBenefit: 'Histórico pericial auditável e profissional para comprovação de viabilidade perante bancos, credores, sócios e investidores parceiros.',
     actionHint: 'Parabéns! Você concluiu o Tour Completo por todas as ferramentas da plataforma e está pronto para arrematar com máxima segurança e lucro.',
     icon: Bookmark

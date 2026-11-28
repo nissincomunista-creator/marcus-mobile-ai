@@ -9,10 +9,32 @@ export function parseCalculatorBRL(value: string): number {
   return Number(clean.replace(/\./g, '').replace(',', '.'));
 }
 
-export function filterStreetSuggestions(rows: StreetSuggestion[], query: string): StreetSuggestion[] {
+export function filterStreetSuggestions(rows: StreetSuggestion[], query: string, limit = 15): StreetSuggestion[] {
   const key = canonicalStreet(query);
-  return rows.filter(row => row?.street && (!key || canonicalStreet(row.street).includes(key)))
-    .slice().sort((a, b) => a.street.localeCompare(b.street, 'pt-BR'));
+  if (!key) {
+    return rows
+      .filter((row) => row?.street)
+      .slice()
+      .sort((a, b) => a.street.localeCompare(b.street, 'pt-BR'))
+      .slice(0, Math.max(limit, 40));
+  }
+  const starts: StreetSuggestion[] = [];
+  const wordStarts: StreetSuggestion[] = [];
+  const contains: StreetSuggestion[] = [];
+  const wordNeedle = ` ${key}`;
+  for (const row of rows) {
+    if (!row?.street) continue;
+    const norm = canonicalStreet(row.street);
+    if (norm.startsWith(key)) starts.push(row);
+    else if (norm.includes(wordNeedle)) wordStarts.push(row);
+    else if (norm.includes(key)) contains.push(row);
+  }
+  const byTxOrAlpha = (a: StreetSuggestion, b: StreetSuggestion) =>
+    (b.transactionCount || 0) - (a.transactionCount || 0) || a.street.localeCompare(b.street, 'pt-BR');
+  starts.sort(byTxOrAlpha);
+  wordStarts.sort(byTxOrAlpha);
+  contains.sort(byTxOrAlpha);
+  return [...starts, ...wordStarts, ...contains].slice(0, limit);
 }
 
 export async function fetchCalculatorJson(url: string, signal?: AbortSignal): Promise<any> {

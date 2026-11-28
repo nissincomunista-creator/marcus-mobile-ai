@@ -265,27 +265,22 @@ export default function App() {
 
         const aucData = await aucRes.json();
         setAuctions(Array.isArray(aucData) ? aucData : []);
-        // Sincronização automática completa na abertura do app:
-        // Caixa + Leiloeiros Judiciais/Extrajudiciais + Auditoria de lotes vendidos/encerrados
-        void authFetch('/api/sync/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: 'app-open' })
-        }).then(async (syncRes) => {
-          if (!syncRes.ok) return;
-          const initStatus = await syncRes.json().catch(() => null);
-          if (initStatus?.started || initStatus?.running) {
-            await pollSyncStatusUntilDone(600000);
-            await refreshMarketData({ silent: true, force: true });
-          }
-        }).catch((syncErr) => console.warn('[Auto-Sync] Falha silenciosa na sincronização de abertura:', syncErr));
-        void authFetch('/api/itbi').then(async itbiRes => {
-          if (!itbiRes.ok) throw new Error(`HTTP ${itbiRes.status}`);
-          return itbiRes.json();
-        }).then(itbiData => {
-          setItbiStats(Array.isArray(itbiData?.stats) ? itbiData.stats : []);
-          setItbiCount(Number(itbiData?.totalCount) || 0);
-        }).catch(error => console.warn('Resumo ITBI não carregado durante a abertura:', error));
+        // Sincronização automática em background após 45s de uso para não competir
+        // com o carregamento inicial do mapa, simulador e geração de relatórios.
+        setTimeout(() => {
+          void authFetch('/api/sync/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: 'app-open-deferred' })
+          }).then(async (syncRes) => {
+            if (!syncRes.ok) return;
+            const initStatus = await syncRes.json().catch(() => null);
+            if (initStatus?.started || initStatus?.running) {
+              await pollSyncStatusUntilDone(600000);
+              await refreshMarketData({ silent: true, force: true });
+            }
+          }).catch((syncErr) => console.warn('[Auto-Sync] Falha silenciosa na sincronização de abertura:', syncErr));
+        }, 45000);
       } catch (e: any) {
         console.error('Error fetching data on app load:', e);
         setRpcError(e.message || 'Erro de conexão com o painel fullstack.');
@@ -884,33 +879,39 @@ export default function App() {
       {/* 1. Header Toolbar & Sub-header Fixed Container: Sempre visível inclusive no Mapa */}
       <div className="sticky top-0 z-[60] shrink-0 bg-slate-900 dark:bg-slate-900 border-b border-slate-800">
         <header className="px-4 sm:px-6 py-2.5">
-          <div className="max-w-[1780px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative">
-          
-          {/* Left: Logo + Assessoria Pericial & Flip Imobiliário */}
-          <div className="flex items-center justify-between gap-4 w-full flex-wrap">
-            <div 
-              className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group select-none shrink-0" 
-              onClick={() => {
-                setSelectedAuctionId(null);
-                setActiveTab('garimpo');
-              }}
-            >
-              <img 
-                src="/marcus_logo.png" 
-                alt="Assessoria Pericial & Flip Imobiliário" 
-                className="w-9 h-9 rounded-xl object-cover border border-emerald-500/40 shadow-md ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform" 
-              />
-              <div className="flex flex-col justify-center">
-                <span className="text-xs sm:text-sm font-bold text-slate-100 tracking-tight leading-tight">
-                  Assessoria Pericial &amp; Flip Imobiliário
-                </span>
+          <div className="max-w-[1780px] mx-auto relative">
+
+          {/* 3-Column Grid: Left Logo/Slot | Center Garimpar & Flip House (sempre centralizado) | Right Tools */}
+          <div className="flex flex-wrap items-center justify-between lg:grid lg:grid-cols-[1fr_auto_1fr] gap-3 w-full">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 lg:justify-self-start">
+              <div 
+                className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group select-none shrink-0" 
+                onClick={() => {
+                  setSelectedAuctionId(null);
+                  setActiveTab('garimpo');
+                  setIsDashboardMapOpen(false);
+                }}
+              >
+                <img 
+                  src="/marcus_logo.png" 
+                  alt="Assessoria Pericial & Flip Imobiliário" 
+                  className="w-9 h-9 rounded-xl object-cover border border-emerald-500/40 shadow-md ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform" 
+                />
+                {!isMapFullscreen && (
+                  <div className="flex flex-col justify-center">
+                    <span className="text-xs sm:text-sm font-bold text-slate-100 tracking-tight leading-tight">
+                      Assessoria Pericial &amp; Flip Imobiliário
+                    </span>
+                  </div>
+                )}
               </div>
+              {isMapFullscreen && (
+                <div id="map-header-title-slot" className="flex items-center gap-2 min-w-0 flex-wrap" />
+              )}
             </div>
 
-            {/* Center/Right: Garimpar Leilões + Flip House + (Calculadora, ITBI, Perfil) */}
-            <div data-tour="header-nav" className="flex flex-wrap items-center gap-2 sm:gap-3 justify-end ml-auto">
-              {/* Garimpar Leilões & Flip House */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Center: Garimpar Leilões + Flip House centralizados horizontalmente na tela */}
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 lg:justify-self-center">
                 <button
                   onClick={() => {
                     setActiveTab('garimpo');
@@ -920,7 +921,7 @@ export default function App() {
                     activeTab === 'garimpo'
                       ? 'btn-solid-white bg-emerald-600 text-white border-emerald-500 shadow-sm'
                       : theme === 'light'
-                        ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:text-slate-900'
+                        ? 'bg-emerald-50/85 text-emerald-800 border-emerald-300/80 hover:bg-emerald-100 hover:text-emerald-900'
                         : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
                   }`}
                 >
@@ -928,7 +929,7 @@ export default function App() {
                   <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                     activeTab === 'garimpo' || theme !== 'light'
                       ? 'bg-black/25 text-white'
-                      : 'bg-slate-200 text-slate-800'
+                      : 'bg-emerald-200/70 text-emerald-900 border border-emerald-300/60'
                   }`}>
                     {auctions.filter(a => a.origin !== 'portal').length}
                   </span>
@@ -958,11 +959,10 @@ export default function App() {
                     {auctions.filter(a => a.origin === 'portal').length}
                   </span>
                 </button>
-              </div>
+            </div>
 
-              <span className="hidden sm:inline-block h-5 w-px bg-slate-800" />
-
-              {/* Right corner tools: Calculadora, ITBI, Perfil (transparentes só contorno + letra) + Theme & Logout */}
+            {/* Right: Calculadora, ITBI, Perfil + Theme & Logout */}
+            <div data-tour="header-nav" className="flex flex-wrap items-center gap-1.5 justify-end lg:justify-self-end ml-auto lg:ml-0">
               <div className="flex items-center gap-1.5">
                 <button
                   id="tab-calculadora"
@@ -982,26 +982,6 @@ export default function App() {
                 >
                   <Calculator className="w-3.5 h-3.5" />
                   <span>Calculadora</span>
-                </button>
-
-                <button
-                  id="tab-itbi"
-                  onClick={() => {
-                    setActiveTab('itbi');
-                    setSelectedAuctionId(null);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl font-medium text-xs transition-all flex items-center space-x-1.5 cursor-pointer border bg-transparent ${
-                    activeTab === 'itbi'
-                      ? theme === 'light'
-                        ? 'text-slate-900 border-slate-700'
-                        : 'text-white border-slate-300'
-                      : theme === 'light'
-                        ? 'text-slate-700 border-slate-400 hover:border-slate-600 hover:text-slate-950'
-                        : 'text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
-                  }`}
-                >
-                  <Database className="w-3.5 h-3.5" />
-                  <span>ITBI</span>
                 </button>
 
                 <button

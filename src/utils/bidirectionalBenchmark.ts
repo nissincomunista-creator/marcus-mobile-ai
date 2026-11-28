@@ -75,6 +75,9 @@ export function isGenericStreet(str?: string | null): boolean {
   const s = str.toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b.*$/i, '')
+    .replace(/\s+/g, ' ')
     .trim();
   
   if (s.length < 3) return true;
@@ -880,8 +883,8 @@ export function computeBidirectionalBenchmarks(
 
   // 6. Aplicação no Flip Rápido (60 dias) e Gabarito
   // Deságio tático de 10% para liquidez imediata
-  // Válvula de Segurança para Apartamentos sem amostragem no próprio condomínio:
-  const isApartmentWithoutBuilding = targetPropType === 'Apartamento' && predioValid.length === 0;
+  // Válvula de Segurança só atua em Apartamento sem prédio E com baixa amostragem na própria rua (< 3 vendas):
+  const isApartmentWithoutBuilding = targetPropType === 'Apartamento' && predioValid.length === 0 && ruaValid.length < 3;
   const buildingSafetyValveFactor = isApartmentWithoutBuilding ? 0.95 : 1.0;
 
   const flipRapidoSqm = isJuizDeFora ? 0 : (mediaCorteReal > 0 ? Math.round(mediaCorteReal * 0.90 * buildingSafetyValveFactor) : 0);

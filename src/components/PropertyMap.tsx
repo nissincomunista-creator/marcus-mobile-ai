@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { AuctionProperty } from '../types.ts';
 import {
   MapPin, Compass, ExternalLink, X, ShieldAlert, Building2,
-  Sparkles, ChevronRight, ChevronLeft, ListFilter, Box, Eye, EyeOff, List, Bookmark, RefreshCw, Sun, Moon
+  Sparkles, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, ListFilter, Box, Eye, EyeOff, List, Bookmark, RefreshCw, Mountain, Sun, Moon
 } from 'lucide-react';
 import { getPropertyCoordinates } from '../utils/geoCoords.ts';
 import { checkPropertyCommunityRisk } from '../utils/communityRisk.ts';
@@ -17,6 +17,7 @@ import {
   OPENFREEMAP_DARK_STYLE,
   OPENFREEMAP_LIGHT_STYLE,
   RioBuildingMetric,
+  applyTerrainRelief,
   ensureMapLibrePMTilesProtocol,
   getBuildingColorExpression,
   getTypologyColor,
@@ -24,6 +25,9 @@ import {
   toLngLat,
   upsertRio3DBuildingsLayer,
 } from '../utils/mapLibreSetup.ts';
+import { getOrAttachSolarShadowEngine } from '../map/SolarShadowEngine.ts';
+
+const SOLAR_HOURS_STEPS = [5.5, 7, 9, 12, 15, 16.5] as const;
 
 function normalizeBairroKey(raw?: string): string {
   return String(raw || '')
@@ -182,7 +186,7 @@ const METRIC_LEGENDS: Record<
 > = {
   auctions: {
     title: 'Imóveis em Leilão 3D',
-    subtitle: 'Cor por tipologia no endereço IPP',
+    subtitle: 'Cor por tipologia no lote mapeado',
     description: 'Use R$/m², Liquidez e Spread acima para estudar o preço da rua, giro de vendas e potencial de cada região.',
     stops: [
       { color: '#22c55e', label: 'Casa / Sobrado' },
@@ -195,7 +199,7 @@ const METRIC_LEGENDS: Record<
   },
   m2: {
     title: 'ITBI R$/m² por Prédio',
-    subtitle: 'Mediana oficial IPP + ITBI',
+    subtitle: 'Mediana oficial de ITBI no lote',
     description: 'Azul claro nos valores menores (< 2,7 mil) intensificando gradualmente até o azul vibrante nos imóveis acima de 18 mil/m².',
     stops: [
       { color: '#2563EB', label: '> 18 mil' },
@@ -255,12 +259,16 @@ export default function PropertyMap({
   const [activeMetric, setActiveMetric] = useState<RioBuildingMetric>('auctions');
   const [auctionBuildingsByOid, setAuctionBuildingsByOid] = useState<Record<number, any>>({});
   const [is3DMode, setIs3DMode] = useState<boolean>(true);
+  const [isSolarEnabled, setIsSolarEnabled] = useState<boolean>(true);
+  const [solarHourIdx, setSolarHourIdx] = useState<number>(2); // 09h default
+  const [isReliefEnabled, setIsReliefEnabled] = useState<boolean>(false); // Relevo OFF por padrão
   const [showAuctionsLayer, setShowAuctionsLayer] = useState<boolean>(true);
   const [legendCollapsed, setLegendCollapsed] = useState<boolean>(false);
   const [stateFilter, setStateFilter] = useState<string>('');
   const [selectedTypologyFilter, setSelectedTypologyFilter] = useState<string | null>(null);
   const [selectedBairroKey, setSelectedBairroKey] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [mapCenterCoords, setMapCenterCoords] = useState<{ lat: number; lng: number }>({ lat: -22.9068, lng: -43.195 });
   const [viewportBounds, setViewportBounds] = useState<{
     minLat: number;
     maxLat: number;
@@ -360,10 +368,37 @@ export default function PropertyMap({
     [locationRecords]
   );
 
+  const activeViewportCity = useMemo(() => {
+    const { lat, lng } = mapCenterCoords;
+    // Juiz de Fora / Zona da Mata MG
+    if (lat > -22.3) return 'Juiz de Fora';
+    // Niterói (east of Guanabara Bay)
+    if (lng > -43.138 && lat > -22.99 && lat < -22.80) return 'Niterói';
+    // Rio de Janeiro metro core
+    if (lat <= -22.65 && lng <= -43.05) return 'Rio de Janeiro';
+
+    // Nearest property city inside viewport fallback
+    let bestCity = 'Rio de Janeiro';
+    let bestDist = Infinity;
+    for (const a of filteredList) {
+      const c = getMapCoordinates(a);
+      if (!c) continue;
+      const d = Math.hypot(c[0] - lat, c[1] - lng);
+      if (d < bestDist) {
+        bestDist = d;
+        if (a.city) bestCity = a.city;
+      }
+    }
+    return bestCity;
+  }, [mapCenterCoords, filteredList, getMapCoordinates]);
+
   const neighborhoodOptions = useMemo(() => {
+    const activeCityNorm = normalizeBairroKey(activeViewportCity);
     const counts = new Map<string, { key: string; label: string; count: number }>();
     for (const a of filteredList) {
       if (!getMapCoordinates(a)) continue;
+      const propCityNorm = normalizeBairroKey(a.city || '');
+      if (activeCityNorm && propCityNorm && propCityNorm !== activeCityNorm) continue;
       const raw = a.neighborhood || locationRecords[a.id]?.matchedLocality || '';
       const key = normalizeBairroKey(raw);
       if (!key) continue;
@@ -372,7 +407,13 @@ export default function PropertyMap({
       else counts.set(key, { key, label: formatBairroTitle(raw), count: 1 });
     }
     return Array.from(counts.values()).sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
-  }, [filteredList, getMapCoordinates, locationRecords]);
+  }, [filteredList, getMapCoordinates, locationRecords, activeViewportCity]);
+
+  useEffect(() => {
+    if (selectedBairroKey && !neighborhoodOptions.some((o) => o.key === selectedBairroKey)) {
+      setSelectedBairroKey('');
+    }
+  }, [selectedBairroKey, neighborhoodOptions]);
 
   const selectedBairroFeature = useMemo(() => {
     if (!selectedBairroKey || !rioBairrosFeatures.length) return null;
@@ -670,6 +711,12 @@ export default function PropertyMap({
     const map = mapRef.current;
     if (!map) return;
     const bounds = map.getBounds();
+    const centerNow = map.getCenter();
+    setMapCenterCoords((prev) =>
+      Math.abs(prev.lat - centerNow.lat) < 1e-4 && Math.abs(prev.lng - centerNow.lng) < 1e-4
+        ? prev
+        : { lat: centerNow.lat, lng: centerNow.lng }
+    );
     const minLng = bounds.getWest();
     const maxLng = bounds.getEast();
     const minLat = bounds.getSouth();
@@ -724,23 +771,44 @@ export default function PropertyMap({
       bearing: is3DMode ? -14 : 0,
       maxPitch: 68,
       attributionControl: false,
-    });
+      canvasContextAttributes: { stencil: true, antialias: true },
+    } as any);
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     map.addControl(new maplibregl.ScaleControl({ maxWidth: 110, unit: 'metric' }), 'bottom-right');
 
     mapRef.current = map;
 
+    let solarDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleSolarRefresh = () => {
+      if (solarDebounceTimer) clearTimeout(solarDebounceTimer);
+      solarDebounceTimer = setTimeout(() => {
+        setSolarRefreshTick((t) => t + 1);
+      }, 120);
+    };
+
     map.on('load', () => {
       styleReadyRef.current = true;
       setMapReady(true);
       setStyleVersion((v) => v + 1);
       updateViewportCounter();
+      scheduleSolarRefresh();
     });
 
     map.on('style.load', () => {
       styleReadyRef.current = true;
       setStyleVersion((v) => v + 1);
+    });
+
+    map.once('idle', scheduleSolarRefresh);
+
+    map.on('sourcedata', (ev: any) => {
+      if (
+        ev?.isSourceLoaded &&
+        (ev.sourceId === 'rio-edificacoes' || ev.sourceId === 'cities-3d-edificacoes')
+      ) {
+        scheduleSolarRefresh();
+      }
     });
 
     map.on('error', (ev: any) => {
@@ -750,8 +818,14 @@ export default function PropertyMap({
       }
     });
 
-    map.on('moveend', updateViewportCounter);
-    map.on('zoomend', updateViewportCounter);
+    map.on('moveend', () => {
+      updateViewportCounter();
+      scheduleSolarRefresh();
+    });
+    map.on('zoomend', () => {
+      updateViewportCounter();
+      scheduleSolarRefresh();
+    });
 
     // Unified click handler: strict precedence (cluster > auction building/multi > IPP 3D building > clear)
     map.on('click', async (e) => {
@@ -792,9 +866,9 @@ export default function PropertyMap({
           setSelectedBuildingInfo(null);
           setIsSidebarCollapsed(false);
 
-          // Sample matching IPP vector tile building metrics at click coordinates
+          // Sample matching 3D vector tile building metrics at click coordinates
           try {
-            const ippLayersAtPoint = existingLayer(['rio-edificacoes-3d']);
+            const ippLayersAtPoint = existingLayer(['rio-edificacoes-3d', 'cities-3d-edificacoes-3d']);
             if (ippLayersAtPoint.length) {
               const ippAtClick = map.queryRenderedFeatures(e.point, { layers: ippLayersAtPoint })[0];
               if (ippAtClick?.properties) {
@@ -833,8 +907,8 @@ export default function PropertyMap({
         }
       }
 
-      // 3. Regular IPP 3D building inspector
-      const ippLayers = existingLayer(['rio-edificacoes-3d']);
+      // 3. Regular 3D building inspector (Rio + Niterói + Juiz de Fora)
+      const ippLayers = existingLayer(['rio-edificacoes-3d', 'cities-3d-edificacoes-3d']);
       if (ippLayers.length) {
         const ippHits = map.queryRenderedFeatures(e.point, { layers: ippLayers });
         if (ippHits.length > 0) {
@@ -844,7 +918,7 @@ export default function PropertyMap({
           ];
           const candidateFeats = [
             ...ippHits,
-            ...map.queryRenderedFeatures(bbox10, { layers: ['rio-edificacoes-3d'] }),
+            ...map.queryRenderedFeatures(bbox10, { layers: ippLayers }),
           ];
           const feat =
             candidateFeats.find((f: any) => Number(f.properties?.m2 || 0) > 0 && f.properties?.a) ||
@@ -883,7 +957,7 @@ export default function PropertyMap({
             setBuildingClusterModal(null);
             setSelectedBuildingInfo({
               id: Number(p.id) || undefined,
-              address: displayAddress || 'Edificação Cartográfica Oficial IPP',
+              address: displayAddress || 'Edificação Cartográfica Mapeada',
               bairro: p.b || 'Rio de Janeiro',
               altura: Number(p.h) || 5,
               m2: Number(p.m2) || 0,
@@ -970,6 +1044,12 @@ export default function PropertyMap({
     map.on('mouseleave', 'rio-edificacoes-3d', () => {
       map.getCanvas().style.cursor = '';
     });
+    map.on('mouseenter', 'cities-3d-edificacoes-3d', () => {
+      if (!map.getCanvas().style.cursor) map.getCanvas().style.cursor = 'crosshair';
+    });
+    map.on('mouseleave', 'cities-3d-edificacoes-3d', () => {
+      map.getCanvas().style.cursor = '';
+    });
 
     // Faction popup
     map.on('click', 'factions-fill', (e) => {
@@ -982,7 +1062,6 @@ export default function PropertyMap({
           `<div style="font-family: sans-serif; font-size: 12px; color: #0f172a; min-width: 140px;">
              <strong style="font-size: 13px; color: #0284c7;">${p.n || 'Área'}</strong><br/>
              <span style="font-size: 11px; margin-top: 2px; display: block;">Controle/Facção: <strong style="color: #ef4444;">${p.f || 'Em disputa'}</strong></span>
-             <span style="font-size: 9.5px; color: #64748b; margin-top: 4px; display: block;">Fonte: dadosderiscos.com.br</span>
            </div>`
         )
         .addTo(map);
@@ -1010,8 +1089,10 @@ export default function PropertyMap({
 
   const prevIs3DRef = useRef(is3DMode);
   const prevThemeRef = useRef(theme);
+  const lastSolarSigRef = useRef<string>('');
+  const [solarRefreshTick, setSolarRefreshTick] = useState<number>(0);
 
-  // Switch between light (Positron) and dark OpenFreeMap style seamlessly
+  // Sync light/dark theme basemap cleanly (light = landscape palette, dark = graphite dark matter)
   useEffect(() => {
     if (prevThemeRef.current === theme) return;
     prevThemeRef.current = theme;
@@ -1021,6 +1102,41 @@ export default function PropertyMap({
     map.setStyle(theme === 'light' ? OPENFREEMAP_LIGHT_STYLE : OPENFREEMAP_DARK_STYLE);
   }, [theme]);
 
+  // Toggle 3D Terrain & Hillshade Relief cleanly (OFF by default)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReadyRef.current) return;
+    applyTerrainRelief(map, isReliefEnabled);
+  }, [isReliefEnabled, styleVersion]);
+
+  // Project crisp hardware WebGL Stencil shadows via SolarShadowEngine
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleReadyRef.current) return;
+    const engine = getOrAttachSolarShadowEngine(map);
+    const hourVal = SOLAR_HOURS_STEPS[solarHourIdx] ?? 9;
+    const center = map.getCenter();
+    const zoomNow = map.getZoom();
+    const isDark = theme !== 'light';
+
+    if (!isSolarEnabled) {
+      const offSig = `off|${styleVersion}|${isReliefEnabled}|${isDark}`;
+      if (lastSolarSigRef.current === offSig) return;
+      lastSolarSigRef.current = offSig;
+      engine.rebuildFromMap(map, hourVal, false, isDark, isReliefEnabled);
+      return;
+    }
+
+    const layers = ['rio-edificacoes-3d', 'cities-3d-edificacoes-3d', 'auctions-buildings-3d'].filter((id) =>
+      Boolean(map.getLayer(id))
+    );
+    const featsCount = layers.length && zoomNow >= 13.0 ? map.queryRenderedFeatures({ layers }).length : 0;
+    const onSig = `on|${hourVal}|${zoomNow.toFixed(1)}|${center.lat.toFixed(3)}|${center.lng.toFixed(3)}|${featsCount}|${styleVersion}|${is3DMode}|${isReliefEnabled}|${isDark}`;
+    if (lastSolarSigRef.current === onSig) return;
+    lastSolarSigRef.current = onSig;
+    engine.rebuildFromMap(map, hourVal, true, isDark, isReliefEnabled);
+  }, [isSolarEnabled, solarHourIdx, solarRefreshTick, styleVersion, is3DMode, isReliefEnabled, theme]);
+
   // Focus & fit bounds when user picks a specific Bairro (using real IPP boundary)
   useEffect(() => {
     const map = mapRef.current;
@@ -1028,7 +1144,7 @@ export default function PropertyMap({
     if (selectedBairroFeature) {
       const bBounds = getGeometryBounds(selectedBairroFeature.geometry);
       if (bBounds) {
-        map.fitBounds(bBounds, { padding: 48, maxZoom: 15.8, duration: 600 });
+        map.fitBounds(bBounds, { padding: 48, maxZoom: 15.8, duration: 280 });
         return;
       }
     }
@@ -1041,7 +1157,7 @@ export default function PropertyMap({
     if (!pts.length) return;
     const bounds = new maplibregl.LngLatBounds();
     for (const pt of pts) bounds.extend(pt);
-    map.fitBounds(bounds, { padding: 80, maxZoom: 16.2, duration: 600 });
+    map.fitBounds(bounds, { padding: 80, maxZoom: 16.2, duration: 280 });
   }, [selectedBairroKey, selectedBairroFeature, getPropertyBairroKey]);
 
   // Update 3D tilt/pitch seamlessly
@@ -1055,8 +1171,8 @@ export default function PropertyMap({
       bearing: is3DMode ? -14 : 0,
       duration: 500,
     });
-    if (styleReadyRef.current && map.getLayer('rio-edificacoes-3d')) {
-      upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88, isLightTheme: theme === 'light' });
+    if (styleReadyRef.current && (map.getLayer('rio-edificacoes-3d') || map.getLayer('cities-3d-edificacoes-3d'))) {
+      upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, showRelief: isReliefEnabled, opacity: 0.9, isLightTheme: theme === 'light' });
     }
     if (styleReadyRef.current && map.getLayer('auctions-buildings-3d')) {
       map.setPaintProperty(
@@ -1078,8 +1194,12 @@ export default function PropertyMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !styleReadyRef.current) return;
+    const ramp = getBuildingColorExpression(activeMetric, theme === 'light');
     if (map.getLayer('rio-edificacoes-3d')) {
-      map.setPaintProperty('rio-edificacoes-3d', 'fill-extrusion-color', getBuildingColorExpression(activeMetric, theme === 'light'));
+      map.setPaintProperty('rio-edificacoes-3d', 'fill-extrusion-color', ramp);
+    }
+    if (map.getLayer('cities-3d-edificacoes-3d')) {
+      map.setPaintProperty('cities-3d-edificacoes-3d', 'fill-extrusion-color', ramp);
     }
   }, [activeMetric, theme]);
 
@@ -1088,7 +1208,7 @@ export default function PropertyMap({
     const map = mapRef.current;
     if (!map || !styleReadyRef.current) return;
 
-    upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, opacity: 0.88, isLightTheme: theme === 'light' });
+    upsertRio3DBuildingsLayer(map, activeMetric, { show3D: is3DMode, showRelief: isReliefEnabled, opacity: 0.9, isLightTheme: theme === 'light' });
 
     // Bairro highlight overlay (glow perimeter polygon around selected bairro lots)
     const hullData = selectedBairroHullGeoJsonRef.current;
@@ -1142,24 +1262,123 @@ export default function PropertyMap({
         ]
       : 0.7;
 
+    // Enrich auction buildings with any overlapping/nested 3D polygons (towers, cores, rooftops)
+    // so the ENTIRE building volume is painted brightly without gray holes
+    const getGeomCenter = (geom: any): [number, number] | null => {
+      if (!geom) return null;
+      const ring =
+        geom.type === 'Polygon'
+          ? geom.coordinates?.[0]
+          : geom.type === 'MultiPolygon'
+          ? geom.coordinates?.[0]?.[0]
+          : null;
+      if (!Array.isArray(ring) || ring.length < 3) return null;
+      let sx = 0;
+      let sy = 0;
+      for (const pt of ring) {
+        sx += Number(pt[0]) || 0;
+        sy += Number(pt[1]) || 0;
+      }
+      return [sx / ring.length, sy / ring.length];
+    };
+
+    let completedBldData: any = bldData;
+    try {
+      const zoomNow = map.getZoom();
+      const baseFeats: any[] = Array.isArray((bldData as any)?.features) ? (bldData as any).features : [];
+      if (zoomNow >= 13.8 && baseFeats.length > 0) {
+        const layers3d = ['rio-edificacoes-3d', 'cities-3d-edificacoes-3d'].filter((id) => Boolean(map.getLayer(id)));
+        const rendered3d = layers3d.length ? map.queryRenderedFeatures({ layers: layers3d }) : [];
+        if (rendered3d.length > 0) {
+          const bounds = map.getBounds();
+          const inViewAuctions = baseFeats
+            .filter((bf) => {
+              const lng = Number(bf.properties?.lng);
+              const lat = Number(bf.properties?.lat);
+              return Number.isFinite(lng) && Number.isFinite(lat) && bounds.contains([lng, lat]);
+            })
+            .map((bf) => ({
+              feat: bf,
+              center: getGeomCenter(bf.geometry),
+              oid: Number(bf.properties?.oid) || 0,
+            }));
+
+          if (inViewAuctions.length > 0) {
+            const extraParts: any[] = [];
+            const seenExtra = new Set<string>();
+            for (const cand of rendered3d) {
+              const geom = cand.geometry;
+              if (!geom || (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon')) continue;
+              const candCenter = getGeomCenter(geom);
+              if (!candCenter) continue;
+              const candOid = Number((cand.properties as any)?.oid ?? cand.id ?? 0);
+              const candH = Number((cand.properties as any)?.h ?? (cand.properties as any)?.height ?? 0);
+
+              for (const ab of inViewAuctions) {
+                if (candOid && candOid === ab.oid) continue;
+                if (ab.center) {
+                  const dx = Math.abs(candCenter[0] - ab.center[0]);
+                  const dy = Math.abs(candCenter[1] - ab.center[1]);
+                  if (dx > 0.00055 || dy > 0.00055) continue;
+                }
+                const insideAuction = pointInGeometry(candCenter, ab.feat.geometry);
+                const auctionInsideCand = ab.center ? pointInGeometry(ab.center, geom) : false;
+                if (!insideAuction && !auctionInsideCand) continue;
+
+                const partKey = `${ab.feat.properties?.clusterKey || ab.oid}|${candOid || `${candCenter[0].toFixed(5)},${candCenter[1].toFixed(5)}`}`;
+                if (seenExtra.has(partKey)) break;
+                seenExtra.add(partKey);
+                extraParts.push({
+                  type: 'Feature',
+                  geometry: geom,
+                  properties: {
+                    ...ab.feat.properties,
+                    h: Math.max(candH, Number(ab.feat.properties?.h) || 8),
+                  },
+                });
+                break;
+              }
+            }
+            if (extraParts.length > 0) {
+              completedBldData = {
+                type: 'FeatureCollection',
+                features: [...baseFeats, ...extraParts],
+              };
+            }
+          }
+        }
+      }
+    } catch {}
+
+    // Remove ground outline layer if present (no floor border under auction buildings)
+    if (map.getLayer('auctions-buildings-outline')) {
+      try {
+        map.removeLayer('auctions-buildings-outline');
+      } catch {}
+    }
+
+    const brightColorExpr: any = [
+      'case',
+      ['==', ['get', 'isSelected'], 1],
+      '#ffeb00',
+      ['==', ['get', 'isBairroMatch'], 1],
+      ['get', 'color'],
+      theme === 'light' ? '#94a3b8' : '#334866',
+    ];
+
     if (existingBldSrc) {
-      existingBldSrc.setData(bldData as any);
+      existingBldSrc.setData(completedBldData as any);
       if (map.getLayer('auctions-buildings-3d')) {
         map.moveLayer('auctions-buildings-3d', beforeSymbol);
         map.setPaintProperty('auctions-buildings-3d', 'fill-extrusion-height', auctionHeightExpr);
-        map.setPaintProperty(
-          'auctions-buildings-3d',
-          'fill-extrusion-color',
-          ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], theme === 'light' ? '#94a3b8' : '#334155']
-        );
-      }
-      if (map.getLayer('auctions-buildings-outline')) {
-        map.moveLayer('auctions-buildings-outline', beforeSymbol);
+        map.setPaintProperty('auctions-buildings-3d', 'fill-extrusion-color', brightColorExpr);
+        map.setPaintProperty('auctions-buildings-3d', 'fill-extrusion-opacity', 1);
+        map.setPaintProperty('auctions-buildings-3d', 'fill-extrusion-vertical-gradient', false);
       }
     } else {
       map.addSource('auctions-buildings-source', {
         type: 'geojson',
-        data: bldData as any,
+        data: completedBldData as any,
       });
 
       map.addLayer(
@@ -1168,32 +1387,11 @@ export default function PropertyMap({
           type: 'fill-extrusion',
           source: 'auctions-buildings-source',
           paint: {
-            'fill-extrusion-color': ['case', ['==', ['get', 'isBairroMatch'], 1], ['get', 'color'], theme === 'light' ? '#94a3b8' : '#334155'],
+            'fill-extrusion-color': brightColorExpr,
             'fill-extrusion-height': auctionHeightExpr,
             'fill-extrusion-base': 0,
-            'fill-extrusion-opacity': 0.96,
-            'fill-extrusion-vertical-gradient': true,
-          },
-        },
-        beforeSymbol
-      );
-
-      map.addLayer(
-        {
-          id: 'auctions-buildings-outline',
-          type: 'line',
-          source: 'auctions-buildings-source',
-          paint: {
-            'line-color': [
-              'case',
-              ['==', ['get', 'isSelected'], 1],
-              '#fde047',
-              ['==', ['get', 'isBairroMatch'], 1],
-              '#ffffff',
-              '#475569',
-            ],
-            'line-width': ['case', ['==', ['get', 'isSelected'], 1], 3.5, 1.0],
-            'line-opacity': 0.88,
+            'fill-extrusion-opacity': 1,
+            'fill-extrusion-vertical-gradient': false,
           },
         },
         beforeSymbol
@@ -1272,7 +1470,6 @@ export default function PropertyMap({
     const vis = showAuctionsLayer ? 'visible' : 'none';
     for (const lid of [
       'auctions-buildings-3d',
-      'auctions-buildings-outline',
       'auctions-clusters',
       'auctions-cluster-count',
       'auctions-multi-unit',
@@ -1282,7 +1479,7 @@ export default function PropertyMap({
     }
 
     updateViewportCounter();
-  }, [auctionGeoJson, auctionBuildingsGeoJson, selectedBairroHullGeoJson, styleVersion, showAuctionsLayer, is3DMode, theme, updateViewportCounter]);
+  }, [auctionGeoJson, auctionBuildingsGeoJson, selectedBairroHullGeoJson, styleVersion, showAuctionsLayer, is3DMode, theme, solarRefreshTick, updateViewportCounter]);
 
   // Factions overlay inside MapLibre
   const effectiveShowFactions = showFactionsExternal ?? showFactionsLayer;
@@ -1472,7 +1669,7 @@ export default function PropertyMap({
       if (typeof data.resolvedCount === 'number' && data.resolvedCount > 0) {
         setPendingRefreshMsg(`${data.resolvedCount} endereço(s) confirmado(s) e plotado(s) no mapa!`);
       } else {
-        setPendingRefreshMsg('Varredura concluída nas descrições e base oficial IPP/CNEFE.');
+        setPendingRefreshMsg('Varredura concluída nas descrições e base georreferenciada.');
       }
     } catch (err) {
       console.warn('Falha ao atualizar pendentes:', err);
@@ -1522,7 +1719,7 @@ export default function PropertyMap({
     if (coords && focusKey !== focusedLocationRef.current) {
       focusedLocationRef.current = focusKey;
       mapRef.current.resize();
-      mapRef.current.easeTo({ center: toLngLat(coords), zoom: Math.max(mapRef.current.getZoom(), 16.8), duration: 500 });
+      mapRef.current.easeTo({ center: toLngLat(coords), zoom: Math.max(mapRef.current.getZoom(), 16.8), duration: 220 });
     }
   }, [selectedPropId, auctions, baseList, getMapCoordinates, mapReady]);
 
@@ -1531,7 +1728,7 @@ export default function PropertyMap({
     setSelectedBuildingInfo(null);
     const coords = getMapCoordinates(prop);
     if (coords && mapRef.current) {
-      mapRef.current.easeTo({ center: toLngLat(coords), zoom: 16.8, pitch: is3DMode ? 48 : 0, duration: 550 });
+      mapRef.current.easeTo({ center: toLngLat(coords), zoom: 16.8, pitch: is3DMode ? 48 : 0, duration: 240 });
     }
     if (window.innerWidth < 1024) {
       setActiveTab('map');
@@ -1549,117 +1746,123 @@ export default function PropertyMap({
 
   const currentLegend = METRIC_LEGENDS[activeMetric];
 
-  return (
-    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose ? 'flex-1 min-h-0 h-full' : 'h-[calc(100dvh-4.5rem)] lg:h-[calc(100vh-5rem)] rounded-2xl border border-slate-800'}`}>
-      <div className="bg-slate-950/95 border-b border-slate-800 px-3 sm:px-6 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-2 z-20">
-        <div className="flex items-center space-x-2">
-          <div className="p-1.5 sm:p-2 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
-            <Compass className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div>
-            <h2 className="font-bold text-white text-xs sm:text-base tracking-tight flex items-center gap-2 flex-wrap">
-              <span>Mapa Georreferenciado</span>
-              <span className="text-[11px] sm:text-xs font-mono text-slate-300 font-normal">
-                {filteredList.length} Lotes {inViewportCount > 0 ? `• ${inViewportCount} no Enquadramento` : ''}
-              </span>
-              {locationsLoaded && pendingReviewProps.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowPendingDrawer(true)}
-                  className="hidden sm:flex items-center gap-1.5 text-[10.5px] font-medium font-mono bg-transparent hover:bg-slate-800/70 text-slate-200 px-2.5 py-0.5 rounded-lg border border-slate-600 hover:border-slate-400 cursor-pointer transition-all"
-                  title="Imóveis bloqueados no mapa por falta de validação cartográfica estrita de endereço"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5 text-slate-300" />
-                  <span>{pendingReviewProps.length} Pendentes de Revisão</span>
-                </button>
-              )}
-            </h2>
-          </div>
-        </div>
+  const mapHeaderTitleSlot = typeof document !== 'undefined' ? document.getElementById('map-header-title-slot') : null;
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="flex lg:hidden items-center bg-slate-900 p-0.5 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setActiveTab('map')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                activeTab === 'map' ? 'bg-indigo-600 text-white' : 'text-slate-400'
-              }`}
-            >
-              Mapa
-            </button>
-            <button
-              onClick={() => setActiveTab('list')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-400'
-              }`}
-            >
-              Fichas ({orderedList.length})
-            </button>
-          </div>
-
+  const mapTitleSummary = (
+    <div className="flex items-center space-x-2 min-w-0">
+      <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30 shrink-0">
+        <Compass className="w-4 h-4" />
+      </div>
+      <h2 className="font-bold text-white text-xs sm:text-sm tracking-tight flex items-center gap-2 flex-wrap">
+        <span>Mapa Georreferenciado</span>
+        <span className="text-[11px] font-mono text-slate-300 font-normal">
+          {filteredList.length} Lotes {inViewportCount > 0 ? `• ${inViewportCount} no Enquadramento` : ''}
+        </span>
+        {locationsLoaded && pendingReviewProps.length > 0 && (
           <button
             type="button"
-            onClick={() => setIs3DMode((v) => !v)}
-            className={`px-2.5 py-1 rounded-xl text-xs font-semibold font-mono transition-colors cursor-pointer border flex items-center gap-1 ${
-              is3DMode
-                ? 'btn-light-tint-sky bg-sky-600/20 text-sky-300 border-sky-500/60'
-                : 'btn-light-outline bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
-            }`}
-            title="Alternar extrusão 3D pelas alturas oficiais (IPP ALTURA)"
+            onClick={() => setShowPendingDrawer(true)}
+            className="hidden sm:flex items-center gap-1.5 text-[10.5px] font-medium font-mono bg-transparent hover:bg-slate-800/70 text-slate-200 px-2.5 py-0.5 rounded-lg border border-slate-600 hover:border-slate-400 cursor-pointer transition-all"
+            title="Imóveis bloqueados no mapa por falta de validação cartográfica estrita de endereço"
           >
-            <Box className="w-3.5 h-3.5" />
-            <span>{is3DMode ? '3D ON' : '3D OFF'}</span>
+            <ShieldAlert className="w-3.5 h-3.5 text-slate-300" />
+            <span>{pendingReviewProps.length} Pendentes de Revisão</span>
           </button>
+        )}
+      </h2>
+    </div>
+  );
 
-          {onToggleTheme && (
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              className="btn-light-outline p-1.5 rounded-xl font-bold text-xs bg-slate-900 text-amber-300 border border-slate-700 hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center"
-              title={theme === 'dark' ? 'Alternar para Tema Claro' : 'Alternar para Tema Escuro'}
-              aria-label="Alternar tema claro ou escuro"
-            >
-              {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
-            </button>
-          )}
+  return (
+    <div className={`bg-slate-900 overflow-hidden flex flex-col relative w-full ${onClose ? 'flex-1 min-h-0 h-full' : 'h-[calc(100dvh-4.5rem)] lg:h-[calc(100vh-5rem)] rounded-2xl border border-slate-800'}`}>
+      {mapHeaderTitleSlot ? createPortal(mapTitleSummary, mapHeaderTitleSlot) : null}
 
-          {onClose && !hideCloseButton && (
-            <button
-              onClick={onClose}
-              className="p-1.5 sm:p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-colors cursor-pointer"
-              title="Fechar mapa"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          )}
-        </div>
-      </div>
+      {(!mapHeaderTitleSlot || (onClose && !hideCloseButton)) && (
+        <div className="bg-slate-950/95 border-b border-slate-800 px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-20">
+          {!mapHeaderTitleSlot ? mapTitleSummary : <div />}
 
-      <div className="bg-slate-950/90 border-b border-slate-800 px-3 sm:px-6 py-1.5 sm:py-2 flex flex-nowrap lg:flex-wrap overflow-x-auto lg:overflow-visible items-center justify-between gap-2 z-20 text-xs">
-        {renderMapFilters ? (
-          renderMapFilters
-        ) : (
-          <div className="w-full flex items-center justify-end">
-            {!onToggleFactionsExternal && (
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex lg:hidden items-center bg-slate-900 p-0.5 rounded-xl border border-slate-800">
               <button
-                type="button"
-                onClick={() => setShowFactionsLayer((prev) => !prev)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-                  effectiveShowFactions
-                    ? 'bg-rose-950/90 text-rose-300 border-rose-500'
-                    : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
+                onClick={() => setActiveTab('map')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  activeTab === 'map' ? 'bg-indigo-600 text-white' : 'text-slate-400'
                 }`}
-                title="Camada de controle de facções RJ (dadosderiscos.com.br)"
               >
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-                <span>Risco &amp; Facções RJ</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${effectiveShowFactions ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                  {effectiveShowFactions ? 'ON' : 'OFF'}
-                </span>
+                Mapa
+              </button>
+              <button
+                onClick={() => setActiveTab('list')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-400'
+                }`}
+              >
+                Fichas ({orderedList.length})
+              </button>
+            </div>
+
+            {onClose && !hideCloseButton && (
+              <button
+                onClick={onClose}
+                className="p-1.5 sm:p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-colors cursor-pointer"
+                title="Fechar mapa"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             )}
           </div>
-        )}
+        </div>
+      )}
+
+      <div className="bg-slate-950/90 border-b border-slate-800 px-3 sm:px-6 py-1.5 sm:py-2 flex flex-nowrap lg:flex-wrap overflow-x-auto lg:overflow-visible items-center justify-between gap-2 z-20 text-xs">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {renderMapFilters ? (
+            renderMapFilters
+          ) : (
+            <div className="w-full flex items-center justify-end gap-2">
+              {!onToggleFactionsExternal && (
+                <button
+                  type="button"
+                  onClick={() => setShowFactionsLayer((prev) => !prev)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                    effectiveShowFactions
+                      ? 'bg-rose-950/90 text-rose-300 border-rose-500'
+                      : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
+                  }`}
+                  title="Camada de risco territorial RJ"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Risco &amp; Facções RJ</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${effectiveShowFactions ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    {effectiveShowFactions ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {mapHeaderTitleSlot && (
+            <div className="flex lg:hidden items-center bg-slate-900 p-0.5 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setActiveTab('map')}
+                className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                  activeTab === 'map' ? 'bg-indigo-600 text-white' : 'text-slate-400'
+                }`}
+              >
+                Mapa
+              </button>
+              <button
+                onClick={() => setActiveTab('list')}
+                className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                  activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-400'
+                }`}
+              >
+                Fichas ({orderedList.length})
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative flex-1 w-full h-full flex flex-col lg:flex-row overflow-hidden">
@@ -1686,7 +1889,7 @@ export default function PropertyMap({
                   className="w-full bg-slate-950 text-slate-100 text-xs font-bold pl-2.5 pr-7 py-2 rounded-xl border border-slate-700 hover:border-sky-500/70 focus:border-sky-400 focus:outline-none cursor-pointer truncate"
                 >
                   <option value="">
-                    Todos os Bairros ({orderedList.length} no enquadramento)
+                    Todos os Bairros — {activeViewportCity} ({orderedList.length} no enquadramento)
                   </option>
                   {neighborhoodOptions.map((opt) => (
                     <option key={opt.key} value={opt.key}>
@@ -1734,11 +1937,12 @@ export default function PropertyMap({
                   const flipPrice = auc.vendaBaixaPrice || 0;
                   const divNotice = cleanDivergentNotice(auc.divergentNeighborhoodNotice);
                   const divMatch = divNotice ? divNotice.match(/^(Bairro\s*Real\s*:\s*)([^(]+)(.*)$/i) : null;
+                  const localTxCount = (auc.itbiBuildingCount || 0) + (auc.itbiStreetCount || 0);
                   const effScore =
-                    !auc.itbiStreetCount || auc.itbiStreetCount === 0
+                    localTxCount === 0
                       ? 0
                       : Math.min(auc.liquidityScore ?? 0, assessDataQuality(auc).liquidityCeiling);
-                  const streetCount = auc.itbiStreetCount || 0;
+                  const streetCount = localTxCount;
                   const roiVal = auc.calculatedRoi;
                   const portalSqm = Number((auc as any).moradaM2 || (auc as any).moradaVirtualM2 || auc.m2MercadoPortal || auc.streetPortalAvgSqm || 0);
 
@@ -1858,15 +2062,15 @@ export default function PropertyMap({
                         <div className="space-y-1.5 pt-1 text-left">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5">
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Lance Mínimo</span>
-                              <span className="text-[11.5px] font-extrabold tracking-tight text-white font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Lance Mínimo</span>
+                              <span className="text-[11.5px] font-normal tracking-tight text-white font-mono block truncate">
                                 {auc.auctionPrice > 0 ? formatBRL(auc.auctionPrice) : 'Propostas'}
                               </span>
                             </div>
 
                             <div className="relative group/cost cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Custo Total Est.</span>
-                              <span className="text-[11.5px] font-extrabold tracking-tight text-slate-200 font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Custo Total Est.</span>
+                              <span className="text-[11.5px] font-normal tracking-tight text-slate-200 font-mono block truncate">
                                 {auc.auctionPrice > 0 ? formatBRL(totalCost) : 'Sob análise'}
                               </span>
                               <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/cost:opacity-100 transition-opacity z-50 text-[10px] space-y-1">
@@ -1882,9 +2086,9 @@ export default function PropertyMap({
                             </div>
 
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Lucro Real Est.</span>
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Lucro Real Est.</span>
                               <span
-                                className={`text-[12px] font-extrabold tracking-tight font-mono block truncate ${
+                                className={`text-[12px] font-normal tracking-tight font-mono block truncate ${
                                   auc.calculatedProfit === undefined && !flipPrice
                                     ? 'text-slate-400'
                                     : (auc.calculatedProfit ?? (flipPrice - totalCost)) >= 0
@@ -1899,8 +2103,8 @@ export default function PropertyMap({
                             </div>
 
                             <div className="relative group/itbi cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Gabarito ITBI</span>
-                              <span className="text-[11.5px] font-extrabold tracking-tight text-slate-200 font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Gabarito ITBI</span>
+                              <span className="text-[11.5px] font-normal tracking-tight text-slate-200 font-mono block truncate">
                                 {!auc.estimatedValue && !auc.itbiStreetAvgSqm
                                   ? 'Sem dados'
                                   : auc.estimatedValue
@@ -1928,22 +2132,22 @@ export default function PropertyMap({
 
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5">
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Avaliação Edital</span>
-                              <span className="text-[11.5px] font-extrabold tracking-tight text-slate-300 font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Avaliação Edital</span>
+                              <span className="text-[11.5px] font-normal tracking-tight text-slate-300 font-mono block truncate">
                                 {auc.evaluationPrice ? formatBRL(auc.evaluationPrice) : '-'}
                               </span>
                             </div>
 
                             <div className="min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">ROI Projetado</span>
-                              <span className="text-[11.5px] font-semibold font-mono text-slate-200 block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">ROI Projetado</span>
+                              <span className="text-[11.5px] font-normal font-mono text-slate-200 block truncate">
                                 {roiVal === undefined ? 'Sob consulta' : `${roiVal.toLocaleString('pt-BR')}%`}
                               </span>
                             </div>
 
                             <div className="relative group/liq cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Liquidez</span>
-                              <span className="text-[11.5px] font-semibold font-mono text-slate-200 block truncate">{effScore}/10</span>
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Liquidez</span>
+                              <span className="text-[11.5px] font-normal font-mono text-slate-200 block truncate">{effScore}/10</span>
                               <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/liq:opacity-100 transition-opacity z-50 text-left">
                                 <div className="text-[10.5px] font-semibold text-slate-200 mb-1">Indicador de Liquidez ({effScore}/10)</div>
                                 <div className="text-[9px] text-slate-300 space-y-1 font-sans">
@@ -1954,8 +2158,8 @@ export default function PropertyMap({
                             </div>
 
                             <div className="relative group/flip cursor-help min-w-0">
-                              <span className="text-[8.5px] text-slate-400 block uppercase font-semibold truncate">Preço Sugerido</span>
-                              <span className="text-[12px] font-extrabold tracking-tight text-white font-mono block truncate">
+                              <span className="text-[8.5px] text-slate-400 block uppercase font-normal truncate">Preço Sugerido</span>
+                              <span className="text-[12px] font-bold tracking-tight text-white font-mono block truncate">
                                 {!flipPrice ? 'Sem dados' : formatBRL(flipPrice)}
                               </span>
                               <div className="absolute bottom-full right-0 mb-2 w-56 p-2.5 bg-slate-950/95 text-slate-200 rounded-xl border border-slate-700 shadow-2xl opacity-0 pointer-events-none group-hover/flip:opacity-100 transition-opacity z-50 text-left">
@@ -1978,11 +2182,13 @@ export default function PropertyMap({
                                   : 'Sem dados'
                                 : auc.itbiIsAbsolutePricing
                                   ? auc.estimatedValue ? formatBRL(auc.estimatedValue) : 'Sem dados'
-                                  : auc.itbiStreetAvgSqm
-                                    ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²`
-                                    : auc.itbiUnitValueAvg
-                                      ? `${formatBRL(auc.itbiUnitValueAvg)}/m²`
-                                      : 'Sem dados'}
+                                  : (auc.itbiBuildingCount || 0) > 0 && Number((auc as any).itbiBuildingAvgSqm) > 0
+                                    ? `${formatBRL((auc as any).itbiBuildingAvgSqm)}/m² (Prédio)`
+                                    : auc.itbiStreetAvgSqm
+                                      ? `${formatBRL(auc.itbiStreetAvgSqm)}/m²`
+                                      : auc.itbiUnitValueAvg
+                                        ? `${formatBRL(auc.itbiUnitValueAvg)}/m²`
+                                        : 'Sem dados'}
                             </span>
                             {portalSqm > 0 && portalSqm <= 75000 && (
                               <span className="ml-2">
@@ -2066,6 +2272,70 @@ export default function PropertyMap({
           }`}
         >
           <div ref={mapContainerRef} className={`w-full h-full z-0 ${theme === 'light' ? 'bg-slate-100' : 'bg-slate-950'}`} />
+
+          {/* Controles Compactos Laterais: Simulador de Sol (ON/OFF + horário) & Relevo (OFF/ON) */}
+          <div className="absolute top-[106px] right-[10px] z-20 w-[30px] flex flex-col gap-1.5 select-none text-slate-800">
+            <div
+              className="w-full rounded-[4px] bg-white border border-slate-300/90 shadow-md flex flex-col items-center overflow-hidden"
+              title="Simulador de Sol e Sombras Vetoriais (SunCalc)"
+            >
+              <button
+                type="button"
+                onClick={() => setIsSolarEnabled((v) => !v)}
+                className={`w-full py-1.5 flex flex-col items-center justify-center gap-0.5 text-[7px] font-bold tracking-tight transition-colors cursor-pointer border-b border-slate-200 ${
+                  isSolarEnabled ? 'bg-amber-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
+                }`}
+                title={isSolarEnabled ? 'Desligar sombra solar' : 'Ligar sombra solar'}
+              >
+                <Sun className="w-3 h-3" />
+                <span>{isSolarEnabled ? 'ON' : 'OFF'}</span>
+              </button>
+              <button
+                type="button"
+                disabled={!isSolarEnabled}
+                onClick={() => setSolarHourIdx((idx) => (idx + 1) % SOLAR_HOURS_STEPS.length)}
+                className="w-full py-0.5 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 cursor-pointer disabled:cursor-default border-b border-slate-200"
+                title="Avançar horário solar"
+              >
+                <ChevronUp className="w-3.5 h-3.5 text-slate-700" />
+              </button>
+              <div className={`w-full py-1 text-center text-[8px] font-bold leading-none ${isSolarEnabled ? 'text-amber-700 bg-amber-50/70' : 'text-slate-400 bg-slate-50'}`}>
+                {(() => {
+                  const hv = SOLAR_HOURS_STEPS[solarHourIdx] ?? 9;
+                  const hh = String(Math.floor(hv)).padStart(2, '0');
+                  const mm = Math.round((hv - Math.floor(hv)) * 60);
+                  return mm > 0 ? `${hh}:${String(mm).padStart(2, '0')}` : `${hh}h`;
+                })()}
+              </div>
+              <button
+                type="button"
+                disabled={!isSolarEnabled}
+                onClick={() => setSolarHourIdx((idx) => (idx - 1 + SOLAR_HOURS_STEPS.length) % SOLAR_HOURS_STEPS.length)}
+                className="w-full py-0.5 flex items-center justify-center hover:bg-slate-100 disabled:opacity-40 cursor-pointer disabled:cursor-default border-t border-slate-200"
+                title="Recuar horário solar"
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-slate-700" />
+              </button>
+            </div>
+
+            <div
+              className="w-full rounded-[4px] bg-white border border-slate-300/90 shadow-md flex flex-col items-center overflow-hidden"
+              title="Alternar relevo topográfico do terreno"
+            >
+              <button
+                type="button"
+                onClick={() => setIsReliefEnabled((v) => !v)}
+                className={`w-full py-1.5 flex flex-col items-center justify-center gap-0.5 text-[6.5px] font-bold tracking-tight leading-tight transition-colors cursor-pointer ${
+                  isReliefEnabled ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+                title={isReliefEnabled ? 'Relevo ON — Clique para desativar' : 'Relevo OFF — Clique para ativar'}
+              >
+                <Mountain className="w-3.5 h-3.5" />
+                <span>Rel.</span>
+                <span>{isReliefEnabled ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
+          </div>
 
           {isSidebarCollapsed && (
             <button
@@ -2204,26 +2474,25 @@ export default function PropertyMap({
                     ? clickedAuctionBuildingMetrics.m2
                     : Number((selectedProp as any).itbiBuildingAvgSqm) || 0;
                 const streetM2 = Number(selectedProp.itbiStreetAvgSqm || selectedProp.itbiUnitValueAvg || 0);
-                const streetTx = Number(selectedProp.itbiStreetCount || clickedAuctionBuildingMetrics?.tx || 0);
+                const combinedAuctionTx = (selectedProp.itbiBuildingCount || 0) + (selectedProp.itbiStreetCount || 0);
+                const streetTx = combinedAuctionTx > 0 ? combinedAuctionTx : Number(clickedAuctionBuildingMetrics?.tx || 0);
                 const liqScore =
                   clickedAuctionBuildingMetrics && clickedAuctionBuildingMetrics.liq > 0
                     ? clickedAuctionBuildingMetrics.liq
-                    : !selectedProp.itbiStreetCount || selectedProp.itbiStreetCount === 0
+                    : streetTx === 0
                       ? null
                       : Math.min(selectedProp.liquidityScore ?? 0, assessDataQuality(selectedProp).liquidityCeiling);
                 const sprFromBldg =
                   clickedAuctionBuildingMetrics && clickedAuctionBuildingMetrics.spr !== null
                     ? Math.round(clickedAuctionBuildingMetrics.spr)
                     : null;
+                const refSpreadSqm = buildingM2 > 0 ? buildingM2 : streetM2;
+                const neighRefSqm = Number((selectedProp as any).itbiNeighborhoodAvgSqm || (selectedProp as any).m2ReferenciaBairro || 0);
                 const sprFromStreet =
                   sprFromBldg !== null
                     ? sprFromBldg
-                    : streetM2 > 0 && Number(selectedProp.itbiNeighborhoodAvgSqm) > 0
-                      ? Math.round(
-                          ((streetM2 - Number(selectedProp.itbiNeighborhoodAvgSqm)) /
-                            Number(selectedProp.itbiNeighborhoodAvgSqm)) *
-                            100
-                        )
+                    : refSpreadSqm > 0 && neighRefSqm > 0
+                      ? Math.round(((refSpreadSqm - neighRefSqm) / neighRefSqm) * 100)
                       : null;
 
                 return (
@@ -2318,7 +2587,7 @@ export default function PropertyMap({
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <span className="text-[10px] font-bold uppercase font-mono text-slate-400">
-                    Edificação 3D IPP, {selectedBuildingInfo.altura.toFixed(1)}m (~{Math.max(1, Math.round(selectedBuildingInfo.altura / 3.1))} pav.)
+                    Edificação 3D, {selectedBuildingInfo.altura.toFixed(1)}m (~{Math.max(1, Math.round(selectedBuildingInfo.altura / 3.1))} pav.)
                   </span>
                   <h4 className="font-extrabold text-white text-xs mt-0.5 truncate">{selectedBuildingInfo.address}</h4>
                   <p className="text-[10.5px] text-slate-400 truncate">{selectedBuildingInfo.bairro}</p>
@@ -2478,7 +2747,7 @@ export default function PropertyMap({
                   onClick={handleRefreshPending}
                   disabled={isRefreshingPending}
                   className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-xl border border-indigo-400/40 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Reprocessar endereços, extrair numeração das descrições e cruzar novamente com IPP/CNEFE"
+                  title="Reprocessar endereços e cruzamento georreferenciado"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingPending ? 'animate-spin' : ''}`} />
                   <span>{isRefreshingPending ? 'Atualizando...' : 'Atualizar'}</span>

@@ -1,4 +1,5 @@
 import { fetchCalculatorJson, filterStreetSuggestions, parseCalculatorBRL } from '../utils/calculatorItbi.ts';
+import { isGenericStreet } from '../utils/bidirectionalBenchmark.ts';
 import { locationAddress, addressUnits } from '../utils/locationAddress.ts';
 import { parseAddressComponents } from '../utils/addressComponents.ts';
 import { selectRadiusTransactions } from '../utils/itbiRadius.ts';
@@ -241,7 +242,7 @@ function parseLegacyAddressComponents(rawAddress: string | null | undefined): {
 
 function cleanStreetName(street: string | null | undefined): string {
   if (!street) return '';
-  let norm = normalizeString(street);
+  let norm = normalizeString(sanitizeStreetName(street));
   norm = norm.replace(/\s+/g, ' ');
   
   const prefixes: [RegExp, string][] = [
@@ -271,7 +272,7 @@ function cleanStreetName(street: string | null | undefined): string {
 
 function getCoreStreetName(street: string | null | undefined): string {
   if (!street) return '';
-  let norm = normalizeString(street);
+  let norm = normalizeString(sanitizeStreetName(street));
   norm = norm.replace(/\s+/g, ' ');
   
   const prefixRegex = /^(rua|r|avenida|avn|av|estrada|etr|estr|travessa|trv|tra|trav|praca|pra|prc|beco|bec|bc|rodovia|rod|alameda|alm|al|largo|lrg|lgo|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i;
@@ -295,7 +296,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Navigation mode for results display
   const [activeTab, setActiveTab] = useState<'local' | 'online' | 'matricula'>('local');
 
-  const initialAddr = useMemo(() => parseAddressComponents(locationAddress(prefillData || {})) || { street: '', number: '', complement: '' }, [prefillData?.address, prefillData?.description]);
+  const initialAddr = useMemo(() => {
+    const parsed = parseAddressComponents(locationAddress(prefillData || {})) || { street: '', number: '', complement: '' };
+    return { ...parsed, street: sanitizeStreetName(parsed.street) || parsed.street || '' };
+  }, [prefillData?.address, prefillData?.description]);
 
   // Unified Form Inputs (Shared between local and online modes)
   const effectiveInitialNeigh = prefillData?.officialNeighborhood || 
@@ -458,7 +462,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     }
     if (prefillData.address) {
       const parsed = parseAddressComponents(locationAddress(prefillData));
-      const cleanSt = (parsed.street || '').split(/\s*,\s*|\s+[-–—]\s+/)[0].trim();
+      const cleanSt = sanitizeStreetName((parsed.street || '').split(/\s*,\s*|\s+[-–—]\s+/)[0].trim()) || '';
       setSelectedStreet(cleanSt);
       setStreetInput(cleanSt);
       // Block/unit disambiguates addresses shared by multiple buildings.
@@ -1014,9 +1018,58 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const [aiReport, setAiReport] = useState('');
   const [isGeneratingAiReport, setIsGeneratingAiReport] = useState(false);
 
+  const streetInputDebounceRef = useRef<any>(null);
+  const streetQueryAbortRef = useRef<AbortController | null>(null);
+  const [cityStreetFallback, setCityStreetFallback] = useState<any[]>([]);
+
   const visibleStreetSuggestions = useMemo(
-    () => filterStreetSuggestions(streetsList, streetSearchQuery), [streetsList, streetSearchQuery]
+    () =>
+      filterStreetSuggestions(
+        streetsList.length > 0 ? streetsList : cityStreetFallback,
+        streetSearchQuery,
+        15
+      ),
+    [streetsList, cityStreetFallback, streetSearchQuery]
   );
+
+  useEffect(() => {
+    return () => {
+      if (streetInputDebounceRef.current) clearTimeout(streetInputDebounceRef.current);
+      if (streetQueryAbortRef.current) streetQueryAbortRef.current.abort();
+    };
+  }, []);
+
+  const streetResolveTimerRef = useRef<any>(null);
+  // A rua puxa o bairro automaticamente quando o logradouro é definido/selecionado e diverge de um bairro genérico ou incorreto
+  useEffect(() => {
+    const cleanSt = sanitizeStreetName(selectedStreet || '').trim();
+    if (!cleanSt || cleanSt.length < 4 || isGenericStreet(cleanSt)) return;
+    if (streetResolveTimerRef.current) clearTimeout(streetResolveTimerRef.current);
+    const controller = new AbortController();
+    streetResolveTimerRef.current = setTimeout(() => {
+      const params = new URLSearchParams({
+        state: selectedState || 'RJ',
+        city: selectedCity || 'Rio de Janeiro',
+        street: cleanSt,
+        ...(streetNumber ? { number: streetNumber } : {})
+      });
+      void fetchCalculatorJson(`/api/itbi/resolve-street?${params}`, controller.signal).then((res: any) => {
+        if (controller.signal.aborted || !res?.found || !res.neighborhood) return;
+        const resolvedNeigh = String(res.neighborhood).trim();
+        const matchInList = neighborhoodsList.find(n => normalizeString(n) === normalizeString(resolvedNeigh))
+          || neighborhoodsList.find(n => cleanNeighborhood(n) === cleanNeighborhood(resolvedNeigh))
+          || resolvedNeigh;
+        if (!selectedNeighborhood || cleanNeighborhood(selectedNeighborhood) !== cleanNeighborhood(matchInList)) {
+          setSelectedNeighborhood(matchInList);
+          setNeighborhoodInput(matchInList);
+        }
+      }).catch(() => {});
+    }, 350);
+    return () => {
+      controller.abort();
+      if (streetResolveTimerRef.current) clearTimeout(streetResolveTimerRef.current);
+    };
+  }, [selectedStreet, streetNumber, selectedCity, selectedState]);
 
   // Opening the menu shows every street of the bairro. Only new typing filters it.
   useEffect(() => {
@@ -1090,14 +1143,6 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           setRawTransactions(Array.isArray(data) ? data : data.transactions);
           setRadiusTransactions(Array.isArray(data?.radiusTransactions) ? data.radiusTransactions : []);
           setRadiusAnchorPrecision(data?.radiusAnchorPrecision || 'missing');
-        }
-        if (isJuizDeFora) {
-          const modelRes = await fetch(`/api/itbi/jf-area-model?propertyType=${encodeURIComponent(propertyType || 'Apartamento')}`, { signal: controller.signal });
-          if (modelRes.ok && !controller.signal.aborted) {
-            setJfAreaModel(await modelRes.json());
-          }
-        } else if (!controller.signal.aborted) {
-          setJfAreaModel(null);
         }
         if (isJuizDeFora) {
           const modelRes = await fetch(`/api/itbi/jf-area-model?propertyType=${encodeURIComponent(propertyType || 'Apartamento')}`, { signal: controller.signal });
@@ -1968,7 +2013,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // 3. Preço Sugerido Flip (Giro rápido em até 60 dias):
   // 100% Ancorado no Gabarito Real de Cartório (Corte Bidirecional) com Deságio Tático de 10% para Liquidez Imediata
   // O cálculo dinâmico sobre a metragem ativa (sizeSqm) é soberano para refletir a área real analisada.
-  const isApartmentWithoutBuilding = (propertyType === 'Apartamento' || prefillData?.propertyType === 'Apartamento') && (!bidiBenchmark?.predio?.validas || bidiBenchmark.predio.validas === 0);
+  const isApartmentWithoutBuilding = (propertyType === 'Apartamento' || prefillData?.propertyType === 'Apartamento') && (!bidiBenchmark?.predio?.validas || bidiBenchmark.predio.validas === 0) && ((bidiBenchmark?.rua?.validas || 0) < 3);
   const buildingSafetyFactor = isApartmentWithoutBuilding ? 0.95 : 1.0;
   const baseQuickSaleSqm = itbiWeightedStats.priceable ? Math.round(itbiWeightedStats.itbiCompositeSqm * 0.90 * buildingSafetyFactor) : 0;
   const suggestedQuickSaleTotal = useMemo(() => {
@@ -2163,8 +2208,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   const activeFlipExitPrice = (customExitPrice !== null && customExitPrice > 0) ? customExitPrice : suggestedQuickSaleTotal;
 
   // Rental Calculations with IR deduction (IRPF / Carnê-Leão) and Portals Benchmark
-  const grossRentMonthly = Math.round(activeFlipExitPrice * 0.0055); // ~0.55% a.m.
-  const portalRentalBenchmarkMonthly = Math.round(activeFlipExitPrice * 0.0058); // ~0.58% a.m. (Média QuintoAndar / Zap)
+  const grossRentYieldRate = propertyType === 'Casa' ? 0.008 : 0.0055; // Casa: ~0.80% a.m. | Apto/Outros: ~0.55% a.m.
+  const grossRentMonthly = Math.round(activeFlipExitPrice * grossRentYieldRate);
+  const portalRentalBenchmarkMonthly = Math.round(activeFlipExitPrice * (propertyType === 'Casa' ? 0.008 : 0.0058));
   const rentAfterVacAndAdm = Math.round(grossRentMonthly * 0.82); // -18% (8% vacância + 10% adm)
   const irDeductionMonthly = Math.round(rentAfterVacAndAdm * ((rentalIrDeductionPct || 0) / 100)); // IR sobre aluguel
   const netRentMonthly = Math.max(0, rentAfterVacAndAdm - irDeductionMonthly);
@@ -2742,10 +2788,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           <button
             onClick={() => setIsExecutiveReportOpen(true)}
             className="btn-solid-white bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center space-x-2 transition-all shadow-sm cursor-pointer border border-indigo-500 shrink-0"
-            title="Abre o Laudo Técnico de Avaliação Mercadológica (PTAM) para impressão e exportação em PDF"
+            title="Abre o Dossiê Completo 360° & Laudo PTAM Resumido para impressão e exportação em PDF"
           >
             <FileText className="w-4 h-4" />
-            <span>Gerar Laudo Técnico PTAM (PDF)</span>
+            <span>Gerar Dossiê 360° & PTAM (PDF)</span>
           </button>
         </div>
       </div>
@@ -2877,13 +2923,64 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                 onChange={(e) => {
                   const val = e.target.value;
                   setStreetInput(val);
-                  setStreetSearchQuery(val);
-                  setSelectedStreet(val);
+                  setShowStreetDropdown(true);
+                  if (streetInputDebounceRef.current) clearTimeout(streetInputDebounceRef.current);
+                  if (streetQueryAbortRef.current) streetQueryAbortRef.current.abort();
+
+                  const trimmed = val.trim();
+                  if (!trimmed) {
+                    setStreetSearchQuery('');
+                    setSelectedStreet('');
+                    setCityStreetFallback([]);
+                    return;
+                  }
+
+                  streetInputDebounceRef.current = setTimeout(() => {
+                    setStreetSearchQuery(val);
+                    if (!selectedNeighborhood && trimmed.length >= 2) {
+                      const ctrl = new AbortController();
+                      streetQueryAbortRef.current = ctrl;
+                      const params = new URLSearchParams({
+                        state: selectedState || 'RJ',
+                        city: selectedCity || 'Rio de Janeiro',
+                        q: trimmed,
+                        limit: '15',
+                      });
+                      void fetchCalculatorJson(`/api/itbi/streets?${params}`, ctrl.signal)
+                        .then((rows) => {
+                          if (!ctrl.signal.aborted && Array.isArray(rows)) {
+                            setCityStreetFallback(rows);
+                          }
+                        })
+                        .catch(() => {});
+                    }
+                  }, 160);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const top = visibleStreetSuggestions[0]?.street;
+                    const chosen = top || streetInput.trim();
+                    if (chosen) {
+                      setSelectedStreet(chosen);
+                      setStreetInput(chosen);
+                    }
+                    setShowStreetDropdown(false);
+                  }
+                }}
+                onFocus={() => {
+                  setStreetSearchQuery(streetInput.trim() && streetInput.trim() !== selectedStreet ? streetInput : '');
                   setShowStreetDropdown(true);
                 }}
-                onFocus={() => { setStreetSearchQuery(''); setShowStreetDropdown(true); }}
                 role="combobox" aria-label="Logradouro" aria-expanded={showStreetDropdown} aria-controls="calculator-street-options"
-                onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)}
+                onBlur={() => {
+                  setTimeout(() => {
+                    setShowStreetDropdown(false);
+                    const trimmed = streetInput.trim();
+                    if (trimmed && trimmed !== selectedStreet) {
+                      setSelectedStreet(trimmed);
+                    }
+                  }, 200);
+                }}
                 className="w-full bg-slate-950 border border-slate-800 text-xs font-bold px-2.5 py-2 rounded-lg focus:outline-none focus:border-slate-600 text-slate-200"
               />
               {showStreetDropdown && (
@@ -3030,47 +3127,6 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
             </div>
 
             {/* Unified Action button (3-in-1) immediately after last item */}
-            <div className="pt-2 space-y-2">
-              <button
-                onClick={handleExecuteFullAnalysis}
-                disabled={(!selectedNeighborhood && !neighborhoodInput) || isExecutingFullAnalysis}
-                className="w-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-emerald-500 hover:from-indigo-400 hover:to-emerald-400 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 text-white font-black text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md hover:shadow-indigo-500/25 cursor-pointer disabled:cursor-not-allowed border border-indigo-400/40"
-                title="Executa automaticamente a análise de ITBI (Prédio/Rua), Varredura Online e Portais em simultâneo"
-              >
-                {isExecutingFullAnalysis ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span className="font-black text-white uppercase tracking-wider">Executando Análise Completa...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-white" />
-                    <span className="font-black text-white uppercase tracking-wider">Executar Análise Completa de Mercado (3-em-1)</span>
-                  </>
-                )}
-              </button>
-
-              {/* Botão de Análise Jurídica de Matrícula & Edital */}
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('secao-due-diligence-juridica');
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white font-black text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-sm border border-indigo-500/40 hover:border-indigo-400 cursor-pointer"
-                title="Leva direto para a guia de Auditoria Técnica da Matrícula & Edital do Leilão"
-              >
-                <Scale className="w-4 h-4 text-indigo-400" />
-                <span className="font-black uppercase tracking-wider">Auditoria da Matrícula & Edital</span>
-              </button>
-
-              <p className="text-[9px] text-slate-400 text-center mt-1 font-sans">
-                Cruza ITBI (Prédio/Rua), Varredura Online, Portais, Matrícula e Edital em tempo real.
-              </p>
-            </div>
-
           </div>
         </div>
 
@@ -3728,19 +3784,19 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
                 <div>
                   <span className="text-[9px] text-slate-400 block uppercase font-bold">1. Aluguel Estimado (Mercado Geral)</span>
-                  <span className="text-[8.5px] text-slate-500 font-sans">Retorno bruto estimado em ~0.55% ao mês sobre o valor de avaliação</span>
+                  <span className="text-[8.5px] text-slate-500 font-sans">Retorno bruto estimado em ~{(grossRentYieldRate * 100).toFixed(2)}% ao mês sobre o valor de avaliação</span>
                 </div>
                 <div className="text-right">
                   <strong className="text-white text-sm block">
                     {formatBRL(grossRentMonthly)}/mês
                   </strong>
-                  <span className="text-[8.5px] text-emerald-400 font-mono">~0.55% a.m. bruto</span>
+                  <span className="text-[8.5px] text-emerald-400 font-mono">~{(grossRentYieldRate * 100).toFixed(2)}% a.m. bruto</span>
                 </div>
               </div>
 
               <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] text-indigo-300 block uppercase font-bold">2. Referência Portais Ativos (Zap / QuintoAndar)</span>
+                  <span className="text-[9px] text-indigo-300 block uppercase font-bold">2. Referência Portais Imobiliários Ativos</span>
                   <span className="text-[8.5px] text-slate-500 font-sans">Média dos anúncios de locação ativos na região (~R$ {Math.round(portalRentalBenchmarkMonthly / sizeSqm)}/m²)</span>
                 </div>
                 <div className="text-right">
@@ -4456,7 +4512,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      `${propertyType}${sizeSqm > 0 ? ` de ${sizeSqm}m²` : ''} • ${selectedStreet || 'Rua não selecionada'}${streetNumber ? `, Nº ${streetNumber}` : ''} • ${selectedNeighborhood || 'Bairro'}, ${selectedCity || (isJuizDeFora ? 'Juiz de Fora' : '')} - ${selectedState || (isJuizDeFora ? 'MG' : '')}`
+                      {`${propertyType}${sizeSqm > 0 ? ` de ${sizeSqm}m²` : ''} • ${selectedStreet || 'Rua não selecionada'}${streetNumber ? `, Nº ${streetNumber}` : ''} • ${selectedNeighborhood || 'Bairro'}, ${selectedCity || (isJuizDeFora ? 'Juiz de Fora' : '')} - ${selectedState || (isJuizDeFora ? 'MG' : '')}`}
                     </p>
                   </div>
                 </div>
@@ -4888,7 +4944,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       {bidiBenchmark?.buildingSafetyValveApplied && (
                         <div className="text-[9.5px] bg-amber-950/40 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-800/40 flex items-center justify-between">
                           <span>🛡️ Válvula de Segurança (-5%)</span>
-                          <span className="text-[9px] text-amber-400/80">Sem amostragem no condomínio</span>
+                          <span className="text-[9px] text-amber-400/80">Sem prédio e &lt; 3 vendas na rua</span>
                         </div>
                       )}
 
@@ -5260,7 +5316,7 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                       </h3>
                       <p className="text-[10px] text-slate-450 mt-0.5">
                         {rawTransactions.some(tx => tx.distanceAnchorPrecision === 'street_axis')
-                          ? 'O CNEFE ainda não confirmou o bloco deste imóvel. As distâncias entre eixos de rua são apenas referência e não entram no preço do Flip.'
+                          ? 'Nossa base geoespacial ainda não confirmou o bloco exato deste imóvel. As distâncias entre eixos de rua são apenas referência e não entram no preço do Flip.'
                           : `Transações reais do ITBI no raio selecionado de ${radiusKm < 1 ? `${Math.round(radiusKm * 1000)}m` : `${radiusKm}km`} a partir do endereço oficial.`}
                       </p>
                     </div>
@@ -5559,9 +5615,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         <button
           onClick={() => setIsExecutiveReportOpen(true)}
           className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-black text-xs px-6 py-3.5 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-md hover:shadow-indigo-500/20 cursor-pointer shrink-0 border border-indigo-400/30"
+          title="Abre o Dossiê Completo 360° & Laudo PTAM Resumido (Base ITBI Oficial + Inteligência Territorial)"
         >
           <FileText className="w-4 h-4" />
-          <span>Gerar Laudo Técnico PTAM (PDF)</span>
+          <span>Gerar Dossiê 360° & PTAM (PDF)</span>
         </button>
       </div>
 
@@ -5570,6 +5627,9 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
         isOpen={isExecutiveReportOpen}
         onClose={() => setIsExecutiveReportOpen(false)}
         data={{
+          initialLat: (prefillData as any)?.mapLocation?.lat || (prefillData as any)?.lat,
+          initialLng: (prefillData as any)?.mapLocation?.lng || (prefillData as any)?.lng,
+          initialCep: ((prefillData as any)?.address || '').match(/\b\d{5}-?\d{3}\b/)?.[0] || undefined,
           state: selectedState,
           city: selectedCity,
           neighborhood: selectedNeighborhood,
@@ -5611,7 +5671,24 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
           rentalIrDeductionPct: rentalIrDeductionPct,
           netRentMonthly: netRentMonthly,
           netRentalYieldAnnual: netRentalYieldAnnual,
-          matriculaReport: matriculaReport || undefined
+          matriculaReport: matriculaReport || undefined,
+
+          suggestedQuickSaleTotal: suggestedQuickSaleTotal,
+          suggestedQuickSaleSqm: suggestedQuickSaleSqm,
+          gabaritoSqm: bidiBenchmark?.mediaCorteReal || itbiWeightedStats.itbiCompositeSqm || 0,
+          gabaritoTotal: Math.round((bidiBenchmark?.mediaCorteReal || itbiWeightedStats.itbiCompositeSqm || 0) * (sizeSqm || 0)),
+          portalStreetAvgSqm: portalBenchmarkSqm || 0,
+          buildingSafetyValveApplied: Boolean(bidiBenchmark?.buildingSafetyValveApplied || isApartmentWithoutBuilding),
+          buildingYear: buildingAgeData.detectedYear ?? manualBuildingYear ?? null,
+          buildingDepPct: buildingAgeData.depreciationPct || 0,
+          isCommunityRisk: Boolean(prefillData?.isCommunityRisk),
+          liquidityScore: (prefillData as any)?.liquidityScore ?? undefined,
+          evaluationPrice: prefillData?.evaluationPrice ?? undefined,
+          neighborhoodAvgSqm: bidiBenchmark?.bairro?.saneada || neighborhoodStats?.avgSqm || 0,
+          streetAvgSqm: exactStreetStats?.avgSqm || bidiBenchmark?.rua?.saneada || 0,
+          itbiBuildingCount: bidiBenchmark?.predio?.validas || exactBuildingStats?.count || 0,
+          itbiStreetCount: bidiBenchmark?.rua?.validas || exactStreetStats?.count || 0,
+          itbiSurroundingCount: bidiBenchmark?.raio?.validas || nearbyStats?.count || 0
         }}
       />
 

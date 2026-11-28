@@ -558,19 +558,34 @@ export function resolveRioIppLocation(params: {
       if (!arr) return;
       for (const c of arr) if (!cls.includes(c)) cls.push(c);
     };
+    const desiredType = full.split(' ')[0];
     if (nb) addAll(idx.exactBairro[`${full}|${nb}`]);
     if (nb) addAll(idx.coreBairro[`${core}|${nb}`]);
     if (!cls.length) {
       addAll(idx.fullMap[full]);
-      if (!cls.length) addAll(idx.coreMap[core]);
+      if (!cls.length) {
+        const coreHits = (idx.coreMap[core] || []).filter((c) => {
+          const candType = normalizeText(idx.clMeta[c]?.[0]).split(' ')[0];
+          if ((desiredType === 'ESTRADA' || desiredType === 'RODOVIA') && candType === 'PRACA') return false;
+          if (desiredType === 'PRACA' && (candType === 'ESTRADA' || candType === 'RODOVIA')) return false;
+          return true;
+        });
+        addAll(coreHits);
+      }
     }
     if (!cls.length) {
-      addAll(findFuzzyStreetCls(core, nb, idx));
+      const fuzzyHits = findFuzzyStreetCls(core, nb, idx).filter((c) => {
+        if (nb && normalizeBairro(idx.clMeta[c]?.[1]) === nb) return true;
+        const candType = normalizeText(idx.clMeta[c]?.[0]).split(' ')[0];
+        if ((desiredType === 'ESTRADA' || desiredType === 'RODOVIA') && candType === 'PRACA') return false;
+        if (desiredType === 'PRACA' && (candType === 'ESTRADA' || candType === 'RODOVIA')) return false;
+        return true;
+      });
+      addAll(fuzzyHits);
     }
     if (!cls.length) continue;
 
     // Prioriza logradouros do mesmo tipo (ex.: AVENIDA vs RUA) e mesmo bairro
-    const desiredType = full.split(' ')[0];
     if (cls.length > 1 && TYPE_PREFIXES.has(desiredType)) {
       cls.sort((a, b) => {
         const ma = idx.clMeta[a];

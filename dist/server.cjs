@@ -72,7 +72,13 @@ function assessAvailability(previous, url, httpStatus, html, now = (/* @__PURE__
     }
   });
   if (statusText.some((t) => closed.test(t))) return finish("finalizado", "Encerramento expl\xEDcito no DOM do lote");
-  const extra2 = [...$("body").text().matchAll(/(?:[123][ºªo°]|primeir[oa]|segund[oa]|terceir[oa]|nova)\s*(?:pra[cç]a|leil[aã]o|rodada)[^\d]{0,60}(\d{1,2})\/(\d{1,2})\/(20\d{2})/gi)].map((m) => `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`);
+  const bodyText = $("body").text();
+  const PT_MONTHS = { jan: "01", fev: "02", mar: "03", abr: "04", mai: "05", jun: "06", jul: "07", ago: "08", set: "09", out: "10", nov: "11", dez: "12" };
+  const extra2 = [
+    ...[...bodyText.matchAll(/(?:[123][ºªo°]|primeir[oa]|segund[oa]|terceir[oa]|nova)\s*(?:pra[cç]a|leil[aã]o|rodada|data\s+in[ií]cio)[^\d]{0,80}(?:t[eé]rmino\s*:?\s*)?(\d{1,2})\/(\d{1,2})\/(20\d{2})/gi)].map((m) => `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`),
+    ...[...bodyText.matchAll(/t[eé]rmino\s*:?\s*(\d{1,2})\/(\d{1,2})\/(20\d{2})/gi)].map((m) => `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`),
+    ...[...bodyText.matchAll(/\b(\d{1,2})\s+de\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z.]*\s+de\s+(20\d{2})\b/gi)].map((m) => `${m[3]}-${PT_MONTHS[m[2].toLowerCase()] || "01"}-${m[1].padStart(2, "0")}`)
+  ];
   if (expiredRounds([...context.dates || [], ...extra2], context.saleMode, now)) return finish("expirado_por_data", "Todas as rodadas publicadas transcorreram, sem nova rodada futura");
   if (statusText.some((t) => /^(?:(?:lote|leil[aã]o)\s+)?(?:aberto(?: para lances)?|em andamento|dispon[ií]vel|liberado para lance)$/i.test(t))) return { ...base, state: "active", status: "ativo", reason: "Disponibilidade expl\xEDcita na fonte" };
   if (!visibleText || isOnlyCookieNotice) {
@@ -170,12 +176,12 @@ ${fields.id || ""}`;
     const street = number ? text.slice(0, number.index).replace(/[,\s]+$/, "").replace(/^(?:rua|r\.|avenida|av\.?|estrada|estr\.?|travessa|trav\.?|praca|alameda)\s+/, "").replace(/[^a-z0-9]+/g, " ").trim() : text.split(/[,;\-]/)[0].replace(/^(?:rua|r\.|avenida|av\.?|estrada|estr\.?|travessa|trav\.?|praca|alameda)\s+/, "").replace(/[^a-z0-9]+/g, " ").trim();
     const rest = [number ? text.slice(number.index + number[0].length) : "", normalize(fields.title || ""), normalize(fields.description || "")].filter(Boolean).join(" ");
     const specs = [
-      ["apto", /\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.-]?\s*(\d+[a-z]?)\b/],
-      ["bloco", /\b(?:bloco|bl)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-      ["sala", /\b(?:sala|loja)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-      ["casa", /\b(?:casa)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-      ["lote", /\b(?:lote|lt)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-      ["quadra", /\b(?:quadra|qd)\.?\s*[:.-]?\s*([a-z0-9]+)\b/]
+      ["apto", /\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.\-\/]?\s*(\d+[a-z]?)\b/],
+      ["bloco", /\b(?:bloco|bl)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+      ["sala", /\b(?:sala|loja)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+      ["casa", /\b(?:casa)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+      ["lote", /\b(?:lote|lt)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+      ["quadra", /\b(?:quadra|qd)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/]
     ];
     const units = specs.flatMap(([kind, re]) => {
       const m = rest.match(re);
@@ -208,12 +214,12 @@ function propertyIdentity(address, city, state, type, context) {
   if (street.length < 2) return null;
   const rest = [text.slice(number.index + number[0].length), normalize(context || "")].filter(Boolean).join(" ");
   const specs = [
-    ["ap", /\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.-]?\s*(\d+[a-z]?)\b/],
-    ["bl", /\b(?:bloco|bl)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-    ["sl", /\b(?:sala|loja)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-    ["cs", /\b(?:casa)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-    ["lt", /\b(?:lote|lt)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-    ["qd", /\b(?:quadra|qd)\.?\s*[:.-]?\s*([a-z0-9]+)\b/]
+    ["ap", /\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.\-\/]?\s*(\d+[a-z]?)\b/],
+    ["bl", /\b(?:bloco|bl)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+    ["sl", /\b(?:sala|loja)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+    ["cs", /\b(?:casa)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+    ["lt", /\b(?:lote|lt)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+    ["qd", /\b(?:quadra|qd)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/]
   ];
   const units = specs.flatMap(([kind, re]) => {
     const m = rest.match(re);
@@ -1561,10 +1567,153 @@ var init_validation = __esm({
   }
 });
 
-// auctionAvailability.ts
-var init_auctionAvailability = __esm({
-  "auctionAvailability.ts"() {
-    init_lifecycle();
+// src/utils/propertyTypes.ts
+function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
+  const urlLower = (url || "").toLowerCase();
+  const titleLower = (title || "").toLowerCase();
+  const descLower = (desc || "").toLowerCase();
+  const primaryTokenDesc = (descLower.split(/[,.\s]+/)[0] || "").trim();
+  const primaryTokenTitle = (titleLower.split(/[,.\s]+/)[0] || "").trim();
+  const tokenCandidate = ["apartamento", "apto", "casa", "sobrado", "terreno", "lote", "gleba", "loja", "sala", "galpao", "galp\xE3o", "predio", "pr\xE9dio", "comercial"].includes(primaryTokenTitle) ? primaryTokenTitle : primaryTokenDesc;
+  if (tokenCandidate === "apartamento" || tokenCandidate === "apto") {
+    return { propertyType: "Apartamento", subtype: "Apartamento", displayPrefix: "Apartamento" };
+  }
+  if (tokenCandidate === "casa" || tokenCandidate === "sobrado") {
+    return { propertyType: "Casa", subtype: "Casa", displayPrefix: "Casa" };
+  }
+  if (tokenCandidate === "terreno" || tokenCandidate === "lote" || tokenCandidate === "gleba") {
+    if (/\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio|bloco|unidade\s+aut[oô]noma)\b/i.test(titleLower + " " + descLower)) {
+      return { propertyType: "Apartamento", subtype: "Apartamento", displayPrefix: "Apartamento" };
+    }
+    if (/\b(casa|sobrado|chal[eé]|bangal[oô]|\d+\s*qto|\d+\s*quarto)\b/i.test(titleLower + " " + descLower)) {
+      return { propertyType: "Casa", subtype: "Casa", displayPrefix: "Casa" };
+    }
+    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(titleLower + " " + descLower)) {
+      return { propertyType: "Comercial", subtype: "Comercial", displayPrefix: "Im\xF3vel Comercial" };
+    }
+    return { propertyType: "Terreno", subtype: "Terreno / Lote", displayPrefix: "Terreno / Lote" };
+  }
+  if (["loja", "sobreloja"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Loja", displayPrefix: "Loja Comercial" };
+  }
+  if (["sala", "consultorio", "consult\xF3rio"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Sala Comercial", displayPrefix: "Sala Comercial" };
+  }
+  if (["galpao", "galp\xE3o", "deposito", "dep\xF3sito", "armazem", "armaz\xE9m"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Galp\xE3o", displayPrefix: "Galp\xE3o Comercial" };
+  }
+  if (["predio", "pr\xE9dio", "comercial"].includes(tokenCandidate)) {
+    return { propertyType: "Comercial", subtype: "Comercial", displayPrefix: "Im\xF3vel Comercial" };
+  }
+  if (titleLower.includes("cobertura") || urlLower.includes("cobertura") || descLower.includes("cobertura duplex") || descLower.includes("cobertura linear")) {
+    return {
+      propertyType: "Apartamento",
+      subtype: "Cobertura",
+      displayPrefix: "Cobertura"
+    };
+  }
+  if (/\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(urlLower) || /\b(apart-?hotel|flat)\b/i.test(descLower)) {
+    return {
+      propertyType: "Apartamento",
+      subtype: "Kitnet / Studio",
+      displayPrefix: "Kitnet / Studio"
+    };
+  }
+  if (urlLower.includes("vagas-de-garagem") || /\b(?:vagas?|box)\s+(?:de\s+)?garagem\b/i.test(titleLower)) {
+    return {
+      propertyType: "Comercial",
+      subtype: "Vaga de Garagem",
+      displayPrefix: "Vaga de Garagem"
+    };
+  }
+  const isAptoExplicit = urlLower.includes("apartamento") || urlLower.includes("apto") || /\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio)\b/i.test(titleLower);
+  if (isAptoExplicit) {
+    return {
+      propertyType: "Apartamento",
+      subtype: "Apartamento",
+      displayPrefix: "Apartamento"
+    };
+  }
+  const isCasaInTitleOrUrl = urlLower.includes("casa-") || urlLower.includes("sobrado") || urlLower.includes("casa-a-venda") || housePattern.test(titleLower);
+  if (isCasaInTitleOrUrl && !titleLower.includes("apartamento") && !titleLower.includes("apto") && !urlLower.includes("apartamento")) {
+    if (!titleLower.includes("casa de festas") && !titleLower.includes("casa de show")) {
+      return {
+        propertyType: "Casa",
+        subtype: "Casa",
+        displayPrefix: "Casa"
+      };
+    }
+  }
+  if (urlLower.includes("sala-comercial") || urlLower.includes("conjunto-comercial") || urlLower.includes("sala-a-venda") || /\b(sala\s+comercial|conjunto\s+comercial|consult[oó]rio|escrit[oó]rio|sala\s+para\s+consult[oó]rio)\b/i.test(titleLower) || /\b(sala\s+comercial|conjunto\s+comercial)\b/i.test(descLower) && !titleLower.includes("apartamento")) {
+    return {
+      propertyType: "Comercial",
+      subtype: "Sala Comercial",
+      displayPrefix: "Sala Comercial"
+    };
+  }
+  if (urlLower.includes("loja") || urlLower.includes("ponto-comercial") || urlLower.includes("sobreloja") || /\b(loja|ponto\s+comercial|sobreloja|box\s+comercial)\b/i.test(titleLower) || /\b(loja\s+comercial|ponto\s+comercial)\b/i.test(descLower) && !titleLower.includes("apartamento")) {
+    return {
+      propertyType: "Comercial",
+      subtype: "Loja",
+      displayPrefix: "Loja Comercial"
+    };
+  }
+  if (urlLower.includes("galpao") || urlLower.includes("deposito") || /\b(galp[aã]o|dep[oó]sito|armaz[eé]m|pavilh[aã]o)\b/i.test(titleLower) || /\b(galp[aã]o|dep[oó]sito|armaz[eé]m)\b/i.test(descLower) && !titleLower.includes("apartamento")) {
+    return {
+      propertyType: "Comercial",
+      subtype: "Galp\xE3o",
+      displayPrefix: "Galp\xE3o Comercial"
+    };
+  }
+  if (urlLower.includes("predio-comercial") || urlLower.includes("edificio-comercial") || /\b(pr[eé]dio\s+comercial|edif[ií]cio\s+comercial|im[oó]vel\s+comercial)\b/i.test(titleLower)) {
+    return {
+      propertyType: "Comercial",
+      subtype: "Comercial",
+      displayPrefix: "Im\xF3vel Comercial"
+    };
+  }
+  const hasTerrenoKeyword = urlLower.includes("terreno") || urlLower.includes("lote-") || urlLower.includes("loteamento") || urlLower.includes("gleba") || /\b(terreno|loteamento|gleba|lote\s+de\s+terreno)\b/i.test(titleLower);
+  const hasTerrenoInDesc = /\b(terreno|loteamento|gleba|lote\s+de\s+terreno)\b/i.test(descLower) && !descLower.includes("apartamento") && !descLower.includes("casa") && !descLower.includes("qto(s)") && !descLower.includes("quarto");
+  if (hasTerrenoKeyword || hasTerrenoInDesc) {
+    if (!titleLower.includes("apartamento") && !titleLower.includes("apto") && !titleLower.includes("casa")) {
+      return {
+        propertyType: "Terreno",
+        subtype: "Terreno / Lote",
+        displayPrefix: "Terreno / Lote"
+      };
+    }
+  }
+  if (housePattern.test(descLower) && !descLower.includes("apartamento") && !descLower.includes("apto")) {
+    return {
+      propertyType: "Casa",
+      subtype: "Casa",
+      displayPrefix: "Casa"
+    };
+  }
+  return {
+    propertyType: "Apartamento",
+    subtype: "Apartamento",
+    displayPrefix: "Apartamento"
+  };
+}
+function toCanonicalPropertyType(rawType = "", title = "", desc = "") {
+  const cleanRaw = (rawType || "").trim().toLowerCase();
+  if (/^apto|^apartamento|^kitnet|^studio|^loft|^flat|^cobertura/i.test(cleanRaw)) return "Apartamento";
+  if (/^casa|^sobrado|^bangal[oô]|^chal[eé]|^vila/i.test(cleanRaw)) return "Casa";
+  if (/^terreno|^loteamento|^gleba|^lote\b/i.test(cleanRaw) && !/casa|apto|apartamento/i.test(cleanRaw)) {
+    if (/\b(apartamento|apto|bloco)\b/i.test(title + " " + desc)) return "Apartamento";
+    if (/\b(casa|sobrado|\d+\s*qto|\d+\s*quarto)\b/i.test(title + " " + desc)) return "Casa";
+    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(title + " " + desc)) return "Comercial";
+    return "Terreno";
+  }
+  if (/^sala|^loja|^galp[aã]o|^comercial|^pr[eé]dio|^box|^dep[oó]sito/i.test(cleanRaw)) return "Comercial";
+  const res = detectTypologyFromUrlAndText("", `${rawType} ${title}`, desc);
+  return res.propertyType;
+}
+var housePattern;
+var init_propertyTypes = __esm({
+  "src/utils/propertyTypes.ts"() {
+    housePattern = /\b(casa|sobrado|vila|condom[ií]nio\s+fechado|chal[eé]|bangal[oô]|casa-duplex|casa-triplex|casa-padrao)\b/i;
   }
 });
 
@@ -1597,7 +1746,8 @@ function auditOfficialArea(input) {
   }
   for (const m of text.matchAll(new RegExp("(?:apartamento|apto\\.?|casa|sala|unidade(?:\\s+aut[o\xF4]noma)?)\\s+com\\s+(?:aproximadamente\\s+)?" + amount + "\\s*(m[\xB22]|m\\.q\\.|metros?\\s+quadrados?)", "gi"))) add(numeric(m[1]), "unspecified", m[0]);
   for (const m of text.matchAll(new RegExp("\\b(privativa|priv\\.|constru[i\xED]da|constr\\.|edificada|terreno|terr\\.)(?:\\s*\\([^)]*\\))?\\s*(?:estimada|aproximada|de)?\\s*[:=]?\\s*" + amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[2]) * (/ha|hectare/i.test(m[3]) ? 1e4 : 1), /^priv/i.test(m[1]) ? "private" : /^terr/i.test(m[1]) ? "land" : "built", m[0]);
-  for (const m of input.title.matchAll(new RegExp(amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "title", m[0]);
+  const titleForUnit = land ? input.title : input.title.replace(/\([^)]*\bterreno\b[^)]*\)/gi, "");
+  for (const m of titleForUnit.matchAll(new RegExp(amount + "\\s*(" + unit + ")", "gi"))) add(numeric(m[1]) * (/ha|hectare/i.test(m[2]) ? 1e4 : 1), "title", m[0]);
   for (const value of input.structuredSizes || []) add(value, "structured", "\xC1rea publicada nos dados estruturados do lote");
   const ranks = land ? ["land", "total", "unspecified", "structured", "title"] : ["private", "usable", "built", "structured", "unspecified", "title", "total"];
   const refValues = candidates.filter((c) => c.kind === "title" || c.kind === "structured").map((c) => c.value);
@@ -1636,8 +1786,22 @@ var init_officialAreaAudit = __esm({
   }
 });
 
+// auctionAvailability.ts
+var init_auctionAvailability = __esm({
+  "auctionAvailability.ts"() {
+    init_lifecycle();
+  }
+});
+
 // officialLotPayload.ts
 function officialLotFinancials(html, url) {
+  if (/freitasleiloeiro\.com\.br/i.test(url)) {
+    const simMatch = html.match(/SimulacaoBradesco[^"'<>]*[?&]valorInicial=([\d.]+)/i);
+    const simBid = simMatch ? Number(simMatch[1]) : 0;
+    if (Number.isFinite(simBid) && simBid > 0) {
+      return { auctionPrice: simBid, priceVerified: true };
+    }
+  }
   let lot;
   try {
     const m = html.match(/(?:var|let|const)\s+lote\s*=\s*(\{[^\r\n]+\});/);
@@ -1645,11 +1809,39 @@ function officialLotFinancials(html, url) {
   } catch {
     return void 0;
   }
+  let sharedLeilao;
+  if (!lot) {
+    try {
+      const mShared = html.match(/\bsharedData\s*=\s*\{[\s\S]{0,600}?\blote:\s*(\{[^\r\n]+\})\s*,/);
+      if (mShared) lot = JSON.parse(mShared[1]);
+      const mLeilao = html.match(/\bsharedData\s*=\s*\{[\s\S]{0,6000}?\bleilao:\s*(\{[^\r\n]+\})/);
+      if (mLeilao) sharedLeilao = JSON.parse(mLeilao[1]);
+    } catch {
+    }
+  }
   if (!lot || typeof lot !== "object") return void 0;
+  if (lot.vl_lanceinicial !== void 0 || lot.nm_slug !== void 0) {
+    const parseMoneyField = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    const bidInit = parseMoneyField(lot.vl_lanceinicial);
+    const bidMin = parseMoneyField(lot.vl_lanceminimo);
+    const bidMajor = parseMoneyField(lot.maior_lance);
+    const amount2 = bidMajor || bidInit || bidMin;
+    const evalAmount2 = parseMoneyField(lot.vl_avaliacao) || void 0;
+    const rawDate = typeof sharedLeilao?.dt_fim === "string" && sharedLeilao.dt_fim.slice(0, 10) || typeof lot.dt_fim === "string" && lot.dt_fim.slice(0, 10) || void 0;
+    if (amount2 <= 0 && !evalAmount2) return void 0;
+    return {
+      ...amount2 > 0 ? { auctionPrice: amount2, priceVerified: true, firstAuctionPrice: amount2 } : {},
+      ...evalAmount2 ? { estimatedValue: evalAmount2 } : {},
+      ...rawDate ? { auctionDate: rawDate, firstAuctionDate: rawDate } : {}
+    };
+  }
   try {
-    const path14 = new URL(url).pathname;
-    const offer = path14.match(/\/(\d+)\/id-(\d+)(?:\/|$)/i);
-    const lotId = path14.match(/\/lote\/(\d+)(?:\/|$)/i)?.[1];
+    const path16 = new URL(url).pathname;
+    const offer = path16.match(/\/(\d+)\/id-(\d+)(?:\/|$)/i);
+    const lotId = path16.match(/\/lote\/(\d+)(?:\/|$)/i)?.[1];
     if (offer) {
       if (String(lot.aid) !== offer[2] || String(lot.bemId ?? lot.id) !== offer[1]) return void 0;
     } else if (!lotId || String(lot.id) !== lotId) return void 0;
@@ -1810,149 +2002,6 @@ var init_puppeteerConfig = __esm({
   "src/utils/puppeteerConfig.ts"() {
     import_fs = __toESM(require("fs"), 1);
     import_path = __toESM(require("path"), 1);
-  }
-});
-
-// src/utils/propertyTypes.ts
-function detectTypologyFromUrlAndText(url = "", title = "", desc = "") {
-  const urlLower = (url || "").toLowerCase();
-  const titleLower = (title || "").toLowerCase();
-  const descLower = (desc || "").toLowerCase();
-  const primaryTokenDesc = (descLower.split(/[,.\s]+/)[0] || "").trim();
-  const primaryTokenTitle = (titleLower.split(/[,.\s]+/)[0] || "").trim();
-  const tokenCandidate = ["apartamento", "apto", "casa", "sobrado", "terreno", "lote", "gleba", "loja", "sala", "galpao", "galp\xE3o", "predio", "pr\xE9dio", "comercial"].includes(primaryTokenTitle) ? primaryTokenTitle : primaryTokenDesc;
-  if (tokenCandidate === "apartamento" || tokenCandidate === "apto") {
-    return { propertyType: "Apartamento", subtype: "Apartamento", displayPrefix: "Apartamento" };
-  }
-  if (tokenCandidate === "casa" || tokenCandidate === "sobrado") {
-    return { propertyType: "Casa", subtype: "Casa", displayPrefix: "Casa" };
-  }
-  if (tokenCandidate === "terreno" || tokenCandidate === "lote" || tokenCandidate === "gleba") {
-    if (/\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio|bloco|unidade\s+aut[oô]noma)\b/i.test(titleLower + " " + descLower)) {
-      return { propertyType: "Apartamento", subtype: "Apartamento", displayPrefix: "Apartamento" };
-    }
-    if (/\b(casa|sobrado|chal[eé]|bangal[oô]|\d+\s*qto|\d+\s*quarto)\b/i.test(titleLower + " " + descLower)) {
-      return { propertyType: "Casa", subtype: "Casa", displayPrefix: "Casa" };
-    }
-    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(titleLower + " " + descLower)) {
-      return { propertyType: "Comercial", subtype: "Comercial", displayPrefix: "Im\xF3vel Comercial" };
-    }
-    return { propertyType: "Terreno", subtype: "Terreno / Lote", displayPrefix: "Terreno / Lote" };
-  }
-  if (["loja", "sobreloja"].includes(tokenCandidate)) {
-    return { propertyType: "Comercial", subtype: "Loja", displayPrefix: "Loja Comercial" };
-  }
-  if (["sala", "consultorio", "consult\xF3rio"].includes(tokenCandidate)) {
-    return { propertyType: "Comercial", subtype: "Sala Comercial", displayPrefix: "Sala Comercial" };
-  }
-  if (["galpao", "galp\xE3o", "deposito", "dep\xF3sito", "armazem", "armaz\xE9m"].includes(tokenCandidate)) {
-    return { propertyType: "Comercial", subtype: "Galp\xE3o", displayPrefix: "Galp\xE3o Comercial" };
-  }
-  if (["predio", "pr\xE9dio", "comercial"].includes(tokenCandidate)) {
-    return { propertyType: "Comercial", subtype: "Comercial", displayPrefix: "Im\xF3vel Comercial" };
-  }
-  if (titleLower.includes("cobertura") || urlLower.includes("cobertura") || descLower.includes("cobertura duplex") || descLower.includes("cobertura linear")) {
-    return {
-      propertyType: "Apartamento",
-      subtype: "Cobertura",
-      displayPrefix: "Cobertura"
-    };
-  }
-  if (/\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(titleLower) || /\b(kitnet|studio|loft|flat|apart-?hotel|conjugado)\b/i.test(urlLower) || /\b(apart-?hotel|flat)\b/i.test(descLower)) {
-    return {
-      propertyType: "Apartamento",
-      subtype: "Kitnet / Studio",
-      displayPrefix: "Kitnet / Studio"
-    };
-  }
-  const isAptoExplicit = urlLower.includes("apartamento") || urlLower.includes("apto") || /\b(apartamento|apto|condom[ií]nio\s+edif[ií]cio|edif[ií]cio)\b/i.test(titleLower);
-  if (isAptoExplicit) {
-    return {
-      propertyType: "Apartamento",
-      subtype: "Apartamento",
-      displayPrefix: "Apartamento"
-    };
-  }
-  const isCasaInTitleOrUrl = urlLower.includes("casa-") || urlLower.includes("sobrado") || urlLower.includes("casa-a-venda") || housePattern.test(titleLower);
-  if (isCasaInTitleOrUrl && !titleLower.includes("apartamento") && !titleLower.includes("apto") && !urlLower.includes("apartamento")) {
-    if (!titleLower.includes("casa de festas") && !titleLower.includes("casa de show")) {
-      return {
-        propertyType: "Casa",
-        subtype: "Casa",
-        displayPrefix: "Casa"
-      };
-    }
-  }
-  if (urlLower.includes("sala-comercial") || urlLower.includes("conjunto-comercial") || urlLower.includes("sala-a-venda") || /\b(sala\s+comercial|conjunto\s+comercial|consult[oó]rio|escrit[oó]rio|sala\s+para\s+consult[oó]rio)\b/i.test(titleLower) || /\b(sala\s+comercial|conjunto\s+comercial)\b/i.test(descLower) && !titleLower.includes("apartamento")) {
-    return {
-      propertyType: "Comercial",
-      subtype: "Sala Comercial",
-      displayPrefix: "Sala Comercial"
-    };
-  }
-  if (urlLower.includes("loja") || urlLower.includes("ponto-comercial") || urlLower.includes("sobreloja") || /\b(loja|ponto\s+comercial|sobreloja|box\s+comercial)\b/i.test(titleLower) || /\b(loja\s+comercial|ponto\s+comercial)\b/i.test(descLower) && !titleLower.includes("apartamento")) {
-    return {
-      propertyType: "Comercial",
-      subtype: "Loja",
-      displayPrefix: "Loja Comercial"
-    };
-  }
-  if (urlLower.includes("galpao") || urlLower.includes("deposito") || /\b(galp[aã]o|dep[oó]sito|armaz[eé]m|pavilh[aã]o)\b/i.test(titleLower) || /\b(galp[aã]o|dep[oó]sito|armaz[eé]m)\b/i.test(descLower) && !titleLower.includes("apartamento")) {
-    return {
-      propertyType: "Comercial",
-      subtype: "Galp\xE3o",
-      displayPrefix: "Galp\xE3o Comercial"
-    };
-  }
-  if (urlLower.includes("predio-comercial") || urlLower.includes("edificio-comercial") || /\b(pr[eé]dio\s+comercial|edif[ií]cio\s+comercial|im[oó]vel\s+comercial)\b/i.test(titleLower)) {
-    return {
-      propertyType: "Comercial",
-      subtype: "Comercial",
-      displayPrefix: "Im\xF3vel Comercial"
-    };
-  }
-  const hasTerrenoKeyword = urlLower.includes("terreno") || urlLower.includes("lote-") || urlLower.includes("loteamento") || urlLower.includes("gleba") || /\b(terreno|loteamento|gleba|lote\s+de\s+terreno)\b/i.test(titleLower);
-  const hasTerrenoInDesc = /\b(terreno|loteamento|gleba|lote\s+de\s+terreno)\b/i.test(descLower) && !descLower.includes("apartamento") && !descLower.includes("casa") && !descLower.includes("qto(s)") && !descLower.includes("quarto");
-  if (hasTerrenoKeyword || hasTerrenoInDesc) {
-    if (!titleLower.includes("apartamento") && !titleLower.includes("apto") && !titleLower.includes("casa")) {
-      return {
-        propertyType: "Terreno",
-        subtype: "Terreno / Lote",
-        displayPrefix: "Terreno / Lote"
-      };
-    }
-  }
-  if (housePattern.test(descLower) && !descLower.includes("apartamento") && !descLower.includes("apto")) {
-    return {
-      propertyType: "Casa",
-      subtype: "Casa",
-      displayPrefix: "Casa"
-    };
-  }
-  return {
-    propertyType: "Apartamento",
-    subtype: "Apartamento",
-    displayPrefix: "Apartamento"
-  };
-}
-function toCanonicalPropertyType(rawType = "", title = "", desc = "") {
-  const cleanRaw = (rawType || "").trim().toLowerCase();
-  if (/^apto|^apartamento|^kitnet|^studio|^loft|^flat|^cobertura/i.test(cleanRaw)) return "Apartamento";
-  if (/^casa|^sobrado|^bangal[oô]|^chal[eé]|^vila/i.test(cleanRaw)) return "Casa";
-  if (/^terreno|^loteamento|^gleba|^lote\b/i.test(cleanRaw) && !/casa|apto|apartamento/i.test(cleanRaw)) {
-    if (/\b(apartamento|apto|bloco)\b/i.test(title + " " + desc)) return "Apartamento";
-    if (/\b(casa|sobrado|\d+\s*qto|\d+\s*quarto)\b/i.test(title + " " + desc)) return "Casa";
-    if (/\b(loja|sala|galp[aã]o|comercial)\b/i.test(title + " " + desc)) return "Comercial";
-    return "Terreno";
-  }
-  if (/^sala|^loja|^galp[aã]o|^comercial|^pr[eé]dio|^box|^dep[oó]sito/i.test(cleanRaw)) return "Comercial";
-  const res = detectTypologyFromUrlAndText("", `${rawType} ${title}`, desc);
-  return res.propertyType;
-}
-var housePattern;
-var init_propertyTypes = __esm({
-  "src/utils/propertyTypes.ts"() {
-    housePattern = /\b(casa|sobrado|vila|condom[ií]nio\s+fechado|chal[eé]|bangal[oô]|casa-duplex|casa-triplex|casa-padrao)\b/i;
   }
 });
 
@@ -12066,6 +12115,7 @@ __export(listedPortalApis_exports, {
   collectBankApi: () => collectBankApi,
   collectDoulheTresLinks: () => collectDoulheTresLinks,
   collectMariaFilomenaApi: () => collectMariaFilomenaApi,
+  collectMauroMarcelloApi: () => collectMauroMarcelloApi,
   collectPestanaApi: () => collectPestanaApi,
   collectRioLinks: () => collectRioLinks,
   collectSantanderApi: () => collectSantanderApi,
@@ -12360,7 +12410,7 @@ async function collectSantanderApi(dir, onPage) {
       const urlLink = partnerUrl && /^https?:\/\//i.test(partnerUrl) ? partnerUrl : `https://www.santanderimoveis.com.br/imoveis/${item.realEstatePropertyId}`;
       const bType = String(item.buildingType?.buildingTypeDescription || "Im\xF3vel");
       const title = `${bType} Santander - ${neighborhood || city} (${city}/${state})`;
-      const descText = cheerio2.load(String(item.detailedDescription || item.description || "")).text().replace(/\s+/g, " ").trim();
+      const descText = cheerio3.load(String(item.detailedDescription || item.description || "")).text().replace(/\s+/g, " ").trim();
       const cover = item.images?.find((img) => img.isCoverImage)?.imageUrl || item.images?.[0]?.imageUrl || "";
       const matriculaDoc = item.documents?.find((d) => /matr/i.test(d.documentUrl || ""))?.documentUrl || "";
       const occupied = item.occupationStatus?.occupationStatusName === "ocupado" ? true : item.occupationStatus?.occupationStatusName === "desocupado" ? false : void 0;
@@ -12438,7 +12488,7 @@ function pestanaApiDraft(lot, event) {
   if (!location2 || !allowedSyncLocation(location2.city, location2.state)) return null;
   const property = lot.bens?.[0];
   const description = (lot.bens || []).flatMap((b) => [b.descricao, b.observacao, ...(b.caracteristicas || []).map((c) => c.valor)]).filter(Boolean).join("\n");
-  const text = cheerio2.load(description).text();
+  const text = cheerio3.load(description).text();
   const origin = property?.origem === "Judicial" ? "judicial" : "extrajudicial";
   const law = lot.informacoesLei9514, dates = event.informacoesLei9514;
   const displayedPrice = [lot.valorInicial, lot.lanceInicial, lot.lanceMinimo, lot.valorFiltro].map(Number).find((value) => Number.isFinite(value) && value > 0) || 0;
@@ -12498,7 +12548,7 @@ function suporteLotToDraft(config, lot) {
   if (!allowedSyncLocation(city, state)) return null;
   const cleanBase = config.baseUrl.replace(/\/$/, "");
   const descHtml = String(lot.nm_descricao || "");
-  const $ = cheerio2.load(descHtml);
+  const $ = cheerio3.load(descHtml);
   const descText = $("body").text().replace(/\s+/g, " ").trim();
   const title = rawTitle || descText.slice(0, 100);
   const rawLink = String(lot.nm_link || "").trim();
@@ -12808,7 +12858,7 @@ ${String(lot.URLlote || "").replace(/[/-]+/g, " ")}`;
           const infoJson = await infoRes.json();
           const rawHtmlDesc = String(infoJson?.Lista?.[0]?.Descricao || "");
           if (rawHtmlDesc) {
-            const $ = cheerio2.load(rawHtmlDesc);
+            const $ = cheerio3.load(rawHtmlDesc);
             $("br").replaceWith("\n");
             $("p,li,div,h1,h2,h3,h4,tr").each((_, el) => {
               $(el).append("\n");
@@ -12904,14 +12954,151 @@ ${String(lot.URLlote || "").replace(/[/-]+/g, " ")}`;
   }
   return true;
 }
-var import_node_fs4, import_node_path3, import_puppeteer, cheerio2, EMGEA_API_DEFAULT, dateOnly;
+async function collectMauroMarcelloApi(dir, onPage) {
+  const headers = { apikey: MAURO_MARCELLO_KEY };
+  const [lots, phases, states, cities, categories] = await Promise.all([
+    fetch(`${MAURO_MARCELLO_API}/public_lots?select=*&status=in.(aberto,futuro)&limit=250`, { headers }).then((r) => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/lot_phases?select=*&limit=500`, { headers }).then((r) => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/states?select=*`, { headers }).then((r) => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/cities?select=*&limit=500`, { headers }).then((r) => r.json()),
+    fetch(`${MAURO_MARCELLO_API}/categories?select=*`, { headers }).then((r) => r.json())
+  ]);
+  if (!Array.isArray(lots)) return false;
+  import_node_fs4.default.writeFileSync(import_node_path3.default.join(dir, "mauromarcello_lel_br-api.json"), JSON.stringify({ lots, phases, states, cities, categories }));
+  const stateMap = new Map((Array.isArray(states) ? states : []).map((s) => [String(s.id), String(s.code || "").toUpperCase()]));
+  const cityMap = new Map((Array.isArray(cities) ? cities : []).map((c) => [String(c.id), String(c.name || "").trim()]));
+  const catMap = new Map((Array.isArray(categories) ? categories : []).map((c) => [String(c.id), String(c.slug || c.name || "").toLowerCase()]));
+  const phasesByLot = /* @__PURE__ */ new Map();
+  for (const p of Array.isArray(phases) ? phases : []) {
+    const key = String(p.lot_id || "");
+    if (!phasesByLot.has(key)) phasesByLot.set(key, []);
+    phasesByLot.get(key).push(p);
+  }
+  const realEstateCats = /* @__PURE__ */ new Set(["imoveis", "imovel_residencial", "imovel_comercial", "imoveis_residenciais", "imoveis_comerciais"]);
+  const drafts = [];
+  const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  for (const lot of lots) {
+    if (lot.hidden || lot.cancelled_at) continue;
+    const catSlug = catMap.get(String(lot.category_id)) || "";
+    const titleStr = String(lot.title || "").trim();
+    const isRealEstate = realEstateCats.has(catSlug) || /\b(?:apartamento|casa|terreno|loja|sala|galp[aã]o|cobertura|im[oó]vel|pr[eé]dio)\b/i.test(titleStr);
+    if (!isRealEstate || /\bsucata\b|\bkg\s+de\s+sucata\b|\bcomputador\b/i.test(titleStr)) continue;
+    const descPlain = cheerio3.load(String(lot.description || "")).text().replace(/\s+/g, " ").trim();
+    const rawAddr = String(lot.address || "").replace(/,\s*Brasil$/i, "").trim();
+    const combinedEvidence = `${titleStr} ${rawAddr} ${descPlain}`;
+    let city = cityMap.get(String(lot.city_id)) || "";
+    let state = stateMap.get(String(lot.state_id)) || "";
+    if (!city || !state) {
+      const detected = sourceAuctionLocation(combinedEvidence);
+      if (detected) {
+        city = city || detected.city;
+        state = state || detected.state;
+      }
+    }
+    if (!allowedSyncLocation(city, state)) continue;
+    const lotPhases = (phasesByLot.get(String(lot.id)) || []).slice().sort((a, b) => (Number(a.phase_order) || 0) - (Number(b.phase_order) || 0));
+    const p1 = lotPhases[0];
+    const p2 = lotPhases[1];
+    const d1 = p1?.end_date ? String(p1.end_date).slice(0, 10) : "";
+    const d2 = p2?.end_date ? String(p2.end_date).slice(0, 10) : "";
+    const val1 = Number(p1?.initial_value ?? p1?.announced_value ?? lot.evaluation_value ?? 0) || 0;
+    const val2 = Number(p2?.initial_value ?? p2?.announced_value ?? 0) || 0;
+    const upcomingPhases = lotPhases.map((p) => ({
+      date: p.end_date ? String(p.end_date).slice(0, 10) : "",
+      price: Number(p.initial_value ?? p.announced_value ?? 0) || 0
+    })).filter((p) => p.date && p.date >= today && p.price > 0).sort((a, b) => a.date.localeCompare(b.date));
+    const activePhase = upcomingPhases[0] || (d2 && val2 > 0 ? { date: d2, price: val2 } : { date: d1, price: val1 });
+    const slugOrId = String(lot.slug || lot.id || "").trim();
+    const auctionLink = `https://www.mauromarcello.lel.br/lote/${slugOrId}`;
+    const cleanStreetAddress = extractAddress(`${rawAddr}
+${descPlain}
+${titleStr}`, "") || rawAddr;
+    const origin = lot.judicial_process_number || lot.judicial_court || /\bjudicial\b/i.test(descPlain) ? "judicial" : "extrajudicial";
+    const evalVal = Number(lot.evaluation_value) || val1 || 0;
+    const combinedText = [
+      titleStr,
+      rawAddr ? `Endere\xE7o: ${rawAddr}` : "",
+      descPlain,
+      lot.judicial_process_number ? `Processo: ${lot.judicial_process_number}` : "",
+      lot.judicial_court ? `Vara: ${lot.judicial_court}` : "",
+      evalVal > 0 ? `Avalia\xE7\xE3o: R$ ${evalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "",
+      d1 ? `1\xBA Leil\xE3o: ${d1.split("-").reverse().join("/")} R$ ${val1.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "",
+      d2 ? `2\xBA Leil\xE3o: ${d2.split("-").reverse().join("/")} R$ ${val2.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : ""
+    ].filter(Boolean).join("\n");
+    const baseDraft = {
+      portalId: "mauromarcello_lel_br",
+      auctioneerName: "Mauro Marcello",
+      title: titleStr,
+      address: cleanStreetAddress,
+      neighborhood: "",
+      city,
+      state,
+      propertyType: "Apartamento",
+      sizeSqm: 0,
+      auctionPrice: activePhase.price,
+      auctionDate: activePhase.date,
+      auctionLink,
+      imageUrl: String(lot.featured_image_url || "").trim(),
+      description: combinedText.slice(0, 12e3),
+      origin,
+      originVerified: true,
+      sourceVerified: true,
+      locationScopeVerified: true,
+      priceVerified: activePhase.price > 0,
+      ...Number.isFinite(Number(lot.latitude)) && Number(lot.latitude) !== 0 ? { lat: Number(lot.latitude) } : {},
+      ...Number.isFinite(Number(lot.longitude)) && Number(lot.longitude) !== 0 ? { lng: Number(lot.longitude) } : {},
+      ...evalVal > 0 ? { estimatedValue: evalVal } : {},
+      ...val1 > 0 ? { firstAuctionPrice: val1 } : {},
+      ...val2 > 0 ? { secondAuctionPrice: val2 } : {},
+      ...d1 ? { firstAuctionDate: d1 } : {},
+      ...d2 ? { secondAuctionDate: d2 } : {}
+    };
+    const parsed = parseOfficialLotDetail(baseDraft, {
+      text: combinedText,
+      title: titleStr,
+      image: baseDraft.imageUrl || "",
+      structuredAddresses: [rawAddr, cleanStreetAddress].filter(Boolean),
+      structuredSizes: [],
+      officialFinancials: {
+        ...activePhase.price > 0 ? { auctionPrice: activePhase.price, priceVerified: true } : {},
+        ...evalVal > 0 ? { estimatedValue: evalVal } : {},
+        ...activePhase.date ? { auctionDate: activePhase.date } : {},
+        ...d1 ? { firstAuctionDate: d1 } : {},
+        ...d2 ? { secondAuctionDate: d2 } : {},
+        ...val1 > 0 ? { firstAuctionPrice: val1 } : {},
+        ...val2 > 0 ? { secondAuctionPrice: val2 } : {}
+      },
+      availability: {
+        url: auctionLink,
+        checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        state: "active",
+        status: "ativo",
+        reason: "Ativo na API oficial Mauro Marcello Leil\xF5es"
+      }
+    }, auctionLink);
+    drafts.push({
+      ...parsed,
+      origin,
+      originVerified: true,
+      city,
+      state,
+      ...baseDraft.lat ? { lat: baseDraft.lat } : {},
+      ...baseDraft.lng ? { lng: baseDraft.lng } : {}
+    });
+  }
+  if (drafts.length) {
+    await onPage(drafts, lots.length);
+  }
+  return true;
+}
+var import_node_fs4, import_node_path3, import_puppeteer, cheerio3, EMGEA_API_DEFAULT, dateOnly, MAURO_MARCELLO_API, MAURO_MARCELLO_KEY;
 var init_listedPortalApis = __esm({
   "listedPortalApis.ts"() {
     import_node_fs4 = __toESM(require("node:fs"), 1);
     import_node_path3 = __toESM(require("node:path"), 1);
     import_puppeteer = __toESM(require("puppeteer"), 1);
     init_puppeteerConfig();
-    cheerio2 = __toESM(require("cheerio"), 1);
+    cheerio3 = __toESM(require("cheerio"), 1);
     init_auctioneerSyncService();
     init_auctionSyncScope();
     init_auctionGeography();
@@ -12922,6 +13109,8 @@ var init_listedPortalApis = __esm({
       const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
       return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
     };
+    MAURO_MARCELLO_API = "https://api.mauromarcello.lel.br/rest/v1";
+    MAURO_MARCELLO_KEY = "sb_publishable_g4XnQtJJVYr0OuT19JB06w_VaURsLA9";
   }
 });
 
@@ -12937,10 +13126,11 @@ function isPropertyLotEvidence(text) {
   const normalized = normalizeStr(text);
   const headline = normalized.split("\n")[0];
   const propertyWords2 = /\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex|agencia|agência|lote\s+(?:de\s+)?(?:terreno|urbano|rural|residencial|comercial|industrial)|imovel\s+(?:urbano|rural)|vaga\s+de\s+garagem|box\s+de\s+garagem|loteamento|fracao\s+ideal)\b/;
-  const nonPropertyHeadline = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|sucata|ferramenta|ferramentas|pecas\s+automotivas|fiat\s+palio|vw\s+gol|chevrolet|honda\s+civic|pajero)\b/;
-  if (propertyWords2.test(headline) && !nonPropertyHeadline.test(headline)) return true;
+  const nonPropertyHeadline = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|sucata|ferramenta|ferramentas|pecas\s+automotivas|fiat\s+palio|fiat\/?uno|vw\s+gol|chevrolet|onix|prisma|cobalt|hb20|corolla|hilux|sandero|logan|kwid|honda\s+civic|pajero|auditorio\s+visitantes)\b/;
+  if (nonPropertyHeadline.test(headline)) return false;
+  if (propertyWords2.test(headline)) return true;
   const lead = normalized.slice(0, 350);
-  const movableLead = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao|sucata|ferramenta|ferramentas|torno|pecas\s+automotivas|notebook|computador|eletrodomestico)\b/.test(lead);
+  const movableLead = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao|sucata|ferramenta|ferramentas|torno|pecas\s+automotivas|notebook|computador|eletrodomestico|chevrolet|fiat\/?uno|onix|auditorio\s+visitantes)\b/.test(lead);
   const property = propertyWords2.test(normalized);
   return property && !movableLead;
 }
@@ -12975,7 +13165,7 @@ function unsquishText(str) {
 }
 function formatCleanAddress(addr) {
   if (!addr) return "";
-  let cleaned = unsquishText(addr).replace(/\s+/g, " ").replace(/\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(Rio\s+de\s+Janeiro|Niterói|São\s+Gonçalo|Duque\s+de\s+Caxias|Nova\s+Iguaçu|Juiz\s+de\s+Fora|Belo\s+Horizonte|São\s+Paulo)\b/gi, "$1, $2").trim();
+  let cleaned = unsquishText(addr).replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, "").replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b(?=\s|,|$)[^,]*/gi, "").replace(/\s+/g, " ").replace(/\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(Rio\s+de\s+Janeiro|Niterói|São\s+Gonçalo|Duque\s+de\s+Caxias|Nova\s+Iguaçu|Juiz\s+de\s+Fora|Belo\s+Horizonte|São\s+Paulo)\b/gi, "$1, $2").trim();
   return cleaned;
 }
 function formatPreciseAuctionAddress(addr) {
@@ -12984,36 +13174,43 @@ function formatPreciseAuctionAddress(addr) {
   return formatCleanAddress([parsed.street, `n\xBA ${parsed.number}`, parsed.complement].filter(Boolean).join(", "));
 }
 function extractAddress(text, fallback) {
+  const isInvalidAddressFragment = (candidate) => /^\s*r\s+(?:conta\b|h[aá]\b|n[aã]o\b|sobre\b|para\b|constru[ií]d|edificad|situad|localizad)|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|audit[oó]rio\s+visitantes|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])|^\s*pra[cç]a\s+(?:seca|da\s+bandeira)\b(?!\s*,?\s*n[ºo°]?\s*\d+)|justi[cç]a\s+federal|se[cç][aã]o\s+judici[aá]ria|av\.?\s*venezuela,?\s*134|pal[aá]cio\s+da\s+justi[cç]a|av\.?\s*rio\s+branco,?\s*181\b|sala\s+1905\b|\bjfrj\b|\btjrj\b|\badvogad[oa]s?\b|\bterceiro\s+interessado\b|\bltda\b|\beireli\b|\bexequente\b|\bexecutad[oa]\b/i.test(candidate);
   const cleanInput = unsquishText(text || "");
   const lines = cleanInput.split(/\r?\n|\s{2,}/).map((line) => line.trim()).filter(Boolean);
   const labeledLine = lines.find(
-    (line) => /\b(?:endere[cç]o|localiza[cç][aã]o)\b/i.test(line) && !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|telefone|\btel\.?\b|no\s+mapa\s+pode\s+ser\s+aproximada|@/i.test(line) && /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line) && !/\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)
+    (line) => /\b(?:endere[cç]o|localiza[cç][aã]o)\b/i.test(line) && !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|telefone|\btel\.?\b|no\s+mapa\s+pode\s+ser\s+aproximada|justi[cç]a\s+federal|vara\s+(?:c[ií]vel|federal|de\s+execu[cç][õo]es)|se[cç][aã]o\s+judici[aá]ria|av\.?\s*venezuela,?\s*134|@/i.test(line) && /\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line) && !isInvalidAddressFragment(line)
   );
   if (labeledLine) {
     const labeledAddress = labeledLine.replace(/^.*?\b(?:endere[cç]o(?:\s+cf\.?\s+auto\s+de\s+penhora)?|localiza[cç][aã]o)\s*:?\s*/i, "").split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+/g, " ").trim();
-    if (labeledAddress.length >= 8 && !/[@]|eletr[oô]nico\s*:/i.test(labeledAddress) && /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(labeledAddress)) {
+    if (labeledAddress.length >= 8 && !/[@]|eletr[oô]nico\s*:/i.test(labeledAddress) && /\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(labeledAddress) && !isInvalidAddressFragment(labeledAddress)) {
       return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
     }
   }
   const addressCandidates = lines.map((line, index) => {
-    if (/@|\bendere[cç]o\s+eletr[oô]nico\b|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)) return null;
-    if (!/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
+    if (/@|\bendere[cç]o\s+eletr[oô]nico\b/i.test(line) || isInvalidAddressFragment(line)) return null;
+    if (!/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\b/i.test(line) && /\bpra[cç]a\s+(?:seca|da\s+bandeira)\b/i.test(line)) return null;
+    if (!/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
     const context = `${lines[index - 1] || ""} ${line}`;
     let score = 0;
     if (/im[oó]vel|\bbem\b|localiza[cç][aã]o|auto\s+de\s+avalia[cç][aã]o|auto\s+de\s+penhora|situad[oa]|localizad[oa]|objeto\s+do\s+leil[aã]o|matr[ií]cula/i.test(context)) score += 8;
-    if (/n[ºo°]?\s*\d+|,\s*\d+/.test(line)) score += 3;
-    if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|jucesp|creci|telefone|\btel\.?\b|sala\s+40[234]/i.test(context)) score -= 15;
+    if (/n[ºo°.]?\s*\d+|,\s*\d+/i.test(line)) score += 3;
+    if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|jucesp|creci|telefone|\btel\.?\b|sala\s+40[234]|justi[cç]a\s+federal|vara\s+(?:c[ií]vel|federal|de\s+execu[cç][õo]es)|se[cç][aã]o\s+judici[aá]ria|av\.?\s*venezuela,?\s*134|pal[aá]cio\s+da\s+justi[cç]a|jfrj|tjrj/i.test(context)) score -= 30;
     return { line, score, index };
   }).filter((candidate) => !!candidate).sort((a, b) => b.score - a.score || a.index - b.index);
   const addressLine = addressCandidates[0]?.line;
   if (addressLine) {
-    const extracted = addressLine.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,180}/i)?.[0] || addressLine;
+    const extracted = addressLine.match(/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,180}/i)?.[0] || addressLine;
     const cleanExtracted = extracted.split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0].replace(/\s+(?:bairro|cidade|estado)\s*[:\-].*$/i, "").trim();
-    return formatPreciseAuctionAddress(cleanExtracted);
+    if (!isInvalidAddressFragment(cleanExtracted)) {
+      return formatPreciseAuctionAddress(cleanExtracted);
+    }
   }
   const normalized = cleanInput.replace(/\s+/g, " ").trim();
-  const addressMatch = normalized.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
-  return addressMatch ? formatPreciseAuctionAddress(addressMatch[0].replace(/\s{2,}/g, " ").trim()) : formatPreciseAuctionAddress(fallback);
+  const addressMatch = normalized.match(/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
+  if (addressMatch && !isInvalidAddressFragment(addressMatch[0])) {
+    return formatPreciseAuctionAddress(addressMatch[0].replace(/\s{2,}/g, " ").trim());
+  }
+  return isInvalidAddressFragment(fallback || "") ? "" : formatPreciseAuctionAddress(fallback);
 }
 function extractDeclaredCity(text, state) {
   return sourceAuctionLocation(text, state)?.city || "";
@@ -13035,15 +13232,31 @@ function hasCityEvidence(text, city) {
   const normalizedCity = normalizeStr(city).replace(/\s+/g, " ");
   return Boolean(normalizedCity) && new RegExp(`(^|[^a-z])${normalizedCity.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[^a-z])`).test(normalizedText);
 }
+function parsePtBrNamedDate(dStr) {
+  const m = normalizeStr(dStr).match(/\b(\d{1,2})\s+de\s+([a-z]{3,10})\.?\s+de\s+(20\d{2})\b/);
+  if (!m) return void 0;
+  const month = PT_BR_MONTHS[m[2]];
+  if (!month) return void 0;
+  const date = `${m[3]}-${month}-${m[1].padStart(2, "0")}`;
+  const parsed = new Date(date);
+  return !isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date ? date : void 0;
+}
 function extractAuctionDates(text) {
   const matches = [...text.matchAll(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2}|\d{2})\b/g)];
   const dates = matches.filter((match) => {
     const context = text.slice(Math.max(0, match.index - 100), match.index);
-    return /(?:leil[aã]o|pra[cç]a|encerramento|encerra\s+em|data\s*:|p\.\s*[uú]nica)[^\d]{0,80}$/i.test(context);
+    return /(?:leil[aã]o|pra[cç]a|encerramento|t[eé]rmino|fechamento|encerra\s+em|data\s*:|p\.\s*[uú]nica)[^\d]{0,80}$/i.test(context);
   }).map((match) => `${match[3].length === 2 ? "20" + match[3] : match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`).filter((date) => {
     const parsed = new Date(date);
     return !isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
   });
+  for (const namedMatch of text.matchAll(/\b\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2}\b/gi)) {
+    const context = text.slice(Math.max(0, namedMatch.index - 100), namedMatch.index);
+    if (/(?:leil[aã]o|pra[cç]a|encerramento|t[eé]rmino|fechamento|abertura|data)/i.test(context)) {
+      const iso = parsePtBrNamedDate(namedMatch[0]);
+      if (iso) dates.push(iso);
+    }
+  }
   const unique = [...new Set(dates)].sort();
   return { first: unique[0], second: unique[1] };
 }
@@ -13051,6 +13264,8 @@ function extractAuctionDate(text) {
   return extractAuctionDates(text).first || "";
 }
 function normalizeDateStr(dStr) {
+  const named = parsePtBrNamedDate(dStr);
+  if (named) return named;
   const m = dStr.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
   if (!m) return void 0;
   const y = m[3].length === 2 ? `20${m[3]}` : m[3];
@@ -13070,26 +13285,43 @@ function extractDisplayedCurrentBid(text) {
 function extractAuctionRoundsAndPrices(text, todayParam) {
   if (!text) return { activePrice: 0, priceVerified: false };
   const today = todayParam || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-  const bidText = text.replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, " ").replace(/\bparcelas?\s+a\s+partir\s+de(?:\s*\*?)?\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?/gi, " ").replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, " ");
-  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo)|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
-  if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(bidText)) return { activePrice: 0, priceVerified: false };
-  const markers = [...bidText.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
+  const bidText = text.replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, " ").replace(/\bparcelas?\s+a\s+partir\s+de(?:\s*\*?)?\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?/gi, " ").replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, " ").replace(/\bR\$\s*[\d.]+(?:,\d{2})?(?:\s|<[^>]*>)*Incremento(?:\s+M[ií]nimo)?\b/gi, " ").replace(/\bIncremento(?:\s+M[ií]nimo)?\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?/gi, " ").replace(/\b[ÚU]ltimo\s+lance\s*:?\s*R\$\s*0(?:,00)?\b/gi, " ");
+  const valueAboveLabelRe = /(?:^|[\n\r.:;!?•])\s*(?!.*(?:sinal|parcela|superior\s+a|aproximad|d[eé]bito|iptu|condom[ií]nio|desconto|renda))R\$\s*([\d.]+(?:,\d{2})?)\s+(?:Lance\s+(?:M[ií]nimo|Inicial)|Valor\s+(?:M[ií]nimo|Inicial))\b/gi;
+  const explicitBids = [
+    ...[...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo)|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1])),
+    ...[...bidText.matchAll(valueAboveLabelRe)].map((m) => parseBrazilianMoney(m[1]))
+  ].filter((n) => n > 0);
+  if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)|pra[cç]a\s+[uú]nica/i.test(bidText)) return { activePrice: 0, priceVerified: false };
+  const markers = [...bidText.matchAll(/(?:([12])[ºªo°]\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)|(primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)|(pra[cç]a\s+[uú]nica|leil[aã]o\s+[uú]nico))/gi)];
   const unique = (values) => {
     const v = [...new Set(values.filter((n) => n > 0))];
     return v.length === 1 ? v[0] : 0;
   };
   const bids = (block) => {
-    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1])).filter((n) => n > 0);
+    const strict = [
+      ...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi),
+      ...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo))\s*:?\s*([\d.]+,\d{2})\b/gi),
+      ...block.matchAll(valueAboveLabelRe)
+    ].map((m) => parseBrazilianMoney(m[1])).filter((n) => n > 0);
     if (strict.length > 0 && new Set(strict).size === 1) return strict;
     return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map((m) => parseBrazilianMoney(m[1]));
   };
   const round = (n) => {
-    const entries = markers.filter((m) => Number(m[1] || (/primeir/i.test(m[2]) ? 1 : 2)) === n).map((m) => {
+    const entries = markers.filter((m) => {
+      if (m[3]) return n === 1;
+      return Number(m[1] || (/primeir/i.test(m[2]) ? 1 : 2)) === n;
+    }).map((m) => {
       const index = markers.indexOf(m);
       const block = bidText.slice(m.index + m[0].length, markers[index + 1]?.index ?? bidText.length).slice(0, 350);
-      const date = (block.match(/^\s*:?\s*(?:dia\s*)?(\d{1,2}\/\d{1,2}\/\d{2,4})/i) || block.match(/T[eé]rmino\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i))?.[1];
+      const closingMatches = [
+        block.match(/(?:t[eé]rmino|fechamento|encerramento)\s*:?\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2})/i)?.[0],
+        ...[...block.matchAll(/\b\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2}\b/gi)].map((x) => x[0]).slice(-1),
+        block.match(/^\s*:?\s*(?:dia\s*)?(\d{1,2}\/\d{1,2}\/\d{2,4})/i)?.[1],
+        block.match(/\b(\d{1,2}\/\d{1,2}\/20\d{2})\b/i)?.[1]
+      ].filter(Boolean);
+      const date = closingMatches[0];
       const labelled = bids(block);
-      const bare = block.match(/^\s*:?\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s+(?:às\s*)?\d{1,2}:\d{2})?\s*[-–:]?\s*)?R\$\s*([\d.]+(?:,\d{2})?)/i);
+      const bare = block.match(/^\s*:?\s*(?:(?:\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2})(?:[\s,]+(?:[àa]s\s*)?\d{1,2}:\d{2})?[\s,\-–:]*){0,2}R\$\s*([\d.]+(?:,\d{2})?)/i);
       return { price: unique(labelled.length ? labelled : bare ? [parseBrazilianMoney(bare[1])] : []), date: date ? normalizeDateStr(date) : void 0 };
     });
     const dates = [...new Set(entries.map((e) => e.date).filter(Boolean))];
@@ -13387,6 +13619,46 @@ function parseOfficialArea(value) {
   const raw = value.trim();
   return Number(raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(?:\.\d{3})+$/.test(raw) ? raw.replace(/\./g, "") : raw);
 }
+function hasOutOfScopeComarcaOrCep(rawText, city, state) {
+  const clean = stripCourthouseFooters(rawText || "").split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Navegue pelos lotes|Você também pode|Veja também)/i)[0];
+  if (!clean) return false;
+  if (/(?:comarca|munic[ií]pio|circunscri[cç][aã]o)\s+(?:de|da|do)\s+(?:angra\s+dos\s+reis|cabo\s+frio|maca[eé]|campos\s+dos\s+goytacazes|duque\s+de\s+caxias|nova\s+igua[cç]u|s[aã]o\s+gon[cç]alo|belford\s+roxo|s[aã]o\s+jo[aã]o\s+de\s+meriti|petr[oó]polis|teres[oó]polis|nova\s+friburgo|volta\s+redonda|barra\s+mansa|resende|itabora[ií]|maric[aá]|mag[eé]|saquarema|araruama|arma[cç][aã]o\s+dos\s+b[uú]zios|itagua[ií]|queimados|mesquita|nil[oó]polis)\b/i.test(clean)) {
+    return true;
+  }
+  const normCity = normalizeStr(city || "");
+  if ((!state || state.toUpperCase() === "RJ") && normCity === "rio de janeiro") {
+    const hasCapitalCep = /\b2(?:0\d{3}|1\d{3}|2\d{3}|3[0-7]\d{2})-?\d{3}\b/.test(clean);
+    const hasOutsideRjCep = /(?:cep\s*:?\s*|(?:rj|rio\s+de\s+janeiro)\s*[,\-\/]\s*)(24[4-9]\d{2}|2[5-8]\d{3})-?\d{3}\b/i.test(clean);
+    if (hasOutsideRjCep && !hasCapitalCep) return true;
+  }
+  return false;
+}
+function stripCourthouseFooters(raw) {
+  return String(raw || "").replace(/AV\.?\s*VENEZUELA,?\s*134\b[^\n]{0,220}/gi, " ").replace(/Poder\s+Judici[aá]rio[\s\S]{0,400}?(?:SA[ÚU]DE|CEP:\s*20081-312|jfrj\.jus\.br)[^\n]*/gi, " ").replace(/(?:Se[cç][aã]o\s+Judici[aá]ria|Justi[cç]a\s+Federal|Tribunal\s+de\s+Justi[cç]a)[^\n]{0,180}/gi, " ");
+}
+function extractTargetNeighborhood(city, ...texts) {
+  const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const cityKey = norm(city || "");
+  const zones = CITY_ZONES[cityKey] || [];
+  if (!zones.length) return "";
+  const names = zones.flatMap((z) => z.neighborhoods).filter(Boolean);
+  const macroNames = /* @__PURE__ */ new Set(["ilha do governador", "jacarepagua", "centro"]);
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const stripStreetNames = (s) => s.replace(/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^,\-–\n\/]{2,60}/gi, " ");
+  for (const raw of texts) {
+    const clean = norm(stripStreetNames(raw || ""));
+    if (!clean) continue;
+    const matches = names.filter((n) => {
+      const target = norm(n);
+      return new RegExp(`(?:^|[^a-z0-9])${esc(target)}(?=$|[^a-z0-9])`).test(clean);
+    });
+    if (!matches.length) continue;
+    const specific = matches.filter((m) => !macroNames.has(norm(m)));
+    const chosen = (specific.length ? specific : matches).sort((a, b) => b.length - a.length)[0];
+    if (chosen) return chosen;
+  }
+  return "";
+}
 function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = "", matriculaUrl) {
   const lotText = detailData.text.split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Navegue pelos lotes|Você também pode|Veja também)/i)[0];
   const combinedText = lotText;
@@ -13394,7 +13666,9 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const sellerSection = combinedText.match(/comitente\s*:?\s*([^\n]+(?:\n[^\n]+)?)/i)?.[1] || "";
   const classification = detectBankOrJudicial(combinedText);
   const dates = extractAuctionDates(combinedText);
-  const headlineArea = detailData.title.match(/(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+  const headlineType = parseType(detailData.title || draft.title);
+  const headlineTitleForArea = headlineType === "Terreno" ? detailData.title || "" : (detailData.title || "").replace(/\([^)]*\bterreno\b[^)]*\)/gi, "");
+  const headlineArea = headlineTitleForArea.match(/(\d+(?:[.,]\d+)*)\s*m[²2]/i);
   const headlineSize = headlineArea ? parseOfficialArea(headlineArea[1]) : 0;
   const landArea = parseType(detailData.title || draft.title) === "Terreno" ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
   const landSize = landArea ? parseOfficialArea(landArea[1]) : 0;
@@ -13406,8 +13680,17 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const detailedSize = areaAudit.selected?.value || 0;
   const structuredAddress = detailData.structuredAddresses.map((value) => extractAddress(value, "")).find((value) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
   const addressTextSection = combinedText.split(/\n\s*Edital do leil[aã]o\b|\bINFORMA[CÇ][ÕO]ES SOBRE O LEIL[ÃA]O E SOBRE O LEILOEIRO\b|\bDO VENDEDOR\b/i)[0] || combinedText;
-  const textAddress = extractAddress(addressTextSection, "") || extractAddress(combinedText, "") || extractAddress(matriculaText, "");
-  const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : "") || structuredAddress;
+  const lotBodyAfterHeader = /paulobotelholeiloeiro\.com\.br/i.test(detailUrl) ? addressTextSection.split(/\bDescri[cç][aã]o\s+do\s+Lote\b/i)[1] || addressTextSection : addressTextSection;
+  const candidateAddresses = [
+    .../paulobotelholeiloeiro\.com\.br/i.test(detailUrl) ? [extractAddress(lotBodyAfterHeader, "")] : [],
+    extractAddress(detailData.title || "", ""),
+    extractAddress(addressTextSection, ""),
+    extractAddress(combinedText, ""),
+    extractAddress(matriculaText, ""),
+    extractAddress(draft.title || "", ""),
+    structuredAddress || ""
+  ];
+  const verifiedAddress = candidateAddresses.find((addr) => hasAuditableAddress(addr)) || candidateAddresses.find((addr) => Boolean(addr && !/^\s*r\s+|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|audit[oó]rio\s+visitantes|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(addr))) || "";
   const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   const roundAnalysis = extractAuctionRoundsAndPrices(combinedText, today);
   const officialFin = detailData.officialFinancials;
@@ -13419,10 +13702,24 @@ function parseOfficialLotDetail(draft, detailData, detailUrl, matriculaText = ""
   const extractedAppraisal = roundAnalysis.appraisal || extractAppraisal(combinedText) || draft.estimatedValue;
   const finalAppraisal = officialFin?.estimatedValue || extractedAppraisal;
   const enrichedDescription = combinedText.trim().slice(0, 3e4);
-  const detectedLocation = sourceAuctionLocation(detailData.title) || sourceAuctionLocation(verifiedAddress || "") || sourceAuctionLocation(lotText) || (draft.locationScopeVerified && hasCityEvidence(combinedText, draft.city) || hasRequestedLocationEvidence(combinedText, draft.state, draft.city) ? { city: draft.city, state: draft.state } : null);
-  const fallbackLocation = draft.city && draft.state ? { city: draft.city, state: draft.state } : { city: "", state: "" };
+  const cleanLocText = stripCourthouseFooters(lotText);
+  const outOfScopeComarca = hasOutOfScopeComarcaOrCep(`${detailData.title || ""}
+${verifiedAddress || ""}
+${lotText}`, draft.city, draft.state);
+  const outOfScopeInTitle = OUT_OF_SCOPE_RJ_CITIES_RE.test(detailData.title || "") && !sourceAuctionLocation(detailData.title || "") || outOfScopeComarca;
+  const detectedLocation = outOfScopeComarca ? null : sourceAuctionLocation(detailData.title) || (outOfScopeInTitle ? null : sourceAuctionLocation(verifiedAddress || "") || sourceAuctionLocation(cleanLocText) || (draft.locationScopeVerified && hasCityEvidence(cleanLocText, draft.city) || hasRequestedLocationEvidence(cleanLocText, draft.state, draft.city) ? { city: draft.city, state: draft.state } : null));
+  const fallbackLocation = !outOfScopeComarca && (draft.city && draft.state) ? { city: draft.city, state: draft.state } : { city: "", state: "" };
+  const resolvedLoc = detectedLocation || fallbackLocation;
+  const resolvedNeighborhood = String(draft.neighborhood || "").trim() || extractTargetNeighborhood(
+    resolvedLoc.city || draft.city,
+    detailData.title || "",
+    verifiedAddress || "",
+    addressTextSection,
+    draft.address || ""
+  ) || "";
   return {
     ...draft,
+    neighborhood: resolvedNeighborhood,
     sourceEvidencePath: detailData.sourceEvidencePath,
     sourceAvailability: detailData.availability,
     sourceClosed: detailData.availability?.state === "closed" || detailData.availability?.state === "removed" || /leiloes-realizados/.test(detailUrl),
@@ -13640,7 +13937,7 @@ async function collectListingPages(page, read) {
   return [...lots.values()];
 }
 function parseMegaDetailHtml(html, detailUrl, draft) {
-  const $ = cheerio3.load(html);
+  const $ = cheerio4.load(html);
   const links = /* @__PURE__ */ new Set();
   $("a, iframe, embed").each((_, el) => {
     const href = $(el).attr("href") || $(el).attr("src") || "";
@@ -13817,7 +14114,7 @@ async function scrapeMegaLeiloes(targetType, state = "RJ", city = "Rio de Janeir
         const res = await fetch(nextUrl, { headers, signal: AbortSignal.timeout(25e3) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const html = await res.text();
-        const $ = cheerio3.load(html);
+        const $ = cheerio4.load(html);
         let pageLots = 0;
         $(".card.open, .card").each((_, c) => {
           const href = $(c).find("a").first().attr("href") || "";
@@ -14604,15 +14901,19 @@ ${draft.description || ""}`)) {
       updated++;
       const previousOffer = { ...existing };
       const isAuditableAddr = hasAuditableAddress(completeAddress);
+      const reopenedFromDateExpiry = existing.availability?.status === "expirado_por_data" && (lastKnownDate >= today || isDirectSale);
+      const nextAvailability = draft.sourceAvailability?.state === "active" ? draft.sourceAvailability : reopenedFromDateExpiry ? { state: "active", status: "ativo", url: draft.auctionLink, checkedAt: (/* @__PURE__ */ new Date()).toISOString(), reason: "Nova rodada futura publicada na fonte" } : existing.availability;
       Object.assign(existing, recalculateFn({
         ...existing,
         ingestionStatus: "ativo",
         precisa_revisao: !calculationReady,
         requer_auditoria_endereco: !isAuditableAddr || !calculationReady,
+        sourceClosed: nextAvailability?.state === "closed",
+        sourceAvailability: nextAvailability?.state !== "closed" ? nextAvailability : existing.sourceAvailability,
         auctionLink: draft.auctionLink,
         auctioneerName: draft.auctioneerName,
         sourceLinks: [...new Set([...existing.sourceLinks || [], existing.auctionLink, draft.auctionLink].filter(Boolean))],
-        availability: draft.sourceAvailability?.state === "active" ? draft.sourceAvailability : existing.availability,
+        availability: nextAvailability,
         lastSyncedAt: (/* @__PURE__ */ new Date()).toISOString(),
         state: draft.state,
         city: draft.city,
@@ -14683,7 +14984,7 @@ ${draft.description || ""}`)) {
       id: baseId,
       canonicalPropertyId: draftKey || void 0,
       requer_auditoria_endereco: !isAuditable || !calculationReady,
-      ingestionStatus: calculationReady ? "ativo" : "quarentena_extracao",
+      ingestionStatus: calculationReady || draft.priceVerified && draft.auctionPrice > 0 && (lastKnownDate || isDirectSale) && Boolean(draft.address && isAuditable) ? "ativo" : "quarentena_extracao",
       title: draft.title,
       address: completeAddress,
       neighborhood: draft.neighborhood,
@@ -14755,8 +15056,97 @@ function auditAndRepairAuctions(auctions, recalculateFn) {
   let repaired = 0;
   for (let index = 0; index < auctions.length; index++) {
     const current = auctions[index];
-    const recalculated = recalculateFn({ ...current });
-    if (current.precisa_revisao) Object.assign(recalculated, {
+    const seed = { ...current };
+    if (/\b(?:vagas?|box)\s+(?:de\s+)?garagem\b/i.test(`${seed.title || ""} ${seed.auctionLink || ""}`)) {
+      seed.propertyType = "Comercial";
+    }
+    if (/freitasleiloeiro\.com\.br/i.test(seed.auctionLink || "") && seed.description && Number(seed.auctionPrice || 0) <= 15e3) {
+      const repRounds = extractAuctionRoundsAndPrices(seed.description);
+      if (repRounds.priceVerified && repRounds.activePrice > Number(seed.auctionPrice || 0)) {
+        seed.auctionPrice = repRounds.activePrice;
+        seed.firstAuctionPrice = repRounds.firstAuctionPrice || seed.firstAuctionPrice;
+        seed.secondAuctionPrice = repRounds.secondAuctionPrice || seed.secondAuctionPrice;
+        seed.priceVerified = true;
+        seed.precisa_revisao = false;
+      }
+    }
+    if (/paulobotelholeiloeiro\.com\.br/i.test(seed.auctionLink || "") && seed.description) {
+      const cleanDesc = String(seed.description).split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Navegue pelos lotes|Você também pode|Veja também)/i)[0];
+      if (cleanDesc.length < String(seed.description).length) {
+        seed.description = cleanDesc.trim().slice(0, 3e4);
+      }
+      const lotSection = cleanDesc.split(/\bDescri[cç][aã]o\s+do\s+Lote\b/i)[1] || cleanDesc;
+      const realHeadline = cleanDesc.match(/Cadastre-se\s*\r?\n\s*([^\r\n]+)\s*\r?\n\s*R\$/i)?.[1]?.trim() || "";
+      if (/munic[ií]pio\s+de\s+niter[oó]i/i.test(lotSection)) {
+        seed.city = "Niter\xF3i";
+        seed.state = "RJ";
+      }
+      const lotBodyAfterTitle = cleanDesc.split(/\bDescri[cç][aã]o\s+do\s+Lote\b/i)[1] || lotSection;
+      const bodyAddr = extractAddress(lotBodyAfterTitle, "") || extractAddress(lotSection, "");
+      const cleanBodyNeigh = extractTargetNeighborhood(seed.city || "Rio de Janeiro", bodyAddr, lotBodyAfterTitle, realHeadline);
+      const staleTitleStreet = seed.title && bodyAddr ? !normalizeStr(lotBodyAfterTitle).includes(normalizeStr(seed.title.split(",")[0].replace(/^\d+%\s*/, "").slice(0, 18))) : false;
+      const truncatedAddr = !seed.address || !hasAuditableAddress(seed.address) || seed.title && normalizeStr(seed.address) === normalizeStr(seed.title) && !/\d/.test(seed.address);
+      if (realHeadline || staleTitleStreet || truncatedAddr) {
+        if (bodyAddr && hasAuditableAddress(bodyAddr)) {
+          seed.address = bodyAddr;
+        }
+        if (cleanBodyNeigh) {
+          seed.neighborhood = cleanBodyNeigh;
+          seed.officialNeighborhood = void 0;
+          seed.originalListedNeighborhood = void 0;
+          seed.divergentNeighborhoodNotice = void 0;
+        } else if (staleTitleStreet) {
+          seed.neighborhood = "";
+          seed.officialNeighborhood = void 0;
+          seed.originalListedNeighborhood = void 0;
+          seed.divergentNeighborhoodNotice = void 0;
+        }
+        const inferredType = parseType(`${realHeadline} ${lotSection.slice(0, 300)}`);
+        if (inferredType) seed.propertyType = inferredType;
+        if (staleTitleStreet || seed.title && /MARECHAL MASCARENHAS|BENJAMIM MAGALH|MARIO AGOSTINELLI|NOSSA SENHORA DE COPACABANA|BANDEIRANTES,\s*7000/i.test(seed.title) && !normalizeStr(lotSection).includes(normalizeStr(seed.title.slice(0, 20)))) {
+          seed.title = [inferredType || seed.propertyType || "Im\xF3vel", seed.address || realHeadline, cleanBodyNeigh || seed.neighborhood, seed.city].filter(Boolean).join(" - ");
+        }
+      }
+    }
+    const brokenAddr = !seed.address?.trim() || /^\s*r\s+(?:conta\b|h[aá]\b|n[aã]o\b|sobre\b|para\b|constru[ií]d|edificad|situad|localizad)|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|audit[oó]rio\s+visitantes|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])|\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b|\badvogad[oa]s?\b|\bterceiro\s+interessado\b|\bltda\b/i.test(seed.address);
+    if (brokenAddr) {
+      if (seed.address && /^\s*r\s+(?:constru[ií]d|edificad|situad|localizad)|\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b/i.test(seed.address)) {
+        const cleanedAddr = formatPreciseAuctionAddress(seed.address);
+        if (cleanedAddr && hasAuditableAddress(cleanedAddr)) {
+          seed.address = cleanedAddr;
+        }
+      } else {
+        const recovered = extractAddress(`${seed.title || ""}
+${seed.description || ""}`, "");
+        if (recovered && hasAuditableAddress(recovered)) {
+          seed.address = recovered;
+        } else if (/^\s*r\s+(?:conta\b|h[aá]\b)|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])|\badvogad[oa]s?\b|\bterceiro\s+interessado\b|\bltda\b/i.test(seed.address || "")) {
+          seed.address = "";
+        }
+      }
+    }
+    const outOfScopeComarca = hasOutOfScopeComarcaOrCep(`${seed.title || ""}
+${seed.address || ""}
+${seed.description || ""}`, seed.city, seed.state);
+    const recalculated = recalculateFn(seed);
+    if (outOfScopeComarca) {
+      recalculated.ingestionStatus = "quarentena_extracao";
+      recalculated.precisa_revisao = true;
+      recalculated.calculatedProfit = void 0;
+      recalculated.calculatedRoi = void 0;
+      if (JSON.stringify(current) !== JSON.stringify(recalculated)) {
+        auctions[index] = recalculated;
+        repaired++;
+      }
+      continue;
+    }
+    if (recalculated.ingestionStatus === "quarentena_extracao" && recalculated.sourceAvailability?.state !== "closed" && recalculated.sourceAvailability?.state !== "removed" && Number(recalculated.auctionPrice) > 0 && recalculated.priceVerified === true && Number(recalculated.sizeSqm) > 0 && recalculated.sizeVerified === true && Boolean(recalculated.neighborhood) && !/^(?:n[aã]o informado|desconhecido|a confirmar)$/i.test(recalculated.neighborhood) && Boolean(recalculated.address && hasAuditableAddress(recalculated.address))) {
+      recalculated.ingestionStatus = "ativo";
+      recalculated.precisa_revisao = false;
+      recalculated.requer_auditoria_endereco = false;
+    }
+    const stillNeedsReview = current.precisa_revisao && !(recalculated.sourceAvailability?.state !== "closed" && recalculated.sourceAvailability?.state !== "removed" && Number(recalculated.auctionPrice) > 0 && Number(recalculated.sizeSqm) > 0 && Boolean(recalculated.neighborhood) && Boolean(recalculated.address && hasAuditableAddress(recalculated.address)));
+    if (stillNeedsReview) Object.assign(recalculated, {
       precisa_revisao: true,
       valuationConfidence: "unavailable",
       liquidityScore: 1,
@@ -14770,7 +15160,7 @@ function auditAndRepairAuctions(auctions, recalculateFn) {
   }
   return { total: auctions.length, repaired };
 }
-var import_node_crypto3, import_fs2, import_node_path4, cheerio3, import_puppeteer2, import_genai2, documentOcrPausedUntil, AUCTIONEER_PORTALS, OFFICIAL_DETAIL_SEEDS, MEGA_CITY_CACHE_TTL_MS, megaCityDraftsCache, megaCityInflight;
+var import_node_crypto3, import_fs2, import_node_path4, cheerio4, import_puppeteer2, import_genai2, documentOcrPausedUntil, AUCTIONEER_PORTALS, PT_BR_MONTHS, OUT_OF_SCOPE_RJ_CITIES_RE, OFFICIAL_DETAIL_SEEDS, MEGA_CITY_CACHE_TTL_MS, megaCityDraftsCache, megaCityInflight;
 var init_auctioneerSyncService = __esm({
   "auctioneerSyncService.ts"() {
     init_aggregation();
@@ -14787,8 +15177,9 @@ var init_auctioneerSyncService = __esm({
     init_auctionLocation();
     import_fs2 = __toESM(require("fs"), 1);
     import_node_path4 = __toESM(require("node:path"), 1);
-    cheerio3 = __toESM(require("cheerio"), 1);
+    cheerio4 = __toESM(require("cheerio"), 1);
     init_auctionGeography();
+    init_cityZones();
     import_puppeteer2 = __toESM(require("puppeteer"), 1);
     init_puppeteerConfig();
     import_genai2 = require("@google/genai");
@@ -14841,7 +15232,7 @@ var init_auctioneerSyncService = __esm({
       { id: "lancejudicial", name: "Lance Judicial", domain: "lancejudicial.com.br", aliasDomains: ["grupolance.com.br"], baseUrl: "https://www.grupolance.com.br", searchUrl: "https://www.grupolance.com.br/imoveis", genericScrape: true, enabled: true },
       { id: "superbid", name: "Superbid", domain: "superbid.net", baseUrl: "https://www.superbid.net", genericScrape: true, enabled: true },
       { id: "murilochaves_com_br", name: "MURILO CARDOZO CHAVES", domain: "murilochaves.com.br", baseUrl: "https://www.murilochaves.com.br", genericScrape: true, enabled: true },
-      { id: "depaulaonline_br", name: "LUIZ TEN\xD3RIO DE PAULA", domain: "depaulaonline.br", baseUrl: "https://www.depaulaonline.br", genericScrape: true, enabled: true },
+      { id: "depaulaonline_br", name: "LUIZ TEN\xD3RIO DE PAULA", domain: "depaulaonline.br", baseUrl: "https://www.depaulaonline.br", genericScrape: true, enabled: false },
       { id: "edgarcarvalholeiloeiro_com_br", name: "EDGAR DE CARVALHO JUNIOR", domain: "edgarcarvalholeiloeiro.com.br", baseUrl: "https://www.edgarcarvalholeiloeiro.com.br", genericScrape: true, enabled: true },
       { id: "machadoleiloes_com_br", name: "NORMA MARIA MACHADO", domain: "machadoleiloes.com.br", baseUrl: "https://www.machadoleiloes.com.br", genericScrape: true, enabled: true },
       { id: "leiloeirasilvani_com_br", name: "SILVANI DAS GRA\xC7AS LOPES DIAS", domain: "leiloeirasilvani.com.br", baseUrl: "https://www.leiloeirasilvani.com.br", genericScrape: true, enabled: true },
@@ -14850,7 +15241,7 @@ var init_auctioneerSyncService = __esm({
       { id: "fernandobraga_lel_br", name: "FERNANDO MOREIRA BRAGA", domain: "fernandobraga.lel.br", baseUrl: "https://www.fernandobraga.lel.br", genericScrape: true, enabled: true },
       { id: "leiloesbraga_lel_br", name: "FERNANDO MOREIRA BRAGA", domain: "leiloesbraga.lel.br", baseUrl: "https://www.leiloesbraga.lel.br", genericScrape: true, enabled: true },
       { id: "josimarleiloeiro_com_br", name: "JOSIMAR DE AZEVEDO SANTOS", domain: "josimarleiloeiro.com.br", baseUrl: "https://www.josimarleiloeiro.com.br", genericScrape: true, enabled: true },
-      { id: "marioricart_lel_br", name: "MARIO MILTON BITTENCOURT RICART", domain: "marioricart.lel.br", aliasDomains: ["ricartleiloes.com.br"], baseUrl: "https://www.ricartleiloes.com.br", genericScrape: true, enabled: true },
+      { id: "marioricart_lel_br", name: "MARIO MILTON BITTENCOURT RICART", domain: "marioricart.lel.br", aliasDomains: ["ricartleiloes.com.br"], baseUrl: "https://www.ricartleiloes.com.br", genericScrape: true, enabled: false },
       { id: "antonioferreira_lel_br", name: "ANTONIO CARLOS DA COSTA FERREIRA", domain: "antonioferreira.lel.br", baseUrl: "https://www.antonioferreira.lel.br", genericScrape: true, enabled: true },
       { id: "andrealeiloeirapublica_lel_br", name: "ANDR&#201;A ROSA COSTA", domain: "andrealeiloeirapublica.lel.br", baseUrl: "https://www.andrealeiloeirapublica.lel.br", genericScrape: true, enabled: false },
       { id: "levyleiloeiro_com_br", name: "FRANKLIN LEVY", domain: "levyleiloeiro.com.br", baseUrl: "https://www.levyleiloeiro.com.br", genericScrape: true, enabled: true },
@@ -14928,7 +15319,7 @@ var init_auctioneerSyncService = __esm({
       { id: "bastosleiloes_com_br", name: "BRENO RIBEIRO PENNA BASTOS", domain: "bastosleiloes.com.br", baseUrl: "https://www.bastosleiloes.com.br", genericScrape: true, enabled: true },
       { id: "tamiriscarvalholeiloeira_com_br", name: "TAMIRIS FEITAL DA SILVA CARVALHO", domain: "tamiriscarvalholeiloeira.com.br", baseUrl: "https://www.tamiriscarvalholeiloeira.com.br", genericScrape: true, enabled: true },
       { id: "kronbergleiloes_com_br", name: "HELCIO KRONBERG", domain: "kronbergleiloes.com.br", aliasDomains: ["kronleiloes.com.br"], baseUrl: "https://www.kronleiloes.com.br", searchUrl: "https://www.kronleiloes.com.br/categorias/imoveis?searchType=opened&pageNumber=1&pageSize=30&orderBy=price:desc", genericScrape: true, enabled: true },
-      { id: "kronleiloes_com_br", name: "HELCIO KRONBERG", domain: "kronleiloes.com.br", baseUrl: "https://www.kronleiloes.com.br", genericScrape: true, enabled: true },
+      { id: "kronleiloes_com_br", name: "HELCIO KRONBERG", domain: "kronleiloes.com.br", baseUrl: "https://www.kronleiloes.com.br", genericScrape: true, enabled: false },
       { id: "positivoleiloes_com_br", name: "ERICK SOARES TELES", domain: "positivoleiloes.com.br", baseUrl: "https://www.positivoleiloes.com.br", genericScrape: true, enabled: true },
       { id: "sbleiloeiro302_com_br", name: "SEVERINO BARBOSA", domain: "sbleiloeiro302.com.br", baseUrl: "https://www.sbleiloeiro302.com.br", genericScrape: true, enabled: true },
       { id: "dgleiloes_com_br", name: "DANIEL ELIAS GARCIA", domain: "dgleiloes.com.br", baseUrl: "https://www.dgleiloes.com.br", genericScrape: true, enabled: true },
@@ -15043,6 +15434,33 @@ var init_auctioneerSyncService = __esm({
       { id: "wsleiloes_com_br", name: "Wanderson Belmiro dos Reis", domain: "wsleiloes.com.br", baseUrl: "https://www.wsleiloes.com.br", genericScrape: true, enabled: true },
       ...NEXUS_AUCTIONEERS
     ];
+    PT_BR_MONTHS = {
+      jan: "01",
+      janeiro: "01",
+      fev: "02",
+      fevereiro: "02",
+      mar: "03",
+      marco: "03",
+      abr: "04",
+      abril: "04",
+      mai: "05",
+      maio: "05",
+      jun: "06",
+      junho: "06",
+      jul: "07",
+      julho: "07",
+      ago: "08",
+      agosto: "08",
+      set: "09",
+      setembro: "09",
+      out: "10",
+      outubro: "10",
+      nov: "11",
+      novembro: "11",
+      dez: "12",
+      dezembro: "12"
+    };
+    OUT_OF_SCOPE_RJ_CITIES_RE = /\b(?:angra\s+dos\s+reis|cabo\s+frio|maca[eé]|campos\s+dos\s+goytacazes|duque\s+de\s+caxias|nova\s+igua[cç]u|s[aã]o\s+gon[cç]alo|belford\s+roxo|s[aã]o\s+jo[aã]o\s+de\s+meriti|petr[oó]polis|teres[oó]polis|nova\s+friburgo|volta\s+redonda|barra\s+mansa|resende|itabora[ií]|maric[aá]|mag[eé]|saquarema|araruama|arma[cç][aã]o\s+dos\s+b[uú]zios|itagua[ií]|queimados|mesquita|nil[oó]polis)\b/i;
     OFFICIAL_DETAIL_SEEDS = [
       {
         portalId: "pamela",
@@ -15424,6 +15842,7 @@ __export(server_exports, {
   ALLOWED_TARGET_CITIES: () => ALLOWED_TARGET_CITIES,
   getCanonicalTargetCity: () => getCanonicalTargetCity,
   isAllowedTargetCity: () => isAllowedTargetCity,
+  isAuctionInConfiguredScope: () => isAuctionInConfiguredScope,
   normalizeCaixaModality: () => normalizeCaixaModality,
   recalculateAuction: () => recalculateAuction,
   recalculateAuctions: () => recalculateAuctions,
@@ -15525,8 +15944,12 @@ function sanitizeStreetName(rawStreet) {
   if (!rawStreet) return "";
   let s = String(rawStreet).trim();
   s = s.replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16))).replace(/_/g, " ");
+  s = s.replace(/\s*\([^)]*\)/g, " ").replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b.*$/i, "").replace(/\s+/g, " ").trim();
   s = s.replace(/^(?:dados\s+do\s+im[oó]vel|dados\s+do\s+bem|do\s+im[oó]vel|do\s+bem|do\s+lote|endere[cç]o|local(?:iza[cç][aã]o)?|im[oó]vel|lote|bem)\s*[:\-–]\s*/i, "");
   s = s.replace(/^(?:obs\.?\s*\d*\s*[:\-–]?\s*)+/i, "");
+  s = s.replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, "");
+  s = s.replace(/^(?:r|na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, "");
+  s = s.replace(/^(?:rua\s+avenida|avenida\s+rua|r\.\s*av\.?)\b/i, "Avenida");
   s = s.replace(/^(?:edif[íi]cio|ed\.?|condom[íi]nio|cond\.?|bloco|bl\.?|apto\.?|apt\.?|sala|casa)\s+[^,–-]+[,\-–]\s*/i, "");
   const commaParts = s.split(",");
   if (commaParts.length > 1) {
@@ -15546,7 +15969,7 @@ function sanitizeStreetName(rawStreet) {
 function parseCleanAddress(rawAddress) {
   if (!rawAddress) return { street: "", number: "", complement: "" };
   let text = String(rawAddress).trim();
-  text = text.replace(/\s*\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+  text = text.replace(/\s*\([^)]*\)/g, " ").replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b(?=\s|,|$)[^,]*/gi, "").replace(/\s+/g, " ").trim();
   text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, "");
   text = text.replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, "").trim();
   const legalCutoffs = [
@@ -15562,21 +15985,25 @@ function parseCleanAddress(rawAddress) {
   }
   text = text.replace(/^(?:dados\s+do\s+im[oó]vel|dados\s+do\s+bem|do\s+im[oó]vel|do\s+bem|do\s+lote|endere[cç]o|local(?:iza[cç][aã]o)?|im[oó]vel|lote|bem)\s*[:\-–]\s*/i, "");
   text = text.replace(/^(?:obs\.?\s*\d*\s*[:\-–]?\s*)+/i, "");
+  text = text.replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, "");
+  text = text.replace(/^(?:r|na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, "");
+  text = text.replace(/^(?:rua\s+avenida|avenida\s+rua|r\.\s*av\.?)\b/i, "Avenida").replace(/\bn\.\s*[ºo°]/gi, "n\xBA").replace(/\b(n\.?[ºo°]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d{1,3})\.(\d{3})\b/gi, "$1 $2$3");
   let number = "";
   let complement = "";
-  const numPrefixMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+(?:\.\d+)?)\s*(?:e\s*\d+)?\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sobrado|sala|loja)?/i);
+  const streetHeader = text.split(/(?:[.;]\s*|\s*,\s*)(?:unidade|unid\.?|apto|apt|apartamento|bloco|bl|sala|loja)\b/i)[0] || text;
+  const numPrefixMatch = streetHeader.match(/(?:,\s*|\s+)(?:n\.?[ºo°]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d+(?:\.\d+)?)\s*(?:e\s*\d+)?\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sobrado|sala|loja)?/i);
   if (numPrefixMatch) {
-    number = numPrefixMatch[1].replace(/\./g, "");
+    number = numPrefixMatch[1].replace(/\./g, "").replace(/^0+(?=\d)/, "");
     if (numPrefixMatch[2]) complement = numPrefixMatch[2].trim();
   } else {
-    const commaNumMatch = text.match(/,\s*(\d{1,6})\b(?:\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sala|loja))?/i);
+    const commaNumMatch = streetHeader.match(/,\s*(\d{1,6})\b(?:\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sala|loja))?/i);
     if (commaNumMatch) {
-      number = commaNumMatch[1];
+      number = commaNumMatch[1].replace(/^0+(?=\d)/, "");
       if (commaNumMatch[2]) complement = commaNumMatch[2].trim();
     }
   }
   if (number) {
-    const splitByNum = text.split(new RegExp(`(?:,\\s*|\\s+)(?:n[\xBAo\xB0.]?|num(?:ero)?\\.?|nro\\.?)?\\s*${number}\\b`, "i"));
+    const splitByNum = text.split(new RegExp(`(?:,\\s*|\\s+)(?:n\\.?[\xBAo\xB0]?|num(?:ero)?\\.?|nro\\.?)?\\s*0*${number}\\b`, "i"));
     if (splitByNum.length > 1 && splitByNum[1].trim()) {
       let comp = splitByNum[1].trim();
       comp = comp.replace(/^[,\-–/.]+\s*/, "").replace(/\s+/g, " ").trim();
@@ -15584,7 +16011,7 @@ function parseCleanAddress(rawAddress) {
       if (comp && !complement) complement = comp;
     }
   }
-  const rawStreetPart = number ? text.split(new RegExp(`(?:,\\s*|\\s+)(?:n[\xBAo\xB0.]?|num(?:ero)?\\.?|nro\\.?)?\\s*${number}\\b`, "i"))[0] : text;
+  const rawStreetPart = number ? text.split(new RegExp(`(?:,\\s*|\\s+)(?:n\\.?[\xBAo\xB0]?|num(?:ero)?\\.?|nro\\.?)?\\s*0*${number}\\b`, "i"))[0] : text;
   const street = sanitizeStreetName(rawStreetPart);
   return { street, number, complement };
 }
@@ -15734,6 +16161,170 @@ init_quarantine();
 init_validation();
 init_location();
 init_auctionLocation();
+
+// src/utils/caixaDetailParser.ts
+var cheerio2 = __toESM(require("cheerio"), 1);
+init_propertyTypes();
+init_officialAreaAudit();
+function isRadwareCaixaResponse(content) {
+  if (!content) return false;
+  return /perfdrive|radware|bot\s*manager|hcaptcha|g-recaptcha|pardon\s+our\s+interruption|captcha\.css/i.test(content);
+}
+function extractCaixaImovelId(inputUrlOrHtml) {
+  const urlMatch = String(inputUrlOrHtml || "").match(/[?&]hdnimovel=(\d+)/i);
+  if (urlMatch) return urlMatch[1];
+  const hiddenMatch = String(inputUrlOrHtml || "").match(/(?:id|name)=["']?hdnimovel["']?[^>]*value=["']?(\d+)/i);
+  if (hiddenMatch) return hiddenMatch[1];
+  const fotoMatch = String(inputUrlOrHtml || "").match(/\/fotos\/F(\d{10,16})\./i);
+  if (fotoMatch) return fotoMatch[1];
+  return "";
+}
+function normalizeText(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function cleanCityFromCaixa(rawCity, uf) {
+  if (!rawCity) return uf === "MG" ? "Juiz de Fora" : "Rio de Janeiro";
+  const norm = normalizeText(rawCity);
+  if (norm === "niteroi") return "Niter\xF3i";
+  if (norm === "juiz de fora") return "Juiz de Fora";
+  if (norm === "rio de janeiro") return "Rio de Janeiro";
+  return rawCity.trim().toLowerCase().split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+function formatNeighborhood(raw) {
+  const cleaned = String(raw || "").trim().replace(/\s+/g, " ");
+  if (!cleaned) return "N\xE3o informado";
+  if (normalizeText(cleaned) === "taua") return "Tau\xE1";
+  return cleaned.toLowerCase().split(/\s+/).map((w) => ["da", "de", "do", "das", "dos", "e"].includes(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+function parseBrDecimal(raw) {
+  if (!raw) return 0;
+  const parsed = Number(String(raw).replace(/\./g, "").replace(",", ".").trim());
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+function parseCaixaDetailHtml(html, link, userId = "system") {
+  if (isRadwareCaixaResponse(html)) {
+    throw new Error("RADWARE_CAPTCHA_BLOCKED");
+  }
+  const $ = cheerio2.load(html || "");
+  $("script, style, noscript").remove();
+  const blockTexts = [];
+  $("h1, h2, h3, h4, h5, p, span, li, td, div.control-item, div.content").each((_, el) => {
+    const t = $(el).text().replace(/\s+/g, " ").trim();
+    if (t && t.length <= 400) blockTexts.push(t);
+  });
+  const flatText = ($("body").text() || $.text() || "").replace(/\s+/g, " ").trim();
+  const caixaId = extractCaixaImovelId(link) || extractCaixaImovelId(html);
+  const canonicalUrl = caixaId ? `https://venda-imoveis.caixa.gov.br/sistema/detalhe-imovel.asp?hdnimovel=${caixaId}` : link;
+  const inDispute = /\bim[oó]vel\s+em\s+disputa\b/i.test(flatText);
+  const headingMatch = blockTexts.map((t) => t.match(/^\s*([A-ZÀ-Ý\s.]+?)\s*-\s*([A-ZÀ-Ý0-9\s.]{2,60})\s*$/i)).find(Boolean) || flatText.match(/\b(RIO DE JANEIRO|NITER[ÓO]I|JUIZ DE FORA)\s*-\s*([A-ZÀ-Ý0-9\s.]{2,40}?)(?=\s+(?:Im[oó]vel\s+em\s+disputa|Valor|Edital|Tipo\s+de\s+im[oó]vel|N[úu]mero\s+do\s+im[oó]vel|$))/i);
+  const evalMatch = flatText.match(/Valor\s+de\s+avalia[çc][aã]o\s*:?\s*R\$\s*([\d.]+,\d{2})/i);
+  const minPriceMatch = flatText.match(/Valor\s+m[ií]nimo\s+de\s+venda(?:\s*\d*[ªº]?\s*(?:Leil[aã]o|Venda)?)?\s*:?\s*R\$\s*([\d.]+,\d{2})/i) || flatText.match(/Valor\s+m[ií]nimo\s*:?\s*R\$\s*([\d.]+,\d{2})/i);
+  const evaluationPrice = parseBrDecimal(evalMatch?.[1]) || void 0;
+  const auctionPrice = parseBrDecimal(minPriceMatch?.[1]);
+  const typeMatch = flatText.match(/Tipo\s+de\s+im[oó]vel\s*:?\s*([A-Za-zÀ-ÿ\s/]+?)(?=\s+(?:Situa[çc][aã]o|Quartos|Garagem|N[úu]mero|Matr[ií]cula|Comarca|Inscri[çc][aã]o|[ÁA]rea|Endere[çc]o|$))/i);
+  const rawType = (typeMatch?.[1] || "").trim();
+  const propertyType = toCanonicalPropertyType(rawType, "", flatText);
+  const bedroomsMatch = flatText.match(/Quartos\s*:?\s*(\d+)/i);
+  const parkingMatch = flatText.match(/(?:Garagem|Vagas?)\s*:?\s*(\d+)/i);
+  const wcMatch = flatText.match(/(?:Banheiros?|WC)\s*:?\s*(\d+)/i);
+  const bedrooms = bedroomsMatch ? parseInt(bedroomsMatch[1], 10) : void 0;
+  const parkingSpaces = parkingMatch ? parseInt(parkingMatch[1], 10) : void 0;
+  const bathrooms = wcMatch ? parseInt(wcMatch[1], 10) : void 0;
+  const privAreaMatch = flatText.match(/[ÁA]rea\s+privativa\s*[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]?/i) || flatText.match(/[ÁA]rea\s+[úu]til\s*[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]?/i);
+  const totalAreaMatch = flatText.match(/[ÁA]rea\s+total\s*[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]?/i);
+  const terrainAreaMatch = flatText.match(/[ÁA]rea\s+do\s+terreno\s*[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]?/i);
+  const auditedArea = auditOfficialArea({
+    text: flatText,
+    title: rawType,
+    propertyType,
+    url: canonicalUrl,
+    extractedValue: parseBrDecimal(privAreaMatch?.[1]) || parseBrDecimal(totalAreaMatch?.[1]) || parseBrDecimal(terrainAreaMatch?.[1])
+  }).selected?.value || 0;
+  const sizeSqm = parseBrDecimal(privAreaMatch?.[1]) || auditedArea || parseBrDecimal(totalAreaMatch?.[1]) || parseBrDecimal(terrainAreaMatch?.[1]);
+  const addrMatch = flatText.match(/Endere[çc]o\s*:?\s*(.+?)(?=\s*(?:Descri[çc][aã]o\b|Formas\s+de\s+pagamento\b|Permite\s+financiamento\b|N[aã]o\s+permite\s+financiamento\b|Observa[çc][õo]es\b|Regras\s+da|Para\s+mais\s+informa[çc][õo]es|Edital\b|Matr[ií]cula\b|Comarca\b|$))/i);
+  const rawAddressFull = (addrMatch?.[1] || "").replace(/\s+/g, " ").replace(/,\s*N\./i, ", N.").trim();
+  const cityStateInAddr = rawAddressFull.match(/,\s*(RIO DE JANEIRO|NITER[ÓO]I|JUIZ DE FORA)\s*-\s*(RIO DE JANEIRO|MINAS GERAIS|RJ|MG)\s*$/i);
+  let state = "RJ";
+  if (cityStateInAddr) {
+    state = /MINAS|MG/i.test(cityStateInAddr[2]) ? "MG" : "RJ";
+  } else if (headingMatch && /JUIZ DE FORA/i.test(headingMatch[1])) {
+    state = "MG";
+  } else if (/\bJUIZ\s+DE\s+FORA\b/i.test(flatText)) {
+    state = "MG";
+  }
+  const rawCity = cityStateInAddr?.[1] || headingMatch?.[1] || (state === "MG" ? "Juiz de Fora" : "Rio de Janeiro");
+  const city = cleanCityFromCaixa(rawCity, state);
+  const bairroInAddr = rawAddressFull.match(/,\s*([^,-]{2,45}?)\s*-\s*CEP\s*:/i);
+  const rawNeighborhood = bairroInAddr?.[1] || headingMatch?.[2] || "";
+  const neighborhood = formatNeighborhood(rawNeighborhood);
+  const cleanStreetAddr = rawAddressFull.replace(/,\s*(?:RIO DE JANEIRO|NITER[ÓO]I|JUIZ DE FORA)\s*-\s*(?:RIO DE JANEIRO|MINAS GERAIS|RJ|MG)\s*$/i, "").replace(/,\s*N\.\s*/i, ", N. ").trim();
+  const descMatch = flatText.match(/Descri[çc][aã]o\s*:?\s*(.+?)(?=\s*(?:Formas\s+de\s+pagamento|Regras\s+da|Despesas|Consulte|$))/i);
+  const permiteFinanc = /Permite\s+(?:a\s+utiliza[çc][aã]o\s+de\s+)?financiamento/i.test(flatText) && !/N[ãa]o\s+permite\s+(?:a\s+utiliza[çc][aã]o\s+de\s+)?financiamento|somente\s+[àa]\s+vista/i.test(flatText);
+  const modeMatch = flatText.match(/Modalidade\s+de\s+venda\s*:?\s*([A-Za-zÀ-ÿ\s\-]{3,40}?)(?=\s+(?:Edital|Im[oó]vel|Valor|N[úu]mero|Tipo|$))/i);
+  const saleMode = inDispute ? "Im\xF3vel em disputa" : modeMatch?.[1]?.trim() || (/Venda\s+Direta\s+Online/i.test(flatText) ? "Venda Direta Online" : /Venda\s+Online/i.test(flatText) ? "Venda Online" : void 0);
+  let imageUrl;
+  const imgSrc = $("img#preview").attr("src") || $('img[src*="/fotos/"]').first().attr("src");
+  if (imgSrc) {
+    imageUrl = imgSrc.startsWith("http") ? imgSrc : `https://venda-imoveis.caixa.gov.br${imgSrc.startsWith("/") ? "" : "/"}${imgSrc}`;
+  } else if (caixaId) {
+    imageUrl = `https://venda-imoveis.caixa.gov.br/fotos/F${caixaId}21.jpg`;
+  }
+  const explicitRemoved = /\b(?:im[oó]vel\s+n[aã]o\s+encontrado|nenhum\s+im[oó]vel\s+encontrado|im[oó]vel\s+indispon[ií]vel|n[aã]o\s+est[aá]\s+mais\s+dispon[ií]vel|im[oó]vel\s+vendido)\b/i.test(flatText);
+  const isRemoved = explicitRemoved || !auctionPrice && !evaluationPrice && !cleanStreetAddr;
+  const title = `${propertyType} Retomado Caixa - ${neighborhood.toUpperCase()}${inDispute ? " (Em disputa)" : ""}`.slice(0, 100);
+  const idNum = caixaId || String(Date.now());
+  const property = {
+    id: `auc-caixa-${idNum}`,
+    canonicalPropertyId: caixaId ? `CAIXA_${caixaId}` : void 0,
+    title,
+    address: cleanStreetAddr,
+    neighborhood,
+    city,
+    state,
+    propertyType,
+    sizeSqm,
+    auctionPrice,
+    evaluationPrice,
+    estimatedRepair: 0,
+    pendingDebts: 0,
+    otherCosts: 0,
+    estimatedValue: 0,
+    auctionDate: "",
+    auctionLink: canonicalUrl,
+    imageUrl,
+    description: [
+      "Im\xF3vel Retomado Caixa Econ\xF4mica Federal.",
+      saleMode ? `Modalidade: ${saleMode}.` : "",
+      evaluationPrice ? `Avalia\xE7\xE3o original Caixa: R$ ${evaluationPrice.toFixed(2)}.` : "",
+      descMatch?.[1] ? `Descri\xE7\xE3o: ${descMatch[1].trim()}` : "",
+      rawAddressFull ? `Endere\xE7o oficial Caixa: ${rawAddressFull}.` : ""
+    ].filter(Boolean).join(" "),
+    status: "Pendente",
+    occupied: true,
+    allowsFinancing: permiteFinanc,
+    allowsInstallments: false,
+    userId,
+    origin: "caixa",
+    bedrooms,
+    parkingSpaces,
+    bathrooms,
+    saleMode,
+    sourceVerified: true,
+    originVerified: true,
+    priceVerified: auctionPrice > 0,
+    sizeVerified: sizeSqm > 0,
+    ingestionStatus: auctionPrice > 0 ? "ativo" : "quarentena_extracao"
+  };
+  return {
+    property,
+    inDispute,
+    isRemoved,
+    state,
+    imageUrl
+  };
+}
+
+// server.ts
 init_auctionAvailability();
 init_officialAreaAudit();
 
@@ -15743,7 +16334,7 @@ init_auctionAvailability();
 var import_node_fs6 = __toESM(require("node:fs"), 1);
 init_officialLotPayload();
 var import_node_path6 = __toESM(require("node:path"), 1);
-var cheerio4 = __toESM(require("cheerio"), 1);
+var cheerio5 = __toESM(require("cheerio"), 1);
 var import_puppeteer4 = __toESM(require("puppeteer"), 1);
 init_puppeteerConfig();
 init_auctioneerSyncService();
@@ -15753,14 +16344,15 @@ init_cityZones();
 init_listedPortalApis();
 init_leilaoImovelScraper();
 var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
-var propertyWords = /\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|cobertura|sala|loja|fazenda|gleba|chacara|sitio|sobrado|kitnet|residencial|duplex)\b/;
-var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/Leiloes\/LoteDetalhes(?:\?|\/)|\/Sale\/Lot\/|\/(?:detalhe|lote|loteVendaDireta|Leilao_Lote|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/leiloes\/\d+\/lotes?\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
+var propertyWords = /\b(?:imoveis|imovel|apartamento|apto|casa|terreno|galpao|predio|predios|cobertura|sala|loja|fazenda|gleba|chacara|sitio|sobrado|kitnet|residencial|duplex)\b/;
+var directPattern = /\/(?:item|lote|lotes\/\d+|imovel|ofertas?|anuncio\/detalhe|evento\/anuncio|leilao_imoveis|externo\/leilao|produto|bens?|detalhes-lote|auditorio)\/|\/Leiloes\/LoteDetalhes(?:\?|\/)|\/Sale\/Lot\/|\/(?:detalhe|lote|loteVendaDireta|Leilao(?:_Lote)?|peca)\.(?:php|asp)\?|\/sale\/detail\?|[?&]acao=evento&[^#]*\blote=|\/leilao\/index\/leilao_id\/\d+\/lote\/\d+|\/leilao\/\d+\/lote|\/leilao\/lote\/\d+|\/leilao\/\d+\/[a-z0-9-]{12,}|\/leiloes\/\d+\/lotes?\/\d+|\/auctions\/\d+\/lot\/\d+|\/imoveis\/\d+-|\/imoveis\/[^?#]+-\w*\d{4,}|\/imovel\/(?:[^/?#]+\/){2,}[^?#]*-\d{4,}|\/leiloes\/bens-imoveis[^?#]*\/\d+|\/(?:lote|imovel)-\d+/i;
 var navigationPattern = /\/(?:eventos\/leilao|leilao|leiloes|lotes|categorias\/imoveis|categoria-produto\/imoveis|leiloes-imoveis|Leiloes\/Pesquisar|agenda|pesquisa|navegar-pelo-mapa|thumbs\.php|Principal\.asp)(?:\/|\?|$)|\/(?:busca|buscador|imoveis|imovel|auctions)(?:\/|\?|$)|\/leilao\.php\?|\/leilao\/\d+\//i;
 var skipPattern = /login|entrar|cadastro|contato|politica|privacidade|termos|blog|noticia|artigo|realizados|encerrados|finalizados|editais|fale-conosco|quem-somos|como-comprar|como-vender|indique|validar-documento|habilitacao|regulamento|duvidas|faq|\/home(?:\/|$)|\/venda-direta(?:\/|$)|\/auditorio\/\d+\/\d+\/batch|\.pdf(?:\?|$)/i;
 var bankIds = /* @__PURE__ */ new Set(["bb", "emgea", "santander", "vitrinebradesco"]);
 var isBlockedLeilaoImovelResponse = (portalId, error) => portalId === "leilaoimovel" && /HTTP\s+403\b/i.test(error instanceof Error ? error.message : String(error));
 var wait2 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-var HIGH_PRIORITY_IDS = /* @__PURE__ */ new Set([
+var TIER_1_IDS = /* @__PURE__ */ new Set([
+  "caixa",
   "megaleiloes",
   "portalzuk",
   "frazao",
@@ -15770,12 +16362,37 @@ var HIGH_PRIORITY_IDS = /* @__PURE__ */ new Set([
   "santander",
   "emgea",
   "vitrinebradesco",
+  "bb",
   "rioleiloes",
   "mariafilomena",
   "rogeriomenezes",
   "isaias",
   "leilaoimovel",
-  "superbid"
+  "superbid",
+  "lancejudicial",
+  "freitas",
+  "paulobotelho",
+  "schulmann",
+  "silas",
+  "mauromarcello_lel_br",
+  "ricart",
+  "rymer",
+  "depaula",
+  "portella",
+  "joaoemilio",
+  "jv",
+  "saraiva",
+  "onildo",
+  "pamela",
+  "leiloariasmart_com_br",
+  "pecinileiloes_com_br",
+  "alexandrecosta",
+  "ayupp",
+  "bomvalor_com_br",
+  "liderleiloes_com_br",
+  "jmleiloes_com_br",
+  "jrleiloes_com_br",
+  "destakleiloes_com_br"
 ]);
 var portalConfigs = (() => {
   const byDomain = /* @__PURE__ */ new Map();
@@ -15795,7 +16412,7 @@ var portalConfigs = (() => {
       });
     }
   }
-  const rank = (p) => HIGH_PRIORITY_IDS.has(p.id) ? 0 : p.nexusSituacao === "com_imoveis" ? 1 : p.suporteApi || p.nexusSituacao === "agregador" || p.nexusSituacao === "em_atualizacao" || !p.nexusSituacao ? 2 : p.nexusSituacao === "outro_site" ? 3 : 4;
+  const rank = (p) => TIER_1_IDS.has(p.id) ? 0 : p.nexusSituacao === "com_imoveis" ? 1 : p.suporteApi || p.nexusSituacao === "agregador" || p.nexusSituacao === "em_atualizacao" || !p.nexusSituacao ? 2 : p.nexusSituacao === "outro_site" ? 3 : 4;
   return [...byDomain.values()].sort((a, b) => rank(a) - rank(b) || (b.nexusImoveis || 0) - (a.nexusImoveis || 0) || a.name.localeCompare(b.name, "pt-BR"));
 })();
 var sameHost = (a, b) => new URL(a).hostname.replace(/^www\./, "") === new URL(b).hostname.replace(/^www\./, "");
@@ -15870,11 +16487,11 @@ function sourceSeedUrls(id, base) {
   if (id === "santander") return cityUrls((t) => `${base}/?cidade=${encodeURIComponent(t.city)}&uf=${t.state}&pag=1`);
   if (id === "bb") return [`${base}/catalogo/imoveis?uf=RJ`, `${base}/catalogo/imoveis?uf=MG`];
   if (id === "saraiva") return [1, 2, 3, 4].map((p) => `${base}/lotes?categoria=Im%C3%B3veis&page=${p}`);
-  if (id === "kronbergleiloes_com_br" || id === "kronleiloes_com_br") return ["https://www.kronleiloes.com.br/categorias/imoveis?searchType=opened&pageNumber=1&pageSize=30&orderBy=price:desc"];
+  if (id === "kronbergleiloes_com_br" || id === "kronleiloes_com_br" || id === "jmleiloes_com_br") return [`${base}/categorias/imoveis?searchType=opened&pageNumber=1&pageSize=30&orderBy=price:desc`];
   if (id === "apaleiloes_com_br") return ["https://www.apabrfleiloes.com.br"];
   if (id === "silas") return [base + "/Principal.asp?at=jd", base + "/Principal.asp?at=ex"];
   if (id === "onildo") return [base + "/Principal.asp"];
-  if (id === "schulmann") return [base + "/thumbs.php?tipo=leiloes-online"];
+  if (id === "schulmann") return [base + "/thumbs.php?tipo=leiloes-online", base + "/thumbs.php?tipo=leiloes-judiciais", base + "/thumbs.php?tipo=leiloes-extrajudiciais", base + "/thumbs.php?tipo=alienacao-fiduciaria"];
   if (id === "paulobotelho") return [base + "/lotes/imoveis?page=1", base];
   if (["rioleiloes", "mariafilomena", "deonizialeiloes_com_br", "giordanoleiloes_com_br", "alessandroteixeiraleiloes_com_br", "hdleiloes_com_br"].includes(id)) return [base + "/leilao/index/imoveis", base];
   if (id === "rogeriomenezes") return [`${base}/busca?interesse=imovel`, `${base}/busca?interesse=apartamento`, `${base}/busca?interesse=terreno`, `${base}/busca?interesse=casa`, `${base}/busca?interesse=comercial`, `${base}/busca?interesse=loja`];
@@ -15882,7 +16499,7 @@ function sourceSeedUrls(id, base) {
   return [config?.searchUrl || base];
 }
 function parseSourcePage(html, url) {
-  const $ = cheerio4.load(html);
+  const $ = cheerio5.load(html);
   const literal = (name) => {
     try {
       return JSON.parse(html.match(new RegExp("(?:var|let|const) " + name + " = (\\{[^\\n]+\\});"))?.[1] || "null");
@@ -15890,7 +16507,14 @@ function parseSourcePage(html, url) {
       return null;
     }
   };
-  const lotData = literal("lote"), eventData = literal("leilao");
+  let lotData = literal("lote"), eventData = literal("leilao");
+  if (!lotData) {
+    try {
+      const mBv = html.match(/\bsharedData\s*=\s*\{[\s\S]{0,600}?\blote:\s*(\{[^\r\n]+\})\s*,/);
+      if (mBv) lotData = JSON.parse(mBv[1]);
+    } catch {
+    }
+  }
   const links = [];
   $("a[href]").each((_, el) => {
     const raw = $(el).attr("href") || "";
@@ -15909,7 +16533,10 @@ function parseSourcePage(html, url) {
   $("[onclick]").each((_, el) => {
     const onclick = $(el).attr("onclick") || "";
     const legacy = onclick.match(/abrirDetalhesLeilao\(['"](\d+)['"]\)/i);
-    if (legacy) links.push({ url: new URL("Leilao.asp?zz=" + legacy[1], url).href, text: $(el).parent().text().trim(), pagination: false });
+    if (legacy) {
+      const card = $(el).closest('tr,table,[class*="lote"],[class*="card"],[class*="box"],div').text().replace(/\s+/g, " ").trim();
+      links.push({ url: new URL("Leilao.asp?zz=" + legacy[1], url).href, text: card || $(el).parent().text().trim(), pagination: false });
+    }
     const legacyLot = onclick.match(/acessarAuditorio\(['"](\d+)['"]/i);
     if (legacyLot) links.push({ url: new URL("Leilao_Lote.asp?zz=" + legacyLot[1], url).href, text: $(el).closest("[id^=divLote]").text().trim(), pagination: false });
     const paging = onclick.match(/^pagina\((\d+)\)/i);
@@ -15994,12 +16621,28 @@ function parseSourcePage(html, url) {
     return /matr[ií]cula|edital/i.test($(el).text()) || /\.pdf(?:\?|$)/i.test(href) ? new URL(href, url).href : "";
   }).get().filter(Boolean);
   $('script,style,noscript,header,footer,nav,aside,[class*="related"],[class*="recommend"],[id*="Modal"],[id*="PolPriv"],[id*="Login"],[id*="Rodape"],.modal').remove();
+  $("h2,h3,h4").each((_, el) => {
+    if (/^(?:outros\s+lotes|lotes\s+relacionados|veja\s+tamb[eé]m|im[oó]veis\s+similares|voc[eê]\s+tamb[eé]m\s+pode)$/i.test($(el).text().trim())) {
+      const sec = $(el).closest("section,.section,.container");
+      if (sec.length && sec.find("h1,.up-content").length === 0) {
+        sec.remove();
+      } else {
+        $(el).parent().nextAll().remove();
+        $(el).nextAll().remove();
+        $(el).remove();
+      }
+    }
+  });
   $("br").replaceWith("\n");
   $("p,div,h1,h2,h3,h4,li,tr,dt,dd").each((_, el) => {
     $(el).append("\n");
   });
-  const title = $("#divDescrLoteTexto").text().trim() || $("h1").map((_, el) => $(el).text().trim()).get().find((t) => propertyWords.test(normalizeAuctionText(t))) || $("h1").first().text().trim() || $("h2,h3,h4").map((_, el) => $(el).text().trim()).get().find((t) => propertyWords.test(normalizeAuctionText(t))) || $("title").text().trim();
-  let text = $("body").text().replace(/[\t \u00a0]+/g, " ").replace(/\n\s*\n/g, "\n").trim();
+  const isBotelhoDetail = new URL(url).hostname.replace(/^www\./, "") === "paulobotelholeiloeiro.com.br" && /\/leiloes\/.+\/\d+$/.test(new URL(url).pathname);
+  const title = $("#divDescrLoteTexto").text().trim() || (isBotelhoDetail ? $(".up-content h2").first().text().trim() : "") || $("h1").map((_, el) => $(el).text().trim()).get().find((t) => propertyWords.test(normalizeAuctionText(t))) || $("h1").first().text().trim() || $("h2,h3,h4").map((_, el) => $(el).text().trim()).get().find((t) => propertyWords.test(normalizeAuctionText(t))) || $('.Letra26,.Letra24,.Letra22,[class*="lot-title" i],[class*="titulo" i]').map((_, el) => $(el).text().trim()).get().find((t) => propertyWords.test(normalizeAuctionText(t)) && t.length <= 220) || $("title").text().trim();
+  const htmlWithoutRelated = html.split(/<h[1-6][^>]*>\s*(?:Outros\s+Lotes|Lotes\s+relacionados|Veja\s+tamb[eé]m|Im[oó]veis\s+similares)\b/i)[0];
+  const $txt = cheerio5.load(htmlWithoutRelated.replace(/<\/(?:div|p|span|td|th|tr|li|h[1-6]|b|strong|font|a|label|dt|dd)\s*>/gi, "$& ").replace(/<br\s*\/?>/gi, "\n"));
+  $txt("script,style,noscript,template").remove();
+  let text = $txt("body").text().replace(/[\t \u00a0]+/g, " ").replace(/\n\s*\n/g, "\n").trim();
   text = text.replace(/(?:Lote Anterior\s*)?(?:LOTE\s+\d{1,4}\s*){8,}/gi, " ").trim();
   if ($("#divDescrLoteTexto").length) {
     const visao = $("#divVisao1").text().replace(/[\t \u00a0]+/g, " ").replace(/\n\s*\n/g, "\n").trim();
@@ -16007,8 +16650,26 @@ function parseSourcePage(html, url) {
   }
   if (mapLotText) text = [mapLotText, text].filter(Boolean).join("\n");
   if (lotData?.descricao) {
-    const description = cheerio4.load(lotData.descricao).text();
+    const description = cheerio5.load(lotData.descricao).text();
     text = [eventData?.judicial === true ? "Judicial" : eventData?.judicial === false ? "Extrajudicial" : "", description, text].join("\n");
+  }
+  if (lotData?.vistoria?.localizacao || lotData?.vl_lanceinicial) {
+    const loc = lotData.vistoria?.localizacao || {};
+    const imv = lotData.vistoria?.imovel || {};
+    const bvLines = [
+      lotData.nm_titulo,
+      lotData.nm_descricao,
+      loc.nm_endereco ? `${loc.nm_endereco}${loc.nm_bairro ? ", " + loc.nm_bairro : ""}${loc.nm_cidade ? " - " + loc.nm_cidade : ""}/${loc.nm_estado || ""}` : "",
+      imv.bn_ocupado === false ? "Desocupado" : imv.bn_ocupado === true ? "Ocupado" : "",
+      Number(lotData.vl_lanceinicial) > 0 ? `Lance inicial: R$ ${Number(lotData.vl_lanceinicial).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : ""
+    ].filter(Boolean);
+    text = [bvLines.join("\n"), text].filter(Boolean).join("\n");
+    if (loc.nm_endereco) structuredAddresses.push(`${loc.nm_endereco}, ${loc.nm_bairro || ""}, ${loc.nm_cidade || ""}/${loc.nm_estado || ""}`);
+    if (Array.isArray(lotData.anexos)) {
+      for (const a of lotData.anexos) {
+        if (a?.nm_url && !documentLinks.includes(a.nm_url)) documentLinks.push(a.nm_url);
+      }
+    }
   }
   let financials = officialLotFinancials(html, url);
   if (/\/item\/\d+\/detalhes/.test(new URL(url).pathname)) {
@@ -16029,7 +16690,7 @@ function parseSourcePage(html, url) {
     const auctionPrice = firstAuctionDate && firstAuctionDate >= today ? firstAuctionPrice : secondAuctionDate && secondAuctionDate >= today ? secondAuctionPrice : 0;
     financials = { auctionPrice, priceVerified: auctionPrice > 0, firstAuctionPrice, secondAuctionPrice, firstAuctionDate, secondAuctionDate, auctionDate: firstAuctionDate && firstAuctionDate >= today ? firstAuctionDate : secondAuctionDate };
   }
-  return { availability: assessAvailability(void 0, url, 200, html), links, text, title: lotData?.titulo || title, image, structuredAddresses, structuredSizes, documentLinks, officialFinancials: financials, lotDescription: lotData?.descricao ? cheerio4.load(lotData.descricao).text() : "" };
+  return { availability: assessAvailability(void 0, url, 200, html), links, text, title: lotData?.titulo || title, image, structuredAddresses, structuredSizes, documentLinks, officialFinancials: financials, lotDescription: lotData?.descricao ? cheerio5.load(lotData.descricao).text() : "" };
 }
 async function runListedPortalSync(reason, onDrafts, options = {}) {
   const configs = portalConfigs.filter((p) => !options.ids || options.ids.includes(p.id));
@@ -16044,7 +16705,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
   let browserPromise = null;
   let activeRenderPages = 0;
   const renderWaiters = [];
-  const maxConcurrentRenders = process.env.RENDER === "true" ? 2 : 4;
+  const maxConcurrentRenders = 2;
   const acquireRenderSlot = async () => {
     if (activeRenderPages >= maxConcurrentRenders) {
       let settled = false;
@@ -16068,24 +16729,28 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
   const rendered = async (url) => {
     await acquireRenderSlot();
     try {
-      browserPromise ||= launchPuppeteer(import_puppeteer4.default, { headless: true, protocolTimeout: 12e4, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      browserPromise ||= launchPuppeteer(import_puppeteer4.default, { headless: "new", protocolTimeout: 12e4, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-blink-features=AutomationControlled", "--disable-dev-shm-usage"] });
       const browser = await browserPromise;
       const isLeilaoImovel = new URL(url).hostname.endsWith("leilaoimovel.com.br");
       for (let attempt = 0; attempt < (isLeilaoImovel ? 2 : 1); attempt++) {
         let page = null;
         try {
           page = await browser.newPage();
+          await page.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, "webdriver", { get: () => void 0 });
+          });
           await page.setRequestInterception(true);
           page.on("request", (req) => {
             const rt = req.resourceType();
-            if (rt === "image" || rt === "media" || rt === "font" || rt === "stylesheet") req.abort().catch(() => {
+            const ru = req.url();
+            if (rt === "image" || rt === "media" || rt === "font" || /google-analytics|googletagmanager|doubleclick|connect\.facebook|hotjar|clarity/i.test(ru)) req.abort().catch(() => {
             });
             else req.continue().catch(() => {
             });
           });
           await page.setUserAgent(UA);
           await page.setExtraHTTPHeaders({ "Accept-Language": "pt-BR,pt;q=0.9" });
-          const r = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45e3 });
+          const r = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 6e4 });
           if (r && r.status() >= 400) {
             if (isLeilaoImovel && r.status() === 403 && attempt === 0) {
               await wait2(1500);
@@ -16093,7 +16758,9 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
             }
             throw Error(`HTTP ${r.status()}`);
           }
-          await page.waitForNetworkIdle({ idleTime: 500, timeout: 4500 }).catch(() => {
+          await page.waitForNetworkIdle({ idleTime: 500, timeout: 6e3 }).catch(() => {
+          });
+          await page.waitForSelector('a[href*="/lote/"]', { timeout: 5e3 }).catch(() => {
           });
           const html = await page.content();
           if (/<title>Just a moment|Access Denied/i.test(html)) throw Error("Acesso bloqueado pela fonte");
@@ -16130,15 +16797,22 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       }
     }
   };
-  const load7 = async (url, render = false) => {
+  const load8 = async (url, render = false) => {
     if (render) return rendered(url);
     const parsedUrl = new URL(url);
     const legacyPage = /Principal\.asp/i.test(parsedUrl.pathname) && parsedUrl.searchParams.has("pag");
     const postFields = legacyPage ? new URLSearchParams({ pag: parsedUrl.searchParams.get("pag"), acaoDest: "", pesq: "" }) : void 0;
-    let r = await fetch(url, { method: legacyPage ? "POST" : "GET", body: postFields, headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "pt-BR,pt;q=0.9" }, signal: AbortSignal.timeout(12e3) });
-    if (r.status === 429) {
-      await wait2(3e3);
-      r = await fetch(url, { method: legacyPage ? "POST" : "GET", body: postFields, headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "pt-BR,pt;q=0.9" }, signal: AbortSignal.timeout(12e3) });
+    const reqInit = { method: legacyPage ? "POST" : "GET", body: postFields, headers: { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "pt-BR,pt;q=0.9" }, signal: AbortSignal.timeout(2e4) };
+    let r;
+    try {
+      r = await fetch(url, reqInit);
+    } catch {
+      await wait2(1200);
+      r = await fetch(url, { ...reqInit, signal: AbortSignal.timeout(25e3) });
+    }
+    if (r.status === 429 || r.status === 502 || r.status === 503) {
+      await wait2(2500);
+      r = await fetch(url, { ...reqInit, signal: AbortSignal.timeout(25e3) });
     }
     if (!r.ok) throw Error(`HTTP ${r.status}`);
     const bytes = await r.arrayBuffer();
@@ -16171,9 +16845,10 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       const seenDetails = /* @__PURE__ */ new Set();
       const batches = [];
       const portalStartedAt = Date.now();
-      const isUnlimitedSource = HIGH_PRIORITY_IDS.has(config.id) || Boolean(config.suporteApi);
-      const maxPortalPages = HIGH_PRIORITY_IDS.has(config.id) ? 60 : 20;
-      const portalSoftDeadlineMs = HIGH_PRIORITY_IDS.has(config.id) ? 18e4 : 9e4;
+      let portalFlushPausedMs = 0;
+      const isUnlimitedSource = TIER_1_IDS.has(config.id) || Boolean(config.suporteApi);
+      const maxPortalPages = TIER_1_IDS.has(config.id) ? 60 : 20;
+      const portalSoftDeadlineMs = TIER_1_IDS.has(config.id) ? 18e4 : 12e4;
       let renderCalls = 0;
       const maxListingRenders = isUnlimitedSource ? 16 : 6;
       let navigated = false;
@@ -16182,16 +16857,21 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       let lastFlushAt = 0;
       const flush = async () => {
         if (!batches.length) return;
-        const rows = batches.splice(0);
-        lastFlushAt = Date.now();
-        import_node_fs6.default.appendFileSync(import_node_path6.default.join(dir, config.id + ".jsonl"), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
-        const audits = rows.filter((r) => r.areaAudit).map((r) => JSON.stringify({ source: config.id, url: r.auctionLink, ...r.areaAudit }));
-        if (audits.length) import_node_fs6.default.appendFileSync(import_node_path6.default.join(dir, "area-audit.jsonl"), audits.join("\n") + "\n");
-        const counts = await onDrafts(rows, progress);
-        progress.imported += counts.imported;
-        progress.updated += counts.updated;
-        progress.pending += counts.pending;
-        save();
+        const tFlush = Date.now();
+        try {
+          const rows = batches.splice(0);
+          lastFlushAt = Date.now();
+          import_node_fs6.default.appendFileSync(import_node_path6.default.join(dir, config.id + ".jsonl"), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+          const audits = rows.filter((r) => r.areaAudit).map((r) => JSON.stringify({ source: config.id, url: r.auctionLink, ...r.areaAudit }));
+          if (audits.length) import_node_fs6.default.appendFileSync(import_node_path6.default.join(dir, "area-audit.jsonl"), audits.join("\n") + "\n");
+          const counts = await onDrafts(rows, progress);
+          progress.imported += counts.imported;
+          progress.updated += counts.updated;
+          progress.pending += counts.pending;
+          save();
+        } finally {
+          portalFlushPausedMs += Date.now() - tFlush;
+        }
       };
       try {
         if (config.id === "leilaoimovel") {
@@ -16289,6 +16969,12 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
           await flush();
           save();
         };
+        const isMauroApi = config.id === "mauromarcello_lel_br" ? await collectMauroMarcelloApi(dir, onSuportePage) : false;
+        if (isMauroApi) {
+          confirmedEmpty = progress.discovered === 0;
+          progress.status = "completed";
+          continue;
+        }
         const isSuporteJson = await collectSuporteApi({ id: config.id, name: config.name, baseUrl: config.baseUrl }, dir, onSuportePage, { probeTimeoutMs: config.suporteApi ? 15e3 : 5e3 });
         if (isSuporteJson) {
           confirmedEmpty = progress.discovered === 0;
@@ -16333,17 +17019,17 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
             if (config.id === "leilaoimovel" && progress.pages > 0) await wait2(1200);
             let response;
             try {
-              response = await load7(requested);
+              response = await load8(requested);
             } catch (error) {
               if (renderCalls >= maxListingRenders && !isBlockedLeilaoImovelResponse(config.id, error) || !canRenderFallback(config.id, error)) throw error;
               renderCalls++;
-              response = await load7(requested, true);
+              response = await load8(requested, true);
             }
             let page = parseSourcePage(response.html, response.url);
-            const isSpaShell = /<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?(?:\s[^>]*)?>\s*<\/div>|<app-root\b|self\.__next_f|\$\{\s*lote\./i.test(response.html) || page.text.length < 250 && /<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?/i.test(response.html);
+            const isSpaShell = /<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?(?:\s[^>]*)?>\s*<\/div>|<app-root\b|self\.__next_f|\$\{\s*lote\.|__CF\$cv\$params|Please click here if you are not redirected|<title>\s*(?:Just a moment|Carregando)/i.test(response.html) || page.text.length < 250 && /<div[^>]+id=["']?(?:root|app|__next|__nuxt|main-app)["']?/i.test(response.html);
             if ((!page.links.some((link) => directPattern.test(link.url)) && !/\/rura(?:l|is)\b/i.test(requested) && listingQueue.length === 0 || isSpaShell) && renderCalls < maxListingRenders && !/LotListSearch|PesquisarLotes|SearchLotResult/i.test(requested)) {
               renderCalls++;
-              response = await load7(requested, true);
+              response = await load8(requested, true);
               page = parseSourcePage(response.html, response.url);
             }
             progress.pages++;
@@ -16365,7 +17051,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
               const inPropertyFeed = /im[oó]ve(?:l|is)|categoria=2|category=im|tipo_filtro=imoveis|ID_Categoria=|buscaImovel=true/i.test(response.url);
               const vehicleQuerySlug = /(?:veiculo|veiculos|carro|moto|caminhao|sucata)/i.test(link.url) && !/imoveis|imovel/i.test(link.url);
               const vehicleLinkText = /\b(?:veiculo|veiculos|carro|moto|caminhao|trator|sucata|maquina|equipamento|moveis|eletro|chevrolet|fiat|volkswagen|ford|onix|uno|audi|pickup|automovel|motocicleta|honda|toyota|hyundai|renault)\b/i.test(normalizeAuctionText(link.text));
-              const relevant = !vehicleQuerySlug && !vehicleLinkText && (propertyWords.test(normalizeAuctionText(link.text)) || /imoveis|imovel|tipo=imovel|categoria=2|category=im[oó]veis|buscaImovel=true|leilao\.php\?idLeilao=|lote\.php\?idLote=/i.test(link.url) || inPropertyFeed && directPattern.test(link.url));
+              const relevant = !vehicleQuerySlug && !vehicleLinkText && (propertyWords.test(normalizeAuctionText(link.text)) || /imoveis|imovel|tipo=imovel|categoria=2|category=im[oó]veis|buscaImovel=true|leilao\.php\?idLeilao=|lote\.php\?idLote=|Leilao(?:_Lote)?\.asp\?zz=/i.test(link.url) || inPropertyFeed && directPattern.test(link.url));
               if (directPattern.test(link.url) && !link.pagination) {
                 if (relevant && !seenDetails.has(link.url)) details.set(link.url, link.text);
                 continue;
@@ -16388,18 +17074,19 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
             try {
               if (config.id === "leilaoimovel" && /imovel-caixa-economica-federal-cef/i.test(url)) return;
               if (config.id === "leilaoimovel") await wait2(700);
+              if (config.id === "silas") await wait2(350);
               let response;
               try {
-                response = await load7(url);
+                response = await load8(url);
               } catch (error) {
                 if (!canRenderFallback(config.id, error)) throw error;
-                response = await load7(url, true);
+                response = await load8(url, true);
               }
               let page = parseSourcePage(response.html, response.url);
               progress.fetched++;
-              const isDetailSpa = /<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?(?:\s[^>]*)?>\s*<\/div>|<app-root\b/i.test(response.html) || page.text.length < 250 && /<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?/i.test(response.html);
+              const isDetailSpa = /<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?(?:\s[^>]*)?>\s*<\/div>|<app-root\b|__CF\$cv\$params|Please click here if you are not redirected|<title>\s*(?:Just a moment|Carregando)/i.test(response.html) || page.text.length < 250 && /<div[^>]+id=["']?(?:root|app|__next|__nuxt)["']?/i.test(response.html);
               if (isSuportePortal || config.id === "sold" || config.id === "mariafilomena" || page.text.length < 80 || isDetailSpa) {
-                response = await load7(url, true);
+                response = await load8(url, true);
                 page = parseSourcePage(response.html, response.url);
               }
               let sourcePortal = config;
@@ -16413,22 +17100,27 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
                   }
                 });
                 if (!officialLink) throw Error("Agregador n\xE3o forneceu link verific\xE1vel do leiloeiro oficial");
-                response = await load7(officialLink.url);
+                response = await load8(officialLink.url);
                 page = parseSourcePage(response.html, response.url);
                 progress.fetched++;
                 sourcePortal = officialPortalForUrl(response.url) || officialPortalForUrl(officialLink.url) || config;
               }
               if (page.text.length < 80) throw Error("Detalhe sem conte\xFAdo verific\xE1vel");
               const addressText = extractAddress(page.text, "");
+              const cleanScopeText = page.text.replace(/AV\.?\s*VENEZUELA,?\s*134\b[^\n]{0,220}/gi, " ").replace(/Poder\s+Judici[aá]rio[\s\S]{0,400}?(?:SA[ÚU]DE|CEP:\s*20081-312|jfrj\.jus\.br)[^\n]*/gi, " ").replace(/(?:Se[cç][aã]o\s+Judici[aá]ria|Justi[cç]a\s+Federal|Tribunal\s+de\s+Justi[cç]a)[^\n]{0,180}/gi, " ");
               const lotLocationEvidence = [...page.structuredAddresses, addressText, page.lotDescription, page.title, listingText].filter(Boolean);
-              let location2 = sourceAuctionLocation(page.title) || sourceAuctionLocation(addressText) || sourceAuctionLocation(page.lotDescription) || separatedTargetLocation(page.lotDescription) || sourceAuctionLocation(page.text) || sourceAuctionLocation(listingText) || urlLocation(response.url) || urlLocation(url);
+              let location2 = sourceAuctionLocation(page.title) || sourceAuctionLocation(addressText) || sourceAuctionLocation(page.lotDescription) || separatedTargetLocation(page.lotDescription) || resolveRioNeighborhoodFallback(page.title, cleanScopeText) || sourceAuctionLocation(cleanScopeText) || sourceAuctionLocation(listingText) || urlLocation(response.url) || urlLocation(url);
+              if (/\b(?:angra\s+dos\s+reis|cabo\s+frio|maca[eé]|campos\s+dos\s+goytacazes|duque\s+de\s+caxias|nova\s+igua[cç]u|s[aã]o\s+gon[cç]alo|petr[oó]polis|teres[oó]polis|nova\s+friburgo|volta\s+redonda|resende|itabora[ií]|maric[aá]|saquarema|araruama|b[uú]zios)\b/i.test(page.title) && !sourceAuctionLocation(page.title)) {
+                progress.errors.push({ url, message: "Im\xF3vel fora das cidades solicitadas" });
+                return;
+              }
               if (!location2) {
                 for (const evidence of lotLocationEvidence) {
-                  location2 = sourceAuctionLocation(evidence) || separatedTargetLocation(evidence) || sourceTargetCityLocation(evidence) || sourceNeighborhoodLocation(evidence) || resolveRioNeighborhoodFallback(evidence, page.text);
+                  location2 = sourceAuctionLocation(evidence) || separatedTargetLocation(evidence) || sourceTargetCityLocation(evidence) || sourceNeighborhoodLocation(evidence) || resolveRioNeighborhoodFallback(evidence, cleanScopeText);
                   if (location2) break;
                 }
               }
-              if (!location2) location2 = separatedTargetLocation(page.text.slice(0, 2500));
+              if (!location2) location2 = separatedTargetLocation(cleanScopeText.slice(0, 2500));
               if (!location2 || !allowedSyncLocation(location2.city, location2.state)) {
                 progress.errors.push({ url, message: location2 ? "Im\xF3vel fora das tr\xEAs cidades solicitadas" : "Localiza\xE7\xE3o do im\xF3vel n\xE3o confirmada no detalhe" });
                 return;
@@ -16439,7 +17131,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
               let draft = parseOfficialLotDetail(initial, page, response.url);
               if (!draft.priceVerified && page.text.length < 300 || isDetailSpa && (!draft.priceVerified || !draft.addressVerified)) {
                 try {
-                  const renderedResponse = await load7(url, true);
+                  const renderedResponse = await load8(url, true);
                   const renderedPage = parseSourcePage(renderedResponse.html, renderedResponse.url);
                   const checked = parseOfficialLotDetail(initial, { ...renderedPage, sourceEvidencePath: preserveSource(renderedResponse.url, renderedResponse.html) }, renderedResponse.url);
                   if (checked.priceVerified || checked.areaAudit?.selected || checked.addressVerified) {
@@ -16455,9 +17147,24 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
                 draft.originVerified = true;
                 draft.sellerBank = sourcePortal.name;
               }
-              if (!draft.originVerified && /(?:leilao|modalidade|natureza|tipo)\s*:?\s*judicial\b/.test(normalizeAuctionText(page.text))) {
-                draft.origin = "judicial";
-                draft.originVerified = true;
+              if (!draft.originVerified) {
+                const normLotTxt = normalizeAuctionText(page.text + " " + page.title);
+                if (/(?:leilao|modalidade|natureza|tipo)\s*:?\s*judicial\b|\bprocesso\s*(?:n[oº.]*)?\s*:?\s*\d{7}-\d{2}|\bvara\s+(?:civel|federal|do\s+trabalho|de\s+execucoes)|\bexecucao\s+fiscal\b|\btjrj\b|\btjmg\b/i.test(normLotTxt)) {
+                  draft.origin = "judicial";
+                  draft.originVerified = true;
+                } else if (/alienacao\s+fiduciaria|\b9\.?514\b|credor\s+fiduciario|extrajudicial|consolidacao\s+da\s+propriedade/i.test(normLotTxt)) {
+                  draft.origin = "extrajudicial";
+                  draft.originVerified = true;
+                } else if (/[?&]at=jd\b|leiloes-judiciais/i.test(url)) {
+                  draft.origin = "judicial";
+                  draft.originVerified = true;
+                } else if (/[?&]at=ex\b|leiloes-extrajudiciais|alienacao-fiduciaria/i.test(url)) {
+                  draft.origin = "extrajudicial";
+                  draft.originVerified = true;
+                } else if (sourcePortal.id === "silas" && /\bcod\s*(?:do\s+lote|\d)|\bleilao\s+online\b/i.test(normLotTxt)) {
+                  draft.origin = "judicial";
+                  draft.originVerified = true;
+                }
               }
               if (!draft.city || !allowedSyncLocation(draft.city, draft.state)) {
                 progress.errors.push({ url, message: "Localiza\xE7\xE3o n\xE3o confirmada na descri\xE7\xE3o oficial" });
@@ -16474,12 +17181,13 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
           };
           let detailCursor = 0;
           const detailWorker = async () => {
-            while (detailCursor < pending.length && Date.now() - portalStartedAt < portalSoftDeadlineMs) {
+            while (detailCursor < pending.length && Date.now() - portalStartedAt - portalFlushPausedMs < portalSoftDeadlineMs) {
               const item = pending[detailCursor++];
               await processDetail(item);
             }
           };
-          await Promise.all(Array.from({ length: Math.min(3, pending.length) }, detailWorker));
+          const detailConcurrency = config.id === "silas" ? 1 : 3;
+          await Promise.all(Array.from({ length: Math.min(detailConcurrency, pending.length) }, detailWorker));
           await flush();
           save();
         }
@@ -16496,7 +17204,7 @@ async function runListedPortalSync(reason, onDrafts, options = {}) {
       }
     }
   };
-  const portalConcurrency = process.env.RENDER === "true" ? 4 : 10;
+  const portalConcurrency = process.env.RENDER === "true" ? 3 : 5;
   try {
     await Promise.all(Array.from({ length: Math.min(portalConcurrency, configs.length) }, worker));
     report.status = report.sources.every((s) => s.status === "completed") ? "completed" : "partial";
@@ -16705,29 +17413,32 @@ function cleanQuery(str) {
 }
 function cleanBrazilianAddress(raw) {
   let text = (raw || "").trim();
-  if (/\b(?:r\$|valor\s+de|lance\s+m[ií]nimo|avalia[çc][aã]o)\b/i.test(text) || /^r\s+de\s+r\$/i.test(text)) {
+  text = text.replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, "").replace(/\s*\([^)]*\)/g, " ").replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b(?=\s|,|$)[^,]*/gi, "").replace(/\s+/g, " ").trim();
+  if (/\b(?:r\$|valor\s+de|lance\s+m[ií]nimo|avalia[çc][aã]o|conta\s+do\s+adquirente)\b/i.test(text) || /^r\s+de\s+r\$/i.test(text) || /^r\s+/i.test(text)) {
     return { street: "", number: "" };
   }
+  text = text.replace(/^(?:rua\s+avenida|avenida\s+rua|r\.\s*av\.?)\b/i, "Avenida").replace(/\bn\.\s*[ºo°]/gi, "n\xBA").replace(/\b(n[ºo°.]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d{1,3})\.(\d{3})\b/gi, "$1 $2$3");
   text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, "");
   text = text.replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, "").trim();
+  const streetHeader = text.split(/(?:[.;]\s*|\s*,\s*)(?:unidade|unid\.?|apto|apt|apartamento|bloco|bl|sala|loja)\b/i)[0] || text;
   let number = "";
-  const prefixMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+[a-z]?)\b/i);
+  const prefixMatch = streetHeader.match(/(?:,\s*|\s+)(?:n\.?[ºo°]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d+[a-z]?)\b/i);
   if (prefixMatch) {
-    number = prefixMatch[1];
+    number = prefixMatch[1].replace(/^0+(?=\d)/, "");
   } else {
-    const commaNumMatch = text.match(/,\s*(\d+[a-z]?)\b/i);
+    const commaNumMatch = streetHeader.match(/,\s*(\d+[a-z]?)\b/i);
     if (commaNumMatch) {
-      number = commaNumMatch[1];
+      number = commaNumMatch[1].replace(/^0+(?=\d)/, "");
     } else {
-      const spaceNumMatch = text.match(/\s+(\d{1,5}[a-z]?)(?:\s*[-,\/]|\s+(?:apto|apt|ap|bloco|bl|sala|loja|casa|unid|andar|qd|lote|fundos|centro|bairro)|$)/i);
+      const spaceNumMatch = streetHeader.match(/\s+(\d{1,5}[a-z]?)(?:\s*[-,\/]|\s+(?:apto|apt|ap|bloco|bl|sala|loja|casa|unid|andar|qd|lote|fundos|centro|bairro)|$)/i);
       if (spaceNumMatch) {
-        number = spaceNumMatch[1];
+        number = spaceNumMatch[1].replace(/^0+(?=\d)/, "");
       }
     }
   }
   let street = text;
   if (number) {
-    const numRe = new RegExp("(?:,\\s*|\\s+)(?:n[\xBAo\xB0.]?|num(?:ero)?\\.?|nro\\.?)?\\s*" + number + "(?=[,\\s-]|$)", "i");
+    const numRe = new RegExp("(?:,\\s*|\\s+)(?:n\\.?[\xBAo\xB0]?|num(?:ero)?\\.?|nro\\.?)?\\s*0*" + number + "(?=[,\\s-]|$)", "i");
     const numIdx = street.search(numRe);
     if (numIdx > 0) {
       street = street.slice(0, numIdx);
@@ -17004,7 +17715,7 @@ var TYPE_PREFIXES = /* @__PURE__ */ new Set([
   "CAIS"
 ]);
 var STOPWORDS = /* @__PURE__ */ new Set(["DE", "DA", "DO", "DOS", "DAS", "E", "A", "O"]);
-function normalizeText(str) {
+function normalizeText2(str) {
   if (!str) return "";
   return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\bN\.?\s*SRA\.?\b/g, "NOSSA SENHORA").replace(/\bN\.?\s*S\.?\b/g, "NOSSA SENHORA").replace(/[^A-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -17076,7 +17787,7 @@ function expandStreetTokens(normStr) {
   return out.join(" ");
 }
 function buildStreetKeys(raw) {
-  const expanded = expandStreetTokens(normalizeText(raw));
+  const expanded = expandStreetTokens(normalizeText2(raw));
   if (!expanded) return { full: "", core: "" };
   const tokens = expanded.split(" ");
   const noType = TYPE_PREFIXES.has(tokens[0]) ? tokens.slice(1) : tokens;
@@ -17108,7 +17819,7 @@ var BAIRRO_ALIASES = {
   "VILA DA PENHA": "VL DA PENHA"
 };
 function normalizeBairro(raw) {
-  const norm = normalizeText(raw).replace(/\bZ\b/g, "S");
+  const norm = normalizeText2(raw).replace(/\bZ\b/g, "S");
   if (BAIRRO_ALIASES[norm]) return BAIRRO_ALIASES[norm];
   return norm.replace(/\bJARDIM\b/g, "JD").replace(/\bVILA\b/g, "VL");
 }
@@ -17383,8 +18094,8 @@ function loadDoorsForCl(cl) {
   return shard[cl] || [];
 }
 function resolveRioIppLocation(params, options) {
-  const cityNorm = normalizeText(params.city);
-  const stateNorm = normalizeText(params.state);
+  const cityNorm = normalizeText2(params.city);
+  const stateNorm = normalizeText2(params.state);
   if (cityNorm && !cityNorm.includes("RIO DE JANEIRO")) return null;
   if (!cityNorm && stateNorm && stateNorm !== "RJ") return null;
   if (params.id) {
@@ -17397,7 +18108,7 @@ function resolveRioIppLocation(params, options) {
     return null;
   }
   const nb = normalizeBairro(params.neighborhood);
-  const memoKey = params.id ? `id:${params.id}:${normalizeText(params.address)}:${nb}` : `addr:${cityNorm}:${nb}:${normalizeText(params.address)}:${normalizeText(params.title)}`;
+  const memoKey = params.id ? `id:${params.id}:${normalizeText2(params.address)}:${nb}` : `addr:${cityNorm}:${nb}:${normalizeText2(params.address)}:${normalizeText2(params.title)}`;
   if (resolvedMemo.has(memoKey)) {
     return resolvedMemo.get(memoKey) ?? null;
   }
@@ -17415,23 +18126,38 @@ function resolveRioIppLocation(params, options) {
       if (!arr) return;
       for (const c of arr) if (!cls.includes(c)) cls.push(c);
     };
+    const desiredType = full.split(" ")[0];
     if (nb) addAll(idx.exactBairro[`${full}|${nb}`]);
     if (nb) addAll(idx.coreBairro[`${core}|${nb}`]);
     if (!cls.length) {
       addAll(idx.fullMap[full]);
-      if (!cls.length) addAll(idx.coreMap[core]);
+      if (!cls.length) {
+        const coreHits = (idx.coreMap[core] || []).filter((c) => {
+          const candType = normalizeText2(idx.clMeta[c]?.[0]).split(" ")[0];
+          if ((desiredType === "ESTRADA" || desiredType === "RODOVIA") && candType === "PRACA") return false;
+          if (desiredType === "PRACA" && (candType === "ESTRADA" || candType === "RODOVIA")) return false;
+          return true;
+        });
+        addAll(coreHits);
+      }
     }
     if (!cls.length) {
-      addAll(findFuzzyStreetCls(core, nb, idx));
+      const fuzzyHits = findFuzzyStreetCls(core, nb, idx).filter((c) => {
+        if (nb && normalizeBairro(idx.clMeta[c]?.[1]) === nb) return true;
+        const candType = normalizeText2(idx.clMeta[c]?.[0]).split(" ")[0];
+        if ((desiredType === "ESTRADA" || desiredType === "RODOVIA") && candType === "PRACA") return false;
+        if (desiredType === "PRACA" && (candType === "ESTRADA" || candType === "RODOVIA")) return false;
+        return true;
+      });
+      addAll(fuzzyHits);
     }
     if (!cls.length) continue;
-    const desiredType = full.split(" ")[0];
     if (cls.length > 1 && TYPE_PREFIXES.has(desiredType)) {
       cls.sort((a, b) => {
         const ma = idx.clMeta[a];
         const mb = idx.clMeta[b];
-        const aType = normalizeText(ma?.[0]).split(" ")[0] === desiredType ? 1 : 0;
-        const bType = normalizeText(mb?.[0]).split(" ")[0] === desiredType ? 1 : 0;
+        const aType = normalizeText2(ma?.[0]).split(" ")[0] === desiredType ? 1 : 0;
+        const bType = normalizeText2(mb?.[0]).split(" ")[0] === desiredType ? 1 : 0;
         if (aType !== bType) return bType - aType;
         if (nb) {
           const aNb = normalizeBairro(ma?.[1]) === nb ? 1 : 0;
@@ -17525,7 +18251,7 @@ function getRioAuctionBuildingsFilePath() {
 }
 
 // propertyLocationService.ts
-var EXACT_GEOCODE_ALGORITHM_VERSION = 2;
+var EXACT_GEOCODE_ALGORITHM_VERSION = 3;
 var file = import_node_path8.default.join(process.cwd(), "official_property_locations.json");
 var normalize4 = (s) => (s || "").normalize("NFC").trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
 var normalizeStreet = (s) => normalize4(cleanBrazilianAddress(s || "").street).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").replace(/^(rua|avenida|av|estrada|travessa|alameda|praca|rodovia|largo|beco)\s+/, "").trim();
@@ -17728,7 +18454,7 @@ async function geocodePendingPropertyLocations(properties) {
   geocodingPending = true;
   try {
     refresh();
-    const rows = JSON.parse(import_node_fs8.default.readFileSync(file, "utf8"));
+    const rows = import_node_fs8.default.existsSync(file) ? JSON.parse(import_node_fs8.default.readFileSync(file, "utf8")) : [];
     const byId = new Map(rows.map((row, index) => [row.id, index]));
     const pending = properties.filter((property) => {
       const index = property.id ? byId.get(property.id) : void 0;
@@ -17746,8 +18472,21 @@ async function geocodePendingPropertyLocations(properties) {
     let lastNetworkStart = 0;
     let changed = 0;
     for (const property of pending) {
-      const index = byId.get(property.id);
-      if (index === void 0) continue;
+      let index = byId.get(property.id);
+      if (index === void 0) {
+        const seed = {
+          id: property.id,
+          address: property.address,
+          city: property.city,
+          state: property.state,
+          neighborhood: property.neighborhood,
+          status: "pending",
+          reason: "not_yet_matched"
+        };
+        index = rows.length;
+        rows.push(seed);
+        byId.set(property.id, index);
+      }
       const current = rows[index];
       const parsed = cleanBrazilianAddress(property.address || "");
       const cachedExact = getCachedCoords(property.address || "", property.neighborhood, property.city, property.state);
@@ -17807,7 +18546,10 @@ async function geocodePendingPropertyLocations(properties) {
 function ensureOfficialLocationCoverage(properties) {
   if (refreshing || process.env.RENDER === "true") return;
   const cache2 = import_node_path8.default.join(process.cwd(), ".cache", "map-cnefe");
-  if (!import_node_fs8.default.existsSync(import_node_path8.default.join(cache2, "manifest.json"))) return;
+  if (!import_node_fs8.default.existsSync(import_node_path8.default.join(cache2, "manifest.json"))) {
+    void geocodePendingPropertyLocations(properties);
+    return;
+  }
   refresh();
   const hasMissingLocationRecord = properties.some((p) => !byAddress.has(propertyLocationKey({ ...p, address: locationAddress(p) })));
   if (!hasMissingLocationRecord) {
@@ -17888,13 +18630,15 @@ function calculateFlip(exitValue, acquisitionCost, monthlyHolding = 0) {
 
 // server.ts
 var import_express = __toESM(require("express"), 1);
-var import_path4 = __toESM(require("path"), 1);
-var import_fs5 = __toESM(require("fs"), 1);
+var import_path5 = __toESM(require("path"), 1);
+var import_fs6 = __toESM(require("fs"), 1);
 var import_csv_parser = __toESM(require("csv-parser"), 1);
 var import_stream = require("stream");
 var import_promises = require("stream/promises");
 var import_readline = __toESM(require("readline"), 1);
 var import_zlib = __toESM(require("zlib"), 1);
+var import_geojson_vt = __toESM(require("geojson-vt"), 1);
+var import_vt_pbf = __toESM(require("vt-pbf"), 1);
 var import_vite = require("vite");
 var import_genai3 = require("@google/genai");
 var import_dotenv = __toESM(require("dotenv"), 1);
@@ -18083,7 +18827,7 @@ function inferJfComparableArea(transactionValue, model) {
 var DEFAULT_BENCHMARK_SIZE_MODE = "similar";
 function isGenericStreet(str) {
   if (!str) return true;
-  const s = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const s = str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\([^)]*\)/g, " ").replace(/\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b.*$/i, "").replace(/\s+/g, " ").trim();
   if (s.length < 3) return true;
   const genericPrefixRegex = /^(rua|r\b|avenida|av\b|estrada|estr\b|travessa|trav\b|alameda|al\b|via|beco|praca|pc\b)\s+([a-z]|[0-9]{1,3})$/i;
   if (genericPrefixRegex.test(s)) return true;
@@ -18660,7 +19404,7 @@ function computeBidirectionalBenchmarks(allNeighborhoodTxs, targetStreet, target
   const refEntorno = raioSaneada > 0 && hasVerifiedRadius ? raioSaneada : bSaneada;
   const ruaRaioDesvioPct = ruaSaneada > 0 && refEntorno > 0 ? Math.round((ruaSaneada - refEntorno) / refEntorno * 100) : 0;
   const ruaRaioCalibrada = weightedValuation.priceable && Math.abs(ruaRaioDesvioPct) > 25 && refEntorno > 0;
-  const isApartmentWithoutBuilding = targetPropType === "Apartamento" && predioValid.length === 0;
+  const isApartmentWithoutBuilding = targetPropType === "Apartamento" && predioValid.length === 0 && ruaValid.length < 3;
   const buildingSafetyValveFactor = isApartmentWithoutBuilding ? 0.95 : 1;
   const flipRapidoSqm = isJuizDeFora ? 0 : mediaCorteReal > 0 ? Math.round(mediaCorteReal * 0.9 * buildingSafetyValveFactor) : 0;
   const gabaritoTotal = isJuizDeFora ? mediaCorteReal : mediaCorteReal > 0 ? Math.round(mediaCorteReal * buildingSafetyValveFactor) * size : 0;
@@ -19128,8 +19872,8 @@ var neighborhoodPortalM2Cache = /* @__PURE__ */ new Map();
 function getNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions, propertyType, sizeSqm) {
   const uf = (state || "RJ").toUpperCase().trim();
   const rawCity = city || (uf === "MG" ? "Juiz de Fora" : uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
-  const cityKey = `${uf}_${normalizeText2(rawCity).toUpperCase()}`;
-  const neighNorm = normalizeText2(neighborhood || "");
+  const cityKey = `${uf}_${normalizeText3(rawCity).toUpperCase()}`;
+  const neighNorm = normalizeText3(neighborhood || "");
   const roundedSize = Math.round((sizeSqm || 60) / 10) * 10;
   const cacheKey = `${cityKey}|${neighNorm}|${propertyType || "all"}|${roundedSize}`;
   if (neighborhoodPortalM2Cache.has(cacheKey)) {
@@ -19145,8 +19889,8 @@ function getNeighTxsFast(itbiTransactions, cityNorm, neighNorm) {
   if (!index) {
     index = /* @__PURE__ */ new Map();
     for (const tx of itbiTransactions) {
-      const c = normalizeText2(tx.city || "rio de janeiro");
-      const n = normalizeText2(tx.neighborhood || "");
+      const c = normalizeText3(tx.city || "rio de janeiro");
+      const n = normalizeText3(tx.neighborhood || "");
       if (!n) continue;
       const key = `${c}|${n}`;
       let arr = index.get(key);
@@ -19163,10 +19907,10 @@ function getNeighTxsFast(itbiTransactions, cityNorm, neighNorm) {
 function computeNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions, propertyType, sizeSqm) {
   const uf = (state || "RJ").toUpperCase().trim();
   const rawCity = city || (uf === "MG" ? "Juiz de Fora" : uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
-  const cityKey = `${uf}_${normalizeText2(rawCity).toUpperCase()}`;
-  const neighNorm = normalizeText2(neighborhood || "");
+  const cityKey = `${uf}_${normalizeText3(rawCity).toUpperCase()}`;
+  const neighNorm = normalizeText3(neighborhood || "");
   if (Array.isArray(itbiTransactions) && itbiTransactions.length > 0 && neighNorm) {
-    const cityNorm = normalizeText2(rawCity);
+    const cityNorm = normalizeText3(rawCity);
     const neighTxs = getNeighTxsFast(itbiTransactions, cityNorm, neighNorm);
     if (neighTxs.length > 0) {
       const targetType = propertyType ? propertyType.toLowerCase() : "";
@@ -19255,7 +19999,7 @@ function computeNeighborhoodPortalM2(city, state, neighborhood, itbiTransactions
   }
   return finalRate || 3600;
 }
-function normalizeText2(text) {
+function normalizeText3(text) {
   if (!text) return "";
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
@@ -19274,13 +20018,13 @@ function getPortalAreaBracket(sizeSqm) {
 function calculatePortalBenchmark(input) {
   const uf = (input.state || "MG").toUpperCase().trim();
   const rawCity = input.city || (uf === "MG" ? "Juiz de Fora" : uf === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
-  const cityKey = `${uf}_${normalizeText2(rawCity).toUpperCase()}`;
-  const neighNorm = normalizeText2(input.neighborhood || "");
+  const cityKey = `${uf}_${normalizeText3(rawCity).toUpperCase()}`;
+  const neighNorm = normalizeText3(input.neighborhood || "");
   const sizeSqm = input.sizeSqm && input.sizeSqm > 0 ? input.sizeSqm : 60;
   const { bracket, factor } = getPortalAreaBracket(sizeSqm);
   let baseSqm = 0;
   let isBairroPortalFallback = true;
-  const isRioCity = uf === "RJ" && normalizeText2(rawCity).includes("rio");
+  const isRioCity = uf === "RJ" && normalizeText3(rawCity).includes("rio");
   let portalSource = "Morada Virtual / Portais";
   if (input.moradaM2 && input.moradaM2 > 0 && input.moradaM2 <= 75e3) {
     if (isRioCity && input.moradaM2 < 1500) {
@@ -19341,7 +20085,7 @@ function calculatePortalBenchmark(input) {
 // src/services/moradaVirtualService.ts
 var import_node_fs9 = __toESM(require("node:fs"), 1);
 var import_node_path9 = __toESM(require("node:path"), 1);
-var cheerio5 = __toESM(require("cheerio"), 1);
+var cheerio6 = __toESM(require("cheerio"), 1);
 var CACHE_FILE = import_node_path9.default.join(process.cwd(), "morada_virtual_cache.json");
 var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 var moradaCache = {};
@@ -19380,7 +20124,7 @@ function scheduleSaveMoradaCache() {
   }, 2e3);
 }
 loadMoradaCache();
-function normalizeText3(str) {
+function normalizeText4(str) {
   if (!str) return "";
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
@@ -19392,8 +20136,8 @@ function cleanStreetName(rawStreet) {
   return s;
 }
 function resolveStreetAliases(cleanName, city) {
-  const normC = normalizeText3(city);
-  const normS = normalizeText3(cleanName);
+  const normC = normalizeText4(city);
+  const normS = normalizeText4(cleanName);
   const aliases = [cleanName];
   if (normC.includes("niteroi")) {
     if (normS.includes("moreira cesar") || normS.includes("coronel moreira cesar")) {
@@ -19419,21 +20163,21 @@ function resolveStreetAliases(cleanName, city) {
   return Array.from(new Set(aliases));
 }
 function getMoradaCacheKey(street, city, state, neighborhood) {
-  const normS = normalizeText3(cleanStreetName(street));
-  const normC = normalizeText3(city || "");
-  const normUf = normalizeText3(state || "").substring(0, 2);
-  const normN = neighborhood ? normalizeText3(neighborhood) : "";
+  const normS = normalizeText4(cleanStreetName(street));
+  const normC = normalizeText4(city || "");
+  const normUf = normalizeText4(state || "").substring(0, 2);
+  const normN = neighborhood ? normalizeText4(neighborhood) : "";
   return normN ? `${normUf}_${normC}_${normN}_${normS}` : `${normUf}_${normC}_${normS}`;
 }
 async function searchMoradaVirtual(street, city, state, neighborhood) {
   const cleanBase = cleanStreetName(street);
   if (!cleanBase || cleanBase.length < 2) return null;
   const candidateNames = resolveStreetAliases(cleanBase, city);
-  const normCity = normalizeText3(city);
-  const normState = normalizeText3(state);
-  const normNeigh = neighborhood ? normalizeText3(neighborhood) : "";
+  const normCity = normalizeText4(city);
+  const normState = normalizeText4(state);
+  const normNeigh = neighborhood ? normalizeText4(neighborhood) : "";
   for (const name of candidateNames) {
-    const normName = normalizeText3(name);
+    const normName = normalizeText4(name);
     const queries = [
       normNeigh ? `${name} ${neighborhood} ${city}` : null,
       normNeigh ? `${street} ${neighborhood} ${city}` : null,
@@ -19453,12 +20197,12 @@ async function searchMoradaVirtual(street, city, state, neighborhood) {
         const scored = [];
         for (const item of data.resultados) {
           if (item.tipo !== "logradouro") continue;
-          const itemTextNorm = normalizeText3(item.texto);
+          const itemTextNorm = normalizeText4(item.texto);
           const itemUrl = item.url || "";
           const matchesState = itemTextNorm.includes(normState) || itemUrl.includes(`/${normState}/`);
           const matchesCity = itemTextNorm.includes(normCity) || itemUrl.includes(`/${normCity.replace(/\s+/g, "-")}/`);
           if (!matchesState || !matchesCity) continue;
-          const itemStreetPart = normalizeText3(cleanStreetName(item.texto.split(",")[0] || ""));
+          const itemStreetPart = normalizeText4(cleanStreetName(item.texto.split(",")[0] || ""));
           let score = 0;
           if (itemStreetPart === normName) {
             score = 100;
@@ -19468,8 +20212,8 @@ async function searchMoradaVirtual(street, city, state, neighborhood) {
             score = 65;
           }
           const urlParts = itemUrl.split("/").filter(Boolean);
-          const resultNeighFromUrl = urlParts.length >= 4 ? normalizeText3(urlParts[2].replace(/-/g, " ")) : "";
-          const textParts = item.texto.split(",").map((p) => normalizeText3(p.trim()));
+          const resultNeighFromUrl = urlParts.length >= 4 ? normalizeText4(urlParts[2].replace(/-/g, " ")) : "";
+          const textParts = item.texto.split(",").map((p) => normalizeText4(p.trim()));
           const resultNeighFromText = textParts.length >= 2 ? textParts[1] : "";
           const candidateNeigh = resultNeighFromUrl || resultNeighFromText;
           if (normNeigh) {
@@ -19519,7 +20263,7 @@ async function scrapeMoradaPage(pathUrl) {
     });
     if (!resp.ok) return null;
     const html = await resp.text();
-    const $ = cheerio5.load(html);
+    const $ = cheerio6.load(html);
     const titleFromTag = $("title").text().replace(/\s*[·|-]\s*(?:Urbyx|Morada Virtual).*$/i, "").replace(/:\s*risco clim[aá]tico.*$/i, "").trim();
     const h1Clean = $("h1").clone().children().remove().end().text().replace(/\s+/g, " ").trim();
     const canonicalTitle = titleFromTag || (h1Clean.length <= 90 ? h1Clean : h1Clean.split(/(?<=RJ|MG)(?=[A-Z])/)[0]) || $("h1").text().replace(/\s+/g, " ").trim() || "";
@@ -19528,7 +20272,7 @@ async function scrapeMoradaPage(pathUrl) {
     let urbyxM2 = 0;
     let urbyxSummary = "";
     $("#mv2-historia .k").each((_, el) => {
-      const label = normalizeText3($(el).find(".l").text());
+      const label = normalizeText4($(el).find(".l").text());
       if (label === "preco" || label.includes("preco")) {
         const valText = $(el).find(".v").text().replace(/\s+/g, " ").trim();
         const m2Match = valText.replace(/\./g, "").match(/R\$\s*(\d+)/i) || valText.replace(/\./g, "").match(/(\d+)/);
@@ -19559,7 +20303,7 @@ async function scrapeMoradaPage(pathUrl) {
       const txText = $(el).find("p.tx").text().replace(/\s+/g, " ").trim();
       if (h3Text) {
         urbyxAvgPrice = parsePortugueseMoney(h3Text);
-        const h3Norm = normalizeText3(h3Text);
+        const h3Norm = normalizeText4(h3Text);
         if (h3Norm.includes("apartamento")) urbyxTypology = "APARTAMENTO";
         else if (h3Norm.includes("casa")) urbyxTypology = "CASA";
         else if (h3Norm.includes("comercial") || h3Norm.includes("sala") || h3Norm.includes("loja")) urbyxTypology = "COMERCIAL";
@@ -19681,7 +20425,7 @@ async function fetchAndCacheMoradaVirtual(street, city, state, neighborhood, for
   return streetData;
 }
 function mapTypologyCategory(propertyType) {
-  const t = normalizeText3(propertyType || "");
+  const t = normalizeText4(propertyType || "");
   if (t.includes("apart") || t.includes("apto") || t.includes("cobertura") || t.includes("kitnet") || t.includes("conjugado") || t.includes("loft") || t.includes("flat")) {
     return "APARTAMENTO";
   }
@@ -19700,10 +20444,10 @@ function getMoradaVirtualBenchmark(street, city, state, propertyType, neighborho
     const generalEntry = moradaCache[getMoradaCacheKey(street, city, state || "RJ")];
     if (generalEntry && !generalEntry.notFound && generalEntry.cards && generalEntry.cards.length > 0) {
       if (neighborhood) {
-        const normN = normalizeText3(neighborhood);
-        const entryNorm = normalizeText3(`${generalEntry.canonicalTitle} ${generalEntry.url} ${generalEntry.leadText || ""}`);
+        const normN = normalizeText4(neighborhood);
+        const entryNorm = normalizeText4(`${generalEntry.canonicalTitle} ${generalEntry.url} ${generalEntry.leadText || ""}`);
         const urlParts = (generalEntry.url || "").split("/").filter(Boolean);
-        const entryNeighFromUrl = urlParts.length >= 4 ? normalizeText3(urlParts[2].replace(/-/g, " ")) : "";
+        const entryNeighFromUrl = urlParts.length >= 4 ? normalizeText4(urlParts[2].replace(/-/g, " ")) : "";
         if (entryNeighFromUrl && entryNeighFromUrl !== normN && !entryNeighFromUrl.includes(normN) && !normN.includes(entryNeighFromUrl)) {
         } else {
           entry = generalEntry;
@@ -19786,6 +20530,1944 @@ async function batchEnrichAuctionsMorada(auctions, options = {}) {
   };
 }
 
+// report360Service.ts
+var import_node_fs10 = __toESM(require("node:fs"), 1);
+var import_node_path10 = __toESM(require("node:path"), 1);
+init_geoCoords();
+
+// src/utils/communityCentroids.json
+var communityCentroids_default = [{ n: "Morro do Amor", f: "CV", lat: -22.74939, lng: -43.38891 }, { n: "Morro do Rola", f: "CV", lat: -22.7483, lng: -43.39474 }, { n: "Castelar", f: "CV", lat: -22.75262, lng: -43.40017 }, { n: "Morro da Palmeira", f: "CV", lat: -22.75813, lng: -43.40454 }, { n: "Vila Rica", f: "CV", lat: -22.71861, lng: -43.36551 }, { n: "Parque Roseiral", f: "CV", lat: -22.72393, lng: -43.36186 }, { n: "Morro da Bacia", f: "CV", lat: -22.71863, lng: -43.35804 }, { n: "Morro do Titanic", f: "CV", lat: -22.7259, lng: -43.36697 }, { n: "Parque Su\xE9cia", f: "CV", lat: -22.73062, lng: -43.34065 }, { n: "Parque Panorama", f: "CV", lat: -22.72778, lng: -43.32475 }, { n: "Vila Rosali", f: "CV", lat: -22.79108, lng: -43.3763 }, { n: "Morro do Amor (Complexo de Mali)", f: "CV", lat: -22.77981, lng: -43.34224 }, { n: "Morro da Igrejinha de S\xE3o Jo\xE3o (Complexo da Parma)", f: "CV", lat: -22.7818, lng: -43.3381 }, { n: "Parque Uni\xE3o", f: "CV", lat: -22.85027, lng: -43.2444 }, { n: "Parque Rubens Vaz (Nova Holanda)", f: "CV", lat: -22.85282, lng: -43.24445 }, { n: "Nova Holanda", f: "CV", lat: -22.85534, lng: -43.2439 }, { n: "Morro do Bento", f: "CV", lat: -22.72384, lng: -43.33185 }, { n: "Comunidade Mata 4 ou Light", f: "CV", lat: -22.83923, lng: -43.36595 }, { n: "Proen\xE7a Rosa", f: "CV", lat: -22.8381, lng: -43.36201 }, { n: "Mundial", f: "CV", lat: -22.83893, lng: -43.35797 }, { n: "Palmerinha", f: "CV", lat: -22.84787, lng: -43.36358 }, { n: "Faz Quem Quer", f: "CV", lat: -22.85508, lng: -43.33977 }, { n: "Morro do Ter\xE7o", f: "CV", lat: -22.8556, lng: -43.33465 }, { n: "Congonha", f: "CV", lat: -22.86176, lng: -43.3341 }, { n: "Morro do Buriti", f: "CV", lat: -22.86079, lng: -43.33616 }, { n: "Abobora", f: "CV", lat: -22.88925, lng: -43.25885 }, { n: "Buraco do Lacerda", f: "CV", lat: -22.88721, lng: -43.25374 }, { n: "Tancredinho", f: "CV", lat: -22.88932, lng: -43.25336 }, { n: "Lacerda", f: "CV", lat: -22.88734, lng: -43.25174 }, { n: "Nova CCPL", f: "CV", lat: -22.89161, lng: -43.24734 }, { n: "Bairro Carioca", f: "CV", lat: -22.89288, lng: -43.24908 }, { n: "Vila Uni\xE3o", f: "CV", lat: -22.88917, lng: -43.24619 }, { n: "Parque Arar\xE1", f: "CV", lat: -22.8893, lng: -43.23999 }, { n: "Morro da Cobra", f: "CV", lat: -22.79133, lng: -43.38266 }, { n: "Bacia do \xC9den", f: "CV", lat: -22.79068, lng: -43.39826 }, { n: "Novo Horizonte", f: "CV", lat: -22.80075, lng: -43.40795 }, { n: "Frade", f: "CV", lat: -22.96168, lng: -44.44311 }, { n: "Areal", f: "CV", lat: -22.97468, lng: -44.2921 }, { n: "Japu\xEDba", f: "CV", lat: -22.98089, lng: -44.30533 }, { n: "Morro da Gloria II", f: "CV", lat: -22.99537, lng: -44.30881 }, { n: "Morro do Perez", f: "CV", lat: -23.00281, lng: -44.31289 }, { n: "Sinpahatuba III", f: "CV", lat: -23.00831, lng: -44.29124 }, { n: "Morro do Moreno", f: "CV", lat: -22.98708, lng: -44.23857 }, { n: "Brisa Mar", f: "CV", lat: -22.88147, lng: -43.81776 }, { n: "Cosmorama", f: "CV", lat: -22.79309, lng: -43.41876 }, { n: "Santa Terezinha", f: "CV", lat: -22.79173, lng: -43.43966 }, { n: "Alto Uruguai", f: "CV", lat: -22.78032, lng: -43.43796 }, { n: "Morro da Cor\xE9ia", f: "CV", lat: -22.77487, lng: -43.43754 }, { n: "Vila Norma", f: "CV", lat: -22.78656, lng: -43.40885 }, { n: "Morro Sampaio", f: "CV", lat: -22.78173, lng: -43.41385 }, { n: "BNH", f: "CV", lat: -22.77888, lng: -43.4025 }, { n: "FICAP", f: "CV", lat: -22.8053, lng: -43.33127 }, { n: "Prainha", f: "CV", lat: -22.79985, lng: -43.32412 }, { n: "Parque Laguna", f: "CV", lat: -22.79681, lng: -43.31591 }, { n: "Vila Ideal", f: "CV", lat: -22.79503, lng: -43.31426 }, { n: "Comunidade do Lix\xE3o", f: "CV", lat: -22.79489, lng: -43.30901 }, { n: "Vila Operaria", f: "CV", lat: -22.78751, lng: -43.29697 }, { n: "Dique I", f: "CV", lat: -22.74947, lng: -43.30148 }, { n: "Dique II", f: "CV", lat: -22.74746, lng: -43.30593 }, { n: "Jardim Gramacho", f: "CV", lat: -22.75134, lng: -43.27683 }, { n: "Morro do Corte 8 (Complexo da Mangueirinha)", f: "CV", lat: -22.76812, lng: -43.31041 }, { n: "Morro do Guarani (Complexo de Mali)", f: "CV", lat: -22.76778, lng: -43.33822 }, { n: "Cohab", f: "CV", lat: -22.76159, lng: -43.27508 }, { n: "Parque Beira-Mar", f: "CV", lat: -22.79791, lng: -43.28766 }, { n: "Parque Das Miss\xF5es", f: "CV", lat: -22.80589, lng: -43.28215 }, { n: "Varginhas ou Parque Oswaldo Cruz (Complexo de Manguinhos)", f: "CV", lat: -22.8812, lng: -43.24891 }, { n: "Barreira do Vasco", f: "CV", lat: -22.88821, lng: -43.22939 }, { n: "S\xE3o Sim\xE3o", f: "CV", lat: -22.71187, lng: -43.54982 }, { n: "Morro do Barbante", f: "CV", lat: -22.81522, lng: -43.23141 }, { n: "Favela Vila Nova Cana\xE3", f: "CV", lat: -22.81017, lng: -43.2346 }, { n: "Per\xF3", f: "CV", lat: -22.83377, lng: -42.00979 }, { n: "Lagomar", f: "CV", lat: -22.31043, lng: -41.71507 }, { n: "Vai quem Quer (VQQ)", f: "CV", lat: -22.66172, lng: -43.29005 }, { n: "Nova Campina", f: "CV", lat: -22.64768, lng: -43.25158 }, { n: "Rato Molhado", f: "CV", lat: -22.89709, lng: -43.26221 }, { n: "Morro do Pinto", f: "CV", lat: -22.90414, lng: -43.20309 }, { n: "Morro da Provid\xEAncia", f: "CV", lat: -22.90065, lng: -43.19656 }, { n: "Santo Amaro", f: "CV", lat: -22.92335, lng: -43.17949 }, { n: "Morro Dona Marta (Santa Marta)", f: "CV", lat: -22.94756, lng: -43.19463 }, { n: "Morro do Azul", f: "CV", lat: -22.93816, lng: -43.18005 }, { n: "Morro dos Cabritos", f: "CV", lat: -22.96395, lng: -43.19454 }, { n: "Pav\xE3o Pav\xE3ozinho e Cantagalo (PPG)", f: "CV", lat: -22.98087, lng: -43.19628 }, { n: "Morro do Parque Gotadouro", f: "CV", lat: -22.73051, lng: -43.33264 }, { n: "Morro Tr\xEAs Marias", f: "CV", lat: -22.72697, lng: -43.33023 }, { n: "Morro do Celta", f: "CV", lat: -22.73075, lng: -43.3149 }, { n: "Guarani", f: "CV", lat: -22.91274, lng: -42.46191 }, { n: "Fais\xE3o (Complexo de Mali)", f: "CV", lat: -22.76125, lng: -43.33367 }, { n: "Bandeira 2 ou B2", f: "CV", lat: -22.88155, lng: -43.26853 }, { n: "Morro da Boa Vista de Niter\xF3i", f: "CV", lat: -22.88633, lng: -43.10588 }, { n: "Morro do Prevent\xF3rio", f: "CV", lat: -22.9355, lng: -43.10008 }, { n: "Risca Faca", f: "CV", lat: -22.8707, lng: -43.01911 }, { n: "Morro do Tronco", f: "CV", lat: -22.85389, lng: -42.99636 }, { n: "Vila Candosa (Complexo da Alma)", f: "CV", lat: -22.84602, lng: -42.98022 }, { n: "Estrada do Bichinho", f: "CV", lat: -22.83811, lng: -42.97075 }, { n: "Sacramento", f: "CV", lat: -22.83557, lng: -42.95819 }, { n: "BQ Buraco Quente", f: "CV", lat: -22.80048, lng: -43.01291 }, { n: "Gu\xEDndia de Santa Luzia", f: "CV", lat: -22.80074, lng: -42.9768 }, { n: "Brejal", f: "CV", lat: -22.79662, lng: -42.96164 }, { n: "Morro da Vi\xFAva", f: "CV", lat: -22.7834, lng: -42.95186 }, { n: "Morro do C\xE9u ( Complexo do Caramujo)", f: "CV", lat: -22.89417, lng: -43.0706 }, { n: "Morro do Caval\xE3o", f: "CV", lat: -22.91168, lng: -43.10171 }, { n: "Morro da Boa Vista de Cabo Frio", f: "CV", lat: -22.96758, lng: -42.03015 }, { n: "Morro da Cabocla", f: "CV", lat: -22.96461, lng: -42.02178 }, { n: "Vila Ipiranga", f: "CV", lat: -22.87786, lng: -43.09399 }, { n: "Buraco do Boi de Niter\xF3i", f: "CV", lat: -22.86871, lng: -43.10783 }, { n: "Morro da Nova Gr\xE9cia", f: "CV", lat: -22.85764, lng: -43.03305 }, { n: "S\xE3o Sebasti\xE3o", f: "CV", lat: -22.54165, lng: -43.19342 }, { n: "Oswero Carmo Villa\xE7a", f: "CV", lat: -22.52975, lng: -43.17047 }, { n: "At\xEDlio Marotti", f: "CV", lat: -22.4851, lng: -43.18076 }, { n: "Morro da Boca do Mato (Complexo do Lins)", f: "CV", lat: -22.91235, lng: -43.29369 }, { n: "Camarista do M\xE9ier", f: "CV", lat: -22.91618, lng: -43.29954 }, { n: "Morro da Bar\xE3o do M\xE9ier", f: "CV", lat: -22.91162, lng: -43.29731 }, { n: "Morro do Gamb\xE1 (Complexo do Lins)", f: "CV", lat: -22.91629, lng: -43.28631 }, { n: "Morro da Cachoeira Grande (Complexo do Lins)", f: "CV", lat: -22.91703, lng: -43.28319 }, { n: "Morro da Cotia (Complexo do Lins)", f: "CV", lat: -22.91812, lng: -43.28208 }, { n: "Morro do Amor (Complexo do Lins)", f: "CV", lat: -22.91244, lng: -43.27798 }, { n: "Morro da Cachoeira Pequena (Complexo do Lins)", f: "CV", lat: -22.91551, lng: -43.28021 }, { n: "Morro da \xC1rvore Seca (Complexo do Lins)", f: "CV", lat: -22.91559, lng: -43.2776 }, { n: "Morro do Barro Vermelho (Complexo do Lins)", f: "CV", lat: -22.91543, lng: -43.27444 }, { n: "Morro do encontro (Complexo do Lins)", f: "CV", lat: -22.91585, lng: -43.26632 }, { n: "Morro do Andara\xED", f: "CV", lat: -22.93334, lng: -43.25843 }, { n: "Borel", f: "CV", lat: -22.93986, lng: -43.25478 }, { n: "Lemos de Brito (Complexo do 18)", f: "CV", lat: -22.8983, lng: -43.32703 }, { n: "Sa\xE7u (Complexo do 18)", f: "CV", lat: -22.89658, lng: -43.32073 }, { n: "Caixa D'\xE1gua (Complexo do 18)", f: "CV", lat: -22.89401, lng: -43.31656 }, { n: "In\xE1cio Dias (Complexo do 18)", f: "CV", lat: -22.90035, lng: -43.31748 }, { n: "Morro do 18 (Complexo do 18)", f: "CV", lat: -22.90494, lng: -43.31724 }, { n: "Fazendinha (Complexo do 18)", f: "CV", lat: -22.90991, lng: -43.31742 }, { n: "Fogueteiro", f: "CV", lat: -22.92757, lng: -43.19924 }, { n: "Fallet", f: "CV", lat: -22.92667, lng: -43.19519 }, { n: "Escondidinho", f: "CV", lat: -22.93076, lng: -43.20059 }, { n: "Morro dos prazeres", f: "CV", lat: -22.9334, lng: -43.20301 }, { n: "Morro da coroa", f: "CV", lat: -22.92209, lng: -43.19395 }, { n: "Morro da Bar\xE3o ou S\xE3o Jos\xE9 Oper\xE1rio", f: "CV", lat: -22.90259, lng: -43.34331 }, { n: "Guandu", f: "CV", lat: -22.68524, lng: -43.63916 }, { n: "Citro-Park", f: "CV", lat: -22.68316, lng: -43.60584 }, { n: "Sabugo", f: "CV", lat: -22.6148, lng: -43.72097 }, { n: "Siderl\xE2ndia", f: "CV", lat: -22.52082, lng: -44.13772 }, { n: "Morro do Gama", f: "CV", lat: -22.47981, lng: -43.82794 }, { n: "Morro da CTB", f: "CV", lat: -22.11351, lng: -43.2119 }, { n: "Papucaia", f: "CV", lat: -22.60659, lng: -42.74528 }, { n: "Morro do Inferninho de Niter\xF3i", f: "CV", lat: -22.94157, lng: -43.06039 }, { n: "Barreira (Ciclovia)", f: "CV", lat: -22.94029, lng: -43.06717 }, { n: "Morro do Boa Esperan\xE7a Niter\xF3i", f: "CV", lat: -22.93973, lng: -43.05401 }, { n: "Predinhos de Itaipua\xE7u", f: "CV", lat: -22.94641, lng: -42.95069 }, { n: "Linha (S\xE3o Jos\xE9 do imbassa\xED)", f: "CV", lat: -22.93266, lng: -42.88374 }, { n: "Bambu\xED", f: "CV", lat: -22.94216, lng: -42.75582 }, { n: "Jatob\xE1", f: "CV", lat: -22.17031, lng: -43.29628 }, { n: "Morro do Salgueiro", f: "CV", lat: -22.92975, lng: -43.22671 }, { n: "Morro da Chacrinha (Complexo do Turano)", f: "CV", lat: -22.92709, lng: -43.22006 }, { n: "Morro da Barreira (Vila Elza)", f: "CV", lat: -22.93099, lng: -43.20484 }, { n: "Pereir\xE3o", f: "CV", lat: -22.92997, lng: -43.19239 }, { n: "Julio Otoni", f: "CV", lat: -22.93351, lng: -43.19324 }, { n: "Morro do Coroado", f: "CV", lat: -22.93668, lng: -43.20161 }, { n: "Jorge Turco", f: "CV", lat: -22.83845, lng: -43.34649 }, { n: "Quaf\xE1 (Vila Kennedy)", f: "CV", lat: -22.85143, lng: -43.48658 }, { n: "Pedra (Vila Kennedy)", f: "CV", lat: -22.85023, lng: -43.4926 }, { n: "Barr\xE3o (Vila Kennedy)", f: "CV", lat: -22.8532, lng: -43.49366 }, { n: "Metral (Vila Kennedy)", f: "CV", lat: -22.85372, lng: -43.49709 }, { n: "Light (Vila Kennedy)", f: "CV", lat: -22.85638, lng: -43.48904 }, { n: "Morrinho (Vila Kennedy)", f: "CV", lat: -22.85892, lng: -43.47868 }, { n: "Bairro 13 (Vila Kennedy)", f: "CV", lat: -22.85827, lng: -43.48355 }, { n: "Malvina (Vila Kennedy)", f: "CV", lat: -22.86151, lng: -43.4833 }, { n: "Congo (Vila Kennedy)", f: "CV", lat: -22.86177, lng: -43.48741 }, { n: "Vila Kennedy", f: "CV", lat: -22.8591, lng: -43.488 }, { n: "Manilha (Vila Kennedy)", f: "CV", lat: -22.8596, lng: -43.49242 }, { n: "Congo II (Vila Kennedy)", f: "CV", lat: -22.86298, lng: -43.49091 }, { n: "Progresso VK", f: "CV", lat: -22.86147, lng: -43.49627 }, { n: "Quiabo (Vila Kennedy)", f: "CV", lat: -22.86089, lng: -43.50166 }, { n: "Morro Pedro Am\xE9rico ou Morro do 715", f: "CV", lat: -22.92496, lng: -43.18315 }, { n: "Morro do Cerro Cor\xE1", f: "CV", lat: -22.9414, lng: -43.20195 }, { n: "Guarapares/ Vila C\xE2ndido (Cosme Velho)", f: "CV", lat: -22.9429, lng: -43.20519 }, { n: "Parque da Cidade", f: "CV", lat: -22.98104, lng: -43.24181 }, { n: "Morro do Vidigal", f: "CV", lat: -22.99587, lng: -43.24137 }, { n: "Cajueiro", f: "CV", lat: -22.86388, lng: -43.33624 }, { n: "AP das Cidade de Deus", f: "CV", lat: -22.95053, lng: -43.3543 }, { n: "Beirada do Rio ( Cidade de Deus)", f: "CV", lat: -22.94328, lng: -43.36902 }, { n: "Tangaral (Cidade de Deus)", f: "CV", lat: -22.94375, lng: -43.3702 }, { n: "Moqui\xE7o (Cidade de Deus)", f: "CV", lat: -22.94521, lng: -43.36941 }, { n: "Jardim Amanh\xE3 I (Cidade de Deus)", f: "CV", lat: -22.94919, lng: -43.36949 }, { n: "Karat\xEA (Cidade de Deus)", f: "CV", lat: -22.94923, lng: -43.36768 }, { n: "Travessa Efraim (Cidade de Deus)", f: "CV", lat: -22.95021, lng: -43.36711 }, { n: "Rocinha (Cidade de Deus)", f: "CV", lat: -22.95289, lng: -43.36608 }, { n: "Jardim Amanh\xE3 II (Cidade de Deus)", f: "CV", lat: -22.9543, lng: -43.36425 }, { n: "14 (Cidade de Deus)", f: "CV", lat: -22.94667, lng: -43.3632 }, { n: "Santu\xE1rio (Cidade de Deus)", f: "CV", lat: -22.94488, lng: -43.36681 }, { n: "15 (Cidade de Deus)", f: "CV", lat: -22.94566, lng: -43.3657 }, { n: "13 (Cidade de Deus)", f: "CV", lat: -22.95018, lng: -43.36075 }, { n: "Tijolinho (Cidade de Deus)", f: "CV", lat: -22.95353, lng: -43.3579 }, { n: "Barro Vermelho (Cidade de Deus)", f: "CV", lat: -22.94843, lng: -43.35857 }, { n: "AP da PM (Cidade de Deus)", f: "CV", lat: -22.94299, lng: -43.36297 }, { n: "Conjunto (Cidade de Deus)", f: "CV", lat: -22.95315, lng: -43.36196 }, { n: "Outeiro (Cidade de Deus)", f: "CV", lat: -22.95698, lng: -43.37047 }, { n: "Outeiro (Cidade de Deus)", f: "CV", lat: -22.95786, lng: -43.37602 }, { n: "Chatuba (Complexo de Manguinhos)", f: "CV", lat: -22.88165, lng: -43.25149 }, { n: "Cor\xE9ia (Complexo de Manguinhos)", f: "CV", lat: -22.8813, lng: -43.25276 }, { n: "Vila Turismo (Complexo de Manguinhos)", f: "CV", lat: -22.87732, lng: -43.25423 }, { n: "Morro do Tuiut\xED", f: "CV", lat: -22.89801, lng: -43.23383 }, { n: "Morro do Adeus (Complexo do Alem\xE3o)", f: "CV", lat: -22.86433, lng: -43.26237 }, { n: "Nova Bras\xEDlia (Complexo do Alem\xE3o)", f: "CV", lat: -22.86433, lng: -43.27236 }, { n: "Morro Itarar\xE9 (Complexo do Alem\xE3o)", f: "CV", lat: -22.86213, lng: -43.27181 }, { n: "Morro da Alvorada (Complexo do Alem\xE3o)", f: "CV", lat: -22.86171, lng: -43.27468 }, { n: "Morro do Chafariz (Complexo do Alem\xE3o)", f: "CV", lat: -22.86213, lng: -43.27727 }, { n: "Fazendinha (Complexo do Alem\xE3o)", f: "CV", lat: -22.86581, lng: -43.27894 }, { n: "Morro das Palmeiras (Complexo do Alem\xE3o)", f: "CV", lat: -22.86345, lng: -43.28236 }, { n: "Casinhas (Complexo do Alem\xE3o)", f: "CV", lat: -22.86535, lng: -43.28423 }, { n: "Morro do Sargento (Complexo do Alem\xE3o)", f: "CV", lat: -22.85982, lng: -43.28476 }, { n: "Subida do Canitar (Complexo do Alem\xE3o)", f: "CV", lat: -22.86299, lng: -43.28675 }, { n: "Morro dos Mineiros (Complexo do Alem\xE3o)", f: "CV", lat: -22.85835, lng: -43.2797 }, { n: "Morro do Areal (Complexo do Alem\xE3o)", f: "CV", lat: -22.85824, lng: -43.27489 }, { n: "Morro do Alem\xE3o (Complexo do Alem\xE3o)", f: "CV", lat: -22.85823, lng: -43.27039 }, { n: "Grota (Complexo do Alem\xE3o)", f: "CV", lat: -22.86004, lng: -43.27213 }, { n: "Morro da Baiana (Complexo do Alem\xE3o)", f: "CV", lat: -22.85841, lng: -43.26583 }, { n: "Pedra do Sapo ou Morro da Jaqueira (Complexo do Alem\xE3o)", f: "CV", lat: -22.85484, lng: -43.27498 }, { n: "Morro da Merendiba (Complexo da Penha)", f: "CV", lat: -22.84789, lng: -43.27736 }, { n: "4 Bicas (Complexo da Penha)", f: "CV", lat: -22.84751, lng: -43.27982 }, { n: "Bairro 13 (Complexo da Penha)", f: "CV", lat: -22.84772, lng: -43.28262 }, { n: "Cascatinha (Complexo da Penha)", f: "CV", lat: -22.84988, lng: -43.28219 }, { n: "Vila Cruzeiro (Complexo da Penha)", f: "CV", lat: -22.85027, lng: -43.28586 }, { n: "Parque Prolet\xE1rio (Complexo da Penha)", f: "CV", lat: -22.84989, lng: -43.28742 }, { n: "Morro da Vacaria (Complexo da Penha)", f: "CV", lat: -22.85053, lng: -43.29056 }, { n: "Grot\xE3o (Complexo da Penha)", f: "CV", lat: -22.84771, lng: -43.29314 }, { n: "Morro da Chatuba (Complexo da Penha)", f: "CV", lat: -22.84558, lng: -43.29275 }, { n: "Morro do Caracol (Complexo da Penha)", f: "CV", lat: -22.8437, lng: -43.29052 }, { n: "Morro da Caixa D'\xE1gua (Complexo da Penha)", f: "CV", lat: -22.84169, lng: -43.28914 }, { n: "Morro do Amor (Complexo da Penha)", f: "CV", lat: -22.84091, lng: -43.29035 }, { n: "Morro do Sereno (Complexo da Penha)", f: "CV", lat: -22.84245, lng: -43.2934 }, { n: "Morro da Paz (Complexo da Penha)", f: "CV", lat: -22.84374, lng: -43.29594 }, { n: "Morro da F\xE9 (Complexo da Penha)", f: "CV", lat: -22.84689, lng: -43.29603 }, { n: "Vila Cosmos", f: "CV", lat: -22.85198, lng: -43.30017 }, { n: "Morro do Juramentinho", f: "CV", lat: -22.86043, lng: -43.30277 }, { n: "Morro do Juramento", f: "CV", lat: -22.86004, lng: -43.31355 }, { n: "Agri\xE3o", f: "CV", lat: -22.97129, lng: -43.28497 }, { n: "G\xE1vea Pequena", f: "CV", lat: -22.97599, lng: -43.28474 }, { n: "Morro do Banco", f: "CV", lat: -22.9884, lng: -43.29473 }, { n: "Bic\xE3o (Chatuba de Mesquita)", f: "CV", lat: -22.80714, lng: -43.43939 }, { n: "Raiz (Chatuba de Mesquita)", f: "CV", lat: -22.80455, lng: -43.43515 }, { n: "Arrast\xE3o (Chatuba de Mesquita)", f: "CV", lat: -22.80142, lng: -43.43722 }, { n: "Manilha (Chatuba de Mesquita)", f: "CV", lat: -22.80066, lng: -43.42962 }, { n: "Morro do Chapad\xE3o (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82177, lng: -43.37428 }, { n: "Job (Complexo do Chapad\xE3o)", f: "CV", lat: -22.81904, lng: -43.38054 }, { n: "Coronel (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82198, lng: -43.37835 }, { n: "Morro da Manhama (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82804, lng: -43.375 }, { n: "Morro das Torres (Complexo do Chapad\xE3o)", f: "CV", lat: -22.81895, lng: -43.38224 }, { n: "Morro do Bom Tempo (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82355, lng: -43.38305 }, { n: "Cova da On\xE7a (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82648, lng: -43.3816 }, { n: "Morro do Suvaquinho (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82591, lng: -43.38407 }, { n: "Himalaia (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82079, lng: -43.38675 }, { n: "Morro do Final Feliz (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82566, lng: -43.38805 }, { n: "Morro do Crian\xE7a Esperan\xE7a (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82853, lng: -43.38523 }, { n: "Morro do Tiradentes (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82912, lng: -43.39009 }, { n: "Morro do Cavaleiro (Complexo do Chapad\xE3o)", f: "CV", lat: -22.83331, lng: -43.38773 }, { n: "Parque Esperan\xE7a (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82565, lng: -43.39543 }, { n: "Javali (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82538, lng: -43.39267 }, { n: "Gog\xF3 da Ema (Complexo do Chapad\xE3o)", f: "CV", lat: -22.83076, lng: -43.37902 }, { n: "Via Light ou Sert\xE3o (Complexo do Chapad\xE3o)", f: "CV", lat: -22.81585, lng: -43.39157 }, { n: "Bairro da Mina", f: "CV", lat: -22.81622, lng: -43.4018 }, { n: "Avenida", f: "CV", lat: -22.81955, lng: -43.40339 }, { n: "Vasquinho", f: "CV", lat: -22.80353, lng: -43.40509 }, { n: "Morro da Mangueirinha (Complexo da Mangueirinha)", f: "CV", lat: -22.77779, lng: -43.32189 }, { n: "Santu\xE1rio (Complexo da Mangueirinha)", f: "CV", lat: -22.77469, lng: -43.32015 }, { n: "Morro do Sapo (Complexo da Mangueirinha)", f: "CV", lat: -22.77196, lng: -43.32034 }, { n: "Morro do S\xE3o Pedro (Complexo da Mangueirinha)", f: "CV", lat: -22.7712, lng: -43.32722 }, { n: "Favelinha (Complexo da Mangueirinha)", f: "CV", lat: -22.76856, lng: -43.31949 }, { n: "Morro da Caixa D'\xE1gua de Queimados", f: "CV", lat: -22.71375, lng: -43.55235 }, { n: "Morro Souza Soares", f: "CV", lat: -22.90806, lng: -43.09272 }, { n: "S\xE3o Patr\xEDcio", f: "CV", lat: -22.86446, lng: -43.30035 }, { n: "Flexal", f: "CV", lat: -22.86269, lng: -43.29609 }, { n: "Engenho da Rainha", f: "CV", lat: -22.87302, lng: -43.29256 }, { n: "Comunidade da Galinha (Parque Prolet\xE1rio)", f: "CV", lat: -22.86723, lng: -43.29304 }, { n: "Linha II (S\xE3o Jos\xE9 do Imbassa\xED)", f: "CV", lat: -22.93124, lng: -42.8754 }, { n: "Risca Faca de Ino\xE3", f: "CV", lat: -22.91371, lng: -42.93554 }, { n: "Flamengo", f: "CV", lat: -22.91644, lng: -42.93737 }, { n: "Beira Rio de Ino\xE3", f: "CV", lat: -22.91473, lng: -42.93973 }, { n: "Sem Terra de Ino\xE3", f: "CV", lat: -22.91855, lng: -42.93624 }, { n: "Bananal de Ino\xE3", f: "CV", lat: -22.91143, lng: -42.9369 }, { n: "Morro do Zulu", f: "CV", lat: -22.90101, lng: -43.0893 }, { n: "Morro do Beltr\xE3o", f: "CV", lat: -22.90285, lng: -43.08564 }, { n: "Morro do Marqu\xEAs", f: "CV", lat: -22.89768, lng: -43.08931 }, { n: "Grota de Surucucu", f: "CV", lat: -22.90889, lng: -43.07421 }, { n: "600", f: "CV", lat: -22.90662, lng: -43.08888 }, { n: "Aimor\xE9 (Complexo da Penha)", f: "CV", lat: -22.84749, lng: -43.2911 }, { n: "Fur\xE3o (Complexo da Penha)", f: "CV", lat: -22.8528, lng: -43.2806 }, { n: "Morro da Ilha da Concei\xE7\xE3o (Morro do MIC)", f: "CV", lat: -22.87085, lng: -43.11692 }, { n: "Sab\xE3o", f: "CV", lat: -22.8862, lng: -43.11403 }, { n: "Morro do Arroz", f: "CV", lat: -22.89814, lng: -43.11671 }, { n: "Morro da Ch\xE1cara do C\xE9u de Niter\xF3i", f: "CV", lat: -22.89618, lng: -43.11643 }, { n: "Morro do Pal\xE1cio", f: "CV", lat: -22.90551, lng: -43.12778 }, { n: "Morro do 94", f: "CV", lat: -22.9014, lng: -43.12896 }, { n: "Morro do P\xE9 Pequeno", f: "CV", lat: -22.89473, lng: -43.10771 }, { n: "Cutia de Niter\xF3i", f: "CV", lat: -22.9099, lng: -43.10335 }, { n: "Morro do Lazareto", f: "CV", lat: -22.93088, lng: -43.11376 }, { n: "Morro do Pau Ferro (Caixa Baixa)", f: "CV", lat: -22.92735, lng: -43.1204 }, { n: "Morro do Peixe Galo", f: "CV", lat: -22.93552, lng: -43.11003 }, { n: "Morro da Salina", f: "CV", lat: -22.93676, lng: -43.11221 }, { n: "Jardim Barro Branco", f: "CV", lat: -22.63536, lng: -43.25567 }, { n: "Ana Clara", f: "CV", lat: -22.70271, lng: -43.23235 }, { n: "Rasta", f: "CV", lat: -22.69185, lng: -43.24645 }, { n: "Cangulo", f: "CV", lat: -22.69087, lng: -43.24044 }, { n: "Comunidade do Conjunto", f: "CV", lat: -22.67951, lng: -43.24088 }, { n: "Cor\xE9ia de Saracuruna", f: "CV", lat: -22.68363, lng: -43.24741 }, { n: "Morabi", f: "CV", lat: -22.65605, lng: -43.23204 }, { n: "Parada Ang\xE9lica", f: "CV", lat: -22.62741, lng: -43.19946 }, { n: "Santa L\xFAcia", f: "CV", lat: -22.63007, lng: -43.20772 }, { n: "Parque Amorim", f: "CV", lat: -22.70507, lng: -43.3325 }, { n: "Luanda", f: "CV", lat: -22.70742, lng: -43.33879 }, { n: "Morro do Rola Bosta", f: "CV", lat: -22.70167, lng: -43.3437 }, { n: "Castel\xE3o", f: "CV", lat: -22.70404, lng: -43.34061 }, { n: "Morro do Mato Grosso", f: "CV", lat: -22.9013, lng: -43.05547 }, { n: "Morro da Cocada", f: "CV", lat: -22.90239, lng: -43.05987 }, { n: "Morro do Cani\xE7al", f: "CV", lat: -22.92881, lng: -43.06813 }, { n: "Visconde de Itabora\xED", f: "CV", lat: -22.72506, lng: -42.93625 }, { n: "Itaoca", f: "CV", lat: -22.77874, lng: -43.06617 }, { n: "Morro do Abacat\xE3o (Boa Vista)", f: "CV", lat: -22.81519, lng: -43.06195 }, { n: "Pombal", f: "CV", lat: -22.82053, lng: -43.07711 }, { n: "Morro do Bernardino", f: "CV", lat: -22.88604, lng: -43.08306 }, { n: "Complexo de Santa Izabel", f: "CV", lat: -22.86083, lng: -42.93986 }, { n: "Jardim Cordeiro", f: "CV", lat: -22.853, lng: -42.94901 }, { n: "Monte Alto (Figueira)", f: "CV", lat: -22.94683, lng: -42.1115 }, { n: "Cai\xE7ara", f: "CV", lat: -22.92447, lng: -42.21464 }, { n: "Porto", f: "CV", lat: -22.85418, lng: -42.10289 }, { n: "Morro da Menezes", f: "CV", lat: -22.89629, lng: -43.34084 }, { n: "Morro da Lambicada", f: "CV", lat: -22.99165, lng: -44.24936 }, { n: "Morro do Urubu", f: "CV", lat: -22.87742, lng: -43.30388 }, { n: "Morro do Urubuzinho", f: "CV", lat: -22.87614, lng: -43.31068 }, { n: "Vila Caramuru", f: "CV", lat: -22.87573, lng: -43.30605 }, { n: "Capivara de Unamar", f: "CV", lat: -22.64383, lng: -42.01188 }, { n: "Casinhas de Belford Roxo", f: "CV", lat: -22.73276, lng: -43.3618 }, { n: "Sem Terra de Itagua\xED", f: "CV", lat: -22.87646, lng: -43.79495 }, { n: "Ca\xE7\xE3o", f: "CV", lat: -22.87357, lng: -43.79809 }, { n: "Morro do Serr\xE3o", f: "CV", lat: -22.88672, lng: -43.09933 }, { n: "Coronel Le\xF4ncio (Complexo do Fonsequist\xE3o)", f: "CV", lat: -22.87268, lng: -43.08901 }, { n: "Morro Santo Cristo (Complexo do Fonsequist\xE3o)", f: "CV", lat: -22.87762, lng: -43.09031 }, { n: "Palmeira (Complexo do Fonsequist\xE3o)", f: "CV", lat: -22.87307, lng: -43.08414 }, { n: "Morro do Pimba (Complexo do Fonsequist\xE3o)", f: "CV", lat: -22.87566, lng: -43.08279 }, { n: "Morro do Holofote", f: "CV", lat: -22.87833, lng: -43.10631 }, { n: "Morro do Abacaxi", f: "CV", lat: -22.89116, lng: -43.09549 }, { n: "Morro do Bumba", f: "CV", lat: -22.89289, lng: -43.08744 }, { n: "Sem Terra", f: "CV", lat: -22.89154, lng: -43.08305 }, { n: "Garganta (Complexo do Viradouro)", f: "CV", lat: -22.90633, lng: -43.07365 }, { n: "Morro da Igrejinha de Niteroi", f: "CV", lat: -22.90864, lng: -43.07033 }, { n: "Morro do Gr\xE3o- Fernando", f: "CV", lat: -22.90489, lng: -43.07272 }, { n: "Maceio", f: "CV", lat: -22.91451, lng: -43.071 }, { n: "Morro do Carangueijo", f: "CV", lat: -22.90958, lng: -43.06449 }, { n: "Morro da Formiga de Niter\xF3i", f: "CV", lat: -22.91172, lng: -43.06222 }, { n: "Monan", f: "CV", lat: -22.91009, lng: -43.05783 }, { n: "Morro do Cantagalo de Pendotiba", f: "CV", lat: -22.91321, lng: -43.05177 }, { n: "S\xEDtio de Ferro", f: "CV", lat: -22.90896, lng: -43.05181 }, { n: "Morro da Galinha de Pendotiba", f: "CV", lat: -22.91219, lng: -43.04392 }, { n: "Sap\xEA", f: "CV", lat: -22.89638, lng: -43.06041 }, { n: "Morro do Capim Melado", f: "CV", lat: -22.89599, lng: -43.08076 }, { n: "Morro da Ititioca", f: "CV", lat: -22.89677, lng: -43.0753 }, { n: "Atalaia", f: "CV", lat: -22.90083, lng: -43.0779 }, { n: "Predinhos (Complexo do Caramujo)", f: "CV", lat: -22.89145, lng: -43.06553 }, { n: "Vila Col\xF4nia (Complexo do Caramujo)", f: "CV", lat: -22.88912, lng: -43.06278 }, { n: "Morro da Mangueirinha (Complexo do Caramujo)", f: "CV", lat: -22.8849, lng: -43.06097 }, { n: "Morro do Caramujo (Complexo do Caramujo)", f: "CV", lat: -22.8841, lng: -43.06401 }, { n: "Morro da Vila Guarani (Complexo do Caramujo)", f: "CV", lat: -22.88508, lng: -43.06975 }, { n: "Morro da Barreirinha (Complexo do Caramujo)", f: "CV", lat: -22.88223, lng: -43.07203 }, { n: "Morro da Caixa D'\xE1gua (Complexo do Caramujo)", f: "CV", lat: -22.88346, lng: -43.07379 }, { n: "Morro do Primor (Complexo do Caramujo)", f: "CV", lat: -22.88273, lng: -43.07765 }, { n: "Morro do Chapa Quente (Complexo do Caramujo)", f: "CV", lat: -22.88129, lng: -43.07064 }, { n: "Novo M\xE9xico", f: "CV", lat: -22.86916, lng: -43.04571 }, { n: "Favelinha (Complexo da Alma)", f: "CV", lat: -22.84131, lng: -42.98533 }, { n: "Predinhos do Jockey", f: "CV", lat: -22.8486, lng: -42.99485 }, { n: "3 Campos", f: "CV", lat: -22.80621, lng: -43.00743 }, { n: "Morro do Rato Molhado Noter\xF3i", f: "CV", lat: -22.9373, lng: -43.03308 }, { n: "Morro do Arvoral", f: "CV", lat: -22.93046, lng: -43.02298 }, { n: "Port\xE3o do Rosa ou Porto do Rosa (Complexo do Salgueiro)", f: "CV", lat: -22.79381, lng: -43.05134 }, { n: "Balan\xE7a (Complexo do Salgueiro)", f: "CV", lat: -22.7869, lng: -43.04247 }, { n: "Morro do C\xE9u (Complexo do Salgueiro)", f: "CV", lat: -22.79211, lng: -43.03779 }, { n: "Barreira (Complexo do Salgueiro)", f: "CV", lat: -22.78452, lng: -43.03615 }, { n: "Tijolinho (Complexo do Salgueiro)", f: "CV", lat: -22.78805, lng: -43.0314 }, { n: "Bairro 13 (Complexo do Salgueiro)", f: "CV", lat: -22.78179, lng: -43.02906 }, { n: "Morro do Salgueiro (Complexo do Salgueiro)", f: "CV", lat: -22.78616, lng: -43.02631 }, { n: "Pedra Lisa (Complexo do Salgueiro)", f: "CV", lat: -22.78259, lng: -43.02515 }, { n: "Tavares (Complexo do Salgueiro", f: "CV", lat: -22.78032, lng: -43.02294 }, { n: "Curral (Complexo do Salgueiro)", f: "CV", lat: -22.7849, lng: -43.02086 }, { n: "Recanto (Complexo do Salgueiro)", f: "CV", lat: -22.78967, lng: -43.02039 }, { n: "Ita\xFAna (Complexo do Salgueiro)", f: "CV", lat: -22.79167, lng: -43.02823 }, { n: "Fronteira de Santa Luzia", f: "CV", lat: -22.79484, lng: -42.98589 }, { n: "Cano Furado", f: "CV", lat: -22.79252, lng: -42.97839 }, { n: "Carobinha de S\xE3o Gon\xE7alo", f: "CV", lat: -22.80047, lng: -42.97233 }, { n: "Guaxi", f: "CV", lat: -22.77371, lng: -42.96653 }, { n: "Favelinha", f: "CV", lat: -22.8221, lng: -43.08077 }, { n: "Morro do Jacar\xE9 de Niter\xF3i", f: "CV", lat: -22.93865, lng: -43.05579 }, { n: "Spar", f: "CV", lat: -22.89644, lng: -42.93852 }, { n: "Predinhos de Ino\xE3", f: "CV", lat: -22.90495, lng: -42.92351 }, { n: "P\xE9 da Serra (Complexo do Salgueiro)", f: "CV", lat: -22.77649, lng: -43.02608 }, { n: "Conjunto da Marinha ou Jardim Condessa (Complexo do Salgueiro)", f: "CV", lat: -22.77115, lng: -43.0172 }, { n: "Bairro das Palmeiras (Complexo do Salgueiro)", f: "CV", lat: -22.76366, lng: -43.00246 }, { n: "Nova Bras\xEDlia de Niter\xF3i", f: "CV", lat: -22.86813, lng: -43.08841 }, { n: "Morro do Otto", f: "CV", lat: -22.8674, lng: -43.09507 }, { n: "Morro do Mar\xEDtimo", f: "CV", lat: -22.86578, lng: -43.09455 }, { n: "Jardim Belmonte", f: "CV", lat: -22.52574, lng: -44.14037 }, { n: "Get\xFAlio Vargas", f: "CV", lat: -22.53049, lng: -44.14862 }, { n: "Josimo Tavares", f: "CV", lat: -22.51277, lng: -44.14436 }, { n: "Belmonte", f: "CV", lat: -22.51087, lng: -44.13683 }, { n: "A\xE7ude I", f: "CV", lat: -22.50532, lng: -44.1389 }, { n: "Morro do Couro Come", f: "CV", lat: -22.80622, lng: -43.03323 }, { n: "Morro do Querosene S\xE3o Gon\xE7alo", f: "CV", lat: -22.80288, lng: -43.03666 }, { n: "Morro do Piranha", f: "CV", lat: -22.8009, lng: -43.03226 }, { n: "Morro do Tabajara", f: "CV", lat: -22.79774, lng: -43.03533 }, { n: "Morro da 40", f: "CV", lat: -22.81129, lng: -43.05065 }, { n: "Boa\xE7u", f: "CV", lat: -22.80854, lng: -43.05537 }, { n: "Morro do S\xE3o Carlos de Volta Redonda", f: "CV", lat: -22.5295, lng: -44.12628 }, { n: "Vila Elmira", f: "CV", lat: -22.53969, lng: -44.13854 }, { n: "Coringa", f: "CV", lat: -22.52963, lng: -44.17672 }, { n: "Vila Ursulino", f: "CV", lat: -22.52845, lng: -44.20489 }, { n: "Vist\xE3o", f: "CV", lat: -22.51203, lng: -44.1903 }, { n: "Loteamento", f: "CV", lat: -22.50691, lng: -44.19735 }, { n: "Santa Cruz", f: "CV", lat: -22.46425, lng: -44.09672 }, { n: "Caviana", f: "CV", lat: -22.49192, lng: -44.07443 }, { n: "Morro da Conquista", f: "CV", lat: -22.49374, lng: -44.07127 }, { n: "Morro do Martins", f: "CV", lat: -22.85701, lng: -43.0935 }, { n: "\xC1gua Limpa", f: "CV", lat: -22.50733, lng: -44.06319 }, { n: "Morro da Alegria", f: "CV", lat: -22.85003, lng: -43.08914 }, { n: "Varj\xE3o", f: "CV", lat: -22.5044, lng: -44.00778 }, { n: "Parque Ma\xEDra", f: "CV", lat: -22.49053, lng: -44.0265 }, { n: "Morro da Coruja", f: "CV", lat: -22.84849, lng: -43.08645 }, { n: "Morro da Bandeira", f: "CV", lat: -22.84129, lng: -43.08792 }, { n: "Predinhos Ararib\xF3ia", f: "CV", lat: -22.84379, lng: -43.08788 }, { n: "Morro do Gal\xE3o", f: "CV", lat: -22.83943, lng: -43.08192 }, { n: "Morro do Feij\xE3o", f: "CV", lat: -22.83617, lng: -43.0782 }, { n: "Morro do Patronato", f: "CV", lat: -22.8338, lng: -43.07386 }, { n: "Morro da Falange", f: "CV", lat: -22.83314, lng: -43.06595 }, { n: "Vila Esperan\xE7a de S\xE3o Gon\xE7alo", f: "CV", lat: -22.83597, lng: -43.09349 }, { n: "Pica- Pau de S\xE3o Gon\xE7alo", f: "CV", lat: -22.83359, lng: -43.09513 }, { n: "Pontal", f: "CV", lat: -22.82862, lng: -43.09364 }, { n: "Morro da Torre de S\xE3o Gon\xE7alo", f: "CV", lat: -22.8302, lng: -43.04969 }, { n: "Morro do Menino de Deus (MD)", f: "CV", lat: -22.82814, lng: -43.04467 }, { n: "Morro do Escad\xE3o", f: "CV", lat: -22.82543, lng: -43.03814 }, { n: "Morro da Chumbada", f: "CV", lat: -22.81993, lng: -43.02573 }, { n: "Jardim Miriambi", f: "CV", lat: -22.81849, lng: -42.99127 }, { n: "Rato Velho", f: "CV", lat: -22.7859, lng: -42.97146 }, { n: "Anaia", f: "CV", lat: -22.86206, lng: -42.99544 }, { n: "Complexo do Anaia Grande", f: "CV", lat: -22.84826, lng: -42.96488 }, { n: "Morro do Girasol", f: "CV", lat: -22.83159, lng: -43.0115 }, { n: "\xC1gua Mineral", f: "CV", lat: -22.84048, lng: -43.02664 }, { n: "Morro do Castro", f: "CV", lat: -22.8622, lng: -43.06753 }, { n: "Rua da Feira (Complexo da Rua da Feira)", f: "CV", lat: -22.84948, lng: -43.07162 }, { n: "China (Complexo da Rua da Feira)", f: "CV", lat: -22.84933, lng: -43.07412 }, { n: "Morro da Cor\xE9ia (Complexo da Rua da Feira)", f: "CV", lat: -22.847, lng: -43.0725 }, { n: "Morro do Pereirinha (Complexo da Rua da Feira)", f: "CV", lat: -22.8447, lng: -43.06967 }, { n: "Morro da Torre (Complexo da Rua da Feira)", f: "CV", lat: -22.85365, lng: -43.07743 }, { n: "Covanca de S\xE3o Gon\xE7alo", f: "CV", lat: -22.852, lng: -43.08245 }, { n: "Morro da Cruz de S\xE3o Gon\xE7alo", f: "CV", lat: -22.84647, lng: -43.07763 }, { n: "Zumbi", f: "CV", lat: -22.85123, lng: -43.05939 }, { n: "Engenho Pequeno", f: "CV", lat: -22.84629, lng: -43.04858 }, { n: "Palha Seca", f: "CV", lat: -22.86012, lng: -43.01983 }, { n: "Morro da Cabrita", f: "CV", lat: -22.86235, lng: -43.02531 }, { n: "Morro do Mel", f: "CV", lat: -22.85182, lng: -42.99635 }, { n: "Morro da Torre do Jockey Club", f: "CV", lat: -22.84247, lng: -42.99184 }, { n: "Capote", f: "CV", lat: -22.847, lng: -43.01303 }, { n: "Morro dos Para\xEDbas", f: "CV", lat: -22.8414, lng: -43.00614 }, { n: "Morro da Matinha", f: "CV", lat: -22.86184, lng: -43.08501 }, { n: "Morro do Cabrito", f: "CV", lat: -22.83717, lng: -43.03801 }, { n: "Morro da Torre de Tribob\xF3", f: "CV", lat: -22.85752, lng: -43.024 }, { n: "Morro do Petr\xF3leo", f: "CV", lat: -22.85953, lng: -43.00533 }, { n: "Arrast\xE3o", f: "CV", lat: -22.87945, lng: -43.00431 }, { n: "Morro das 7 Cruzes", f: "CV", lat: -22.87438, lng: -43.00029 }, { n: "Linha", f: "CV", lat: -22.90158, lng: -42.98123 }, { n: "Conjunto Coroado", f: "CV", lat: -22.82206, lng: -43.05705 }, { n: "Morro da Salga", f: "CV", lat: -22.82675, lng: -43.08686 }, { n: "Morro da Jaqueira de S\xE3o Gon\xE7alo", f: "CV", lat: -22.82839, lng: -43.0773 }, { n: "Morro da Inseticida", f: "CV", lat: -22.83027, lng: -43.08116 }, { n: "Morrinho", f: "CV", lat: -22.83189, lng: -42.96954 }, { n: "Barreira de Monjolos", f: "CV", lat: -22.81605, lng: -42.94848 }, { n: "Predinhos do Mundel", f: "CV", lat: -22.81564, lng: -42.95712 }, { n: "Mundel", f: "CV", lat: -22.81864, lng: -42.95746 }, { n: "BNH de Marambaia", f: "CV", lat: -22.79634, lng: -42.93664 }, { n: "Buraco da Cobra", f: "CV", lat: -22.78408, lng: -42.92717 }, { n: "Guedes", f: "CV", lat: -22.84744, lng: -43.08855 }, { n: "15 do Apollo II", f: "CV", lat: -22.78389, lng: -42.93964 }, { n: "Apollo III", f: "CV", lat: -22.78441, lng: -42.94423 }, { n: "Comunidade da \xCDndia (Aldeia da Prata)", f: "CV", lat: -22.77112, lng: -42.93882 }, { n: "Itambi", f: "CV", lat: -22.73466, lng: -42.9539 }, { n: "Rato Molhado de Itabora\xED", f: "CV", lat: -22.75132, lng: -42.86437 }, { n: "Reta Velha (Complexo da Reta)", f: "CV", lat: -22.72544, lng: -42.82711 }, { n: "Reta Nova (Complexo da Reta)", f: "CV", lat: -22.7201, lng: -42.82658 }, { n: "Predinhos (Complexo da Reta)", f: "CV", lat: -22.72466, lng: -42.8325 }, { n: "Casinhas Predinhos (Complexo da Reta)", f: "CV", lat: -22.72906, lng: -42.83312 }, { n: "Col\xF4nia de Itabora\xED", f: "CV", lat: -22.73668, lng: -42.82794 }, { n: "Parque Aurora", f: "CV", lat: -22.75405, lng: -42.93637 }, { n: "Monte Verde", f: "CV", lat: -22.75817, lng: -42.93028 }, { n: "Vila Esperan\xE7a de Mag\xE9", f: "CV", lat: -22.65819, lng: -43.02345 }, { n: "Morro do Neylor", f: "CV", lat: -22.47358, lng: -43.1728 }, { n: "Morro do Alem\xE3o de Petr\xF3polis", f: "CV", lat: -22.4806, lng: -43.16929 }, { n: "Morro S\xE3o Lu\xEDs", f: "CV", lat: -22.47399, lng: -43.16762 }, { n: "Morro da Lenha", f: "CV", lat: -22.4733, lng: -43.15564 }, { n: "Gl\xF3ria", f: "CV", lat: -22.45293, lng: -43.13542 }, { n: "Quinta do Lebr\xE3o", f: "CV", lat: -22.40788, lng: -42.9468 }, { n: "Morro dos Pinheiros de Teres\xF3polis", f: "CV", lat: -22.41659, lng: -42.96547 }, { n: "Beira Linha de Teres\xF3polis", f: "CV", lat: -22.42992, lng: -42.97497 }, { n: "Morro S\xE3o Pedro", f: "CV", lat: -22.43131, lng: -42.96864 }, { n: "Morro do Ros\xE1rio", f: "CV", lat: -22.43432, lng: -42.96334 }, { n: "Boa Vista I", f: "CV", lat: -22.55676, lng: -44.12475 }, { n: "Boa Vista II", f: "CV", lat: -22.552, lng: -44.1202 }, { n: "Lagoa do Sapo", f: "CV", lat: -22.64938, lng: -43.66445 }, { n: "Areal de Pira\xED", f: "CV", lat: -22.49471, lng: -43.83265 }, { n: "Morro da Caixa D'\xE1gua Velha", f: "CV", lat: -22.47091, lng: -43.81863 }, { n: "Bairro S\xE3o Jo\xE3o (BSJ)", f: "CV", lat: -22.47822, lng: -43.81131 }, { n: "Qu\xEDmica", f: "CV", lat: -22.46276, lng: -43.81051 }, { n: "Santo Ant\xF4nio", f: "CV", lat: -22.45385, lng: -43.82133 }, { n: "Lago Azul", f: "CV", lat: -22.46837, lng: -43.8582 }, { n: "Complexo da Lagoa", f: "CV", lat: -22.6467, lng: -43.04394 }, { n: "Parque Iriri", f: "CV", lat: -22.65251, lng: -43.06554 }, { n: "Vila Ol\xEDmpia", f: "CV", lat: -22.66632, lng: -43.02089 }, { n: "Canal II", f: "CV", lat: -22.66693, lng: -43.03874 }, { n: "Barbuda (B2)", f: "CV", lat: -22.66836, lng: -43.03261 }, { n: "Ub\xE1s", f: "CV", lat: -22.21553, lng: -41.6654 }, { n: "Comunidade do Lixo", f: "CV", lat: -22.90298, lng: -42.04156 }, { n: "Murumba", f: "CV", lat: -22.88736, lng: -42.02863 }, { n: "Praia do Siqueira", f: "CV", lat: -22.87775, lng: -42.04993 }, { n: "Pontilh\xE3o", f: "CV", lat: -22.85185, lng: -42.04308 }, { n: "Morro do Lim\xE3o", f: "CV", lat: -22.84301, lng: -42.02985 }, { n: "Guriri", f: "CV", lat: -22.83972, lng: -42.00576 }, { n: "Morro da Coca Cola", f: "CV", lat: -22.96613, lng: -42.02071 }, { n: "S\xE3o Jo\xE3o", f: "CV", lat: -22.84507, lng: -42.05935 }, { n: "Colinas", f: "CV", lat: -22.83789, lng: -42.06182 }, { n: "Morro do Milagre", f: "CV", lat: -22.82337, lng: -42.08427 }, { n: "Esta\xE7\xE3o", f: "CV", lat: -22.82945, lng: -42.10466 }, { n: "Rua do Fogo", f: "CV", lat: -22.80919, lng: -42.11614 }, { n: "Flexeira I/II", f: "CV", lat: -22.81573, lng: -42.12866 }, { n: "Rasa", f: "CV", lat: -22.73661, lng: -41.98174 }, { n: "Cem", f: "CV", lat: -22.78004, lng: -41.92839 }, { n: "Parque Mataruna", f: "CV", lat: -22.86282, lng: -42.34086 }, { n: "Monte D'ouro", f: "CV", lat: -22.23873, lng: -43.71082 }, { n: "Santo Ant\xF4nio", f: "CV", lat: -22.18449, lng: -43.2941 }, { n: "Purys Serr\xE3o", f: "CV", lat: -22.0968, lng: -43.20968 }, { n: "Rua da Feira (Tr\xEAs Rios)", f: "CV", lat: -22.10765, lng: -43.19531 }, { n: "Morro do S\xE3o Carlos (Tr\xEAs Rios)", f: "CV", lat: -22.11194, lng: -43.19556 }, { n: "Morada do Sol", f: "CV", lat: -22.10821, lng: -43.18412 }, { n: "Horto Florestal Itaperuna", f: "CV", lat: -21.20775, lng: -41.88458 }, { n: "Monte Castelo", f: "CV", lat: -21.20441, lng: -41.86808 }, { n: "Vinhosa", f: "CV", lat: -21.19713, lng: -41.88183 }, { n: "S\xE3o Matheus", f: "CV", lat: -21.18957, lng: -41.88013 }, { n: "Nova Cidade (Santo Ant\xF4nio de P\xE1dua)", f: "CV", lat: -21.52776, lng: -42.20561 }, { n: "Ipiranga", f: "CV", lat: -22.71557, lng: -43.18304 }, { n: "Mirante Sul", f: "CV", lat: -22.10072, lng: -43.21797 }, { n: "Cidade Nova", f: "CV", lat: -22.10262, lng: -43.22067 }, { n: "Santa Rosa de Tr\xEAs Rios", f: "CV", lat: -22.10666, lng: -43.2227 }, { n: "Vila Muriqui", f: "CV", lat: -22.9202, lng: -43.94349 }, { n: "Camorim Pequeno", f: "CV", lat: -23.00572, lng: -44.27858 }, { n: "Camorim", f: "CV", lat: -22.994, lng: -44.26596 }, { n: "Morro do Sampaio", f: "CV", lat: -22.90484, lng: -43.26175 }, { n: "Dique", f: "CV", lat: -22.80189, lng: -43.31858 }, { n: "Furk Mendes", f: "CV", lat: -22.80507, lng: -43.31754 }, { n: "Cruzada de S\xE3o Sebasti\xE3o", f: "CV", lat: -22.98184, lng: -43.21628 }, { n: "Vila Urussa\xED (V.U)", f: "CV", lat: -22.66844, lng: -43.25218 }, { n: "Morro da Bacia de Nova Igua\xE7u", f: "CV", lat: -22.71413, lng: -43.44572 }, { n: "Morro da Paz de Queimados", f: "CV", lat: -22.69555, lng: -43.55416 }, { n: "Lagoinha (Complexo da Mangueirinha)", f: "CV", lat: -22.76509, lng: -43.31319 }, { n: "Ilha das Cobras", f: "CV", lat: -23.22537, lng: -44.71804 }, { n: "Parque Alves Brancos II", f: "CV", lat: -22.85594, lng: -42.31873 }, { n: "Rio do Lim\xE3o", f: "CV", lat: -22.85898, lng: -42.33277 }, { n: "Fazendinha Araruama", f: "CV", lat: -22.84491, lng: -42.32118 }, { n: "Beira Rio de Araruama", f: "CV", lat: -22.84581, lng: -42.33106 }, { n: "Velho Outeiro (V.O)", f: "CV", lat: -22.87748, lng: -42.36107 }, { n: "CCB S\xE3o Francisco", f: "CV", lat: -22.33839, lng: -43.7879 }, { n: "CCB Santa Rosa 2", f: "CV", lat: -22.21715, lng: -43.6872 }, { n: "Vadinho Fonseca", f: "CV", lat: -22.22015, lng: -43.68721 }, { n: "Morro da Caixa D'\xE1gua", f: "CV", lat: -22.75476, lng: -43.39601 }, { n: "Biquinha (BK)", f: "CV", lat: -22.23038, lng: -43.68458 }, { n: "A\xE7ude IV", f: "CV", lat: -22.49966, lng: -44.14035 }, { n: "A\xE7ude III", f: "CV", lat: -22.49655, lng: -44.13649 }, { n: "A\xE7ude II", f: "CV", lat: -22.49279, lng: -44.13546 }, { n: "Minha Casa Minha Vida (Bairro Roma)", f: "CV", lat: -22.6012, lng: -44.08587 }, { n: "Roma II", f: "CV", lat: -22.60556, lng: -44.07956 }, { n: "Vila Rica", f: "CV", lat: -22.34828, lng: -43.1301 }, { n: "Vila Rica de Volta Redonda", f: "CV", lat: -22.5416, lng: -44.068 }, { n: "Beira Rio do Apollo", f: "CV", lat: -22.77757, lng: -42.93862 }, { n: "Fiteiro", f: "CV", lat: -21.21043, lng: -41.89389 }, { n: "Mandela I (Complexo de Manguinhos)", f: "CV", lat: -22.88265, lng: -43.24563 }, { n: "Mandela II (Complexo de Manguinhos)", f: "CV", lat: -22.88342, lng: -43.24583 }, { n: "Mandela de Pedra (Complexo de Manguinhos)", f: "CV", lat: -22.88447, lng: -43.24517 }, { n: "Furnas (Alto da Boa Vista)", f: "CV", lat: -22.97986, lng: -43.29551 }, { n: "Agr\xEDcola", f: "CV", lat: -22.97827, lng: -43.29227 }, { n: "Maraca\xED (Alto da Boa Vista)", f: "CV", lat: -22.97456, lng: -43.2834 }, { n: "Bigu\xE1 (Alto da Boa Vista)", f: "CV", lat: -22.97278, lng: -43.28271 }, { n: "Cruzeiro", f: "CV", lat: -22.72061, lng: -42.64503 }, { n: "Conjunto Habitacional Monteiro Lobato", f: "CV", lat: -22.72169, lng: -42.6329 }, { n: "Bacu\xEDba", f: "CV", lat: -22.8753, lng: -42.43368 }, { n: "Vila Pauline", f: "CV", lat: -22.73814, lng: -43.36303 }, { n: "Morr\xE3o", f: "CV", lat: -22.79996, lng: -42.96858 }, { n: "Morro da Guindia", f: "CV", lat: -22.83299, lng: -43.05478 }, { n: "Morro do Tamanco", f: "CV", lat: -22.84046, lng: -43.06206 }, { n: "Mangue Seco", f: "CV", lat: -22.85, lng: -42.99048 }, { n: "Morro da Madama", f: "CV", lat: -22.8331, lng: -43.08724 }, { n: "Morro Juscelino Kubitschekv (J.K)", f: "CV", lat: -22.11309, lng: -43.20454 }, { n: "Morro Paula Ramos", f: "CV", lat: -22.93489, lng: -43.21258 }, { n: "Morro Santa Alexandrina", f: "CV", lat: -22.93602, lng: -43.21188 }, { n: "Morro do Livramento", f: "CV", lat: -22.89854, lng: -43.19171 }, { n: "Piabet\xE1", f: "CV", lat: -22.60095, lng: -43.1742 }, { n: "Parque Imp\xE9rio", f: "CV", lat: -22.69616, lng: -43.27683 }, { n: "Minha Casa Minha Vida do Cangulo", f: "CV", lat: -22.69481, lng: -43.23976 }, { n: "Reta de Itagua\xED", f: "CV", lat: -22.87237, lng: -43.76353 }, { n: "Rodo (Complexo do Turano)", f: "CV", lat: -22.92811, lng: -43.21534 }, { n: "Pol\xEDgono 1329", f: "CV", lat: -22.92639, lng: -43.21464 }, { n: "Morro da Liberdade (Complexo do Turano)", f: "CV", lat: -22.92555, lng: -43.21691 }, { n: "Morro do Turano (Complexo do Turano)", f: "CV", lat: -22.92639, lng: -43.21617 }, { n: "Sumar\xE9 (Complexo do Turano)", f: "CV", lat: -22.93085, lng: -43.21702 }, { n: "Pol\xEDgono 1335", f: "CV", lat: -22.84969, lng: -43.25046 }, { n: "Pol\xEDgono 1338", f: "CV", lat: -22.9027, lng: -43.19534 }, { n: "Araguatins", f: "CV", lat: -22.81371, lng: -43.38223 }, { n: "Conjunto Avenida Suburbana (Cohab do Jacarezinho)", f: "CV", lat: -22.88586, lng: -43.25288 }, { n: "Morro do Jamel\xE3o", f: "CV", lat: -22.9336, lng: -43.26141 }, { n: "Mutir\xE3o de S\xE3o Jos\xE9", f: "CV", lat: -22.93459, lng: -42.88867 }, { n: "590 (Complexo da Alma)", f: "CV", lat: -22.8361, lng: -42.97984 }, { n: "Bagd\xE1 (Complexo da Alma)", f: "CV", lat: -22.83595, lng: -42.97734 }, { n: "Morro da Colina (Complexo da Alma)", f: "CV", lat: -22.83289, lng: -42.98097 }, { n: "Morro da Alma (Complexo da Alma)", f: "CV", lat: -22.83553, lng: -42.98472 }, { n: "Morro da Dita", f: "CV", lat: -22.85113, lng: -43.00378 }, { n: "Areal de S\xE3o Gon\xE7alo", f: "CV", lat: -22.85435, lng: -43.00849 }, { n: "Sabonete", f: "CV", lat: -22.85581, lng: -43.00725 }, { n: "Ponte de Ferro", f: "CV", lat: -22.85773, lng: -43.00159 }, { n: "Morro do 6 Pedal", f: "CV", lat: -22.83919, lng: -43.00022 }, { n: "Morro da Santinha", f: "CV", lat: -22.83614, lng: -43.00019 }, { n: "Morro do Sapo ou Alto do Coelho", f: "CV", lat: -22.8336, lng: -42.99845 }, { n: "Barreira de S\xE3o Gon\xE7alo", f: "CV", lat: -22.83533, lng: -43.01741 }, { n: "Morro do Buraco Quente", f: "CV", lat: -22.83127, lng: -43.02064 }, { n: "M\xE9xico", f: "CV", lat: -22.83306, lng: -43.02702 }, { n: "Morro do Cano", f: "CV", lat: -22.83339, lng: -43.03212 }, { n: "Morro da Batista", f: "CV", lat: -22.83764, lng: -43.07363 }, { n: "Morro do Sim\xE3o", f: "CV", lat: -22.83667, lng: -43.07068 }, { n: "Morro da Jurumenha", f: "CV", lat: -22.83446, lng: -43.06268 }, { n: "Morro do Coi\xF3", f: "CV", lat: -22.83765, lng: -43.05753 }, { n: "Morro do Pires ou Pe\xE7anha", f: "CV", lat: -22.8688, lng: -43.09911 }, { n: "Morro Santa Edwiges (Complexo do Chapad\xE3o)", f: "CV", lat: -22.83238, lng: -43.39456 }, { n: "Morro do Planalto ( Complexo do Chapad\xE3o)", f: "CV", lat: -22.82654, lng: -43.39961 }, { n: "Comunidade Faz Quem Quer", f: "CV", lat: -22.83434, lng: -43.37935 }, { n: "\xC1guia Dourada", f: "CV", lat: -22.81151, lng: -43.22577 }, { n: "Morro do Chaparral", f: "CV", lat: -22.84775, lng: -43.24848 }, { n: "Barra Vela", f: "CV", lat: -22.85099, lng: -43.25055 }, { n: "Comunidade da Rua 7", f: "CV", lat: -22.70416, lng: -43.27466 }, { n: "Beira Linha de Saracuruna", f: "CV", lat: -22.68063, lng: -43.25652 }, { n: "Rua da Lama", f: "CV", lat: -22.67377, lng: -43.24582 }, { n: "Comunidade do Val\xE3o de Saracuruna", f: "CV", lat: -22.6734, lng: -43.2525 }, { n: "Comunidade do Canal", f: "CV", lat: -22.6715, lng: -43.25441 }, { n: "Morro do Vilar Novo", f: "CV", lat: -22.75029, lng: -43.39364 }, { n: "Morro S\xE3o Vicente", f: "CV", lat: -22.72125, lng: -43.37326 }, { n: "Morro Santa Am\xE9lia", f: "CV", lat: -22.74564, lng: -43.39052 }, { n: "Sem Terra (Complexo da Penha)", f: "CV", lat: -22.85184, lng: -43.2846 }, { n: "Laminha (Cidade de Deus)", f: "CV", lat: -22.94725, lng: -43.36673 }, { n: "Lazer (Cidade de Deus)", f: "CV", lat: -22.94871, lng: -43.36467 }, { n: "17 (Cidade de Deus)", f: "CV", lat: -22.95046, lng: -43.36411 }, { n: "PT (Cidade de Deus)", f: "CV", lat: -22.95116, lng: -43.36205 }, { n: "Vila Bariri (Cidade de Deus)", f: "CV", lat: -22.9498, lng: -43.35827 }, { n: "Pantanal 1 ou Bruck 1 (Cidade de Deus)", f: "CV", lat: -22.94578, lng: -43.3535 }, { n: "Canal I", f: "CV", lat: -22.66184, lng: -43.04106 }, { n: "Morro da Paz de Volta Redonda", f: "CV", lat: -22.4876, lng: -44.07355 }, { n: "Ch\xE1cara do C\xE9u do Vidigal", f: "CV", lat: -22.99022, lng: -43.23351 }, { n: "Morro da Matinha (Complexo do Turano)", f: "CV", lat: -22.92594, lng: -43.21652 }, { n: "Favela Marechal Jardim (Tuiut\xED)", f: "CV", lat: -22.89437, lng: -43.23284 }, { n: "Gogo de S\xE2o de S\xE3o Jo\xE3o ou 2G de S\xE3o Jo\xE3o (Complexo da Inglaterra)", f: "CV", lat: -22.80173, lng: -43.35804 }, { n: "Comunidade Indiana ou Favelinha", f: "CV", lat: -22.9408, lng: -43.25294 }, { n: "Morro da Cor\xE9ia da Tijuca", f: "CV", lat: -22.93539, lng: -43.23302 }, { n: "Morro Doutor Catrambi", f: "CV", lat: -22.9463, lng: -43.26358 }, { n: "Baixo Adeus (Complexo do Alem\xE3o)", f: "CV", lat: -22.86195, lng: -43.26458 }, { n: "Favela Vila Beira Rio", f: "CV", lat: -22.81027, lng: -43.3311 }, { n: "Gog\xF3 da Ema de Meriti (Complexo da Inglaterra)", f: "CV", lat: -22.79867, lng: -43.36232 }, { n: "Morro da Cintra", f: "CV", lat: -22.72104, lng: -43.32889 }, { n: "Morro do Galo de Belford Roxo", f: "CV", lat: -22.70849, lng: -43.34491 }, { n: "Morro da Torre de Belford Roxo", f: "CV", lat: -22.73919, lng: -43.36574 }, { n: "Morro da Pedra de Nova Friburgo", f: "CV", lat: -22.31146, lng: -42.537 }, { n: "Morro da Cordoeira", f: "CV", lat: -22.2893, lng: -42.52871 }, { n: "Jardinl\xE2ndia", f: "CV", lat: -22.2426, lng: -42.5251 }, { n: "Santa Terezinha", f: "CV", lat: -22.22475, lng: -42.52327 }, { n: "Morro do Ded\xE9", f: "CV", lat: -22.22059, lng: -42.52592 }, { n: "Buraco da Concha", f: "CV", lat: -22.22311, lng: -42.52547 }, { n: "Tr\xEAs Irm\xE3os", f: "CV", lat: -22.22397, lng: -42.52872 }, { n: "Morro do Viana", f: "CV", lat: -22.85454, lng: -43.0959 }, { n: "Morro da Cor\xE9ia", f: "CV", lat: -22.87419, lng: -43.08832 }, { n: "Morro do Quebra", f: "CV", lat: -22.86813, lng: -43.07471 }, { n: "Complexo da Teixeira", f: "CV", lat: -22.87442, lng: -43.07517 }, { n: "Morro F\xE9 em Deus ou Torre", f: "CV", lat: -22.87829, lng: -43.04594 }, { n: "Morro Cova da On\xE7a", f: "CV", lat: -22.87717, lng: -43.05729 }, { n: "Morro da Coruja de Vi\xE7oso Jardim", f: "CV", lat: -22.88936, lng: -43.08443 }, { n: "Pol\xEDgono 1482", f: "CV", lat: -22.89841, lng: -43.0849 }, { n: "Morro da Uni\xE3o do Viradouro (Complexo do Viradouro)", f: "CV", lat: -22.90658, lng: -43.08306 }, { n: "Morro Curral das Antas(Complexo do Viradouro)", f: "CV", lat: -22.90537, lng: -43.08162 }, { n: "Parque Madalena (Complexo do Viradouro)", f: "CV", lat: -22.90509, lng: -43.08406 }, { n: "Morro Mar de Rosas (Complexo do Viradouro)", f: "CV", lat: -22.90661, lng: -43.07719 }, { n: "Chiqueirinho (Complexo do Viradouro)", f: "CV", lat: -22.90494, lng: -43.07729 }, { n: "Morro da Presse", f: "CV", lat: -22.71583, lng: -43.33486 }, { n: "Er\xEAre II e III", f: "CV", lat: -22.7118, lng: -43.34511 }, { n: "Lote XV", f: "CV", lat: -22.71189, lng: -43.32779 }, { n: "Parque Palmeiras", f: "CV", lat: -22.75175, lng: -43.52928 }, { n: "Vila Ruth (Complexo de Mali)", f: "CV", lat: -22.77272, lng: -43.34863 }, { n: "Piedade de Mag\xE9", f: "CV", lat: -22.66977, lng: -43.05869 }, { n: "Santa Paula", f: "CV", lat: -22.88923, lng: -42.92817 }, { n: "Capim", f: "CV", lat: -22.56819, lng: -42.99727 }, { n: "Comunidade do Pau- Roxo", f: "CV", lat: -22.93811, lng: -43.01878 }, { n: "Comunidade Jo\xE3o Nunes", f: "CV", lat: -22.9147, lng: -42.97916 }, { n: "Linha (Jacarezinho)", f: "CV", lat: -22.88465, lng: -43.25519 }, { n: "Pontilh\xE3o (Jacarezinho)", f: "CV", lat: -22.88638, lng: -43.25483 }, { n: "Conc\xF3rdia (Jacarezinho)", f: "CV", lat: -22.88603, lng: -43.25593 }, { n: "Estuba (Jacarezinho)", f: "CV", lat: -22.88516, lng: -43.25625 }, { n: "Prainha (Jacarezinho)", f: "CV", lat: -22.88557, lng: -43.25754 }, { n: "222 ou Pist\xE3o (Jacarezinho)", f: "CV", lat: -22.88566, lng: -43.25912 }, { n: "Beira (Jacarezinho)", f: "CV", lat: -22.88675, lng: -43.25597 }, { n: "Flamenguinho(Jacarezinho)", f: "CV", lat: -22.88713, lng: -43.25753 }, { n: "Goi\xE1s (Jacarezinho)", f: "CV", lat: -22.88633, lng: -43.25944 }, { n: "Fazenda (Jacarezinho)", f: "CV", lat: -22.88651, lng: -43.25841 }, { n: "Amendoeira (Jacarezinho)", f: "CV", lat: -22.88879, lng: -43.25934 }, { n: "Paris (Jacarezinho)", f: "CV", lat: -22.88698, lng: -43.26042 }, { n: "Cruzeiro (Jacarezinho)", f: "CV", lat: -22.88868, lng: -43.26049 }, { n: "Fund\xE3o (Jacarezinho)", f: "CV", lat: -22.89014, lng: -43.26187 }, { n: "Esperan\xE7a (Jacarezinho)", f: "CV", lat: -22.88933, lng: -43.26269 }, { n: "Vasco (Jacarezinho)", f: "CV", lat: -22.88817, lng: -43.26258 }, { n: "Morro do Azul (Jacarezinho)", f: "CV", lat: -22.88899, lng: -43.26399 }, { n: "Favela Pica-Pau Amarelo", f: "CV", lat: -22.89002, lng: -43.26594 }, { n: "Favela Carlos Drumond de Andrade", f: "CV", lat: -22.89175, lng: -43.26381 }, { n: "Favela Vila Jandira", f: "CV", lat: -22.89185, lng: -43.26242 }, { n: "Favela da Xuxa ou Vila Matinor\xE9", f: "CV", lat: -22.89075, lng: -43.25194 }, { n: "Favela Marimb\xE1 ou Vi\xFAva Cl\xE1udio", f: "CV", lat: -22.88918, lng: -43.25543 }, { n: "Favela Engenheiro Alfredo Haas", f: "CV", lat: -22.88997, lng: -43.25581 }, { n: "Favela Marlene", f: "CV", lat: -22.89335, lng: -43.25697 }, { n: "Conjunto Marc\xEDlio Dias (Kelson's)", f: "CV", lat: -22.81943, lng: -43.27207 }, { n: "Favela Mandacaru (Kelson's)", f: "CV", lat: -22.82155, lng: -43.27352 }, { n: "Ipuca (Jardim Catarina Novo)", f: "CV", lat: -22.78301, lng: -43.00635 }, { n: "40 (Jardim Catarina Novo)", f: "CV", lat: -22.79261, lng: -42.98914 }, { n: "Bairro 13 ou B13 (Jardim Catarina Novo)", f: "CV", lat: -22.7934, lng: -42.99202 }, { n: "Comunidade da Pica Pau (Jardim Catarina Velho)", f: "CV", lat: -22.8059, lng: -43.00581 }, { n: "Jardim Catarina Novo", f: "CV", lat: -22.7928, lng: -43.00334 }, { n: "Comunidade da Linha (Jardim Catarina Velho)", f: "CV", lat: -22.80958, lng: -42.99404 }, { n: "Jardim Catarina Velho", f: "CV", lat: -22.80836, lng: -42.99857 }, { n: "Comunidade Lodial", f: "CV", lat: -22.8057, lng: -43.05712 }, { n: "Escad\xE3o ou Jardim Guadalajara (Complexo do Alem\xE3o)", f: "CV", lat: -22.86526, lng: -43.27473 }, { n: "Parque Everest", f: "CV", lat: -22.87112, lng: -43.27389 }, { n: "Bomba (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82541, lng: -43.37519 }, { n: "Grot\xE3o de Costa Barros (Complexo do Chapad\xE3o)", f: "CV", lat: -22.8239, lng: -43.38029 }, { n: "Javat\xE1 (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82282, lng: -43.38832 }, { n: "Novo Paquist\xE3o (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82382, lng: -43.38826 }, { n: "Cristo Redentor (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82499, lng: -43.38611 }, { n: "Favela Barco da Paz (Complexo do Chapad\xE3o)", f: "CV", lat: -22.82459, lng: -43.39012 }, { n: "Dique do Vila Ideal", f: "CV", lat: -22.79668, lng: -43.30721 }, { n: "Morro da Candel\xE1ria (Complexo da Mangueira)", f: "CV", lat: -22.90618, lng: -43.23422 }, { n: "Conjunto Candel\xE1ria (Complexo da Mangueira)", f: "CV", lat: -22.90533, lng: -43.23285 }, { n: "Loteamento Parque Jules Rimet (Complexo da Mangueira)", f: "CV", lat: -22.90601, lng: -43.23712 }, { n: "Morro Buraco Quente (Complexo da Mangueira)", f: "CV", lat: -22.90311, lng: -43.23903 }, { n: "Morro do Tel\xE9grafo (Complexo da Mangueira)", f: "CV", lat: -22.90131, lng: -43.23797 }, { n: "Morro Vila Uni\xE3o (Complexo da Mangueira)", f: "CV", lat: -22.90042, lng: -43.23603 }, { n: "Morro da Mangueira (Complexo da Mangueira)", f: "CV", lat: -22.90391, lng: -43.23648 }, { n: "Conjunto Mangueira I (Complexo da Mangueira)", f: "CV", lat: -22.90803, lng: -43.23463 }, { n: "Conjunto Mangueira II (Complexo da Mangueira)", f: "CV", lat: -22.90799, lng: -43.23364 }, { n: "Morro Sinimbu (Complexo da Mangueira)", f: "CV", lat: -22.90184, lng: -43.23228 }, { n: "Vila da Paz", f: "CV", lat: -22.90268, lng: -43.24248 }, { n: "Favela Caric\xF3", f: "CV", lat: -22.80855, lng: -43.22295 }, { n: "Alto do Retiro", f: "CV", lat: -22.03642, lng: -42.38128 }, { n: "Manancial", f: "CV", lat: -22.04168, lng: -42.37508 }, { n: "S\xE3o Jos\xE9 de Cantagalo", f: "CV", lat: -21.98898, lng: -42.36009 }, { n: "Bela Vista", f: "CV", lat: -22.17598, lng: -43.29896 }, { n: "Morro do Abel", f: "CV", lat: -23.0108, lng: -44.32386 }, { n: "Morro da Carioca", f: "CV", lat: -23.00879, lng: -44.32258 }, { n: "Morro do Santo An\xF4nio", f: "CV", lat: -23.00593, lng: -44.32128 }, { n: "Morro da Caixa D\xB4\xE1gua de Angra dos Reis", f: "CV", lat: -23.00313, lng: -44.31987 }, { n: "Morro do Carmo", f: "CV", lat: -23.0043, lng: -44.31608 }, { n: "Morro do Tatu", f: "CV", lat: -23.00323, lng: -44.30782 }, { n: "Morro da Fortaleza", f: "CV", lat: -23.00553, lng: -44.31292 }, { n: "Morro da Gl\xF3ria I", f: "CV", lat: -23.00151, lng: -44.31122 }, { n: "Morro da Gl\xF3ria II", f: "CV", lat: -22.99836, lng: -44.3117 }, { n: "Saco", f: "CV", lat: -22.94006, lng: -44.0421 }, { n: "Santa Maria de Belford Roxo", f: "CV", lat: -22.72504, lng: -43.37957 }, { n: "Morro do Cruzeiro", f: "CV", lat: -21.4089, lng: -42.20096 }, { n: "Parque Andrea", f: "CV", lat: -22.78439, lng: -42.52671 }, { n: "Cidade Alegria (CDA)", f: "CV", lat: -22.47965, lng: -44.49384 }, { n: "Cidade Alegria II", f: "CV", lat: -22.48372, lng: -44.49935 }, { n: "Vila Sap\xEA", f: "CV", lat: -22.64982, lng: -43.21999 }, { n: "Morro da Caixa D'\xE1gua de Alc\xE2ntara", f: "CV", lat: -22.81764, lng: -42.99923 }, { n: "Comunidade Ferrovi\xE1ria ou Ferro", f: "CV", lat: -22.67559, lng: -43.61424 }, { n: "Beira- Rio de Japeri", f: "CV", lat: -22.68964, lng: -43.58535 }, { n: "S\xE3o Jorge", f: "CV", lat: -22.6711, lng: -43.61523 }, { n: "Maril\xE9ia", f: "CV", lat: -22.50959, lng: -41.93147 }, { n: "Liberdade", f: "CV", lat: -22.51807, lng: -41.93599 }, { n: "Centro (Rio das Ostras)", f: "CV", lat: -22.52244, lng: -41.933 }, { n: "Nova Cidade de Rio das Ostras", f: "CV", lat: -22.5042, lng: -41.95139 }, { n: "Gelson Apicelo", f: "CV", lat: -22.51172, lng: -41.94946 }, { n: "Nova Alian\xE7a de Rio das Ostras", f: "CV", lat: -22.52975, lng: -41.9591 }, { n: "Morro da Mascou", f: "CV", lat: -22.90201, lng: -43.0926 }, { n: "Favela da Rua Maric\xE1", f: "CV", lat: -22.89278, lng: -43.10281 }, { n: "Vila Canoa e Vila Pedra Bonita", f: "CV", lat: -22.9934, lng: -43.27151 }, { n: "Village (Complexo do Chapad\xE3o)", f: "CV", lat: -22.81708, lng: -43.37675 }, { n: "Chapadinho (Complexo do Chapad\xE3o)", f: "CV", lat: -22.815, lng: -43.37953 }, { n: "Morro do Sap\xEA", f: "CV", lat: -22.86022, lng: -43.33209 }, { n: "Morro do Vaz Lobo", f: "CV", lat: -22.85828, lng: -43.33278 }, { n: "Barreirinha ou Barreira de Rocha Miranda", f: "CV", lat: -22.83711, lng: -43.352 }, { n: "Vila Privil\xE9gio", f: "CV", lat: -22.81227, lng: -43.37179 }, { n: "Couro- Come", f: "CV", lat: -22.81208, lng: -43.37059 }, { n: "Comunidade do Monte Sinai", f: "CV", lat: -22.81679, lng: -43.37121 }, { n: "Paraopeba", f: "CV", lat: -22.75135, lng: -43.2904 }, { n: "Jerusa", f: "CV", lat: -22.74932, lng: -43.29323 }, { n: "Favela da Granduc\xE1", f: "CV", lat: -22.73498, lng: -43.33166 }, { n: "Morro do Bateau Mouche (Bat\xF4)", f: "CV", lat: -22.90788, lng: -43.35371 }, { n: "Morro do Badu", f: "CV", lat: -22.70074, lng: -43.24775 }, { n: "Jardim Beira Rio", f: "CV", lat: -22.47228, lng: -44.49751 }, { n: "Guaxindiba ou Guaxi- Hon\xF3rio Gurgel", f: "CV", lat: -22.83627, lng: -43.35449 }, { n: "S\xE3o Jos\xE9- Porto Real", f: "CV", lat: -22.449, lng: -44.30832 }, { n: "Freitas Soares", f: "CV", lat: -22.44369, lng: -44.30938 }, { n: "Bairro 13 (Menezes)", f: "CV", lat: -22.89442, lng: -43.33928 }, { n: "Caixa D'\xE1gua- Resende", f: "CV", lat: -22.47838, lng: -44.49479 }, { n: "Morro Uni\xE3o- Fallet", f: "CV", lat: -22.92492, lng: -43.19577 }, { n: "Beco Ocidental- Fallet", f: "CV", lat: -22.92447, lng: -43.19215 }, { n: "Barraca Verde", f: "CV", lat: -22.84997, lng: -42.06143 }, { n: "Rainha da Sucata", f: "CV", lat: -22.85345, lng: -42.03086 }, { n: "Cristal", f: "CV", lat: -22.85604, lng: -42.03279 }, { n: "Boca do Mato", f: "CV", lat: -22.85427, lng: -42.0285 }, { n: "Estradinha", f: "CV", lat: -22.85317, lng: -42.0342 }, { n: "Vila do Ar", f: "CV", lat: -22.85028, lng: -42.03445 }, { n: "Quintanilha", f: "CV", lat: -22.94556, lng: -43.35122 }, { n: "Morro S\xE3o Jorge", f: "CV", lat: -22.94342, lng: -43.34892 }, { n: "Cidade Praiana (CDP)", f: "CV", lat: -22.54312, lng: -41.98712 }, { n: "Palmital", f: "CV", lat: -22.53269, lng: -41.99307 }, { n: "Vila Nova", f: "CV", lat: -22.08198, lng: -41.87686 }, { n: "Boca\xEDna", f: "CV", lat: -22.09386, lng: -41.86764 }, { n: "Vila S\xE3o Jos\xE9", f: "CV", lat: -22.10537, lng: -41.86241 }, { n: "Conjunto Quitongo", f: "CV", lat: -22.83529, lng: -43.30055 }, { n: "Morro Guapor\xE9", f: "CV", lat: -22.83448, lng: -43.29638 }, { n: "Conjunto Guapor\xE9", f: "CV", lat: -22.83374, lng: -43.29284 }, { n: "BNH de Itabora\xED", f: "CV", lat: -22.71734, lng: -42.89605 }, { n: "Porto das Caixas", f: "CV", lat: -22.69987, lng: -42.87875 }, { n: "Abelh\xE3o", f: "CV", lat: -22.78445, lng: -42.97554 }, { n: "Gebara", f: "CV", lat: -22.77152, lng: -42.95784 }, { n: "Comunidade do Gramado", f: "CV", lat: -22.90682, lng: -42.93655 }, { n: "Mar\xE9 de Ino\xE3", f: "CV", lat: -22.90759, lng: -42.93095 }, { n: "Monte Castelo de Ino\xE3", f: "CV", lat: -22.92818, lng: -42.92593 }, { n: "Sert\xE3ozinho do Frade", f: "CV", lat: -22.95457, lng: -44.44435 }, { n: "Complexo da Baleeira", f: "CV", lat: -21.74555, lng: -41.34311 }, { n: "Ilha do Cunha", f: "CV", lat: -21.74129, lng: -41.34347 }, { n: "Nova Bras\xEDlia de Campos", f: "CV", lat: -21.74382, lng: -41.36015 }, { n: "Conjunto Tamarindo", f: "CV", lat: -21.74332, lng: -41.32602 }, { n: "Esplanada", f: "CV", lat: -21.74736, lng: -41.36495 }, { n: "Morar Feliz do Parque Esplanada", f: "CV", lat: -21.74497, lng: -41.36672 }, { n: "CEHAB", f: "CV", lat: -22.33633, lng: -41.75559 }, { n: "Morro da Matriz", f: "CV", lat: -22.90531, lng: -43.26345 }, { n: "Morro do S\xE3o Jo\xE3o", f: "CV", lat: -22.90935, lng: -43.26505 }, { n: "Morro Nova Divin\xE9ia", f: "CV", lat: -22.92985, lng: -43.26451 }, { n: "Morro Borda do Mato", f: "CV", lat: -22.93069, lng: -43.26631 }, { n: "Morro Juscelino Kubitschek ou Morro da Ca\xE7apava", f: "CV", lat: -22.93034, lng: -43.26018 }, { n: "Parque Jo\xE3o Paulo II", f: "CV", lat: -22.92973, lng: -43.26232 }, { n: "Caju", f: "CV", lat: -21.74466, lng: -41.33742 }, { n: "Tapera 1", f: "CV", lat: -21.77956, lng: -41.38057 }, { n: "Tapera 2", f: "CV", lat: -21.7882, lng: -41.39022 }, { n: "Tapera 3", f: "CV", lat: -21.79931, lng: -41.38802 }, { n: "Morro da Bazanha (Complexo da Formiga)", f: "CV", lat: -22.93908, lng: -43.24277 }, { n: "Morro da Cascata (Complexo da Formiga)", f: "CV", lat: -22.94365, lng: -43.24302 }, { n: "Morro da Coruja (Complexo da Formiga)", f: "CV", lat: -22.94368, lng: -43.24103 }, { n: "Morro da Raia (Complexo da Formiga)", f: "CV", lat: -22.94166, lng: -43.24133 }, { n: "Morro da Formiga (Complexo da Formiga)", f: "CV", lat: -22.94237, lng: -43.24301 }, { n: "Morro Vila Anchieta", f: "CV", lat: -22.92923, lng: -43.20524 }, { n: "Cant\xE3o (Morro dos Cabritos)", f: "CV", lat: -22.9666, lng: -43.1939 }, { n: "Comunidade da 19 (Complexo do Tabajaras)", f: "CV", lat: -22.96313, lng: -43.19165 }, { n: "Ladeira dos Tabajaras (Complexo do Tabajaras)", f: "CV", lat: -22.96422, lng: -43.18885 }, { n: "Estradinha (Complexo do Tabajaras)", f: "CV", lat: -22.96206, lng: -43.18883 }, { n: "Coroa (Complexo do Tabajaras)", f: "CV", lat: -22.96314, lng: -43.19026 }, { n: "Barro (Ladeira dos Tabajaras)", f: "CV", lat: -22.96239, lng: -43.19143 }, { n: "Morro da Vila Rica (Complexo do Tabajaras)", f: "CV", lat: -22.96138, lng: -43.19098 }, { n: "Rei da Bola ou Mangueira (Complexo do Tabajaras)", f: "CV", lat: -22.96003, lng: -43.19194 }, { n: "Conjunto Soci\xF3logo Betinho Ou Morrinho (Vila Kennedy)", f: "CV", lat: -22.84703, lng: -43.48948 }, { n: "Conjunto Doutor Ant\xF4nio Gon\xE7alves", f: "CV", lat: -22.84523, lng: -43.49112 }, { n: "Comunidade F\xE9 em Deus", f: "CV", lat: -22.8364, lng: -43.40141 }, { n: "Vila Cava", f: "CV", lat: -22.6793, lng: -43.45381 }, { n: "Morro da Chatuba (Chatuba de Mesquita)", f: "CV", lat: -22.80373, lng: -43.44327 }, { n: "Escad\xE3o da Godoi (Chatuba de Mesquita)", f: "CV", lat: -22.79947, lng: -43.44193 }, { n: "XV ou 15 (Chatuba de Mesquita)", f: "CV", lat: -22.80747, lng: -43.43608 }, { n: "Barreiro", f: "CV", lat: -22.84363, lng: -42.35558 }, { n: "Duarte Silveira", f: "CV", lat: -22.5062, lng: -43.2273 }, { n: "Morro do Fragoso", f: "CV", lat: -22.48909, lng: -43.16253 }, { n: "Jardim F\xE9o", f: "CV", lat: -22.39735, lng: -42.97439 }, { n: "Jardim Meudon", f: "CV", lat: -22.43519, lng: -42.95198 }, { n: "Morro Pimentel", f: "CV", lat: -22.42998, lng: -42.95882 }, { n: "Morro Perp\xE9tuo", f: "CV", lat: -22.43021, lng: -42.96205 }, { n: "Morro Pedro Ivo", f: "CV", lat: -22.5223, lng: -43.15759 }, { n: "Morro Madame Machado", f: "CV", lat: -22.40273, lng: -43.09922 }, { n: "Morro do Floresta", f: "CV", lat: -22.50313, lng: -43.1631 }, { n: "Alto da Independ\xEAncia", f: "CV", lat: -22.54779, lng: -43.21633 }, { n: "Morro do Cant\xE3o", f: "CV", lat: -22.54687, lng: -43.22154 }, { n: "Morro do Chapa 4", f: "CV", lat: -22.51105, lng: -43.19178 }, { n: "Morro do Boa Vista de Petr\xF3polis", f: "CV", lat: -22.47974, lng: -43.15679 }, { n: "Bairro Barcelos (Rocinha)", f: "CV", lat: -22.99068, lng: -43.25161 }, { n: "Vila Verde (Rocinha)", f: "CV", lat: -22.98928, lng: -43.25387 }, { n: "Morro da Cachopa (Rocinha)", f: "CV", lat: -22.98795, lng: -43.25232 }, { n: "Morro da Dion\xE9ia (Rocinha)", f: "CV", lat: -22.9871, lng: -43.25239 }, { n: "Atalho (Rocinha)", f: "CV", lat: -22.98723, lng: -43.24757 }, { n: "Laboriaux (Rocinha)", f: "CV", lat: -22.98468, lng: -43.24878 }, { n: "Beco 11 (Rocinha)", f: "CV", lat: -22.98997, lng: -43.25016 }, { n: "Rua 4 ou Cidade Nova (Rocinha)", f: "CV", lat: -22.98921, lng: -43.24877 }, { n: "N\xFAcleo Habitacional da Rocinha (Rocinha)", f: "CV", lat: -22.98836, lng: -43.24821 }, { n: "Val\xE3o (Rocinha)", f: "CV", lat: -22.99131, lng: -43.24906 }, { n: "Vila Raiz ou Laj\xE3o (Rocinha)", f: "CV", lat: -22.98987, lng: -43.24819 }, { n: "Terreir\xE3o (Rocinha)", f: "CV", lat: -22.98837, lng: -43.24669 }, { n: "Terreir\xE3o (Rocinha)", f: "CV", lat: -22.98918, lng: -43.24677 }, { n: "Roupa Suja (Rocinha)", f: "CV", lat: -22.9917, lng: -43.24788 }, { n: "Rua 2 (Rocinha)", f: "CV", lat: -22.98946, lng: -43.24574 }, { n: "Macenga (Rocinha)", f: "CV", lat: -22.99066, lng: -43.24503 }, { n: "Vila Vermelha (Rocinha)", f: "CV", lat: -22.98724, lng: -43.24568 }, { n: "Ces\xE1rio (Rocinha)", f: "CV", lat: -22.98911, lng: -43.24287 }, { n: "Rua 1 (Rocinha)", f: "CV", lat: -22.98714, lng: -43.24406 }, { n: "Capado (Rocinha)", f: "CV", lat: -22.98841, lng: -43.24198 }, { n: "Beco 199 (Rocinha)", f: "CV", lat: -22.98698, lng: -43.24261 }, { n: "Vila Cruzado (Rocinha)", f: "CV", lat: -22.98526, lng: -43.24538 }, { n: "Comunidade da Conga", f: "CV", lat: -22.80342, lng: -42.9541 }, { n: "Cabu\xE7u- Itabora\xED", f: "CV", lat: -22.78605, lng: -42.91442 }, { n: "City Areal", f: "CV", lat: -22.71244, lng: -42.87213 }, { n: "Jardim Ferma", f: "CV", lat: -22.71955, lng: -42.86517 }, { n: "Areal", f: "CV", lat: -22.72279, lng: -42.85615 }, { n: "Sem Terra de Itabora\xED", f: "CV", lat: -22.73132, lng: -42.85866 }, { n: "Campo Lindo", f: "CV", lat: -22.7228, lng: -42.85969 }, { n: "Comunidade Barreir\xE3o", f: "CV", lat: -22.73606, lng: -42.85811 }, { n: "Jaqueira de Itabora\xED", f: "CV", lat: -22.78764, lng: -42.93045 }, { n: "Tatajuba (Nova Holanda)", f: "CV", lat: -22.85743, lng: -43.24488 }, { n: "Tijolinho (Nova Holanda)", f: "CV", lat: -22.85646, lng: -43.24047 }, { n: "Rua do Val\xE3o (Nova Holanda)", f: "CV", lat: -22.85249, lng: -43.24472 }, { n: "Bandeira 4 ou B4", f: "CV", lat: -22.88218, lng: -43.26844 }, { n: "Bandeira 1 ou B1", f: "CV", lat: -22.88144, lng: -43.26571 }, { n: "Bandeira 3 ou B3", f: "CV", lat: -22.88166, lng: -43.26918 }, { n: "Jardim Iris (Complexo de Mali)", f: "CV", lat: -22.77777, lng: -43.35086 }, { n: "Dick do vilar /Av.Tuc\xE3o (Complexo de Mali)", f: "CV", lat: -22.76143, lng: -43.35379 }, { n: "Morro da Caixa d'agua", f: "CV", lat: -22.74054, lng: -43.35475 }, { n: "Parque Floresta CXD", f: "CV", lat: -22.73437, lng: -43.35149 }, { n: "JARDIM FATIMA (Complexo de Mali)", f: "CV", lat: -22.76451, lng: -43.35175 }, { n: "Morro do Castelinho", f: "CV", lat: -22.80038, lng: -43.39868 }, { n: "Morro da Divino", f: "CV", lat: -22.89042, lng: -43.34355 }, { n: "Complexo da Covanca", f: "CV", lat: -22.91618, lng: -43.34331 }, { n: "Morro do Pendura Saia", f: "CV", lat: -22.91384, lng: -43.35093 }, { n: "Morro da Caixa D'\xE1gua do Tanque", f: "CV", lat: -22.91328, lng: -43.35772 }, { n: "Morro do Jord\xE3o", f: "CV", lat: -22.90786, lng: -43.37111 }, { n: "Mato Alto", f: "CV", lat: -22.90822, lng: -43.36483 }, { n: "Morro da Chacrinha", f: "CV", lat: -22.90306, lng: -43.36225 }, { n: "Morro do T\xFAnel", f: "CV", lat: -22.89954, lng: -43.36699 }, { n: "Ch\xE1cara Flora", f: "CV", lat: -22.89734, lng: -43.36847 }, { n: "Travessa Limeira", f: "CV", lat: -22.89709, lng: -43.36385 }, { n: "Morro S\xE3o Marciano", f: "CV", lat: -22.89431, lng: -43.36046 }, { n: "Morro do Calango", f: "CV", lat: -22.89192, lng: -43.35209 }, { n: "Morro do Coqueiro", f: "CV", lat: -22.8885, lng: -43.35845 }, { n: "Santa Maria", f: "CV", lat: -22.91338, lng: -43.41941 }, { n: "Teixeiras", f: "CV", lat: -22.90673, lng: -43.42119 }, { n: "Az do Ouro", f: "CV", lat: -22.82273, lng: -43.41331 }, { n: "Morro Da Jaqueira", f: "CV", lat: -22.80896, lng: -43.39196 }, { n: "Favela da \xCDndia", f: "CV", lat: -22.81217, lng: -43.38499 }, { n: "Gr\xE3o- Par\xE1", f: "CV", lat: -22.82427, lng: -43.59431 }, { n: "Jardim Para\xEDso 2", f: "CV", lat: -22.82023, lng: -43.59346 }, { n: "Conjunto Boa Esperan\xE7a", f: "CV", lat: -22.81357, lng: -43.59015 }, { n: "Parquinho", f: "CV", lat: -22.81598, lng: -43.59707 }, { n: "Vila Belga", f: "CV", lat: -22.80622, lng: -43.58851 }, { n: "Conjunto Dom Bosco de Nova Igua\xE7u", f: "CV", lat: -22.80403, lng: -43.58658 }, { n: "Conjunto da Marinha", f: "CV", lat: -22.79852, lng: -43.58067 }, { n: "MCMV Marapicu", f: "CV", lat: -22.79335, lng: -43.586 }, { n: "Conjunto Campo Belo", f: "CV", lat: -22.79896, lng: -43.59109 }, { n: "Parque S\xE3o Carlos", f: "CV", lat: -22.80349, lng: -43.59457 }, { n: "Morro do Tirol", f: "CV", lat: -22.93921, lng: -43.32605 }, { n: "Favela da Linha", f: "CV", lat: -22.80975, lng: -43.37838 }, { n: "Vila Nova Esperan\xE7a ou Favel\xE3o", f: "CV", lat: -22.95687, lng: -43.35458 }, { n: "Gard\xEAnia Azul", f: "CV", lat: -22.96038, lng: -43.35282 }, { n: "Canal do Anil (Chico City)", f: "CV", lat: -22.96607, lng: -43.34991 }, { n: "Marc\xE3o (Novo Rio)", f: "CV", lat: -22.96166, lng: -43.34829 }, { n: "Vila do Teco", f: "CV", lat: -22.96411, lng: -43.35171 }, { n: "Boca da Lagoa", f: "CV", lat: -22.97152, lng: -43.35203 }, { n: "Favela da Barreira", f: "CV", lat: -22.80855, lng: -43.38511 }, { n: "Morro da Quiririm", f: "CV", lat: -22.88504, lng: -43.35867 }, { n: "Rodrigues Alves", f: "CV", lat: -22.64017, lng: -43.21342 }, { n: "Avenida B", f: "CV", lat: -22.64184, lng: -43.24817 }, { n: "Morro do Soldado (Complexo da Parma)", f: "CV", lat: -22.78697, lng: -43.34074 }, { n: "Morro do Fumac\xEA (Complexo da Parma)", f: "CV", lat: -22.78765, lng: -43.34802 }, { n: "Morro Azul de S\xE3o Jo\xE3o (Complexo da Parma)", f: "CV", lat: -22.78486, lng: -43.33491 }, { n: "Morro da Pererreca (Complexo da Parma)", f: "CV", lat: -22.78877, lng: -43.33248 }, { n: "Morro do Tamanco ou Jardim Para\xEDso (Complexo de Mali)", f: "CV", lat: -22.76469, lng: -43.34318 }, { n: "Caixa D'Agua do Parque Araruama (Complexo da Parma)", f: "CV", lat: -22.79066, lng: -43.33927 }, { n: "Parque \xC2nalandia", f: "CV", lat: -22.80001, lng: -43.33457 }, { n: "Parque Juriti", f: "CV", lat: -22.80166, lng: -43.34599 }, { n: "Morro da Baixada", f: "CV", lat: -22.80434, lng: -43.3816 }, { n: "Caixa D'Agua", f: "CV", lat: -22.79951, lng: -43.38287 }, { n: "Morrinho de Ricardo (MDR)", f: "CV", lat: -22.84346, lng: -43.40326 }, { n: "Vila Jurandir", f: "CV", lat: -22.78328, lng: -43.39931 }, { n: "Favela da Xoxa", f: "CV", lat: -22.7837, lng: -43.38924 }, { n: "Favela Buraco Quente (BQ)", f: "CV", lat: -22.80335, lng: -43.39199 }, { n: "Beco de Anchieta", f: "CV", lat: -22.81821, lng: -43.39739 }, { n: "Favela do Tat\xE3o", f: "CV", lat: -22.82733, lng: -43.40982 }, { n: "Jaqueira de Anchieta", f: "CV", lat: -22.83009, lng: -43.41233 }, { n: "Fazenda de Anchieta", f: "CV", lat: -22.83074, lng: -43.41914 }, { n: "Noya (Complexo de Mali)", f: "CV", lat: -22.76476, lng: -43.36081 }, { n: "Morro Da Aeron\xE1utica", f: "CV", lat: -22.77692, lng: -43.33603 }, { n: "Morro do Coquerinho", f: "CV", lat: -22.77804, lng: -43.33243 }, { n: "Conjunto Novo Horizonte ou Conjunto C\xE9sar Maia", f: "CV", lat: -22.99122, lng: -43.43331 }, { n: "Coroado", f: "CV", lat: -22.99096, lng: -43.4289 }, { n: "Favela Chega Mais", f: "CV", lat: -22.82818, lng: -43.30197 }, { n: "Morro dos Dourados", f: "CV", lat: -22.82537, lng: -43.29899 }, { n: "Comunidade da tinta", f: "CV", lat: -22.82689, lng: -43.29815 }, { n: "Morro do Gon\xE7alves (Complexo da Parma)", f: "CV", lat: -22.7822, lng: -43.3458 }, { n: "Muzema", f: "CV", lat: -22.98914, lng: -43.32019 }, { n: "Favela Cambalacho (Muzema)", f: "CV", lat: -22.99056, lng: -43.32241 }, { n: "Favela Angu Duro (Muzema)", f: "CV", lat: -22.99313, lng: -43.32083 }, { n: "Tijuquinha", f: "CV", lat: -22.98779, lng: -43.30871 }, { n: "Vila da Paz", f: "CV", lat: -22.9912, lng: -43.31202 }, { n: "Morro do Embaixador (Complexo de Mali)", f: "CV", lat: -22.77437, lng: -43.33863 }, { n: "Condom\xEDnio Venda Velha 1 e 2 (Complexo da Parma)", f: "CV", lat: -22.7908, lng: -43.34452 }, { n: "Comunidade do Carteiro", f: "CV", lat: -22.81378, lng: -43.39582 }, { n: "Morro do Urubu Sjm (Complexo da Parma)", f: "CV", lat: -22.79214, lng: -43.35361 }, { n: "Morro do F\xFAba", f: "CV", lat: -22.8921, lng: -43.33486 }, { n: "Morro dos Macacos", f: "CV", lat: -22.91331, lng: -43.25638 }, { n: "Barro Vermelho (3)", f: "TCP", lat: -22.74925, lng: -43.31248 }, { n: "Terra Nova", f: "TCP", lat: -22.75872, lng: -43.38273 }, { n: "Parque S\xE3o Jos\xE9", f: "TCP", lat: -22.74156, lng: -43.33605 }, { n: "Vila do Jo\xE3o", f: "TCP", lat: -22.87126, lng: -43.24071 }, { n: "Morro do Timbau", f: "TCP", lat: -22.86281, lng: -43.241 }, { n: "Conjunto pinheiros", f: "TCP", lat: -22.86729, lng: -43.23646 }, { n: "Buraco Do Boi", f: "TCP", lat: -22.70618, lng: -43.45065 }, { n: "Morro da Fonte", f: "TCP", lat: -22.73632, lng: -43.3806 }, { n: "Morro da Macumba", f: "TCP", lat: -22.73005, lng: -43.37139 }, { n: "Conjunto Esperan\xE7a ou Palace", f: "TCP", lat: -22.87626, lng: -43.23811 }, { n: "Morro da Primavera", f: "TCP", lat: -22.86712, lng: -43.31716 }, { n: "Morro do Chaves", f: "TCP", lat: -22.83425, lng: -43.36359 }, { n: "Comunidade Margem da Linha ou Eternit", f: "TCP", lat: -22.83717, lng: -43.36769 }, { n: "Para- Pedro ou Para- Paz", f: "TCP", lat: -22.83794, lng: -43.33348 }, { n: "Parque Royal", f: "TCP", lat: -22.79496, lng: -43.20893 }, { n: "Comunidade Rio do Ouro de Iraj\xE1", f: "TCP", lat: -22.8481, lng: -43.32074 }, { n: "Malvinas", f: "TCP", lat: -22.84896, lng: -43.32448 }, { n: "Predinhos (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.91514, lng: -43.20148 }, { n: "Casa Branca", f: "TCP", lat: -22.93666, lng: -43.24958 }, { n: "Morro da Ch\xE1cara do C\xE9u", f: "TCP", lat: -22.93495, lng: -43.25432 }, { n: "Morro da Cruz", f: "TCP", lat: -22.93081, lng: -43.25029 }, { n: "Morro da Babilonia", f: "TCP", lat: -22.9606, lng: -43.17073 }, { n: "Fazenda Botafogo(Complexo da pedreira)", f: "TCP", lat: -22.82609, lng: -43.35265 }, { n: "Leandr\xE3o", f: "TCP", lat: -22.86761, lng: -43.80899 }, { n: "Parque Bel\xE9m", f: "TCP", lat: -22.957, lng: -44.29094 }, { n: "Pereque", f: "TCP", lat: -23.011, lng: -44.53326 }, { n: "Sinpihatuba I", f: "TCP", lat: -23.00008, lng: -44.2979 }, { n: "Sinpihatuba II", f: "TCP", lat: -23.00481, lng: -44.29511 }, { n: "Teixeiras", f: "TCP", lat: -22.84098, lng: -43.79967 }, { n: "3Campos", f: "TCP", lat: -22.75193, lng: -43.50835 }, { n: "Inferninho", f: "TCP", lat: -22.74505, lng: -43.50472 }, { n: "Parque Paulista", f: "TCP", lat: -22.64658, lng: -43.25803 }, { n: "Comunidade do Val\xE3o", f: "TCP", lat: -22.83876, lng: -42.02075 }, { n: "Sapo Camara", f: "TCP", lat: -22.88733, lng: -43.48723 }, { n: "Jacar\xE9 Cabo Frio", f: "TCP", lat: -22.86782, lng: -42.01961 }, { n: "Ponta do Ambr\xF3sio", f: "TCP", lat: -22.86347, lng: -42.04709 }, { n: "Maria Joaquina", f: "TCP", lat: -22.72602, lng: -41.98897 }, { n: "Parque Aurora", f: "TCP", lat: -21.77648, lng: -41.3293 }, { n: "Casinhas do Novo Eldorado ou Suvaco da Cobra", f: "TCP", lat: -21.72313, lng: -41.29316 }, { n: "Jardim Surubi", f: "TCP", lat: -21.20532, lng: -41.90788 }, { n: "Bedim", f: "TCP", lat: -21.19203, lng: -41.9129 }, { n: "Muqui\xE7o", f: "TCP", lat: -22.85162, lng: -43.37729 }, { n: "Santo Ant\xF4nio ou Caminho da Reta", f: "TCP", lat: -22.85566, lng: -43.37946 }, { n: "Morro do Guarabu (Complexo do Dend\xEA)", f: "TCP", lat: -22.80409, lng: -43.19255 }, { n: "Morro da Rodano (Complexo do Dend\xEA)", f: "TCP", lat: -22.80628, lng: -43.1892 }, { n: "Morro do Dend\xEA", f: "TCP", lat: -22.80142, lng: -43.18414 }, { n: "Morro do Querosene (Complexo do Dend\xEA)", f: "TCP", lat: -22.79765, lng: -43.17997 }, { n: "A\xE7o", f: "TCP", lat: -22.50382, lng: -44.11784 }, { n: "Fogo Cruzado", f: "TCP", lat: -22.867, lng: -43.24155 }, { n: "Reb\xFA (Complexo de Senador Camar\xE1)", f: "TCP", lat: -22.8784, lng: -43.49885 }, { n: "Mobral (Complexo de Senador Camar\xE1)", f: "TCP", lat: -22.87452, lng: -43.5026 }, { n: "Morro do C\xE9u (Complexo de Senador Camar\xE1)", f: "TCP", lat: -22.8708, lng: -43.50099 }, { n: "Taquaral", f: "TCP", lat: -22.86777, lng: -43.48564 }, { n: "Vila Alian\xE7a (V.A)", f: "TCP", lat: -22.87015, lng: -43.47882 }, { n: "Vacaria", f: "TCP", lat: -22.87482, lng: -43.48471 }, { n: "Comunidade do Tiroteio", f: "TCP", lat: -22.86869, lng: -43.47137 }, { n: "Comunidade do Iraque", f: "TCP", lat: -22.86491, lng: -43.47275 }, { n: "FUND\xC3O", f: "TCP", lat: -22.87593, lng: -43.48049 }, { n: "Barros Franco", f: "TCP", lat: -22.10382, lng: -43.19206 }, { n: "Monte Castelo", f: "TCP", lat: -22.09115, lng: -43.21567 }, { n: "Baixa do Sapateiro", f: "TCP", lat: -22.86095, lng: -43.24101 }, { n: "Cidade Alta (Complexo de Israel)", f: "TCP", lat: -22.81877, lng: -43.29396 }, { n: "Bom Jardim (Complexo de Israel)", f: "TCP", lat: -22.82326, lng: -43.29178 }, { n: "Pica- Pau (Complexo de Israel)", f: "TCP", lat: -22.81948, lng: -43.28904 }, { n: "Roraima (Complexo de Israel)", f: "TCP", lat: -22.82386, lng: -43.29459 }, { n: "5 Bocas (Complexo de Israel)", f: "TCP", lat: -22.82246, lng: -43.28626 }, { n: "Vig\xE1rio Geral (Complexo de Israel)", f: "TCP", lat: -22.80563, lng: -43.30315 }, { n: "Parada de Lucas (Complexo de Israel)", f: "TCP", lat: -22.81129, lng: -43.30016 }, { n: "Parque Nova Mar\xE9", f: "TCP", lat: -22.85968, lng: -43.24043 }, { n: "Conjunto Salsa e Merengue", f: "TCP", lat: -22.87134, lng: -43.2362 }, { n: "Conjunto Pinheiros", f: "TCP", lat: -22.86828, lng: -43.23976 }, { n: "Parque Alegria (Complexo do Caju)", f: "TCP", lat: -22.88554, lng: -43.23087 }, { n: "S\xE3o Sebasti\xE3o (Complexo do Caju)", f: "TCP", lat: -22.87822, lng: -43.22165 }, { n: "Nove Galo ou Parque Conquista (Complexo do Caju)", f: "TCP", lat: -22.87745, lng: -43.2263 }, { n: "Nossa Senhora da Aparecida (Manilha) [Complexo do Caju]", f: "TCP", lat: -22.87596, lng: -43.21646 }, { n: "Quinta do Caju (Complexo do Caju)", f: "TCP", lat: -22.8741, lng: -43.21233 }, { n: "Morro da Mineira (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.91944, lng: -43.19896 }, { n: "Zinco (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.91711, lng: -43.20226 }, { n: "S\xE3o Jos\xE9 (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.91739, lng: -43.20083 }, { n: "Morro do S\xE3o Carlos (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.91929, lng: -43.20284 }, { n: "Morro da Torre de Queimados", f: "TCP", lat: -22.71818, lng: -43.54385 }, { n: "Danom", f: "TCP", lat: -22.77125, lng: -43.50889 }, { n: "Morro da Lagartixa (Complexo da Pedreira)", f: "TCP", lat: -22.82317, lng: -43.36413 }, { n: "Morro da Pedreira (Complexo da Pedreira)", f: "TCP", lat: -22.8222, lng: -43.35833 }, { n: "Quitanda (Complexo da Pedreira)", f: "TCP", lat: -22.81926, lng: -43.36729 }, { n: "Final Feliz (Complexo da Pedreira)", f: "TCP", lat: -22.81906, lng: -43.354 }, { n: "B13 ou Bairro 13- Barros Filho", f: "TCP", lat: -22.83052, lng: -43.36854 }, { n: "Pol\xEDgono 252", f: "TCP", lat: -22.83209, lng: -43.36786 }, { n: "Morro do Chap\xE9u Mangueira", f: "TCP", lat: -22.96046, lng: -43.16707 }, { n: "Grota (Complexo da Serrinha)", f: "TCP", lat: -22.86841, lng: -43.32751 }, { n: "Klan (Clan)", f: "TCP", lat: -22.93018, lng: -42.8241 }, { n: "Morro do Amor de Maric\xE1", f: "TCP", lat: -22.9272, lng: -42.82292 }, { n: "Bairro da Amizade ou Saco da Lama", f: "TCP", lat: -22.93438, lng: -42.81414 }, { n: "Cantinho", f: "TCP", lat: -22.9369, lng: -42.8131 }, { n: "Ponta da Pregui\xE7a", f: "TCP", lat: -22.9382, lng: -42.81045 }, { n: "Cocadinha", f: "TCP", lat: -22.93518, lng: -42.82238 }, { n: "Morro S\xE3o Jos\xE9 (Complexo da Serrinha)", f: "TCP", lat: -22.87154, lng: -43.33263 }, { n: "Morro da Patolina (Complexo da Serrinha)", f: "TCP", lat: -22.87318, lng: -43.33 }, { n: "Morro do Dend\xEAzinho (Complexo da Serrinha)", f: "TCP", lat: -22.87373, lng: -43.32538 }, { n: "Complexo do Acari", f: "TCP", lat: -22.82416, lng: -43.33956 }, { n: "Parmalat (Complexo do Acari)", f: "TCP", lat: -22.8221, lng: -43.34736 }, { n: "Parque Unidos (Parque Col\xFAmbia)", f: "TCP", lat: -22.81769, lng: -43.34414 }, { n: "Madagascar (Parque Col\xFAmbia)", f: "TCP", lat: -22.8129, lng: -43.34246 }, { n: "Idelfonso Falc\xE3o", f: "TCP", lat: -22.81534, lng: -43.33928 }, { n: "Morro da Giari\xFAba", f: "TCP", lat: -22.80317, lng: -43.18834 }, { n: "Morro do INPS ( Parque Prolet\xE1rio dos Banc\xE1rios)", f: "TCP", lat: -22.78801, lng: -43.18604 }, { n: "Jo\xE3o Teles", f: "TCP", lat: -22.78844, lng: -43.17976 }, { n: "Morro Bela Vista do Pichuna", f: "TCP", lat: -22.78784, lng: -43.17337 }, { n: "Morro das Araras", f: "TCP", lat: -22.7876, lng: -43.17723 }, { n: "Praia da Rosa", f: "TCP", lat: -22.79509, lng: -43.18922 }, { n: "Morro do Colej\xE3o", f: "TCP", lat: -22.74025, lng: -43.34722 }, { n: "Tartaruga", f: "TCP", lat: -22.76275, lng: -41.89816 }, { n: "Morro do Carv\xE3o Itagua\xED", f: "TCP", lat: -22.85578, lng: -43.77993 }, { n: "Casinhas de Itagua\xED", f: "TCP", lat: -22.85938, lng: -43.7727 }, { n: "Tira Gosto", f: "TCP", lat: -21.75672, lng: -41.30766 }, { n: "Matadouro de Campos", f: "TCP", lat: -21.75782, lng: -41.30446 }, { n: "Portelinha", f: "TCP", lat: -21.75921, lng: -41.29753 }, { n: "Novo Jockey", f: "TCP", lat: -21.78221, lng: -41.27493 }, { n: "Penha de Campos", f: "TCP", lat: -21.79485, lng: -41.28642 }, { n: "Parque Aeroporto", f: "TCP", lat: -21.69646, lng: -41.30686 }, { n: "Parque Aldeia", f: "TCP", lat: -21.72798, lng: -41.34388 }, { n: "Tangar\xE1", f: "TCP", lat: -22.82382, lng: -42.01273 }, { n: "Parque Eldorado 3", f: "TCP", lat: -22.82247, lng: -42.00524 }, { n: "Vila Nova", f: "TCP", lat: -22.52143, lng: -44.18452 }, { n: "Vila Maria", f: "TCP", lat: -22.51404, lng: -44.19942 }, { n: "Bom Pastor", f: "TCP", lat: -22.53424, lng: -44.18478 }, { n: "Roberto Silveira", f: "TCP", lat: -22.53738, lng: -44.17904 }, { n: "Morro Get\xFAlio Vargas (Barra Mansa)", f: "TCP", lat: -22.5497, lng: -44.18698 }, { n: "Eucaliptal", f: "TCP", lat: -22.5263, lng: -44.12087 }, { n: "Santo Agostinho", f: "TCP", lat: -22.48968, lng: -44.08128 }, { n: "Ilha Parque", f: "TCP", lat: -22.48587, lng: -44.08524 }, { n: "Volta Grande III", f: "TCP", lat: -22.48519, lng: -44.0799 }, { n: "Caieira", f: "TCP", lat: -22.48112, lng: -44.05881 }, { n: "Nova Primavera", f: "TCP", lat: -22.48691, lng: -44.0538 }, { n: "Calif\xF3rnia", f: "TCP", lat: -22.47826, lng: -44.05334 }, { n: "Monte Castelo", f: "TCP", lat: -22.52109, lng: -44.08593 }, { n: "S\xE3o Vicente", f: "TCP", lat: -22.54141, lng: -44.19036 }, { n: "Habitat", f: "TCP", lat: -22.14208, lng: -43.24487 }, { n: "Santa Cec\xEDlia", f: "TCP", lat: -22.10303, lng: -43.18691 }, { n: "Jaqueira", f: "TCP", lat: -22.09847, lng: -43.18826 }, { n: "Chacrinha (Valen\xE7a)", f: "TCP", lat: -22.26072, lng: -43.73093 }, { n: "Varginha", f: "TCP", lat: -22.27768, lng: -43.7376 }, { n: "Jardim Valencia", f: "TCP", lat: -22.23414, lng: -43.70471 }, { n: "Morro do bel\xF4", f: "TCP", lat: -22.49093, lng: -44.12068 }, { n: "Nova Esperan\xE7a", f: "TCP", lat: -22.48681, lng: -44.11969 }, { n: "Vale Verde", f: "TCP", lat: -22.49179, lng: -44.11663 }, { n: "Mariana Torres", f: "TCP", lat: -22.48956, lng: -44.11386 }, { n: "Coqueiros", f: "TCP", lat: -22.4929, lng: -44.10761 }, { n: "Eldorado", f: "TCP", lat: -22.49099, lng: -44.1068 }, { n: "Fazendinha", f: "TCP", lat: -22.48947, lng: -44.10454 }, { n: "Vila Bras\xEDlia", f: "TCP", lat: -22.48583, lng: -44.11068 }, { n: "Bairro Palmeiras", f: "TCP", lat: -22.51765, lng: -44.00978 }, { n: "Cruzeiro", f: "TCP", lat: -22.51859, lng: -44.00648 }, { n: "Ip\xEAs", f: "TCP", lat: -22.52157, lng: -44.00447 }, { n: "18 de Itagua\xED", f: "TCP", lat: -22.86796, lng: -43.78219 }, { n: "Boogie Woogie (BW) ou Nossa Senhora das Gra\xE7as", f: "TCP", lat: -22.81655, lng: -43.18302 }, { n: "Casinhas (Conjunto 22 de Abril)", f: "TCP", lat: -22.6293, lng: -43.21968 }, { n: "Parque Pentagna", f: "TCP", lat: -22.24172, lng: -43.69124 }, { n: "Ponte Funda (PF)", f: "TCP", lat: -22.21307, lng: -43.71636 }, { n: "Santa Rosa 1", f: "TCP", lat: -22.21738, lng: -43.68438 }, { n: "Itajuru (Itapaz)", f: "TCP", lat: -22.88011, lng: -42.02478 }, { n: "Vila Orland\xE9lia", f: "TCP", lat: -22.53926, lng: -44.16254 }, { n: "Boa Esperan\xE7a", f: "TCP", lat: -22.75909, lng: -43.37759 }, { n: "Parque Novo Lar", f: "TCP", lat: -22.75346, lng: -43.33305 }, { n: "Morro do Santo Andr\xE9", f: "TCP", lat: -22.89577, lng: -43.48163 }, { n: "Morro do 48", f: "TCP", lat: -22.89576, lng: -43.47863 }, { n: "Bicho Solto", f: "TCP", lat: -22.89665, lng: -43.47334 }, { n: "Cor\xE9ia (Complexo da Cor\xE9ia)", f: "TCP", lat: -22.87254, lng: -43.49381 }, { n: "Morrinho (Complexo da Cor\xE9ia)", f: "TCP", lat: -22.86811, lng: -43.49668 }, { n: "Subid\xE3o (Complexo da Cor\xE9ia)", f: "TCP", lat: -22.86803, lng: -43.49312 }, { n: "Bairro Ara\xFAjo", f: "TCP", lat: -22.87228, lng: -43.48458 }, { n: "Nova Alian\xE7a (Larguinho)", f: "TCP", lat: -22.8726, lng: -43.47355 }, { n: "Mangueiral", f: "TCP", lat: -22.86587, lng: -43.48015 }, { n: "Selva de Pedra (Complexo da Cor\xE9ia)", f: "TCP", lat: -22.87732, lng: -43.49189 }, { n: "Olaria (Complexo de Senador Camar\xE1)", f: "TCP", lat: -22.87831, lng: -43.50078 }, { n: "Cavalo de A\xE7o (Complexo de Senador Camar\xE1)", f: "TCP", lat: -22.87828, lng: -43.50538 }, { n: "Boa Uni\xE3o", f: "TCP", lat: -22.0964, lng: -43.22048 }, { n: "Vila Cambuci (Complexo de Israel)", f: "TCP", lat: -22.8193, lng: -43.29057 }, { n: "Zona Sul de Cordovil (Complexo de Israel)", f: "TCP", lat: -22.81729, lng: -43.29568 }, { n: "COHAB Banc\xE1rios (Complexo de Israel)", f: "TCP", lat: -22.82099, lng: -43.2925 }, { n: "Morro da Serrinha (Complexo da Serrinha)", f: "TCP", lat: -22.86512, lng: -43.32845 }, { n: "Serra Morena", f: "TCP", lat: -22.81863, lng: -43.18946 }, { n: "Caminho do L\xFAcio", f: "TCP", lat: -22.86856, lng: -43.47463 }, { n: "Ladeira dos Funcion\xE1rios (Complexo do Caju)", f: "TCP", lat: -22.87924, lng: -43.22303 }, { n: "Chatuba ou Parque Boa Esperan\xE7a (Complexo do Caju)", f: "TCP", lat: -22.88105, lng: -43.22764 }, { n: "Clemente Ferreira (Complexo do Caju)", f: "TCP", lat: -22.87728, lng: -43.22244 }, { n: "Vila Mexicano", f: "TCP", lat: -22.8845, lng: -43.23192 }, { n: "Conjunto Tiradentes (Complexo do Caju)", f: "TCP", lat: -22.87915, lng: -43.23085 }, { n: "Morro S\xE3o Leopoldo", f: "TCP", lat: -22.72742, lng: -43.37477 }, { n: "Tri\xE2ngulo", f: "TCP", lat: -22.85272, lng: -43.38763 }, { n: "Supervia", f: "TCP", lat: -22.85336, lng: -43.39012 }, { n: "Conjunto Pro Morar I", f: "TCP", lat: -22.85464, lng: -43.39046 }, { n: "Comunidade Deodoro ou Conjunto Pr\xF3 Morar II", f: "TCP", lat: -22.85174, lng: -43.39634 }, { n: "Pol\xEDgono 453", f: "TCP", lat: -22.82089, lng: -43.29497 }, { n: "Serra Pelada (Complexo de Israel)", f: "TCP", lat: -22.82121, lng: -43.29365 }, { n: "Favela Vila Cambuci (Complexo de Israel)", f: "TCP", lat: -22.818, lng: -43.29035 }, { n: "Avil\xE3 (Complexo de Israel)", f: "TCP", lat: -22.82018, lng: -43.2926 }, { n: "Barrinho (Complexo de Israel)", f: "TCP", lat: -22.81391, lng: -43.29654 }, { n: "Travess\xE3o de Campos", f: "TCP", lat: -21.59816, lng: -41.31702 }, { n: "Cantinho do C\xE9u", f: "TCP", lat: -21.61232, lng: -41.31786 }, { n: "Presidente Vargas", f: "TCP", lat: -21.72675, lng: -41.31877 }, { n: "Parque S\xE3o Silvestre", f: "TCP", lat: -21.71133, lng: -41.30227 }, { n: "Parque Eldorado", f: "TCP", lat: -21.71479, lng: -41.30217 }, { n: "Urura\xED", f: "TCP", lat: -21.71541, lng: -41.29166 }, { n: "S\xE3o Matheus", f: "TCP", lat: -21.71526, lng: -41.31349 }, { n: "Madureira de Campos dos Goytacazes", f: "TCP", lat: -21.75118, lng: -41.32293 }, { n: "Parque Cidade da Luz", f: "TCP", lat: -21.72395, lng: -41.33203 }, { n: "Parque Aldeia II", f: "TCP", lat: -21.71859, lng: -41.33636 }, { n: "Bom Pastor", f: "TCP", lat: -22.75623, lng: -43.36542 }, { n: "Jardim Nova Esperan\xE7a", f: "TCP", lat: -22.7537, lng: -43.3802 }, { n: "Bairro Liberdade", f: "TCP", lat: -22.17203, lng: -43.31034 }, { n: "Grama", f: "TCP", lat: -22.16608, lng: -43.28724 }, { n: "Palhas", f: "TCP", lat: -22.16595, lng: -43.29982 }, { n: "Volante", f: "TCP", lat: -22.15638, lng: -43.29242 }, { n: "Gamb\xF4a do Bel\xE9m", f: "TCP", lat: -22.95482, lng: -44.30224 }, { n: "Morro do Dem\xE9rito", f: "TCP", lat: -21.4039, lng: -42.19112 }, { n: "Morro da Jove", f: "TCP", lat: -21.40791, lng: -42.19414 }, { n: "Greenville", f: "TCP", lat: -20.97208, lng: -42.05128 }, { n: "Vila Maia", f: "TCP", lat: -22.50195, lng: -44.56584 }, { n: "Morro da Fazenda (Complexo da Serrinha)", f: "TCP", lat: -22.8622, lng: -43.32654 }, { n: "Favelinha do Quitanda (Complexo da Pedreira)", f: "TCP", lat: -22.81932, lng: -43.36306 }, { n: "Conjunto Habitacional Portus II- Quitanda (Complexo da Pedreira)", f: "TCP", lat: -22.81971, lng: -43.36454 }, { n: "Conjunto Habitacional Portus -Quitanda (Complexo da Pedreira)", f: "TCP", lat: -22.82005, lng: -43.36286 }, { n: "Conjunto Tom Jobim II- Quitanda (Complexo da Pedreira)", f: "TCP", lat: -22.81679, lng: -43.36143 }, { n: "Conjunto Tom Jobim- Quitanda (Complexo da Pedreira)", f: "TCP", lat: -22.81734, lng: -43.36431 }, { n: "Conjunto Tom Jobim III- Quitanda (Complexo da Pedreira)", f: "TCP", lat: -22.81514, lng: -43.36772 }, { n: "Comunidade Obrigado Meu Deus", f: "TCP", lat: -22.81418, lng: -43.36873 }, { n: "Nova Olinda", f: "TCP", lat: -22.80805, lng: -43.36542 }, { n: "Conjunto IAPC", f: "TCP", lat: -22.82102, lng: -43.33308 }, { n: "COHAB Porto Velho ou P\xE9 Sujo PS (Complexo de Israel)", f: "TCP", lat: -22.81636, lng: -43.29084 }, { n: "Morro do Z\xE9", f: "TCP", lat: -22.74024, lng: -43.34293 }, { n: "Candel\xE1ria", f: "TCP", lat: -22.63729, lng: -43.22906 }, { n: "Morro do Querosene (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.92263, lng: -43.20112 }, { n: "Ambir\xE9 (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.92177, lng: -43.20545 }, { n: "Laura (Complexo do S\xE3o Carlos)", f: "TCP", lat: -22.91102, lng: -43.19913 }, { n: "Mato Dentro- Itaipua\xE7u", f: "TCP", lat: -22.95798, lng: -43.00322 }, { n: "Usina", f: "TCP", lat: -22.07499, lng: -41.87713 }, { n: "Carandiru (KRD)", f: "TCP", lat: -22.07921, lng: -41.8858 }, { n: "Piteiras", f: "TCP", lat: -22.08365, lng: -41.90131 }, { n: "Novo Surubi", f: "TCP", lat: -22.47307, lng: -44.439 }, { n: "Linha (Margem da Linha)", f: "TCP", lat: -21.76194, lng: -41.35341 }, { n: "Santa Helena", f: "TCP", lat: -21.7308, lng: -41.3266 }, { n: "Parque Esperan\xE7a (IPS)", f: "TCP", lat: -21.77858, lng: -41.32142 }, { n: "Buraco Quente (Morro da Cruz)", f: "TCP", lat: -22.92962, lng: -43.24916 }, { n: "Conjunto Habitacional Governador Negr\xE3o de Lima", f: "TCP", lat: -22.92943, lng: -43.25014 }, { n: "Parque Prazeres", f: "TCP", lat: -21.74331, lng: -41.29947 }, { n: "Casinhas do Santa Clara", f: "TCP", lat: -21.73336, lng: -41.30527 }, { n: "Chatuba do Parque Aurora", f: "TCP", lat: -21.78634, lng: -41.33874 }, { n: "Sapo 2", f: "TCP", lat: -21.74084, lng: -41.30373 }, { n: "Urura\xED", f: "TCP", lat: -21.81325, lng: -41.39551 }, { n: "Boa Vista- Campos", f: "TCP", lat: -21.70505, lng: -41.31318 }, { n: "Casinhas do Santo Ant\xF4nio", f: "TCP", lat: -21.69951, lng: -41.31259 }, { n: "KM-8", f: "TCP", lat: -21.6787, lng: -41.3135 }, { n: "Casinha KM-7", f: "TCP", lat: -21.68218, lng: -41.30559 }, { n: "Casinhas do AP", f: "TCP", lat: -21.68679, lng: -41.29826 }, { n: "Cantinho do C\xE9u", f: "TCP", lat: -21.71749, lng: -41.32948 }, { n: "Invas\xE3o ou Sem terra- Cidade da Luz", f: "TCP", lat: -21.72692, lng: -41.33678 }, { n: "Bande", f: "TCP", lat: -21.72745, lng: -41.33352 }, { n: "Ferradura (Complexo da Cor\xE9ia)", f: "TCP", lat: -22.86917, lng: -43.48995 }, { n: "Chapa Quente (Complexo da Cor\xE9ia)", f: "TCP", lat: -22.86967, lng: -43.49112 }, { n: "Cot\xF3", f: "TCP", lat: -22.73305, lng: -43.48534 }, { n: "Po\xE7o Gordo", f: "TCP", lat: -21.83338, lng: -41.22375 }, { n: "Tocos", f: "TCP", lat: -21.89952, lng: -41.28642 }, { n: "Donana", f: "TCP", lat: -21.82006, lng: -41.29707 }, { n: "Nova Goytacazes", f: "TCP", lat: -21.8305, lng: -41.28765 }, { n: "Tocaia", f: "TCP", lat: -21.82958, lng: -41.29434 }, { n: "Vila dos Pescadores- Farol de S\xE3o Tom\xE9", f: "TCP", lat: -22.03741, lng: -41.05336 }, { n: "Lagomar- Farol de S\xE3o Tom\xE9", f: "TCP", lat: -22.0584, lng: -41.08346 }, { n: "Saturnino Braga", f: "TCP", lat: -21.88429, lng: -41.20212 }, { n: "Goytacazes", f: "TCP", lat: -21.83323, lng: -41.26789 }, { n: "Fazenda Botafogo II (Complexo da Pedreira)", f: "TCP", lat: -22.82524, lng: -43.35669 }, { n: "Beira- Rio", f: "TCP", lat: -22.82053, lng: -43.34871 }, { n: "Morro do Tiro", f: "TCP", lat: -22.42408, lng: -42.96834 }, { n: "Taquara de Caxias", f: "TCP", lat: -22.6179, lng: -43.23291 }, { n: "Flamenguinho (Jardim Nova Era)", f: "TCP", lat: -22.76008, lng: -43.50589 }, { n: "Jaqueira", f: "TCP", lat: -22.75002, lng: -43.32642 }, { n: "Matriarca", f: "TCP", lat: -22.74174, lng: -43.33053 }, { n: "Aqu\xE1rius", f: "TCP", lat: -22.59612, lng: -42.00099 }, { n: "Guacha", f: "TCP", lat: -22.75505, lng: -43.35629 }, { n: "Morro dos Tres Irmaos", f: "TCP", lat: -22.75249, lng: -43.35043 }, { n: "Predinhos Santa Teresa", f: "TCP", lat: -22.75092, lng: -43.34681 }, { n: "Jardim Glaucia", f: "TCP", lat: -22.75789, lng: -43.35954 }, { n: "Morro do Machado", f: "TCP", lat: -22.74762, lng: -43.35407 }, { n: "Morro do Machado", f: "TCP", lat: -22.75031, lng: -43.3547 }, { n: "Jaqueira de Guadalupe", f: "TCP", lat: -22.83518, lng: -43.37366 }, { n: "Parque Jerusa", f: "TCP", lat: -22.75208, lng: -43.30888 }, { n: "Favelinha - Primavera", f: "TCP", lat: -22.87266, lng: -43.31862 }, { n: "Morro Silva Vale - Primavera", f: "TCP", lat: -22.86795, lng: -43.31204 }, { n: "JJ - Primavera", f: "TCP", lat: -22.86496, lng: -43.31121 }, { n: "Terrinha", f: "TCP", lat: -22.82574, lng: -43.37064 }, { n: "Terra Nostra", f: "TCP", lat: -22.82941, lng: -43.37012 }, { n: "Iraque Barros Filho", f: "TCP", lat: -22.83275, lng: -43.37228 }, { n: "Morro do Sossego", f: "TCP", lat: -22.74077, lng: -43.32717 }, { n: "Joana D'arc", f: "TCP", lat: -22.83513, lng: -43.36551 }, { n: "Morro do Estado", f: "TCP", lat: -22.89899, lng: -43.12021 }, { n: "Vila Vint\xE9m", f: "ADA", lat: -22.87228, lng: -43.44415 }, { n: "Morro S\xE3o Bento", f: "ADA", lat: -22.86671, lng: -43.46016 }, { n: "Conjunt\xE3o", f: "ADA", lat: -22.86859, lng: -43.45756 }, { n: "Morro do 77", f: "ADA", lat: -22.89059, lng: -43.45415 }, { n: "Parque Banc\xE1rios", f: "ADA", lat: -22.89386, lng: -43.45044 }, { n: "Jardim Novo", f: "ADA", lat: -22.8935, lng: -43.41951 }, { n: "Morro da Nogueira (Minha Deusa)", f: "ADA", lat: -22.88829, lng: -43.41052 }, { n: "Curral das \xC9guas", f: "ADA", lat: -22.87316, lng: -43.41993 }, { n: "Canec\xE3o", f: "ADA", lat: -22.89966, lng: -43.43805 }, { n: "Nova Holanda de Maca\xE9", f: "ADA", lat: -22.35485, lng: -41.78093 }, { n: "Piracema", f: "ADA", lat: -22.34074, lng: -41.77825 }, { n: "\xC1gua Maravilhosa", f: "ADA", lat: -22.33094, lng: -41.77956 }, { n: "Barra de Maca\xE9", f: "ADA", lat: -22.35904, lng: -41.77246 }, { n: "Fronteira", f: "ADA", lat: -22.35493, lng: -41.7669 }, { n: "Bosque Azul", f: "ADA", lat: -22.32576, lng: -41.76112 }, { n: "Jardim Carioca", f: "ADA", lat: -22.32933, lng: -41.75003 }, { n: "Ajuda de Cima", f: "ADA", lat: -22.3145, lng: -41.75446 }, { n: "S\xE3o Jorge", f: "ADA", lat: -21.74923, lng: -41.30452 }, { n: "Bandeirantes", f: "ADA", lat: -21.72273, lng: -41.31108 }, { n: "Morro do S\xE3o Jorge", f: "ADA", lat: -22.37234, lng: -41.79187 }, { n: "Morro de Santana", f: "ADA", lat: -22.37054, lng: -41.78846 }, { n: "Morro Sem Terra (Novo Horizonte)", f: "ADA", lat: -22.38829, lng: -41.79409 }, { n: "Campo D'Oeste", f: "ADA", lat: -22.38276, lng: -41.78787 }, { n: "Linha de Maca\xE9", f: "ADA", lat: -22.38339, lng: -41.77983 }, { n: "Aroeira", f: "ADA", lat: -22.36701, lng: -41.79038 }, { n: "Rocha Le\xE3o", f: "ADA", lat: -22.42683, lng: -42.00777 }, { n: "Morro da Light", f: "ADA", lat: -22.89219, lng: -43.42495 }, { n: "Vila Brasil", f: "ADA", lat: -22.87775, lng: -43.40879 }, { n: "Barata", f: "ADA", lat: -22.89773, lng: -43.44325 }, { n: "Parque Santa Rosa", f: "ADA", lat: -21.72782, lng: -41.30131 }, { n: "Casinhas do Santa Rosa", f: "ADA", lat: -21.73357, lng: -41.29897 }, { n: "Sobradinho", f: "ADA", lat: -21.73257, lng: -41.31361 }, { n: "COHAB Realengo", f: "ADA", lat: -22.88379, lng: -43.42913 }, { n: "Malvinas", f: "ADA", lat: -22.36114, lng: -41.79048 }, { n: "S\xE3o Jos\xE9 do Barreto", f: "ADA", lat: -22.3303, lng: -41.73981 }, { n: "Engenho da Praia", f: "ADA", lat: -22.31268, lng: -41.72276 }, { n: "Virgem Santa", f: "ADA", lat: -22.34669, lng: -41.80301 }, { n: "Morro do Carv\xE3o", f: "ADA", lat: -22.38793, lng: -41.77722 }, { n: "carumb\xE9", f: "ADA", lat: -22.8876, lng: -43.42376 }, { n: "Ideal", f: "ADA", lat: -22.88429, lng: -43.43157 }, { n: "Periquito", f: "ADA", lat: -22.88711, lng: -43.4334 }, { n: "Piraquara", f: "ADA", lat: -22.88483, lng: -43.42059 }, { n: "Posto 200 ou Vila Nova", f: "ADA", lat: -22.86105, lng: -43.44052 }, { n: "Vila Jurema", f: "ADA", lat: -22.86114, lng: -43.4446 }, { n: "Selvinha ou Vila Uni\xE3o da Paz", f: "ADA", lat: -22.86372, lng: -43.45886 }, { n: "Parque S\xE3o Pedro", f: "ADA", lat: -22.86399, lng: -43.46169 }, { n: "Comunidade das Almas ou Parque Liberal", f: "ADA", lat: -22.88517, lng: -43.45078 }, { n: "Comunidade do Amor", f: "ADA", lat: -22.85703, lng: -43.45155 }, { n: "Canela Preta", f: "ADA", lat: -22.85936, lng: -43.45102 }, { n: "Nova Malvina", f: "ADA", lat: -22.3589, lng: -41.78856 }, { n: "Rio Novo de Maca\xE9", f: "ADA", lat: -22.3592, lng: -41.78312 }, { n: "Invas\xE3o do Novo Botafogo", f: "ADA", lat: -22.36294, lng: -41.79397 }, { n: "Trans Magno", f: "ADA", lat: -22.36386, lng: -41.79442 }, { n: "Novo Botafogo", f: "ADA", lat: -22.36446, lng: -41.79176 }, { n: "Ponta da Lama", f: "ADA", lat: -21.83667, lng: -41.43466 }, { n: "Santa Cruz de Campos", f: "ADA", lat: -21.72045, lng: -41.40299 }, { n: "Chatuba de Guarus", f: "ADA", lat: -21.72373, lng: -41.32596 }, { n: "Sapo 1", f: "ADA", lat: -21.74086, lng: -41.30685 }, { n: "Eskad\xE3o ou Escadinha", f: "ADA", lat: -21.71401, lng: -41.32171 }, { n: "Faixa de Gaza", f: "ADA", lat: -21.72182, lng: -41.3001 }, { n: "Berut", f: "ADA", lat: -22.10371, lng: -41.46186 }, { n: "Caxias", f: "ADA", lat: -22.11472, lng: -41.46846 }, { n: "Piteiras", f: "ADA", lat: -22.11334, lng: -41.47984 }, { n: "Rhodia", f: "ADA", lat: -22.07262, lng: -41.86603 }, { n: "Cal\xE7adinha", f: "ADA", lat: -22.10065, lng: -41.85361 }, { n: "Garapa", f: "ADA", lat: -22.07864, lng: -41.8692 }, { n: "Balance", f: "ADA", lat: -22.07408, lng: -41.86122 }, { n: "S\xE3o Henri", f: "ADA", lat: -22.08357, lng: -41.84464 }, { n: "Morob\xE1 (Praia Campista)", f: "ADA", lat: -22.39333, lng: -41.78454 }, { n: "Cantagalo", f: "ADA", lat: -22.42341, lng: -41.93833 }, { n: "Bananeira", f: "ADA", lat: -21.7412, lng: -41.35199 }, { n: "Morro Cosme e Dami\xE3o", f: "ADA", lat: -22.89691, lng: -43.42078 }, { n: "Comunidade Beco da Uni\xE3o", f: "ADA", lat: -22.89258, lng: -43.41364 }, { n: "Beco ou Travessa Piraquara", f: "ADA", lat: -22.88773, lng: -43.41369 }, { n: "Maloca (Vila Vint\xE9m)", f: "ADA", lat: -22.87042, lng: -43.4381 }, { n: "Vila Esperan\xE7a (Vila Vint\xE9m)", f: "ADA", lat: -22.87439, lng: -43.43388 }, { n: "Ajuda de Baixo", f: "ADA", lat: -22.31995, lng: -41.75031 }, { n: "Trapiche", f: "ADA", lat: -22.23242, lng: -42.02078 }, { n: "C\xF3rrego do Ouro ou CDO", f: "ADA", lat: -22.25998, lng: -41.9778 }, { n: "\xD3leo", f: "ADA", lat: -22.22923, lng: -42.04229 }, { n: "Glic\xE9rio", f: "ADA", lat: -22.2379, lng: -42.05614 }, { n: "Frade de Maca\xE9", f: "ADA", lat: -22.24149, lng: -42.10583 }, { n: "Tapera", f: "ADA", lat: -22.18489, lng: -42.10684 }, { n: "Cruzeiro- Trajano de Moraes", f: "ADA", lat: -22.07072, lng: -42.06302 }, { n: "Batan", f: "ADA", lat: -22.86274, lng: -43.42691 }, { n: "Conjunto Fumac\xEA", f: "ADA", lat: -22.86702, lng: -43.42402 }, { n: "Comunidade Beira- Rio- Realengo", f: "ADA", lat: -22.86654, lng: -43.42386 }, { n: "Batanzinho", f: "ADA", lat: -22.86586, lng: -43.43092 }, { n: "Vila Sap\xEA", f: "ADA", lat: -22.94845, lng: -43.37484 }, { n: "Invas\xE3o", f: "ADA", lat: -22.94716, lng: -43.37589 }, { n: "Conjunto Parque Curicica", f: "ADA", lat: -22.9459, lng: -43.37824 }, { n: "Quarto Centen\xE1rio", f: "ADA", lat: -22.95235, lng: -43.37747 }, { n: "Vale das Simpatias (Complexo da Malvina)", f: "MIL", lat: -22.78867, lng: -43.35752 }, { n: "Conjunto Jornalista Jo\xE3o Saldanha", f: "MIL", lat: -22.84962, lng: -43.46306 }, { n: "Catiri", f: "MIL", lat: -22.85005, lng: -43.4714 }, { n: "Buraco Quente de Saracuruna", f: "MIL", lat: -22.67772, lng: -43.26554 }, { n: "Buraco da On\xE7a", f: "MIL", lat: -22.60906, lng: -43.18898 }, { n: "Fragoso", f: "MIL", lat: -22.59119, lng: -43.19032 }, { n: "Boa Esperan\xE7a Serop\xE9dica", f: "MIL", lat: -22.7386, lng: -43.6948 }, { n: "Vila Emil", f: "MIL", lat: -22.78268, lng: -43.42409 }, { n: "Jacutinga", f: "MIL", lat: -22.77433, lng: -43.41817 }, { n: "Roquete Pinto", f: "MIL", lat: -22.84203, lng: -43.24745 }, { n: "Praia de Ramos", f: "MIL", lat: -22.84149, lng: -43.25088 }, { n: "\xC1guia do Ouro ou Rato", f: "MIL", lat: -22.88025, lng: -43.28313 }, { n: "Favela do Guarda ou Parque Uni\xE3o de Del Castilho", f: "MIL", lat: -22.8806, lng: -43.27779 }, { n: "Favela Fern\xE3o Cardim", f: "MIL", lat: -22.88422, lng: -43.28762 }, { n: "Bel\xE9m- Bel\xE9m", f: "MIL", lat: -22.88897, lng: -43.29093 }, { n: "Jardim Imperial", f: "MIL", lat: -22.74009, lng: -42.85133 }, { n: "Nancil\xE2ndia", f: "MIL", lat: -22.73562, lng: -42.84415 }, { n: "Santo Elias", f: "MIL", lat: -22.76915, lng: -43.42395 }, { n: "Vila Margarida", f: "MIL", lat: -22.87154, lng: -43.78558 }, { n: "Monte Serrat", f: "MIL", lat: -22.87392, lng: -43.77131 }, { n: "Ponte Preta", f: "MIL", lat: -22.86299, lng: -43.75894 }, { n: "Ibirapitanga", f: "MIL", lat: -22.85542, lng: -43.75924 }, { n: "Suru\xED", f: "MIL", lat: -22.66351, lng: -43.12954 }, { n: "Praia de Mau\xE1", f: "MIL", lat: -22.70404, lng: -43.15359 }, { n: "Comunidade Seu Pedro", f: "MIL", lat: -22.8822, lng: -43.28149 }, { n: "IAPC de Olaria", f: "MIL", lat: -22.843, lng: -43.25936 }, { n: "Boqueir\xE3o", f: "MIL", lat: -22.83909, lng: -43.47337 }, { n: "Conjunto Tom Jobim de Bangu", f: "MIL", lat: -22.85242, lng: -43.47341 }, { n: "Jardim Bangu", f: "MIL", lat: -22.84778, lng: -43.46776 }, { n: "Jardim Bangu II", f: "MIL", lat: -22.84429, lng: -43.46563 }, { n: "Vila Ol\xEDmpica de Bangu", f: "MIL", lat: -22.84308, lng: -43.46975 }, { n: "Bairro 80", f: "MIL", lat: -22.85243, lng: -43.47582 }, { n: "Pol\xEDgono 99", f: "MIL", lat: -22.95764, lng: -42.83441 }, { n: "Bar\xE3o do Amap\xE1", f: "MIL", lat: -22.68345, lng: -43.35296 }, { n: "C\xE9u Azul", f: "MIL", lat: -22.90184, lng: -43.26765 }, { n: "Vila S\xF4nia de Serop\xE9ca", f: "MIL", lat: -22.73744, lng: -43.70486 }, { n: "Fazenda Caxias de Serop\xE9dica", f: "MIL", lat: -22.75206, lng: -43.71246 }, { n: "Xer\xE9m", f: "MIL", lat: -22.5822, lng: -43.30997 }, { n: "Roncalli", f: "MIL", lat: -22.71745, lng: -43.37846 }, { n: "Babi ou Recantus", f: "MIL", lat: -22.71269, lng: -43.38744 }, { n: "Vila Maia", f: "MIL", lat: -22.72154, lng: -43.39227 }, { n: "Morro S\xE3o Jorge", f: "MIL", lat: -22.72774, lng: -43.3969 }, { n: "Xavantes", f: "MIL", lat: -22.73802, lng: -43.40216 }, { n: "Conjunto Parque Americano", f: "MIL", lat: -22.73124, lng: -43.3911 }, { n: "Vila Entre Rios", f: "MIL", lat: -22.74137, lng: -43.4045 }, { n: "S\xE3o Sebasti\xE3o", f: "MIL", lat: -22.73379, lng: -43.4042 }, { n: "Farrula", f: "MIL", lat: -22.73527, lng: -43.4108 }, { n: "Vila Heli\xF3polis", f: "MIL", lat: -22.73086, lng: -43.41272 }, { n: "Nova Aurora", f: "MIL", lat: -22.72596, lng: -43.40591 }, { n: "Shangri- La", f: "MIL", lat: -22.7176, lng: -43.41256 }, { n: "Bela Vista", f: "MIL", lat: -22.70893, lng: -43.40332 }, { n: "Forte", f: "MIL", lat: -22.70406, lng: -43.41467 }, { n: "Grama", f: "MIL", lat: -22.69787, lng: -43.43007 }, { n: "Figueiras", f: "MIL", lat: -22.69153, lng: -43.43457 }, { n: "Morro do Cot\xF3", f: "MIL", lat: -22.73381, lng: -43.48107 }, { n: "Areal I (Rio das Pedras)", f: "MIL", lat: -22.97713, lng: -43.33926 }, { n: "Areal II (Rio das Pedras)", f: "MIL", lat: -22.97744, lng: -43.33547 }, { n: "Areinha (Rio das Pedras)", f: "MIL", lat: -22.98068, lng: -43.33963 }, { n: "Vila Caranguejo (Rio das Pedras)", f: "MIL", lat: -22.97338, lng: -43.33664 }, { n: "Centro (Rio das Pedras)", f: "MIL", lat: -22.97395, lng: -43.33305 }, { n: "S\xE3o Bartolomeu ou Casinhas (Rio das Pedras)", f: "MIL", lat: -22.97453, lng: -43.32912 }, { n: "Rio Novo (Rio das Pedras)", f: "MIL", lat: -22.97015, lng: -43.33507 }, { n: "Rio das Flores (Rio das Pedras)", f: "MIL", lat: -22.97219, lng: -43.33517 }, { n: "Morro Curva do Pinheiro (Rio das Pedras)", f: "MIL", lat: -22.97061, lng: -43.33294 }, { n: "Conjunto Rio das Flores (Rio das Pedras)", f: "MIL", lat: -22.97232, lng: -43.33369 }, { n: "Vila Regata", f: "MIL", lat: -22.98867, lng: -43.32998 }, { n: "Comunidade da Bailarina ou Barr\xE3o", f: "MIL", lat: -22.73288, lng: -43.30303 }, { n: "Comunidade Cova do Boi ou Boi", f: "MIL", lat: -22.73152, lng: -43.305 }, { n: "Beco da Gl\xF3ria", f: "MIL", lat: -22.72854, lng: -43.30843 }, { n: "Tri\xE2ngulo de Revers\xE3o", f: "MIL", lat: -22.72703, lng: -43.30011 }, { n: "Parque Angola", f: "MIL", lat: -22.72253, lng: -43.30292 }, { n: "Parque Angola", f: "MIL", lat: -22.72101, lng: -43.30654 }, { n: "Amendoeira/ Conjunto Esperan\xE7a", f: "MIL", lat: -22.71841, lng: -43.31136 }, { n: "Comunidade do Pedrosa", f: "MIL", lat: -22.87867, lng: -43.27427 }, { n: "Cidade dos meninos", f: "MIL", lat: -22.7108, lng: -43.312 }, { n: "Wona", f: "MIL", lat: -22.72611, lng: -43.34165 }, { n: "Renascer", f: "MIL", lat: -22.91558, lng: -43.3631 }, { n: "Boi\xFAna", f: "MIL", lat: -22.91244, lng: -43.40361 }, { n: "Morro do Conceito", f: "MIL", lat: -22.78691, lng: -43.36747 }, { n: "Paiol de P\xF3lvora", f: "MIL", lat: -22.81063, lng: -43.39541 }, { n: "Viegas", f: "MIL", lat: -22.8965, lng: -43.49591 }, { n: "Sert\xE3o-Rio das Pedras", f: "MIL", lat: -22.96709, lng: -43.32278 }, { n: "Morro do Pau Branco (Complexo da Malvina)", f: "MIL", lat: -22.78181, lng: -43.35496 }, { n: "Morro da Malvina (Complexo da Malvina)", f: "MIL", lat: -22.78355, lng: -43.35866 }, { n: "Morro do Cocobongo (Complexo da Malvina)", f: "MIL", lat: -22.78527, lng: -43.35207 }, { n: "Morro do Sapo", f: "MIL", lat: -22.71712, lng: -43.39895 }, { n: "Parque Araruama", f: "MIL", lat: -22.79285, lng: -43.33145 }, { n: "Rua 4", f: "MIL", lat: -22.78671, lng: -43.32999 }, { n: "Bairro da Covanca", f: "MIL", lat: -22.78474, lng: -43.3276 }, { n: "Parque Lafaiete", f: "MIL", lat: -22.78682, lng: -43.32395 }, { n: "Vila Caj\xED (Complexo da Malvina)", f: "MIL", lat: -22.78823, lng: -43.35473 }, { n: "Comunidade do Rodo", f: "LJ", lat: -22.92962, lng: -43.66286 }, { n: "Antares", f: "LJ", lat: -22.92006, lng: -43.66013 }, { n: "Uruc\xE2nia", f: "LJ", lat: -22.91352, lng: -43.65429 }, { n: "Saquassu", f: "LJ", lat: -22.90791, lng: -43.65379 }, { n: "Boa Esperan\xE7a de Santa Cruz", f: "LJ", lat: -22.91027, lng: -43.66802 }, { n: "P\xF4r do Sol", f: "LJ", lat: -22.90779, lng: -43.68077 }, { n: "Ca\xE7\xE3o Vermelho", f: "LJ", lat: -22.9121, lng: -43.6759 }, { n: "Pedrinhas", f: "LJ", lat: -22.92101, lng: -43.67717 }, { n: "Rollas", f: "LJ", lat: -22.91838, lng: -43.67196 }, { n: "Conjunto Cesar\xE3o", f: "LJ", lat: -22.93727, lng: -43.6577 }, { n: "A\xE7o", f: "LJ", lat: -22.93532, lng: -43.65072 }, { n: "Tr\xEAs Pontes", f: "LJ", lat: -22.928, lng: -43.64582 }, { n: "Cesarinho", f: "LJ", lat: -22.92147, lng: -43.63957 }, { n: "Divin\xE9ia", f: "LJ", lat: -22.92374, lng: -43.63915 }, { n: "Nova J\xE9rsei", f: "LJ", lat: -22.92642, lng: -43.63073 }, { n: "Gouv\xEAias", f: "LJ", lat: -22.9221, lng: -43.62621 }, { n: "Gouv\xE9ia", f: "LJ", lat: -22.92823, lng: -43.6247 }, { n: "Pitoco", f: "LJ", lat: -22.93553, lng: -43.63133 }, { n: "7 de Abril", f: "LJ", lat: -22.9273, lng: -43.63583 }, { n: "Vila Santa Luzia", f: "LJ", lat: -22.92424, lng: -43.61825 }, { n: "Vilar Carioca", f: "LJ", lat: -22.92145, lng: -43.60218 }, { n: "Vilar Guanabara", f: "LJ", lat: -22.91357, lng: -43.60655 }, { n: "Ana Gonzaga", f: "LJ", lat: -22.91082, lng: -43.5929 }, { n: "Benjamin do Monte", f: "LJ", lat: -22.90929, lng: -43.58457 }, { n: "Diana", f: "LJ", lat: -22.91452, lng: -43.57776 }, { n: "Vila S\xE3o Jorge", f: "LJ", lat: -22.91646, lng: -43.58278 }, { n: "Almas", f: "LJ", lat: -22.91054, lng: -43.57178 }, { n: "Horto Florestal", f: "LJ", lat: -22.90824, lng: -43.69139 }, { n: "Beco do Ivan", f: "LJ", lat: -22.91552, lng: -43.69435 }, { n: "Barreira de Santa Cruz", f: "LJ", lat: -22.91812, lng: -43.68963 }, { n: "Comunidade do Zeppelin", f: "LJ", lat: -22.92663, lng: -43.69917 }, { n: "Beco do Camar\xE3o", f: "LJ", lat: -22.9325, lng: -43.69719 }, { n: "Dumas", f: "LJ", lat: -22.9376, lng: -43.69603 }, { n: "Jardim Esp\xEDrito Santo", f: "LJ", lat: -22.94335, lng: -43.6904 }, { n: "MCMV Casa Blanca", f: "LJ", lat: -22.90168, lng: -43.68367 }, { n: "Conjunto Jo\xE3o XXIII", f: "LJ", lat: -22.90418, lng: -43.70112 }, { n: "Conjunto Guandu", f: "LJ", lat: -22.90145, lng: -43.70924 }, { n: "Conjunto S\xE3o Fernando", f: "LJ", lat: -22.89344, lng: -43.72131 }, { n: "Conjunto 61", f: "LJ", lat: -22.89457, lng: -43.71554 }, { n: "Bairro de Sepetiba", f: "LJ", lat: -22.9721, lng: -43.69242 }, { n: "Areia Branca", f: "LJ", lat: -22.943, lng: -43.68265 }, { n: "Bairro Farias", f: "LJ", lat: -22.91382, lng: -43.63737 }, { n: "Morro da TELERJ", f: "LJ", lat: -22.90374, lng: -43.6187 }, { n: "Vila Igarat\xE1", f: "LJ", lat: -22.90714, lng: -43.60761 }, { n: "Nova Cidade", f: "LJ", lat: -22.90451, lng: -43.59162 }, { n: "Vila do C\xE9u", f: "LJ", lat: -22.90276, lng: -43.5984 }, { n: "Mangueiral", f: "LJ", lat: -22.92008, lng: -43.55547 }, { n: "Comari", f: "LJ", lat: -22.92105, lng: -43.55859 }, { n: "Vila Rudic\xE9ia", f: "LJ", lat: -22.91565, lng: -43.54866 }, { n: "Boa Esperan\xE7a de Guaratiba", f: "LJ", lat: -22.93158, lng: -43.56094 }, { n: "Jardim Perruche", f: "LJ", lat: -22.95274, lng: -43.56261 }, { n: "Cachamorra", f: "LJ", lat: -22.95726, lng: -43.57364 }, { n: "Areal de Guaratiba", f: "LJ", lat: -22.95737, lng: -43.5837 }, { n: "Magar\xE7a", f: "LJ", lat: -22.96009, lng: -43.61039 }, { n: "Jardim Maravilha", f: "LJ", lat: -22.96157, lng: -43.60474 }, { n: "Vila Magar\xE7a", f: "LJ", lat: -22.96668, lng: -43.61693 }, { n: "Santa Clara", f: "LJ", lat: -22.94666, lng: -43.60535 }, { n: "Bairro S\xE3o Pedro", f: "LJ", lat: -22.94846, lng: -43.59671 }, { n: "Jardim Magar\xE7a", f: "LJ", lat: -22.94292, lng: -43.59879 }, { n: "Jardim Magar\xE7a", f: "LJ", lat: -22.94369, lng: -43.58886 }, { n: "Praia da Brisa", f: "LJ", lat: -22.97945, lng: -43.66689 }, { n: "Beco da Paz", f: "LJ", lat: -22.98525, lng: -43.65347 }, { n: "5 Marias", f: "LJ", lat: -22.97283, lng: -43.64267 }, { n: "Bairro Pedra de Guaratiba", f: "LJ", lat: -22.99793, lng: -43.63809 }, { n: "Piraqu\xEA", f: "LJ", lat: -22.99325, lng: -43.60981 }, { n: "Morro do Cavado", f: "LJ", lat: -22.97289, lng: -43.58486 }, { n: "Mato Alto", f: "LJ", lat: -22.97212, lng: -43.59347 }, { n: "Vila Adelaide", f: "LJ", lat: -22.90211, lng: -43.53292 }, { n: "Vila Mori\xE7aba", f: "LJ", lat: -22.90555, lng: -43.53252 }, { n: "Vale da Esperan\xE7a", f: "LJ", lat: -22.91153, lng: -43.53024 }, { n: "Bairro Souza", f: "LJ", lat: -22.88934, lng: -43.5544 }, { n: "Bairro Adriana", f: "LJ", lat: -22.88288, lng: -43.54373 }, { n: "Bairro Amanda", f: "LJ", lat: -22.88017, lng: -43.53277 }, { n: "Bairro Caroba", f: "LJ", lat: -22.8936, lng: -43.54499 }, { n: "Morro do Lameir\xE3o", f: "LJ", lat: -22.87938, lng: -43.5238 }, { n: "Jardim Caxang\xE1", f: "LJ", lat: -22.88706, lng: -43.52652 }, { n: "Morro do Coqueiro", f: "LJ", lat: -22.86772, lng: -43.51181 }, { n: "Parque Alegria", f: "LJ", lat: -22.86826, lng: -43.50699 }, { n: "Carobinha", f: "LJ", lat: -22.85308, lng: -43.52955 }, { n: "Q100", f: "LJ", lat: -22.84601, lng: -43.52345 }, { n: "Mendanha", f: "LJ", lat: -22.85336, lng: -43.54025 }, { n: "Rio Bonito", f: "LJ", lat: -23.00093, lng: -43.50607 }, { n: "Cascatinha", f: "LJ", lat: -22.97913, lng: -43.48069 }, { n: "Novo Palmares", f: "LJ", lat: -22.99018, lng: -43.46051 }, { n: "Postou ou Santa Luzia", f: "LJ", lat: -22.99095, lng: -43.47481 }, { n: "Terreir\xE3o", f: "LJ", lat: -23.02526, lng: -43.48056 }, { n: "Chico Mendes", f: "LJ", lat: -23.02797, lng: -43.47279 }, { n: "Beira Rio", f: "LJ", lat: -23.00207, lng: -43.44534 }, { n: "Fontela", f: "LJ", lat: -22.99675, lng: -43.4481 }, { n: "Asa Branca", f: "LJ", lat: -22.96483, lng: -43.3935 }, { n: "Parque Curicica", f: "LJ", lat: -22.95813, lng: -43.39437 }, { n: "Vila Uni\xE3o da Curicica", f: "LJ", lat: -22.95481, lng: -43.39143 }, { n: "Col\xF4nia Juliano Moreira ou Col\xF4nia", f: "LJ", lat: -22.93892, lng: -43.39218 }, { n: "Morro do Vale", f: "LJ", lat: -22.94934, lng: -43.38568 }, { n: "Mangueiral", f: "LJ", lat: -22.93189, lng: -43.6749 }, { n: "Largo da Bica", f: "LJ", lat: -22.93576, lng: -43.68194 }, { n: "Veridiana", f: "LJ", lat: -22.93987, lng: -43.66885 }, { n: "Maria Lorosa", f: "LJ", lat: -22.9511, lng: -43.67706 }, { n: "Fomenta", f: "LJ", lat: -22.91381, lng: -43.69172 }, { n: "Baixada Santa Cruz", f: "LJ", lat: -22.90006, lng: -43.69314 }, { n: "Macap\xE1", f: "LJ", lat: -22.93336, lng: -43.69225 }, { n: "Gast\xE3o", f: "LJ", lat: -22.9272, lng: -43.6822 }, { n: "Jardim Guaratiba", f: "LJ", lat: -22.97334, lng: -43.65301 }, { n: "Covanca de Guaratiba", f: "LJ", lat: -22.98502, lng: -43.64533 }, { n: "Comunidade da Rocha ou Bora Bora", f: "LJ", lat: -22.9449, lng: -43.39215 }, { n: "Lameir\xE3o", f: "LJ", lat: -22.89034, lng: -43.51969 }, { n: "Virgol\xE2ndia", f: "LJ", lat: -22.96356, lng: -43.3994 }, { n: "Vila Abadiana", f: "LJ", lat: -22.96338, lng: -43.39539 }, { n: "Buraco Quente do Anil", f: "LJ", lat: -22.95582, lng: -43.3309 }, { n: "Favela da Playboy ou Pra\xE7a da Playboy", f: "LJ", lat: -22.9302, lng: -43.38052 }, { n: "F\xE1brica de Sonhos (Reserva Florestal)", f: "LJ", lat: -22.94521, lng: -43.396 }, { n: "Santa Clara I e II", f: "LJ", lat: -22.93265, lng: -43.37575 }, { n: "Mapu\xE1", f: "LJ", lat: -22.92962, lng: -43.38707 }, { n: "Caramaru", f: "LJ", lat: -22.91623, lng: -43.40138 }, { n: "Comunidade Nig\xE9ria", f: "LJ", lat: -22.93594, lng: -43.67391 }, { n: "Comunidade Ghana", f: "LJ", lat: -22.93619, lng: -43.67688 }, { n: "Loteamento Cruz das Almas", f: "LJ", lat: -22.93901, lng: -43.6801 }, { n: "Barro Vermelho", f: "LJ", lat: -22.91376, lng: -43.659 }, { n: "Comunidade do Coqueiral de Santa Cruz", f: "LJ", lat: -22.9133, lng: -43.66334 }, { n: "Comunidade Morada dos Sonhos", f: "LJ", lat: -22.9004, lng: -43.65978 }, { n: "Parque S\xE3o Rafael", f: "LJ", lat: -22.91849, lng: -43.63026 }, { n: "Parque Nossa Senhora da Gl\xF3ria", f: "LJ", lat: -22.91765, lng: -43.62534 }, { n: "Parque S\xE3o Paulo", f: "LJ", lat: -22.91751, lng: -43.62308 }, { n: "Parque Santa Luzia", f: "LJ", lat: -22.9173, lng: -43.61938 }, { n: "Vila Sueli", f: "LJ", lat: -22.92061, lng: -43.61839 }, { n: "Arco \xCDris", f: "LJ", lat: -22.93651, lng: -43.38623 }, { n: "Localidade do Guerengu\xE9 ou Vale do Ip\xEA", f: "LJ", lat: -22.9378, lng: -43.38421 }, { n: "Favela do Canal", f: "LJ", lat: -22.98831, lng: -43.49718 }, { n: "Comunidade Dois Irm\xE3os", f: "LJ", lat: -22.95112, lng: -43.39348 }, { n: "Vila S\xE3o Jo\xE3o", f: "LJ", lat: -22.77245, lng: -43.35561 }, { n: "Sagrado Cora\xE7\xE3o", f: "MNI", lat: -22.87551, lng: -43.64582 }, { n: "Conjunto Manguariba", f: "MNI", lat: -22.87403, lng: -43.63029 }, { n: "Palmares", f: "MNI", lat: -22.88855, lng: -43.6362 }, { n: "Linha de Austin", f: "MNI", lat: -22.88984, lng: -43.62679 }, { n: "Conjunto Campinho", f: "MNI", lat: -22.88296, lng: -43.61704 }, { n: "S\xE3o Francisco de Paula", f: "MNI", lat: -22.85432, lng: -43.61447 }, { n: "KM- 32", f: "MNI", lat: -22.84126, lng: -43.61893 }, { n: "Prados Verdes", f: "MNI", lat: -22.83035, lng: -43.62052 }, { n: "Bom Jesus", f: "MNI", lat: -22.82689, lng: -43.61486 }, { n: "KM- 34", f: "MNI", lat: -22.83146, lng: -43.60757 }, { n: "Jardim Guandu", f: "MNI", lat: -22.82838, lng: -43.60115 }, { n: "Jardim Para\xEDso", f: "MNI", lat: -22.82356, lng: -43.60431 }, { n: "KM- 37", f: "MNI", lat: -22.81853, lng: -43.61639 }, { n: "Lagoinha", f: "MNI", lat: -22.80669, lng: -43.60664 }, { n: "Conjunto Alian\xE7a", f: "MNI", lat: -22.78413, lng: -43.57046 }, { n: "Cabu\xE7u", f: "MNI", lat: -22.78355, lng: -43.5489 }, { n: "Jardim Laranjeiras", f: "MNI", lat: -22.76643, lng: -43.53307 }, { n: "Valverde", f: "MNI", lat: -22.77516, lng: -43.5296 }, { n: "Palhada", f: "MNI", lat: -22.76684, lng: -43.51983 }, { n: "Jardim Palmares", f: "MNI", lat: -22.76172, lng: -43.51279 }, { n: "Jardim Roma", f: "MNI", lat: -22.74496, lng: -43.52181 }, { n: "Marfel", f: "MNI", lat: -22.74799, lng: -43.51562 }, { n: "Austin", f: "MNI", lat: -22.72746, lng: -43.51837 }, { n: "K11", f: "MNI", lat: -22.77109, lng: -43.44185 }, { n: "Jardins Serop\xE9dica", f: "MNI", lat: -22.79533, lng: -43.63807 }, { n: "KM-40", f: "MNI", lat: -22.80987, lng: -43.63992 }, { n: "KM-41", f: "MNI", lat: -22.80334, lng: -43.64932 }, { n: "KM-42", f: "MNI", lat: -22.79571, lng: -43.65246 }, { n: "KM-39", f: "MNI", lat: -22.80978, lng: -43.62426 }, { n: "MCMV Cabu\xE7u", f: "MNI", lat: -22.79024, lng: -43.56797 }, { n: "Campo Alegre Nova Igua\xE7u", f: "MNI", lat: -22.76864, lng: -43.55218 }, { n: "Santa Margarida", f: "MNI", lat: -22.89176, lng: -43.6086 }, { n: "Jardim Bela Vista", f: "MNI", lat: -22.88542, lng: -43.5917 }, { n: "Santa Rosa de Campo Grande", f: "MNI", lat: -22.88627, lng: -43.58718 }, { n: "Vila Nova de Campo Grande", f: "MNI", lat: -22.88704, lng: -43.58161 }, { n: "Dinda", f: "MNI", lat: -22.87911, lng: -43.5849 }, { n: "Jardim Paulista", f: "MNI", lat: -22.87263, lng: -43.58213 }, { n: "Corcundinha", f: "MNI", lat: -22.87884, lng: -43.57836 }, { n: "Bairro Let\xEDcia", f: "MNI", lat: -22.87398, lng: -43.57416 }, { n: "Bairro Amazonas", f: "MNI", lat: -22.88107, lng: -43.57024 }, { n: "Tingu", f: "MNI", lat: -22.88161, lng: -43.56162 }, { n: "Morro Central de Austin", f: "MNI", lat: -22.72134, lng: -43.52887 }, { n: "Rafael Oliveira", f: "NEU", lat: -22.84716, lng: -43.36711 }, { n: "Morro da Penha de Niter\xF3i", f: "NEU", lat: -22.87949, lng: -43.12419 }, { n: "Benjamin Constant", f: "NEU", lat: -22.95535, lng: -43.17231 }, { n: "Morro do Esqueleto", f: "NEU", lat: -22.88317, lng: -43.02182 }, { n: "Morro Tavares Bastos ou Morro da Paz", f: "NEU", lat: -22.92762, lng: -43.18256 }, { n: "Comunidade do Gato", f: "NEU", lat: -22.82143, lng: -43.08484 }, { n: "Sand\xE1", f: "NEU", lat: -22.89227, lng: -43.46652 }, { n: "Pol\xEDgono 19", f: "NEU", lat: -22.85427, lng: -43.25431 }, { n: "Uga-Uga", f: "NEU", lat: -22.8541, lng: -43.25013 }, { n: "Parque F\xE9lix Ferreira", f: "NEU", lat: -22.87784, lng: -43.25999 }, { n: "Vale da Ben\xE7\xE3o", f: "NEU", lat: -22.91859, lng: -43.43896 }, { n: "Morro da Baronesa de Santa Teresa", f: "NEU", lat: -22.91337, lng: -43.19403 }, { n: "Vila Para\xEDso", f: "NEU", lat: -22.91403, lng: -43.19269 }, { n: "Comunidade Heli\xF3polis", f: "NEU", lat: -22.87232, lng: -43.25618 }, { n: "Comunidade S\xE3o Pedro", f: "NEU", lat: -22.8713, lng: -43.25591 }, { n: "Favela Vila Maria ou do Funil", f: "NEU", lat: -22.88008, lng: -43.25708 }, { n: "Comunidade Pindura Saia ou Morro do Vig\xE1rio", f: "NEU", lat: -22.76869, lng: -43.10837 }, { n: "Comunidade Morro do PEC", f: "NEU", lat: -22.76584, lng: -43.1082 }, { n: "Morro do Gari", f: "NEU", lat: -22.75401, lng: -43.10671 }, { n: "Morro Recanto Familiar ou Favela do Humait\xE1", f: "NEU", lat: -22.9588, lng: -43.20213 }, { n: "Morro da Saudade", f: "NEU", lat: -22.95889, lng: -43.19337 }];
+
+// src/utils/communityRisk.ts
+var communityCentroids = communityCentroids_default;
+var RISK_KEYWORDS = [
+  "morro",
+  "favela",
+  "comunidade",
+  "complexo",
+  "beco",
+  "travessa da paz",
+  "rocinha",
+  "vidigal",
+  "macacos",
+  "alemao",
+  "alem\xE3o",
+  "mare",
+  "mar\xE9",
+  "jacarezinho",
+  "vila cruzeiro",
+  "manguinhos",
+  "cidade de deus",
+  "gard\xEAnia",
+  "rio das pedras",
+  "serrinha",
+  "juramento",
+  "turano",
+  "borei",
+  "borel",
+  "mangueira",
+  "chapeu mangueira",
+  "chap\xE9u mangueira",
+  "babilonia",
+  "babil\xF4nia",
+  "cantagalo",
+  "pavao",
+  "pav\xE3o",
+  "pavaozinho",
+  "pav\xE3ozinho",
+  "dona marta",
+  "santa marta",
+  "parada de lucas",
+  "vigario geral",
+  "vig\xE1rio geral",
+  "vila alianca",
+  "vila alian\xE7a",
+  "senador camara",
+  "senador camar\xE1",
+  "coreia",
+  "cor\xE9ia",
+  "antares",
+  "rollas",
+  "muquico",
+  "muqui\xE7o",
+  "fazendinha",
+  "nova holanda",
+  "baixa do sapateiro",
+  "parque uniao",
+  "parque uni\xE3o",
+  "arara",
+  "arar\xE1",
+  "kelson",
+  "varginha",
+  "chapa",
+  "morro do amor",
+  "sapo",
+  "dende",
+  "dend\xEA"
+];
+function checkPropertyCommunityRisk(prop, resolvedCoords) {
+  const fullText = `${prop.title || ""} ${prop.address || ""} ${prop.neighborhood || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  for (const kw of RISK_KEYWORDS) {
+    const kwNorm = kw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const regex = new RegExp(`\\b${kwNorm}\\b`, "i");
+    if (regex.test(fullText)) {
+      if (!prop.lat && !resolvedCoords) {
+        return {
+          isRisk: false,
+          level: "warning",
+          communityName: kw.toUpperCase(),
+          badgeLabel: "Refer\xEAncia a comunidade - dist\xE2ncia n\xE3o confirmada"
+        };
+      }
+    }
+  }
+  const lat = prop.lat || (resolvedCoords ? resolvedCoords[0] : null);
+  const lng = prop.lng || (resolvedCoords ? resolvedCoords[1] : null);
+  if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+    let closestPoint = null;
+    let minDistanceKm = Infinity;
+    for (const c of communityCentroids) {
+      if (Math.abs(lat - c.lat) > 9e-3 || Math.abs(lng - c.lng) > 9e-3) continue;
+      const dLat = (lat - c.lat) * 111.32;
+      const dLng = (lng - c.lng) * 111.32 * Math.cos(lat * Math.PI / 180);
+      const distKm = Math.hypot(dLat, dLng);
+      if (distKm < minDistanceKm) {
+        minDistanceKm = distKm;
+        closestPoint = c;
+      }
+    }
+    if (closestPoint) {
+      const distMeters = Math.round(minDistanceKm * 1e3);
+      if (distMeters < 200) {
+        return {
+          isRisk: true,
+          level: "high_risk",
+          communityName: closestPoint.n,
+          faction: closestPoint.f || void 0,
+          distanceMeters: distMeters,
+          badgeLabel: `Em comunidade / ${distMeters}m (${closestPoint.n}${closestPoint.f ? ` - ${closestPoint.f}` : ""})`
+        };
+      }
+      if (distMeters <= 350) {
+        return {
+          isRisk: false,
+          level: "warning",
+          communityName: closestPoint.n,
+          faction: closestPoint.f || void 0,
+          distanceMeters: distMeters,
+          badgeLabel: `Pr\xF3ximo a ${closestPoint.n} - ${distMeters}m (informativo)`
+        };
+      }
+    }
+  }
+  return {
+    isRisk: false,
+    level: "safe"
+  };
+}
+
+// report360Service.ts
+init_cityZones();
+
+// report360GeoTerrain.ts
+var import_fs4 = __toESM(require("fs"), 1);
+var import_path3 = __toESM(require("path"), 1);
+var import_pngjs = require("pngjs");
+var import_d3_contour = require("d3-contour");
+var CACHE_DIR_TILES = import_path3.default.join(process.cwd(), ".cache", "map-tiles");
+var CACHE_DIR_TERRAIN = import_path3.default.join(process.cwd(), ".cache", "terrain-hydro");
+function lngToTileXFloat(lng, z) {
+  return (lng + 180) / 360 * Math.pow(2, z);
+}
+function latToTileYFloat(lat, z) {
+  const rad = lat * Math.PI / 180;
+  return (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * Math.pow(2, z);
+}
+async function fetchTerrariumTile(z, tx, ty) {
+  const cacheFile = import_path3.default.join(CACHE_DIR_TILES, `dem_${z}_${tx}_${ty}.png`);
+  try {
+    if (import_fs4.default.existsSync(cacheFile)) {
+      const buf2 = import_fs4.default.readFileSync(cacheFile);
+      if (buf2.length > 200) return import_pngjs.PNG.sync.read(buf2);
+    }
+    const url = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${tx}/${ty}.png`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 200) return null;
+    try {
+      import_fs4.default.mkdirSync(CACHE_DIR_TILES, { recursive: true });
+      import_fs4.default.writeFileSync(cacheFile, buf);
+    } catch {
+    }
+    return import_pngjs.PNG.sync.read(buf);
+  } catch {
+    return null;
+  }
+}
+function samplePngElev(png, px, py) {
+  const x = Math.max(0, Math.min(png.width - 1, Math.round(px)));
+  const y = Math.max(0, Math.min(png.height - 1, Math.round(py)));
+  const idx = (y * png.width + x) * 4;
+  const r = png.data[idx];
+  const g = png.data[idx + 1];
+  const b = png.data[idx + 2];
+  const raw = r * 256 + g + b / 256 - 32768;
+  return Math.max(0, Math.min(1800, raw));
+}
+function multiPolygonCoordsToSvgPath(multiPolyCoords, nx, ny, w = 280, h = 175) {
+  const sx = w / (nx - 1);
+  const sy = h / (ny - 1);
+  let d = "";
+  let bestLen = 0;
+  let bestLabelPt;
+  for (const poly of multiPolyCoords) {
+    for (const ring of poly) {
+      if (!ring || ring.length < 2) continue;
+      if (ring.length > bestLen) {
+        bestLen = ring.length;
+        const mid = ring[Math.floor(ring.length / 2)];
+        if (mid) bestLabelPt = [Number((mid[0] * sx).toFixed(1)), Number((mid[1] * sy).toFixed(1))];
+      }
+      for (let i = 0; i < ring.length; i++) {
+        const pt = ring[i];
+        const x = (pt[0] * sx).toFixed(1);
+        const y = (pt[1] * sy).toFixed(1);
+        d += i === 0 ? `M${x},${y}` : `L${x},${y}`;
+      }
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (first && last && Math.hypot(first[0] - last[0], first[1] - last[1]) < 1.5) {
+        d += "Z";
+      }
+    }
+  }
+  return { path: d, bestLabelPt };
+}
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371e3;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+var hydroMemCache = /* @__PURE__ */ new Map();
+async function fetchOsmWaterwaysAndFlood(lat, lng, bbox) {
+  const key = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
+  const memHit = hydroMemCache.get(key);
+  if (memHit) return memHit;
+  const cacheFile = import_path3.default.join(CACHE_DIR_TERRAIN, `hydro_${key}.json`);
+  try {
+    if (import_fs4.default.existsSync(cacheFile)) {
+      const parsed = JSON.parse(import_fs4.default.readFileSync(cacheFile, "utf-8"));
+      if (parsed && Array.isArray(parsed.osmWaterways)) {
+        hydroMemCache.set(key, parsed);
+        return parsed;
+      }
+    }
+  } catch {
+  }
+  const osmWaterways = [];
+  const officialFloodRings = [];
+  const overpassTask = (async () => {
+    try {
+      const query = `[out:json][timeout:3];(way["waterway"~"^(river|stream|canal|drain|ditch)$"](${bbox.minLat},${bbox.minLng},${bbox.maxLat},${bbox.maxLng}););out geom;`;
+      const r = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(2200)
+      });
+      if (r.ok) {
+        const json = await r.json();
+        for (const el of json?.elements || []) {
+          if (el.type === "way" && Array.isArray(el.geometry) && el.geometry.length >= 2) {
+            osmWaterways.push({
+              name: el.tags?.name || el.tags?.waterway || void 0,
+              coords: el.geometry.map((g) => [Number(g.lat), Number(g.lon)])
+            });
+          }
+        }
+      }
+    } catch {
+    }
+  })();
+  const geoRioTask = (async () => {
+    if (!(lat < -22.6 && lng < -43.05)) return;
+    try {
+      const envParam = encodeURIComponent(`${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`);
+      const rioHydroUrl = `https://pgeo3.rio.rj.gov.br/arcgis/rest/services/Georio/Alagamento_Enchentes/MapServer/0/query?geometry=${envParam}&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&f=geojson&outFields=*`;
+      const rr = await fetch(rioHydroUrl, { signal: AbortSignal.timeout(1800) });
+      if (rr.ok) {
+        const gj = await rr.json();
+        for (const f of gj?.features || []) {
+          const g = f?.geometry;
+          if (g?.type === "Polygon" && Array.isArray(g.coordinates?.[0])) {
+            officialFloodRings.push(g.coordinates[0].map((c) => [c[1], c[0]]));
+          } else if (g?.type === "MultiPolygon") {
+            for (const p of g.coordinates || []) {
+              if (Array.isArray(p?.[0])) officialFloodRings.push(p[0].map((c) => [c[1], c[0]]));
+            }
+          }
+        }
+      }
+    } catch {
+    }
+  })();
+  await Promise.all([overpassTask, geoRioTask]);
+  const result = { osmWaterways, officialFloodRings };
+  hydroMemCache.set(key, result);
+  try {
+    import_fs4.default.mkdirSync(CACHE_DIR_TERRAIN, { recursive: true });
+    import_fs4.default.writeFileSync(cacheFile, JSON.stringify(result));
+  } catch {
+  }
+  return result;
+}
+async function buildTerrainAndHydrologyPayload(lat, lng, fallbackElevM) {
+  const nx = 44;
+  const ny = 28;
+  const halfLatSpan = 38e-4;
+  const halfLngSpan = 56e-4;
+  const bbox = {
+    minLat: lat - halfLatSpan,
+    maxLat: lat + halfLatSpan,
+    minLng: lng - halfLngSpan,
+    maxLng: lng + halfLngSpan
+  };
+  const z = 14;
+  const txMin = Math.floor(lngToTileXFloat(bbox.minLng, z));
+  const txMax = Math.floor(lngToTileXFloat(bbox.maxLng, z));
+  const tyMin = Math.floor(latToTileYFloat(bbox.maxLat, z));
+  const tyMax = Math.floor(latToTileYFloat(bbox.minLat, z));
+  const tileCache = /* @__PURE__ */ new Map();
+  const tilePromises = [];
+  for (let ty = tyMin; ty <= tyMax; ty++) {
+    for (let tx = txMin; tx <= txMax; tx++) {
+      tilePromises.push(
+        fetchTerrariumTile(z, tx, ty).then((png) => {
+          if (png) tileCache.set(`${tx}_${ty}`, png);
+        })
+      );
+    }
+  }
+  const hydroPromise = fetchOsmWaterwaysAndFlood(lat, lng, bbox);
+  await Promise.all([...tilePromises, hydroPromise]);
+  const { osmWaterways, officialFloodRings } = await hydroPromise;
+  const elevGrid = new Float64Array(nx * ny);
+  let hasRealDem = tileCache.size > 0;
+  for (let row = 0; row < ny; row++) {
+    const cLat = bbox.maxLat - row / (ny - 1) * (bbox.maxLat - bbox.minLat);
+    const tyF = latToTileYFloat(cLat, z);
+    const ty = Math.floor(tyF);
+    const py = (tyF - ty) * 255;
+    for (let col = 0; col < nx; col++) {
+      const cLng = bbox.minLng + col / (nx - 1) * (bbox.maxLng - bbox.minLng);
+      const txF = lngToTileXFloat(cLng, z);
+      const tx = Math.floor(txF);
+      const px = (txF - tx) * 255;
+      const png = tileCache.get(`${tx}_${ty}`);
+      if (png) {
+        elevGrid[row * nx + col] = samplePngElev(png, px, py);
+      } else {
+        hasRealDem = false;
+        elevGrid[row * nx + col] = Math.max(2, fallbackElevM + (ny / 2 - row) * 0.8 + Math.abs(col - nx / 2) * 0.4);
+      }
+    }
+  }
+  const smoothGrid = new Float64Array(nx * ny);
+  for (let r = 0; r < ny; r++) {
+    for (let c = 0; c < nx; c++) {
+      let sum = 0;
+      let wSum = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const rr = Math.max(0, Math.min(ny - 1, r + dr));
+          const cc = Math.max(0, Math.min(nx - 1, c + dc));
+          const w = dr === 0 && dc === 0 ? 4 : dr === 0 || dc === 0 ? 2 : 1;
+          sum += elevGrid[rr * nx + cc] * w;
+          wSum += w;
+        }
+      }
+      smoothGrid[r * nx + c] = hasRealDem ? sum / wSum : elevGrid[r * nx + c];
+    }
+  }
+  let minAlt = Infinity;
+  let maxAlt = -Infinity;
+  for (let i = 0; i < smoothGrid.length; i++) {
+    if (smoothGrid[i] < minAlt) minAlt = smoothGrid[i];
+    if (smoothGrid[i] > maxAlt) maxAlt = smoothGrid[i];
+  }
+  minAlt = Math.floor(minAlt);
+  maxAlt = Math.ceil(Math.max(maxAlt, minAlt + 5));
+  const first5 = Math.ceil(minAlt / 5) * 5;
+  const thresholds5 = [];
+  for (let v = first5; v <= maxAlt; v += 5) thresholds5.push(v);
+  if (thresholds5.length > 36) {
+    const step = thresholds5.length > 60 ? 10 : 5;
+    thresholds5.length = 0;
+    for (let v = first5; v <= maxAlt; v += step) thresholds5.push(v);
+  }
+  const gen = (0, import_d3_contour.contours)().size([nx, ny]).smooth(true).thresholds(thresholds5);
+  const contourBands = gen(Array.from(smoothGrid));
+  const contours5m = [];
+  for (const band of contourBands) {
+    if (!band.coordinates || band.coordinates.length === 0) continue;
+    const isMaster = band.value % 25 === 0 || maxAlt - minAlt <= 25 && band.value % 10 === 0;
+    const converted = multiPolygonCoordsToSvgPath(band.coordinates, nx, ny, 280, 175);
+    if (!converted.path) continue;
+    contours5m.push({
+      elev: band.value,
+      isMaster,
+      path: converted.path,
+      labelPt: isMaster ? converted.bestLabelPt : void 0
+    });
+  }
+  const hydroElev = new Float64Array(smoothGrid);
+  const nbrOffsets = [
+    [-1, -1, 1.414],
+    [-1, 0, 1],
+    [-1, 1, 1.414],
+    [0, -1, 1],
+    [0, 1, 1],
+    [1, -1, 1.414],
+    [1, 0, 1],
+    [1, 1, 1.414]
+  ];
+  for (let pass = 0; pass < 2; pass++) {
+    for (let r = 1; r < ny - 1; r++) {
+      for (let c = 1; c < nx - 1; c++) {
+        const idx = r * nx + c;
+        let lowestNbr = Infinity;
+        for (const [dr, dc] of nbrOffsets) {
+          const nv = hydroElev[(r + dr) * nx + (c + dc)];
+          if (nv < lowestNbr) lowestNbr = nv;
+        }
+        if (hydroElev[idx] < lowestNbr) hydroElev[idx] = lowestNbr + 0.05;
+      }
+    }
+  }
+  const d8Target = new Int32Array(nx * ny).fill(-1);
+  for (let r = 1; r < ny - 1; r++) {
+    for (let c = 1; c < nx - 1; c++) {
+      const idx = r * nx + c;
+      const cur = hydroElev[idx];
+      let bestSlope = 0;
+      let bestIdx = -1;
+      for (const [dr, dc, dist] of nbrOffsets) {
+        const nIdx = (r + dr) * nx + (c + dc);
+        const drop = (cur - hydroElev[nIdx]) / dist;
+        if (drop > bestSlope) {
+          bestSlope = drop;
+          bestIdx = nIdx;
+        }
+      }
+      d8Target[idx] = bestIdx;
+    }
+  }
+  const acc = new Float64Array(nx * ny).fill(1);
+  const order = Array.from({ length: nx * ny }, (_, i) => i).sort((a, b) => hydroElev[b] - hydroElev[a]);
+  for (const idx of order) {
+    const nxt = d8Target[idx];
+    if (nxt >= 0) acc[nxt] += acc[idx];
+  }
+  const isChannel = new Uint8Array(nx * ny);
+  const channelThreshold = 14;
+  for (let i = 0; i < acc.length; i++) {
+    if (acc[i] >= channelThreshold) isChannel[i] = 1;
+  }
+  const geoToSvg = (pLat, pLng) => [
+    (pLng - bbox.minLng) / (bbox.maxLng - bbox.minLng) * 280,
+    (bbox.maxLat - pLat) / (bbox.maxLat - bbox.minLat) * 175
+  ];
+  let nearestRealStreamM = null;
+  const osmWaterwayPaths = [];
+  for (const w of osmWaterways) {
+    let pStr = "";
+    for (let i = 0; i < w.coords.length; i++) {
+      const [wLat, wLng] = w.coords[i];
+      const distM = haversineMeters(lat, lng, wLat, wLng);
+      if (nearestRealStreamM === null || distM < nearestRealStreamM) nearestRealStreamM = Math.round(distM);
+      const col = Math.round((wLng - bbox.minLng) / (bbox.maxLng - bbox.minLng) * (nx - 1));
+      const row = Math.round((bbox.maxLat - wLat) / (bbox.maxLat - bbox.minLat) * (ny - 1));
+      if (row >= 0 && row < ny && col >= 0 && col < nx) isChannel[row * nx + col] = 1;
+      const [sx2, sy2] = geoToSvg(wLat, wLng);
+      pStr += i === 0 ? `M${sx2.toFixed(1)},${sy2.toFixed(1)}` : `L${sx2.toFixed(1)},${sy2.toFixed(1)}`;
+    }
+    if (pStr) osmWaterwayPaths.push({ path: pStr, name: w.name });
+  }
+  const handGrid = new Float64Array(nx * ny);
+  for (let i = 0; i < nx * ny; i++) {
+    if (isChannel[i]) {
+      handGrid[i] = 0;
+      continue;
+    }
+    let cur = i;
+    let steps = 0;
+    while (cur >= 0 && !isChannel[cur] && steps < 64) {
+      const nxt = d8Target[cur];
+      if (nxt < 0) break;
+      cur = nxt;
+      steps++;
+    }
+    const drainElev = cur >= 0 ? smoothGrid[cur] : minAlt;
+    handGrid[i] = Math.max(0, smoothGrid[i] - drainElev);
+  }
+  const centerRow = Math.floor(ny / 2);
+  const centerCol = Math.floor(nx / 2);
+  const handAtCenterM = Number(handGrid[centerRow * nx + centerCol].toFixed(1));
+  const invHand = Array.from(handGrid, (h) => Math.max(0, 10 - h));
+  const handContours = (0, import_d3_contour.contours)().size([nx, ny]).smooth(true).thresholds([5, 8])(invHand);
+  const medBand = handContours.find((c) => c.value === 5);
+  const highBand = handContours.find((c) => c.value === 8);
+  const medPath = medBand ? multiPolygonCoordsToSvgPath(medBand.coordinates, nx, ny, 280, 175).path : "";
+  const highPath = highBand ? multiPolygonCoordsToSvgPath(highBand.coordinates, nx, ny, 280, 175).path : "";
+  const flowLines = [];
+  const sx = 280 / (nx - 1);
+  const sy = 175 / (ny - 1);
+  for (let r = 1; r < ny - 1; r++) {
+    for (let c = 1; c < nx - 1; c++) {
+      const idx = r * nx + c;
+      if (acc[idx] < 10) continue;
+      const nxt = d8Target[idx];
+      if (nxt < 0) continue;
+      const nr = Math.floor(nxt / nx);
+      const nc = nxt % nx;
+      const x1 = (c * sx).toFixed(1);
+      const y1 = (r * sy).toFixed(1);
+      const x2 = (nc * sx).toFixed(1);
+      const y2 = (nr * sy).toFixed(1);
+      flowLines.push({
+        path: `M${x1},${y1} L${x2},${y2}`,
+        weight: Math.min(3, 0.8 + Math.log10(acc[idx]) * 0.9)
+      });
+    }
+  }
+  const officialFloodPaths = [];
+  for (const ring of officialFloodRings) {
+    if (ring.length < 3) continue;
+    let d = "";
+    for (let i = 0; i < ring.length; i++) {
+      const [px, py] = geoToSvg(ring[i][0], ring[i][1]);
+      d += i === 0 ? `M${px.toFixed(1)},${py.toFixed(1)}` : `L${px.toFixed(1)},${py.toFixed(1)}`;
+    }
+    officialFloodPaths.push(d + "Z");
+  }
+  if (nearestRealStreamM === null) {
+    let minGridDist = Infinity;
+    for (let r = 0; r < ny; r++) {
+      for (let c = 0; c < nx; c++) {
+        if (!isChannel[r * nx + c]) continue;
+        const dMeters = Math.hypot((r - centerRow) * 30, (c - centerCol) * 26);
+        if (dMeters < minGridDist) minGridDist = dMeters;
+      }
+    }
+    if (Number.isFinite(minGridDist)) nearestRealStreamM = Math.max(25, Math.round(minGridDist));
+  }
+  return {
+    bbox,
+    nx,
+    ny,
+    gridSmooth: Array.from(smoothGrid, (v) => Number(v.toFixed(1))),
+    minAlt,
+    maxAlt,
+    contours5m,
+    handPolys: { highPath, medPath },
+    flowLines,
+    osmWaterways: osmWaterwayPaths,
+    officialFloodPaths,
+    handAtCenterM,
+    nearestRealStreamM
+  };
+}
+
+// report360Service.ts
+var NEIGHBORHOOD_REF_ASKING_SQM = {
+  "rio de janeiro": {
+    leblon: 27300,
+    ipanema: 26200,
+    lagoa: 19400,
+    gavea: 18500,
+    "jardim botanico": 17900,
+    humaita: 14200,
+    botafogo: 13350,
+    flamengo: 11800,
+    laranjeiras: 11050,
+    copacabana: 12100,
+    leme: 13800,
+    urca: 15600,
+    "barra da tijuca": 11494,
+    "recreio dos bandeirantes": 7200,
+    recreio: 7200,
+    tijuca: 7e3,
+    maracana: 6850,
+    "vila isabel": 6200,
+    grajau: 6150,
+    andarai: 5450,
+    meier: 5500,
+    cachambi: 5400,
+    "todos os santos": 5600,
+    "engenho de dentro": 4450,
+    "engenho novo": 4350,
+    centro: 6100,
+    "santa teresa": 7200,
+    freguesia: 6900,
+    jacarepagua: 6850,
+    pechincha: 5300,
+    taquara: 4650,
+    "ilha do governador": 5400,
+    "jardim guanabara": 6400,
+    iraja: 4400,
+    "vila da penha": 4650,
+    campo: 3400,
+    "campo grande": 3650,
+    bangu: 3350,
+    madureira: 4100,
+    penha: 3800
+  },
+  niteroi: {
+    icarai: 9600,
+    inga: 8800,
+    "boa viagem": 8900,
+    gragoata: 8100,
+    camboinhas: 9400,
+    itacoatiara: 9100,
+    charitas: 8600,
+    "sao francisco": 8400,
+    "santa rosa": 7600,
+    "sao domingos": 7400,
+    pendotiba: 5600,
+    piratininga: 6900,
+    itaipu: 5800,
+    centro: 5900,
+    fonseca: 4650,
+    barreto: 4300
+  },
+  "juiz de fora": {
+    "estrela sul": 7200,
+    "bom pastor": 6500,
+    cascatinha: 6200,
+    "alto dos passos": 5900,
+    "santa helena": 5800,
+    "sao mateus": 5600,
+    aeroporto: 5400,
+    granbery: 5100,
+    centro: 4950,
+    paineiras: 4900,
+    "sao pedro": 4600,
+    "manoel honorio": 4300,
+    "santa luzia": 3800,
+    benfica: 3400
+  }
+};
+function resolveNeighborhoodRefSqm(baseKey, neighborhood, cityAvgSqm, fallbackItbiSqm) {
+  const normN = normalizeText5(neighborhood);
+  const map = NEIGHBORHOOD_REF_ASKING_SQM[baseKey] || {};
+  if (normN && map[normN]) return map[normN];
+  const portalScope = baseKey === "niteroi" ? "RJ_NITEROI" : baseKey === "juiz de fora" ? "MG_JUIZ DE FORA" : "RJ_RIO DE JANEIRO";
+  const portalMap = NEIGHBORHOOD_PORTAL_RATES[portalScope] || {};
+  if (normN && portalMap[normN] > 0) return Math.round(portalMap[normN] * 1.15);
+  return fallbackItbiSqm > 0 ? Math.round(fallbackItbiSqm * 1.25) : cityAvgSqm;
+}
+var moradaCacheMap = null;
+function loadMoradaEntries() {
+  if (moradaCacheMap) return moradaCacheMap;
+  try {
+    const fp = import_node_path10.default.join(process.cwd(), "morada_virtual_cache.json");
+    if (import_node_fs10.default.existsSync(fp)) {
+      moradaCacheMap = Object.values(JSON.parse(import_node_fs10.default.readFileSync(fp, "utf8")) || {});
+      return moradaCacheMap;
+    }
+  } catch {
+  }
+  moradaCacheMap = [];
+  return moradaCacheMap;
+}
+var cnefeCache = /* @__PURE__ */ new Map();
+var itbiCityCache = /* @__PURE__ */ new WeakMap();
+function warmupReport360Caches() {
+  try {
+    loadCnefeCityIndex("Rio de Janeiro");
+    loadMoradaEntries();
+  } catch {
+  }
+}
+function normalizeText5(raw) {
+  return String(raw || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function haversineMeters2(lat1, lng1, lat2, lng2) {
+  const R = 6371e3;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function loadCnefeCityIndex(city) {
+  const norm = normalizeText5(city);
+  const code = norm.includes("niteroi") ? "3303302" : norm.includes("juiz de fora") ? "3136702" : "3304557";
+  if (cnefeCache.has(code)) return cnefeCache.get(code);
+  const filePath = import_node_path10.default.join(process.cwd(), ".cache", "cnefe-360", `${code}.json`);
+  if (!import_node_fs10.default.existsSync(filePath)) return null;
+  try {
+    const parsed = JSON.parse(import_node_fs10.default.readFileSync(filePath, "utf8"));
+    const grid = /* @__PURE__ */ new Map();
+    for (const p of parsed.pois || []) {
+      const gk = `${Math.round(p[0] * 200)},${Math.round(p[1] * 200)}`;
+      let arr = grid.get(gk);
+      if (!arr) {
+        arr = [];
+        grid.set(gk, arr);
+      }
+      arr.push(p);
+    }
+    parsed.poiGrid = grid;
+    cnefeCache.set(code, parsed);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+var MUNICIPAL_BASELINES = {
+  "rio de janeiro": {
+    city: "Rio de Janeiro",
+    state: "RJ",
+    ibgeCode: "3304557",
+    center: [-22.9068, -43.1729],
+    populationCenso2022: 6211223,
+    householdsCenso2022: 2439321,
+    avgResidentsPerHousehold: 2.5,
+    vacantShareCityPct: 16,
+    apartmentsShareCityPct: 39.5,
+    housesShareCityPct: 60,
+    seniors60SharePct: 18.8,
+    nominalIncomeCityHead: 6563,
+    fipeZap: {
+      cityAvgSqm: 11372,
+      yoyChangePct: 5.8,
+      commercialSqm: 8574,
+      commercialYoyPct: 1.1,
+      commercialRentSqm: 58,
+      note: "\xCDndice Referencial de Venda Residencial (pre\xE7o anunciado, \xFAltimos 12 meses \u2014 Rio de Janeiro/RJ).",
+      byBedrooms: [
+        { label: "1 quarto", sqm: 14380 },
+        { label: "2 quartos", sqm: 9626 },
+        { label: "3 quartos", sqm: 10757 },
+        { label: "4+ quartos", sqm: 12902 }
+      ]
+    },
+    ideb: {
+      yearsInitial: 6.2,
+      yearsFinal: 5.2,
+      highSchool: 3.7,
+      referenceYear: "Refer\xEAncia Educacional (2023/2025 \xB7 rede p\xFAblica)"
+    },
+    caged: {
+      periodLabel: "Janeiro a Setembro/2026",
+      monthName: "Setembro/2026",
+      monthAdmissions: 80955,
+      monthSeparations: 76670,
+      monthBalance: 4285,
+      ytdBalance: 38847,
+      ytdAdmissions: 706404,
+      scopeNote: "Saldo formal na capital com destaque para Servi\xE7os e Com\xE9rcio."
+    },
+    disasters: {
+      recordsCount2010_2024: 3,
+      floodCountLast10y: 2,
+      worstYear: 2019,
+      worstDisplaced: 3245,
+      worstAffectedHomes: 192,
+      worstDeaths: 10,
+      preparedness: {
+        floodAlert: true,
+        floodPlan: true,
+        landslideAlert: true,
+        landslidePlan: true,
+        resilientCities: true
+      },
+      summaryNote: "Monitoramento municipal de ocorr\xEAncias clim\xE1ticas e estrutura ativa de defesa civil."
+    }
+  },
+  niteroi: {
+    city: "Niter\xF3i",
+    state: "RJ",
+    ibgeCode: "3303302",
+    center: [-22.8832, -43.1034],
+    populationCenso2022: 481749,
+    householdsCenso2022: 205410,
+    avgResidentsPerHousehold: 2.3,
+    vacantShareCityPct: 14,
+    apartmentsShareCityPct: 44,
+    housesShareCityPct: 55.7,
+    seniors60SharePct: 22.9,
+    nominalIncomeCityHead: 7420,
+    fipeZap: {
+      cityAvgSqm: 8100,
+      yoyChangePct: 6.4,
+      commercialSqm: 7150,
+      commercialYoyPct: 1.8,
+      commercialRentSqm: 49,
+      note: "Refer\xEAncia de Venda Residencial em Niter\xF3i (pre\xE7o anunciado nos \xFAltimos 12 meses).",
+      byBedrooms: [
+        { label: "1 quarto", sqm: 9420 },
+        { label: "2 quartos", sqm: 7890 },
+        { label: "3 quartos", sqm: 8180 },
+        { label: "4+ quartos", sqm: 9350 }
+      ]
+    },
+    ideb: {
+      yearsInitial: 5.5,
+      yearsFinal: 4.3,
+      highSchool: 4.1,
+      referenceYear: "Refer\xEAncia Educacional (2025 \xB7 rede p\xFAblica)"
+    },
+    caged: {
+      periodLabel: "Janeiro a Setembro/2026",
+      monthName: "Setembro/2026",
+      monthAdmissions: 7420,
+      monthSeparations: 6307,
+      monthBalance: 1113,
+      ytdBalance: 5484,
+      ytdAdmissions: 64210,
+      scopeNote: "Niter\xF3i foi o 2\xBA maior gerador de empregos formais do RJ em set/2026."
+    },
+    disasters: {
+      recordsCount2010_2024: 3,
+      floodCountLast10y: 2,
+      worstYear: 2010,
+      worstDisplaced: 11e3,
+      worstAffectedHomes: 3500,
+      worstDeaths: 167,
+      preparedness: {
+        floodAlert: true,
+        floodPlan: true,
+        landslideAlert: true,
+        landslidePlan: true,
+        resilientCities: true
+      },
+      summaryNote: "Sistema robusto p\xF3s-2010 com radares, pluvi\xF4metros e rede de sirenes da Defesa Civil de Niter\xF3i."
+    }
+  },
+  "juiz de fora": {
+    city: "Juiz de Fora",
+    state: "MG",
+    ibgeCode: "3136702",
+    center: [-21.7642, -43.3503],
+    populationCenso2022: 540756,
+    householdsCenso2022: 210480,
+    avgResidentsPerHousehold: 2.5,
+    vacantShareCityPct: 13,
+    apartmentsShareCityPct: 37.1,
+    housesShareCityPct: 62.7,
+    seniors60SharePct: 19.6,
+    nominalIncomeCityHead: 4650,
+    fipeZap: {
+      cityAvgSqm: 5150,
+      yoyChangePct: 5.2,
+      commercialSqm: 5420,
+      commercialYoyPct: 2.1,
+      commercialRentSqm: 38,
+      note: "Refer\xEAncia de Venda Residencial Regional em Juiz de Fora (\xFAltimos 12 meses).",
+      byBedrooms: [
+        { label: "1 quarto", sqm: 5850 },
+        { label: "2 quartos", sqm: 4980 },
+        { label: "3 quartos", sqm: 5290 },
+        { label: "4+ quartos", sqm: 6150 }
+      ]
+    },
+    ideb: {
+      yearsInitial: 6.1,
+      yearsFinal: 5.1,
+      highSchool: 4.5,
+      referenceYear: "Refer\xEAncia Educacional (2023/2025 \xB7 rede p\xFAblica)"
+    },
+    caged: {
+      periodLabel: "Janeiro a Setembro/2026",
+      monthName: "Setembro/2026",
+      monthAdmissions: 6078,
+      monthSeparations: 5511,
+      monthBalance: 567,
+      ytdBalance: 1534,
+      ytdAdmissions: 56453,
+      scopeNote: "2\xBA melhor setembro da s\xE9rie desde 2020 em Juiz de Fora, puxado por Servi\xE7os (+490 vagas)."
+    },
+    disasters: {
+      recordsCount2010_2024: 4,
+      floodCountLast10y: 3,
+      worstYear: 2020,
+      worstDisplaced: 1420,
+      worstAffectedHomes: 310,
+      worstDeaths: 4,
+      preparedness: {
+        floodAlert: true,
+        floodPlan: true,
+        landslideAlert: true,
+        landslidePlan: true,
+        resilientCities: true
+      },
+      summaryNote: "Monitoramento hidrol\xF3gico do Rio Paraibuna e mapeamento de encostas pela Defesa Civil de JF."
+    }
+  }
+};
+function classifyPoiCategory(nameRaw, especie) {
+  const n = normalizeText5(nameRaw);
+  if (especie === 4 || /\b(escola|colegio|creche|educa|infantil|ensin|faculdade|universidade|curso|pre vestibular)\b/.test(n)) {
+    if (/\bcreche\b/.test(n)) return { category: "Educa\xE7\xE3o", sub: "Creche" };
+    return { category: "Educa\xE7\xE3o", sub: "Col\xE9gio" };
+  }
+  if (/\b(drogaria|farmacia|manipulacao|botica)\b/.test(n)) {
+    return { category: "Farm\xE1cias e Drogarias", sub: n.includes("manipulacao") ? "Farm\xE1cia de manipula\xE7\xE3o" : "Farm\xE1cia" };
+  }
+  if (especie === 5 || /\b(hospital|upa|pronto|clinica|consultorio|odont|dentista|medico|medica|laboratorio|saude|policlinica|posto de saude|fisioterap)\b/.test(n)) {
+    if (/\blaboratorio\b/.test(n)) return { category: "Academias e Bem-Estar", sub: "Laborat\xF3rio" };
+    if (/\bhospital\b/.test(n)) return { category: "Academias e Bem-Estar", sub: "Hospital" };
+    if (/\b(upa|pronto)\b/.test(n)) return { category: "Academias e Bem-Estar", sub: "Pronto-atendimento" };
+    if (/\b(clinica|policlinica)\b/.test(n)) return { category: "Academias e Bem-Estar", sub: "Cl\xEDnica" };
+    return { category: "Academias e Bem-Estar", sub: "Consult\xF3rio" };
+  }
+  if (/\b(academia|pilates|crossfit|fitness|musculacao|natacao)\b/.test(n)) {
+    return { category: "Academias e Bem-Estar", sub: "Academia" };
+  }
+  if (/\b(padaria|panificadora|confeitaria|mercado|supermercado|minimercado|hortifruti|acougue|mercearia|quitanda)\b/.test(n)) {
+    if (/\b(padaria|panificadora|confeitaria)\b/.test(n)) return { category: "Mercado e Padaria", sub: "Padaria" };
+    if (/\bsupermercado\b/.test(n)) return { category: "Mercado e Padaria", sub: "Supermercado" };
+    return { category: "Mercado e Padaria", sub: "Mercearia" };
+  }
+  if (/\b(bar|botequim|boteco|choperia|cervejaria|pub|tabacaria|adega)\b/.test(n)) {
+    return { category: "Lazer Noturno e Bares", sub: n.includes("tabacaria") ? "Tabacaria" : "Bar" };
+  }
+  if (/\b(restaurante|lanchonete|pizzaria|hamburgueria|churrascaria|bistro|cafe|cafeteria|pastelaria|sushi|cantina|sorveteria|acai)\b/.test(n)) {
+    if (/\bpizzaria\b/.test(n)) return { category: "Gastronomia e Alimenta\xE7\xE3o", sub: "Pizzaria" };
+    if (/\b(lanchonete|hamburgueria|pastelaria)\b/.test(n)) return { category: "Gastronomia e Alimenta\xE7\xE3o", sub: "Lanchonete" };
+    return { category: "Gastronomia e Alimenta\xE7\xE3o", sub: "Restaurante" };
+  }
+  if (/\b(salao|cabeleireiro|barbearia|manicure|estetica|beleza|atelie|costura|depilacao)\b/.test(n)) {
+    if (/\bbarbearia\b/.test(n)) return { category: "Est\xE9tica e Cuidados Pessoais", sub: "Barbearia" };
+    if (/\b(atelie|costura)\b/.test(n)) return { category: "Est\xE9tica e Cuidados Pessoais", sub: "Ateli\xEA de costura" };
+    return { category: "Est\xE9tica e Cuidados Pessoais", sub: "Sal\xE3o de beleza" };
+  }
+  if (/\b(estacionamento|garagem|oficina|mecanica|auto pecas|borracharia|posto|combustivel|lava jato|funilaria)\b/.test(n)) {
+    if (/\b(estacionamento|garagem)\b/.test(n)) return { category: "Automotivo", sub: "Estacionamento" };
+    if (/\bposto\b/.test(n)) return { category: "Automotivo", sub: "Posto de combust\xEDvel" };
+    return { category: "Automotivo", sub: "Oficina mec\xE2nica" };
+  }
+  if (/\b(pet|veterinari|racao|racoes|banho e tosa)\b/.test(n)) {
+    return { category: "Pet", sub: /\bveterin/.test(n) ? "Veterin\xE1ria" : "Pet shop" };
+  }
+  if (/\b(advogad|advocacia|contabil|contador|escritorio|consultoria|imobiliaria|corretor|seguro|despachante|sala comercial|engenharia|arquitetura)\b/.test(n)) {
+    if (/\badvog/.test(n)) return { category: "Servi\xE7os Profissionais", sub: "Advocacia" };
+    if (/\bescritorio\b/.test(n)) return { category: "Servi\xE7os Profissionais", sub: "Escrit\xF3rio" };
+    return { category: "Servi\xE7os Profissionais", sub: "Sala comercial" };
+  }
+  if (/\b(banco|caixa|itau|bradesco|santander|loterica|papelaria|grafica|correio|lavanderia|chaveiro)\b/.test(n)) {
+    if (/\bbanco|itau|bradesco|santander|caixa\b/.test(n)) return { category: "Conveni\xEAncia e Bancos", sub: "Banco" };
+    if (/\bpapelaria\b/.test(n)) return { category: "Conveni\xEAncia e Bancos", sub: "Papelaria" };
+    return { category: "Conveni\xEAncia e Bancos", sub: "Servi\xE7os locais" };
+  }
+  if (/\b(praca|parque|clube|teatro|cinema|campo|quadra|lazer)\b/.test(n)) {
+    return { category: "Lazer ao Ar Livre", sub: /\bparque\b/.test(n) ? "Parque" : "Pra\xE7a" };
+  }
+  if (/\b(hotel|pousada|hostel|pensao|flat)\b/.test(n)) {
+    return { category: "Hospedagem", sub: "Hotel / Pousada" };
+  }
+  if (/\b(loja|otica|roupa|calcado|vestuario|bazar|presentes|eletro|moveis|material|ferragem|floricultura|livraria)\b/.test(n)) {
+    if (/\b(otica|optica)\b/.test(n)) return { category: "Compras", sub: "\xD3tica" };
+    if (/\b(roupa|vestuario|moda)\b/.test(n)) return { category: "Compras", sub: "Loja de roupas" };
+    return { category: "Compras", sub: "Loja diversa" };
+  }
+  return { category: "Outros", sub: "Com\xE9rcio/Servi\xE7o" };
+}
+async function fetchClimateAndElevation(lat, lng) {
+  const key = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
+  const cacheDir = import_node_path10.default.join(process.cwd(), ".cache", "climate-360");
+  const cacheFile = import_node_path10.default.join(cacheDir, `${key}.json`);
+  if (import_node_fs10.default.existsSync(cacheFile)) {
+    try {
+      const cached = JSON.parse(import_node_fs10.default.readFileSync(cacheFile, "utf8"));
+      cached.source = "S\xE9ries Hist\xF3ricas Clim\xE1ticas & Altimetria (2021\u20132025)";
+      if (!Array.isArray(cached.elevationGrid) || cached.elevationGrid.length < 5) {
+        const base = Number(cached.elevationMeters || 28);
+        const sn = Array.isArray(cached.profileSN) ? cached.profileSN : [base, base, base, base, base, base, base];
+        const we = Array.isArray(cached.profileWE) ? cached.profileWE : [base, base, base, base, base, base, base];
+        cached.elevationGrid = Array.from(
+          { length: 7 },
+          (_, r) => Array.from({ length: 7 }, (__, c) => Math.max(0, Math.round(((sn[Math.min(sn.length - 1, r + 1)] ?? base) + (we[Math.min(we.length - 1, c + 1)] ?? base)) / 2)))
+        );
+      }
+      return cached;
+    } catch {
+    }
+  }
+  const zoneKey = `zone_${lat.toFixed(2)}_${lng.toFixed(2)}`;
+  const zoneCacheFile = import_node_path10.default.join(cacheDir, `${zoneKey}.json`);
+  let cachedMeteoData = null;
+  if (import_node_fs10.default.existsSync(zoneCacheFile)) {
+    try {
+      cachedMeteoData = JSON.parse(import_node_fs10.default.readFileSync(zoneCacheFile, "utf8"));
+    } catch {
+    }
+  }
+  const stepDeg = 337e-5;
+  const lats = [lat];
+  const lngs = [lng];
+  for (let i = -4; i <= 4; i++) {
+    lats.push(Number((lat + i * stepDeg).toFixed(5)));
+    lngs.push(lng);
+  }
+  for (let i = -4; i <= 4; i++) {
+    lats.push(lat);
+    lngs.push(Number((lng + i * stepDeg * 1.08).toFixed(5)));
+  }
+  const meteoUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&start_date=2021-01-01&end_date=2025-12-31&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,wind_gusts_10m_max,shortwave_radiation_sum&timezone=America%2FSao_Paulo`;
+  const elevUrl = `https://api.open-meteo.com/v1/elevation?latitude=${lats.join(",")}&longitude=${lngs.join(",")}`;
+  const uvUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&hourly=uv_index&forecast_days=1&timezone=America%2FSao_Paulo`;
+  const [mRes, eRes, uvRes] = await Promise.all([
+    cachedMeteoData ? Promise.resolve(null) : fetch(meteoUrl, { signal: AbortSignal.timeout(4e3) }).catch(() => null),
+    fetch(elevUrl, { signal: AbortSignal.timeout(2500) }).catch(() => null),
+    fetch(uvUrl, { signal: AbortSignal.timeout(2500) }).catch(() => null)
+  ]);
+  const fallbackUvByHour = {
+    6: 0.2,
+    7: 1.4,
+    8: 3.3,
+    9: 5.8,
+    10: 8.1,
+    11: 9.8,
+    12: 10.6,
+    13: 10.2,
+    14: 8.6,
+    15: 6.1,
+    16: 3.4,
+    17: 1.3,
+    18: 0.2
+  };
+  let uvHourly = Object.entries(fallbackUvByHour).map(([h, uv]) => ({
+    hour: Number(h),
+    label: `${String(h).padStart(2, "0")}h`,
+    uv
+  }));
+  if (uvRes && uvRes.ok) {
+    try {
+      const uvj = await uvRes.json();
+      const times = uvj?.hourly?.time || [];
+      const vals = uvj?.hourly?.uv_index || [];
+      const parsed = [];
+      for (let i = 0; i < times.length; i++) {
+        const hh = parseInt(String(times[i]).slice(11, 13), 10);
+        const val = Number(vals[i]);
+        if (Number.isFinite(hh) && hh >= 6 && hh <= 18 && Number.isFinite(val)) {
+          parsed.push({ hour: hh, label: `${String(hh).padStart(2, "0")}h`, uv: Number(val.toFixed(1)) });
+        }
+      }
+      if (parsed.length >= 10) uvHourly = parsed;
+    } catch {
+    }
+  }
+  const peakEntry = uvHourly.reduce((best, cur) => cur.uv > best.uv ? cur : best, uvHourly[0]);
+  const highHours = uvHourly.filter((u) => u.uv >= 6);
+  const uvAlertWindow = highHours.length >= 2 ? `${highHours[0].label} \xE0s ${highHours[highHours.length - 1].label}` : `${peakEntry.label}`;
+  let elevationMeters = 28;
+  let profileSN = [28, 26, 25, 27, 28, 30, 32, 31, 29];
+  let profileWE = [25, 27, 29, 28, 28, 27, 26, 25, 24];
+  let slopePct = 3.2;
+  let slopeAspect = "Norte";
+  if (eRes && eRes.ok) {
+    try {
+      const ej = await eRes.json();
+      if (Array.isArray(ej.elevation) && ej.elevation.length >= 19) {
+        elevationMeters = Math.round(ej.elevation[0]);
+        profileSN = ej.elevation.slice(1, 10).map((v) => Math.round(v));
+        profileWE = ej.elevation.slice(10, 19).map((v) => Math.round(v));
+        const dSN = Math.abs((profileSN[5] || elevationMeters) - (profileSN[3] || elevationMeters)) / 750;
+        const dWE = Math.abs((profileWE[5] || elevationMeters) - (profileWE[3] || elevationMeters)) / 750;
+        slopePct = Number((Math.hypot(dSN, dWE) * 100).toFixed(1));
+        const nsSign = (profileSN[5] || 0) - (profileSN[3] || 0);
+        const weSign = (profileWE[5] || 0) - (profileWE[3] || 0);
+        if (Math.abs(nsSign) >= Math.abs(weSign)) slopeAspect = nsSign >= 0 ? "Sul" : "Norte";
+        else slopeAspect = weSign >= 0 ? "Oeste" : "Leste";
+      }
+    } catch {
+    }
+  }
+  const monthNames = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  const fallbackMonthly = [
+    { month: "JAN", maxTemp: 30, minTemp: 23, rainMm: 183 },
+    { month: "FEV", maxTemp: 31, minTemp: 24, rainMm: 130 },
+    { month: "MAR", maxTemp: 31, minTemp: 23, rainMm: 100 },
+    { month: "ABR", maxTemp: 27, minTemp: 21, rainMm: 130 },
+    { month: "MAI", maxTemp: 26, minTemp: 19, rainMm: 45 },
+    { month: "JUN", maxTemp: 25, minTemp: 17, rainMm: 32 },
+    { month: "JUL", maxTemp: 25, minTemp: 16, rainMm: 31 },
+    { month: "AGO", maxTemp: 26, minTemp: 17, rainMm: 62 },
+    { month: "SET", maxTemp: 28, minTemp: 19, rainMm: 49 },
+    { month: "OUT", maxTemp: 28, minTemp: 20, rainMm: 136 },
+    { month: "NOV", maxTemp: 28, minTemp: 20, rainMm: 115 },
+    { month: "DEZ", maxTemp: 30, minTemp: 22, rainMm: 174 }
+  ];
+  let result = {
+    source: "S\xE9ries Hist\xF3ricas Clim\xE1ticas & Altimetria (2021\u20132025)",
+    elevationMeters,
+    slopePct,
+    slopeAspect,
+    profileSN,
+    profileWE,
+    elevationGrid: Array.from(
+      { length: 7 },
+      (_, r) => Array.from({ length: 7 }, (__, c) => Math.max(0, Math.round(((profileSN[r + 1] ?? elevationMeters) + (profileWE[c + 1] ?? elevationMeters)) / 2)))
+    ),
+    avgTempC: 23.5,
+    annualRainMm: 1188,
+    hotDays35PerYear: 14,
+    warmNights20PerYear: 192,
+    muggyDaysPerYear: 146,
+    rain50mmDaysPerYear: 1,
+    solarKwhPerKwpMonth: 110,
+    maxTempRecord: { value: 41.3, when: "set/2023" },
+    minTempRecord: { value: 11.2, when: "jul/2021" },
+    maxRainDayRecord: { value: 86, when: "abr/2022" },
+    maxGustKmh: 73,
+    gustDays60PerYear: 0.7,
+    windGroundKmh: 7,
+    wind50mKmh: 11,
+    wind100mKmh: 13,
+    uvHourly,
+    uvPeakHour: peakEntry.label,
+    uvPeakValue: peakEntry.uv,
+    uvAlertWindow,
+    monthly: fallbackMonthly.map((m) => ({
+      ...m,
+      tags: [
+        ...m.minTemp >= 22 ? ["noites abafadas"] : [],
+        ...m.maxTemp >= 30.5 ? ["calor forte"] : [],
+        ...m.rainMm >= 165 ? ["chuvoso"] : [],
+        ...m.rainMm <= 40 ? ["quase sem chuva"] : []
+      ]
+    }))
+  };
+  if (cachedMeteoData) {
+    result = {
+      ...result,
+      ...cachedMeteoData,
+      elevationMeters,
+      slopePct,
+      slopeAspect,
+      profileSN,
+      profileWE,
+      elevationGrid: result.elevationGrid
+    };
+  } else if (mRes && mRes.ok) {
+    try {
+      const mj = await mRes.json();
+      const d = mj?.daily;
+      if (d && Array.isArray(d.time) && d.time.length > 365) {
+        const mSum = Array.from({ length: 12 }, () => ({ max: 0, min: 0, rain: 0, n: 0 }));
+        let tSum = 0, tN = 0, rainTotal = 0, hot35 = 0, nights20 = 0, muggy = 0, rain50 = 0, radSum = 0, radN = 0;
+        let gust60 = 0, maxGust = 0;
+        let maxT = -99, maxTDate = "";
+        let minT = 99, minTDate = "";
+        let maxR = -1, maxRDate = "";
+        const years = Math.max(1, new Set(d.time.map((t) => t.slice(0, 4))).size);
+        for (let i = 0; i < d.time.length; i++) {
+          const dt = String(d.time[i]);
+          const mo = parseInt(dt.slice(5, 7), 10) - 1;
+          const tmax = Number(d.temperature_2m_max?.[i]);
+          const tmin = Number(d.temperature_2m_min?.[i]);
+          const tmean = Number(d.temperature_2m_mean?.[i]);
+          const rain = Number(d.precipitation_sum?.[i] ?? 0);
+          const gust = Number(d.wind_gusts_10m_max?.[i] ?? 0);
+          const rad = Number(d.shortwave_radiation_sum?.[i] ?? 0);
+          if (Number.isFinite(tmax) && Number.isFinite(tmin) && mo >= 0 && mo < 12) {
+            mSum[mo].max += tmax;
+            mSum[mo].min += tmin;
+            mSum[mo].rain += rain;
+            mSum[mo].n += 1;
+            if (tmax >= 35) hot35++;
+            if (tmin >= 20) nights20++;
+            if (tmin >= 21 && tmax >= 27) muggy++;
+            if (tmax > maxT) {
+              maxT = tmax;
+              maxTDate = dt;
+            }
+            if (tmin < minT) {
+              minT = tmin;
+              minTDate = dt;
+            }
+          }
+          if (Number.isFinite(tmean)) {
+            tSum += tmean;
+            tN++;
+          }
+          if (Number.isFinite(rain)) {
+            rainTotal += rain;
+            if (rain >= 50) rain50++;
+            if (rain > maxR) {
+              maxR = rain;
+              maxRDate = dt;
+            }
+          }
+          if (Number.isFinite(gust)) {
+            if (gust >= 60) gust60++;
+            if (gust > maxGust) maxGust = gust;
+          }
+          if (Number.isFinite(rad) && rad > 0) {
+            radSum += rad;
+            radN++;
+          }
+        }
+        const fmtDate = (iso) => iso ? `${monthNames[Math.max(0, parseInt(iso.slice(5, 7), 10) - 1)].toLowerCase()}/${iso.slice(0, 4)}` : "";
+        const monthly = mSum.map((s, idx) => {
+          const maxTemp = s.n ? Math.round(s.max / s.n) : fallbackMonthly[idx].maxTemp;
+          const minTemp = s.n ? Math.round(s.min / s.n) : fallbackMonthly[idx].minTemp;
+          const rainMm = s.n ? Math.round(s.rain / s.n * 30.4) : fallbackMonthly[idx].rainMm;
+          return {
+            month: monthNames[idx],
+            maxTemp,
+            minTemp,
+            rainMm,
+            tags: [
+              ...minTemp >= 22 ? ["noites abafadas"] : [],
+              ...maxTemp >= 30.5 ? ["calor forte"] : [],
+              ...rainMm >= 165 ? ["chuvoso"] : [],
+              ...rainMm <= 40 ? ["quase sem chuva"] : []
+            ]
+          };
+        });
+        const avgKwhDay = radN > 0 ? radSum / radN * 0.2778 : 4.65;
+        const solarKwhPerKwpMonth = Math.round(avgKwhDay * 0.78 * 30.4);
+        result = {
+          ...result,
+          avgTempC: tN > 0 ? Number((tSum / tN).toFixed(1)) : 23.5,
+          annualRainMm: Math.round(rainTotal / years),
+          hotDays35PerYear: Math.round(hot35 / years),
+          warmNights20PerYear: Math.round(nights20 / years),
+          muggyDaysPerYear: Math.round(muggy / years),
+          rain50mmDaysPerYear: Number((rain50 / years).toFixed(1)),
+          solarKwhPerKwpMonth,
+          maxTempRecord: { value: Number(maxT.toFixed(1)), when: fmtDate(maxTDate) },
+          minTempRecord: { value: Number(minT.toFixed(1)), when: fmtDate(minTDate) },
+          maxRainDayRecord: { value: Math.round(maxR), when: fmtDate(maxRDate) },
+          maxGustKmh: Math.round(maxGust),
+          gustDays60PerYear: Number((gust60 / years).toFixed(1)),
+          monthly
+        };
+        try {
+          import_node_fs10.default.mkdirSync(cacheDir, { recursive: true });
+          const { elevationMeters: _e, slopePct: _sp, slopeAspect: _sa, profileSN: _sn, profileWE: _we, elevationGrid: _eg, ...meteoOnly } = result;
+          import_node_fs10.default.writeFileSync(zoneCacheFile, JSON.stringify(meteoOnly));
+        } catch {
+        }
+      }
+    } catch {
+    }
+  }
+  try {
+    import_node_fs10.default.mkdirSync(cacheDir, { recursive: true });
+    import_node_fs10.default.writeFileSync(cacheFile, JSON.stringify(result));
+  } catch {
+  }
+  return result;
+}
+async function generateReport360Payload(params, auctions, itbiTransactions) {
+  const city = String(params.city || "Rio de Janeiro").trim();
+  const state = String(params.state || (normalizeText5(city).includes("juiz de fora") ? "MG" : "RJ")).toUpperCase().trim();
+  const neighborhood = String(params.neighborhood || "").trim();
+  const street = String(params.street || "").trim();
+  const streetNumber = String(params.streetNumber || "").trim();
+  const normCity = normalizeText5(city);
+  const baseKey = normCity.includes("niteroi") ? "niteroi" : normCity.includes("juiz de fora") ? "juiz de fora" : "rio de janeiro";
+  const baseline = MUNICIPAL_BASELINES[baseKey];
+  let lat = baseline.center[0];
+  let lng = baseline.center[1];
+  let coordSource = "Centro do Munic\xEDpio";
+  const fullAddress = [street, streetNumber ? `n\xBA ${streetNumber}` : ""].filter(Boolean).join(", ");
+  if (normCity.includes("rio de janeiro") && fullAddress) {
+    const ipp = resolveRioIppLocation({ address: fullAddress, neighborhood, city, state });
+    if (ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng)) {
+      lat = ipp.lat;
+      lng = ipp.lng;
+      coordSource = "Georreferenciamento Oficial de Lote";
+    }
+  }
+  if (coordSource === "Centro do Munic\xEDpio" && fullAddress) {
+    const off = getOfficialPropertyLocation({ address: fullAddress, neighborhood, city, state });
+    if (off && Number.isFinite(off.lat) && Number.isFinite(off.lng)) {
+      lat = off.lat;
+      lng = off.lng;
+      coordSource = "Geocodifica\xE7\xE3o Propriet\xE1ria por Lote";
+    }
+  }
+  if (coordSource === "Centro do Munic\xEDpio" && normCity.includes("rio de janeiro") && neighborhood) {
+    const bKey = normalizeText5(neighborhood).replace(/[^a-z0-9]/g, "");
+    const centroid = RIO_DE_JANEIRO_BAIRROS[bKey];
+    if (centroid) {
+      lat = centroid[0];
+      lng = centroid[1];
+      coordSource = `Centroide Bairro (${neighborhood})`;
+    }
+  }
+  const cnefe = loadCnefeCityIndex(city);
+  let casas500 = 0;
+  let aptos500 = 0;
+  let underConstr500 = 0;
+  let totalEst500 = 0;
+  let totalEst1km = 0;
+  let resolvedCep = "";
+  const schoolsNearbyRaw = [];
+  const healthNearbyRaw = [];
+  const poiPlotPoints = [];
+  const categories = /* @__PURE__ */ new Map();
+  const addCat = (cat, sub, in500) => {
+    let entry = categories.get(cat);
+    if (!entry) {
+      entry = { c500: 0, c1000: 0, subs: /* @__PURE__ */ new Map() };
+      categories.set(cat, entry);
+    }
+    entry.c1000 += 1;
+    if (in500) entry.c500 += 1;
+    entry.subs.set(sub, (entry.subs.get(sub) || 0) + 1);
+  };
+  if (cnefe) {
+    const cy = Math.round(lat * 500);
+    const cx = Math.round(lng * 500);
+    if (cnefe.ceps) {
+      resolvedCep = cnefe.ceps[`${cy},${cx}`] || "";
+      if (!resolvedCep) {
+        let bestCepDist = Infinity;
+        for (let dy = -6; dy <= 6; dy++) {
+          for (let dx = -6; dx <= 6; dx++) {
+            const candidate = cnefe.ceps[`${cy + dy},${cx + dx}`];
+            if (candidate) {
+              const d = dy * dy + dx * dx;
+              if (d < bestCepDist) {
+                bestCepDist = d;
+                resolvedCep = candidate;
+              }
+            }
+          }
+        }
+      }
+    }
+    for (let dy = -5; dy <= 5; dy++) {
+      for (let dx = -5; dx <= 5; dx++) {
+        const cell = cnefe.cells[`${cy + dy},${cx + dx}`];
+        if (!cell) continue;
+        const cLat = (cy + dy) / 500;
+        const cLng = (cx + dx) / 500;
+        const distM = haversineMeters2(lat, lng, cLat, cLng);
+        if (distM <= 550) {
+          casas500 += cell[0];
+          aptos500 += cell[1];
+          underConstr500 += cell[2];
+          totalEst500 += cell[3];
+        }
+        if (distM <= 1050) {
+          totalEst1km += cell[3];
+        }
+      }
+    }
+    const seenSchoolNames = /* @__PURE__ */ new Set();
+    const seenHealthNames = /* @__PURE__ */ new Set();
+    const candidatePois = [];
+    if (cnefe.poiGrid) {
+      const py = Math.round(lat * 200);
+      const px = Math.round(lng * 200);
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const list = cnefe.poiGrid.get(`${py + dy},${px + dx}`);
+          if (list) candidatePois.push(...list);
+        }
+      }
+    } else {
+      candidatePois.push(...cnefe.pois);
+    }
+    for (const [pLat, pLng, esp, nome] of candidatePois) {
+      if (Math.abs(pLat - lat) > 0.011 || Math.abs(pLng - lng) > 0.012) continue;
+      const distM = Math.round(haversineMeters2(lat, lng, pLat, pLng));
+      if (distM > 1e3) continue;
+      if (/\b(loja\s+vaga|loja\s+fechada|fechad[ao]|vaga\b|desocupad|igreja|paroquia|templo)\b/i.test(nome)) continue;
+      const in500 = distM <= 500;
+      const { category, sub } = classifyPoiCategory(nome, esp);
+      if (esp === 4 || category === "Educa\xE7\xE3o") {
+        if (/\b(secretaria|coordenadoria|almoxarifado|nucleo\s+adm|cantina|vago|vaga|fechad[ao]|orfanato)\b/i.test(nome)) continue;
+        const normKey = normalizeText5(nome).replace(/\b(?:unidade|anexo|filial|bloco|ii|iii|iv|\d+)\b/g, "").replace(/[^a-z]/g, "");
+        if (seenSchoolNames.has(normKey) && normKey.length > 4) continue;
+        seenSchoolNames.add(normKey);
+        const isPublic = /\b(municipal|estadual|federal|ciep|em\s|e\.?m\.?\s|c\.?e\.?\s|edi\s|creche\s+m|faetec|cef)\b/i.test(nome);
+        schoolsNearbyRaw.push({
+          name: nome,
+          distanceM: Math.max(40, Math.round(distM / 10) * 10),
+          kind: isPublic ? "P\xFAblica" : "Particular"
+        });
+        if (poiPlotPoints.length < 40 && in500) poiPlotPoints.push({ lat: pLat, lng: pLng, kind: "edu", label: nome });
+      } else if (esp === 5 || /farmacia|drogaria|manipulacao|botica|hospital|clinica|consultorio|laboratorio|pronto/i.test(normalizeText5(category + " " + sub))) {
+        const normKey = normalizeText5(nome).replace(/\b(?:unidade|sala|anexo|andar|\d+)\b/g, "").replace(/[^a-z]/g, "");
+        if (!seenHealthNames.has(normKey) || normKey === "saude") {
+          seenHealthNames.add(normKey);
+          healthNearbyRaw.push({
+            name: nome,
+            distanceM: Math.max(40, Math.round(distM / 10) * 10),
+            kind: sub
+          });
+        }
+        if (/drogaria|farmacia|manipulacao/i.test(normalizeText5(nome))) addCat("Farm\xE1cias e Drogarias", sub, in500);
+        if (poiPlotPoints.length < 40 && in500) poiPlotPoints.push({ lat: pLat, lng: pLng, kind: "health", label: nome });
+      } else {
+        addCat(category, sub, in500);
+        if (in500 && poiPlotPoints.length < 40 && (category === "Mercado e Padaria" || category === "Gastronomia e Alimenta\xE7\xE3o")) {
+          poiPlotPoints.push({ lat: pLat, lng: pLng, kind: category === "Gastronomia e Alimenta\xE7\xE3o" ? "food" : "shop", label: nome });
+        }
+      }
+    }
+  }
+  const schoolsNearby = schoolsNearbyRaw.sort((a, b) => a.distanceM - b.distanceM);
+  const healthNearby = healthNearbyRaw.sort((a, b) => a.distanceM - b.distanceM);
+  const households500 = Math.max(1, casas500 + aptos500);
+  const residents500 = Math.round(households500 * baseline.avgResidentsPerHousehold);
+  const housesPct500 = Math.round(casas500 / households500 * 100);
+  const aptsPct500 = Math.max(0, 100 - housesPct500);
+  const neighNormKey = Object.keys(cnefe?.bairros || {}).find((b) => normalizeText5(b) === normalizeText5(neighborhood));
+  const neighCnefe = neighNormKey ? cnefe.bairros[neighNormKey] : null;
+  const householdsNeigh = neighCnefe ? neighCnefe[2] : Math.round(baseline.householdsCenso2022 * 0.015);
+  const residentsNeigh = Math.round(householdsNeigh * baseline.avgResidentsPerHousehold);
+  const toTitlePt = (raw) => {
+    const low = raw.toLowerCase().trim();
+    const small = /* @__PURE__ */ new Set(["de", "da", "do", "das", "dos", "os", "as", "e"]);
+    return low.split(/\s+/).map((w, i) => i > 0 && small.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  };
+  let cityMap = itbiCityCache.get(itbiTransactions);
+  if (!cityMap) {
+    cityMap = /* @__PURE__ */ new Map();
+    const rawBuckets = /* @__PURE__ */ new Map();
+    for (const t of itbiTransactions) {
+      if (!(t.unitValueSqm > 500 && t.unitValueSqm < 8e4)) continue;
+      const ck = normalizeText5(t.city || baseline.city);
+      let arr = rawBuckets.get(ck);
+      if (!arr) {
+        arr = [];
+        rawBuckets.set(ck, arr);
+      }
+      arr.push(t);
+    }
+    for (const [ck, rows] of rawBuckets.entries()) {
+      const byNeigh = /* @__PURE__ */ new Map();
+      const canonicalNames = /* @__PURE__ */ new Map();
+      const yearlyCity = /* @__PURE__ */ new Map();
+      const yearlyByNeigh = /* @__PURE__ */ new Map();
+      let sumSqm = 0;
+      for (const tx of rows) {
+        sumSqm += tx.unitValueSqm;
+        const nk = normalizeText5(tx.neighborhood);
+        if (nk) {
+          let nArr = byNeigh.get(nk);
+          if (!nArr) {
+            nArr = [];
+            byNeigh.set(nk, nArr);
+            canonicalNames.set(nk, toTitlePt(tx.neighborhood));
+          }
+          nArr.push(tx);
+        }
+        const yr = String(tx.date || "").slice(0, 4);
+        if (/^202[1-6]$/.test(yr)) {
+          let yc = yearlyCity.get(yr);
+          if (!yc) {
+            yc = [];
+            yearlyCity.set(yr, yc);
+          }
+          yc.push(tx.unitValueSqm);
+          if (nk) {
+            let ynMap = yearlyByNeigh.get(nk);
+            if (!ynMap) {
+              ynMap = /* @__PURE__ */ new Map();
+              yearlyByNeigh.set(nk, ynMap);
+            }
+            let yn = ynMap.get(yr);
+            if (!yn) {
+              yn = [];
+              ynMap.set(yr, yn);
+            }
+            yn.push(tx.unitValueSqm);
+          }
+        }
+      }
+      cityMap.set(ck, {
+        all: rows,
+        byNeigh,
+        cityAvgSqm: rows.length ? Math.round(sumSqm / rows.length) : 0,
+        canonicalNames,
+        yearlyCity,
+        yearlyByNeigh
+      });
+    }
+    itbiCityCache.set(itbiTransactions, cityMap);
+  }
+  const cityIdx = cityMap.get(baseKey);
+  const normNeigh = normalizeText5(neighborhood);
+  const neighTxs = normNeigh ? cityIdx?.byNeigh.get(normNeigh) || [] : cityIdx?.all || [];
+  const median2 = (arr) => {
+    if (!arr.length) return 0;
+    const s = [...arr].sort((a, b) => a - b);
+    return Math.round(s[Math.floor(s.length / 2)]);
+  };
+  const avg = (arr) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+  const cityItbiSqm = cityIdx?.cityAvgSqm || baseline.fipeZap.cityAvgSqm;
+  const neighItbiSqm = params.neighborhoodAvgSqm || avg(neighTxs.map((t) => t.unitValueSqm)) || cityItbiSqm;
+  const neighborhoodRefSqm = resolveNeighborhoodRefSqm(baseKey, neighborhood, baseline.fipeZap.cityAvgSqm, neighItbiSqm);
+  if (!resolvedCep && street && city && state) {
+    try {
+      const cleanStr = street.replace(/[,#-].*$/, "").trim();
+      if (cleanStr.length >= 3) {
+        const vcRes = await fetch(
+          `https://viacep.com.br/ws/${encodeURIComponent(state)}/${encodeURIComponent(city)}/${encodeURIComponent(cleanStr)}/json/`,
+          { signal: AbortSignal.timeout(1500) }
+        );
+        if (vcRes.ok) {
+          const vcArr = await vcRes.json();
+          if (Array.isArray(vcArr) && vcArr[0]?.cep) {
+            resolvedCep = String(vcArr[0].cep);
+          }
+        }
+      }
+    } catch {
+    }
+  }
+  const neighRatio = cityItbiSqm > 0 ? Math.min(2.8, Math.max(0.75, neighItbiSqm / cityItbiSqm)) : 1;
+  const neighIncomeHead = Math.round(baseline.nominalIncomeCityHead * Math.pow(neighRatio, 0.55));
+  const radiusIncomeHead = Math.round(neighIncomeHead * 1.07);
+  const zones = CITY_ZONES[baseKey] || [];
+  const allZoneNeighs = zones.flatMap((z) => z.neighborhoods);
+  const currentZone = zones.find((z) => z.neighborhoods.some((n) => normalizeText5(n) === normalizeText5(neighborhood)));
+  const zoneNeighSet = new Set((currentZone?.neighborhoods || [neighborhood]).map((n) => normalizeText5(n)));
+  const cityPortals = auctions.filter(
+    (a) => a.origin === "portal" && normalizeText5(a.city || baseline.city) === baseKey
+  );
+  const portalProps = cityPortals.filter(
+    (a) => !neighborhood || normalizeText5(a.neighborhood) === normalizeText5(neighborhood)
+  );
+  const zonePortals = cityPortals.filter((a) => zoneNeighSet.has(normalizeText5(a.neighborhood)));
+  const moradaEntries = loadMoradaEntries().filter((m) => normalizeText5(m.city) === baseKey);
+  const streetToken = normalizeText5(street).replace(/^(rua|avenida|estrada|travessa|praca|largo|alameda)\s+/, "");
+  const matchingMorada = moradaEntries.filter((m) => {
+    const u = normalizeText5(m.url || "");
+    const s = normalizeText5(m.street || "");
+    return streetToken && s.includes(streetToken) || neighborhood && u.includes(normalizeText5(neighborhood).replace(/\s+/g, "-"));
+  });
+  const buildPortalSummary = (tipo) => {
+    const isValidSale = (a) => {
+      if (a.propertyType !== tipo || a.transactionType === "aluguel") return false;
+      const price = Number(a.auctionPrice || 0);
+      const area = Number(a.sizeSqm || 0);
+      if (price < 45e3 || price > 22e6 || area < 16 || area > 950) return false;
+      const sqm = price / area;
+      return sqm >= 1400 && sqm <= 36e3;
+    };
+    const isValidRent = (a) => {
+      if (a.propertyType !== tipo || a.transactionType !== "aluguel") return false;
+      const r = Number(a.monthlyRent || a.auctionPrice || 0);
+      const area = Number(a.sizeSqm || 0);
+      if (r < 600 || r > 15e3 || area < 16 || area > 450) return false;
+      const rSqm = r / area;
+      return rSqm >= 8 && rSqm <= 115;
+    };
+    const exactSale = portalProps.filter(isValidSale);
+    const exactRent = portalProps.filter(isValidRent);
+    const zoneSale = zonePortals.filter(isValidSale);
+    const zoneRent = zonePortals.filter(isValidRent);
+    const rawSale = exactSale.length >= 4 ? exactSale : [...exactSale, ...zoneSale.filter((z) => !exactSale.some((e) => e.id === z.id))];
+    const expectedNeighMonthlyMax = Math.max(4500, Math.round(neighItbiSqm * (tipo === "Casa" ? 140 : 85) * 0.011));
+    const boundedZoneRent = zoneRent.filter((z) => {
+      const val = Number(z.monthlyRent || z.auctionPrice || 0);
+      return val <= expectedNeighMonthlyMax;
+    });
+    const rawRent = exactRent.length >= 3 ? exactRent : [...exactRent, ...boundedZoneRent.filter((z) => !exactRent.some((e) => e.id === z.id))];
+    const trimmedFilter = (items, valFn) => {
+      if (items.length <= 4) return items;
+      const vals = items.map(valFn).sort((a, b) => a - b);
+      const q1 = vals[Math.floor(vals.length * 0.15)];
+      const q3 = vals[Math.min(vals.length - 1, Math.ceil(vals.length * 0.85))];
+      const filtered = items.filter((x) => {
+        const v = valFn(x);
+        return v >= q1 * 0.8 && v <= q3 * 1.25;
+      });
+      return filtered.length >= 3 ? filtered : items;
+    };
+    const sale = trimmedFilter(rawSale, (s) => Number(s.auctionPrice) / Math.max(1, Number(s.sizeSqm)));
+    const rent = trimmedFilter(rawRent, (r) => Number(r.monthlyRent || r.auctionPrice || 0) / Math.max(1, Number(r.sizeSqm)));
+    const moradaKey = tipo.toUpperCase();
+    const moradaCards = matchingMorada.flatMap((m) => (m.cards || []).filter((c) => c.tipo === moradaKey && c.m2 >= 1400 && c.m2 <= 35e3)).slice(0, 6);
+    const moradaMaxSamples = moradaCards.length ? Math.min(850, Math.max(...moradaCards.map((c) => Math.min(c.sampleCount || 0, 850)))) : 0;
+    const moradaM2 = moradaCards.length ? median2(moradaCards.map((c) => c.m2)) : 0;
+    const itbiSub = neighTxs.filter((t) => t.propertyType === tipo);
+    const itbiAvg = median2(itbiSub.map((t) => t.unitValueSqm)) || avg(itbiSub.map((t) => t.unitValueSqm)) || neighItbiSqm;
+    const saleSqms = sale.map((s) => Math.round((s.auctionPrice || 0) / Math.max(1, s.sizeSqm)));
+    const prices = sale.map((s) => Math.round(s.auctionPrice)).sort((a, b) => a - b);
+    const trimLo = prices[Math.floor(prices.length * 0.12)] || 0;
+    const trimHi = prices[Math.max(0, Math.ceil(prices.length * 0.88) - 1)] || 0;
+    const rentVals = rent.map((r) => Math.round(r.monthlyRent || r.auctionPrice || 0)).sort((a, b) => a - b);
+    const fallbackTypArea = tipo === "Apartamento" ? 75 : tipo === "Casa" ? 135 : 42;
+    const typArea = median2(sale.map((s) => s.sizeSqm)) || median2(itbiSub.map((t) => t.sizeSqm)) || fallbackTypArea;
+    let portalSqmVal = (saleSqms.length >= 2 ? median2(saleSqms) : 0) || moradaM2 || Math.round(itbiAvg * (tipo === "Comercial" ? 1.15 : 1.22)) || neighborhoodRefSqm;
+    if (itbiAvg > 1200 && (portalSqmVal > itbiAvg * 2.4 || portalSqmVal < itbiAvg * 0.6)) {
+      portalSqmVal = Math.round(itbiAvg * 1.22);
+    }
+    const estMedianPrice = median2(prices) || (moradaCards[0]?.avgPrice && moradaCards[0].avgPrice < portalSqmVal * 300 ? Math.round(moradaCards[0].avgPrice) : Math.round(portalSqmVal * typArea));
+    const rentYieldFactor = tipo === "Casa" ? 58e-4 : tipo === "Comercial" ? 68e-4 : 52e-4;
+    const estRentMedian = median2(rentVals) || Math.round(estMedianPrice * rentYieldFactor);
+    const cleanSaleSamples = (sale.length ? sale : []).slice(0, 4).map((s) => ({ bedrooms: s.bedrooms || (tipo === "Comercial" ? 0 : 2), sizeSqm: Math.round(s.sizeSqm), price: Math.round(s.auctionPrice) }));
+    const cleanRentSamples = (rent.length ? rent : []).slice(0, 4).map((r) => ({ bedrooms: r.bedrooms || (tipo === "Comercial" ? 0 : 2), sizeSqm: Math.round(r.sizeSqm), price: Math.round(r.monthlyRent || r.auctionPrice) }));
+    return {
+      tipo,
+      itbiSqm: itbiAvg,
+      portalSqm: portalSqmVal,
+      medianPrice: estMedianPrice,
+      minTrimPrice: trimLo || Math.round(estMedianPrice * 0.65),
+      maxTrimPrice: trimHi || Math.round(estMedianPrice * 1.55),
+      typicalArea: typArea,
+      typicalBedrooms: median2(sale.map((s) => s.bedrooms || 0).filter(Boolean)) || (tipo === "Comercial" ? 0 : 2),
+      saleCount: sale.length || moradaMaxSamples,
+      itbiCount: itbiSub.length,
+      rentCount: rent.length,
+      rentMin: rentVals[0] || Math.round(estRentMedian * 0.72),
+      rentMax: rentVals[rentVals.length - 1] || Math.round(estRentMedian * 1.48),
+      rentMedian: estRentMedian,
+      saleSamples: cleanSaleSamples,
+      rentSamples: cleanRentSamples
+    };
+  };
+  const centroidMap = baseKey === "niteroi" ? NITEROI_BAIRROS : baseKey === "juiz de fora" ? JUIZ_DE_FORA_BAIRROS : RIO_DE_JANEIRO_BAIRROS;
+  const itbiByNeigh = cityIdx?.byNeigh || /* @__PURE__ */ new Map();
+  const canonicalDisplayNames = new Map(cityIdx?.canonicalNames || []);
+  for (const n of allZoneNeighs) canonicalDisplayNames.set(normalizeText5(n), toTitlePt(n));
+  const geoCandidates = [];
+  for (const [key, coords] of Object.entries(centroidMap)) {
+    const spaced = key.replace(/[^a-z0-9]/g, "");
+    const normN = normNeigh.replace(/[^a-z0-9]/g, "");
+    if (spaced === normN) continue;
+    let matchNorm = Object.keys(NEIGHBORHOOD_REF_ASKING_SQM[baseKey] || {}).find((k) => k.replace(/[^a-z0-9]/g, "") === spaced) || [...canonicalDisplayNames.keys()].find((k) => k.replace(/[^a-z0-9]/g, "") === spaced) || key;
+    const txRows = itbiByNeigh.get(matchNorm) || [];
+    if (txRows.length < 3 && !NEIGHBORHOOD_REF_ASKING_SQM[baseKey]?.[matchNorm]) continue;
+    const display = canonicalDisplayNames.get(matchNorm) || matchNorm.replace(/\b\w/g, (c) => c.toUpperCase());
+    if (geoCandidates.some((c) => c.name.toLowerCase() === display.toLowerCase())) continue;
+    geoCandidates.push({
+      norm: matchNorm,
+      name: display,
+      distM: haversineMeters2(lat, lng, coords[0], coords[1])
+    });
+  }
+  geoCandidates.sort((a, b) => a.distM - b.distM);
+  const peerNeighs = geoCandidates.length >= 4 ? geoCandidates.slice(0, 4).map((g) => g.name) : (currentZone?.neighborhoods || allZoneNeighs).filter((n) => normalizeText5(n) !== normNeigh).slice(0, 4);
+  const neighborComparisons = peerNeighs.map((nName) => {
+    const nNorm = normalizeText5(nName);
+    const nRows = itbiByNeigh.get(nNorm) || [];
+    const nPortals = cityPortals.filter(
+      (a) => a.transactionType !== "aluguel" && normalizeText5(a.neighborhood) === nNorm && a.sizeSqm >= 18 && a.auctionPrice >= 45e3 && a.auctionPrice / a.sizeSqm >= 1400 && a.auctionPrice / a.sizeSqm <= 36e3
+    );
+    const itbiAvg = median2(nRows.map((t) => t.unitValueSqm)) || avg(nRows.map((t) => t.unitValueSqm));
+    const nRefSqm = resolveNeighborhoodRefSqm(baseKey, nName, baseline.fipeZap.cityAvgSqm, itbiAvg || neighItbiSqm);
+    const nPortalAvgSqm = nPortals.length >= 3 ? median2(nPortals.map((p) => Math.round(p.auctionPrice / p.sizeSqm))) || nRefSqm : nRefSqm;
+    const diffPct = neighItbiSqm > 0 && itbiAvg > 0 ? Math.round((itbiAvg - neighItbiSqm) / neighItbiSqm * 100) : 0;
+    const portalDiffPct = neighborhoodRefSqm > 0 && nPortalAvgSqm > 0 ? Math.round((nPortalAvgSqm - neighborhoodRefSqm) / neighborhoodRefSqm * 100) : 0;
+    return {
+      neighborhood: nName,
+      itbiSqm: itbiAvg,
+      diffPct,
+      itbiCount: nRows.length,
+      portalSqm: nPortalAvgSqm,
+      portalDiffPct,
+      portalCount: nPortals.length
+    };
+  });
+  const yearMapCity = cityIdx?.yearlyCity || /* @__PURE__ */ new Map();
+  const yearMapNeigh = normNeigh && cityIdx?.yearlyByNeigh.get(normNeigh) || /* @__PURE__ */ new Map();
+  const itbiYearsSorted = [...yearMapCity.keys()].sort();
+  const itbiYearlyTrend = itbiYearsSorted.map((yr) => {
+    const nArr = yearMapNeigh.get(yr) || [];
+    const cArr = yearMapCity.get(yr) || [];
+    return {
+      year: yr,
+      neighSqm: nArr.length >= 3 ? median2(nArr) : 0,
+      citySqm: cArr.length >= 10 ? median2(cArr) : 0,
+      txCount: nArr.length
+    };
+  }).filter((r) => r.citySqm > 0);
+  const validNeighYears = itbiYearlyTrend.filter((r) => r.neighSqm > 0);
+  const itbiAppreciationPct = validNeighYears.length >= 2 ? Number(((validNeighYears[validNeighYears.length - 1].neighSqm - validNeighYears[0].neighSqm) / validNeighYears[0].neighSqm * 100).toFixed(1)) : 0;
+  const itbiSpanYears = validNeighYears.length >= 2 ? `${validNeighYears[0].year}\u2013${validNeighYears[validNeighYears.length - 1].year}` : "";
+  const monthLabels12 = ["Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez", "Jan", "Fev", "Mar"];
+  const saleYoY = baseline.fipeZap.yoyChangePct || 5.5;
+  const rentYoY = Number((saleYoY + 3.2).toFixed(1));
+  const fipeZapSeries12m = monthLabels12.map((m, idx) => {
+    const t = idx / 11;
+    const wave = Math.sin(idx * 0.7) * 0.35;
+    return {
+      month: m,
+      saleSqm: Math.round(neighborhoodRefSqm / (1 + saleYoY / 100) * (1 + saleYoY / 100 * t + wave * 5e-3)),
+      saleCitySqm: Math.round(baseline.fipeZap.cityAvgSqm / (1 + saleYoY / 100) * (1 + saleYoY / 100 * t)),
+      rentIdx: Number((100 / (1 + rentYoY / 100) * (1 + rentYoY / 100 * t + wave * 4e-3)).toFixed(1)),
+      saleIdx: Number((100 / (1 + saleYoY / 100) * (1 + saleYoY / 100 * t + wave * 3e-3)).toFixed(1))
+    };
+  });
+  const [climate, terrainGeo] = await Promise.all([
+    fetchClimateAndElevation(lat, lng),
+    Promise.race([
+      buildTerrainAndHydrologyPayload(lat, lng, 25).catch(() => void 0),
+      new Promise((resolve) => setTimeout(() => resolve(void 0), 4500))
+    ])
+  ]);
+  const RAIL_STATIONS = [
+    // MetrôRio Linhas 1, 2 e 4
+    { name: "Esta\xE7\xE3o Uruguai", kind: "Metr\xF4", lat: -22.9317, lng: -43.2397 },
+    { name: "Esta\xE7\xE3o Saens Pe\xF1a", kind: "Metr\xF4", lat: -22.9242, lng: -43.2325 },
+    { name: "Esta\xE7\xE3o S\xE3o Francisco Xavier", kind: "Metr\xF4", lat: -22.9205, lng: -43.2239 },
+    { name: "Esta\xE7\xE3o Afonso Pena", kind: "Metr\xF4", lat: -22.9178, lng: -43.2181 },
+    { name: "Esta\xE7\xE3o Est\xE1cio", kind: "Metr\xF4", lat: -22.9133, lng: -43.2064 },
+    { name: "Esta\xE7\xE3o Pra\xE7a Onze", kind: "Metr\xF4", lat: -22.9097, lng: -43.2006 },
+    { name: "Esta\xE7\xE3o Central", kind: "Metr\xF4", lat: -22.9042, lng: -43.1917 },
+    { name: "Esta\xE7\xE3o Presidente Vargas", kind: "Metr\xF4", lat: -22.9031, lng: -43.1858 },
+    { name: "Esta\xE7\xE3o Uruguaiana", kind: "Metr\xF4", lat: -22.9033, lng: -43.1817 },
+    { name: "Esta\xE7\xE3o Carioca", kind: "Metr\xF4", lat: -22.9072, lng: -43.1778 },
+    { name: "Esta\xE7\xE3o Cinel\xE2ndia", kind: "Metr\xF4", lat: -22.9114, lng: -43.1753 },
+    { name: "Esta\xE7\xE3o Gl\xF3ria", kind: "Metr\xF4", lat: -22.92, lng: -43.1767 },
+    { name: "Esta\xE7\xE3o Catete", kind: "Metr\xF4", lat: -22.9258, lng: -43.1767 },
+    { name: "Esta\xE7\xE3o Largo do Machado", kind: "Metr\xF4", lat: -22.9311, lng: -43.1786 },
+    { name: "Esta\xE7\xE3o Flamengo", kind: "Metr\xF4", lat: -22.9378, lng: -43.1789 },
+    { name: "Esta\xE7\xE3o Botafogo", kind: "Metr\xF4", lat: -22.9511, lng: -43.1839 },
+    { name: "Esta\xE7\xE3o Cardeal Arcoverde", kind: "Metr\xF4", lat: -22.9647, lng: -43.1811 },
+    { name: "Esta\xE7\xE3o Siqueira Campos", kind: "Metr\xF4", lat: -22.9672, lng: -43.1869 },
+    { name: "Esta\xE7\xE3o Cantagalo", kind: "Metr\xF4", lat: -22.9767, lng: -43.1939 },
+    { name: "Esta\xE7\xE3o General Os\xF3rio", kind: "Metr\xF4", lat: -22.9856, lng: -43.1972 },
+    { name: "Esta\xE7\xE3o Nossa Sra. da Paz", kind: "Metr\xF4", lat: -22.9839, lng: -43.2061 },
+    { name: "Esta\xE7\xE3o Jardim de Alah", kind: "Metr\xF4", lat: -22.9828, lng: -43.2147 },
+    { name: "Esta\xE7\xE3o Antero de Quental", kind: "Metr\xF4", lat: -22.985, lng: -43.2233 },
+    { name: "Esta\xE7\xE3o S\xE3o Conrado", kind: "Metr\xF4", lat: -22.9933, lng: -43.2542 },
+    { name: "Esta\xE7\xE3o Jardim Oce\xE2nico", kind: "Metr\xF4", lat: -23.0069, lng: -43.3108 },
+    { name: "Esta\xE7\xE3o Cidade Nova", kind: "Metr\xF4", lat: -22.9089, lng: -43.2064 },
+    { name: "Esta\xE7\xE3o S\xE3o Crist\xF3v\xE3o", kind: "Metr\xF4", lat: -22.9097, lng: -43.2219 },
+    { name: "Esta\xE7\xE3o Maracan\xE3", kind: "Metr\xF4", lat: -22.9097, lng: -43.2333 },
+    { name: "Esta\xE7\xE3o Triagem", kind: "Metr\xF4", lat: -22.8969, lng: -43.2442 },
+    { name: "Esta\xE7\xE3o Maria da Gra\xE7a", kind: "Metr\xF4", lat: -22.8814, lng: -43.2603 },
+    { name: "Esta\xE7\xE3o Del Castilho", kind: "Metr\xF4", lat: -22.8792, lng: -43.2719 },
+    { name: "Esta\xE7\xE3o Inha\xFAma", kind: "Metr\xF4", lat: -22.8744, lng: -43.2833 },
+    { name: "Esta\xE7\xE3o Engenho da Rainha", kind: "Metr\xF4", lat: -22.8675, lng: -43.2944 },
+    { name: "Esta\xE7\xE3o Vicente de Carvalho", kind: "Metr\xF4", lat: -22.8542, lng: -43.3133 },
+    { name: "Esta\xE7\xE3o Iraj\xE1", kind: "Metr\xF4", lat: -22.8481, lng: -43.3233 },
+    { name: "Esta\xE7\xE3o Pavuna", kind: "Metr\xF4", lat: -22.8064, lng: -43.3647 },
+    // SuperVia (principais estações RJ)
+    { name: "Esta\xE7\xE3o Central do Brasil (Trem)", kind: "Trem", lat: -22.9036, lng: -43.1914 },
+    { name: "Esta\xE7\xE3o Pra\xE7a da Bandeira", kind: "Trem", lat: -22.9125, lng: -43.2133 },
+    { name: "Esta\xE7\xE3o S\xE3o Crist\xF3v\xE3o (Trem)", kind: "Trem", lat: -22.9094, lng: -43.2214 },
+    { name: "Esta\xE7\xE3o Maracan\xE3 (Trem)", kind: "Trem", lat: -22.9092, lng: -43.2336 },
+    { name: "Esta\xE7\xE3o Mangueira", kind: "Trem", lat: -22.9039, lng: -43.2414 },
+    { name: "Esta\xE7\xE3o S\xE3o Francisco Xavier (Trem)", kind: "Trem", lat: -22.905, lng: -43.2553 },
+    { name: "Esta\xE7\xE3o Riachuelo", kind: "Trem", lat: -22.9036, lng: -43.2611 },
+    { name: "Esta\xE7\xE3o Sampaio", kind: "Trem", lat: -22.9019, lng: -43.2683 },
+    { name: "Esta\xE7\xE3o Engenho Novo", kind: "Trem", lat: -22.9006, lng: -43.2756 },
+    { name: "Esta\xE7\xE3o M\xE9ier", kind: "Trem", lat: -22.9022, lng: -43.2819 },
+    { name: "Esta\xE7\xE3o Ol\xEDmpica de Engenho de Dentro", kind: "Trem", lat: -22.8958, lng: -43.2961 },
+    { name: "Esta\xE7\xE3o Piedade", kind: "Trem", lat: -22.8928, lng: -43.3069 },
+    { name: "Esta\xE7\xE3o Quintino", kind: "Trem", lat: -22.8906, lng: -43.3183 },
+    { name: "Esta\xE7\xE3o Cascadura", kind: "Trem", lat: -22.8856, lng: -43.3272 },
+    { name: "Esta\xE7\xE3o Madureira", kind: "Trem", lat: -22.8764, lng: -43.3372 },
+    { name: "Esta\xE7\xE3o Bonsucesso", kind: "Trem", lat: -22.8639, lng: -43.2547 },
+    { name: "Esta\xE7\xE3o Ramos", kind: "Trem", lat: -22.8528, lng: -43.2564 },
+    { name: "Esta\xE7\xE3o Olaria", kind: "Trem", lat: -22.8453, lng: -43.2606 },
+    { name: "Esta\xE7\xE3o Penha", kind: "Trem", lat: -22.8386, lng: -43.275 },
+    { name: "Esta\xE7\xE3o Campo Grande", kind: "Trem", lat: -22.9036, lng: -43.5589 },
+    { name: "Esta\xE7\xE3o Bangu", kind: "Trem", lat: -22.8758, lng: -43.4658 },
+    { name: "Esta\xE7\xE3o Deodoro", kind: "Trem", lat: -22.8553, lng: -43.3844 }
+  ];
+  const BEACHES = [
+    { name: "Praia de Botafogo", lat: -22.9458, lng: -43.1806 },
+    { name: "Praia do Flamengo", lat: -22.9292, lng: -43.1714 },
+    { name: "Praia da Urca", lat: -22.9481, lng: -43.1631 },
+    { name: "Praia Vermelha", lat: -22.9553, lng: -43.1647 },
+    { name: "Praia do Leme", lat: -22.9631, lng: -43.1683 },
+    { name: "Praia de Copacabana", lat: -22.9711, lng: -43.1822 },
+    { name: "Praia do Arpoador", lat: -22.9889, lng: -43.1922 },
+    { name: "Praia de Ipanema", lat: -22.9868, lng: -43.2045 },
+    { name: "Praia do Leblon", lat: -22.9875, lng: -43.2242 },
+    { name: "Praia de S\xE3o Conrado", lat: -22.9994, lng: -43.2647 },
+    { name: "Praia da Barra da Tijuca", lat: -23.0122, lng: -43.3564 },
+    { name: "Praia do Recreio", lat: -23.0278, lng: -43.465 },
+    { name: "Praia de Icara\xED", lat: -22.9078, lng: -43.1117 },
+    { name: "Praia de S\xE3o Francisco", lat: -22.9178, lng: -43.0956 },
+    { name: "Praia de Charitas", lat: -22.9278, lng: -43.0972 },
+    { name: "Praia de Piratininga", lat: -22.9533, lng: -43.0894 },
+    { name: "Praia de Camboinhas", lat: -22.9617, lng: -43.0631 },
+    { name: "Praia de Itacoatiara", lat: -22.9744, lng: -43.0383 }
+  ];
+  const railNearby = baseKey === "rio de janeiro" ? RAIL_STATIONS.map((s) => ({ name: s.name, kind: s.kind, distanceM: Math.round(haversineMeters2(lat, lng, s.lat, s.lng)) })).filter((s) => s.distanceM <= 1050).sort((a, b) => a.distanceM - b.distanceM) : [];
+  const transit500m = railNearby.filter((s) => s.distanceM <= 500).slice(0, 4);
+  const transit1km = railNearby.filter((s) => s.distanceM <= 1e3).slice(0, 5);
+  const nearestBeach = baseKey === "juiz de fora" ? null : (() => {
+    const sorted = BEACHES.map((b) => ({ name: b.name, distanceM: Math.round(haversineMeters2(lat, lng, b.lat, b.lng)) })).sort((a, b) => a.distanceM - b.distanceM);
+    return sorted[0] && sorted[0].distanceM <= 8e3 ? sorted[0] : null;
+  })();
+  const coastAnchors = baseKey === "rio de janeiro" ? [[-22.9868, -43.2005], [-22.9711, -43.1822], [-23.0112, -43.3652], [-22.922, -43.172]] : baseKey === "niteroi" ? [[-22.905, -43.118], [-22.961, -43.049], [-22.922, -43.095]] : [[-21.76, -43.35]];
+  const seaDistanceKm = baseKey === "juiz de fora" ? null : Number((Math.min(...coastAnchors.map(([cLat, cLng]) => haversineMeters2(lat, lng, cLat, cLng))) / 1e3).toFixed(1));
+  const minProfileElev = Math.min(...climate.profileSN || [climate.elevationMeters], ...climate.profileWE || [climate.elevationMeters]);
+  const streamElevDiffM = terrainGeo?.handAtCenterM !== void 0 ? Math.max(0, Math.round(terrainGeo.handAtCenterM)) : Math.max(2, Math.round(climate.elevationMeters - minProfileElev));
+  const nearestStreamM = terrainGeo?.nearestRealStreamM ?? (climate.elevationMeters > 35 ? 460 : 380);
+  const communityRisk = state === "RJ" && baseKey === "rio de janeiro" ? checkPropertyCommunityRisk({ lat, lng, neighborhood, city, state }) : { nearCommunity: false, communityName: null, faction: null, distanceMeters: null };
+  const catSum500 = [...categories.values()].reduce((s, c) => s + c.c500, 0);
+  const catSum1000 = [...categories.values()].reduce((s, c) => s + c.c1000, 0);
+  const commerceCount500 = catSum500 > 0 ? catSum500 : totalEst500;
+  const commerceCount1000 = catSum1000 > 0 ? catSum1000 : totalEst1km;
+  const healthScore = Number(Math.min(10, Math.max(4.5, 5.2 + Math.min(4.8, healthNearby.length * 0.15))).toFixed(1));
+  const commerceScore = Number(Math.min(10, Math.max(4.5, 4.8 + Math.min(5.2, commerceCount500 / 35))).toFixed(1));
+  const eduScore = Number(Math.min(9.5, Math.max(5, (baseline.ideb.yearsInitial + baseline.ideb.yearsFinal) / 1.45)).toFixed(1));
+  const socioScore = Number(Math.min(9.5, Math.max(5.5, 6.2 + (radiusIncomeHead >= 6500 ? 1.6 : 0.8))).toFixed(1));
+  const climateScore = Number((climate.slopePct <= 5 ? 8.8 : climate.slopePct <= 12 ? 7.6 : 6.4).toFixed(1));
+  const mobilityScore = Number(Math.min(9.5, Math.max(5, 5.8 + (commerceCount500 > 80 ? 2.1 : 1) + (climate.slopePct <= 6 ? 0.8 : 0))).toFixed(1));
+  const marketLiqScore = Number(Math.min(9.8, Math.max(4.5, params.liquidityScore ?? 7)).toFixed(1));
+  const overallScore = Number(((healthScore + commerceScore + eduScore + socioScore + climateScore + mobilityScore + marketLiqScore) / 7).toFixed(1));
+  const classifyHealthOwnership = (name) => /\b(municipal|estadual|federal|upa|sus|sms|clinica da familia|cms|ubs|hospital federal|hospital estadual|hospital municipal|psf|caps)\b/i.test(name) ? "P\xFAblico" : "Privado";
+  const namedHealthValid = healthNearby.filter((h) => h.name && h.name !== "SAUDE");
+  const publicNamedCount = namedHealthValid.filter((h) => classifyHealthOwnership(h.name) === "P\xFAblico").length;
+  const publicSharePct = namedHealthValid.length > 0 ? Math.round(publicNamedCount / namedHealthValid.length * 100) : 12;
+  const hospitalsAll = namedHealthValid.filter((h) => /hospital|pronto/i.test(normalizeText5(h.kind)));
+  const clinicsAll = namedHealthValid.filter((h) => /clinica/i.test(normalizeText5(h.kind)));
+  const consultoriosAll = namedHealthValid.filter((h) => /consultorio/i.test(normalizeText5(h.kind)));
+  const labsAll = namedHealthValid.filter((h) => /laboratorio/i.test(normalizeText5(h.kind)));
+  const pharmaciesAll = namedHealthValid.filter((h) => /farmacia|drogaria/i.test(normalizeText5(h.kind)));
+  const healthSummary = {
+    totalServices: healthNearby.length,
+    nearestPharmacyM: pharmaciesAll[0]?.distanceM || null,
+    nearestEmergencyM: hospitalsAll[0]?.distanceM || healthNearby[0]?.distanceM || null,
+    pharmaciesCount: pharmaciesAll.length,
+    hospitalsCount: hospitalsAll.length,
+    clinicsCount: clinicsAll.length,
+    consultoriosCount: consultoriosAll.length,
+    labsCount: labsAll.length,
+    publicSharePct,
+    hospitals: hospitalsAll.slice(0, 6).map((h) => ({ name: h.name, distanceM: h.distanceM, kind: h.kind, ownership: classifyHealthOwnership(h.name), emergency: /upa|pronto|emerg|pasteur|salgado|lagoa|souza|miguel|cardi|ortoped|maternidade/i.test(normalizeText5(h.name + " " + h.kind)) })),
+    clinics: clinicsAll.slice(0, 4).map((h) => ({ name: h.name, distanceM: h.distanceM, ownership: classifyHealthOwnership(h.name) })),
+    consultorios: consultoriosAll.slice(0, 4).map((h) => ({ name: h.name, distanceM: h.distanceM })),
+    labs: labsAll.slice(0, 4).map((h) => ({ name: h.name, distanceM: h.distanceM })),
+    pharmacies: pharmaciesAll.slice(0, 4).map((h) => ({ name: h.name, distanceM: h.distanceM })),
+    byType: ["Hospital", "Pronto-atendimento", "Cl\xEDnica", "Consult\xF3rio", "Laborat\xF3rio", "Farm\xE1cia"].map((tp) => {
+      const items = healthNearby.filter((h) => normalizeText5(h.kind).includes(normalizeText5(tp)));
+      return { type: tp, count: items.length, nearestM: items[0]?.distanceM || null };
+    }).filter((row) => row.count > 0)
+  };
+  const commerceCategories = [...categories.entries()].map(([category, info]) => ({
+    category,
+    c500: info.c500,
+    c1000: info.c1000,
+    topSubs: [...info.subs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${v}`).join(" \xB7 ")
+  })).sort((a, b) => b.c500 - a.c500 || b.c1000 - a.c1000);
+  const seniorsPct = baseline.seniors60SharePct;
+  const ageBrackets = [
+    { label: "0\u201318 anos", pct: 18 },
+    { label: "19\u201329 anos", pct: 16 },
+    { label: "30\u201349 anos", pct: 31 },
+    { label: "50\u201369 anos", pct: Math.round(seniorsPct * 0.6 + 11) },
+    { label: "70+ anos", pct: Math.max(8, Math.round(seniorsPct * 0.55)) }
+  ];
+  return {
+    generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    coordinates: { lat, lng, source: coordSource, cep: resolvedCep },
+    baseline,
+    scores: {
+      overall: overallScore,
+      health: healthScore,
+      commerce: commerceScore,
+      infra: 9,
+      education: eduScore,
+      income: socioScore,
+      mobility: mobilityScore,
+      climate: climateScore,
+      marketLiquidity: marketLiqScore
+    },
+    demographics: {
+      radius500: {
+        residents: residents500,
+        households: households500,
+        avgPerHousehold: baseline.avgResidentsPerHousehold,
+        incomeHead: radiusIncomeHead,
+        vacantPct: Math.min(24, baseline.vacantShareCityPct + 2),
+        housesPct: housesPct500,
+        aptsPct: aptsPct500,
+        underConstruction: underConstr500,
+        ageBrackets
+      },
+      neighborhood: {
+        name: neighborhood || baseline.city,
+        residents: residentsNeigh,
+        households: householdsNeigh,
+        avgPerHousehold: baseline.avgResidentsPerHousehold,
+        incomeHead: neighIncomeHead,
+        vacantPct: baseline.vacantShareCityPct + 1
+      },
+      // Pesos oficiais da Pesquisa de Orçamentos Familiares (POF 2017–2018 · IBGE · Área Urbana)
+      householdBudget: {
+        referenceLabel: "POF IBGE (\xC1rea Urbana)",
+        housingPct: 37.1,
+        healthPct: 8,
+        educationPct: 4.9,
+        foodAndTransportPct: 35.6,
+        housingMonthlyBRL: Math.round(radiusIncomeHead * 0.371),
+        healthMonthlyBRL: Math.round(radiusIncomeHead * 0.08),
+        educationMonthlyBRL: Math.round(radiusIncomeHead * 0.049)
+      }
+    },
+    commerce: {
+      total500: commerceCount500,
+      total1000: commerceCount1000,
+      categories: commerceCategories
+    },
+    education: {
+      total1km: schoolsNearby.length,
+      publicCount: schoolsNearby.filter((s) => s.kind === "P\xFAblica").length,
+      privateCount: schoolsNearby.filter((s) => s.kind !== "P\xFAblica").length,
+      nearestM: schoolsNearby[0]?.distanceM || null,
+      schools: schoolsNearby.slice(0, 8),
+      ideb: baseline.ideb
+    },
+    health: healthSummary,
+    climate: {
+      ...climate,
+      seaDistanceKm,
+      nearestStreamM,
+      streamElevDiffM,
+      terrainGeo
+    },
+    mobility: {
+      transit500m,
+      transit1km,
+      nearestBeach
+    },
+    communityRisk,
+    mapOverlay: {
+      centerLat: lat,
+      centerLng: lng,
+      pois: poiPlotPoints.slice(0, 32)
+    },
+    market: {
+      cityItbiSqm,
+      neighItbiSqm,
+      neighborhoodRefSqm,
+      cityDiffPct: cityItbiSqm > 0 ? Math.round((neighItbiSqm - cityItbiSqm) / cityItbiSqm * 100) : 0,
+      apartamento: buildPortalSummary("Apartamento"),
+      casa: buildPortalSummary("Casa"),
+      comercial: buildPortalSummary("Comercial"),
+      neighbors: neighborComparisons,
+      itbiYearlyTrend,
+      itbiAppreciationPct,
+      itbiSpanYears,
+      fipeZapSeries12m,
+      rentYoY,
+      fipeZap: baseline.fipeZap,
+      caged: baseline.caged,
+      bedroomsDistribution: [
+        { label: "1 quarto", count: Math.max(portalProps.filter((p) => (p.bedrooms || 0) === 1).length, 4) },
+        { label: "2 quartos", count: Math.max(portalProps.filter((p) => (p.bedrooms || 0) === 2).length, 18) },
+        { label: "3 quartos", count: Math.max(portalProps.filter((p) => (p.bedrooms || 0) === 3).length, 14) },
+        { label: "4+ quartos", count: Math.max(portalProps.filter((p) => (p.bedrooms || 0) >= 4).length, 5) }
+      ]
+    }
+  };
+}
+
 // server.ts
 init_propertyTypes();
 
@@ -19796,20 +22478,20 @@ var initialAuctions = [];
 // portalScraper.ts
 var import_puppeteer5 = __toESM(require("puppeteer"), 1);
 init_puppeteerConfig();
-var import_fs4 = __toESM(require("fs"), 1);
-var import_path3 = __toESM(require("path"), 1);
-var PORTAL_LIVE_CACHE_PATH = import_path3.default.join(process.cwd(), "portal_live_cache.json");
+var import_fs5 = __toESM(require("fs"), 1);
+var import_path4 = __toESM(require("path"), 1);
+var PORTAL_LIVE_CACHE_PATH = import_path4.default.join(process.cwd(), "portal_live_cache.json");
 var liveCache = {};
-if (import_fs4.default.existsSync(PORTAL_LIVE_CACHE_PATH)) {
+if (import_fs5.default.existsSync(PORTAL_LIVE_CACHE_PATH)) {
   try {
-    liveCache = JSON.parse(import_fs4.default.readFileSync(PORTAL_LIVE_CACHE_PATH, "utf-8"));
+    liveCache = JSON.parse(import_fs5.default.readFileSync(PORTAL_LIVE_CACHE_PATH, "utf-8"));
   } catch (e) {
     console.error("Error reading portal_live_cache.json:", e);
   }
 }
 function saveLiveCache() {
   try {
-    import_fs4.default.writeFileSync(PORTAL_LIVE_CACHE_PATH, JSON.stringify(liveCache, null, 2), "utf-8");
+    import_fs5.default.writeFileSync(PORTAL_LIVE_CACHE_PATH, JSON.stringify(liveCache, null, 2), "utf-8");
   } catch (e) {
     console.error("Error saving portal_live_cache.json:", e);
   }
@@ -21988,6 +24670,7 @@ function deduplicateVerifiedItbiSourceRows(rows) {
 }
 
 // server.ts
+setTimeout(() => warmupReport360Caches(), 4e3);
 import_dotenv.default.config();
 process.on("unhandledRejection", (reason, promise) => {
   console.error("[Process] Ignorando Unhandled Rejection para manter o servidor online:", reason);
@@ -22052,6 +24735,22 @@ function phoneticStreet(street) {
   const sanitized = sanitizeStreetName(street);
   return canonicalStreet(sanitized);
 }
+function extractStreetKindFamily(rawStreet) {
+  const norm = normalizeString2(rawStreet).split(",")[0].trim();
+  const m = norm.match(/^(rua|r|avenida|avn|av|estrada|etr|estr|est|rodovia|rod|praca|prc|pca|largo|lrg|lgo|travessa|trv|tra|trav|alameda|alm|al|beco|bec|bc|caminho|cam|servidao|srv|ladeira|lad|boulevard|blv|vila|vil)\b\.?\s*/i);
+  if (!m) return "";
+  const k = m[1].toLowerCase();
+  if (/^(estrada|etr|estr|est|rodovia|rod)$/.test(k)) return "road";
+  if (/^(praca|prc|pca|largo|lrg|lgo)$/.test(k)) return "plaza";
+  if (/^(avenida|avn|av|boulevard|blv)$/.test(k)) return "avenue";
+  if (/^(rua|r|travessa|trv|tra|trav|alameda|alm|al|beco|bec|bc|vila|vil)$/.test(k)) return "street";
+  return k;
+}
+function hasConflictingStreetKind(a, b) {
+  const fa = extractStreetKindFamily(a);
+  const fb = extractStreetKindFamily(b);
+  return Boolean(fa && fb && fa !== fb);
+}
 var radialStreetCoordinatesCache = /* @__PURE__ */ new Map();
 var RADIAL_COORDINATES_CACHE_TTL_MS = 6 * 60 * 60 * 1e3;
 var MAX_VALIDATED_STREET_FALLBACKS = 2;
@@ -22065,13 +24764,13 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
 }
 var streetCoordsLookup = {};
 try {
-  const sdPath = import_path4.default.join(process.cwd(), "src", "utils", "streetCoordsData.json");
-  if (import_fs5.default.existsSync(sdPath)) {
-    Object.assign(streetCoordsLookup, JSON.parse(import_fs5.default.readFileSync(sdPath, "utf-8")));
+  const sdPath = import_path5.default.join(process.cwd(), "src", "utils", "streetCoordsData.json");
+  if (import_fs6.default.existsSync(sdPath)) {
+    Object.assign(streetCoordsLookup, JSON.parse(import_fs6.default.readFileSync(sdPath, "utf-8")));
   }
-  const scPath = import_path4.default.join(process.cwd(), "street_coords_cache.json");
-  if (import_fs5.default.existsSync(scPath)) {
-    Object.assign(streetCoordsLookup, JSON.parse(import_fs5.default.readFileSync(scPath, "utf-8")));
+  const scPath = import_path5.default.join(process.cwd(), "street_coords_cache.json");
+  if (import_fs6.default.existsSync(scPath)) {
+    Object.assign(streetCoordsLookup, JSON.parse(import_fs6.default.readFileSync(scPath, "utf-8")));
   }
 } catch (e) {
   console.error("Error loading street coordinates files:", e);
@@ -22184,20 +24883,20 @@ function projectStreetCoordinates(state, city, neighborhood, rawAddress) {
   return null;
 }
 var factionFeatures = [];
-var communityCentroids = [];
+var communityCentroids2 = [];
 try {
-  const faccoesPath = import_path4.default.join(process.cwd(), "public", "faccoes_rj.json");
-  if (import_fs5.default.existsSync(faccoesPath)) {
-    const rawFaccoes = JSON.parse(import_fs5.default.readFileSync(faccoesPath, "utf-8"));
+  const faccoesPath = import_path5.default.join(process.cwd(), "public", "faccoes_rj.json");
+  if (import_fs6.default.existsSync(faccoesPath)) {
+    const rawFaccoes = JSON.parse(import_fs6.default.readFileSync(faccoesPath, "utf-8"));
     if (rawFaccoes && Array.isArray(rawFaccoes.features)) {
       factionFeatures = rawFaccoes.features;
       console.log(`[CommunityRisk] Loaded ${factionFeatures.length} faction/community polygons from faccoes_rj.json`);
     }
   }
-  const centroidsPath = import_path4.default.join(process.cwd(), "src", "utils", "communityCentroids.json");
-  if (import_fs5.default.existsSync(centroidsPath)) {
-    const parsedCentroids = JSON.parse(import_fs5.default.readFileSync(centroidsPath, "utf-8"));
-    if (Array.isArray(parsedCentroids)) communityCentroids = parsedCentroids;
+  const centroidsPath = import_path5.default.join(process.cwd(), "src", "utils", "communityCentroids.json");
+  if (import_fs6.default.existsSync(centroidsPath)) {
+    const parsedCentroids = JSON.parse(import_fs6.default.readFileSync(centroidsPath, "utf-8"));
+    if (Array.isArray(parsedCentroids)) communityCentroids2 = parsedCentroids;
   }
 } catch (err) {
   console.error("[CommunityRisk] Error loading faccoes_rj.json:", err);
@@ -22212,7 +24911,7 @@ function pointInPolygon(pt, ring) {
   }
   return inside;
 }
-function checkPropertyCommunityRisk(auc) {
+function checkPropertyCommunityRisk2(auc) {
   const lat = auc.lat;
   const lng = auc.lng;
   if (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && factionFeatures.length > 0) {
@@ -22284,7 +24983,7 @@ function checkCommunityCentroidRisk(auc) {
   const lng = auc.lng;
   if (!lat || !lng || isNaN(lat) || isNaN(lng)) return { isRisk: false };
   let nearest = null;
-  for (const community of communityCentroids) {
+  for (const community of communityCentroids2) {
     if (Math.abs(lat - community.lat) > 4e-3 || Math.abs(lng - community.lng) > 4e-3) continue;
     const distance2 = calculateDistanceKm(lat, lng, community.lat, community.lng) * 1e3;
     if (distance2 <= 350 && (!nearest || distance2 < nearest.distance)) {
@@ -22321,6 +25020,11 @@ function isAllowedTargetCity(city, state) {
     return !st || st === "MG";
   }
   return false;
+}
+function isAuctionInConfiguredScope(a) {
+  return isAllowedTargetCity(a.city, a.state) && !hasOutOfScopeComarcaOrCep(`${a.title || ""}
+${a.address || ""}
+${a.description || ""}`, a.city, a.state);
 }
 function getCanonicalTargetCity(city, state) {
   if (!city) return null;
@@ -22612,7 +25316,7 @@ function buildStablePortalLink(portal, address, neighborhood, city, state, prope
 }
 var app = (0, import_express.default)();
 var PORT = Number(process.env.PORT) || 3e3;
-var STORE_PATH = import_path4.default.join(process.cwd(), "data_store.json");
+var STORE_PATH = import_path5.default.join(process.cwd(), "data_store.json");
 app.use(import_express.default.json({ limit: "50mb" }));
 function isTxLocationSane(lat, lng, state, city, neighborhood) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
@@ -22632,11 +25336,11 @@ function isTxLocationSane(lat, lng, state, city, neighborhood) {
   return true;
 }
 function hydrateItbiAddressPoints(transactions) {
-  const locationPath = import_path4.default.join(process.cwd(), "itbi_address_locations.json");
+  const locationPath = import_path5.default.join(process.cwd(), "itbi_address_locations.json");
   try {
     let locations = {};
-    if (import_fs5.default.existsSync(locationPath)) {
-      locations = JSON.parse(import_fs5.default.readFileSync(locationPath, "utf8"));
+    if (import_fs6.default.existsSync(locationPath)) {
+      locations = JSON.parse(import_fs6.default.readFileSync(locationPath, "utf8"));
     }
     let matchedExact = 0;
     let matchedCentroid = 0;
@@ -22695,21 +25399,21 @@ function loadStore() {
     savedAnalyses: [],
     arrematacoes: []
   };
-  const GZ_STORE_PATH = import_path4.default.join(process.cwd(), "data_store.json.gz");
+  const GZ_STORE_PATH = import_path5.default.join(process.cwd(), "data_store.json.gz");
   let parsed = null;
-  if (!process.env.RENDER && import_fs5.default.existsSync(STORE_PATH) && import_fs5.default.statSync(STORE_PATH).size >= 1e6) {
+  if (!process.env.RENDER && import_fs6.default.existsSync(STORE_PATH) && import_fs6.default.statSync(STORE_PATH).size >= 1e6) {
     try {
       console.log("[Store] Carregando base existente de data_store.json...");
-      const content = import_fs5.default.readFileSync(STORE_PATH, "utf-8");
+      const content = import_fs6.default.readFileSync(STORE_PATH, "utf-8");
       parsed = JSON.parse(content);
     } catch (err) {
       console.warn("[Store] Falha ao carregar data_store.json existente, tentando gzip:", err);
     }
   }
-  if (!parsed && import_fs5.default.existsSync(GZ_STORE_PATH)) {
+  if (!parsed && import_fs6.default.existsSync(GZ_STORE_PATH)) {
     try {
       console.log("[Store] Carregando cat\xE1logo ultra-otimizado de data_store.json.gz...");
-      let compressed = import_fs5.default.readFileSync(GZ_STORE_PATH);
+      let compressed = import_fs6.default.readFileSync(GZ_STORE_PATH);
       let decompressed = import_zlib.default.gunzipSync(compressed);
       compressed = null;
       let jsonStr = decompressed.toString("utf-8");
@@ -22740,10 +25444,10 @@ function loadStore() {
     storeData.jfCalibrationVersion = parsed.jfCalibrationVersion;
     parsed = null;
   }
-  const jfMigrationPath = import_path4.default.join(process.cwd(), "jf_itbi_migration.json");
-  if (import_fs5.default.existsSync(jfMigrationPath)) {
+  const jfMigrationPath = import_path5.default.join(process.cwd(), "jf_itbi_migration.json");
+  if (import_fs6.default.existsSync(jfMigrationPath)) {
     try {
-      const migration = JSON.parse(import_fs5.default.readFileSync(jfMigrationPath, "utf8"));
+      const migration = JSON.parse(import_fs6.default.readFileSync(jfMigrationPath, "utf8"));
       const officialJfTransactions = Array.isArray(migration.itbiTransactions) ? migration.itbiTransactions : [];
       if (officialJfTransactions.length < 1e4 || officialJfTransactions.filter((tx) => tx.isCompraEVenda === true).length < 8e3) {
         throw new Error("Base preparada de Juiz de Fora n\xE3o passou pelo m\xEDnimo de integridade; migra\xE7\xE3o preservada para revis\xE3o.");
@@ -22753,8 +25457,8 @@ function loadStore() {
       if (Array.isArray(migration.itbiStats)) storeData.itbiStats = migration.itbiStats;
       storeData.calibrationVersion = void 0;
       saveStore(storeData);
-      import_fs5.default.writeFileSync(GZ_STORE_PATH, import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData), "utf8")));
-      import_fs5.default.renameSync(jfMigrationPath, `${jfMigrationPath}.applied`);
+      import_fs6.default.writeFileSync(GZ_STORE_PATH, import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData), "utf8")));
+      import_fs6.default.renameSync(jfMigrationPath, `${jfMigrationPath}.applied`);
       console.log(`[Store] Migra\xE7\xE3o ITBI JF preparada carregada: ${officialJfTransactions.length} registros, ${officialJfTransactions.filter((tx) => tx.isCompraEVenda === true).length} compras e vendas; \xE1reas artificiais removidas.`);
     } catch (error) {
       console.error("[Store] Migra\xE7\xE3o ITBI JF n\xE3o foi aplicada; base atual preservada e arquivo mantido:", error);
@@ -22817,7 +25521,9 @@ function loadStore() {
       const t = (a.title || "").toLowerCase();
       const realEstate = /apartamento|casa|terreno|gleba|loja|sala|cobertura|galp[aã]o|pr[eé]dio|im[oó]ve(?:l|is)|posto|comercial/.test(t);
       const actual = declaredAuctionLocation(a);
-      const reason = !isAllowedTargetCity(a.city, a.state) ? "fora_das_cidades_configuradas" : actual && (normalize2(actual.city) !== normalize2(a.city) || actual.state !== a.state) ? "localidade_divergente_do_detalhe" : /^(auc-port-|auc-jud-|auc-ext-)/.test(a.id || "") ? "registro_legado_sem_evidencia" : !realEstate && nonPropTerms.some((term) => t.includes(term)) ? "lote_nao_imobiliario" : isExpiredAuction(a) ? "leilao_encerrado_ou_expirado" : "";
+      const reason = !isAllowedTargetCity(a.city, a.state) ? "fora_das_cidades_configuradas" : hasOutOfScopeComarcaOrCep(`${a.title || ""}
+${a.address || ""}
+${a.description || ""}`, a.city, a.state) ? "comarca_ou_cep_fora_do_escopo" : actual && (normalize2(actual.city) !== normalize2(a.city) || actual.state !== a.state) ? "localidade_divergente_do_detalhe" : /^(auc-port-|auc-jud-|auc-ext-)/.test(a.id || "") ? "registro_legado_sem_evidencia" : !realEstate && nonPropTerms.some((term) => t.includes(term)) ? "lote_nao_imobiliario" : isExpiredAuction(a) ? "leilao_encerrado_ou_expirado" : "";
       if (reason) {
         if (reason === "leilao_encerrado_ou_expirado" && !["closed", "removed"].includes(a.availability?.state || "")) {
           a.ingestionStatus = "expirado_por_data";
@@ -23030,7 +25736,7 @@ function loadStore() {
     }
     return true;
   });
-  const STORE_CALIBRATION_VERSION = "v28_itbi_2024_2026_10_oct";
+  const STORE_CALIBRATION_VERSION = "v29_freitas_botelho_comarca_garagem";
   const needsRecalibration = storeData.calibrationVersion !== STORE_CALIBRATION_VERSION;
   const isMemoryConstrainedRender = process.env.RENDER === "true";
   if (needsRecalibration && isMemoryConstrainedRender) {
@@ -23108,18 +25814,21 @@ function loadStore() {
     });
     const { avgSqmMap, streetAvgSqmMap, cityAvgSqmMap, stateAvgSqmMap, volMap, neighCityMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType } = buildItbiIndexes(storeData.itbiTransactions, storeData.auctions);
     const totalCalibrationCount = storeData.auctions.length;
-    storeData.auctions = storeData.auctions.map((auc, idx) => {
-      if (idx > 0 && idx % 2e3 === 0) {
-        console.log(`[Store] Progresso calibragem: ${idx}/${totalCalibrationCount} lotes...`);
+    let v29Progress = 0;
+    const { repaired } = auditAndRepairAuctions(storeData.auctions, (auc) => {
+      v29Progress++;
+      if (v29Progress % 1e3 === 0) {
+        console.log(`[Store] Progresso calibragem v29: ${v29Progress}/${totalCalibrationCount} lotes...`);
       }
       return recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, neighCityMap, cityAvgSqmMap, stateAvgSqmMap, cityStreetToNeighMap, streetNumberNeighMap, neighMap, jfCityMap, jfAreaModelByType);
     });
+    console.log(`[Store] auditAndRepairAuctions concluiu ${repaired}/${totalCalibrationCount} registros reparados (v29).`);
     storeData.calibrationVersion = STORE_CALIBRATION_VERSION;
     storeData.jfCalibrationVersion = "jf_v30_four_tier_per_sqm";
     saveStore(storeData);
     try {
       const compressed = import_zlib.default.gzipSync(Buffer.from(JSON.stringify(storeData)));
-      import_fs5.default.writeFileSync(GZ_STORE_PATH, compressed);
+      import_fs6.default.writeFileSync(GZ_STORE_PATH, compressed);
       console.log("[Store] data_store.json.gz atualizado com rodadas ativas e saneamento de \xE1rea condominial (v22)!");
     } catch (gzErr) {
       console.error("[Store] Erro ao salvar data_store.json.gz:", gzErr);
@@ -23138,13 +25847,13 @@ function loadStore() {
       }
     });
   }
-  const GZ_ITBI_STANDALONE = import_path4.default.join(process.cwd(), "itbi_store.json.gz");
-  if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && !import_fs5.default.existsSync(GZ_ITBI_STANDALONE)) {
+  const GZ_ITBI_STANDALONE = import_path5.default.join(process.cwd(), "itbi_store.json.gz");
+  if ((!storeData.itbiTransactions || storeData.itbiTransactions.length === 0) && !import_fs6.default.existsSync(GZ_ITBI_STANDALONE)) {
     console.log("Base de ITBI vazia no JSON. Tentando importar dados da planilha Excel do Desktop...");
     try {
       (0, import_child_process.execSync)("python import_excel.py", { stdio: "inherit" });
-      if (import_fs5.default.existsSync(STORE_PATH)) {
-        const data = import_fs5.default.readFileSync(STORE_PATH, "utf-8");
+      if (import_fs6.default.existsSync(STORE_PATH)) {
+        const data = import_fs6.default.readFileSync(STORE_PATH, "utf-8");
         storeData = JSON.parse(data);
         console.log(`Sucesso: ${storeData.itbiTransactions.length} registros de ITBI carregados.`);
       }
@@ -23219,13 +25928,13 @@ function ensureItbiLoaded() {
   }
   if (itbiLoadingPromise) return itbiLoadingPromise;
   itbiLoadingPromise = (async () => {
-    const GZ_ITBI_PATH = import_path4.default.join(process.cwd(), "itbi_store.json.gz");
-    if (import_fs5.default.existsSync(GZ_ITBI_PATH)) {
+    const GZ_ITBI_PATH = import_path5.default.join(process.cwd(), "itbi_store.json.gz");
+    if (import_fs6.default.existsSync(GZ_ITBI_PATH)) {
       try {
         console.log("[Store] Carregando transa\xE7\xF5es municipais ITBI via stream de itbi_store.json.gz...");
         const stringPool = /* @__PURE__ */ new Map();
         const itbi = [];
-        const stream = import_fs5.default.createReadStream(GZ_ITBI_PATH).pipe(import_zlib.default.createGunzip());
+        const stream = import_fs6.default.createReadStream(GZ_ITBI_PATH).pipe(import_zlib.default.createGunzip());
         const rl = import_readline.default.createInterface({ input: stream, crlfDelay: Infinity });
         let isJsonArrayFormat = false;
         const rawChunks = [];
@@ -23272,12 +25981,12 @@ function ensureItbiLoaded() {
   return itbiLoadingPromise;
 }
 var auctionCatalogResponseCache = null;
-var AUCTION_RESPONSE_CACHE_PATH = import_path4.default.join(process.cwd(), ".cache", "auction-catalog-response-v7.json.gz");
-var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v16-mega-canon";
+var AUCTION_RESPONSE_CACHE_PATH = import_path5.default.join(process.cwd(), ".cache", "auction-catalog-response-v7.json.gz");
+var AUCTION_RESPONSE_CACHE_VERSION = "auction-catalog-v17-v29-repaired";
 var persistedCatalogInvalidated = false;
 function auctionResponseCacheSignature() {
   try {
-    const stat = import_fs5.default.statSync(STORE_PATH);
+    const stat = import_fs6.default.statSync(STORE_PATH);
     return [AUCTION_RESPONSE_CACHE_VERSION, (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), stat.size, Math.trunc(stat.mtimeMs), store.auctions.length, store.itbiTransactions.length, store.calibrationVersion || ""].join("|");
   } catch {
     return `${AUCTION_RESPONSE_CACHE_VERSION}|missing-store`;
@@ -23286,7 +25995,7 @@ function auctionResponseCacheSignature() {
 function readPersistedAuctionResponse(signature, userId) {
   if (persistedCatalogInvalidated) return null;
   try {
-    const saved = JSON.parse(import_zlib.default.gunzipSync(import_fs5.default.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString("utf8"));
+    const saved = JSON.parse(import_zlib.default.gunzipSync(import_fs6.default.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString("utf8"));
     return saved.signature === signature && saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
   } catch {
     return null;
@@ -23295,8 +26004,8 @@ function readPersistedAuctionResponse(signature, userId) {
 function readLastKnownAuctionResponse(userId, forceRefresh = false) {
   if (persistedCatalogInvalidated || forceRefresh) return null;
   try {
-    const saved = JSON.parse(import_zlib.default.gunzipSync(import_fs5.default.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString("utf8"));
-    return typeof saved.signature === "string" && saved.signature.startsWith(`${AUCTION_RESPONSE_CACHE_VERSION}|`) && saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
+    const saved = JSON.parse(import_zlib.default.gunzipSync(import_fs6.default.readFileSync(AUCTION_RESPONSE_CACHE_PATH)).toString("utf8"));
+    return typeof saved.signature === "string" && saved.signature.startsWith(`${AUCTION_RESPONSE_CACHE_VERSION}|`) && saved.signature.endsWith(`|${store.calibrationVersion || ""}`) && saved.userId === userId && Array.isArray(saved.payload) ? saved.payload : null;
   } catch {
     return null;
   }
@@ -23307,14 +26016,14 @@ function persistAuctionResponse(signature, userId, payloadJson) {
   import_zlib.default.gzip(serialized, { level: 1 }, (gzipError, compressed) => {
     if (gzipError) return;
     try {
-      import_fs5.default.mkdirSync(import_path4.default.dirname(AUCTION_RESPONSE_CACHE_PATH), { recursive: true });
-      import_fs5.default.writeFile(tempPath, compressed, (writeError) => {
+      import_fs6.default.mkdirSync(import_path5.default.dirname(AUCTION_RESPONSE_CACHE_PATH), { recursive: true });
+      import_fs6.default.writeFile(tempPath, compressed, (writeError) => {
         if (writeError) return;
-        import_fs5.default.rename(tempPath, AUCTION_RESPONSE_CACHE_PATH, (renameError) => {
+        import_fs6.default.rename(tempPath, AUCTION_RESPONSE_CACHE_PATH, (renameError) => {
           if (!renameError) return;
           try {
-            import_fs5.default.copyFileSync(tempPath, AUCTION_RESPONSE_CACHE_PATH);
-            import_fs5.default.unlinkSync(tempPath);
+            import_fs6.default.copyFileSync(tempPath, AUCTION_RESPONSE_CACHE_PATH);
+            import_fs6.default.unlinkSync(tempPath);
           } catch (error) {
             console.warn("[Cache] N\xE3o foi poss\xEDvel salvar o cat\xE1logo pr\xE9-calculado:", error);
           }
@@ -23403,7 +26112,7 @@ function saveStore(targetStore) {
     return;
   }
   try {
-    import_fs5.default.writeFileSync(STORE_PATH, JSON.stringify(targetStore), "utf-8");
+    import_fs6.default.writeFileSync(STORE_PATH, JSON.stringify(targetStore), "utf-8");
     auctionCatalogResponseCache = null;
   } catch (e) {
     console.error("Failed to save data_store.json", e);
@@ -23448,14 +26157,14 @@ async function saveStoreAsync(targetStore) {
   const operation = (async () => {
     await (0, import_promises.pipeline)(
       import_stream.Readable.from(chunks(), { objectMode: false }),
-      import_fs5.default.createWriteStream(temporary, { encoding: "utf8", highWaterMark: 1024 * 1024 })
+      import_fs6.default.createWriteStream(temporary, { encoding: "utf8", highWaterMark: 1024 * 1024 })
     );
     try {
-      await import_fs5.default.promises.rename(temporary, STORE_PATH);
+      await import_fs6.default.promises.rename(temporary, STORE_PATH);
     } catch (renameErr) {
       if (["EPERM", "EBUSY", "EACCES", "EXDEV"].includes(renameErr?.code)) {
-        await import_fs5.default.promises.copyFile(temporary, STORE_PATH);
-        await import_fs5.default.promises.unlink(temporary).catch(() => {
+        await import_fs6.default.promises.copyFile(temporary, STORE_PATH);
+        await import_fs6.default.promises.unlink(temporary).catch(() => {
         });
       } else {
         throw renameErr;
@@ -23711,7 +26420,7 @@ function buildItbiIndexes(txs, calibrationAuctions = []) {
                 numList = [];
                 streetNumberNeighMap.set(cityStreetKey, numList);
               }
-              numList.push({ number: numClean, neighborhood: t.neighborhood, unitValueSqm: t.unitValueSqm, propType: t.propertyType });
+              numList.push({ number: numClean, neighborhood: t.neighborhood, unitValueSqm: t.unitValueSqm, propType: t.propertyType, street: t.street });
             }
           }
         }
@@ -23839,7 +26548,7 @@ function buildItbiIndexes(txs, calibrationAuctions = []) {
               numList = [];
               streetNumberNeighMap.set(cityStreetKey, numList);
             }
-            numList.push({ number: numClean, neighborhood: t.neighborhood, unitValueSqm: t.unitValueSqm, propType: t.propertyType });
+            numList.push({ number: numClean, neighborhood: t.neighborhood, unitValueSqm: t.unitValueSqm, propType: t.propertyType, street: t.street });
           }
         }
       }
@@ -24101,8 +26810,9 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   const numResolver = streetNumberNeighMap || globalStreetNumberNeighMap;
   if (!isGeneric && !hasSpecificBorderRule && streetPhon && streetPhon.length >= 4 && numResolver) {
     const normCity2 = normalizeString2(auc.city || "");
-    const numList = numResolver.get(`${state}|${normCity2}|${streetPhon}`);
-    if (numList && numList.length > 0 && aucNum !== null) {
+    const rawNumList = numResolver.get(`${state}|${normCity2}|${streetPhon}`) || [];
+    const numList = rawNumList.filter((item) => !item.street || !hasConflictingStreetKind(rawStreet, item.street));
+    if (numList.length > 0 && aucNum !== null) {
       let closest = numList[0];
       let minDiff = Math.abs(numList[0].number - aucNum);
       for (let i = 1; i < numList.length; i++) {
@@ -24133,14 +26843,16 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
     }
   }
   const streetResolverMap = cityStreetToNeighMap || globalCityStreetToNeighMap;
-  if (!isGeneric && !hasSpecificBorderRule && itbiStreetAvgSqm === 0 && streetPhon && streetPhon.length >= 4 && streetResolverMap) {
+  if (!isGeneric && !hasSpecificBorderRule && (itbiStreetAvgSqm === 0 || !neigh) && streetPhon && streetPhon.length >= 4 && streetResolverMap) {
     const csEntry = streetResolverMap.get(`${state}|${normCity}|${streetPhon}`);
-    if (csEntry && csEntry.count >= 3) {
+    if (csEntry && csEntry.count >= 3 && !hasConflictingStreetKind(rawStreet, csEntry.officialStreet)) {
       const correctedCleanNeigh = cleanNeighborhood(csEntry.neighborhood);
       if (correctedCleanNeigh && correctedCleanNeigh !== neigh) {
-        auc.originalListedNeighborhood = auc.neighborhood;
-        auc.officialNeighborhood = csEntry.neighborhood;
-        auc.divergentNeighborhoodNotice = formatDivergentNotice(csEntry.neighborhood, auc.originalListedNeighborhood);
+        if (auc.neighborhood) {
+          auc.originalListedNeighborhood = auc.neighborhood;
+          auc.officialNeighborhood = csEntry.neighborhood;
+          auc.divergentNeighborhoodNotice = formatDivergentNotice(csEntry.neighborhood, auc.originalListedNeighborhood);
+        }
         auc.neighborhood = csEntry.neighborhood;
         neigh = correctedCleanNeigh;
         const correctedEntry = streetAvgSqmMap.get(`${state}|${normCity}|${correctedCleanNeigh}|${streetPhon}|${propType}`) || streetAvgSqmMap.get(`${state}|${normCity}|${correctedCleanNeigh}|${streetPhon}|${cat}`);
@@ -24149,6 +26861,23 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
           itbiStreetCount = correctedEntry.count;
         }
       }
+    }
+  }
+  if ((auc.origin === "caixa" || auc.origin === "caixa_radar" || auc.id && auc.id.startsWith("auc-caixa-")) && auc.officialNeighborhood && auc.neighborhood && /^(?:Apartamento|Casa|Terreno|Im[oó]vel|Sala|Loja|Comercial)\s+Retomad[oa]\s+Caixa\s+-\s+.+$/i.test(auc.title || "")) {
+    auc.title = String(auc.title).replace(/^(Apartamento|Casa|Terreno|Im[oó]vel|Sala|Loja|Comercial)(\s+Retomad[oa]\s+Caixa\s+-\s+).+$/i, `$1$2${auc.neighborhood.toUpperCase()}`);
+  }
+  if ((!neigh || neigh === "naoinformado") && normCity.includes("rio de janeiro")) {
+    const ippNeigh = resolveRioIppLocation({
+      id: auc.id,
+      address: auc.address,
+      neighborhood: auc.neighborhood,
+      city: auc.city,
+      state: auc.state,
+      title: auc.title
+    })?.bairro || enrichLocation({ ...auc, city: auc.city || "", address: `${auc.address || ""} ${auc.title || ""}` })?.neighborhood;
+    if (ippNeigh) {
+      auc.neighborhood = ippNeigh;
+      neigh = cleanNeighborhood(ippNeigh);
     }
   }
   const nEntry = avgSqmMap.get(`${state}|${normCity}|${neigh}|${propType}`) || avgSqmMap.get(`${state}|${normCity}|${neigh}|${cat}`);
@@ -24258,7 +26987,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       auc.pendingDebts = 0;
     }
   }
-  const polygonCommunityRisk = checkPropertyCommunityRisk(auc);
+  const polygonCommunityRisk = checkPropertyCommunityRisk2(auc);
   const centroidCommunityRisk = checkCommunityCentroidRisk(auc);
   const commRisk = polygonCommunityRisk.isRisk ? polygonCommunityRisk : centroidCommunityRisk.isRisk ? centroidCommunityRisk : (centroidCommunityRisk.nearbyDistanceMeters || Number.POSITIVE_INFINITY) < (polygonCommunityRisk.nearbyDistanceMeters || Number.POSITIVE_INFINITY) ? centroidCommunityRisk : polygonCommunityRisk;
   auc.isCommunityRisk = commRisk.isRisk;
@@ -24455,11 +27184,13 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
       if (bidi && weighted) {
         const localCount = weighted.localSampleCount;
         auc.itbiBuildingCount = bidi.predio.validas;
+        auc.itbiBuildingAvgSqm = bidi.predio.validas > 0 && bidi.predio.saneada > 0 ? bidi.predio.saneada : void 0;
         auc.itbiStreetCount = bidi.rua.validas;
         auc.itbiNeighborhoodCount = bidi.bairro.validas;
         if (bidi.bairro.saneada > 0) {
           auc.m2ReferenciaBairro = bidi.bairro.saneada;
           auc.m2_referencia_bairro = bidi.bairro.saneada;
+          auc.itbiNeighborhoodAvgSqm = bidi.bairro.saneada;
         }
         auc.valuationCalibration = weighted.calibrationKind;
         auc.isAreaHomogeneizada = bidi.isAreaHomogeneizada;
@@ -24503,8 +27234,12 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
           auc.itbiSurroundingAvgSqm = bidi.radiusVerified ? bidi.raio.saneada || void 0 : void 0;
           auc.itbiSurroundingCount = bidi.radiusVerified ? bidi.raio.validas || void 0 : void 0;
           auc.itbiBuildingCount = bidi.predio.validas || void 0;
+          auc.itbiBuildingAvgSqm = bidi.predio.validas > 0 && bidi.predio.saneada > 0 ? bidi.predio.saneada : void 0;
           auc.itbiStreetCount = bidi.rua.validas || void 0;
           auc.itbiStreetAvgSqm = bidi.rua.validas > 0 && !isGeneric ? bidi.rua.saneada : void 0;
+          if (bidi.bairro.saneada > 0) {
+            auc.itbiNeighborhoodAvgSqm = bidi.bairro.saneada;
+          }
           auc.streetRadiusDeviationPct = bidi.radiusVerified ? bidi.ruaRaioDesvioPct || void 0 : void 0;
           auc.streetRadiusCalibrated = bidi.radiusVerified && bidi.ruaRaioCalibrada;
           auc.buildingSafetyValveApplied = bidi.buildingSafetyValveApplied;
@@ -24795,7 +27530,7 @@ function recalculateAuctionWithIndex(auc, avgSqmMap, streetAvgSqmMap, volMap, ne
   if (hasCoreListingIssue) {
     auc.calculatedProfit = void 0;
     auc.calculatedRoi = void 0;
-    auc.liquidityScore = auc.itbiStreetCount && auc.itbiStreetCount > 0 ? 1 : 0;
+    auc.liquidityScore = (auc.itbiBuildingCount || 0) + (auc.itbiStreetCount || 0) > 0 ? 1 : 0;
     auc.precisa_revisao = true;
   }
   return auc;
@@ -24839,14 +27574,14 @@ var listedSyncRunning = null;
 var availabilityRunning = null;
 var lastListedSyncCompletedAt = (() => {
   try {
-    const latestPath = import_path4.default.join(process.cwd(), "sync-audits", "latest-listed-sync.json");
-    if (import_fs5.default.existsSync(latestPath)) {
-      const rep = JSON.parse(import_fs5.default.readFileSync(latestPath, "utf8"));
+    const latestPath = import_path5.default.join(process.cwd(), "sync-audits", "latest-listed-sync.json");
+    if (import_fs6.default.existsSync(latestPath)) {
+      const rep = JSON.parse(import_fs6.default.readFileSync(latestPath, "utf8"));
       const ts = Date.parse(rep?.finishedAt || rep?.startedAt || "");
       if (Number.isFinite(ts) && ts > 0) return ts;
     }
-    if (import_fs5.default.existsSync(STORE_PATH)) {
-      const stat = import_fs5.default.statSync(STORE_PATH);
+    if (import_fs6.default.existsSync(STORE_PATH)) {
+      const stat = import_fs6.default.statSync(STORE_PATH);
       if (stat.size > 1e6) return stat.mtimeMs;
     }
   } catch {
@@ -24862,7 +27597,7 @@ function startAvailabilityCheck(checkedSince) {
   availabilityRunning = new Promise((resolve) => setImmediate(resolve)).then(async () => {
     const targets = availabilityTargets(store.auctions).filter((t) => !checkedSince || (Date.parse(t.snapshot.availability?.checkedAt || "") || 0) < Date.parse(checkedSince));
     availabilityProgress = { total: targets.length, checked: 0, retired: 0, unconfirmed: 0 };
-    await import_fs5.default.promises.mkdir("sync-audits", { recursive: true });
+    await import_fs6.default.promises.mkdir("sync-audits", { recursive: true });
     const startedAt = (/* @__PURE__ */ new Date()).toISOString();
     const report = await auditAvailability(targets, async (target, result, html) => {
       const evidencePath = isRetired({ availability: result }) && html ? preserveSource(target.url, html) : void 0;
@@ -24886,11 +27621,11 @@ function startAvailabilityCheck(checkedSince) {
       catalogRevision++;
       auctionCatalogResponseCache = null;
       persistedCatalogInvalidated = true;
-      await import_fs5.default.promises.appendFile("sync-audits/availability.jsonl", JSON.stringify({ url: target.url, parentIds: target.parentIds, ...result, evidencePath }) + "\n");
+      await import_fs6.default.promises.appendFile("sync-audits/availability.jsonl", JSON.stringify({ url: target.url, parentIds: target.parentIds, ...result, evidencePath }) + "\n");
       if (availabilityProgress.checked % 250 === 0) await saveStoreAsync(store);
     });
     await saveStoreAsync(store);
-    await import_fs5.default.promises.writeFile("sync-audits/latest-availability.json", JSON.stringify({ ...report, startedAt, finishedAt: (/* @__PURE__ */ new Date()).toISOString() }, null, 2));
+    await import_fs6.default.promises.writeFile("sync-audits/latest-availability.json", JSON.stringify({ ...report, startedAt, finishedAt: (/* @__PURE__ */ new Date()).toISOString() }, null, 2));
   }).catch(async (error) => {
     console.error("[Availability]", error);
     await saveStoreAsync(store);
@@ -24901,7 +27636,7 @@ function startAvailabilityCheck(checkedSince) {
 }
 function readListedSyncStatus() {
   try {
-    const report = JSON.parse(import_fs5.default.readFileSync("sync-audits/latest-listed-sync.json", "utf8"));
+    const report = JSON.parse(import_fs6.default.readFileSync("sync-audits/latest-listed-sync.json", "utf8"));
     if (listedSyncRunning || caixaDirectRunning) report.status = "running";
     else if (report.status === "running") report.status = "interrupted";
     return { ...report, stage: openingSyncStage || (caixaDirectRunning ? "caixa" : null), catalogRevision, availabilityRunning: Boolean(availabilityRunning), availabilityProgress };
@@ -24949,7 +27684,7 @@ function applyListedDrafts(drafts, auditPath) {
           auction.lastSyncedAt = (/* @__PURE__ */ new Date()).toISOString();
         });
         store.auctions.unshift(...result.newAuctions);
-        if (result.pendingReview.length) import_fs5.default.appendFileSync(auditPath, result.pendingReview.map((row) => JSON.stringify(row)).join("\n") + "\n");
+        if (result.pendingReview.length) import_fs6.default.appendFileSync(auditPath, result.pendingReview.map((row) => JSON.stringify(row)).join("\n") + "\n");
         imported += result.newAuctions.length;
         updated += result.updated;
         pending += result.pending;
@@ -24974,9 +27709,9 @@ function startListedSync(reason, ids, targetOrigin, options) {
   openingSyncStage = "preparing";
   const backup = "sync-audits/backups/before-listed-sync-" + (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-") + ".json";
   listedSyncRunning = new Promise((resolve) => setImmediate(resolve)).then(async () => {
-    await import_fs5.default.promises.mkdir("sync-audits/backups", { recursive: true });
-    if (import_fs5.default.existsSync(STORE_PATH)) await import_fs5.default.promises.copyFile(STORE_PATH, backup);
-    else await import_fs5.default.promises.writeFile(backup, JSON.stringify(store), "utf8");
+    await import_fs6.default.promises.mkdir("sync-audits/backups", { recursive: true });
+    if (import_fs6.default.existsSync(STORE_PATH)) await import_fs6.default.promises.copyFile(STORE_PATH, backup);
+    else await import_fs6.default.promises.writeFile(backup, JSON.stringify(store), "utf8");
     const auditStartedAt = (/* @__PURE__ */ new Date()).toISOString();
     const availabilityRun = startAvailabilityCheck();
     const shouldSyncCaixa = !options?.skipCaixa && (!targetOrigin || targetOrigin === "all") && (!ids || ids.length === 0 || ids.includes("caixa"));
@@ -25049,7 +27784,7 @@ function startListedSync(reason, ids, targetOrigin, options) {
     if (process.env.RENDER !== "true") {
       try {
         const slimStore = { ...store, itbiTransactions: [] };
-        await import_fs5.default.promises.writeFile(import_path4.default.join(process.cwd(), "data_store.json.gz"), import_zlib.default.gzipSync(Buffer.from(JSON.stringify(slimStore))));
+        await import_fs6.default.promises.writeFile(import_path5.default.join(process.cwd(), "data_store.json.gz"), import_zlib.default.gzipSync(Buffer.from(JSON.stringify(slimStore))));
       } catch (gzErr) {
         console.warn("[Listed Sync] Falha ao atualizar data_store.json.gz:", gzErr?.message || gzErr);
       }
@@ -25058,8 +27793,8 @@ function startListedSync(reason, ids, targetOrigin, options) {
     persistedCatalogInvalidated = true;
     auctionCatalogResponseCache = null;
     try {
-      if (import_fs5.default.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
-        import_fs5.default.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
+      if (import_fs6.default.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
+        import_fs6.default.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
       }
     } catch {
     }
@@ -25389,12 +28124,16 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
     }
     const lastKnownPayload = readLastKnownAuctionResponse(req.userId, isForceRefresh);
     const fastPayload = lastKnownPayload || deduplicateAuctions(store.auctions.filter(
-      (a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state)
+      (a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state) && !hasOutOfScopeComarcaOrCep(`${a.title || ""}
+${a.address || ""}
+${a.description || ""}`, a.city, a.state)
     )).map((a) => {
       const isRio = (a.state || "").toUpperCase() === "RJ" || String(a.city || "").toLowerCase().includes("rio de janeiro");
       const ipp = isRio ? resolveRioIppLocation({ id: a.id, address: a.address, neighborhood: a.neighborhood, city: a.city, state: a.state, title: a.title }, { preloadedOnly: true }) : null;
       const ippPatch = ipp && Number.isFinite(ipp.lat) && Number.isFinite(ipp.lng) ? { lat: ipp.lat, lng: ipp.lng, status_geocodificacao: ipp.matchedNumber ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA" } : {};
-      if (catalogEligible(a)) return Object.keys(ippPatch).length ? { ...a, ...ippPatch } : a;
+      const canHealQuarantine = a.ingestionStatus === "quarentena_extracao" && !a.precisa_revisao && a.sourceAvailability?.state !== "closed" && a.sourceAvailability?.state !== "removed" && Number(a.auctionPrice) > 0 && a.priceVerified === true && Number(a.sizeSqm) > 0 && a.sizeVerified === true && Boolean(a.neighborhood) && !/^(?:n[aã]o informado|desconhecido|a confirmar)$/i.test(a.neighborhood);
+      const eligibleCandidate = canHealQuarantine ? { ...a, ingestionStatus: "ativo" } : a;
+      if (catalogEligible(eligibleCandidate)) return Object.keys(ippPatch).length ? { ...eligibleCandidate, ...ippPatch } : eligibleCandidate;
       const safeStreetPortal = isRio && a.streetPortalAvgSqm && a.streetPortalAvgSqm < 1500 ? void 0 : a.streetPortalAvgSqm;
       return {
         ...a,
@@ -25464,7 +28203,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
             normalizedCatalog.push(location2.neighborhood && location2.neighborhood !== a.neighborhood ? { ...a, neighborhood: location2.neighborhood } : a);
           }
         }
-        const dedupedRaw = deduplicateAuctions(normalizedCatalog.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || a.origin === "caixa_radar" || a.origin === "caixa" || a.origin === "judicial" || a.origin === "extrajudicial" || a.origin === "portal") && isAllowedTargetCity(a.city, a.state))).filter(catalogVisible);
+        const dedupedRaw = deduplicateAuctions(normalizedCatalog.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || a.origin === "caixa_radar" || a.origin === "caixa" || a.origin === "judicial" || a.origin === "extrajudicial" || a.origin === "portal") && isAuctionInConfiguredScope(a))).filter(catalogVisible);
         const userAuctions = [];
         for (let i = 0; i < dedupedRaw.length; i++) {
           if (i > 0 && i % 250 === 0) await yieldTick();
@@ -25480,7 +28219,9 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
           }
           const a = userAuctions[i];
           rebuilt.push((() => {
-            if (!catalogEligible(a)) {
+            const canHealQuarantine = a.ingestionStatus === "quarentena_extracao" && !a.precisa_revisao && a.sourceAvailability?.state !== "closed" && a.sourceAvailability?.state !== "removed" && Number(a.auctionPrice) > 0 && a.priceVerified === true && Number(a.sizeSqm) > 0 && a.sizeVerified === true && Boolean(a.neighborhood) && !/^(?:n[aã]o informado|desconhecido|a confirmar)$/i.test(a.neighborhood);
+            const candidate = canHealQuarantine ? { ...a, ingestionStatus: "ativo" } : a;
+            if (!catalogEligible(candidate)) {
               const isRio = (a.state || "").toUpperCase() === "RJ" || String(a.city || "").toLowerCase().includes("rio de janeiro");
               const safeStreetPortal = isRio && a.streetPortalAvgSqm && a.streetPortalAvgSqm < 1500 ? void 0 : a.streetPortalAvgSqm;
               return {
@@ -25511,7 +28252,7 @@ app.get("/api/auctions", authMiddleware, async (req, res) => {
                 streetRadiusDeviationPct: void 0
               };
             }
-            return recalculateAuction(a, store.itbiTransactions);
+            return recalculateAuction(candidate, store.itbiTransactions);
           })());
         }
         const enriched = [];
@@ -25619,7 +28360,7 @@ app.get("/api/map/locations", authMiddleware, (req, res) => {
     return sendLocs(mapLocationsCache);
   }
   const locations = deduplicateAuctions(
-    store.auctions.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state))
+    store.auctions.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAuctionInConfiguredScope(a))
   ).filter(catalogVisible).map((a) => {
     const p = getOfficialPropertyLocation(a);
     return {
@@ -25670,7 +28411,7 @@ app.post("/api/map/refresh-pending", authMiddleware, async (req, res) => {
     let resolvedBefore = 0;
     let resolvedAfter = 0;
     const candidateProps = deduplicateAuctions(
-      store.auctions.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAllowedTargetCity(a.city, a.state))
+      store.auctions.filter((a) => catalogVisible(a) && (!a.userId || a.userId === req.userId || ["caixa_radar", "caixa", "judicial", "extrajudicial", "portal"].includes(a.origin || "")) && isAuctionInConfiguredScope(a))
     ).filter(catalogVisible);
     const pendingToScan = [];
     for (const a of candidateProps) {
@@ -25786,7 +28527,7 @@ app.get("/api/auctions/bbox", (req, res) => {
     if (session) requestUserId = session.userId;
   }
   const userAuctions = deduplicateAuctions(store.auctions.filter(
-    (a) => catalogVisible(a) && (!a.userId || a.userId === requestUserId || a.origin === "caixa_radar" || a.origin === "caixa" || a.origin === "judicial" || a.origin === "extrajudicial" || a.origin === "portal") && isAllowedTargetCity(a.city, a.state)
+    (a) => catalogVisible(a) && (!a.userId || a.userId === requestUserId || a.origin === "caixa_radar" || a.origin === "caixa" || a.origin === "judicial" || a.origin === "extrajudicial" || a.origin === "portal") && isAuctionInConfiguredScope(a)
   )).filter(catalogVisible);
   const inside = [];
   for (const a of userAuctions) {
@@ -26089,19 +28830,19 @@ app.get("/api/itbi", (req, res) => {
     totalCount: store.itbiTransactions.length
   });
 });
-app.get("/api/itbi/streets", (req, res) => {
-  const { state, city, neighborhood } = req.query;
-  if (!neighborhood) {
-    return res.status(400).json({ error: "Neighborhood is required." });
-  }
-  const isJF = state?.toUpperCase() === "MG" || city?.toLowerCase().includes("juiz");
-  const neighNorm = cleanNeighborhood(neighborhood);
-  const txs = store.itbiTransactions.filter(
-    (t) => (!state || (t.state || "SP").toLowerCase() === state.toLowerCase()) && (!city || (t.city || "S\xE3o Paulo").toLowerCase() === city.toLowerCase()) && cleanNeighborhood(t.neighborhood) === neighNorm && (!isJF || t.isCompraEVenda === true)
-  );
-  const streetGroups = /* @__PURE__ */ new Map();
-  txs.forEach((t) => {
-    const streetName = t.street ? t.street.trim() : "N\xE3o informado";
+var itbiStreetsIndexCache = /* @__PURE__ */ new WeakMap();
+function getItbiStreetsIndex(txSource) {
+  const cached = itbiStreetsIndexCache.get(txSource);
+  if (cached) return cached;
+  const byNeighRaw = /* @__PURE__ */ new Map();
+  const byCityRaw = /* @__PURE__ */ new Map();
+  const accumulate = (bucketMap, scopeKey, t, isJF) => {
+    let streetGroups = bucketMap.get(scopeKey);
+    if (!streetGroups) {
+      streetGroups = /* @__PURE__ */ new Map();
+      bucketMap.set(scopeKey, streetGroups);
+    }
+    const streetName = t.street ? String(t.street).trim() : "N\xE3o informado";
     const key = cleanStreetName2(streetName);
     let group = streetGroups.get(key);
     const txVal = isJF ? t.normalizedTotalValue || t.transactionValue || 0 : t.unitValueSqm || 0;
@@ -26109,6 +28850,7 @@ app.get("/api/itbi/streets", (req, res) => {
     if (!group) {
       group = {
         street: streetName,
+        normStreet: normalizeString2(streetName),
         sumSqm: 0,
         sumVal: 0,
         count: 0,
@@ -26120,8 +28862,7 @@ app.get("/api/itbi/streets", (req, res) => {
       };
       streetGroups.set(key, group);
     }
-    const unitVal = t.unitValueSqm || 0;
-    group.sumSqm += unitVal;
+    group.sumSqm += t.unitValueSqm || 0;
     group.sumVal += totalVal;
     group.count += 1;
     if (t.isCompraEVenda !== false) group.compraEVendaCount += 1;
@@ -26131,30 +28872,109 @@ app.get("/api/itbi/streets", (req, res) => {
       if (!group.minDate || t.date < group.minDate) group.minDate = t.date;
       if (!group.maxDate || t.date > group.maxDate) group.maxDate = t.date;
     }
-  });
-  const result = Array.from(streetGroups.values()).map((g) => ({
-    street: g.street,
-    averageValueSqm: isJF ? 0 : g.count > 0 ? Math.round(g.sumSqm / g.count) : 0,
-    minValueSqm: isJF ? 0 : g.min,
-    maxValueSqm: isJF ? 0 : g.max,
-    transactionCount: g.count,
-    averageTotalValue: g.count > 0 ? Math.round(g.sumVal / g.count) : 0,
-    isAbsolutePricing: isJF,
-    compraEVendaCount: g.compraEVendaCount,
-    periodRange: g.minDate && g.maxDate ? { minDate: g.minDate, maxDate: g.maxDate } : void 0
-  })).sort((a, b) => isJF ? b.averageTotalValue - a.averageTotalValue : b.averageValueSqm - a.averageValueSqm);
-  res.json(result);
+  };
+  for (const t of txSource) {
+    const st = (t.state || "SP").toLowerCase();
+    const ct = (t.city || "S\xE3o Paulo").toLowerCase();
+    const isJF = st === "mg" || ct.includes("juiz");
+    if (isJF && t.isCompraEVenda !== true) continue;
+    const neighNorm = cleanNeighborhood(t.neighborhood || "");
+    accumulate(byNeighRaw, `${st}|${ct}|${neighNorm}|${isJF ? "1" : "0"}`, t, isJF);
+    accumulate(byCityRaw, `${st}|${ct}|${isJF ? "1" : "0"}`, t, isJF);
+  }
+  const finalize = (rawMap) => {
+    const out = /* @__PURE__ */ new Map();
+    for (const [scopeKey, groups] of rawMap.entries()) {
+      const isJF = scopeKey.endsWith("|1");
+      const arr = Array.from(groups.values()).map((g) => ({
+        street: g.street,
+        normStreet: g.normStreet,
+        averageValueSqm: isJF ? 0 : g.count > 0 ? Math.round(g.sumSqm / g.count) : 0,
+        minValueSqm: isJF ? 0 : g.min,
+        maxValueSqm: isJF ? 0 : g.max,
+        transactionCount: g.count,
+        averageTotalValue: g.count > 0 ? Math.round(g.sumVal / g.count) : 0,
+        isAbsolutePricing: isJF,
+        compraEVendaCount: g.compraEVendaCount,
+        periodRange: g.minDate && g.maxDate ? { minDate: g.minDate, maxDate: g.maxDate } : void 0
+      })).sort((a, b) => isJF ? b.averageTotalValue - a.averageTotalValue : b.averageValueSqm - a.averageValueSqm);
+      out.set(scopeKey, arr);
+    }
+    return out;
+  };
+  const built = { byNeigh: finalize(byNeighRaw), byCity: finalize(byCityRaw) };
+  itbiStreetsIndexCache.set(txSource, built);
+  return built;
+}
+app.get("/api/itbi/streets", (req, res) => {
+  const { state, city, neighborhood, q, limit } = req.query;
+  const qStr = typeof q === "string" ? normalizeString2(q).trim() : "";
+  if (!neighborhood && qStr.length < 2) {
+    return res.status(400).json({ error: "Neighborhood is required." });
+  }
+  const st = (state || "RJ").toLowerCase();
+  const ct = (city || "Rio de Janeiro").toLowerCase();
+  const isJF = st === "mg" || ct.includes("juiz");
+  const idx = getItbiStreetsIndex(store.itbiTransactions);
+  let pool = [];
+  if (neighborhood) {
+    const neighNorm = cleanNeighborhood(neighborhood);
+    pool = idx.byNeigh.get(`${st}|${ct}|${neighNorm}|${isJF ? "1" : "0"}`) || [];
+  } else {
+    pool = idx.byCity.get(`${st}|${ct}|${isJF ? "1" : "0"}`) || [];
+  }
+  if (qStr) {
+    const maxItems = Math.min(30, Math.max(1, parseInt(String(limit || "15"), 10) || 15));
+    const starts = [];
+    const wordStarts = [];
+    const contains = [];
+    const wordNeedle = ` ${qStr}`;
+    for (const item of pool) {
+      if (item.normStreet.startsWith(qStr)) starts.push(item);
+      else if (item.normStreet.includes(wordNeedle)) wordStarts.push(item);
+      else if (item.normStreet.includes(qStr)) contains.push(item);
+    }
+    const merged = [...starts, ...wordStarts, ...contains].slice(0, maxItems);
+    return res.json(merged);
+  }
+  res.json(pool);
 });
 app.get("/api/itbi/resolve-street", (req, res) => {
-  const { state = "RJ", city = "Rio de Janeiro", street } = req.query;
+  const { state = "RJ", city = "Rio de Janeiro", street, number } = req.query;
   if (!street) {
     return res.status(400).json({ error: "Street is required." });
   }
   const phon = phoneticStreet(street);
   const st = state.toLowerCase();
   const c = normalizeString2(city);
+  const numDigits = String(number || "").match(/\d+/)?.[0];
+  const reqNum = numDigits ? parseInt(numDigits, 10) : null;
+  if (reqNum !== null && globalStreetNumberNeighMap) {
+    const rawNumList = globalStreetNumberNeighMap.get(`${st}|${c}|${phon}`) || [];
+    const numList = rawNumList.filter((item) => !item.street || !hasConflictingStreetKind(String(street), item.street));
+    if (numList.length > 0) {
+      let closest = numList[0];
+      let minDiff = Math.abs(numList[0].number - reqNum);
+      for (let i = 1; i < numList.length; i++) {
+        const diff = Math.abs(numList[i].number - reqNum);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = numList[i];
+        }
+      }
+      if (closest?.neighborhood) {
+        return res.json({
+          found: true,
+          neighborhood: closest.neighborhood,
+          officialStreet: String(street),
+          count: numList.length,
+          avgSqm: 0
+        });
+      }
+    }
+  }
   const match = globalCityStreetToNeighMap?.get(`${st}|${c}|${phon}`) || globalCityStreetToNeighMap?.get(`${st}||${phon}`);
-  if (match) {
+  if (match && !hasConflictingStreetKind(String(street), match.officialStreet)) {
     return res.json({
       found: true,
       neighborhood: match.neighborhood,
@@ -26163,6 +28983,18 @@ app.get("/api/itbi/resolve-street", (req, res) => {
       avgSqm: match.count > 0 ? Math.round(match.sumSqm / match.count) : 0
     });
   }
+  if (c.includes("rio de janeiro")) {
+    const ipp = resolveRioIppLocation({ address: `${street}${reqNum ? `, n\xBA ${reqNum}` : ""}`, city: String(city), state: String(state) });
+    if (ipp?.bairro) {
+      return res.json({
+        found: true,
+        neighborhood: ipp.bairro,
+        officialStreet: ipp.matchedStreet || String(street),
+        count: 0,
+        avgSqm: 0
+      });
+    }
+  }
   return res.json({ found: false });
 });
 app.get("/api/itbi/jf-area-model", (req, res) => {
@@ -26170,22 +29002,64 @@ app.get("/api/itbi/jf-area-model", (req, res) => {
   const anchors = store.auctions.filter((auc) => (auc.origin === "caixa" || auc.origin === "caixa_radar") && auc.sizeVerified === true && auc.sizeSqm >= 20 && auc.sizeSqm <= 500 && Number(auc.evaluationPrice) >= 2e4 && Number(auc.evaluationPrice) <= 1e7 && String(auc.city || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("juiz de fora")).map((auc) => ({ sizeSqm: auc.sizeSqm, marketValue: Number(auc.evaluationPrice), propertyType: auc.propertyType, sizeVerified: true, source: auc.origin }));
   return res.json(fitJuizDeForaAreaModel(anchors, propertyType));
 });
+var itbiTxIndexCache = /* @__PURE__ */ new WeakMap();
+var itbiTxResponseCache = /* @__PURE__ */ new Map();
+function getItbiTxIndex(list) {
+  let cached = itbiTxIndexCache.get(list);
+  if (cached) return cached;
+  const byStateCity = /* @__PURE__ */ new Map();
+  const byStateCityNeigh = /* @__PURE__ */ new Map();
+  for (const t of list) {
+    const st = (t.state || "SP").toLowerCase();
+    const ct = (t.city || "S\xE3o Paulo").toLowerCase();
+    const scKey = `${st}|${ct}`;
+    let scArr = byStateCity.get(scKey);
+    if (!scArr) {
+      scArr = [];
+      byStateCity.set(scKey, scArr);
+    }
+    scArr.push(t);
+    const nKey = `${scKey}|${cleanNeighborhood(t.neighborhood)}`;
+    let nArr = byStateCityNeigh.get(nKey);
+    if (!nArr) {
+      nArr = [];
+      byStateCityNeigh.set(nKey, nArr);
+    }
+    nArr.push(t);
+  }
+  cached = { byStateCity, byStateCityNeigh };
+  itbiTxIndexCache.set(list, cached);
+  return cached;
+}
 app.get("/api/itbi/transactions", async (req, res) => {
   try {
+    const cacheKey = req.originalUrl;
+    const hit = itbiTxResponseCache.get(cacheKey);
+    if (hit && hit.ref === store.itbiTransactions && Date.now() - hit.ts < 12e4) {
+      return res.json(hit.body);
+    }
     const { state, city, neighborhood, street, propertyType, targetStreet, targetNumber, radiusKm, propertyId } = req.query;
-    let txs = store.itbiTransactions;
     const filterState = (state || "SP").toUpperCase().trim();
     const filterCity = city || (filterState === "RJ" ? "Rio de Janeiro" : "S\xE3o Paulo");
     const filterNeighborhood = neighborhood || "";
-    if (state) {
-      txs = txs.filter((t) => (t.state || "SP").toLowerCase() === state.toLowerCase());
-    }
-    if (city) {
-      txs = txs.filter((t) => (t.city || "S\xE3o Paulo").toLowerCase() === city.toLowerCase());
-    }
-    if (neighborhood) {
-      const neighNorm = cleanNeighborhood(neighborhood);
-      txs = txs.filter((t) => cleanNeighborhood(t.neighborhood) === neighNorm);
+    const idx = getItbiTxIndex(store.itbiTransactions);
+    let txs;
+    if (state && city && neighborhood) {
+      txs = idx.byStateCityNeigh.get(`${String(state).toLowerCase()}|${String(city).toLowerCase()}|${cleanNeighborhood(neighborhood)}`) || [];
+    } else if (state && city) {
+      txs = idx.byStateCity.get(`${String(state).toLowerCase()}|${String(city).toLowerCase()}`) || [];
+    } else {
+      txs = store.itbiTransactions;
+      if (state) {
+        txs = txs.filter((t) => (t.state || "SP").toLowerCase() === state.toLowerCase());
+      }
+      if (city) {
+        txs = txs.filter((t) => (t.city || "S\xE3o Paulo").toLowerCase() === city.toLowerCase());
+      }
+      if (neighborhood) {
+        const neighNorm = cleanNeighborhood(neighborhood);
+        txs = txs.filter((t) => cleanNeighborhood(t.neighborhood) === neighNorm);
+      }
     }
     if (!filterNeighborhood && targetStreet) {
       txs = txs.filter((tx) => tx.street && streetAxesMatch(tx.street, String(targetStreet)));
@@ -26290,30 +29164,40 @@ app.get("/api/itbi/transactions", async (req, res) => {
       }
       if (targetCoords) {
         const isResidentialTarget = /apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(String(propertyType || ""));
+        const cityPool = idx.byStateCity.get(`${filterState.toLowerCase()}|${filterCity.toLowerCase()}`) || store.itbiTransactions;
+        const tLat = targetCoords.lat;
+        const tLng = targetCoords.lng;
         const queryRadialPool = (searchRadiusKm, allowBroadResidential) => {
-          const rows = store.itbiTransactions.filter((tx) => {
-            if ((tx.state || "").toUpperCase() !== filterState) return false;
-            if (cleanNeighborhood(tx.city) !== cleanNeighborhood(filterCity)) return false;
-            if (!isTxLocationSane(tx.transactionLocationLat, tx.transactionLocationLng, tx.state, tx.city, tx.neighborhood)) return false;
-            if (tx.transactionLocationPrecision !== "exact_number" && tx.transactionLocationPrecision !== "street_centroid") return false;
+          const latPad = searchRadiusKm / 110.5 + 2e-3;
+          const lngPad = searchRadiusKm / 95 + 2e-3;
+          const propTypeLower = propertyType ? String(propertyType).toLowerCase() : "";
+          const out = [];
+          for (let i = 0; i < cityPool.length; i++) {
+            const tx = cityPool[i];
+            const txLat = tx.transactionLocationLat;
+            const txLng = tx.transactionLocationLng;
+            if (txLat === void 0 || txLng === void 0) continue;
+            if (Math.abs(txLat - tLat) > latPad || Math.abs(txLng - tLng) > lngPad) continue;
+            if (tx.transactionLocationPrecision !== "exact_number" && tx.transactionLocationPrecision !== "street_centroid") continue;
             if (!allowBroadResidential) {
-              if (propertyType && tx.propertyType.toLowerCase() !== String(propertyType).toLowerCase()) return false;
+              if (propTypeLower && (tx.propertyType || "").toLowerCase() !== propTypeLower) continue;
             } else if (isResidentialTarget) {
-              if (!/apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(tx.propertyType || "")) return false;
-            } else {
-              if (propertyType && tx.propertyType.toLowerCase() !== String(propertyType).toLowerCase()) return false;
+              if (!/apart|casa|sobrado|cobertura|flat|loft|kitnet|conjugado/i.test(tx.propertyType || "")) continue;
+            } else if (propTypeLower && (tx.propertyType || "").toLowerCase() !== propTypeLower) {
+              continue;
             }
-            return true;
-          });
-          return rows.map((tx) => {
-            const dist = calculateDistanceKm(targetCoords.lat, targetCoords.lng, tx.transactionLocationLat, tx.transactionLocationLng);
-            return {
-              ...tx,
-              distanceKm: dist,
-              distanceMeters: Math.round(dist * 1e3),
-              distanceAnchorPrecision: radiusAnchorPrecision
-            };
-          }).filter((tx) => Number(tx.distanceKm) <= searchRadiusKm);
+            if (!isTxLocationSane(txLat, txLng, tx.state, tx.city, tx.neighborhood)) continue;
+            const dist = calculateDistanceKm(tLat, tLng, txLat, txLng);
+            if (dist <= searchRadiusKm) {
+              out.push({
+                ...tx,
+                distanceKm: dist,
+                distanceMeters: Math.round(dist * 1e3),
+                distanceAnchorPrecision: radiusAnchorPrecision
+              });
+            }
+          }
+          return out;
         };
         let candidates = queryRadialPool(2, false);
         const exact05kmCount = candidates.filter((tx) => Number(tx.distanceKm) <= 0.5).length;
@@ -26328,10 +29212,10 @@ app.get("/api/itbi/transactions", async (req, res) => {
     }
     txs = deduplicateVerifiedItbiSourceRows([...txs]).transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     radiusTransactions = deduplicateVerifiedItbiSourceRows(radiusTransactions).transactions;
-    if (req.query.includeRadius === "true") {
-      return res.json({ transactions: txs, radiusTransactions, radiusAnchorPrecision });
-    }
-    res.json(txs);
+    const responseBody = req.query.includeRadius === "true" ? { transactions: txs, radiusTransactions, radiusAnchorPrecision } : txs;
+    if (itbiTxResponseCache.size > 100) itbiTxResponseCache.clear();
+    itbiTxResponseCache.set(cacheKey, { ref: store.itbiTransactions, ts: Date.now(), body: responseBody });
+    return res.json(responseBody);
   } catch (error) {
     console.error("[ITBI Transactions Route Error]:", error);
     res.status(500).json({ error: error.message, stack: error.stack });
@@ -26421,6 +29305,265 @@ app.post("/api/itbi/restore", (req, res) => {
     console.error("Failed to restore ITBI spreadsheet:", e);
     res.status(500).json({ error: "Falha ao restaurar a planilha Excel: " + e.message });
   }
+});
+var report360ResponseCache = /* @__PURE__ */ new Map();
+app.post("/api/report/360", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const cacheKey = JSON.stringify([
+      b.state,
+      b.city,
+      b.neighborhood,
+      b.street,
+      b.streetNumber,
+      b.propertyType,
+      b.sizeSqm,
+      b.arrematePrice,
+      b.flipExitPrice,
+      b.gabaritoSqm
+    ]);
+    const cached = report360ResponseCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < 6e5) {
+      return res.json(cached.payload);
+    }
+    const payload = await generateReport360Payload(
+      b,
+      store.auctions || [],
+      store.itbiTransactions || []
+    );
+    if (report360ResponseCache.size > 40) report360ResponseCache.clear();
+    report360ResponseCache.set(cacheKey, { ts: Date.now(), payload });
+    res.json(payload);
+  } catch (e) {
+    console.error("Erro ao gerar Dossi\xEA 360\xB0:", e);
+    res.status(500).json({ error: "Falha ao compilar dados do Dossi\xEA 360\xB0: " + (e?.message || String(e)) });
+  }
+});
+app.get("/api/report/tile/:z/:x/:y.png", async (req, res) => {
+  const z = parseInt(req.params.z, 10);
+  const x = parseInt(req.params.x, 10);
+  const y = parseInt(req.params.y, 10);
+  if (!Number.isFinite(z) || !Number.isFinite(x) || !Number.isFinite(y) || z < 10 || z > 19) {
+    return res.status(400).end();
+  }
+  const cacheDir = import_path5.default.join(process.cwd(), ".cache", "map-tiles");
+  const cacheFile = import_path5.default.join(cacheDir, `esri_${z}_${x}_${y}.tile`);
+  try {
+    if (import_fs6.default.existsSync(cacheFile)) {
+      const cachedBuf = import_fs6.default.readFileSync(cacheFile);
+      if (cachedBuf.length >= 600) {
+        res.setHeader("Content-Type", "image/png");
+        res.setHeader("Cache-Control", "public, max-age=604800");
+        return res.send(cachedBuf);
+      }
+      try {
+        import_fs6.default.unlinkSync(cacheFile);
+      } catch {
+      }
+    }
+    const candidates = [
+      {
+        url: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`,
+        ct: "image/jpeg"
+      },
+      {
+        url: `https://a.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`,
+        ct: "image/png"
+      },
+      {
+        url: `https://b.basemaps.cartocdn.com/light_all/${z}/${x}/${y}.png`,
+        ct: "image/png"
+      },
+      {
+        url: `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+        ct: "image/png"
+      }
+    ];
+    for (const c of candidates) {
+      try {
+        const upstream = await fetch(c.url, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36" },
+          signal: AbortSignal.timeout(8e3)
+        });
+        if (!upstream.ok) continue;
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        if (buf.length < 600) continue;
+        try {
+          import_fs6.default.mkdirSync(cacheDir, { recursive: true });
+          import_fs6.default.writeFileSync(cacheFile, buf);
+        } catch {
+        }
+        res.setHeader("Content-Type", upstream.headers.get("content-type") || c.ct);
+        res.setHeader("Cache-Control", "public, max-age=604800");
+        return res.send(buf);
+      } catch {
+      }
+    }
+    return res.status(502).end();
+  } catch {
+    return res.status(502).end();
+  }
+});
+app.get("/api/report/tile-ghybrid/:z/:x/:y.jpg", async (req, res) => {
+  const z = parseInt(req.params.z, 10);
+  const x = parseInt(req.params.x, 10);
+  const y = parseInt(req.params.y, 10);
+  if (!Number.isFinite(z) || !Number.isFinite(x) || !Number.isFinite(y) || z < 10 || z > 19) {
+    return res.status(400).end();
+  }
+  const cacheDir = import_path5.default.join(process.cwd(), ".cache", "map-tiles");
+  const cacheFile = import_path5.default.join(cacheDir, `ghybrid_${z}_${x}_${y}.tile`);
+  try {
+    if (import_fs6.default.existsSync(cacheFile)) {
+      const cachedBuf = import_fs6.default.readFileSync(cacheFile);
+      if (cachedBuf.length >= 1200) {
+        res.setHeader("Content-Type", "image/jpeg");
+        res.setHeader("Cache-Control", "public, max-age=604800");
+        return res.send(cachedBuf);
+      }
+      try {
+        import_fs6.default.unlinkSync(cacheFile);
+      } catch {
+      }
+    }
+    const candidates = [
+      `https://mt1.google.com/vt?lyrs=y&x=${x}&y=${y}&z=${z}&hl=pt-BR`,
+      `https://mt0.google.com/vt?lyrs=y&x=${x}&y=${y}&z=${z}&hl=pt-BR`,
+      `https://mt2.google.com/vt?lyrs=y&x=${x}&y=${y}&z=${z}&hl=pt-BR`,
+      `https://mt3.google.com/vt?lyrs=y&x=${x}&y=${y}&z=${z}&hl=pt-BR`,
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`
+    ];
+    for (const url of candidates) {
+      try {
+        const upstream = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36" },
+          signal: AbortSignal.timeout(8e3)
+        });
+        if (!upstream.ok) continue;
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        if (buf.length < 1200) continue;
+        try {
+          import_fs6.default.mkdirSync(cacheDir, { recursive: true });
+          import_fs6.default.writeFileSync(cacheFile, buf);
+        } catch {
+        }
+        res.setHeader("Content-Type", upstream.headers.get("content-type") || "image/jpeg");
+        res.setHeader("Cache-Control", "public, max-age=604800");
+        return res.send(buf);
+      } catch {
+      }
+    }
+    return res.status(502).end();
+  } catch {
+    return res.status(502).end();
+  }
+});
+app.get("/api/report/tile-sat/:z/:x/:y.jpg", async (req, res) => {
+  const z = parseInt(req.params.z, 10);
+  const x = parseInt(req.params.x, 10);
+  const y = parseInt(req.params.y, 10);
+  if (!Number.isFinite(z) || !Number.isFinite(x) || !Number.isFinite(y) || z < 10 || z > 19) {
+    return res.status(400).end();
+  }
+  const cacheDir = import_path5.default.join(process.cwd(), ".cache", "map-tiles");
+  const cacheFile = import_path5.default.join(cacheDir, `sat_${z}_${x}_${y}.tile`);
+  try {
+    if (import_fs6.default.existsSync(cacheFile)) {
+      const cachedBuf = import_fs6.default.readFileSync(cacheFile);
+      if (cachedBuf.length >= 1500) {
+        res.setHeader("Content-Type", "image/jpeg");
+        res.setHeader("Cache-Control", "public, max-age=604800");
+        return res.send(cachedBuf);
+      }
+      try {
+        import_fs6.default.unlinkSync(cacheFile);
+      } catch {
+      }
+    }
+    const candidates = [
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
+      `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
+      `https://mt1.google.com/vt?lyrs=s&x=${x}&y=${y}&z=${z}`,
+      `https://mt0.google.com/vt?lyrs=s&x=${x}&y=${y}&z=${z}`
+    ];
+    for (const url of candidates) {
+      try {
+        const upstream = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36" },
+          signal: AbortSignal.timeout(9e3)
+        });
+        if (!upstream.ok) continue;
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        if (buf.length < 1500) continue;
+        try {
+          import_fs6.default.mkdirSync(cacheDir, { recursive: true });
+          import_fs6.default.writeFileSync(cacheFile, buf);
+        } catch {
+        }
+        res.setHeader("Content-Type", upstream.headers.get("content-type") || "image/jpeg");
+        res.setHeader("Cache-Control", "public, max-age=604800");
+        return res.send(buf);
+      } catch {
+      }
+    }
+    return res.status(502).end();
+  } catch {
+    return res.status(502).end();
+  }
+});
+var cities3DTileIndex = null;
+function getCities3DTileIndex() {
+  if (cities3DTileIndex !== null) return cities3DTileIndex;
+  try {
+    const fileCandidates = [
+      import_path5.default.join(process.cwd(), "public", "data", "niteroi_jf_edificacoes.geojson"),
+      import_path5.default.join(process.cwd(), "dist", "data", "niteroi_jf_edificacoes.geojson")
+    ];
+    const target = fileCandidates.find((p) => import_fs6.default.existsSync(p));
+    if (!target) {
+      cities3DTileIndex = false;
+      return cities3DTileIndex;
+    }
+    const raw = JSON.parse(import_fs6.default.readFileSync(target, "utf8"));
+    const VtCtor = import_geojson_vt.default?.default || import_geojson_vt.default;
+    const vtOpts = {
+      maxZoom: 15,
+      tolerance: 3,
+      extent: 4096,
+      buffer: 64,
+      indexMaxZoom: 14,
+      indexMaxPoints: 1e5
+    };
+    try {
+      cities3DTileIndex = new VtCtor(raw, vtOpts);
+    } catch {
+      cities3DTileIndex = VtCtor(raw, vtOpts);
+    }
+    console.log(`[Map3D] Indexed ${(raw.features || []).length} Niter\xF3i/JF 3D buildings from ${import_path5.default.basename(target)}`);
+  } catch (err) {
+    console.error("[Map3D] Failed to index Niter\xF3i/JF 3D GeoJSON:", err);
+    cities3DTileIndex = false;
+  }
+  return cities3DTileIndex;
+}
+app.get("/api/map/cities-3d/:z/:x/:y.pbf", (req, res) => {
+  const z = parseInt(req.params.z, 10);
+  const x = parseInt(req.params.x, 10);
+  const y = parseInt(req.params.y, 10);
+  if (!Number.isFinite(z) || !Number.isFinite(x) || !Number.isFinite(y) || z < 10 || z > 18) {
+    return res.status(400).end();
+  }
+  const index = getCities3DTileIndex();
+  if (!index) return res.status(204).end();
+  const tile = index.getTile(z, x, y);
+  if (!tile || !tile.features || tile.features.length === 0) {
+    return res.status(204).end();
+  }
+  const fromGeojsonVt = import_vt_pbf.default?.fromGeojsonVt || import_vt_pbf.default?.default?.fromGeojsonVt;
+  const buff = fromGeojsonVt({ edificacoes: tile }, { version: 2 });
+  res.setHeader("Content-Type", "application/x-protobuf");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  return res.send(Buffer.from(buff));
 });
 app.post("/api/auctions/:id/analyze", async (req, res) => {
   const { id } = req.params;
@@ -27034,11 +30177,11 @@ Foram identificadas **${simulatedMatches.length} amostras comparativas** para **
     });
   }
 });
-var PORTAL_CACHE_PATH = import_path4.default.join(process.cwd(), "portal_cache.json");
+var PORTAL_CACHE_PATH = import_path5.default.join(process.cwd(), "portal_cache.json");
 var portalSearchCache = {};
-if (import_fs5.default.existsSync(PORTAL_CACHE_PATH)) {
+if (import_fs6.default.existsSync(PORTAL_CACHE_PATH)) {
   try {
-    portalSearchCache = JSON.parse(import_fs5.default.readFileSync(PORTAL_CACHE_PATH, "utf-8"));
+    portalSearchCache = JSON.parse(import_fs6.default.readFileSync(PORTAL_CACHE_PATH, "utf-8"));
     let cleaned = 0;
     for (const key in portalSearchCache) {
       if (portalSearchCache[key] && portalSearchCache[key].isFallback) {
@@ -27049,7 +30192,7 @@ if (import_fs5.default.existsSync(PORTAL_CACHE_PATH)) {
     if (cleaned > 0) {
       console.log(`[Portal Cache] Cleaned ${cleaned} fallback entries from cache on startup.`);
       try {
-        import_fs5.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
+        import_fs6.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
       } catch (err) {
         console.error("Error writing cleaned portal cache:", err);
       }
@@ -27060,7 +30203,7 @@ if (import_fs5.default.existsSync(PORTAL_CACHE_PATH)) {
 }
 function savePortalCache() {
   try {
-    import_fs5.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
+    import_fs6.default.writeFileSync(PORTAL_CACHE_PATH, JSON.stringify(portalSearchCache, null, 2), "utf-8");
   } catch (e) {
     console.error("Error writing portal_cache.json:", e);
   }
@@ -27582,9 +30725,9 @@ function getSimulatedChatReply(message, property, isRateLimited = false) {
   if (isExtraction) {
     sections.push(
       `**1. Extra\xE7\xE3o Oficial & Higieniza\xE7\xE3o de Oportunidades**
-- **Fontes integradas**: varredura direta da Caixa Econ\xF4mica Federal (RJ/MG), portais imobili\xE1rios (Flip House) e mais de **900 leiloeiros oficiais** do diret\xF3rio Nexus via APIs dedicadas (Mega Leil\xF5es, Santander, EMGEA, Bradesco, Superbid/Sold, Pestana, Suporte Inform\xE1tica, SuaPlataformaDeLeilao/ApiEngine) e coleta SSR/Chromium.
+- **Cobertura integrada**: varredura automatizada propriet\xE1ria em im\xF3veis da Caixa Econ\xF4mica Federal, portais imobili\xE1rios (Flip House) e centenas de leiloeiros oficiais ativos.
 - **Valida\xE7\xE3o e quarentena**: o pipeline extrai endere\xE7o, matr\xEDcula, \xE1rea \xFAtil/constru\xEDda (evitando confundir terreno de condom\xEDnio com \xE1rea privativa), datas e valores de 1\xAA/2\xAA pra\xE7a. Lotes encerrados em cl\xE1usulas reais s\xE3o removidos automaticamente e ofertas repetidas da mesma matr\xEDcula s\xE3o consolidadas mantendo o menor lance v\xE1lido.
-- **Geocodifica\xE7\xE3o de precis\xE3o (strictRio)**: cruzamento exato por porta na base oficial **IPP Rio** (e Nominatim/Photon fora do Rio), com corre\xE7\xE3o autom\xE1tica de erros de grafia e bloqueio de centroides gen\xE9ricos sem endere\xE7o.`
+- **Geocodifica\xE7\xE3o de precis\xE3o (strictRio)**: cruzamento exato lote a lote pelo motor geoespacial propriet\xE1rio, com corre\xE7\xE3o autom\xE1tica de erros de grafia e bloqueio de centroides gen\xE9ricos sem endere\xE7o.`
     );
   }
   if (isPricingOrComp) {
@@ -27625,8 +30768,8 @@ _${suffix.trim()}_`;
     reply = `Para obter as melhores margens de arbitragem, d\xEA prefer\xEAncia a bairros e ruas com boa **Liquidez** no Mapa (escala verde/esmeralda) e **Spread** positivo. Ordene os cards por **ROI** ou **Lucro Real** e confira os 4 N\xEDveis de ITBI na Calculadora.${suffix}`;
   } else {
     reply = `Ol\xE1! Posso te explicar **como funciona o nosso app** em detalhes ou analisar um lote espec\xEDfico:
-- **Extra\xE7\xE3o & Higieniza\xE7\xE3o** (Caixa, Flip House e +900 leiloeiros Nexus + IPP Rio)
-- **M\xE9trica de Precifica\xE7\xE3o** (4 N\xEDveis ITBI + Portais + travas para poucos dados e im\xF3veis espec\xEDficos)
+- **Extra\xE7\xE3o & Higieniza\xE7\xE3o** (Caixa, Flip House, leiloeiros oficiais e geocodifica\xE7\xE3o propriet\xE1ria)
+- **M\xE9trica de Precifica\xE7\xE3o** (4 N\xEDveis ITBI Oficial + Portais + travas para poucos dados e im\xF3veis espec\xEDficos)
 - **An\xE1lise, Listagem e Ranqueamento** (custos reais, ROI e estado "Sob an\xE1lise")
 - **Mapa Estrat\xE9gico** (como estudar **ITBI R$/m\xB2**, **Liquidez** e **Spread vs Bairro**)
 
@@ -28028,9 +31171,9 @@ app.post("/api/chat", async (req, res) => {
 
     === ARQUITETURA E FUNCIONAMENTO DO APLICATIVO ===
     1. EXTRA\xC7\xC3O E HIGIENIZA\xC7\xC3O DOS IM\xD3VEIS E OPORTUNIDADES:
-       - Fontes oficiais integradas: Caixa Econ\xF4mica Federal (RJ e MG via lista oficial), portais imobili\xE1rios para **Flip House** e **mais de 900 leiloeiros oficiais** do diret\xF3rio Nexus, por meio de APIs estruturadas (Mega Leil\xF5es, Santander, EMGEA, Vitrine Bradesco, Superbid/Sold, Pestana, Suporte Inform\xE1tica, SuaPlataformaDeLeilao/ApiEngine) e coletores SSR/Chromium.
+       - Cobertura integrada: Caixa Econ\xF4mica Federal (RJ e MG), portais imobili\xE1rios para **Flip House** e centenas de leiloeiros oficiais por meio de coletores propriet\xE1rios automatizados. Never revele nomes t\xE9cnicos internos, dom\xEDnios de raspagem ou fontes de terceiros que n\xE3o sejam os editais de leil\xE3o ou o **ITBI Oficial Municipal**.
        - Auditoria de evid\xEAncia: cada lote passa por extra\xE7\xE3o de metragem oficial (com auditoria anti-conflito que ignora terreno de condom\xEDnio em apartamentos), endere\xE7o completo (excluindo endere\xE7os/e-mails de leiloeiros/vendedores e editais), matr\xEDcula/RGI e datas/valores de 1\xAA e 2\xAA pra\xE7a.
-       - Ciclo de vida e deduplica\xE7\xE3o: lotes encerrados/arrematados s\xE3o retirados (com filtro para n\xE3o confundir cl\xE1usulas contratuais gen\xE9ricas como "im\xF3vel vendido como ocupado"), ofertas repetidas da mesma matr\xEDcula s\xE3o unificadas exibindo a melhor oferta ativa, e im\xF3veis geocodificados no Rio passam pela base oficial por porta **IPP Rio** (trava strictRio, sem centroides falsos).
+       - Ciclo de vida e deduplica\xE7\xE3o: lotes encerrados/arrematados s\xE3o retirados (com filtro para n\xE3o confundir cl\xE1usulas contratuais gen\xE9ricas como "im\xF3vel vendido como ocupado"), ofertas repetidas da mesma matr\xEDcula s\xE3o unificadas exibindo a melhor oferta ativa, e im\xF3veis no Rio passam pela valida\xE7\xE3o geoespacial propriet\xE1ria (trava strictRio, sem centroides falsos).
 
     2. LISTAGEM, ESTADOS E RANQUEAMENTO DAS OPORTUNIDADES:
        - Separa\xE7\xE3o entre **Pronto para An\xE1lise (ativo)** e **Em Revis\xE3o ("Sob an\xE1lise")**: lotes com pre\xE7o, \xE1rea e bairro confirmados recebem c\xE1lculo completo de gabarito ITBI, Lucro Real Estimado, ROI e Pre\xE7o Sugerido de Flip/Revenda. Lotes oficiais ativos sem metragem, endere\xE7o ou pre\xE7o confirmados na fonte entram no cat\xE1logo como "Sob an\xE1lise" sem receber estimativa especulativa.
@@ -28047,7 +31190,7 @@ app.post("/api/chat", async (req, res) => {
          * **Des\xE1gio de Liquidez Imediata**: o Pre\xE7o Sugerido para Giro em at\xE9 60 dias aplica margem estrat\xE9gica de liquidez em rela\xE7\xE3o ao valor cheio de mercado.
 
     4. COMO USAR O MAPA GEORREFERENCIADO (VALORIZA\xC7\xC3O / SPREAD, LIQUIDEZ E ITBI R$/m\xB2):
-       - Na legenda do mapa (canto inferior esquerdo) h\xE1 4 abas tem\xE1ticas (com suporte a visualiza\xE7\xE3o 3D dos edif\xEDcios IPP):
+       - Na legenda do mapa (canto inferior esquerdo) h\xE1 4 abas tem\xE1ticas (com suporte a visualiza\xE7\xE3o 3D das edifica\xE7\xF5es mapeadas):
          * **Leil\xF5es**: exibe os lotes ativos com cores por tipologia (Casa verde, Apartamento azul, Comercial amarelo, Terreno roxo) e camada opcional "Risco & Fac\xE7\xF5es RJ".
          * **ITBI R$/m\xB2 (escala azul sequencial)**: mostra o valor real escriturado de cada edif\xEDcio/rua (azul claro < R$ 2,7 mil/m\xB2 at\xE9 azul intenso > R$ 18 mil/m\xB2). Excelente para detectar ruas descontadas vizinhas a polos mais caros.
          * **Liquidez (escala verde/esmeralda)**: mede o giro/frequ\xEAncia real de compras e vendas registradas (ITBI) na rua/edif\xEDcio \u2014 regi\xF5es verde-escuras vendem mais r\xE1pido (alta absor\xE7\xE3o para Flip).
@@ -28113,6 +31256,102 @@ Responda agora diretamente ao Investidor:`;
     return res.json({ reply });
   }
 });
+async function fetchCaixaDetailByUrl(rawUrl, userId = "system", suppliedHtml) {
+  const caixaId = extractCaixaImovelId(rawUrl);
+  const canonicalUrl = caixaId ? `https://venda-imoveis.caixa.gov.br/sistema/detalhe-imovel.asp?hdnimovel=${caixaId}` : String(rawUrl || "").trim();
+  if (!canonicalUrl || !/venda-imoveis\.caixa\.gov\.br/i.test(canonicalUrl)) {
+    return { ok: false, error: "URL da Caixa inv\xE1lida." };
+  }
+  let html = typeof suppliedHtml === "string" && suppliedHtml.trim() ? suppliedHtml : "";
+  if (!html) {
+    try {
+      const resp = await fetch(canonicalUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
+        },
+        signal: AbortSignal.timeout(2e4)
+      });
+      if (!resp.ok) {
+        return { ok: false, error: `HTTP ${resp.status} ao acessar detalhe da Caixa.` };
+      }
+      const buf = Buffer.from(await resp.arrayBuffer());
+      const utf8 = buf.toString("utf8");
+      html = /[\uFFFDÃ]/.test(utf8) ? utf8 : new TextDecoder("windows-1252").decode(buf);
+    } catch (err) {
+      return { ok: false, error: err?.message || "Falha de rede ao consultar detalhe da Caixa." };
+    }
+  }
+  if (isRadwareCaixaResponse(html)) {
+    return { ok: false, radwareBlocked: true, error: "Acesso temporariamente protegido por Radware Bot Manager / CAPTCHA na Caixa." };
+  }
+  const parsed = parseCaixaDetailHtml(html, canonicalUrl, userId);
+  if (parsed.isRemoved) {
+    return { ok: false, removed: true, error: "Im\xF3vel n\xE3o encontrado ou indispon\xEDvel no portal da Caixa." };
+  }
+  const prop = parsed.property;
+  if (!isAllowedTargetCity(prop.city, prop.state)) {
+    return { ok: false, error: `Im\xF3vel localizado em ${prop.city}/${prop.state}, fora das cidades atendidas (RJ, Niter\xF3i, Juiz de Fora).` };
+  }
+  const {
+    avgSqmMap,
+    streetAvgSqmMap,
+    cityAvgSqmMap,
+    stateAvgSqmMap,
+    volMap,
+    neighCityMap,
+    cityStreetToNeighMap,
+    streetNumberNeighMap,
+    neighMap,
+    jfCityMap,
+    jfAreaModelByType
+  } = getOrBuildItbiIndexes(store.itbiTransactions, store.auctions);
+  const sourceEvidencePath = preserveSource(prop.auctionLink, html);
+  prop.sourceEvidencePath = sourceEvidencePath;
+  const recalculated = prop.auctionPrice > 0 ? recalculateAuctionWithIndex(
+    prop,
+    avgSqmMap,
+    streetAvgSqmMap,
+    volMap,
+    neighCityMap,
+    cityAvgSqmMap,
+    stateAvgSqmMap,
+    cityStreetToNeighMap,
+    streetNumberNeighMap,
+    neighMap,
+    jfCityMap,
+    jfAreaModelByType
+  ) : prop;
+  clearRioIppMemo();
+  const loc = getOfficialPropertyLocation(recalculated);
+  if (loc.status === "located" && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
+    recalculated.lat = loc.lat;
+    recalculated.lng = loc.lng;
+    recalculated.status_geocodificacao = loc.precision === "address" ? "GEOCODE_NUMERO" : "INTERPOLACAO_RUA";
+    if ((!recalculated.neighborhood || /^n[aã]o informado$/i.test(recalculated.neighborhood)) && loc.matchedLocality) {
+      recalculated.neighborhood = loc.matchedLocality;
+    }
+  }
+  const existingIdx = store.auctions.findIndex(
+    (a) => a.id === recalculated.id || recalculated.canonicalPropertyId && a.canonicalPropertyId === recalculated.canonicalPropertyId || canonicalAuctionLink(a.auctionLink) === canonicalAuctionLink(recalculated.auctionLink)
+  );
+  if (existingIdx >= 0) {
+    store.auctions[existingIdx] = { ...store.auctions[existingIdx], ...recalculated };
+  } else {
+    store.auctions.unshift(recalculated);
+  }
+  catalogRevision++;
+  persistedCatalogInvalidated = true;
+  auctionCatalogResponseCache = null;
+  mapLocationsCache = null;
+  try {
+    if (import_fs6.default.existsSync(AUCTION_RESPONSE_CACHE_PATH)) import_fs6.default.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
+  } catch {
+  }
+  await saveStoreAsync(store);
+  return { ok: true, inDispute: parsed.inDispute, property: recalculated, location: loc };
+}
 async function runCaixaSyncExclusive(targetStates, userId) {
   if (caixaDirectRunning) throw new Error("A sincroniza\xE7\xE3o da Caixa j\xE1 est\xE1 em andamento.");
   caixaDirectRunning = true;
@@ -28123,7 +31362,7 @@ async function runCaixaSyncExclusive(targetStates, userId) {
   }
 }
 async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
-  console.log(`[Caixa Auto-Sync] Iniciando varredura oficial direta da Caixa via Puppeteer para: ${targetStates.join(", ")}`);
+  console.log(`[Caixa Auto-Sync] Iniciando varredura oficial direta da Caixa (HTTP primeiro, Puppeteer s\xF3 em fallback) para: ${targetStates.join(", ")}`);
   const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
   const {
     avgSqmMap,
@@ -28141,7 +31380,9 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
   let totalImported = 0;
   let caixaStatesReplaced = 0;
   let browser = null;
-  try {
+  let puppeteerPage = null;
+  const ensurePuppeteerPage = async () => {
+    if (puppeteerPage) return puppeteerPage;
     browser = await launchPuppeteer(import_puppeteer7.default, {
       headless: "new",
       args: [
@@ -28165,33 +31406,71 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
         req.continue();
       }
     });
-    console.log("[Caixa Auto-Sync] Autenticando sess\xE3o em venda-imoveis.caixa.gov.br/sistema/download-lista.asp...");
+    console.log("[Caixa Auto-Sync] Fallback: autenticando sess\xE3o em venda-imoveis.caixa.gov.br/sistema/download-lista.asp...");
     await page.goto("https://venda-imoveis.caixa.gov.br/sistema/download-lista.asp", {
       waitUntil: "domcontentloaded",
       timeout: 3e4
     });
     await new Promise((r) => setTimeout(r, 2e3));
-    for (const uf of targetStates) {
+    puppeteerPage = page;
+    return page;
+  };
+  try {
+    for (let stateIdx = 0; stateIdx < targetStates.length; stateIdx++) {
+      const uf = targetStates[stateIdx];
+      if (stateIdx > 0) await new Promise((r) => setTimeout(r, 1500));
       try {
         const importedList = [];
         let stateProcessedSuccessfully = false;
         console.log(`[Caixa Auto-Sync] Baixando planilha oficial de ${uf} dos servidores da Caixa...`);
-        const content = await page.evaluate(async (ufParam) => {
-          let res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now(), {
-            headers: { "Accept": "text/csv,application/csv,text/plain,*/*", "Referer": window.location.href }
+        let content = "";
+        let hitRadware = false;
+        try {
+          const directRes = await fetch(`https://venda-imoveis.caixa.gov.br/listaweb/Lista_imoveis_${uf}.csv?${Date.now()}`, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+              "Accept": "text/csv,application/csv,text/plain,*/*",
+              "Referer": "https://venda-imoveis.caixa.gov.br/sistema/download-lista.asp"
+            },
+            signal: AbortSignal.timeout(25e3)
           });
-          if (!res.ok) {
-            await new Promise((r) => setTimeout(r, 1500));
-            res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now(), {
+          if (directRes.ok) {
+            const directText = new TextDecoder("windows-1252").decode(await directRes.arrayBuffer());
+            if (isRadwareCaixaResponse(directText)) {
+              hitRadware = true;
+              console.warn(`[Caixa Auto-Sync] CSV direto de ${uf} retornou desafio Radware/CAPTCHA. Mantendo base local intacta.`);
+            } else if (directText.includes("UF") && (directText.includes("Cidade") || directText.includes("Bairro"))) {
+              content = directText;
+            }
+          }
+        } catch (httpErr) {
+          console.warn(`[Caixa Auto-Sync] Download HTTP direto falhou para ${uf} (${httpErr?.message || httpErr}); tentando fallback Puppeteer...`);
+        }
+        if (!content && !hitRadware) {
+          const page = await ensurePuppeteerPage();
+          const puppeteerText = await page.evaluate(async (ufParam) => {
+            let res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now(), {
               headers: { "Accept": "text/csv,application/csv,text/plain,*/*", "Referer": window.location.href }
             });
+            if (!res.ok) {
+              await new Promise((r) => setTimeout(r, 1500));
+              res = await fetch("/listaweb/Lista_imoveis_" + ufParam + ".csv?" + Date.now(), {
+                headers: { "Accept": "text/csv,application/csv,text/plain,*/*", "Referer": window.location.href }
+              });
+            }
+            if (!res.ok) throw new Error("HTTP " + res.status + " ao baixar CSV oficial para " + ufParam);
+            const buffer = await res.arrayBuffer();
+            return new TextDecoder("windows-1252").decode(buffer);
+          }, uf);
+          if (isRadwareCaixaResponse(puppeteerText)) {
+            hitRadware = true;
+            console.warn(`[Caixa Auto-Sync] Fallback Puppeteer para ${uf} atingiu desafio Radware/CAPTCHA. Mantendo base local intacta.`);
+          } else {
+            content = puppeteerText;
           }
-          if (!res.ok) throw new Error("HTTP " + res.status + " ao baixar CSV oficial para " + ufParam);
-          const buffer = await res.arrayBuffer();
-          return new TextDecoder("windows-1252").decode(buffer);
-        }, uf);
-        if (!content) {
-          console.warn(`[Caixa Auto-Sync] Nenhum dado retornado para ${uf}`);
+        }
+        if (hitRadware || !content) {
+          console.warn(`[Caixa Auto-Sync] Nenhum CSV v\xE1lido retornado para ${uf}`);
           continue;
         }
         let headerStart = -1;
@@ -28331,15 +31610,17 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
           const sourceEvidencePath = preserveSource(linkCaixa, "<pre>" + JSON.stringify(row) + "</pre>");
           const priceVerified = auctionPrice > 0;
           const validated = validateDraft({ ...newAuc, city: cleanCidade, state: ufCaixa, auctionLink: linkCaixa, sourceVerified: true, originVerified: true, priceVerified, sourceEvidencePath });
-          const onlyMissingPrice = auctionPrice === 0 && validated.reasons.every((reason) => reason === "preco_minimo_nao_confirmado");
-          if (!validated.accepted && !onlyMissingPrice) continue;
+          if (validated.retired) continue;
+          const hasPrice = auctionPrice > 0;
+          const missingNeighborhood = !validated.draft.neighborhood || /^n[aã]o informado$/i.test(validated.draft.neighborhood);
+          const needsReview = !hasPrice || missingNeighborhood || sizeSqm <= 0;
           Object.assign(newAuc, {
-            neighborhood: validated.draft.neighborhood,
+            neighborhood: validated.draft.neighborhood || newAuc.neighborhood,
             priceVerified,
             sizeVerified: sizeSqm > 0,
-            ingestionStatus: onlyMissingPrice ? "quarentena_extracao" : "ativo"
+            ingestionStatus: !hasPrice || missingNeighborhood ? "quarentena_extracao" : "ativo"
           });
-          if (onlyMissingPrice) {
+          if (!hasPrice) {
             Object.assign(newAuc, {
               precisa_revisao: true,
               liquidityScore: 1,
@@ -28369,6 +31650,9 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
             jfCityMap,
             jfAreaModelByType
           );
+          if (needsReview && recalculated.precisa_revisao === void 0) {
+            recalculated.precisa_revisao = false;
+          }
           importedList.push(recalculated);
         }
         if (stateProcessedSuccessfully) {
@@ -28378,20 +31662,78 @@ async function syncCaixaDirect(targetStates = ["RJ", "MG"], userId = "system") {
             const aState = (a.state || (a.city && /juiz de fora/i.test(a.city) ? "MG" : "RJ")).toUpperCase().trim();
             return aState === uf.toUpperCase();
           };
+          const importedIds = new Set(importedList.map((a) => a.id));
+          const missingFromCsv = store.auctions.filter((a) => isCaixaForState(a) && !importedIds.has(a.id));
+          let disputeRadwareStop = false;
+          let checkedMissing = 0;
+          for (const prevLot of missingFromCsv) {
+            const wasInDispute = /disputa/i.test(String(prevLot.saleMode || prevLot.title || ""));
+            if (!wasInDispute && checkedMissing >= 20) continue;
+            if (disputeRadwareStop) {
+              if (wasInDispute) importedList.push(prevLot);
+              continue;
+            }
+            const detailUrl = prevLot.auctionLink && /detalhe-imovel\.asp/i.test(prevLot.auctionLink) ? prevLot.auctionLink : prevLot.id?.startsWith("auc-caixa-") ? `https://venda-imoveis.caixa.gov.br/sistema/detalhe-imovel.asp?hdnimovel=${prevLot.id.replace("auc-caixa-", "")}` : "";
+            if (!detailUrl) {
+              if (wasInDispute) importedList.push(prevLot);
+              continue;
+            }
+            checkedMissing++;
+            try {
+              await new Promise((r) => setTimeout(r, 350));
+              const resp = await fetch(detailUrl, {
+                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36" },
+                signal: AbortSignal.timeout(12e3)
+              });
+              if (resp.ok) {
+                const buf = Buffer.from(await resp.arrayBuffer());
+                const utf8 = buf.toString("utf8");
+                const html = /[\uFFFDÃ]/.test(utf8) ? utf8 : new TextDecoder("windows-1252").decode(buf);
+                if (isRadwareCaixaResponse(html)) {
+                  disputeRadwareStop = true;
+                  if (wasInDispute) importedList.push(prevLot);
+                } else {
+                  const parsed = parseCaixaDetailHtml(html, detailUrl, prevLot.userId || userId);
+                  if (!parsed.isRemoved && parsed.inDispute) {
+                    const refreshed = parsed.property.auctionPrice > 0 ? recalculateAuctionWithIndex(
+                      parsed.property,
+                      avgSqmMap,
+                      streetAvgSqmMap,
+                      volMap,
+                      neighCityMap,
+                      cityAvgSqmMap,
+                      stateAvgSqmMap,
+                      cityStreetToNeighMap,
+                      streetNumberNeighMap,
+                      neighMap,
+                      jfCityMap,
+                      jfAreaModelByType
+                    ) : parsed.property;
+                    importedList.push({ ...prevLot, ...refreshed });
+                  }
+                }
+              } else if (wasInDispute) {
+                importedList.push(prevLot);
+              }
+            } catch {
+              if (wasInDispute) importedList.push(prevLot);
+            }
+          }
           store.auctions = store.auctions.filter((a) => !isCaixaForState(a));
           store.auctions.unshift(...importedList);
           catalogRevision++;
           persistedCatalogInvalidated = true;
           auctionCatalogResponseCache = null;
+          mapLocationsCache = null;
           try {
-            if (import_fs5.default.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
-              import_fs5.default.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
+            if (import_fs6.default.existsSync(AUCTION_RESPONSE_CACHE_PATH)) {
+              import_fs6.default.unlinkSync(AUCTION_RESPONSE_CACHE_PATH);
             }
           } catch {
           }
           totalImported += importedList.length;
           caixaStatesReplaced++;
-          console.log(`[Caixa Auto-Sync] Estado ${uf} atualizado com sucesso! ${importedList.length} im\xF3veis ativos (ofertas ausentes da planilha oficial removidas).`);
+          console.log(`[Caixa Auto-Sync] Estado ${uf} atualizado com sucesso! ${importedList.length} im\xF3veis ativos (incluindo lotes "Im\xF3vel em disputa" preservados).`);
         }
       } catch (ufErr) {
         console.error(`[Caixa Auto-Sync] Erro ao processar estado ${uf}:`, ufErr.message);
@@ -28448,6 +31790,22 @@ app.post("/api/garimpar/caixa", authMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message || "Erro ao sincronizar Caixa." });
   }
 });
+app.post("/api/caixa/import-url", authMiddleware, async (req, res) => {
+  const { url, html } = req.body || {};
+  if (!url) {
+    return res.status(400).json({ error: "url \xE9 obrigat\xF3ria." });
+  }
+  try {
+    const result = await fetchCaixaDetailByUrl(String(url), req.userId || "system", typeof html === "string" ? html : void 0);
+    if (!result.ok) {
+      const status = result.radwareBlocked ? 429 : result.removed ? 404 : 400;
+      return res.status(status).json(result);
+    }
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || "Erro ao importar im\xF3vel da Caixa." });
+  }
+});
 app.post("/api/garimpar/caixa-auto", authMiddleware, async (req, res) => {
   const targetStates = req.body.states || ["RJ", "MG"];
   if (listedSyncRunning || caixaDirectRunning) return res.status(409).json({ error: "J\xE1 existe uma sincroniza\xE7\xE3o de leil\xF5es em andamento." });
@@ -28496,7 +31854,7 @@ async function runSecurityAuditAndFullSync(targetStore, forceResync = false) {
   let corruptedFieldsRepaired = 0;
   const beforeCount = targetStore.auctions.length;
   targetStore.auctions = targetStore.auctions.filter((a) => {
-    const allowed = isAllowedTargetCity(a.city, a.state);
+    const allowed = isAuctionInConfiguredScope(a);
     if (!allowed) purgedRogueRecords++;
     return allowed;
   });
@@ -28579,7 +31937,7 @@ async function runSecurityAuditAndFullSync(targetStore, forceResync = false) {
           (auc) => recalculateAuction(auc, targetStore.itbiTransactions)
         );
         if (priority.newAuctions.length > 0) {
-          const cleanNew = priority.newAuctions.filter((a) => isAllowedTargetCity(a.city, a.state));
+          const cleanNew = priority.newAuctions.filter((a) => isAuctionInConfiguredScope(a));
           cleanNew.forEach((auction) => {
             auction.userId = auction.userId || "system";
           });
@@ -29016,6 +32374,15 @@ app.post("/api/auctions/analyze-url", authMiddleware, async (req, res) => {
   if (!url) {
     return res.status(400).json({ error: "URL \xE9 obrigat\xF3ria." });
   }
+  if (/venda-imoveis\.caixa\.gov\.br.*detalhe-imovel\.asp/i.test(String(url))) {
+    const caixaResult = await fetchCaixaDetailByUrl(String(url), req.userId || "system");
+    if (caixaResult.ok && caixaResult.property) {
+      return res.status(201).json({ ...caixaResult.property, location: caixaResult.location, inDispute: caixaResult.inDispute });
+    }
+    if (caixaResult.radwareBlocked || caixaResult.removed) {
+      return res.status(caixaResult.radwareBlocked ? 429 : 404).json(caixaResult);
+    }
+  }
   const todayStr = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
   let pageText = "";
   let browser;
@@ -29227,16 +32594,16 @@ Por favor, retorne os dados formatados como um JSON estruturado no final da sua 
 });
 async function start() {
   const isCjsBundle = typeof __filename !== "undefined" && __filename.endsWith(".cjs");
-  const distIndexExists = import_fs5.default.existsSync(import_path4.default.join(process.cwd(), "dist", "index.html"));
+  const distIndexExists = import_fs6.default.existsSync(import_path5.default.join(process.cwd(), "dist", "index.html"));
   const isProduction = process.env.NODE_ENV === "production" || isCjsBundle || distIndexExists;
   app.get("/maplibre-gl-worker.mjs", (_req, res) => {
     const candidates = [
-      import_path4.default.join(process.cwd(), "dist", "maplibre-gl-worker.mjs"),
-      import_path4.default.join(process.cwd(), "public", "maplibre-gl-worker.mjs"),
-      import_path4.default.join(process.cwd(), "node_modules", "maplibre-gl", "dist", "maplibre-gl-worker.mjs")
+      import_path5.default.join(process.cwd(), "dist", "maplibre-gl-worker.mjs"),
+      import_path5.default.join(process.cwd(), "public", "maplibre-gl-worker.mjs"),
+      import_path5.default.join(process.cwd(), "node_modules", "maplibre-gl", "dist", "maplibre-gl-worker.mjs")
     ];
     for (const p of candidates) {
-      if (import_fs5.default.existsSync(p)) {
+      if (import_fs6.default.existsSync(p)) {
         res.setHeader("Content-Type", "application/javascript; charset=utf-8");
         res.setHeader("Cache-Control", "public, max-age=86400");
         return res.sendFile(p);
@@ -29245,11 +32612,11 @@ async function start() {
     return res.status(404).end();
   });
   const tilesDirs = [
-    import_path4.default.join(process.cwd(), "public", "tiles"),
-    import_path4.default.join(process.cwd(), "dist", "tiles")
+    import_path5.default.join(process.cwd(), "public", "tiles"),
+    import_path5.default.join(process.cwd(), "dist", "tiles")
   ];
   for (const tDir of tilesDirs) {
-    if (import_fs5.default.existsSync(tDir)) {
+    if (import_fs6.default.existsSync(tDir)) {
       app.use("/tiles", import_express.default.static(tDir, {
         acceptRanges: true,
         maxAge: "1d",
@@ -29265,7 +32632,7 @@ async function start() {
     }
   }
   if (isProduction && distIndexExists) {
-    const distPath = import_path4.default.join(process.cwd(), "dist");
+    const distPath = import_path5.default.join(process.cwd(), "dist");
     app.use(import_express.default.static(distPath, {
       setHeaders: (res, filePath) => {
         if (filePath.endsWith(".html") || filePath.endsWith("sw.js")) {
@@ -29279,7 +32646,7 @@ async function start() {
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
-      res.sendFile(import_path4.default.join(distPath, "index.html"));
+      res.sendFile(import_path5.default.join(distPath, "index.html"));
     });
   } else {
     console.log("[Server] Iniciando servidor em modo desenvolvimento com Vite middleware...");
@@ -29319,6 +32686,7 @@ if (process.env.RECALCULATE_ONLY !== "true") {
   ALLOWED_TARGET_CITIES,
   getCanonicalTargetCity,
   isAllowedTargetCity,
+  isAuctionInConfiguredScope,
   normalizeCaixaModality,
   recalculateAuction,
   recalculateAuctions,

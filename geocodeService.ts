@@ -227,9 +227,20 @@ export function cleanQuery(str: string): string {
  */
 export function cleanBrazilianAddress(raw: string): { street: string; number: string } {
   let text = (raw || '').trim();
-  if (/\b(?:r\$|valor\s+de|lance\s+m[ií]nimo|avalia[çc][aã]o)\b/i.test(text) || /^r\s+de\s+r\$/i.test(text)) {
+  // Strip narrative prefix clutter ("r construído na AVENIDA...", "situado na RUA...") before rejecting bare "r ..."
+  text = text.replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, '')
+             .replace(/\s*\([^)]*\)/g, ' ')
+             .replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b(?=\s|,|$)[^,]*/gi, '')
+             .replace(/\s+/g, ' ')
+             .trim();
+  if (/\b(?:r\$|valor\s+de|lance\s+m[ií]nimo|avalia[çc][aã]o|conta\s+do\s+adquirente)\b/i.test(text) || /^r\s+de\s+r\$/i.test(text) || /^r\s+/i.test(text)) {
     return { street: '', number: '' };
   }
+
+  // Normalize duplicate prefixes ("Rua Avenida ..."), "n.º", and "número 5.644" dots
+  text = text.replace(/^(?:rua\s+avenida|avenida\s+rua|r\.\s*av\.?)\b/i, 'Avenida')
+             .replace(/\bn\.\s*[ºo°]/gi, 'nº')
+             .replace(/\b(n[ºo°.]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d{1,3})\.(\d{3})\b/gi, '$1 $2$3');
 
   // Strip CEP
   text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, '');
@@ -237,26 +248,29 @@ export function cleanBrazilianAddress(raw: string): { street: string; number: st
   // Strip trailing municipal/state abbreviations like ',PE', ', PE', ',RJ', etc.
   text = text.replace(/,\s*(?:pe|rj|sp|mg|df|pr|sc|rs|es|ba|ce|go|ma|pb|am|rn|al|pi|mt|ms|se|ro|to|ac|ap|rr)\b/gi, '').trim();
 
+  // Extract street number BEFORE unit/apartment clauses (e.g. "5644. Unidade, nº 601")
+  const streetHeader = text.split(/(?:[.;]\s*|\s*,\s*)(?:unidade|unid\.?|apto|apt|apartamento|bloco|bl|sala|loja)\b/i)[0] || text;
+
   // Extract number if present: 'N. 6', 'Nº 6', ', 6', 'NUM 6', 'NRO 6', etc.
   let number = '';
-  const prefixMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+[a-z]?)\b/i);
+  const prefixMatch = streetHeader.match(/(?:,\s*|\s+)(?:n\.?[ºo°]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d+[a-z]?)\b/i);
   if (prefixMatch) {
-    number = prefixMatch[1];
+    number = prefixMatch[1].replace(/^0+(?=\d)/, '');
   } else {
-    const commaNumMatch = text.match(/,\s*(\d+[a-z]?)\b/i);
+    const commaNumMatch = streetHeader.match(/,\s*(\d+[a-z]?)\b/i);
     if (commaNumMatch) {
-      number = commaNumMatch[1];
+      number = commaNumMatch[1].replace(/^0+(?=\d)/, '');
     } else {
-      const spaceNumMatch = text.match(/\s+(\d{1,5}[a-z]?)(?:\s*[-,\/]|\s+(?:apto|apt|ap|bloco|bl|sala|loja|casa|unid|andar|qd|lote|fundos|centro|bairro)|$)/i);
+      const spaceNumMatch = streetHeader.match(/\s+(\d{1,5}[a-z]?)(?:\s*[-,\/]|\s+(?:apto|apt|ap|bloco|bl|sala|loja|casa|unid|andar|qd|lote|fundos|centro|bairro)|$)/i);
       if (spaceNumMatch) {
-        number = spaceNumMatch[1];
+        number = spaceNumMatch[1].replace(/^0+(?=\d)/, '');
       }
     }
   }
 
   let street = text;
   if (number) {
-    const numRe = new RegExp('(?:,\\s*|\\s+)(?:n[ºo°.]?|num(?:ero)?\\.?|nro\\.?)?\\s*' + number + '(?=[,\\s-]|$)', 'i');
+    const numRe = new RegExp('(?:,\\s*|\\s+)(?:n\\.?[ºo°]?|num(?:ero)?\\.?|nro\\.?)?\\s*0*' + number + '(?=[,\\s-]|$)', 'i');
     const numIdx = street.search(numRe);
     if (numIdx > 0) {
       street = street.slice(0, numIdx);

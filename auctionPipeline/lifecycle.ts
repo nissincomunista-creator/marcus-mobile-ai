@@ -44,7 +44,13 @@ export function assessAvailability(previous:Availability|undefined,url:string,ht
  // Scan short visible text blocks as well; legal clauses and instructions are not status labels.
  $('span,strong,b,h2,h3,p,div').each((_,e)=>{if($(e).children().length===0){const t=$(e).text().replace(/\s+/g,' ').trim();if(t.length<100)statusText.push(t);}});
  if(statusText.some(t=>closed.test(t)))return finish('finalizado','Encerramento explícito no DOM do lote');
- const extra=[...$('body').text().matchAll(/(?:[123][ºªo°]|primeir[oa]|segund[oa]|terceir[oa]|nova)\s*(?:pra[cç]a|leil[aã]o|rodada)[^\d]{0,60}(\d{1,2})\/(\d{1,2})\/(20\d{2})/gi)].map(m=>`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`);
+ const bodyText = $('body').text();
+ const PT_MONTHS: Record<string, string> = { jan:'01',fev:'02',mar:'03',abr:'04',mai:'05',jun:'06',jul:'07',ago:'08',set:'09',out:'10',nov:'11',dez:'12' };
+ const extra=[
+   ...[...bodyText.matchAll(/(?:[123][ºªo°]|primeir[oa]|segund[oa]|terceir[oa]|nova)\s*(?:pra[cç]a|leil[aã]o|rodada|data\s+in[ií]cio)[^\d]{0,80}(?:t[eé]rmino\s*:?\s*)?(\d{1,2})\/(\d{1,2})\/(20\d{2})/gi)].map(m=>`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`),
+   ...[...bodyText.matchAll(/t[eé]rmino\s*:?\s*(\d{1,2})\/(\d{1,2})\/(20\d{2})/gi)].map(m=>`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`),
+   ...[...bodyText.matchAll(/\b(\d{1,2})\s+de\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z.]*\s+de\s+(20\d{2})\b/gi)].map(m=>`${m[3]}-${PT_MONTHS[m[2].toLowerCase()]||'01'}-${m[1].padStart(2,'0')}`)
+ ];
  if(expiredRounds([...(context.dates||[]),...extra],context.saleMode,now))return finish('expirado_por_data','Todas as rodadas publicadas transcorreram, sem nova rodada futura');
  if(statusText.some(t=>/^(?:(?:lote|leil[aã]o)\s+)?(?:aberto(?: para lances)?|em andamento|dispon[ií]vel|liberado para lance)$/i.test(t)))return {...base,state:'active',status:'ativo',reason:'Disponibilidade explícita na fonte'};
  if(!visibleText||isOnlyCookieNotice){

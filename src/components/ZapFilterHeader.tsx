@@ -206,7 +206,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
   const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onDocDown = (e: MouseEvent) => {
+    const onDocDown = (e: Event) => {
       if (barRef.current && !barRef.current.contains(e.target as Node)) {
         setOpenPopover(null);
       }
@@ -214,10 +214,12 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
     const onEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpenPopover(null);
     };
-    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('pointerdown', onDocDown, true);
+    document.addEventListener('mousedown', onDocDown, true);
     document.addEventListener('keydown', onEsc);
     return () => {
-      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('pointerdown', onDocDown, true);
+      document.removeEventListener('mousedown', onDocDown, true);
       document.removeEventListener('keydown', onEsc);
     };
   }, []);
@@ -619,51 +621,83 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
         </div>
       )}
 
-      {/* 3. TIPO DE IMÓVEL */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => togglePopover('tipo')}
-          className={`${pillBase} ${selectedTypeFilter || openPopover === 'tipo' ? pillActive : pillIdle}`}
-        >
-          <span>{selectedTypeFilter || 'Tipo de imóvel'}</span>
-          <ChevronDown
-            className={`w-3.5 h-3.5 opacity-75 transition-transform ${openPopover === 'tipo' ? 'rotate-180' : ''}`}
-          />
-        </button>
+      {/* 3. TIPO DE IMÓVEL (Múltipla Seleção) */}
+      {(() => {
+        const selectedTypes = selectedTypeFilter
+          ? selectedTypeFilter.split(',').map((s) => s.trim()).filter(Boolean)
+          : [];
+        const typeLabel =
+          selectedTypes.length === 0
+            ? 'Tipo de imóvel'
+            : selectedTypes.length === 1
+              ? selectedTypes[0]
+              : `${selectedTypes[0]} +${selectedTypes.length - 1}`;
 
-        {openPopover === 'tipo' && (
-          <div className="absolute left-0 top-full mt-2 w-60 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-[60] space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="text-[11px] font-bold text-slate-400 uppercase px-1 pb-1 border-b border-slate-800">
-              Tipologia do Imóvel
-            </div>
-            {PROPERTY_TYPES.map((opt) => {
-              const isSel = selectedTypeFilter === opt.value;
-              return (
-                <label
-                  key={opt.value || 'all'}
-                  onClick={() => {
-                    setSelectedTypeFilter(opt.value);
-                    setOpenPopover(null);
-                  }}
-                  className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer text-xs transition-colors ${
-                    isSel ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded flex items-center justify-center border ${
-                      isSel ? 'bg-indigo-600 border-indigo-400 text-white' : 'border-slate-600 bg-slate-950'
-                    }`}
+        const toggleTypeOption = (val: string) => {
+          if (!val) {
+            setSelectedTypeFilter('');
+            return;
+          }
+          const next = selectedTypes.includes(val)
+            ? selectedTypes.filter((v) => v !== val)
+            : [...selectedTypes, val];
+          setSelectedTypeFilter(next.join(','));
+        };
+
+        return (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => togglePopover('tipo')}
+              className={`${pillBase} ${selectedTypes.length > 0 || openPopover === 'tipo' ? pillActive : pillIdle}`}
+            >
+              <span>{typeLabel}</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 opacity-75 transition-transform ${openPopover === 'tipo' ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {openPopover === 'tipo' && (
+              <div className="absolute left-0 top-full mt-2 w-60 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-[60] space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between px-1 pb-1.5 border-b border-slate-800">
+                  <span className="text-xs font-bold text-white">Tipologia do imóvel</span>
+                  <button
+                    type="button"
+                    onClick={() => setOpenPopover(null)}
+                    className="text-slate-400 hover:text-white cursor-pointer"
                   >
-                    {isSel && <Check className="w-3 h-3" />}
-                  </span>
-                  <span>{opt.label}</span>
-                </label>
-              );
-            })}
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {PROPERTY_TYPES.map((opt) => {
+                  const isSel = opt.value === '' ? selectedTypes.length === 0 : selectedTypes.includes(opt.value);
+                  return (
+                    <label
+                      key={opt.value || 'all'}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleTypeOption(opt.value);
+                      }}
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer text-xs transition-colors ${
+                        isSel ? 'bg-indigo-500/15 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded flex items-center justify-center border ${
+                          isSel ? 'bg-indigo-600 border-indigo-400 text-white' : 'border-slate-600 bg-slate-950'
+                        }`}
+                      >
+                        {isSel && <Check className="w-3 h-3" />}
+                      </span>
+                      <span>{opt.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* 4. QUARTOS */}
       <div className="relative">
@@ -680,8 +714,15 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
 
         {openPopover === 'quartos' && (
           <div className="absolute left-0 top-full mt-2 w-48 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2.5 z-[60] space-y-1 animate-in fade-in zoom-in-95 duration-150">
-            <div className="text-[11px] font-bold text-slate-400 uppercase px-2 pb-1 border-b border-slate-800">
-              Quartos
+            <div className="flex items-center justify-between px-2 pb-1.5 border-b border-slate-800">
+              <span className="text-xs font-bold text-white">Quartos</span>
+              <button
+                type="button"
+                onClick={() => setOpenPopover(null)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
             {[null, 1, 2, 3, 4].map((n) => (
               <button
@@ -720,8 +761,15 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
 
         {openPopover === 'vagas' && (
           <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2.5 z-[60] space-y-1 animate-in fade-in zoom-in-95 duration-150">
-            <div className="text-[11px] font-bold text-slate-400 uppercase px-2 pb-1 border-b border-slate-800">
-              Vagas de Garagem
+            <div className="flex items-center justify-between px-2 pb-1.5 border-b border-slate-800">
+              <span className="text-xs font-bold text-white">Vagas de garagem</span>
+              <button
+                type="button"
+                onClick={() => setOpenPopover(null)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
             {[null, 1, 2, 3, 4].map((n) => (
               <button
@@ -974,11 +1022,27 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
     </div>
   );
 
+  const outsideClickBackdrop = openPopover ? (
+    <div
+      aria-hidden="true"
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        setOpenPopover(null);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpenPopover(null);
+      }}
+      className="fixed inset-0 z-[55] bg-transparent cursor-default"
+    />
+  ) : null;
+
   // Embedded strip inside Fullscreen Map (replaces old Tipologia bar)
   if (embeddedInMap) {
     return (
       <div ref={barRef} className="w-full flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
+        {outsideClickBackdrop}
+        <div className="flex flex-wrap items-center gap-2 relative z-[58]">
           {locationButton}
           {filterPills}
         </div>
@@ -1001,7 +1065,7 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
                 ? 'bg-rose-950/90 text-rose-300 border-rose-500'
                 : 'bg-slate-900 text-slate-300 hover:text-white border-slate-700'
             }`}
-            title="Camada de controle de facções RJ (dadosderiscos.com.br)"
+            title="Camada de risco territorial RJ"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
             <span>Risco &amp; Facções RJ</span>
@@ -1023,8 +1087,9 @@ export default function ZapFilterHeader(props: ZapFilterHeaderProps) {
       ref={barRef}
       className="sticky top-[56px] -mt-[1px] z-30 sticky-bar-surface bg-[#111622] border-b border-slate-800/70 pt-2.5 pb-2 -mx-3 sm:-mx-5 px-3 sm:px-5 space-y-2.5"
     >
+      {outsideClickBackdrop}
       {/* LINHA 1 LIMPA ESTILO ZAP IMÓVEIS: Localização (esq) | Filtros centralizados e afastados (centro) | Abrir no Mapa colado à direita */}
-      <div className="flex flex-wrap items-center justify-between gap-3 py-0.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 py-0.5 relative z-[58]">
         <div className="shrink-0">{locationButton}</div>
         <div className="flex flex-wrap items-center justify-center gap-2.5 flex-1 min-w-0 px-3 lg:px-8">
           {filterPills}

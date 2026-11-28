@@ -14,6 +14,7 @@ import fs from 'fs';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
 import { AUCTION_STATES, municipalityId, sourceAuctionLocation } from './src/utils/auctionGeography.ts';
+import { CITY_ZONES } from './src/utils/cityZones.ts';
 import puppeteer from 'puppeteer';
 import { launchPuppeteer } from './src/utils/puppeteerConfig.ts';
 import { GoogleGenAI } from '@google/genai';
@@ -81,7 +82,7 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "lancejudicial", name: "Lance Judicial", domain: "lancejudicial.com.br", aliasDomains: ["grupolance.com.br"], baseUrl: "https://www.grupolance.com.br", searchUrl: "https://www.grupolance.com.br/imoveis", genericScrape: true, enabled: true },
   { id: "superbid", name: "Superbid", domain: "superbid.net", baseUrl: "https://www.superbid.net", genericScrape: true, enabled: true },
   { id: "murilochaves_com_br", name: "MURILO CARDOZO CHAVES", domain: "murilochaves.com.br", baseUrl: "https://www.murilochaves.com.br", genericScrape: true, enabled: true },
-  { id: "depaulaonline_br", name: "LUIZ TENÓRIO DE PAULA", domain: "depaulaonline.br", baseUrl: "https://www.depaulaonline.br", genericScrape: true, enabled: true },
+  { id: "depaulaonline_br", name: "LUIZ TENÓRIO DE PAULA", domain: "depaulaonline.br", baseUrl: "https://www.depaulaonline.br", genericScrape: true, enabled: false },
   { id: "edgarcarvalholeiloeiro_com_br", name: "EDGAR DE CARVALHO JUNIOR", domain: "edgarcarvalholeiloeiro.com.br", baseUrl: "https://www.edgarcarvalholeiloeiro.com.br", genericScrape: true, enabled: true },
   { id: "machadoleiloes_com_br", name: "NORMA MARIA MACHADO", domain: "machadoleiloes.com.br", baseUrl: "https://www.machadoleiloes.com.br", genericScrape: true, enabled: true },
   { id: "leiloeirasilvani_com_br", name: "SILVANI DAS GRAÇAS LOPES DIAS", domain: "leiloeirasilvani.com.br", baseUrl: "https://www.leiloeirasilvani.com.br", genericScrape: true, enabled: true },
@@ -90,7 +91,7 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "fernandobraga_lel_br", name: "FERNANDO MOREIRA BRAGA", domain: "fernandobraga.lel.br", baseUrl: "https://www.fernandobraga.lel.br", genericScrape: true, enabled: true },
   { id: "leiloesbraga_lel_br", name: "FERNANDO MOREIRA BRAGA", domain: "leiloesbraga.lel.br", baseUrl: "https://www.leiloesbraga.lel.br", genericScrape: true, enabled: true },
   { id: "josimarleiloeiro_com_br", name: "JOSIMAR DE AZEVEDO SANTOS", domain: "josimarleiloeiro.com.br", baseUrl: "https://www.josimarleiloeiro.com.br", genericScrape: true, enabled: true },
-  { id: "marioricart_lel_br", name: "MARIO MILTON BITTENCOURT RICART", domain: "marioricart.lel.br", aliasDomains: ["ricartleiloes.com.br"], baseUrl: "https://www.ricartleiloes.com.br", genericScrape: true, enabled: true },
+  { id: "marioricart_lel_br", name: "MARIO MILTON BITTENCOURT RICART", domain: "marioricart.lel.br", aliasDomains: ["ricartleiloes.com.br"], baseUrl: "https://www.ricartleiloes.com.br", genericScrape: true, enabled: false },
   { id: "antonioferreira_lel_br", name: "ANTONIO CARLOS DA COSTA FERREIRA", domain: "antonioferreira.lel.br", baseUrl: "https://www.antonioferreira.lel.br", genericScrape: true, enabled: true },
   { id: "andrealeiloeirapublica_lel_br", name: "ANDR&#201;A ROSA COSTA", domain: "andrealeiloeirapublica.lel.br", baseUrl: "https://www.andrealeiloeirapublica.lel.br", genericScrape: true, enabled: false },
   { id: "levyleiloeiro_com_br", name: "FRANKLIN LEVY", domain: "levyleiloeiro.com.br", baseUrl: "https://www.levyleiloeiro.com.br", genericScrape: true, enabled: true },
@@ -168,7 +169,7 @@ export const AUCTIONEER_PORTALS: AuctioneerPortalConfig[] = [
   { id: "bastosleiloes_com_br", name: "BRENO RIBEIRO PENNA BASTOS", domain: "bastosleiloes.com.br", baseUrl: "https://www.bastosleiloes.com.br", genericScrape: true, enabled: true },
   { id: "tamiriscarvalholeiloeira_com_br", name: "TAMIRIS FEITAL DA SILVA CARVALHO", domain: "tamiriscarvalholeiloeira.com.br", baseUrl: "https://www.tamiriscarvalholeiloeira.com.br", genericScrape: true, enabled: true },
   { id: "kronbergleiloes_com_br", name: "HELCIO KRONBERG", domain: "kronbergleiloes.com.br", aliasDomains: ["kronleiloes.com.br"], baseUrl: "https://www.kronleiloes.com.br", searchUrl: "https://www.kronleiloes.com.br/categorias/imoveis?searchType=opened&pageNumber=1&pageSize=30&orderBy=price:desc", genericScrape: true, enabled: true },
-  { id: "kronleiloes_com_br", name: "HELCIO KRONBERG", domain: "kronleiloes.com.br", baseUrl: "https://www.kronleiloes.com.br", genericScrape: true, enabled: true },
+  { id: "kronleiloes_com_br", name: "HELCIO KRONBERG", domain: "kronleiloes.com.br", baseUrl: "https://www.kronleiloes.com.br", genericScrape: true, enabled: false },
   { id: "positivoleiloes_com_br", name: "ERICK SOARES TELES", domain: "positivoleiloes.com.br", baseUrl: "https://www.positivoleiloes.com.br", genericScrape: true, enabled: true },
   { id: "sbleiloeiro302_com_br", name: "SEVERINO BARBOSA", domain: "sbleiloeiro302.com.br", baseUrl: "https://www.sbleiloeiro302.com.br", genericScrape: true, enabled: true },
   { id: "dgleiloes_com_br", name: "DANIEL ELIAS GARCIA", domain: "dgleiloes.com.br", baseUrl: "https://www.dgleiloes.com.br", genericScrape: true, enabled: true },
@@ -353,10 +354,11 @@ function isPropertyLotEvidence(text: string): boolean {
   // Furniture and cars mentioned inside a house inspection are not separate lots.
   const headline = normalized.split('\n')[0];
   const propertyWords = /\b(imovel|imoveis|imobiliario|apartamento|apto|casa|terreno|gleba|fazenda|sitio|chacara|sala|loja|galpao|predio|cobertura|duplex|agencia|agência|lote\s+(?:de\s+)?(?:terreno|urbano|rural|residencial|comercial|industrial)|imovel\s+(?:urbano|rural)|vaga\s+de\s+garagem|box\s+de\s+garagem|loteamento|fracao\s+ideal)\b/;
-  const nonPropertyHeadline = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|sucata|ferramenta|ferramentas|pecas\s+automotivas|fiat\s+palio|vw\s+gol|chevrolet|honda\s+civic|pajero)\b/;
-  if (propertyWords.test(headline) && !nonPropertyHeadline.test(headline)) return true;
+  const nonPropertyHeadline = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|sucata|ferramenta|ferramentas|pecas\s+automotivas|fiat\s+palio|fiat\/?uno|vw\s+gol|chevrolet|onix|prisma|cobalt|hb20|corolla|hilux|sandero|logan|kwid|honda\s+civic|pajero|auditorio\s+visitantes)\b/;
+  if (nonPropertyHeadline.test(headline)) return false;
+  if (propertyWords.test(headline)) return true;
   const lead = normalized.slice(0, 350);
-  const movableLead = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao|sucata|ferramenta|ferramentas|torno|pecas\s+automotivas|notebook|computador|eletrodomestico)\b/.test(lead);
+  const movableLead = /\b(veiculo|caminhao|caminhonete|automovel|motocicleta|carro|onibus|trator|maquina|embarcacao|sucata|ferramenta|ferramentas|torno|pecas\s+automotivas|notebook|computador|eletrodomestico|chevrolet|fiat\/?uno|onix|auditorio\s+visitantes)\b/.test(lead);
   const property = propertyWords.test(normalized);
   return property && !movableLead;
 }
@@ -401,6 +403,8 @@ export function unsquishText(str: string): string {
 export function formatCleanAddress(addr: string): string {
   if (!addr) return '';
   let cleaned = unsquishText(addr)
+    .replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, '')
+    .replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b(?=\s|,|$)[^,]*/gi, '')
     .replace(/\s+/g, ' ')
     .replace(/\b([A-ZÀ-Ý][a-zà-ÿ]+)\s+(Rio\s+de\s+Janeiro|Niterói|São\s+Gonçalo|Duque\s+de\s+Caxias|Nova\s+Iguaçu|Juiz\s+de\s+Fora|Belo\s+Horizonte|São\s+Paulo)\b/gi, '$1, $2')
     .trim();
@@ -414,13 +418,15 @@ function formatPreciseAuctionAddress(addr: string): string {
 }
 
 export function extractAddress(text: string, fallback: string): string {
+  const isInvalidAddressFragment = (candidate: string) =>
+    /^\s*r\s+(?:conta\b|h[aá]\b|n[aã]o\b|sobre\b|para\b|constru[ií]d|edificad|situad|localizad)|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|audit[oó]rio\s+visitantes|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])|^\s*pra[cç]a\s+(?:seca|da\s+bandeira)\b(?!\s*,?\s*n[ºo°]?\s*\d+)|justi[cç]a\s+federal|se[cç][aã]o\s+judici[aá]ria|av\.?\s*venezuela,?\s*134|pal[aá]cio\s+da\s+justi[cç]a|av\.?\s*rio\s+branco,?\s*181\b|sala\s+1905\b|\bjfrj\b|\btjrj\b|\badvogad[oa]s?\b|\bterceiro\s+interessado\b|\bltda\b|\beireli\b|\bexequente\b|\bexecutad[oa]\b/i.test(candidate);
   const cleanInput = unsquishText(text || '');
   const lines = cleanInput.split(/\r?\n|\s{2,}/).map(line => line.trim()).filter(Boolean);
   const labeledLine = lines.find(line =>
     /\b(?:endere[cç]o|localiza[cç][aã]o)\b/i.test(line) &&
-    !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|telefone|\btel\.?\b|no\s+mapa\s+pode\s+ser\s+aproximada|@/i.test(line) &&
-    /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line) &&
-    !/\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)
+    !/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|telefone|\btel\.?\b|no\s+mapa\s+pode\s+ser\s+aproximada|justi[cç]a\s+federal|vara\s+(?:c[ií]vel|federal|de\s+execu[cç][õo]es)|se[cç][aã]o\s+judici[aá]ria|av\.?\s*venezuela,?\s*134|@/i.test(line) &&
+    /\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(line) &&
+    !isInvalidAddressFragment(line)
   );
   if (labeledLine) {
     const labeledAddress = labeledLine
@@ -431,36 +437,43 @@ export function extractAddress(text: string, fallback: string): string {
     if (
       labeledAddress.length >= 8 &&
       !/[@]|eletr[oô]nico\s*:/i.test(labeledAddress) &&
-      /\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(labeledAddress)
+      /\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b/i.test(labeledAddress) &&
+      !isInvalidAddressFragment(labeledAddress)
     ) {
       return formatPreciseAuctionAddress(labeledAddress.slice(0, 180));
     }
   }
   const addressCandidates = lines
     .map((line, index) => {
-      if (/@|\bendere[cç]o\s+eletr[oô]nico\b|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(line)) return null;
-      if (!/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
+      if (/@|\bendere[cç]o\s+eletr[oô]nico\b/i.test(line) || isInvalidAddressFragment(line)) return null;
+      if (!/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\b/i.test(line) && /\bpra[cç]a\s+(?:seca|da\s+bandeira)\b/i.test(line)) return null;
+      if (!/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,}/i.test(line)) return null;
       const context = `${lines[index - 1] || ''} ${line}`;
       let score = 0;
       if (/im[oó]vel|\bbem\b|localiza[cç][aã]o|auto\s+de\s+avalia[cç][aã]o|auto\s+de\s+penhora|situad[oa]|localizad[oa]|objeto\s+do\s+leil[aã]o|matr[ií]cula/i.test(context)) score += 8;
-      if (/n[ºo°]?\s*\d+|,\s*\d+/.test(line)) score += 3;
-      if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|jucesp|creci|telefone|\btel\.?\b|sala\s+40[234]/i.test(context)) score -= 15;
+      if (/n[ºo°.]?\s*\d+|,\s*\d+/i.test(line)) score += 3;
+      if (/leiloeir|escrit[oó]rio|correio\s+eletr[oô]nico|endere[cç]o\s+(?:eletr[oô]nico|comercial)|vendedor|comitente|sede\s+em|jucesp|creci|telefone|\btel\.?\b|sala\s+40[234]|justi[cç]a\s+federal|vara\s+(?:c[ií]vel|federal|de\s+execu[cç][õo]es)|se[cç][aã]o\s+judici[aá]ria|av\.?\s*venezuela,?\s*134|pal[aá]cio\s+da\s+justi[cç]a|jfrj|tjrj/i.test(context)) score -= 30;
       return { line, score, index };
     })
     .filter((candidate): candidate is { line: string; score: number; index: number } => !!candidate)
     .sort((a, b) => b.score - a.score || a.index - b.index);
   const addressLine = addressCandidates[0]?.line;
   if (addressLine) {
-    const extracted = addressLine.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,180}/i)?.[0] || addressLine;
+    const extracted = addressLine.match(/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\s+.{3,180}/i)?.[0] || addressLine;
     const cleanExtracted = extracted
       .split(/\b(?:matr[ií]cula|descri[cç][aã]o|consta|avaliado|processo|vara|ressalvas|penhora|devidamente|inscri[cç][aã]o)\b/i)[0]
       .replace(/\s+(?:bairro|cidade|estado)\s*[:\-].*$/i, '')
       .trim();
-    return formatPreciseAuctionAddress(cleanExtracted);
+    if (!isInvalidAddressFragment(cleanExtracted)) {
+      return formatPreciseAuctionAddress(cleanExtracted);
+    }
   }
   const normalized = cleanInput.replace(/\s+/g, ' ').trim();
-  const addressMatch = normalized.match(/(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
-  return addressMatch ? formatPreciseAuctionAddress(addressMatch[0].replace(/\s{2,}/g, ' ').trim()) : formatPreciseAuctionAddress(fallback);
+  const addressMatch = normalized.match(/\b(?:rua|r\.(?=\s)|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^|;]{3,120}/i);
+  if (addressMatch && !isInvalidAddressFragment(addressMatch[0])) {
+    return formatPreciseAuctionAddress(addressMatch[0].replace(/\s{2,}/g, ' ').trim());
+  }
+  return isInvalidAddressFragment(fallback || '') ? '' : formatPreciseAuctionAddress(fallback);
 }
 
 function extractDeclaredCity(text: string, state: string): string {
@@ -487,14 +500,46 @@ function hasCityEvidence(text: string, city: string): boolean {
   return Boolean(normalizedCity) && new RegExp(`(^|[^a-z])${normalizedCity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^a-z])`).test(normalizedText);
 }
 
+const PT_BR_MONTHS: Record<string, string> = {
+  jan: '01', janeiro: '01',
+  fev: '02', fevereiro: '02',
+  mar: '03', marco: '03',
+  abr: '04', abril: '04',
+  mai: '05', maio: '05',
+  jun: '06', junho: '06',
+  jul: '07', julho: '07',
+  ago: '08', agosto: '08',
+  set: '09', setembro: '09',
+  out: '10', outubro: '10',
+  nov: '11', novembro: '11',
+  dez: '12', dezembro: '12',
+};
+
+function parsePtBrNamedDate(dStr: string): string | undefined {
+  const m = normalizeStr(dStr).match(/\b(\d{1,2})\s+de\s+([a-z]{3,10})\.?\s+de\s+(20\d{2})\b/);
+  if (!m) return undefined;
+  const month = PT_BR_MONTHS[m[2]];
+  if (!month) return undefined;
+  const date = `${m[3]}-${month}-${m[1].padStart(2, '0')}`;
+  const parsed = new Date(date);
+  return (!isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date) ? date : undefined;
+}
+
 export function extractAuctionDates(text: string): { first?: string; second?: string } {
   // Dates in registration documents, publication notices or unrelated lots are not auction dates.
   const matches = [...text.matchAll(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2}|\d{2})\b/g)];
   const dates = matches.filter(match => {
     const context = text.slice(Math.max(0, match.index! - 100), match.index!);
-    return /(?:leil[aã]o|pra[cç]a|encerramento|encerra\s+em|data\s*:|p\.\s*[uú]nica)[^\d]{0,80}$/i.test(context);
+    return /(?:leil[aã]o|pra[cç]a|encerramento|t[eé]rmino|fechamento|encerra\s+em|data\s*:|p\.\s*[uú]nica)[^\d]{0,80}$/i.test(context);
   }).map(match => `${match[3].length===2?'20'+match[3]:match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`)
     .filter(date => { const parsed = new Date(date); return !isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date; });
+  for (const namedMatch of text.matchAll(/\b\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2}\b/gi)) {
+    const context = text.slice(Math.max(0, namedMatch.index! - 100), namedMatch.index!);
+    if (/(?:leil[aã]o|pra[cç]a|encerramento|t[eé]rmino|fechamento|abertura|data)/i.test(context)) {
+      const iso = parsePtBrNamedDate(namedMatch[0]);
+      if (iso) dates.push(iso);
+    }
+  }
   const unique = [...new Set(dates)].sort();
   return { first: unique[0], second: unique[1] };
 }
@@ -504,6 +549,8 @@ function extractAuctionDate(text: string): string {
 }
 
 function normalizeDateStr(dStr: string): string | undefined {
+  const named = parsePtBrNamedDate(dStr);
+  if (named) return named;
   const m = dStr.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
   if (!m) return undefined;
   const y = m[3].length === 2 ? `20${m[3]}` : m[3];
@@ -539,23 +586,43 @@ export function extractAuctionRoundsAndPrices(text: string, todayParam?: string)
   const bidText = text
     .replace(/\*?\s*(?:im[oó]veis|lotes|bens|unidades)\s+a\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?:\s+com\s+financiamento)?/gi, ' ')
     .replace(/\bparcelas?\s+a\s+partir\s+de(?:\s*\*?)?\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?/gi, ' ')
-    .replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, ' ');
-  const explicitBids = [...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo)|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
-  if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)/i.test(bidText)) return {activePrice:0,priceVerified:false};
+    .replace(/\ba\s+partir\s+de\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?(?=\s*(?:com\s+financiamento|mensais|por\s+m[eê]s|\/m[eê]s|de\s+renda|de\s+desconto))/gi, ' ')
+    .replace(/\bR\$\s*[\d.]+(?:,\d{2})?(?:\s|<[^>]*>)*Incremento(?:\s+M[ií]nimo)?\b/gi, ' ')
+    .replace(/\bIncremento(?:\s+M[ií]nimo)?\s*:?\s*R\$\s*[\d.]+(?:,\d{2})?/gi, ' ')
+    .replace(/\b[ÚU]ltimo\s+lance\s*:?\s*R\$\s*0(?:,00)?\b/gi, ' ');
+  const valueAboveLabelRe = /(?:^|[\n\r.:;!?•])\s*(?!.*(?:sinal|parcela|superior\s+a|aproximad|d[eé]bito|iptu|condom[ií]nio|desconto|renda))R\$\s*([\d.]+(?:,\d{2})?)\s+(?:Lance\s+(?:M[ií]nimo|Inicial)|Valor\s+(?:M[ií]nimo|Inicial))\b/gi;
+  const explicitBids = [
+    ...[...bidText.matchAll(/(?:valor\s+inicial|lance\s+(?:inicial|m[ií]nimo)|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m => parseBrazilianMoney(m[1])),
+    ...[...bidText.matchAll(valueAboveLabelRe)].map(m => parseBrazilianMoney(m[1])),
+  ].filter(n => n > 0);
+  if (!extractDisplayedCurrentBid(bidText) && new Set(explicitBids).size > 1 && !/(?:[12][ºªo°])\s*(?:leil[aã]o|pra[cç]a)|pra[cç]a\s+[uú]nica/i.test(bidText)) return {activePrice:0,priceVerified:false};
 
   // Isolate each round: nearby amounts can belong to another round, fees or appraisal.
-  const markers = [...bidText.matchAll(/(?:([12])[ºªo°]|(primeir[oa]|segund[oa]))\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)/gi)];
+  const markers = [...bidText.matchAll(/(?:([12])[ºªo°]\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)|(primeir[oa]|segund[oa])\s*(?:leil[aã]o|pra[cç]a|data\s+in[ií]cio)|(pra[cç]a\s+[uú]nica|leil[aã]o\s+[uú]nico))/gi)];
   const unique = (values: number[]) => { const v=[...new Set(values.filter(n=>n>0))];return v.length===1?v[0]:0; };
   const bids = (block:string) => {
-    const strict = [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1])).filter(n=>n>0);
+    const strict = [
+      ...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi),
+      ...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo))\s*:?\s*([\d.]+,\d{2})\b/gi),
+      ...block.matchAll(valueAboveLabelRe),
+    ].map(m=>parseBrazilianMoney(m[1])).filter(n=>n>0);
     if (strict.length > 0 && new Set(strict).size === 1) return strict;
     return [...block.matchAll(/(?:lance\s*(?:inicial|m[ií]nimo)|valor\s*(?:inicial|m[ií]nimo)(?:\s*para\s*proposta)?|valor\s+de\s+venda(?:\s+a\s+partir\s+de)?|a\s+partir\s+de)\s*:?\s*R\$\s*([\d.]+(?:,\d{2})?)/gi)].map(m=>parseBrazilianMoney(m[1]));
   };
   const round = (n:number) => {
-    const entries=markers.filter(m=>Number(m[1] || (/primeir/i.test(m[2])?1:2))===n).map(m=>{
+    const entries=markers.filter(m=>{
+      if (m[3]) return n === 1;
+      return Number(m[1] || (/primeir/i.test(m[2])?1:2))===n;
+    }).map(m=>{
       const index=markers.indexOf(m);const block=bidText.slice(m.index!+m[0].length,markers[index+1]?.index ?? bidText.length).slice(0,350);
-      const date=(block.match(/^\s*:?\s*(?:dia\s*)?(\d{1,2}\/\d{1,2}\/\d{2,4})/i) || block.match(/T[eé]rmino\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i))?.[1];
-      const labelled=bids(block);const bare=block.match(/^\s*:?\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4}(?:\s+(?:às\s*)?\d{1,2}:\d{2})?\s*[-–:]?\s*)?R\$\s*([\d.]+(?:,\d{2})?)/i);
+      const closingMatches = [
+        block.match(/(?:t[eé]rmino|fechamento|encerramento)\s*:?\s*(?:\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2})/i)?.[0],
+        ...([...block.matchAll(/\b\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2}\b/gi)].map(x => x[0]).slice(-1)),
+        block.match(/^\s*:?\s*(?:dia\s*)?(\d{1,2}\/\d{1,2}\/\d{2,4})/i)?.[1],
+        block.match(/\b(\d{1,2}\/\d{1,2}\/20\d{2})\b/i)?.[1]
+      ].filter(Boolean) as string[];
+      const date=closingMatches[0];
+      const labelled=bids(block);const bare=block.match(/^\s*:?\s*(?:(?:\d{1,2}\/\d{1,2}\/\d{2,4}|\d{1,2}\s+de\s+[a-zçãõ.]+\s+de\s+20\d{2})(?:[\s,]+(?:[àa]s\s*)?\d{1,2}:\d{2})?[\s,\-–:]*){0,2}R\$\s*([\d.]+(?:,\d{2})?)/i);
       return {price:unique(labelled.length?labelled:bare?[parseBrazilianMoney(bare[1])]:[]),date:date?normalizeDateStr(date):undefined};
     });
     const dates=[...new Set(entries.map(e=>e.date).filter(Boolean))];
@@ -883,6 +950,56 @@ export function parseOfficialArea(value: string): number {
   return Number(raw.includes(',')?raw.replace(/\./g,'').replace(',','.'):/^\d{1,3}(?:\.\d{3})+$/.test(raw)?raw.replace(/\./g,''):raw);
 }
 
+const OUT_OF_SCOPE_RJ_CITIES_RE = /\b(?:angra\s+dos\s+reis|cabo\s+frio|maca[eé]|campos\s+dos\s+goytacazes|duque\s+de\s+caxias|nova\s+igua[cç]u|s[aã]o\s+gon[cç]alo|belford\s+roxo|s[aã]o\s+jo[aã]o\s+de\s+meriti|petr[oó]polis|teres[oó]polis|nova\s+friburgo|volta\s+redonda|barra\s+mansa|resende|itabora[ií]|maric[aá]|mag[eé]|saquarema|araruama|arma[cç][aã]o\s+dos\s+b[uú]zios|itagua[ií]|queimados|mesquita|nil[oó]polis)\b/i;
+
+export function hasOutOfScopeComarcaOrCep(rawText: string, city?: string, state?: string): boolean {
+  const clean = stripCourthouseFooters(rawText || '').split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Navegue pelos lotes|Você também pode|Veja também)/i)[0];
+  if (!clean) return false;
+  if (/(?:comarca|munic[ií]pio|circunscri[cç][aã]o)\s+(?:de|da|do)\s+(?:angra\s+dos\s+reis|cabo\s+frio|maca[eé]|campos\s+dos\s+goytacazes|duque\s+de\s+caxias|nova\s+igua[cç]u|s[aã]o\s+gon[cç]alo|belford\s+roxo|s[aã]o\s+jo[aã]o\s+de\s+meriti|petr[oó]polis|teres[oó]polis|nova\s+friburgo|volta\s+redonda|barra\s+mansa|resende|itabora[ií]|maric[aá]|mag[eé]|saquarema|araruama|arma[cç][aã]o\s+dos\s+b[uú]zios|itagua[ií]|queimados|mesquita|nil[oó]polis)\b/i.test(clean)) {
+    return true;
+  }
+  const normCity = normalizeStr(city || '');
+  if ((!state || state.toUpperCase() === 'RJ') && normCity === 'rio de janeiro') {
+    const hasCapitalCep = /\b2(?:0\d{3}|1\d{3}|2\d{3}|3[0-7]\d{2})-?\d{3}\b/.test(clean);
+    const hasOutsideRjCep = /(?:cep\s*:?\s*|(?:rj|rio\s+de\s+janeiro)\s*[,\-\/]\s*)(24[4-9]\d{2}|2[5-8]\d{3})-?\d{3}\b/i.test(clean);
+    if (hasOutsideRjCep && !hasCapitalCep) return true;
+  }
+  return false;
+}
+
+function stripCourthouseFooters(raw: string): string {
+  return String(raw || '')
+    .replace(/AV\.?\s*VENEZUELA,?\s*134\b[^\n]{0,220}/gi, ' ')
+    .replace(/Poder\s+Judici[aá]rio[\s\S]{0,400}?(?:SA[ÚU]DE|CEP:\s*20081-312|jfrj\.jus\.br)[^\n]*/gi, ' ')
+    .replace(/(?:Se[cç][aã]o\s+Judici[aá]ria|Justi[cç]a\s+Federal|Tribunal\s+de\s+Justi[cç]a)[^\n]{0,180}/gi, ' ');
+}
+
+function extractTargetNeighborhood(city: string, ...texts: string[]): string {
+  const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const cityKey = norm(city || '');
+  const zones = CITY_ZONES[cityKey] || [];
+  if (!zones.length) return '';
+  const names = zones.flatMap(z => z.neighborhoods).filter(Boolean);
+  const macroNames = new Set(['ilha do governador', 'jacarepagua', 'centro']);
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Strip street-type phrases ("Rua Aristarco Ramos", "Av. Nelson Cardoso") so street proper names like "Ramos" never masquerade as neighborhood names.
+  const stripStreetNames = (s: string) =>
+    s.replace(/\b(?:rua|r\.?|avenida|av\.?|estrada|travessa|alameda|rodovia|largo)\s+[^,\-–\n\/]{2,60}/gi, ' ');
+  for (const raw of texts) {
+    const clean = norm(stripStreetNames(raw || ''));
+    if (!clean) continue;
+    const matches = names.filter(n => {
+      const target = norm(n);
+      return new RegExp(`(?:^|[^a-z0-9])${esc(target)}(?=$|[^a-z0-9])`).test(clean);
+    });
+    if (!matches.length) continue;
+    const specific = matches.filter(m => !macroNames.has(norm(m)));
+    const chosen = (specific.length ? specific : matches).sort((a, b) => b.length - a.length)[0];
+    if (chosen) return chosen;
+  }
+  return '';
+}
+
 export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: any, detailUrl: string, matriculaText = '', matriculaUrl?: string): ScrapedAuctionDraft {
     // Collective notices and recommended lots are not the property description.
     const lotText = detailData.text.split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Navegue pelos lotes|Você também pode|Veja também)/i)[0];
@@ -891,7 +1008,11 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const sellerSection = combinedText.match(/comitente\s*:?\s*([^\n]+(?:\n[^\n]+)?)/i)?.[1] || '';
     const classification = detectBankOrJudicial(combinedText);
     const dates = extractAuctionDates(combinedText);
-    const headlineArea = detailData.title.match(/(\d+(?:[.,]\d+)*)\s*m[²2]/i);
+    const headlineType = parseType(detailData.title || draft.title);
+    const headlineTitleForArea = headlineType === 'Terreno'
+      ? (detailData.title || '')
+      : (detailData.title || '').replace(/\([^)]*\bterreno\b[^)]*\)/gi, '');
+    const headlineArea = headlineTitleForArea.match(/(\d+(?:[.,]\d+)*)\s*m[²2]/i);
     const headlineSize = headlineArea ? parseOfficialArea(headlineArea[1]) : 0;
     const landArea = parseType(detailData.title || draft.title) === 'Terreno' ? combinedText.match(/[aá]rea\s+(?:(?:total|do\s+terreno)\s*)?(?:de\s*)?[:=]?\s*([\d.]+(?:,\d+)?)\s*m[²2]/i) : null;
     const landSize = landArea ? parseOfficialArea(landArea[1]) : 0;
@@ -910,8 +1031,21 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
       .map((value: string) => extractAddress(value, ''))
       .find((value: string) => hasAuditableAddress(value) && !/leiloeir|escrit[oó]rio|telefone|contato/i.test(value));
     const addressTextSection = combinedText.split(/\n\s*Edital do leil[aã]o\b|\bINFORMA[CÇ][ÕO]ES SOBRE O LEIL[ÃA]O E SOBRE O LEILOEIRO\b|\bDO VENDEDOR\b/i)[0] || combinedText;
-    const textAddress = extractAddress(addressTextSection, '') || extractAddress(combinedText, '') || extractAddress(matriculaText, '');
-    const verifiedAddress = (hasAuditableAddress(textAddress) ? textAddress : '') || structuredAddress;
+    const lotBodyAfterHeader = /paulobotelholeiloeiro\.com\.br/i.test(detailUrl)
+      ? (addressTextSection.split(/\bDescri[cç][aã]o\s+do\s+Lote\b/i)[1] || addressTextSection)
+      : addressTextSection;
+    const candidateAddresses = [
+      ...(/paulobotelholeiloeiro\.com\.br/i.test(detailUrl) ? [extractAddress(lotBodyAfterHeader, '')] : []),
+      extractAddress(detailData.title || '', ''),
+      extractAddress(addressTextSection, ''),
+      extractAddress(combinedText, ''),
+      extractAddress(matriculaText, ''),
+      extractAddress(draft.title || '', ''),
+      structuredAddress || ''
+    ];
+    const verifiedAddress = candidateAddresses.find((addr) => hasAuditableAddress(addr))
+      || candidateAddresses.find((addr) => Boolean(addr && !/^\s*r\s+|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|audit[oó]rio\s+visitantes|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])/i.test(addr)))
+      || '';
     const today = new Date().toISOString().slice(0, 10);
     const roundAnalysis = extractAuctionRoundsAndPrices(combinedText, today);
     const officialFin = detailData.officialFinancials;
@@ -928,16 +1062,32 @@ export function parseOfficialLotDetail(draft: ScrapedAuctionDraft, detailData: a
     const extractedAppraisal = roundAnalysis.appraisal || extractAppraisal(combinedText) || draft.estimatedValue;
     const finalAppraisal = officialFin?.estimatedValue || extractedAppraisal;
     const enrichedDescription = combinedText.trim().slice(0, 30000);
-    const detectedLocation = sourceAuctionLocation(detailData.title)
-      || sourceAuctionLocation(verifiedAddress || '')
-      || sourceAuctionLocation(lotText)
-      || ((draft.locationScopeVerified && hasCityEvidence(combinedText, draft.city)) || hasRequestedLocationEvidence(combinedText, draft.state, draft.city)
-        ? { city: draft.city, state: draft.state }
-        : null);
+    const cleanLocText = stripCourthouseFooters(lotText);
+    const outOfScopeComarca = hasOutOfScopeComarcaOrCep(`${detailData.title || ''}\n${verifiedAddress || ''}\n${lotText}`, draft.city, draft.state);
+    const outOfScopeInTitle = (OUT_OF_SCOPE_RJ_CITIES_RE.test(detailData.title || '') && !sourceAuctionLocation(detailData.title || '')) || outOfScopeComarca;
+    const detectedLocation = outOfScopeComarca
+      ? null
+      : (sourceAuctionLocation(detailData.title)
+        || (outOfScopeInTitle ? null : (
+          sourceAuctionLocation(verifiedAddress || '')
+          || sourceAuctionLocation(cleanLocText)
+          || ((draft.locationScopeVerified && hasCityEvidence(cleanLocText, draft.city)) || hasRequestedLocationEvidence(cleanLocText, draft.state, draft.city)
+            ? { city: draft.city, state: draft.state }
+            : null)
+        )));
 
-    const fallbackLocation = (draft.city && draft.state) ? { city: draft.city, state: draft.state } : { city: '', state: '' };
+    const fallbackLocation = !outOfScopeComarca && (draft.city && draft.state) ? { city: draft.city, state: draft.state } : { city: '', state: '' };
+    const resolvedLoc = detectedLocation || fallbackLocation;
+    const resolvedNeighborhood = String(draft.neighborhood || '').trim() || extractTargetNeighborhood(
+      resolvedLoc.city || draft.city,
+      detailData.title || '',
+      verifiedAddress || '',
+      addressTextSection,
+      draft.address || ''
+    ) || '';
     return {
       ...draft,
+      neighborhood: resolvedNeighborhood,
       sourceEvidencePath: detailData.sourceEvidencePath,
       sourceAvailability: detailData.availability,
       sourceClosed: detailData.availability?.state === 'closed' || detailData.availability?.state === 'removed' || /leiloes-realizados/.test(detailUrl),
@@ -2637,7 +2787,13 @@ export function reconcileAuctionDrafts(
       updated++;
       const previousOffer={...existing};
       const isAuditableAddr = hasAuditableAddress(completeAddress);
-      Object.assign(existing, recalculateFn({ ...existing, ingestionStatus:'ativo', precisa_revisao: !calculationReady, requer_auditoria_endereco: !isAuditableAddr || !calculationReady, auctionLink:draft.auctionLink, auctioneerName:draft.auctioneerName, sourceLinks:[...new Set([...(existing.sourceLinks||[]),existing.auctionLink,draft.auctionLink].filter(Boolean))], availability:draft.sourceAvailability?.state==='active'?draft.sourceAvailability:existing.availability, lastSyncedAt:new Date().toISOString(), state: draft.state, city: draft.city, neighborhood: draft.neighborhood || existing.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm, areaAudit: draft.areaAudit, sizeApproximate: draft.sizeApproximate, auctionPrice: draft.priceVerified ? draft.auctionPrice : 0,
+      const reopenedFromDateExpiry = existing.availability?.status === 'expirado_por_data' && (lastKnownDate >= today || isDirectSale);
+      const nextAvailability = draft.sourceAvailability?.state === 'active'
+        ? draft.sourceAvailability
+        : reopenedFromDateExpiry
+          ? { state: 'active' as const, status: 'ativo' as const, url: draft.auctionLink, checkedAt: new Date().toISOString(), reason: 'Nova rodada futura publicada na fonte' }
+          : existing.availability;
+      Object.assign(existing, recalculateFn({ ...existing, ingestionStatus:'ativo', precisa_revisao: !calculationReady, requer_auditoria_endereco: !isAuditableAddr || !calculationReady, sourceClosed: nextAvailability?.state === 'closed', sourceAvailability: nextAvailability?.state !== 'closed' ? nextAvailability : existing.sourceAvailability, auctionLink:draft.auctionLink, auctioneerName:draft.auctioneerName, sourceLinks:[...new Set([...(existing.sourceLinks||[]),existing.auctionLink,draft.auctionLink].filter(Boolean))], availability: nextAvailability, lastSyncedAt:new Date().toISOString(), state: draft.state, city: draft.city, neighborhood: draft.neighborhood || existing.neighborhood, origin: targetType, title: draft.title, imageUrl: draft.imageUrl || existing.imageUrl, propertyType: draft.propertyType, address: completeAddress || existing.address, sizeSqm: draft.sizeSqm, areaAudit: draft.areaAudit, sizeApproximate: draft.sizeApproximate, auctionPrice: draft.priceVerified ? draft.auctionPrice : 0,
         evaluationPrice: draft.estimatedValue ?? existing.evaluationPrice,
         auctionDate: draft.auctionDate, firstAuctionDate: draft.firstAuctionDate, secondAuctionDate: draft.secondAuctionDate, thirdAuctionDate: draft.thirdAuctionDate,
         firstAuctionPrice: draft.firstAuctionPrice, secondAuctionPrice: draft.secondAuctionPrice,
@@ -2688,7 +2844,7 @@ export function reconcileAuctionDrafts(
       id: baseId,
       canonicalPropertyId: draftKey || undefined,
       requer_auditoria_endereco: !isAuditable || !calculationReady,
-      ingestionStatus: calculationReady ? 'ativo' : 'quarentena_extracao',
+      ingestionStatus: (calculationReady || (draft.priceVerified && draft.auctionPrice > 0 && (lastKnownDate || isDirectSale) && Boolean(draft.address && isAuditable))) ? 'ativo' : 'quarentena_extracao',
       title: draft.title,
       address: completeAddress,
       neighborhood: draft.neighborhood,
@@ -2766,8 +2922,117 @@ export function auditAndRepairAuctions(
   let repaired = 0;
   for (let index = 0; index < auctions.length; index++) {
     const current = auctions[index];
-    const recalculated = recalculateFn({ ...current });
-    if (current.precisa_revisao) Object.assign(recalculated, {
+    const seed = { ...current };
+
+    if (/\b(?:vagas?|box)\s+(?:de\s+)?garagem\b/i.test(`${seed.title || ''} ${seed.auctionLink || ''}`)) {
+      seed.propertyType = 'Comercial';
+    }
+
+    if (/freitasleiloeiro\.com\.br/i.test(seed.auctionLink || '') && seed.description && Number(seed.auctionPrice || 0) <= 15000) {
+      const repRounds = extractAuctionRoundsAndPrices(seed.description);
+      if (repRounds.priceVerified && repRounds.activePrice > Number(seed.auctionPrice || 0)) {
+        seed.auctionPrice = repRounds.activePrice;
+        seed.firstAuctionPrice = repRounds.firstAuctionPrice || seed.firstAuctionPrice;
+        seed.secondAuctionPrice = repRounds.secondAuctionPrice || seed.secondAuctionPrice;
+        seed.priceVerified = true;
+        seed.precisa_revisao = false;
+      }
+    }
+
+    if (/paulobotelholeiloeiro\.com\.br/i.test(seed.auctionLink || '') && seed.description) {
+      const cleanDesc = String(seed.description).split(/(?:EDITAL DE LEILÃO CONDICIONAL|Outros lotes|Lotes relacionados|Navegue pelos lotes|Você também pode|Veja também)/i)[0];
+      if (cleanDesc.length < String(seed.description).length) {
+        seed.description = cleanDesc.trim().slice(0, 30000);
+      }
+      const lotSection = cleanDesc.split(/\bDescri[cç][aã]o\s+do\s+Lote\b/i)[1] || cleanDesc;
+      const realHeadline = cleanDesc.match(/Cadastre-se\s*\r?\n\s*([^\r\n]+)\s*\r?\n\s*R\$/i)?.[1]?.trim() || '';
+      if (/munic[ií]pio\s+de\s+niter[oó]i/i.test(lotSection)) {
+        seed.city = 'Niterói';
+        seed.state = 'RJ';
+      }
+      const lotBodyAfterTitle = cleanDesc.split(/\bDescri[cç][aã]o\s+do\s+Lote\b/i)[1] || lotSection;
+      const bodyAddr = extractAddress(lotBodyAfterTitle, '') || extractAddress(lotSection, '');
+      const cleanBodyNeigh = extractTargetNeighborhood(seed.city || 'Rio de Janeiro', bodyAddr, lotBodyAfterTitle, realHeadline);
+      const staleTitleStreet = seed.title && bodyAddr ? !normalizeStr(lotBodyAfterTitle).includes(normalizeStr(seed.title.split(',')[0].replace(/^\d+%\s*/, '').slice(0, 18))) : false;
+      const truncatedAddr = !seed.address || !hasAuditableAddress(seed.address) || (seed.title && normalizeStr(seed.address) === normalizeStr(seed.title) && !/\d/.test(seed.address));
+      if (realHeadline || staleTitleStreet || truncatedAddr) {
+        if (bodyAddr && hasAuditableAddress(bodyAddr)) {
+          seed.address = bodyAddr;
+        }
+        if (cleanBodyNeigh) {
+          seed.neighborhood = cleanBodyNeigh;
+          seed.officialNeighborhood = undefined;
+          seed.originalListedNeighborhood = undefined;
+          seed.divergentNeighborhoodNotice = undefined;
+        } else if (staleTitleStreet) {
+          seed.neighborhood = '';
+          seed.officialNeighborhood = undefined;
+          seed.originalListedNeighborhood = undefined;
+          seed.divergentNeighborhoodNotice = undefined;
+        }
+        const inferredType = parseType(`${realHeadline} ${lotSection.slice(0, 300)}`);
+        if (inferredType) seed.propertyType = inferredType;
+        if (staleTitleStreet || (seed.title && /MARECHAL MASCARENHAS|BENJAMIM MAGALH|MARIO AGOSTINELLI|NOSSA SENHORA DE COPACABANA|BANDEIRANTES,\s*7000/i.test(seed.title) && !normalizeStr(lotSection).includes(normalizeStr(seed.title.slice(0, 20))))) {
+          seed.title = [inferredType || seed.propertyType || 'Imóvel', seed.address || realHeadline, cleanBodyNeigh || seed.neighborhood, seed.city].filter(Boolean).join(' - ');
+        }
+      }
+    }
+
+    const brokenAddr = !seed.address?.trim()
+      || /^\s*r\s+(?:conta\b|h[aá]\b|n[aã]o\b|sobre\b|para\b|constru[ií]d|edificad|situad|localizad)|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|audit[oó]rio\s+visitantes|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])|\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b|\badvogad[oa]s?\b|\bterceiro\s+interessado\b|\bltda\b/i.test(seed.address);
+    if (brokenAddr) {
+      if (seed.address && (/^\s*r\s+(?:constru[ií]d|edificad|situad|localizad)|\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b/i.test(seed.address))) {
+        const cleanedAddr = formatPreciseAuctionAddress(seed.address);
+        if (cleanedAddr && hasAuditableAddress(cleanedAddr)) {
+          seed.address = cleanedAddr;
+        }
+      } else {
+        const recovered = extractAddress(`${seed.title || ''}\n${seed.description || ''}`, '');
+        if (recovered && hasAuditableAddress(recovered)) {
+          seed.address = recovered;
+        } else if (/^\s*r\s+(?:conta\b|h[aá]\b)|conta\s+do\s+adquirente|h[aá]\s+uma\s+constru|\bpra[cç]a\s+(?:[uú]nica|\d+|[12][ªaºo°])|\badvogad[oa]s?\b|\bterceiro\s+interessado\b|\bltda\b/i.test(seed.address || '')) {
+          seed.address = '';
+        }
+      }
+    }
+    const outOfScopeComarca = hasOutOfScopeComarcaOrCep(`${seed.title || ''}\n${seed.address || ''}\n${seed.description || ''}`, seed.city, seed.state);
+    const recalculated = recalculateFn(seed);
+    if (outOfScopeComarca) {
+      recalculated.ingestionStatus = 'quarentena_extracao';
+      recalculated.precisa_revisao = true;
+      recalculated.calculatedProfit = undefined;
+      recalculated.calculatedRoi = undefined;
+      if (JSON.stringify(current) !== JSON.stringify(recalculated)) {
+        auctions[index] = recalculated;
+        repaired++;
+      }
+      continue;
+    }
+    if (
+      recalculated.ingestionStatus === 'quarentena_extracao' &&
+      recalculated.sourceAvailability?.state !== 'closed' &&
+      recalculated.sourceAvailability?.state !== 'removed' &&
+      Number(recalculated.auctionPrice) > 0 &&
+      recalculated.priceVerified === true &&
+      Number(recalculated.sizeSqm) > 0 &&
+      recalculated.sizeVerified === true &&
+      Boolean(recalculated.neighborhood) &&
+      !/^(?:n[aã]o informado|desconhecido|a confirmar)$/i.test(recalculated.neighborhood) &&
+      Boolean(recalculated.address && hasAuditableAddress(recalculated.address))
+    ) {
+      recalculated.ingestionStatus = 'ativo';
+      recalculated.precisa_revisao = false;
+      recalculated.requer_auditoria_endereco = false;
+    }
+    const stillNeedsReview = current.precisa_revisao && !(
+      recalculated.sourceAvailability?.state !== 'closed' &&
+      recalculated.sourceAvailability?.state !== 'removed' &&
+      Number(recalculated.auctionPrice) > 0 &&
+      Number(recalculated.sizeSqm) > 0 &&
+      Boolean(recalculated.neighborhood) &&
+      Boolean(recalculated.address && hasAuditableAddress(recalculated.address))
+    );
+    if (stillNeedsReview) Object.assign(recalculated, {
       precisa_revisao: true,
       valuationConfidence: 'unavailable',
       liquidityScore: 1,

@@ -78,6 +78,18 @@ export function detectTypologyFromUrlAndText(
     };
   }
 
+  // 2.5 VAGA / BOX DE GARAGEM (Nunca classificar como Apartamento)
+  if (
+    urlLower.includes('vagas-de-garagem') ||
+    /\b(?:vagas?|box)\s+(?:de\s+)?garagem\b/i.test(titleLower)
+  ) {
+    return {
+      propertyType: 'Comercial',
+      subtype: 'Vaga de Garagem',
+      displayPrefix: 'Vaga de Garagem'
+    };
+  }
+
   // 3. APARTAMENTO EXPLÍCITO (Se o título ou URL contém apartamento/apto, NUNCA converter em Terreno ou Casa)
   const isAptoExplicit = 
     urlLower.includes('apartamento') ||

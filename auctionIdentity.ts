@@ -77,12 +77,12 @@ export function getCanonicalPropertyKey(fields: PropertyKeyFields): string | nul
 
     const rest = [number ? text.slice(number.index + number[0].length) : '', normalize(fields.title || ''), normalize(fields.description || '')].filter(Boolean).join(' ');
     const specs: [string, RegExp][] = [
-      ['apto', /\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.-]?\s*(\d+[a-z]?)\b/],
-      ['bloco', /\b(?:bloco|bl)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-      ['sala', /\b(?:sala|loja)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-      ['casa', /\b(?:casa)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-      ['lote', /\b(?:lote|lt)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-      ['quadra', /\b(?:quadra|qd)\.?\s*[:.-]?\s*([a-z0-9]+)\b/]
+      ['apto', /\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.\-\/]?\s*(\d+[a-z]?)\b/],
+      ['bloco', /\b(?:bloco|bl)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+      ['sala', /\b(?:sala|loja)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+      ['casa', /\b(?:casa)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+      ['lote', /\b(?:lote|lt)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+      ['quadra', /\b(?:quadra|qd)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/]
     ];
     const units = specs.flatMap(([kind, re]) => { const m = rest.match(re); return m ? [kind + '_' + token(m[1])] : []; });
 
@@ -119,12 +119,12 @@ export function propertyIdentity(address?:string,city?:string,state?:string,type
  if(street.length<2)return null;
  const rest=[text.slice(number.index+number[0].length),normalize(context||'')].filter(Boolean).join(' ');
  const specs:[string,RegExp][]=[
-  ['ap',/\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.-]?\s*(\d+[a-z]?)\b/],
-  ['bl',/\b(?:bloco|bl)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-  ['sl',/\b(?:sala|loja)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-  ['cs',/\b(?:casa)\s*[:.-]?\s*(\d+[a-z]?)\b/],
-  ['lt',/\b(?:lote|lt)\.?\s*[:.-]?\s*([a-z0-9]+)\b/],
-  ['qd',/\b(?:quadra|qd)\.?\s*[:.-]?\s*([a-z0-9]+)\b/]
+  ['ap',/\b(?:apartamento|apto|apt|ap|unidade|und)\.?\s*(?:n[ºo°.]*\s*)?[:.\-\/]?\s*(\d+[a-z]?)\b/],
+  ['bl',/\b(?:bloco|bl)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+  ['sl',/\b(?:sala|loja)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+  ['cs',/\b(?:casa)\s*[:.\-\/]?\s*(\d+[a-z]?)\b/],
+  ['lt',/\b(?:lote|lt)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/],
+  ['qd',/\b(?:quadra|qd)\.?\s*[:.\-\/]?\s*([a-z0-9]+)\b/]
  ];
  const units=specs.flatMap(([kind,re])=>{const m=rest.match(re);return m?[kind+'-'+token(m[1])]:[];});
  if(/apartamento|comercial|cobertura|sala/i.test(type||'')&&!units.some(u=>/^(ap|sl)-/.test(u)))return null;

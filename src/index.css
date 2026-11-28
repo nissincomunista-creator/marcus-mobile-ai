@@ -1,14 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-display: 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-mono: 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-sans: 'Calibri', 'Carlito', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Calibri', 'Carlito', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Calibri', 'Carlito', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .font-mono {
-  font-family: 'Nunito Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+  font-family: 'Calibri', 'Carlito', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
   font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4, .font-display, .report-title {
+  font-family: 'Calibri', 'Carlito', 'Segoe UI', system-ui, sans-serif !important;
+  font-weight: 700;
+}
+
+button, input, select, textarea {
+  font-family: 'Calibri', 'Carlito', 'Segoe UI', system-ui, sans-serif;
 }
 
 html {
@@ -191,34 +200,67 @@ body.light-theme .sticky-bar-surface button[class*="bg-indigo-600"] {
   border-color: #6366f1 !important;
 }
 
-/* Tipografia fiel ao Zap Imóveis no modo claro: títulos e valores escuros, subtítulos cinza suave */
+/* Tipografia legível no modo claro: títulos sempre em negrito escuro, subtítulos levemente escurecidos e tamanho confortável */
+body.light-theme h1,
+body.light-theme h2,
+body.light-theme h3,
+body.light-theme h4,
+body.light-theme .font-display {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
 body.light-theme .text-white,
 body.light-theme .text-slate-100 {
-  color: #111827 !important;
+  color: #0f172a !important;
 }
 
 body.light-theme .text-slate-200,
 body.light-theme .text-slate-205 {
-  color: #1f2937 !important;
+  color: #111827 !important;
 }
 
 body.light-theme .text-slate-300,
 body.light-theme .text-slate-350 {
-  color: #374151 !important;
+  color: #1e293b !important;
 }
 
 body.light-theme .text-slate-400,
 body.light-theme .text-slate-450 {
-  color: #4b5563 !important;
+  color: #334155 !important;
 }
 
 body.light-theme .text-slate-500 {
-  color: #6b7280 !important;
+  color: #475569 !important;
+}
+
+body.light-theme .text-slate-600 {
+  color: #334155 !important;
 }
 
 body.light-theme .text-slate-400.uppercase,
 body.light-theme .text-slate-500.uppercase {
-  color: #5e6a82 !important;
+  color: #334155 !important;
+  font-weight: 700;
+}
+
+body.light-theme .text-xs {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+body.light-theme .text-\[11px\] {
+  font-size: 12px;
+}
+
+body.light-theme .text-\[10px\] {
+  font-size: 11px;
+}
+
+/* Barra/banner de exportação PDF clara no tema claro para leitura perfeita */
+body.light-theme [class*="from-slate-900"] {
+  background: linear-gradient(to right, #f8fafc, #eef2ff, #f8fafc) !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* Inputs, Selects e Textareas no modo claro com borda nítida e escura */

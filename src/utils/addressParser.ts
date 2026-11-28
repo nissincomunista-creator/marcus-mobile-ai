@@ -9,10 +9,18 @@ export function sanitizeStreetName(rawStreet: string | null | undefined): string
   s = s.replace(/_x([0-9a-fA-F]{4})_/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
        .replace(/_/g, ' ');
 
-  // 2. Remoção de prefixos ruidosos de scrapers e editais (case-insensitive)
-  // Ex: "do Imóvel: Rua Silva Rabelo", "do Bem: ", "Endereço: ", "Localização: ", "Imóvel: ", "Dados do Imóvel: "
+  // 1b. Remover notas parentéticas e sufixos históricos não-parentéticos (ex.: "ANTIGA RUA PROJETADA A")
+  s = s.replace(/\s*\([^)]*\)/g, ' ')
+       .replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b.*$/i, '')
+       .replace(/\s+/g, ' ')
+       .trim();
+
+  // 2. Remoção de prefixos ruidosos de scrapers, editais e frases narrativas ("r construído na AVENIDA...")
   s = s.replace(/^(?:dados\s+do\s+im[oó]vel|dados\s+do\s+bem|do\s+im[oó]vel|do\s+bem|do\s+lote|endere[cç]o|local(?:iza[cç][aã]o)?|im[oó]vel|lote|bem)\s*[:\-–]\s*/i, '');
   s = s.replace(/^(?:obs\.?\s*\d*\s*[:\-–]?\s*)+/i, '');
+  s = s.replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, '');
+  s = s.replace(/^(?:r|na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, '');
+  s = s.replace(/^(?:rua\s+avenida|avenida\s+rua|r\.\s*av\.?)\b/i, 'Avenida');
 
   // 3. Remover prefixos de condomínio/edifício/bloco/sala/casa quando vazam no início
   // Ex: "Edifício Master Business Center, Rua Silva Rabelo" ou "Condomínio XYZ, Rua ..."
@@ -61,8 +69,11 @@ export function parseCleanAddress(rawAddress: string | null | undefined): {
   if (!rawAddress) return { street: '', number: '', complement: '' };
   let text = String(rawAddress).trim();
 
-  // 1. Remover notas parentéticas como (Antiga Rua ...), (Lote ...), etc.
-  text = text.replace(/\s*\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+  // 1. Remover notas parentéticas e sufixos históricos como (Antiga Rua ...) / ANTIGA RUA PROJETADA A
+  text = text.replace(/\s*\([^)]*\)/g, ' ')
+             .replace(/\s+\bantig[oa]\s+(?:rua|avenida|av\.?|estrada|travessa|caminho|via)\b(?=\s|,|$)[^,]*/gi, '')
+             .replace(/\s+/g, ' ')
+             .trim();
 
   // 2. Remover CEP e UF residuais
   text = text.replace(/cep:?\s*\d{5}-?\d{3}/gi, '');
@@ -81,29 +92,35 @@ export function parseCleanAddress(rawAddress: string | null | undefined): {
     text = text.replace(cutoff, '').trim();
   }
 
-  // 4. Remover prefixos de scrapers do texto bruto antes de extrair número
+  // 4. Remover prefixos de scrapers e normalizar logradouro/número duplicado antes de extrair número
   text = text.replace(/^(?:dados\s+do\s+im[oó]vel|dados\s+do\s+bem|do\s+im[oó]vel|do\s+bem|do\s+lote|endere[cç]o|local(?:iza[cç][aã]o)?|im[oó]vel|lote|bem)\s*[:\-–]\s*/i, '');
   text = text.replace(/^(?:obs\.?\s*\d*\s*[:\-–]?\s*)+/i, '');
+  text = text.replace(/^(?:r\s+)?(?:constru[ií]d[oa]|edificad[oa]|situad[oa]|localizad[oa]|encravad[oa]|erguid[oa])\s+(?:na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, '');
+  text = text.replace(/^(?:r|na|no|em)\s+(?=(?:rua|avenida|av\.?|estrada|travessa|alameda|rodovia|largo|pra[cç]a)\b)/i, '');
+  text = text.replace(/^(?:rua\s+avenida|avenida\s+rua|r\.\s*av\.?)\b/i, 'Avenida')
+             .replace(/\bn\.\s*[ºo°]/gi, 'nº')
+             .replace(/\b(n\.?[ºo°]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d{1,3})\.(\d{3})\b/gi, '$1 $2$3');
 
-  // 5. Extrair número predial
+  // 5. Extrair número predial antes de cláusulas de unidade (ex.: "5644. Unidade, nº 601")
   let number = '';
   let complement = '';
+  const streetHeader = text.split(/(?:[.;]\s*|\s*,\s*)(?:unidade|unid\.?|apto|apt|apartamento|bloco|bl|sala|loja)\b/i)[0] || text;
 
-  const numPrefixMatch = text.match(/(?:,\s*|\s+)(?:n[ºo°.]?|num(?:ero)?\.?|nro\.?)\s*(\d+(?:\.\d+)?)\s*(?:e\s*\d+)?\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sobrado|sala|loja)?/i);
+  const numPrefixMatch = streetHeader.match(/(?:,\s*|\s+)(?:n\.?[ºo°]?|n[uú]m(?:ero)?\.?|nro\.?)\s*(\d+(?:\.\d+)?)\s*(?:e\s*\d+)?\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sobrado|sala|loja)?/i);
   if (numPrefixMatch) {
-    number = numPrefixMatch[1].replace(/\./g, '');
+    number = numPrefixMatch[1].replace(/\./g, '').replace(/^0+(?=\d)/, '');
     if (numPrefixMatch[2]) complement = numPrefixMatch[2].trim();
   } else {
-    const commaNumMatch = text.match(/,\s*(\d{1,6})\b(?:\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sala|loja))?/i);
+    const commaNumMatch = streetHeader.match(/,\s*(\d{1,6})\b(?:\s*[-–/]?\s*(fundos|fds|casa|apto|bloco|bl|sala|loja))?/i);
     if (commaNumMatch) {
-      number = commaNumMatch[1];
+      number = commaNumMatch[1].replace(/^0+(?=\d)/, '');
       if (commaNumMatch[2]) complement = commaNumMatch[2].trim();
     }
   }
 
   // 6. Extrair complemento predial após número se existir
   if (number) {
-    const splitByNum = text.split(new RegExp(`(?:,\\s*|\\s+)(?:n[ºo°.]?|num(?:ero)?\\.?|nro\\.?)?\\s*${number}\\b`, 'i'));
+    const splitByNum = text.split(new RegExp(`(?:,\\s*|\\s+)(?:n\\.?[ºo°]?|num(?:ero)?\\.?|nro\\.?)?\\s*0*${number}\\b`, 'i'));
     if (splitByNum.length > 1 && splitByNum[1].trim()) {
       let comp = splitByNum[1].trim();
       comp = comp.replace(/^[,\-–/.]+\s*/, '').replace(/\s+/g, ' ').trim();
@@ -114,7 +131,7 @@ export function parseCleanAddress(rawAddress: string | null | undefined): {
   }
 
   // 7. Higienizar a rua usando o sanitizador
-  const rawStreetPart = number ? text.split(new RegExp(`(?:,\\s*|\\s+)(?:n[ºo°.]?|num(?:ero)?\\.?|nro\\.?)?\\s*${number}\\b`, 'i'))[0] : text;
+  const rawStreetPart = number ? text.split(new RegExp(`(?:,\\s*|\\s+)(?:n\\.?[ºo°]?|num(?:ero)?\\.?|nro\\.?)?\\s*0*${number}\\b`, 'i'))[0] : text;
   const street = sanitizeStreetName(rawStreetPart);
 
   return { street, number, complement };

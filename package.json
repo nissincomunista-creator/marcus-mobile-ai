@@ -19,13 +19,16 @@
   "dependencies": {
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@types/d3-contour": "^3.0.6",
     "@types/geojson-vt": "^3.2.5",
     "@types/pdf-parse": "^1.1.5",
+    "@types/pngjs": "^6.0.5",
     "@types/rbush": "^4.0.0",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
     "cheerio": "^1.2.0",
     "csv-parser": "^3.2.1",
+    "d3-contour": "^4.0.3",
     "dotenv": "^17.2.3",
     "esbuild": "^0.25.0",
     "express": "^4.21.2",
@@ -38,11 +41,14 @@
     "motion": "^12.23.24",
     "pdf-parse": "^2.4.5",
     "pmtiles": "^4.5.0",
+    "pngjs": "^7.0.0",
+    "polygon-clipping": "^0.15.7",
     "puppeteer": "^25.0.4",
     "rbush": "^4.0.1",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-markdown": "^10.1.0",
+    "suncalc": "^2.1.4",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
@@ -51,6 +57,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
-    "@types/node": "^22.14.0"
+    "@types/node": "^22.14.0",
+    "@types/suncalc": "^1.9.2"
   }
 }

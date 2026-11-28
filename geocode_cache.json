@@ -8265,9 +8265,9 @@
     "matchedStreet": "Avenida Barão do Rio Branco"
   },
   "avenida barao do rio branco, centro, juiz de fora - mg": {
-    "lat": -21.7574823,
-    "lng": -43.3507703,
-    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-410, Brasil",
+    "lat": -21.7574849,
+    "lng": -43.3507696,
+    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-040, Brasil",
     "precision": "street",
     "source": "nominatim",
     "matchedCity": "Juiz de Fora",
@@ -8570,7 +8570,7 @@
   "rua antonio silva, fonseca, niteroi - rj": {
     "lat": -22.8801747,
     "lng": -43.0975843,
-    "displayName": "Rua Antônio Silva, Fonseca, Região Norte, Niterói, Rio de Janeiro, Região Sudeste, 24130-001, Brasil",
+    "displayName": "Rua Antônio Silva, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-001, Brasil",
     "precision": "street",
     "source": "nominatim",
     "matchedCity": "Niterói",
@@ -8595,9 +8595,9 @@
     "matchedStreet": "Alameda São Boaventura"
   },
   "alameda sao boaventura, fonseca, niteroi - rj": {
-    "lat": -22.8813002,
-    "lng": -43.0848477,
-    "displayName": "Alameda São Boaventura, Fonseca, Região Norte, Niterói, Rio de Janeiro, Região Sudeste, 24130-223, Brasil",
+    "lat": -22.8812888,
+    "lng": -43.0897921,
+    "displayName": "Alameda São Boaventura, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-250, Brasil",
     "precision": "street",
     "source": "nominatim",
     "matchedCity": "Niterói",
@@ -12433,14 +12433,13 @@
     "matchedNumber": "1032"
   },
   "estrada caetano monteiro, badu, niteroi - rj": {
-    "lat": -22.9075801,
-    "lng": -43.0586455,
-    "displayName": "Portal de Pendotiba, Estrada Caetano Monteiro, 1032, Badu, Niterói, Rio de Janeiro, Brasil",
-    "precision": "rooftop",
-    "source": "photon",
+    "lat": -22.9048877,
+    "lng": -43.0517816,
+    "displayName": "Estrada Caetano Monteiro, Badu, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
     "matchedCity": "Niterói",
-    "matchedStreet": "Estrada Caetano Monteiro",
-    "matchedNumber": "1032"
+    "matchedStreet": "Estrada Caetano Monteiro"
   },
   "estrada caetano monteiro, n. 1032, apto 202, bl ii vg 118 lt 8 edif begonia|niteroi|rj": {
     "lat": -22.9075801,
@@ -18260,14 +18259,14 @@
     "matchedNumber": "95"
   },
   "rua da conceicao, , niteroi - rj": {
-    "lat": -22.8942073,
-    "lng": -43.1210009,
-    "displayName": "Drogaria Moderna, 95, Rua da Conceição, Centro, Região Praias da Baía, Niterói, Rio de Janeiro, Região Sudeste, 24020-085, Brasil",
-    "precision": "rooftop",
-    "source": "nominatim",
+    "lat": -22.894863,
+    "lng": -43.1184978,
+    "displayName": "Detran RJ, Rua da Conceição, 188, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
     "matchedCity": "Niterói",
     "matchedStreet": "Rua da Conceição",
-    "matchedNumber": "95"
+    "matchedNumber": "188"
   },
   "rua da conceicao, nº 95 - sala 1605 - edificio city hall business|niteroi|rj": {
     "lat": -22.8942073,
@@ -18860,14 +18859,13 @@
     "matchedNumber": "335"
   },
   "rua noronha torrezao, santa rosa, niteroi - rj": {
-    "lat": -22.8916089,
-    "lng": -43.0998213,
-    "displayName": "Condomínio Vivenda de Santa Rosa, Rua Noronha Torrezão, 335, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
-    "precision": "rooftop",
-    "source": "photon",
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
     "matchedCity": "Niterói",
-    "matchedStreet": "Rua Noronha Torrezão",
-    "matchedNumber": "335"
+    "matchedStreet": "Rua Noronha Torrezão"
   },
   "rua noronha torrezao, 335, santa rosa|niteroi|rj": {
     "lat": -22.8916089,
@@ -20733,13 +20731,14 @@
     "matchedStreet": "Rua Doutor Luiz Palmier"
   },
   "rua doutor luiz palmier, barreto, niteroi - rj": {
-    "lat": -22.8637626,
-    "lng": -43.0979257,
-    "displayName": "Rua Doutor Luiz Palmier, Barreto, Niterói, Rio de Janeiro, Região Sudeste, 24110-310, Brasil",
-    "precision": "street",
-    "source": "nominatim",
+    "lat": -22.8639145,
+    "lng": -43.0965211,
+    "displayName": "Neo Niterói, Rua Doutor Luiz Palmier, 280, Barreto, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
     "matchedCity": "Niterói",
-    "matchedStreet": "Rua Doutor Luiz Palmier"
+    "matchedStreet": "Rua Doutor Luiz Palmier",
+    "matchedNumber": "280"
   },
   "rua doutor luiz palmier, n° 344, bloco 07, apto. 204, barreto|niteroi|rj": {
     "lat": -22.8637626,
@@ -20841,5 +20840,3957 @@
     "matchedCity": "Rio de Janeiro",
     "matchedStreet": "Avenida Embaixador Abelardo Bueno",
     "matchedNumber": "3000"
+  },
+  "estrada francisco da cruz nunes, nº 695, apto": {
+    "lat": -22.9210537,
+    "lng": -43.0539019,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cafubá, Niterói, Rio de Janeiro, Região Sudeste, 24320-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, pendotiba, niteroi - rj": {
+    "lat": -22.9210537,
+    "lng": -43.0539019,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cafubá, Niterói, Rio de Janeiro, Região Sudeste, 24320-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, nº 695, apto|niteroi|rj": {
+    "lat": -22.9210537,
+    "lng": -43.0539019,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cafubá, Niterói, Rio de Janeiro, Região Sudeste, 24320-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada caetano monteiro, nº 2835": {
+    "lat": -22.877592,
+    "lng": -43.0271022,
+    "displayName": "2835, Estrada Caetano Monteiro, Maria Paula, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro",
+    "matchedNumber": "2835"
+  },
+  "estrada caetano monteiro, pendotiba, niteroi - rj": {
+    "lat": -22.877592,
+    "lng": -43.0271022,
+    "displayName": "2835, Estrada Caetano Monteiro, Maria Paula, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro",
+    "matchedNumber": "2835"
+  },
+  "estrada caetano monteiro, nº 2835|niteroi|rj": {
+    "lat": -22.877592,
+    "lng": -43.0271022,
+    "displayName": "2835, Estrada Caetano Monteiro, Maria Paula, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro",
+    "matchedNumber": "2835"
+  },
+  "rua joaquim tavora, nº 122, bloco": {
+    "lat": -22.911758,
+    "lng": -43.1067705,
+    "displayName": "Rua Joaquim Távora, Ed Summer Time, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-540, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Joaquim Távora"
+  },
+  "rua joaquim tavora, icarai, niteroi - rj": {
+    "lat": -22.911758,
+    "lng": -43.1067705,
+    "displayName": "Rua Joaquim Távora, Ed Summer Time, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-540, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Joaquim Távora"
+  },
+  "rua joaquim tavora, nº 122, bloco|niteroi|rj": {
+    "lat": -22.911758,
+    "lng": -43.1067705,
+    "displayName": "Rua Joaquim Távora, Ed Summer Time, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-540, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Joaquim Távora"
+  },
+  "rua doutor luiz palmier, nº 280, apto. 801": {
+    "lat": -22.8639145,
+    "lng": -43.0965211,
+    "displayName": "Neo Niterói, Rua Doutor Luiz Palmier, 280, Barreto, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Luiz Palmier",
+    "matchedNumber": "280"
+  },
+  "rua doutor luiz palmier, nº 280, apto. 801|niteroi|rj": {
+    "lat": -22.8639145,
+    "lng": -43.0965211,
+    "displayName": "Neo Niterói, Rua Doutor Luiz Palmier, 280, Barreto, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Luiz Palmier",
+    "matchedNumber": "280"
+  },
+  "rua baicuru, nº 125, apto. 404": {
+    "lat": -22.9122153,
+    "lng": -43.5647048,
+    "displayName": "Rua Baicuru, Campo Grande, Rio de Janeiro, Região Sudeste, 23045-055, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Baicuru"
+  },
+  "rua baicuru, nº 125, apto. 404|rio de janeiro|rj": {
+    "lat": -22.9122153,
+    "lng": -43.5647048,
+    "displayName": "Rua Baicuru, Campo Grande, Rio de Janeiro, Região Sudeste, 23045-055, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Baicuru"
+  },
+  "avenida almirante tamandare, 1789, piratininga, niteroi, rj": {
+    "lat": -22.9556636,
+    "lng": -43.0754737,
+    "displayName": "Avenida Almirante Tamandaré, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24346-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Tamandaré"
+  },
+  "avenida almirante tamandare, piratininga, niteroi - rj": {
+    "lat": -22.9555514,
+    "lng": -43.0754443,
+    "displayName": "Avenida Almirante Tamandaré, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24346-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Tamandaré"
+  },
+  "avenida almirante tamandare, 1789, piratininga, niteroi, rj|niteroi|rj": {
+    "lat": -22.9556636,
+    "lng": -43.0754737,
+    "displayName": "Avenida Almirante Tamandaré, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24346-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Tamandaré"
+  },
+  "rua guimaraes junior, n. 735, apto 201,": {
+    "lat": -21.7090312,
+    "lng": -43.4245387,
+    "displayName": "Manchester Locadora de Veículos, Rua Guimarães Júnior, 375, Nova Era, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Guimarães Júnior",
+    "matchedNumber": "375"
+  },
+  "rua guimaraes junior, previdenciarios, juiz de fora - mg": {
+    "lat": -21.7090312,
+    "lng": -43.4245387,
+    "displayName": "Manchester Locadora de Veículos, Rua Guimarães Júnior, 375, Nova Era, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Guimarães Júnior",
+    "matchedNumber": "375"
+  },
+  "rua guimaraes junior, n. 735, apto 201,|juiz de fora|mg": {
+    "lat": -21.7090312,
+    "lng": -43.4245387,
+    "displayName": "Manchester Locadora de Veículos, Rua Guimarães Júnior, 375, Nova Era, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Guimarães Júnior",
+    "matchedNumber": "375"
+  },
+  "rua fonseca hermes, n. 159, apto 104,": {
+    "lat": -21.758494,
+    "lng": -43.3463925,
+    "displayName": "Rua Fonseca Hermes, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Fonseca Hermes"
+  },
+  "rua fonseca hermes, juiz de fora, juiz de fora - mg": {
+    "lat": -21.758494,
+    "lng": -43.3463925,
+    "displayName": "Rua Fonseca Hermes, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Fonseca Hermes"
+  },
+  "rua fonseca hermes, n. 159, apto 104,|juiz de fora|mg": {
+    "lat": -21.758494,
+    "lng": -43.3463925,
+    "displayName": "Rua Fonseca Hermes, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Fonseca Hermes"
+  },
+  "rua jose lourenco, n. 285, apto 602, bl 02 vg 151 tr ii": {
+    "lat": -21.7624367,
+    "lng": -43.3754272,
+    "displayName": "Rua José Lourenço, Serra D'Água, Borboleta, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-235, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua José Lourenço"
+  },
+  "rua jose lourenco, juiz de fora, juiz de fora - mg": {
+    "lat": -21.7624367,
+    "lng": -43.3754272,
+    "displayName": "Rua José Lourenço, Serra D'Água, Borboleta, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-235, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua José Lourenço"
+  },
+  "rua jose lourenco, n. 285, apto 602, bl 02 vg 151 tr ii|juiz de fora|mg": {
+    "lat": -21.7624367,
+    "lng": -43.3754272,
+    "displayName": "Rua José Lourenço, Serra D'Água, Borboleta, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-235, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua José Lourenço"
+  },
+  "estrada celso pecanha, n. 1265, lt 12": {
+    "lat": -22.9050683,
+    "lng": -43.0737906,
+    "displayName": "Estrada Celso Peçanha, Morro da União, Largo da Batalha, Niterói, Rio de Janeiro, Região Sudeste, 24315-190, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Celso Peçanha"
+  },
+  "estrada celso pecanha, pendotiba, niteroi - rj": {
+    "lat": -22.9050683,
+    "lng": -43.0737906,
+    "displayName": "Estrada Celso Peçanha, Morro da União, Largo da Batalha, Niterói, Rio de Janeiro, Região Sudeste, 24315-190, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Celso Peçanha"
+  },
+  "estrada celso pecanha, n. 1265, lt 12|niteroi|rj": {
+    "lat": -22.9050683,
+    "lng": -43.0737906,
+    "displayName": "Estrada Celso Peçanha, Morro da União, Largo da Batalha, Niterói, Rio de Janeiro, Região Sudeste, 24315-190, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Celso Peçanha"
+  },
+  "travessa manoel ladeira, n. 37, i fundos": {
+    "lat": -22.8749991,
+    "lng": -43.0846682,
+    "displayName": "Travessa Manoel Ladeira, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-381, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Manoel Ladeira"
+  },
+  "travessa manoel ladeira, fonseca, niteroi - rj": {
+    "lat": -22.8749991,
+    "lng": -43.0846682,
+    "displayName": "Travessa Manoel Ladeira, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-381, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Manoel Ladeira"
+  },
+  "travessa manoel ladeira, n. 37, i fundos|niteroi|rj": {
+    "lat": -22.8749991,
+    "lng": -43.0846682,
+    "displayName": "Travessa Manoel Ladeira, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-381, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Manoel Ladeira"
+  },
+  "rua monsenhor joao de barros uchoa, n. 200, apto 301, bl 06": {
+    "lat": -22.8781386,
+    "lng": -43.0967563,
+    "displayName": "Rua Monsenhor João de Barros Uchoa, Bairro Chic, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-175, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Monsenhor João de Barros Uchoa"
+  },
+  "rua monsenhor joao de barros uchoa, fonseca, niteroi - rj": {
+    "lat": -22.8781386,
+    "lng": -43.0967563,
+    "displayName": "Rua Monsenhor João de Barros Uchoa, Bairro Chic, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-175, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Monsenhor João de Barros Uchoa"
+  },
+  "rua monsenhor joao de barros uchoa, n. 200, apto 301, bl 06|niteroi|rj": {
+    "lat": -22.8781386,
+    "lng": -43.0967563,
+    "displayName": "Rua Monsenhor João de Barros Uchoa, Bairro Chic, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-175, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Monsenhor João de Barros Uchoa"
+  },
+  "rua noronha torrezao, n. 742, apto 1004, 1004,": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, n. 742, apto 1004, 1004,|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "estrada washington luis, n. 609,": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada washington luis, n. 609,|niteroi|rj": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "avenida professora romanda goncalves, n. 2681, cs 002 lt 22 qd 22": {
+    "lat": -22.9495009,
+    "lng": -43.0330325,
+    "displayName": "Avenida Professora Romanda Gonçalves, Condominio AMOLI, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Professora Romanda Gonçalves"
+  },
+  "avenida professora romanda goncalves, itaipu, niteroi - rj": {
+    "lat": -22.9495009,
+    "lng": -43.0330325,
+    "displayName": "Avenida Professora Romanda Gonçalves, Condominio AMOLI, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Professora Romanda Gonçalves"
+  },
+  "avenida professora romanda goncalves, n. 2681, cs 002 lt 22 qd 22|niteroi|rj": {
+    "lat": -22.9495009,
+    "lng": -43.0330325,
+    "displayName": "Avenida Professora Romanda Gonçalves, Condominio AMOLI, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Professora Romanda Gonçalves"
+  },
+  "rua noronha torrezao, n. 407, apto 604, bl12": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, n. 407, apto 604, bl12|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, n. 335, apto 1401, bl 02": {
+    "lat": -22.8916089,
+    "lng": -43.0998213,
+    "displayName": "Condomínio Vivenda de Santa Rosa, Rua Noronha Torrezão, 335, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão",
+    "matchedNumber": "335"
+  },
+  "rua noronha torrezao, n. 335, apto 1401, bl 02|niteroi|rj": {
+    "lat": -22.8916089,
+    "lng": -43.0998213,
+    "displayName": "Condomínio Vivenda de Santa Rosa, Rua Noronha Torrezão, 335, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão",
+    "matchedNumber": "335"
+  },
+  "rua antonio silva, n. 11, apto 202,": {
+    "lat": -22.8801747,
+    "lng": -43.0975843,
+    "displayName": "Rua Antônio Silva, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-001, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Antônio Silva"
+  },
+  "rua antonio silva, n. 11, apto 202,|niteroi|rj": {
+    "lat": -22.8801747,
+    "lng": -43.0975843,
+    "displayName": "Rua Antônio Silva, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-001, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Antônio Silva"
+  },
+  "rua visconde de uruguai, n. 464, apto 203": {
+    "lat": -22.8876297,
+    "lng": -43.1231338,
+    "displayName": "Edifício Visconde do Uruguai, Rua Visconde de Uruguai, 246, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Uruguai",
+    "matchedNumber": "246"
+  },
+  "rua visconde de uruguai, centro, niteroi - rj": {
+    "lat": -22.8876297,
+    "lng": -43.1231338,
+    "displayName": "Edifício Visconde do Uruguai, Rua Visconde de Uruguai, 246, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Uruguai",
+    "matchedNumber": "246"
+  },
+  "rua visconde de uruguai, n. 464, apto 203|niteroi|rj": {
+    "lat": -22.8876297,
+    "lng": -43.1231338,
+    "displayName": "Edifício Visconde do Uruguai, Rua Visconde de Uruguai, 246, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Uruguai",
+    "matchedNumber": "246"
+  },
+  "estrada caetano monteiro, n. 2301, cs 06 qd 02 rua 1": {
+    "lat": -22.9048877,
+    "lng": -43.0517816,
+    "displayName": "Estrada Caetano Monteiro, Badu, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "estrada caetano monteiro, n. 2301, cs 06 qd 02 rua 1|niteroi|rj": {
+    "lat": -22.9048877,
+    "lng": -43.0517816,
+    "displayName": "Estrada Caetano Monteiro, Badu, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "rua doutor mario viana, n. 441, apto 1207, bl 01": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, santa rosa, niteroi - rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 1207, bl 01|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 1604, bl 2": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 1604, bl 2|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "estrada caetano monteiro, n. 4087, apto 210, bloco 2": {
+    "lat": -22.9048877,
+    "lng": -43.0517816,
+    "displayName": "Estrada Caetano Monteiro, Badu, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "estrada caetano monteiro, n. 4087, apto 210, bloco 2|niteroi|rj": {
+    "lat": -22.9048877,
+    "lng": -43.0517816,
+    "displayName": "Estrada Caetano Monteiro, Badu, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "rua riodades, n. 145, apto 302, bl02  lt1a": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua riodades, n. 145, apto 302, bl02  lt1a|niteroi|rj": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua doutor souza soares, n. 11, casa 01": {
+    "lat": -22.8797022,
+    "lng": -43.0891119,
+    "displayName": "Rua Doutor Souza Soares, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Souza Soares"
+  },
+  "rua doutor souza soares, fonseca, niteroi - rj": {
+    "lat": -22.8797022,
+    "lng": -43.0891119,
+    "displayName": "Rua Doutor Souza Soares, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Souza Soares"
+  },
+  "rua doutor souza soares, n. 11, casa 01|niteroi|rj": {
+    "lat": -22.8797022,
+    "lng": -43.0891119,
+    "displayName": "Rua Doutor Souza Soares, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Souza Soares"
+  },
+  "rua desembargador lima castro, n. 113, apto 1105,": {
+    "lat": -22.8841222,
+    "lng": -43.0857952,
+    "displayName": "113, Rua Desembargador Lima Castro, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-350, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Desembargador Lima Castro",
+    "matchedNumber": "113"
+  },
+  "rua desembargador lima castro, fonseca, niteroi - rj": {
+    "lat": -22.8841222,
+    "lng": -43.0857952,
+    "displayName": "113, Rua Desembargador Lima Castro, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-350, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Desembargador Lima Castro",
+    "matchedNumber": "113"
+  },
+  "rua desembargador lima castro, n. 113, apto 1105,|niteroi|rj": {
+    "lat": -22.8841222,
+    "lng": -43.0857952,
+    "displayName": "113, Rua Desembargador Lima Castro, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-350, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Desembargador Lima Castro",
+    "matchedNumber": "113"
+  },
+  "avenida central ewerton xavier, n. 808, casa 81 qd 1 tr 35 rua 04": {
+    "lat": -22.9481769,
+    "lng": -43.0342533,
+    "displayName": "Avenida Central Ewerton Xavier, Condominio AMOLI, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Central Ewerton Xavier"
+  },
+  "avenida central ewerton xavier, itaipu, niteroi - rj": {
+    "lat": -22.9481769,
+    "lng": -43.0342533,
+    "displayName": "Avenida Central Ewerton Xavier, Condominio AMOLI, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Central Ewerton Xavier"
+  },
+  "avenida central ewerton xavier, n. 808, casa 81 qd 1 tr 35 rua 04|niteroi|rj": {
+    "lat": -22.9481769,
+    "lng": -43.0342533,
+    "displayName": "Avenida Central Ewerton Xavier, Condominio AMOLI, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Central Ewerton Xavier"
+  },
+  "avenida nelson de oliveira e silva, n. 201, 4 a": {
+    "lat": -22.9090325,
+    "lng": -43.0447706,
+    "displayName": "Avenida Nélson de Oliveira e Silva, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Nélson de Oliveira e Silva"
+  },
+  "avenida nelson de oliveira e silva, vila progresso, niteroi - rj": {
+    "lat": -22.9090325,
+    "lng": -43.0447706,
+    "displayName": "Avenida Nélson de Oliveira e Silva, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Nélson de Oliveira e Silva"
+  },
+  "avenida nelson de oliveira e silva, n. 201, 4 a|niteroi|rj": {
+    "lat": -22.9090325,
+    "lng": -43.0447706,
+    "displayName": "Avenida Nélson de Oliveira e Silva, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Nélson de Oliveira e Silva"
+  },
+  "rua noronha torrezao, n. 541, apto 302,": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, n. 541, apto 302,|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua doutor luiz palmier, n. 280, apto 801, bl 01": {
+    "lat": -22.8639145,
+    "lng": -43.0965211,
+    "displayName": "Neo Niterói, Rua Doutor Luiz Palmier, 280, Barreto, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Luiz Palmier",
+    "matchedNumber": "280"
+  },
+  "rua doutor luiz palmier, n. 280, apto 801, bl 01|niteroi|rj": {
+    "lat": -22.8639145,
+    "lng": -43.0965211,
+    "displayName": "Neo Niterói, Rua Doutor Luiz Palmier, 280, Barreto, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Luiz Palmier",
+    "matchedNumber": "280"
+  },
+  "rua senador fernandes da cunha, n. 1330,  qd 4": {
+    "lat": -22.8911905,
+    "lng": -42.9890191,
+    "displayName": "Praça do Neco, Estrada Senador Fernandes da Cunha, 18, Rio do Ouro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha",
+    "matchedNumber": "18"
+  },
+  "rua senador fernandes da cunha, n. 1330,  qd 4|niteroi|rj": {
+    "lat": -22.8911905,
+    "lng": -42.9890191,
+    "displayName": "Praça do Neco, Estrada Senador Fernandes da Cunha, 18, Rio do Ouro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha",
+    "matchedNumber": "18"
+  },
+  "rua senador fernandes da cunha, n. 1002, apto 105, bloco c": {
+    "lat": -22.8911905,
+    "lng": -42.9890191,
+    "displayName": "Praça do Neco, Estrada Senador Fernandes da Cunha, 18, Rio do Ouro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha",
+    "matchedNumber": "18"
+  },
+  "rua senador fernandes da cunha, n. 1002, apto 105, bloco c|niteroi|rj": {
+    "lat": -22.8911905,
+    "lng": -42.9890191,
+    "displayName": "Praça do Neco, Estrada Senador Fernandes da Cunha, 18, Rio do Ouro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha",
+    "matchedNumber": "18"
+  },
+  "estrada senador fernandes da cunha, n. 1002, apto 302, bl e  area b": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "estrada senador fernandes da cunha, rio do ouro, niteroi - rj": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "estrada senador fernandes da cunha, n. 1002, apto 302, bl e  area b|niteroi|rj": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "rua doutor mario viana, n. 441, apto 1603, bl 02": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 1603, bl 02|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 303, bl 01": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 303, bl 01|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua barao do amazonas, n. 2, apto 1502, bl iii, ed visconde de itaborai": {
+    "lat": -22.8872561,
+    "lng": -43.1203757,
+    "displayName": "Amazonas Bike, Rua Barão de Amazonas, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Barão de Amazonas"
+  },
+  "rua barao do amazonas, centro, niteroi - rj": {
+    "lat": -22.8872561,
+    "lng": -43.1203757,
+    "displayName": "Amazonas Bike, Rua Barão de Amazonas, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Barão de Amazonas"
+  },
+  "rua barao do amazonas, n. 2, apto 1502, bl iii, ed visconde de itaborai|niteroi|rj": {
+    "lat": -22.8872561,
+    "lng": -43.1203757,
+    "displayName": "Amazonas Bike, Rua Barão de Amazonas, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Barão de Amazonas"
+  },
+  "rua doutor mario viana, n. 441, apto 707, bl 02": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 707, bl 02|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 302, bl 02": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, n. 441, apto 302, bl 02|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua adalgisa monteiro, n. 104, lt 09 qd 54 lot maravista": {
+    "lat": -22.9420147,
+    "lng": -43.02529,
+    "displayName": "Rua Adalgisa Monteiro, Maravista, Niterói, Rio de Janeiro, Região Sudeste, 24342-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Adalgisa Monteiro"
+  },
+  "rua adalgisa monteiro, maravista, niteroi - rj": {
+    "lat": -22.9420147,
+    "lng": -43.02529,
+    "displayName": "Rua Adalgisa Monteiro, Maravista, Niterói, Rio de Janeiro, Região Sudeste, 24342-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Adalgisa Monteiro"
+  },
+  "rua adalgisa monteiro, n. 104, lt 09 qd 54 lot maravista|niteroi|rj": {
+    "lat": -22.9420147,
+    "lng": -43.02529,
+    "displayName": "Rua Adalgisa Monteiro, Maravista, Niterói, Rio de Janeiro, Região Sudeste, 24342-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Adalgisa Monteiro"
+  },
+  "rua noronha torrezao, n. 407, apto 902, bl 09": {
+    "lat": -22.8898642,
+    "lng": -43.0955223,
+    "displayName": "G.R.E.S. Acadêmicos do Cubango, Rua Noronha Torrezão, 560, Cubango, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão",
+    "matchedNumber": "560"
+  },
+  "rua noronha torrezao, n. 407, apto 902, bl 09|niteroi|rj": {
+    "lat": -22.8898642,
+    "lng": -43.0955223,
+    "displayName": "G.R.E.S. Acadêmicos do Cubango, Rua Noronha Torrezão, 560, Cubango, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão",
+    "matchedNumber": "560"
+  },
+  "avenida pastor martin luther king junior, n. 4676, apto 401, bl 13": {
+    "lat": -22.8628309,
+    "lng": -43.3062194,
+    "displayName": "Escola Municipal Maria Mazzetti, Avenida Pastor Martin Luther King, 4676, Tomás Coelho, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Pastor Martin Luther King",
+    "matchedNumber": "4676"
+  },
+  "avenida pastor martin luther king junior, tomas coelho, rio de janeiro - rj": {
+    "lat": -22.8628309,
+    "lng": -43.3062194,
+    "displayName": "Escola Municipal Maria Mazzetti, Avenida Pastor Martin Luther King, 4676, Tomás Coelho, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Pastor Martin Luther King",
+    "matchedNumber": "4676"
+  },
+  "avenida pastor martin luther king junior, n. 4676, apto 401, bl 13|rio de janeiro|rj": {
+    "lat": -22.8628309,
+    "lng": -43.3062194,
+    "displayName": "Escola Municipal Maria Mazzetti, Avenida Pastor Martin Luther King, 4676, Tomás Coelho, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Pastor Martin Luther King",
+    "matchedNumber": "4676"
+  },
+  "avenida pastor martin luther king junior, n. 4700, apto 202,": {
+    "lat": -22.8626005,
+    "lng": -43.3067943,
+    "displayName": "Thomáz Coelho, Avenida Pastor Martin Luther King Junior, Tomás Coelho, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Pastor Martin Luther King Junior"
+  },
+  "avenida pastor martin luther king junior, n. 4700, apto 202,|rio de janeiro|rj": {
+    "lat": -22.8626005,
+    "lng": -43.3067943,
+    "displayName": "Thomáz Coelho, Avenida Pastor Martin Luther King Junior, Tomás Coelho, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Pastor Martin Luther King Junior"
+  },
+  "rua fonseca hermes, nº 159, apto. 104": {
+    "lat": -21.758494,
+    "lng": -43.3463925,
+    "displayName": "Rua Fonseca Hermes, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Fonseca Hermes"
+  },
+  "rua fonseca hermes, nº 159, apto. 104|juiz de fora|mg": {
+    "lat": -21.758494,
+    "lng": -43.3463925,
+    "displayName": "Rua Fonseca Hermes, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Fonseca Hermes"
+  },
+  "rua osvaldo cruz, nº 18": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua osvaldo cruz, nº 18|niteroi|rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua avenida henrique valadares, nº 145": {
+    "lat": -22.911113,
+    "lng": -43.1859626,
+    "displayName": "Avenida Henrique Valadares, Bairro de Fátima, Centro, Rio de Janeiro, Região Sudeste, 20231-016, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Henrique Valadares"
+  },
+  "rua avenida henrique valadares, nº 145|rio de janeiro|rj": {
+    "lat": -22.911113,
+    "lng": -43.1859626,
+    "displayName": "Avenida Henrique Valadares, Bairro de Fátima, Centro, Rio de Janeiro, Região Sudeste, 20231-016, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Henrique Valadares"
+  },
+  "rua jose lourenco, nº 285, apto": {
+    "lat": -21.7624367,
+    "lng": -43.3754272,
+    "displayName": "Rua José Lourenço, Serra D'Água, Borboleta, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-235, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua José Lourenço"
+  },
+  "rua jose lourenco, nº 285, apto|juiz de fora|mg": {
+    "lat": -21.7624367,
+    "lng": -43.3754272,
+    "displayName": "Rua José Lourenço, Serra D'Água, Borboleta, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-235, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua José Lourenço"
+  },
+  "rua professor miguel couto, nº 437": {
+    "lat": -22.9023528,
+    "lng": -43.105234,
+    "displayName": "Rua Professor Miguel Couto, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-230, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Miguel Couto"
+  },
+  "rua professor miguel couto, , niteroi - rj": {
+    "lat": -22.9023528,
+    "lng": -43.105234,
+    "displayName": "Rua Professor Miguel Couto, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-230, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Miguel Couto"
+  },
+  "rua professor miguel couto, nº 437|niteroi|rj": {
+    "lat": -22.9023528,
+    "lng": -43.105234,
+    "displayName": "Rua Professor Miguel Couto, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-230, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Miguel Couto"
+  },
+  "rua do monte, n 396": {
+    "lat": -21.750738,
+    "lng": -43.3432527,
+    "displayName": "Rua do Monte, Santos Anjos, Vitorino Braga, Juiz de Fora, Minas Gerais, Região Sudeste, 36060-140, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua do Monte"
+  },
+  "rua do monte, vitorino braga, juiz de fora - mg": {
+    "lat": -21.750738,
+    "lng": -43.3432527,
+    "displayName": "Rua do Monte, Santos Anjos, Vitorino Braga, Juiz de Fora, Minas Gerais, Região Sudeste, 36060-140, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua do Monte"
+  },
+  "rua do monte, n 396|juiz de fora|mg": {
+    "lat": -21.750738,
+    "lng": -43.3432527,
+    "displayName": "Rua do Monte, Santos Anjos, Vitorino Braga, Juiz de Fora, Minas Gerais, Região Sudeste, 36060-140, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua do Monte"
+  },
+  "rua oscar vidal, 45 - centro - juiz de fora - mg": {
+    "lat": -21.7653049,
+    "lng": -43.3503809,
+    "displayName": "Rua Oscar Vidal, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-290, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Oscar Vidal"
+  },
+  "rua oscar vidal, centro, juiz de fora - mg": {
+    "lat": -21.7653049,
+    "lng": -43.3503809,
+    "displayName": "Rua Oscar Vidal, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-290, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Oscar Vidal"
+  },
+  "rua oscar vidal, 45 - centro - juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7653049,
+    "lng": -43.3503809,
+    "displayName": "Rua Oscar Vidal, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-290, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Oscar Vidal"
+  },
+  "rua lauro teles de mesquita, 52": {
+    "lat": -21.7710818,
+    "lng": -43.3726187,
+    "displayName": "Rua Lauro Teles de Mesquita, Itatiaia, São Pedro, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Lauro Teles de Mesquita"
+  },
+  "rua lauro teles de mesquita, juiz de fora, juiz de fora - mg": {
+    "lat": -21.7710818,
+    "lng": -43.3726187,
+    "displayName": "Rua Lauro Teles de Mesquita, Itatiaia, São Pedro, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Lauro Teles de Mesquita"
+  },
+  "rua lauro teles de mesquita, 52|juiz de fora|mg": {
+    "lat": -21.7710818,
+    "lng": -43.3726187,
+    "displayName": "Rua Lauro Teles de Mesquita, Itatiaia, São Pedro, Juiz de Fora, Minas Gerais, Região Sudeste, 36036-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Lauro Teles de Mesquita"
+  },
+  "rua joao teixeira lopes filho, 190 - santa luzia juiz de fora - mg": {
+    "lat": -21.7843525,
+    "lng": -43.3498203,
+    "displayName": "Rua João Teixeira Lopes Filho, Santa Luzia, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua João Teixeira Lopes Filho"
+  },
+  "rua joao teixeira lopes filho, santa luzia, juiz de fora - mg": {
+    "lat": -21.7843525,
+    "lng": -43.3498203,
+    "displayName": "Rua João Teixeira Lopes Filho, Santa Luzia, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua João Teixeira Lopes Filho"
+  },
+  "rua joao teixeira lopes filho, 190 - santa luzia juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7843525,
+    "lng": -43.3498203,
+    "displayName": "Rua João Teixeira Lopes Filho, Santa Luzia, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua João Teixeira Lopes Filho"
+  },
+  "r. doutor luiz antonio vieira penna - de 1 a 99998, s/n, sao mateus - juiz de fora/mg, sao mateus, j...": {
+    "lat": -21.7747872,
+    "lng": -43.3523361,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, São Mateus, Juiz de Fora, Minas Gerais, Região Sudeste, 36025-180, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "rua doutor luiz antonio vieira penna - de 1 a, sao mateus, juiz de fora - mg": {
+    "lat": -21.7747872,
+    "lng": -43.3523361,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, São Mateus, Juiz de Fora, Minas Gerais, Região Sudeste, 36025-180, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "r. doutor luiz antonio vieira penna - de 1 a 99998, s/n, sao mateus - juiz de fora/mg, sao mateus, j...|juiz de fora|mg": {
+    "lat": -21.7747872,
+    "lng": -43.3523361,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, São Mateus, Juiz de Fora, Minas Gerais, Região Sudeste, 36025-180, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "rua pedro garcia": {
+    "lat": -21.6872841,
+    "lng": -43.4393239,
+    "displayName": "Rua Pedro Garcia, Benfica, Juiz de Fora, Minas Gerais, Região Sudeste, 36090-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Pedro Garcia"
+  },
+  "rua pedro garcia, benfica, juiz de fora - mg": {
+    "lat": -21.6872841,
+    "lng": -43.4393239,
+    "displayName": "Rua Pedro Garcia, Benfica, Juiz de Fora, Minas Gerais, Região Sudeste, 36090-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Pedro Garcia"
+  },
+  "rua pedro garcia|juiz de fora|mg": {
+    "lat": -21.6872841,
+    "lng": -43.4393239,
+    "displayName": "Rua Pedro Garcia, Benfica, Juiz de Fora, Minas Gerais, Região Sudeste, 36090-330, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Pedro Garcia"
+  },
+  "av. deusdedith salgado, 2200, apartamento 307, edificio hotel juiz de fora, teixeiras, juiz de fo, ,...": {
+    "lat": -21.7967148,
+    "lng": -43.3668428,
+    "displayName": "Hotel Ibis Juiz de Fora, 2200, Avenida Deusdedith Salgado, Teixeiras, Juiz de Fora, Minas Gerais, Região Sudeste, 36033-007, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Deusdedith Salgado",
+    "matchedNumber": "2200"
+  },
+  "avenida deusdedith salgado, teixeiras, juiz de fora - mg": {
+    "lat": -21.7967148,
+    "lng": -43.3668428,
+    "displayName": "Hotel Ibis Juiz de Fora, 2200, Avenida Deusdedith Salgado, Teixeiras, Juiz de Fora, Minas Gerais, Região Sudeste, 36033-007, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Deusdedith Salgado",
+    "matchedNumber": "2200"
+  },
+  "av. deusdedith salgado, 2200, apartamento 307, edificio hotel juiz de fora, teixeiras, juiz de fo, ,...|juiz de fora|mg": {
+    "lat": -21.7967148,
+    "lng": -43.3668428,
+    "displayName": "Hotel Ibis Juiz de Fora, 2200, Avenida Deusdedith Salgado, Teixeiras, Juiz de Fora, Minas Gerais, Região Sudeste, 36033-007, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Deusdedith Salgado",
+    "matchedNumber": "2200"
+  },
+  "rua marechal deodoro, nº 444, centro": {
+    "lat": -21.7597467,
+    "lng": -43.3484555,
+    "displayName": "Marechal Center, 444, Rua Marechal Deodoro, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36010-904, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Marechal Deodoro",
+    "matchedNumber": "444"
+  },
+  "rua marechal deodoro, centro, juiz de fora - mg": {
+    "lat": -21.7597467,
+    "lng": -43.3484555,
+    "displayName": "Marechal Center, 444, Rua Marechal Deodoro, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36010-904, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Marechal Deodoro",
+    "matchedNumber": "444"
+  },
+  "rua marechal deodoro, nº 444, centro|juiz de fora|mg": {
+    "lat": -21.7597467,
+    "lng": -43.3484555,
+    "displayName": "Marechal Center, 444, Rua Marechal Deodoro, Santos Anjos, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36010-904, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Marechal Deodoro",
+    "matchedNumber": "444"
+  },
+  "rua delorme de carvalho no.260": {
+    "lat": -21.7753892,
+    "lng": -43.3409242,
+    "displayName": "Rua Delorme de Carvalho, Parque Guaruá, Cidade Jardim, Bom Pastor, Juiz de Fora, Minas Gerais, Região Sudeste, 36021-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Delorme de Carvalho"
+  },
+  "rua delorme de carvalho no.260, bom pastor, juiz de fora - mg": {
+    "lat": -21.7753892,
+    "lng": -43.3409242,
+    "displayName": "Rua Delorme de Carvalho, Parque Guaruá, Cidade Jardim, Bom Pastor, Juiz de Fora, Minas Gerais, Região Sudeste, 36021-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Delorme de Carvalho"
+  },
+  "rua delorme de carvalho no.260|juiz de fora|mg": {
+    "lat": -21.7753892,
+    "lng": -43.3409242,
+    "displayName": "Rua Delorme de Carvalho, Parque Guaruá, Cidade Jardim, Bom Pastor, Juiz de Fora, Minas Gerais, Região Sudeste, 36021-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Delorme de Carvalho"
+  },
+  "rua professor clovis jaguaribe, n 50": {
+    "lat": -21.7789063,
+    "lng": -43.3402716,
+    "displayName": "Rua Professor Clóvis Jaguaribe, Parque Guaruá, Cidade Jardim, Bom Pastor, Juiz de Fora, Minas Gerais, Região Sudeste, 36021-700, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Professor Clóvis Jaguaribe"
+  },
+  "rua professor clovis jaguaribe, juiz de fora, juiz de fora - mg": {
+    "lat": -21.7789063,
+    "lng": -43.3402716,
+    "displayName": "Rua Professor Clóvis Jaguaribe, Parque Guaruá, Cidade Jardim, Bom Pastor, Juiz de Fora, Minas Gerais, Região Sudeste, 36021-700, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Professor Clóvis Jaguaribe"
+  },
+  "rua professor clovis jaguaribe, n 50|juiz de fora|mg": {
+    "lat": -21.7789063,
+    "lng": -43.3402716,
+    "displayName": "Rua Professor Clóvis Jaguaribe, Parque Guaruá, Cidade Jardim, Bom Pastor, Juiz de Fora, Minas Gerais, Região Sudeste, 36021-700, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Professor Clóvis Jaguaribe"
+  },
+  "avenida almirante tamandare, 1789, loteamento bairro piratininga, piratininga, niteroi, rj": {
+    "lat": -22.9555514,
+    "lng": -43.0754443,
+    "displayName": "Avenida Almirante Tamandaré, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24346-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Tamandaré"
+  },
+  "avenida almirante tamandare, 1789, loteamento bairro piratininga, piratininga, niteroi, rj|niteroi|rj": {
+    "lat": -22.9555514,
+    "lng": -43.0754443,
+    "displayName": "Avenida Almirante Tamandaré, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24346-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Tamandaré"
+  },
+  "travessa arantes, 208, engenhoca, niteroi, rj": {
+    "lat": -22.8715827,
+    "lng": -43.1028938,
+    "displayName": "Travessa Arantes, Engenhoca, Niterói, Rio de Janeiro, Região Sudeste, 24110-067, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Arantes"
+  },
+  "travessa arantes, engenhoca, niteroi - rj": {
+    "lat": -22.8715827,
+    "lng": -43.1028938,
+    "displayName": "Travessa Arantes, Engenhoca, Niterói, Rio de Janeiro, Região Sudeste, 24110-067, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Arantes"
+  },
+  "travessa arantes, 208, engenhoca, niteroi, rj|niteroi|rj": {
+    "lat": -22.8715827,
+    "lng": -43.1028938,
+    "displayName": "Travessa Arantes, Engenhoca, Niterói, Rio de Janeiro, Região Sudeste, 24110-067, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Arantes"
+  },
+  "rua riodades, 145 - apartamento 1007 - condominio parque eldorado - fonseca - niteroi / rj": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua riodades, 145 - apartamento 1007 - condominio parque eldorado - fonseca - niteroi / rj|niteroi|rj": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "r. osvaldo cruz, 18, icarai - niteroi/rj, icarai, niteroi, rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "r. osvaldo cruz, 18, icarai - niteroi/rj, icarai, niteroi, rj|niteroi|rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "avenida almirante ary parreiras, 406, apto 501 condominio do edificio montclair, icarai, niteroi, r...": {
+    "lat": -22.9070388,
+    "lng": -43.0991958,
+    "displayName": "Avenida Almirante Ary Parreiras, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Ary Parreiras"
+  },
+  "avenida almirante ary parreiras, icarai, niteroi - rj": {
+    "lat": -22.9070388,
+    "lng": -43.0991958,
+    "displayName": "Avenida Almirante Ary Parreiras, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Ary Parreiras"
+  },
+  "avenida almirante ary parreiras, 406, apto 501 condominio do edificio montclair, icarai, niteroi, r...|niteroi|rj": {
+    "lat": -22.9070388,
+    "lng": -43.0991958,
+    "displayName": "Avenida Almirante Ary Parreiras, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Ary Parreiras"
+  },
+  "rua doutor celso dias gomes, 171, marazul, niteroi, rj": {
+    "lat": -22.9519255,
+    "lng": -43.0916502,
+    "displayName": "Rua Doutor Celso Dias Gomes, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24358-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Celso Dias Gomes"
+  },
+  "rua doutor celso dias gomes, , niteroi - rj": {
+    "lat": -22.9519255,
+    "lng": -43.0916502,
+    "displayName": "Rua Doutor Celso Dias Gomes, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24358-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Celso Dias Gomes"
+  },
+  "rua doutor celso dias gomes, 171, marazul, niteroi, rj|niteroi|rj": {
+    "lat": -22.9519255,
+    "lng": -43.0916502,
+    "displayName": "Rua Doutor Celso Dias Gomes, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24358-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Celso Dias Gomes"
+  },
+  "rua osvaldo cruz, 18, icarai, niteroi, rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "rua osvaldo cruz, 18, icarai, niteroi, rj|niteroi|rj": {
+    "lat": -22.9092355,
+    "lng": -43.1095125,
+    "displayName": "Rua Osvaldo Cruz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-210, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Osvaldo Cruz"
+  },
+  "estrada caetano monteiro, 391, niteroi, rj": {
+    "lat": -22.9025102,
+    "lng": -43.0447539,
+    "displayName": "Estrada Caetano Monteiro, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "estrada caetano monteiro, 391, niteroi, rj|niteroi|rj": {
+    "lat": -22.9025102,
+    "lng": -43.0447539,
+    "displayName": "Estrada Caetano Monteiro, Vila Progresso, Niterói, Rio de Janeiro, Região Sudeste, 24320-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Caetano Monteiro"
+  },
+  "rua doutor paulo cesar, icarai": {
+    "lat": -22.8994394,
+    "lng": -43.1084094,
+    "displayName": "Rua Doutor Paulo César, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-150, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César"
+  },
+  "rua doutor paulo cesar, icarai, icarai, niteroi - rj": {
+    "lat": -22.8994394,
+    "lng": -43.1084094,
+    "displayName": "Rua Doutor Paulo César, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-150, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César"
+  },
+  "rua doutor paulo cesar, icarai|niteroi|rj": {
+    "lat": -22.8994394,
+    "lng": -43.1084094,
+    "displayName": "Rua Doutor Paulo César, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-150, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Paulo César"
+  },
+  "rua domingues de sa, n 206": {
+    "lat": -22.9053286,
+    "lng": -43.1067687,
+    "displayName": "206, Rua Domingues de Sá, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-091, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Domingues de Sá",
+    "matchedNumber": "206"
+  },
+  "rua domingues de sa, icarai, niteroi - rj": {
+    "lat": -22.9053286,
+    "lng": -43.1067687,
+    "displayName": "206, Rua Domingues de Sá, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-091, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Domingues de Sá",
+    "matchedNumber": "206"
+  },
+  "rua domingues de sa, n 206|niteroi|rj": {
+    "lat": -22.9053286,
+    "lng": -43.1067687,
+    "displayName": "206, Rua Domingues de Sá, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-091, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Domingues de Sá",
+    "matchedNumber": "206"
+  },
+  "alameda sao boaventura, 847, apartamento 804, fonseca": {
+    "lat": -22.8812888,
+    "lng": -43.0897921,
+    "displayName": "Alameda São Boaventura, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Alameda São Boaventura"
+  },
+  "alameda sao boaventura, 847, apartamento 804, fonseca|niteroi|rj": {
+    "lat": -22.8812888,
+    "lng": -43.0897921,
+    "displayName": "Alameda São Boaventura, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24120-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Alameda São Boaventura"
+  },
+  "rua professor miguel couto, n 437": {
+    "lat": -22.9023528,
+    "lng": -43.105234,
+    "displayName": "Rua Professor Miguel Couto, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-230, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Miguel Couto"
+  },
+  "rua professor miguel couto, icarai, niteroi - rj": {
+    "lat": -22.9023528,
+    "lng": -43.105234,
+    "displayName": "Rua Professor Miguel Couto, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-230, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Miguel Couto"
+  },
+  "rua professor miguel couto, n 437|niteroi|rj": {
+    "lat": -22.9023528,
+    "lng": -43.105234,
+    "displayName": "Rua Professor Miguel Couto, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-230, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Miguel Couto"
+  },
+  "rua noronha torrezao, nº 524, apto 203": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº 524, apto 203|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua engenheiro guilherme greenhalgh, nº 16, apto": {
+    "lat": -22.9079216,
+    "lng": -43.1088775,
+    "displayName": "Rua Engenheiro Guilherme Greenhalgh, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-200, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Engenheiro Guilherme Greenhalgh"
+  },
+  "rua engenheiro guilherme greenhalgh, icarai, niteroi - rj": {
+    "lat": -22.9079216,
+    "lng": -43.1088775,
+    "displayName": "Rua Engenheiro Guilherme Greenhalgh, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-200, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Engenheiro Guilherme Greenhalgh"
+  },
+  "rua engenheiro guilherme greenhalgh, nº 16, apto|niteroi|rj": {
+    "lat": -22.9079216,
+    "lng": -43.1088775,
+    "displayName": "Rua Engenheiro Guilherme Greenhalgh, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-200, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Engenheiro Guilherme Greenhalgh"
+  },
+  "rua doutor souza dias, nº 71, apartamento n": {
+    "lat": -22.9052903,
+    "lng": -43.0956129,
+    "displayName": "Rua Doutor Souza Dias, Vital Brazil, Niterói, Rio de Janeiro, Região Sudeste, 24230-323, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Souza Dias"
+  },
+  "rua doutor souza dias, , niteroi - rj": {
+    "lat": -22.9052903,
+    "lng": -43.0956129,
+    "displayName": "Rua Doutor Souza Dias, Vital Brazil, Niterói, Rio de Janeiro, Região Sudeste, 24230-323, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Souza Dias"
+  },
+  "rua doutor souza dias, nº 71, apartamento n|niteroi|rj": {
+    "lat": -22.9052903,
+    "lng": -43.0956129,
+    "displayName": "Rua Doutor Souza Dias, Vital Brazil, Niterói, Rio de Janeiro, Região Sudeste, 24230-323, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Souza Dias"
+  },
+  "travessa arantes, nº 208": {
+    "lat": -22.8715827,
+    "lng": -43.1028938,
+    "displayName": "Travessa Arantes, Engenhoca, Niterói, Rio de Janeiro, Região Sudeste, 24110-067, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Arantes"
+  },
+  "travessa arantes, nº 208|niteroi|rj": {
+    "lat": -22.8715827,
+    "lng": -43.1028938,
+    "displayName": "Travessa Arantes, Engenhoca, Niterói, Rio de Janeiro, Região Sudeste, 24110-067, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Travessa Arantes"
+  },
+  "rua doutor celso dias gomes, nº 171": {
+    "lat": -22.9519255,
+    "lng": -43.0916502,
+    "displayName": "Rua Doutor Celso Dias Gomes, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24358-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Celso Dias Gomes"
+  },
+  "rua doutor celso dias gomes, piratininga, niteroi - rj": {
+    "lat": -22.9519255,
+    "lng": -43.0916502,
+    "displayName": "Rua Doutor Celso Dias Gomes, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24358-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Celso Dias Gomes"
+  },
+  "rua doutor celso dias gomes, nº 171|niteroi|rj": {
+    "lat": -22.9519255,
+    "lng": -43.0916502,
+    "displayName": "Rua Doutor Celso Dias Gomes, Piratininga, Niterói, Rio de Janeiro, Região Sudeste, 24358-120, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Celso Dias Gomes"
+  },
+  "rua doutor ferdinando cyrne, nº 3589": {
+    "lat": -21.7829302,
+    "lng": -43.3835669,
+    "displayName": "Rua Doutor Ferdinando Cyrne, Santos Dumont, Adolpho Vireque, Aeroporto, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-336, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Ferdinando Cyrne"
+  },
+  "rua doutor ferdinando cyrne, n, juiz de fora - mg": {
+    "lat": -21.7829302,
+    "lng": -43.3835669,
+    "displayName": "Rua Doutor Ferdinando Cyrne, Santos Dumont, Adolpho Vireque, Aeroporto, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-336, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Ferdinando Cyrne"
+  },
+  "rua doutor ferdinando cyrne, nº 3589|juiz de fora|mg": {
+    "lat": -21.7829302,
+    "lng": -43.3835669,
+    "displayName": "Rua Doutor Ferdinando Cyrne, Santos Dumont, Adolpho Vireque, Aeroporto, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-336, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Ferdinando Cyrne"
+  },
+  "rua professor otacilio 131, santa rosa, niteroi - rj": {
+    "lat": -22.8988535,
+    "lng": -43.0995984,
+    "displayName": "Rua Professor Otacílio, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-660, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Otacílio"
+  },
+  "rua professor otacilio, santa rosa, niteroi - rj": {
+    "lat": -22.8988535,
+    "lng": -43.0995984,
+    "displayName": "Rua Professor Otacílio, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-660, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Otacílio"
+  },
+  "rua professor otacilio 131, santa rosa, niteroi - rj|niteroi|rj": {
+    "lat": -22.8988535,
+    "lng": -43.0995984,
+    "displayName": "Rua Professor Otacílio, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-660, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Professor Otacílio"
+  },
+  "rua noronha torrezao 216, santa rosa, niteroi - rj": {
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao 216, santa rosa, niteroi - rj|niteroi|rj": {
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua doutor mario vianna 441, santa rosa, niteroi - rj": {
+    "lat": -22.9038467,
+    "lng": -43.0939406,
+    "displayName": "Rua Doutor Mário Vianna, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24230-390, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna"
+  },
+  "rua doutor mario vianna, santa rosa, niteroi - rj": {
+    "lat": -22.9038467,
+    "lng": -43.0939406,
+    "displayName": "Rua Doutor Mário Vianna, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24230-390, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna"
+  },
+  "rua doutor mario vianna 441, santa rosa, niteroi - rj|niteroi|rj": {
+    "lat": -22.9038467,
+    "lng": -43.0939406,
+    "displayName": "Rua Doutor Mário Vianna, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24230-390, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna"
+  },
+  "rua noronha torrezao 24, santa rosa, niteroi - rj": {
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao 24, santa rosa, niteroi - rj|niteroi|rj": {
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua doutor sardinha 214, santa rosa, niteroi - rj": {
+    "lat": -22.8981445,
+    "lng": -43.0964935,
+    "displayName": "Villa Catalunya Residencial, 214, Rua Doutor Sardinha, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-660, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Sardinha",
+    "matchedNumber": "214"
+  },
+  "rua doutor sardinha, santa rosa, niteroi - rj": {
+    "lat": -22.8981445,
+    "lng": -43.0964935,
+    "displayName": "Villa Catalunya Residencial, 214, Rua Doutor Sardinha, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-660, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Sardinha",
+    "matchedNumber": "214"
+  },
+  "rua doutor sardinha 214, santa rosa, niteroi - rj|niteroi|rj": {
+    "lat": -22.8981445,
+    "lng": -43.0964935,
+    "displayName": "Villa Catalunya Residencial, 214, Rua Doutor Sardinha, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-660, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Sardinha",
+    "matchedNumber": "214"
+  },
+  "rua luiz leopoldo fernandes pinheiro, centro, niteroi - rj": {
+    "lat": -22.8922734,
+    "lng": -43.1198783,
+    "displayName": "Restaurante Barão de Niterói, Rua Luiz Leopoldo Fernandes Pinheiro, 498, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Luiz Leopoldo Fernandes Pinheiro",
+    "matchedNumber": "498"
+  },
+  "rua luiz leopoldo fernandes pinheiro, centro, centro, niteroi - rj": {
+    "lat": -22.8922734,
+    "lng": -43.1198783,
+    "displayName": "Restaurante Barão de Niterói, Rua Luiz Leopoldo Fernandes Pinheiro, 498, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Luiz Leopoldo Fernandes Pinheiro",
+    "matchedNumber": "498"
+  },
+  "rua luiz leopoldo fernandes pinheiro, centro, niteroi - rj|niteroi|rj": {
+    "lat": -22.8922734,
+    "lng": -43.1198783,
+    "displayName": "Restaurante Barão de Niterói, Rua Luiz Leopoldo Fernandes Pinheiro, 498, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Luiz Leopoldo Fernandes Pinheiro",
+    "matchedNumber": "498"
+  },
+  "rua coronel gomes machado, centro, niteroi - rj": {
+    "lat": -22.8927234,
+    "lng": -43.1151743,
+    "displayName": "Igreja Adventista do Sétimo Dia Central de Niterói, Rua Coronel Gomes Machado, 350, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Coronel Gomes Machado",
+    "matchedNumber": "350"
+  },
+  "rua coronel gomes machado, centro, centro, niteroi - rj": {
+    "lat": -22.8927234,
+    "lng": -43.1151743,
+    "displayName": "Igreja Adventista do Sétimo Dia Central de Niterói, Rua Coronel Gomes Machado, 350, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Coronel Gomes Machado",
+    "matchedNumber": "350"
+  },
+  "rua coronel gomes machado, centro, niteroi - rj|niteroi|rj": {
+    "lat": -22.8927234,
+    "lng": -43.1151743,
+    "displayName": "Igreja Adventista do Sétimo Dia Central de Niterói, Rua Coronel Gomes Machado, 350, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Coronel Gomes Machado",
+    "matchedNumber": "350"
+  },
+  "avenida professor plinio leite, centro, niteroi - rj": {
+    "lat": -22.8893211,
+    "lng": -43.1271865,
+    "displayName": "Ponto de Embarque Buser Niterói, Avenida Professor Plínio Leite, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Professor Plínio Leite"
+  },
+  "avenida professor plinio leite, centro, centro, niteroi - rj": {
+    "lat": -22.8893211,
+    "lng": -43.1271865,
+    "displayName": "Ponto de Embarque Buser Niterói, Avenida Professor Plínio Leite, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Professor Plínio Leite"
+  },
+  "avenida professor plinio leite, centro, niteroi - rj|niteroi|rj": {
+    "lat": -22.8893211,
+    "lng": -43.1271865,
+    "displayName": "Ponto de Embarque Buser Niterói, Avenida Professor Plínio Leite, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Professor Plínio Leite"
+  },
+  "avenida barao do rio branco 2032, centro, juiz de fora - mg": {
+    "lat": -21.7601507,
+    "lng": -43.3498771,
+    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-510, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Barão do Rio Branco"
+  },
+  "avenida barao do rio branco 2032, centro, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7601507,
+    "lng": -43.3498771,
+    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-510, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Barão do Rio Branco"
+  },
+  "rua tiradentes 642, santa helena, juiz de fora - mg": {
+    "lat": -21.7610429,
+    "lng": -43.3537707,
+    "displayName": "Rua Tiradentes, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Tiradentes"
+  },
+  "rua tiradentes, centro, juiz de fora - mg": {
+    "lat": -21.7610429,
+    "lng": -43.3537707,
+    "displayName": "Rua Tiradentes, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Tiradentes"
+  },
+  "rua tiradentes 642, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7610429,
+    "lng": -43.3537707,
+    "displayName": "Rua Tiradentes, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Tiradentes"
+  },
+  "rua olegario maciel 25, santa helena, juiz de fora - mg": {
+    "lat": -21.7702909,
+    "lng": -43.3578352,
+    "displayName": "Avenida Olegário Maciel, Jardim Paineiras, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-430, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Olegário Maciel"
+  },
+  "rua olegario maciel, juiz de fora, juiz de fora - mg": {
+    "lat": -21.7702909,
+    "lng": -43.3578352,
+    "displayName": "Avenida Olegário Maciel, Jardim Paineiras, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-430, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Olegário Maciel"
+  },
+  "rua olegario maciel 25, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7702909,
+    "lng": -43.3578352,
+    "displayName": "Avenida Olegário Maciel, Jardim Paineiras, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-430, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Olegário Maciel"
+  },
+  "rua barao de cataguases 417, santa helena, juiz de fora - mg": {
+    "lat": -21.7534989,
+    "lng": -43.351653,
+    "displayName": "Rua Barão de Cataguases, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-270, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Barão de Cataguases"
+  },
+  "rua barao de cataguases, centro, juiz de fora - mg": {
+    "lat": -21.7534989,
+    "lng": -43.351653,
+    "displayName": "Rua Barão de Cataguases, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-270, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Barão de Cataguases"
+  },
+  "rua barao de cataguases 417, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7534989,
+    "lng": -43.351653,
+    "displayName": "Rua Barão de Cataguases, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-270, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Barão de Cataguases"
+  },
+  "rua alvares de azevedo, icarai, niteroi - rj": {
+    "lat": -22.902742,
+    "lng": -43.113077,
+    "displayName": "Rua Álvares de Azevedo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-021, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Álvares de Azevedo"
+  },
+  "rua alvares de azevedo, icarai, icarai, niteroi - rj": {
+    "lat": -22.902742,
+    "lng": -43.113077,
+    "displayName": "Rua Álvares de Azevedo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-021, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Álvares de Azevedo"
+  },
+  "rua alvares de azevedo, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.902742,
+    "lng": -43.113077,
+    "displayName": "Rua Álvares de Azevedo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-021, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Álvares de Azevedo"
+  },
+  "rua jose vergueiro da cruz, icarai, niteroi - rj": {
+    "lat": -22.9092792,
+    "lng": -43.0997562,
+    "displayName": "Rua José Vergueiro da Cruz, Morro do Cavalão, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua José Vergueiro da Cruz"
+  },
+  "rua jose vergueiro da cruz, icarai, icarai, niteroi - rj": {
+    "lat": -22.9092792,
+    "lng": -43.0997562,
+    "displayName": "Rua José Vergueiro da Cruz, Morro do Cavalão, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua José Vergueiro da Cruz"
+  },
+  "rua jose vergueiro da cruz, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9092792,
+    "lng": -43.0997562,
+    "displayName": "Rua José Vergueiro da Cruz, Morro do Cavalão, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua José Vergueiro da Cruz"
+  },
+  "rua ator paulo gustavo, icarai, niteroi - rj": {
+    "lat": -22.9073199,
+    "lng": -43.1102423,
+    "displayName": "Rua Ator Paulo Gustavo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-063, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Ator Paulo Gustavo"
+  },
+  "rua ator paulo gustavo, icarai, icarai, niteroi - rj": {
+    "lat": -22.9073199,
+    "lng": -43.1102423,
+    "displayName": "Rua Ator Paulo Gustavo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-063, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Ator Paulo Gustavo"
+  },
+  "rua ator paulo gustavo, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9073199,
+    "lng": -43.1102423,
+    "displayName": "Rua Ator Paulo Gustavo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-063, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Ator Paulo Gustavo"
+  },
+  "rua comandante miguelote viana, icarai, niteroi - rj": {
+    "lat": -22.9089385,
+    "lng": -43.099385,
+    "displayName": "Rua Comandante Miguelote Viana, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Comandante Miguelote Viana"
+  },
+  "rua comandante miguelote viana, icarai, icarai, niteroi - rj": {
+    "lat": -22.9089385,
+    "lng": -43.099385,
+    "displayName": "Rua Comandante Miguelote Viana, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Comandante Miguelote Viana"
+  },
+  "rua comandante miguelote viana, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9089385,
+    "lng": -43.099385,
+    "displayName": "Rua Comandante Miguelote Viana, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-136, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Comandante Miguelote Viana"
+  },
+  "rua doutor carlos halfeld, icarai, niteroi - rj": {
+    "lat": -22.9077181,
+    "lng": -43.1030527,
+    "displayName": "Rua Doutor Carlos Halfeld, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-153, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Carlos Halfeld"
+  },
+  "rua doutor carlos halfeld, icarai, icarai, niteroi - rj": {
+    "lat": -22.9077181,
+    "lng": -43.1030527,
+    "displayName": "Rua Doutor Carlos Halfeld, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-153, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Carlos Halfeld"
+  },
+  "rua doutor carlos halfeld, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9077181,
+    "lng": -43.1030527,
+    "displayName": "Rua Doutor Carlos Halfeld, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-153, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Carlos Halfeld"
+  },
+  "rua presidente joao pessoa, icarai, niteroi - rj": {
+    "lat": -22.9037943,
+    "lng": -43.1017475,
+    "displayName": "Rua Presidente João Pessoa, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-370, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Presidente João Pessoa"
+  },
+  "rua presidente joao pessoa, icarai, icarai, niteroi - rj": {
+    "lat": -22.9037943,
+    "lng": -43.1017475,
+    "displayName": "Rua Presidente João Pessoa, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-370, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Presidente João Pessoa"
+  },
+  "rua presidente joao pessoa, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9037943,
+    "lng": -43.1017475,
+    "displayName": "Rua Presidente João Pessoa, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-370, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Presidente João Pessoa"
+  },
+  "rua doutor carlos maximiano, fonseca, niteroi - rj": {
+    "lat": -22.8820588,
+    "lng": -43.1009579,
+    "displayName": "Rua Doutor Carlos Maximiano, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-082, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Carlos Maximiano"
+  },
+  "rua doutor carlos maximiano, fonseca, fonseca, niteroi - rj": {
+    "lat": -22.8820588,
+    "lng": -43.1009579,
+    "displayName": "Rua Doutor Carlos Maximiano, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-082, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Carlos Maximiano"
+  },
+  "rua doutor carlos maximiano, fonseca, niteroi - rj|niteroi|rj": {
+    "lat": -22.8820588,
+    "lng": -43.1009579,
+    "displayName": "Rua Doutor Carlos Maximiano, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-082, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Carlos Maximiano"
+  },
+  "estrada washington luis 2441, sape, niteroi - rj": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada washington luis 2441, sape, niteroi - rj|niteroi|rj": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada francisco da cruz nunes, itaipu, niteroi - rj": {
+    "lat": -22.9444272,
+    "lng": -43.0355708,
+    "displayName": "Estrada Francisco da Cruz Nunes, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, itaipu, itaipu, niteroi - rj": {
+    "lat": -22.9444272,
+    "lng": -43.0355708,
+    "displayName": "Estrada Francisco da Cruz Nunes, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, itaipu, niteroi - rj|niteroi|rj": {
+    "lat": -22.9444272,
+    "lng": -43.0355708,
+    "displayName": "Estrada Francisco da Cruz Nunes, Itaipu, Niterói, Rio de Janeiro, Região Sudeste, 24340-080, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "rua dom vicoso 273, alto dos passos, juiz de fora - mg": {
+    "lat": -21.7788514,
+    "lng": -43.3488829,
+    "displayName": "Rua Dom Viçoso, Alto dos Passos, Juiz de Fora, Minas Gerais, Região Sudeste, 36025-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Dom Viçoso"
+  },
+  "rua dom vicoso, juiz de fora, juiz de fora - mg": {
+    "lat": -21.7788514,
+    "lng": -43.3488829,
+    "displayName": "Rua Dom Viçoso, Alto dos Passos, Juiz de Fora, Minas Gerais, Região Sudeste, 36025-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Dom Viçoso"
+  },
+  "rua dom vicoso 273, alto dos passos, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7788514,
+    "lng": -43.3488829,
+    "displayName": "Rua Dom Viçoso, Alto dos Passos, Juiz de Fora, Minas Gerais, Região Sudeste, 36025-160, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Dom Viçoso"
+  },
+  "rua barao de cataguases 471, santa helena, juiz de fora - mg": {
+    "lat": -21.7534989,
+    "lng": -43.351653,
+    "displayName": "Rua Barão de Cataguases, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-270, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Barão de Cataguases"
+  },
+  "rua barao de cataguases 471, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7534989,
+    "lng": -43.351653,
+    "displayName": "Rua Barão de Cataguases, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-270, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Barão de Cataguases"
+  },
+  "rua tiradentes 175, santa helena, juiz de fora - mg": {
+    "lat": -21.7610429,
+    "lng": -43.3537707,
+    "displayName": "Rua Tiradentes, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Tiradentes"
+  },
+  "rua tiradentes 175, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7610429,
+    "lng": -43.3537707,
+    "displayName": "Rua Tiradentes, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-350, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Tiradentes"
+  },
+  "rua barao de cataguases 131, santa helena, juiz de fora - mg": {
+    "lat": -21.7534989,
+    "lng": -43.351653,
+    "displayName": "Rua Barão de Cataguases, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-270, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Barão de Cataguases"
+  },
+  "rua barao de cataguases 131, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7534989,
+    "lng": -43.351653,
+    "displayName": "Rua Barão de Cataguases, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-270, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Barão de Cataguases"
+  },
+  "avenida luiz perry 417, santa helena, juiz de fora - mg": {
+    "lat": -21.755685,
+    "lng": -43.3550972,
+    "displayName": "Avenida Luiz Perry, Santos Anjos, Jardim Santa Helena, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-380, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Luiz Perry"
+  },
+  "avenida luiz perry, centro, juiz de fora - mg": {
+    "lat": -21.755685,
+    "lng": -43.3550972,
+    "displayName": "Avenida Luiz Perry, Santos Anjos, Jardim Santa Helena, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-380, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Luiz Perry"
+  },
+  "avenida luiz perry 417, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.755685,
+    "lng": -43.3550972,
+    "displayName": "Avenida Luiz Perry, Santos Anjos, Jardim Santa Helena, Juiz de Fora, Minas Gerais, Região Sudeste, 36015-380, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Luiz Perry"
+  },
+  "rua floriano peixoto 840, santa helena, juiz de fora - mg": {
+    "lat": -21.7582273,
+    "lng": -43.347205,
+    "displayName": "Rua Floriano Peixoto, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Floriano Peixoto"
+  },
+  "rua floriano peixoto, centro, juiz de fora - mg": {
+    "lat": -21.7582273,
+    "lng": -43.347205,
+    "displayName": "Rua Floriano Peixoto, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Floriano Peixoto"
+  },
+  "rua floriano peixoto 840, santa helena, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7582273,
+    "lng": -43.347205,
+    "displayName": "Rua Floriano Peixoto, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-130, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Floriano Peixoto"
+  },
+  "avenida barao do rio branco 3559, alto dos passos, juiz de fora - mg": {
+    "lat": -21.7574849,
+    "lng": -43.3507696,
+    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Barão do Rio Branco"
+  },
+  "avenida barao do rio branco 3559, alto dos passos, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7574849,
+    "lng": -43.3507696,
+    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Barão do Rio Branco"
+  },
+  "avenida barao do rio branco 5151, alto dos passos, juiz de fora - mg": {
+    "lat": -21.7574849,
+    "lng": -43.3507696,
+    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Barão do Rio Branco"
+  },
+  "avenida barao do rio branco 5151, alto dos passos, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7574849,
+    "lng": -43.3507696,
+    "displayName": "Avenida Barão do Rio Branco, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36013-040, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Barão do Rio Branco"
+  },
+  "rua doutor tavares de macedo 5, icarai, niteroi - rj": {
+    "lat": -22.9049426,
+    "lng": -43.1108327,
+    "displayName": "Rua Doutor Tavares de Macedo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-215, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Tavares de Macedo"
+  },
+  "rua doutor tavares de macedo, icarai, niteroi - rj": {
+    "lat": -22.9049426,
+    "lng": -43.1108327,
+    "displayName": "Rua Doutor Tavares de Macedo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-215, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Tavares de Macedo"
+  },
+  "rua doutor tavares de macedo 5, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9049426,
+    "lng": -43.1108327,
+    "displayName": "Rua Doutor Tavares de Macedo, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-215, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Tavares de Macedo"
+  },
+  "avenida almirante ary parreiras 194, icarai, niteroi - rj": {
+    "lat": -22.9070388,
+    "lng": -43.0991958,
+    "displayName": "Avenida Almirante Ary Parreiras, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Ary Parreiras"
+  },
+  "avenida almirante ary parreiras 194, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9070388,
+    "lng": -43.0991958,
+    "displayName": "Avenida Almirante Ary Parreiras, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Almirante Ary Parreiras"
+  },
+  "rua general silvestre rocha, icarai, niteroi - rj": {
+    "lat": -22.9080104,
+    "lng": -43.0994225,
+    "displayName": "Rua General Silvestre Rocha, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Silvestre Rocha"
+  },
+  "rua general silvestre rocha, icarai, icarai, niteroi - rj": {
+    "lat": -22.9080104,
+    "lng": -43.0994225,
+    "displayName": "Rua General Silvestre Rocha, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Silvestre Rocha"
+  },
+  "rua general silvestre rocha, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9080104,
+    "lng": -43.0994225,
+    "displayName": "Rua General Silvestre Rocha, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-321, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Silvestre Rocha"
+  },
+  "rua noronha torrezao, nº742 - unidade 404.": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº742 - unidade 404.|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº 742 - unidade 701.": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº 742 - unidade 701.|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº 742 - unidade 703.": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº 742 - unidade 703.|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº 742 - unidade 602.": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, nº 742 - unidade 602.|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua barao do amazonas, nº 2, apto. 1502": {
+    "lat": -22.8872561,
+    "lng": -43.1203757,
+    "displayName": "Amazonas Bike, Rua Barão de Amazonas, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Barão de Amazonas"
+  },
+  "rua barao do amazonas, nº 2, apto. 1502|niteroi|rj": {
+    "lat": -22.8872561,
+    "lng": -43.1203757,
+    "displayName": "Amazonas Bike, Rua Barão de Amazonas, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Barão de Amazonas"
+  },
+  "estrada senador fernandes da cunha, nº 1002, apto. 302": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "estrada senador fernandes da cunha, nº 1002, apto. 302|niteroi|rj": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "avenida pastor martin luther king junior, n. 4676, apto 404, bl 21": {
+    "lat": -22.8628309,
+    "lng": -43.3062194,
+    "displayName": "Escola Municipal Maria Mazzetti, Avenida Pastor Martin Luther King, 4676, Tomás Coelho, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Pastor Martin Luther King",
+    "matchedNumber": "4676"
+  },
+  "avenida pastor martin luther king junior, n. 4676, apto 404, bl 21|rio de janeiro|rj": {
+    "lat": -22.8628309,
+    "lng": -43.3062194,
+    "displayName": "Escola Municipal Maria Mazzetti, Avenida Pastor Martin Luther King, 4676, Tomás Coelho, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Pastor Martin Luther King",
+    "matchedNumber": "4676"
+  },
+  "estrada marechal miguel salazar mendes d, n. 969, apto 211, bl 1 lt 1": {
+    "lat": -22.9422665,
+    "lng": -43.3660648,
+    "displayName": "Residencial My Style Jacarepaguá, Estrada Marechal Miguel Salazar Mendes de Morais, 969, Taquara, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Marechal Miguel Salazar Mendes de Morais",
+    "matchedNumber": "969"
+  },
+  "estrada marechal miguel salazar mendes d, jacarepagua, rio de janeiro - rj": {
+    "lat": -22.9422665,
+    "lng": -43.3660648,
+    "displayName": "Residencial My Style Jacarepaguá, Estrada Marechal Miguel Salazar Mendes de Morais, 969, Taquara, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Marechal Miguel Salazar Mendes de Morais",
+    "matchedNumber": "969"
+  },
+  "estrada marechal miguel salazar mendes d, n. 969, apto 211, bl 1 lt 1|rio de janeiro|rj": {
+    "lat": -22.9422665,
+    "lng": -43.3660648,
+    "displayName": "Residencial My Style Jacarepaguá, Estrada Marechal Miguel Salazar Mendes de Morais, 969, Taquara, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Marechal Miguel Salazar Mendes de Morais",
+    "matchedNumber": "969"
+  },
+  "estrada marechal miguel salazar mendes d, n. 969, apto 207, bl  2": {
+    "lat": -22.9422665,
+    "lng": -43.3660648,
+    "displayName": "Residencial My Style Jacarepaguá, Estrada Marechal Miguel Salazar Mendes de Morais, 969, Taquara, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Marechal Miguel Salazar Mendes de Morais",
+    "matchedNumber": "969"
+  },
+  "estrada marechal miguel salazar mendes d, n. 969, apto 207, bl  2|rio de janeiro|rj": {
+    "lat": -22.9422665,
+    "lng": -43.3660648,
+    "displayName": "Residencial My Style Jacarepaguá, Estrada Marechal Miguel Salazar Mendes de Morais, 969, Taquara, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Marechal Miguel Salazar Mendes de Morais",
+    "matchedNumber": "969"
+  },
+  "estrada francisco da cruz nunes, nº 777, casa": {
+    "lat": -22.9116485,
+    "lng": -43.0589022,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cantagalo, Niterói, Rio de Janeiro, Região Sudeste, 24320-280, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, badu, niteroi - rj": {
+    "lat": -22.9116485,
+    "lng": -43.0589022,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cantagalo, Niterói, Rio de Janeiro, Região Sudeste, 24320-280, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, nº 777, casa|niteroi|rj": {
+    "lat": -22.9116485,
+    "lng": -43.0589022,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cantagalo, Niterói, Rio de Janeiro, Região Sudeste, 24320-280, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada washington luis, nº 520": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada washington luis, nº 520|niteroi|rj": {
+    "lat": -22.8971364,
+    "lng": -43.0592046,
+    "displayName": "Estrada Washington Luís, Morro Bela Vista, Sapê, Niterói, Rio de Janeiro, Região Sudeste, 24315-375, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Washington Luís"
+  },
+  "estrada francisco da cruz nunes, nº 777": {
+    "lat": -22.9116485,
+    "lng": -43.0589022,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cantagalo, Niterói, Rio de Janeiro, Região Sudeste, 24320-280, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "estrada francisco da cruz nunes, nº 777|niteroi|rj": {
+    "lat": -22.9116485,
+    "lng": -43.0589022,
+    "displayName": "Estrada Francisco da Cruz Nunes, Cantagalo, Niterói, Rio de Janeiro, Região Sudeste, 24320-280, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Francisco da Cruz Nunes"
+  },
+  "rua lady laura, nº 101, apto. 502": {
+    "lat": -23.0173256,
+    "lng": -43.4827296,
+    "displayName": "Rua Lady Laura, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-590, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lady Laura"
+  },
+  "rua lady laura, nº 101, apto. 502|rio de janeiro|rj": {
+    "lat": -23.0173256,
+    "lng": -43.4827296,
+    "displayName": "Rua Lady Laura, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-590, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Lady Laura"
+  },
+  "rua doutor luiz antonio vieira penna - de 1 a, nº 99998": {
+    "lat": -21.7791172,
+    "lng": -43.3512044,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, Mundo Novo, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "rua doutor luiz antonio vieira penna - de 1 a, , juiz de fora - mg": {
+    "lat": -21.7791172,
+    "lng": -43.3512044,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, Mundo Novo, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "rua doutor luiz antonio vieira penna - de 1 a, nº 99998|juiz de fora|mg": {
+    "lat": -21.7791172,
+    "lng": -43.3512044,
+    "displayName": "Rua Doutor Luiz Antônio Vieira Penna, Mundo Novo, Juiz de Fora, Minas Gerais, Região Sudeste, 36026-090, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Luiz Antônio Vieira Penna"
+  },
+  "rua doutor mario viana, nº 441, apto. 1402": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, nº 441, apto. 1402|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua eucherio rodrigues, nº 700, apto. 501": {
+    "lat": -21.7260363,
+    "lng": -43.3954088,
+    "displayName": "Residencial Jardim Independência, Rua Euchério Rodrigues, 700, Industrial, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Euchério Rodrigues",
+    "matchedNumber": "700"
+  },
+  "rua eucherio rodrigues, nº 700, apto. 501|juiz de fora|mg": {
+    "lat": -21.7260363,
+    "lng": -43.3954088,
+    "displayName": "Residencial Jardim Independência, Rua Euchério Rodrigues, 700, Industrial, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Euchério Rodrigues",
+    "matchedNumber": "700"
+  },
+  "avenida carlos ermelindo marins, nº 1": {
+    "lat": -22.9316583,
+    "lng": -43.1157939,
+    "displayName": "Avenida Carlos Ermelindo Marins, Jurujuba, Niterói, Rio de Janeiro, Região Sudeste, 24360-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Carlos Ermelindo Marins"
+  },
+  "avenida carlos ermelindo marins, jurujuba, niteroi - rj": {
+    "lat": -22.9316583,
+    "lng": -43.1157939,
+    "displayName": "Avenida Carlos Ermelindo Marins, Jurujuba, Niterói, Rio de Janeiro, Região Sudeste, 24360-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Carlos Ermelindo Marins"
+  },
+  "avenida carlos ermelindo marins, nº 1|niteroi|rj": {
+    "lat": -22.9316583,
+    "lng": -43.1157939,
+    "displayName": "Avenida Carlos Ermelindo Marins, Jurujuba, Niterói, Rio de Janeiro, Região Sudeste, 24360-030, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Carlos Ermelindo Marins"
+  },
+  "rua jornalista carlos vilhena,": {
+    "lat": -22.9386098,
+    "lng": -43.0421533,
+    "displayName": "Rua Jornalista Carlos Vilhena, Santo Antônio, Niterói, Rio de Janeiro, Região Sudeste, 24340-045, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Jornalista Carlos Vilhena"
+  },
+  "rua jornalista carlos vilhena, santo antonio, niteroi - rj": {
+    "lat": -22.9386098,
+    "lng": -43.0421533,
+    "displayName": "Rua Jornalista Carlos Vilhena, Santo Antônio, Niterói, Rio de Janeiro, Região Sudeste, 24340-045, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Jornalista Carlos Vilhena"
+  },
+  "rua jornalista carlos vilhena,|niteroi|rj": {
+    "lat": -22.9386098,
+    "lng": -43.0421533,
+    "displayName": "Rua Jornalista Carlos Vilhena, Santo Antônio, Niterói, Rio de Janeiro, Região Sudeste, 24340-045, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Jornalista Carlos Vilhena"
+  },
+  "avenida ayrton senna n.°, nº 2500": {
+    "lat": -22.9588634,
+    "lng": -43.3571371,
+    "displayName": "Avenida Ayrton Senna, Barra Olímpica, Rio de Janeiro, Região Sudeste, 22765-650, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Ayrton Senna"
+  },
+  "avenida ayrton senna nº, , rio de janeiro - rj": {
+    "lat": -22.9588634,
+    "lng": -43.3571371,
+    "displayName": "Avenida Ayrton Senna, Barra Olímpica, Rio de Janeiro, Região Sudeste, 22765-650, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Ayrton Senna"
+  },
+  "avenida ayrton senna n.°, nº 2500|rio de janeiro|rj": {
+    "lat": -22.9588634,
+    "lng": -43.3571371,
+    "displayName": "Avenida Ayrton Senna, Barra Olímpica, Rio de Janeiro, Região Sudeste, 22765-650, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Ayrton Senna"
+  },
+  "estrada senador fernandes da cunha, nº 1330": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "estrada senador fernandes da cunha, , niteroi - rj": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "estrada senador fernandes da cunha, nº 1330|niteroi|rj": {
+    "lat": -22.9020849,
+    "lng": -42.9976332,
+    "displayName": "Estrada Senador Fernandes da Cunha, Rio do Ouro, Niterói, Rio de Janeiro, Região Sudeste, 24753-500, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Estrada Senador Fernandes da Cunha"
+  },
+  "avenida presidente juscelino kubitschek, n 6.263": {
+    "lat": -21.7360319,
+    "lng": -43.3912714,
+    "displayName": "Avenida Presidente Juscelino Kubitschek, Francisco Bernardino, Juiz de Fora, Minas Gerais, Região Sudeste, 36081-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Presidente Juscelino Kubitschek"
+  },
+  "avenida presidente juscelino kubitschek, francisco bernardino, juiz de fora - mg": {
+    "lat": -21.7360319,
+    "lng": -43.3912714,
+    "displayName": "Avenida Presidente Juscelino Kubitschek, Francisco Bernardino, Juiz de Fora, Minas Gerais, Região Sudeste, 36081-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Presidente Juscelino Kubitschek"
+  },
+  "avenida presidente juscelino kubitschek, n 6.263|juiz de fora|mg": {
+    "lat": -21.7360319,
+    "lng": -43.3912714,
+    "displayName": "Avenida Presidente Juscelino Kubitschek, Francisco Bernardino, Juiz de Fora, Minas Gerais, Região Sudeste, 36081-250, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Presidente Juscelino Kubitschek"
+  },
+  "rua ministro otavio kelly, icarai, niteroi - rj": {
+    "lat": -22.904495,
+    "lng": -43.1036224,
+    "displayName": "Rua Ministro Otávio Kelly, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Ministro Otávio Kelly"
+  },
+  "rua ministro otavio kelly, icarai, icarai, niteroi - rj": {
+    "lat": -22.904495,
+    "lng": -43.1036224,
+    "displayName": "Rua Ministro Otávio Kelly, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Ministro Otávio Kelly"
+  },
+  "rua ministro otavio kelly, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.904495,
+    "lng": -43.1036224,
+    "displayName": "Rua Ministro Otávio Kelly, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-000, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Ministro Otávio Kelly"
+  },
+  "rua comendador queiroz, icarai, niteroi - rj": {
+    "lat": -22.9109112,
+    "lng": -43.1082213,
+    "displayName": "Rua Comendador Queiroz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-320, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Comendador Queiroz"
+  },
+  "rua comendador queiroz, icarai, icarai, niteroi - rj": {
+    "lat": -22.9109112,
+    "lng": -43.1082213,
+    "displayName": "Rua Comendador Queiroz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-320, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Comendador Queiroz"
+  },
+  "rua comendador queiroz, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9109112,
+    "lng": -43.1082213,
+    "displayName": "Rua Comendador Queiroz, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-320, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Comendador Queiroz"
+  },
+  "rua doutor leandro mota, icarai, niteroi - rj": {
+    "lat": -22.9030391,
+    "lng": -43.101616,
+    "displayName": "Rua Doutor Leandro Mota, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-370, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Leandro Mota"
+  },
+  "rua doutor leandro mota, icarai, icarai, niteroi - rj": {
+    "lat": -22.9030391,
+    "lng": -43.101616,
+    "displayName": "Rua Doutor Leandro Mota, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-370, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Leandro Mota"
+  },
+  "rua doutor leandro mota, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9030391,
+    "lng": -43.101616,
+    "displayName": "Rua Doutor Leandro Mota, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-370, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Leandro Mota"
+  },
+  "rua general pereira da silva, icarai, niteroi - rj": {
+    "lat": -22.8999985,
+    "lng": -43.1082004,
+    "displayName": "Rua General Pereira da Silva, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-150, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Pereira da Silva"
+  },
+  "rua general pereira da silva, icarai, icarai, niteroi - rj": {
+    "lat": -22.8999985,
+    "lng": -43.1082004,
+    "displayName": "Rua General Pereira da Silva, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-150, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Pereira da Silva"
+  },
+  "rua general pereira da silva, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.8999985,
+    "lng": -43.1082004,
+    "displayName": "Rua General Pereira da Silva, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-150, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua General Pereira da Silva"
+  },
+  "rua geraldo martins 54, icarai, niteroi - rj": {
+    "lat": -22.9009808,
+    "lng": -43.1026141,
+    "displayName": "Rua Geraldo Martins, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-381, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Geraldo Martins"
+  },
+  "rua geraldo martins, icarai, niteroi - rj": {
+    "lat": -22.9009808,
+    "lng": -43.1026141,
+    "displayName": "Rua Geraldo Martins, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-381, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Geraldo Martins"
+  },
+  "rua geraldo martins 54, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9009808,
+    "lng": -43.1026141,
+    "displayName": "Rua Geraldo Martins, Jardim Icaraí, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24220-381, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Geraldo Martins"
+  },
+  "avenida jornalista alberto francisco torres 85, icarai, niteroi - rj": {
+    "lat": -22.9032696,
+    "lng": -43.1172174,
+    "displayName": "Condomínio Murano, 85, Avenida Jornalista Alberto Francisco Torres, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-000, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Jornalista Alberto Francisco Torres",
+    "matchedNumber": "85"
+  },
+  "avenida jornalista alberto francisco torres, icarai, niteroi - rj": {
+    "lat": -22.9032696,
+    "lng": -43.1172174,
+    "displayName": "Condomínio Murano, 85, Avenida Jornalista Alberto Francisco Torres, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-000, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Jornalista Alberto Francisco Torres",
+    "matchedNumber": "85"
+  },
+  "avenida jornalista alberto francisco torres 85, icarai, niteroi - rj|niteroi|rj": {
+    "lat": -22.9032696,
+    "lng": -43.1172174,
+    "displayName": "Condomínio Murano, 85, Avenida Jornalista Alberto Francisco Torres, Icaraí, Niterói, Rio de Janeiro, Região Sudeste, 24230-000, Brasil",
+    "precision": "rooftop",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Jornalista Alberto Francisco Torres",
+    "matchedNumber": "85"
+  },
+  "rua beth lago, nº 295": {
+    "lat": -23.0159199,
+    "lng": -43.481014,
+    "displayName": "Rua Beth Lago, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Beth Lago"
+  },
+  "rua beth lago, nº 295|rio de janeiro|rj": {
+    "lat": -23.0159199,
+    "lng": -43.481014,
+    "displayName": "Rua Beth Lago, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Beth Lago"
+  },
+  "avenida 1 com avenida 6, lado direito de quem desta vai para avenida 1, na freguesia de jacarepagua, com 03 quartos, townhouse e 106, nº 01": {
+    "lat": -22.8193284,
+    "lng": -43.4040353,
+    "displayName": "Avenida, Anchieta, Rio de Janeiro, Região Sudeste, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida"
+  },
+  "avenida, , rio de janeiro - rj": {
+    "lat": -22.8193284,
+    "lng": -43.4040353,
+    "displayName": "Avenida, Anchieta, Rio de Janeiro, Região Sudeste, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida"
+  },
+  "avenida 1 com avenida 6, lado direito de quem desta vai para avenida 1, na freguesia de jacarepagua, com 03 quartos, townhouse e 106, nº 01|rio de janeiro|rj": {
+    "lat": -22.8193284,
+    "lng": -43.4040353,
+    "displayName": "Avenida, Anchieta, Rio de Janeiro, Região Sudeste, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida"
+  },
+  "rua doutor mario viana, nº 441, apto. 303": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, nº 441, apto. 303|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "estrada marechal miguel salazar mendes d, nº 969, apto. 207": {
+    "lat": -22.9422665,
+    "lng": -43.3660648,
+    "displayName": "Residencial My Style Jacarepaguá, Estrada Marechal Miguel Salazar Mendes de Morais, 969, Taquara, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Marechal Miguel Salazar Mendes de Morais",
+    "matchedNumber": "969"
+  },
+  "estrada marechal miguel salazar mendes d, nº 969, apto. 207|rio de janeiro|rj": {
+    "lat": -22.9422665,
+    "lng": -43.3660648,
+    "displayName": "Residencial My Style Jacarepaguá, Estrada Marechal Miguel Salazar Mendes de Morais, 969, Taquara, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Estrada Marechal Miguel Salazar Mendes de Morais",
+    "matchedNumber": "969"
+  },
+  "rua doutor mario viana, nº 441, apto. 302": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, nº 441, apto. 302|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua noronha torrezao 524 bloco 1 apto, nº 203": {
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao 524, santa rosa, niteroi - rj": {
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao 524 bloco 1 apto, nº 203|niteroi|rj": {
+    "lat": -22.8965264,
+    "lng": -43.1007123,
+    "displayName": "Rua Noronha Torrezão, Santa Rosa, Niterói, Rio de Janeiro, Região Sudeste, 24240-185, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "avenida lucio costa al 3600, barra da tijuca, rio de janeiro - rj": {
+    "lat": -23.0130746,
+    "lng": -43.3938672,
+    "displayName": "Avenida Lúcio Costa, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22793-295, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Lúcio Costa"
+  },
+  "avenida lucio costa al, barra da tijuca, rio de janeiro - rj": {
+    "lat": -23.0130746,
+    "lng": -43.3938672,
+    "displayName": "Avenida Lúcio Costa, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22793-295, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Lúcio Costa"
+  },
+  "avenida lucio costa al 3600, barra da tijuca, rio de janeiro - rj|rio de janeiro|rj": {
+    "lat": -23.0130746,
+    "lng": -43.3938672,
+    "displayName": "Avenida Lúcio Costa, Barra da Tijuca, Rio de Janeiro, Região Sudeste, 22793-295, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Lúcio Costa"
+  },
+  "rua eucherio rodrigues, nº 700, apto. 401": {
+    "lat": -21.7260363,
+    "lng": -43.3954088,
+    "displayName": "Residencial Jardim Independência, Rua Euchério Rodrigues, 700, Industrial, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Euchério Rodrigues",
+    "matchedNumber": "700"
+  },
+  "rua eucherio rodrigues, nº 700, apto. 401|juiz de fora|mg": {
+    "lat": -21.7260363,
+    "lng": -43.3954088,
+    "displayName": "Residencial Jardim Independência, Rua Euchério Rodrigues, 700, Industrial, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Euchério Rodrigues",
+    "matchedNumber": "700"
+  },
+  "rua doutor mario viana, nº 441, apto. 1603": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana, nº 441, apto. 1603|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor cesar cartel villela, nº 10": {
+    "lat": -23.0186102,
+    "lng": -43.4896607,
+    "displayName": "Rua Doutor César Cartel Villela, Condomínio Terra Américas, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Doutor César Cartel Villela"
+  },
+  "rua doutor cesar cartel villela, recreio dos bandeirantes, rio de janeiro - rj": {
+    "lat": -23.0186102,
+    "lng": -43.4896607,
+    "displayName": "Rua Doutor César Cartel Villela, Condomínio Terra Américas, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Doutor César Cartel Villela"
+  },
+  "rua doutor cesar cartel villela, nº 10|rio de janeiro|rj": {
+    "lat": -23.0186102,
+    "lng": -43.4896607,
+    "displayName": "Rua Doutor César Cartel Villela, Condomínio Terra Américas, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Doutor César Cartel Villela"
+  },
+  "rua caicaras 10, centro, juiz de fora - mg": {
+    "lat": -21.7669773,
+    "lng": -43.3498615,
+    "displayName": "Rua Caiçaras, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-320, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Caiçaras"
+  },
+  "rua caicaras, centro, juiz de fora - mg": {
+    "lat": -21.7669773,
+    "lng": -43.3498615,
+    "displayName": "Rua Caiçaras, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-320, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Caiçaras"
+  },
+  "rua caicaras 10, centro, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7669773,
+    "lng": -43.3498615,
+    "displayName": "Rua Caiçaras, Centro, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-320, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Caiçaras"
+  },
+  "rua engenheiro bicalho 10, sao mateus, juiz de fora - mg": {
+    "lat": -21.775691,
+    "lng": -43.3551355,
+    "displayName": "Rua Engenheiro Bicalho, São Mateus, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Engenheiro Bicalho"
+  },
+  "rua engenheiro bicalho, sao mateus, juiz de fora - mg": {
+    "lat": -21.775691,
+    "lng": -43.3551355,
+    "displayName": "Rua Engenheiro Bicalho, São Mateus, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Engenheiro Bicalho"
+  },
+  "rua engenheiro bicalho 10, sao mateus, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.775691,
+    "lng": -43.3551355,
+    "displayName": "Rua Engenheiro Bicalho, São Mateus, Juiz de Fora, Minas Gerais, Região Sudeste, 36016-570, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Engenheiro Bicalho"
+  },
+  "rua noronha torrezao, 742, santa rosa, niteroi, rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua noronha torrezao, 742, santa rosa, niteroi, rj|niteroi|rj": {
+    "lat": -22.8894877,
+    "lng": -43.0948152,
+    "displayName": "Rua Noronha Torrezão, Cubango, Niterói, Rio de Janeiro, Região Sudeste, 24240-183, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Noronha Torrezão"
+  },
+  "rua riodades, nº 145": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "rua riodades, nº 145|niteroi|rj": {
+    "lat": -22.8757908,
+    "lng": -43.0806746,
+    "displayName": "Rua Riodades, Fonseca, Niterói, Rio de Janeiro, Região Sudeste, 24130-340, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Riodades"
+  },
+  "avenida embaixador abelardo bueno 3180 - sala, nº 1008": {
+    "lat": -22.9725142,
+    "lng": -43.3947543,
+    "displayName": "Lumina Work Station, Avenida Embaixador Abelardo Bueno, 3180, Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Embaixador Abelardo Bueno",
+    "matchedNumber": "3180"
+  },
+  "avenida embaixador abelardo bueno 3180 -, jacarepagua, rio de janeiro - rj": {
+    "lat": -22.9725142,
+    "lng": -43.3947543,
+    "displayName": "Lumina Work Station, Avenida Embaixador Abelardo Bueno, 3180, Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Embaixador Abelardo Bueno",
+    "matchedNumber": "3180"
+  },
+  "avenida embaixador abelardo bueno 3180 - sala, nº 1008|rio de janeiro|rj": {
+    "lat": -22.9725142,
+    "lng": -43.3947543,
+    "displayName": "Lumina Work Station, Avenida Embaixador Abelardo Bueno, 3180, Barra da Tijuca, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Avenida Embaixador Abelardo Bueno",
+    "matchedNumber": "3180"
+  },
+  "r. pedro alves - - ate 227 - lado impar - de 1 a 227 lado impar, santo cristo": {
+    "lat": -22.9008274,
+    "lng": -43.2051196,
+    "displayName": "Assembléia de Deus em Santo Cristo, Rua Pedro Alves, 16, Santo Cristo, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Pedro Alves",
+    "matchedNumber": "16"
+  },
+  "rua pedro alves - - ate, santo cristo, rio de janeiro - rj": {
+    "lat": -22.9008274,
+    "lng": -43.2051196,
+    "displayName": "Assembléia de Deus em Santo Cristo, Rua Pedro Alves, 16, Santo Cristo, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Pedro Alves",
+    "matchedNumber": "16"
+  },
+  "r. pedro alves - - ate 227 - lado impar - de 1 a 227 lado impar, santo cristo|rio de janeiro|rj": {
+    "lat": -22.9008274,
+    "lng": -43.2051196,
+    "displayName": "Assembléia de Deus em Santo Cristo, Rua Pedro Alves, 16, Santo Cristo, Rio de Janeiro, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Pedro Alves",
+    "matchedNumber": "16"
+  },
+  "rua desembarga dor lima castro, nº 113, apto. 1105": {
+    "lat": -22.8841222,
+    "lng": -43.0857952,
+    "displayName": "Rua Desembargador Lima Castro, 113, Fonseca, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Desembargador Lima Castro",
+    "matchedNumber": "113"
+  },
+  "rua desembarga dor lima castro, fonseca, niteroi - rj": {
+    "lat": -22.8841222,
+    "lng": -43.0857952,
+    "displayName": "Rua Desembargador Lima Castro, 113, Fonseca, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Desembargador Lima Castro",
+    "matchedNumber": "113"
+  },
+  "rua desembarga dor lima castro, nº 113, apto. 1105|niteroi|rj": {
+    "lat": -22.8841222,
+    "lng": -43.0857952,
+    "displayName": "Rua Desembargador Lima Castro, 113, Fonseca, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Desembargador Lima Castro",
+    "matchedNumber": "113"
+  },
+  "rua doutor cesar cartel villela, nº 10, casa 2": {
+    "lat": -23.0186102,
+    "lng": -43.4896607,
+    "displayName": "Rua Doutor César Cartel Villela, Condomínio Terra Américas, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Doutor César Cartel Villela"
+  },
+  "rua doutor cesar cartel villela, nº 10, casa 2|rio de janeiro|rj": {
+    "lat": -23.0186102,
+    "lng": -43.4896607,
+    "displayName": "Rua Doutor César Cartel Villela, Condomínio Terra Américas, Recreio dos Bandeirantes, Rio de Janeiro, Região Sudeste, 22790-600, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Rio de Janeiro",
+    "matchedStreet": "Rua Doutor César Cartel Villela"
+  },
+  "rua joaquim vicente guedes, nº 1736": {
+    "lat": -21.7898011,
+    "lng": -43.335207,
+    "displayName": "Avenida Joaquim Vicente Guedes, Granjas Santo Antonio, Graminha, Juiz de Fora, Minas Gerais, Região Sudeste, 36030-900, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Joaquim Vicente Guedes"
+  },
+  "rua joaquim vicente guedes, n, juiz de fora - mg": {
+    "lat": -21.7898011,
+    "lng": -43.335207,
+    "displayName": "Avenida Joaquim Vicente Guedes, Granjas Santo Antonio, Graminha, Juiz de Fora, Minas Gerais, Região Sudeste, 36030-900, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Joaquim Vicente Guedes"
+  },
+  "rua joaquim vicente guedes, nº 1736|juiz de fora|mg": {
+    "lat": -21.7898011,
+    "lng": -43.335207,
+    "displayName": "Avenida Joaquim Vicente Guedes, Granjas Santo Antonio, Graminha, Juiz de Fora, Minas Gerais, Região Sudeste, 36030-900, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Avenida Joaquim Vicente Guedes"
+  },
+  "rua sao sebastiao, nº 516, centro": {
+    "lat": -21.7570734,
+    "lng": -43.3493321,
+    "displayName": "Rua São Sebastião, 516, Centro, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua São Sebastião",
+    "matchedNumber": "516"
+  },
+  "rua sao sebastiao, sao mateus, juiz de fora - mg": {
+    "lat": -21.7570734,
+    "lng": -43.3493321,
+    "displayName": "Rua São Sebastião, 516, Centro, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua São Sebastião",
+    "matchedNumber": "516"
+  },
+  "rua sao sebastiao, nº 516, centro|juiz de fora|mg": {
+    "lat": -21.7570734,
+    "lng": -43.3493321,
+    "displayName": "Rua São Sebastião, 516, Centro, Juiz de Fora, Minas Gerais, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua São Sebastião",
+    "matchedNumber": "516"
+  },
+  "rua da conceicao, n": {
+    "lat": -22.894863,
+    "lng": -43.1184978,
+    "displayName": "Detran RJ, Rua da Conceição, 188, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua da Conceição",
+    "matchedNumber": "188"
+  },
+  "rua da conceicao, n|niteroi|rj": {
+    "lat": -22.894863,
+    "lng": -43.1184978,
+    "displayName": "Detran RJ, Rua da Conceição, 188, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua da Conceição",
+    "matchedNumber": "188"
+  },
+  "avenida marques do parana, 349, centro": {
+    "lat": -22.8967092,
+    "lng": -43.111956,
+    "displayName": "GrandLife Icaraí, Avenida Marquês do Paraná, 349, Icaraí, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Marquês do Paraná",
+    "matchedNumber": "349"
+  },
+  "avenida marques do parana, centro, niteroi - rj": {
+    "lat": -22.8967092,
+    "lng": -43.111956,
+    "displayName": "GrandLife Icaraí, Avenida Marquês do Paraná, 349, Icaraí, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Marquês do Paraná",
+    "matchedNumber": "349"
+  },
+  "avenida marques do parana, 349, centro|niteroi|rj": {
+    "lat": -22.8967092,
+    "lng": -43.111956,
+    "displayName": "GrandLife Icaraí, Avenida Marquês do Paraná, 349, Icaraí, Niterói, Rio de Janeiro, Brasil",
+    "precision": "rooftop",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Avenida Marquês do Paraná",
+    "matchedNumber": "349"
+  },
+  "rua doutor nilo pecanha, inga, niteroi - rj": {
+    "lat": -22.9024364,
+    "lng": -43.1242035,
+    "displayName": "solar jardim do ingá, Rua Doutor Nilo Peçanha, 125, Ingá, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Nilo Peçanha",
+    "matchedNumber": "125"
+  },
+  "rua doutor nilo pecanha, inga, inga, niteroi - rj": {
+    "lat": -22.9024364,
+    "lng": -43.1242035,
+    "displayName": "solar jardim do ingá, Rua Doutor Nilo Peçanha, 125, Ingá, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Nilo Peçanha",
+    "matchedNumber": "125"
+  },
+  "rua doutor nilo pecanha, inga, niteroi - rj|niteroi|rj": {
+    "lat": -22.9024364,
+    "lng": -43.1242035,
+    "displayName": "solar jardim do ingá, Rua Doutor Nilo Peçanha, 125, Ingá, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Nilo Peçanha",
+    "matchedNumber": "125"
+  },
+  "rua visconde de sepetiba, centro, niteroi - rj": {
+    "lat": -22.894015,
+    "lng": -43.118414,
+    "displayName": "Poder Judiciário - Comarca de Niterói, Rua Visconde de Sepetiba, 519, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Sepetiba",
+    "matchedNumber": "519"
+  },
+  "rua visconde de sepetiba, centro, centro, niteroi - rj": {
+    "lat": -22.894015,
+    "lng": -43.118414,
+    "displayName": "Poder Judiciário - Comarca de Niterói, Rua Visconde de Sepetiba, 519, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Sepetiba",
+    "matchedNumber": "519"
+  },
+  "rua visconde de sepetiba, centro, niteroi - rj|niteroi|rj": {
+    "lat": -22.894015,
+    "lng": -43.118414,
+    "displayName": "Poder Judiciário - Comarca de Niterói, Rua Visconde de Sepetiba, 519, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Sepetiba",
+    "matchedNumber": "519"
+  },
+  "rua professora marta waltemberg 160, granbery, juiz de fora - mg": {
+    "lat": -21.7688889,
+    "lng": -43.3413887,
+    "displayName": "Rua Professora Marta Waltemberg, Granbery, Juiz de Fora, Minas Gerais, Região Sudeste, 36010-460, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Professora Marta Waltemberg"
+  },
+  "rua professora marta waltemberg, granbery, juiz de fora - mg": {
+    "lat": -21.7688889,
+    "lng": -43.3413887,
+    "displayName": "Rua Professora Marta Waltemberg, Granbery, Juiz de Fora, Minas Gerais, Região Sudeste, 36010-460, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Professora Marta Waltemberg"
+  },
+  "rua professora marta waltemberg 160, granbery, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7688889,
+    "lng": -43.3413887,
+    "displayName": "Rua Professora Marta Waltemberg, Granbery, Juiz de Fora, Minas Gerais, Região Sudeste, 36010-460, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Professora Marta Waltemberg"
+  },
+  "rua santos dumont 276, granbery, juiz de fora - mg": {
+    "lat": -21.7655975,
+    "lng": -43.3435551,
+    "displayName": "Rua Santos Dumont, Granbery, Juiz de Fora, Minas Gerais, Região Sudeste, 36020-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Santos Dumont"
+  },
+  "rua santos dumont, juiz de fora, juiz de fora - mg": {
+    "lat": -21.7655975,
+    "lng": -43.3435551,
+    "displayName": "Rua Santos Dumont, Granbery, Juiz de Fora, Minas Gerais, Região Sudeste, 36020-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Santos Dumont"
+  },
+  "rua santos dumont 276, granbery, juiz de fora - mg|juiz de fora|mg": {
+    "lat": -21.7655975,
+    "lng": -43.3435551,
+    "displayName": "Rua Santos Dumont, Granbery, Juiz de Fora, Minas Gerais, Região Sudeste, 36020-010, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Santos Dumont"
+  },
+  "rua doutor ferdinando cyrne, 3589 - apartamento 501, bloco ii - condominio residencial aeroporto - ...": {
+    "lat": -21.7829302,
+    "lng": -43.3835669,
+    "displayName": "Rua Doutor Ferdinando Cyrne, Santos Dumont, Adolpho Vireque, Aeroporto, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-336, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Ferdinando Cyrne"
+  },
+  "rua doutor ferdinando cyrne, aeroporto, juiz de fora - mg": {
+    "lat": -21.7829302,
+    "lng": -43.3835669,
+    "displayName": "Rua Doutor Ferdinando Cyrne, Santos Dumont, Adolpho Vireque, Aeroporto, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-336, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Ferdinando Cyrne"
+  },
+  "rua doutor ferdinando cyrne, 3589 - apartamento 501, bloco ii - condominio residencial aeroporto - ...|juiz de fora|mg": {
+    "lat": -21.7829302,
+    "lng": -43.3835669,
+    "displayName": "Rua Doutor Ferdinando Cyrne, Santos Dumont, Adolpho Vireque, Aeroporto, Juiz de Fora, Minas Gerais, Região Sudeste, 36038-336, Brasil",
+    "precision": "street",
+    "source": "nominatim",
+    "matchedCity": "Juiz de Fora",
+    "matchedStreet": "Rua Doutor Ferdinando Cyrne"
+  },
+  "rua doutor mario viana 734, santa rosa, niteroi - rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana 734, santa rosa, niteroi - rj|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana 459, santa rosa, niteroi - rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua doutor mario viana 459, santa rosa, niteroi - rj|niteroi|rj": {
+    "lat": -22.9055717,
+    "lng": -43.0887012,
+    "displayName": "Igreja de Nova Vida de Santa Rosa, Rua Doutor Mário Vianna, 662, Santa Rosa, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Doutor Mário Vianna",
+    "matchedNumber": "662"
+  },
+  "rua visconde de itaborai, centro, niteroi - rj": {
+    "lat": -22.8874658,
+    "lng": -43.1216417,
+    "displayName": "Segunda Igreja Congregacional de Niterói, Rua Visconde de Itaboraí, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Itaboraí"
+  },
+  "rua visconde de itaborai, centro, centro, niteroi - rj": {
+    "lat": -22.8874658,
+    "lng": -43.1216417,
+    "displayName": "Segunda Igreja Congregacional de Niterói, Rua Visconde de Itaboraí, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Itaboraí"
+  },
+  "rua visconde de itaborai, centro, niteroi - rj|niteroi|rj": {
+    "lat": -22.8874658,
+    "lng": -43.1216417,
+    "displayName": "Segunda Igreja Congregacional de Niterói, Rua Visconde de Itaboraí, Centro, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Visconde de Itaboraí"
+  },
+  "rua dois, n. 520, cs 59 lt 059 qd c": {
+    "lat": -22.9344499,
+    "lng": -43.001895,
+    "displayName": "Parque Rural de Niterói, Rua Dois, Engenho do Mato, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Dois"
+  },
+  "rua dois, sape, niteroi - rj": {
+    "lat": -22.9344499,
+    "lng": -43.001895,
+    "displayName": "Parque Rural de Niterói, Rua Dois, Engenho do Mato, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Dois"
+  },
+  "rua dois, n. 520, cs 59 lt 059 qd c|niteroi|rj": {
+    "lat": -22.9344499,
+    "lng": -43.001895,
+    "displayName": "Parque Rural de Niterói, Rua Dois, Engenho do Mato, Niterói, Rio de Janeiro, Brasil",
+    "precision": "street",
+    "source": "photon",
+    "matchedCity": "Niterói",
+    "matchedStreet": "Rua Dois"
   }
 }

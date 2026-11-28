@@ -32,7 +32,7 @@ export type OfficialLocation = Address & {
     alternateBoundaryDistanceMeters: number;
   };
 };
-const EXACT_GEOCODE_ALGORITHM_VERSION = 2;
+const EXACT_GEOCODE_ALGORITHM_VERSION = 3;
 const file = path.join(process.cwd(), 'official_property_locations.json');
 const normalize = (s?: string) => (s || '').normalize('NFC').trim().toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ');
 const normalizeStreet = (s?: string) => normalize(cleanBrazilianAddress(s || '').street)
@@ -249,7 +249,7 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
   geocodingPending = true;
   try {
     refresh();
-    const rows: OfficialLocation[] = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const rows: OfficialLocation[] = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
     const byId = new Map(rows.map((row, index) => [row.id, index] as const));
     const pending = properties.filter(property => {
       const index = property.id ? byId.get(property.id) : undefined;
@@ -268,8 +268,21 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
     let lastNetworkStart = 0;
     let changed = 0;
     for (const property of pending) {
-      const index = byId.get(property.id!);
-      if (index === undefined) continue;
+      let index = byId.get(property.id!);
+      if (index === undefined) {
+        const seed: OfficialLocation = {
+          id: property.id,
+          address: property.address,
+          city: property.city,
+          state: property.state,
+          neighborhood: property.neighborhood,
+          status: 'pending',
+          reason: 'not_yet_matched'
+        };
+        index = rows.length;
+        rows.push(seed);
+        byId.set(property.id!, index);
+      }
       const current = rows[index];
       const parsed = cleanBrazilianAddress(property.address || '');
       const cachedExact = getCachedCoords(property.address || '', property.neighborhood, property.city, property.state);
@@ -334,7 +347,10 @@ export async function geocodePendingPropertyLocations(properties: Address[]) {
 export function ensureOfficialLocationCoverage(properties: Address[]) {
   if (refreshing || process.env.RENDER === 'true') return;
   const cache = path.join(process.cwd(), '.cache', 'map-cnefe');
-  if (!fs.existsSync(path.join(cache, 'manifest.json'))) return;
+  if (!fs.existsSync(path.join(cache, 'manifest.json'))) {
+    void geocodePendingPropertyLocations(properties);
+    return;
+  }
   refresh();
   const hasMissingLocationRecord = properties.some(p => !byAddress.has(propertyLocationKey({ ...p, address: locationAddress(p) })));
   if (!hasMissingLocationRecord) {

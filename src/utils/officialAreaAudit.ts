@@ -28,7 +28,8 @@ export function auditOfficialArea(input: {text:string;title:string;propertyType:
  // even when the description does not repeat the word "área".
  for(const m of text.matchAll(new RegExp('(?:apartamento|apto\\.?|casa|sala|unidade(?:\\s+aut[oô]noma)?)\\s+com\\s+(?:aproximadamente\\s+)?'+amount+'\\s*(m[²2]|m\\.q\\.|metros?\\s+quadrados?)','gi')))add(numeric(m[1]),'unspecified',m[0]);
  for(const m of text.matchAll(new RegExp('\\b(privativa|priv\\.|constru[ií]da|constr\\.|edificada|terreno|terr\\.)(?:\\s*\\([^)]*\\))?\\s*(?:estimada|aproximada|de)?\\s*[:=]?\\s*'+amount+'\\s*('+unit+')','gi')))add(numeric(m[2])*(/ha|hectare/i.test(m[3])?10000:1),/^priv/i.test(m[1])?'private':/^terr/i.test(m[1])?'land':'built',m[0]);
- for(const m of input.title.matchAll(new RegExp(amount+'\\s*('+unit+')','gi')))add(numeric(m[1])*(/ha|hectare/i.test(m[2])?10000:1),'title',m[0]);
+ const titleForUnit = land ? input.title : input.title.replace(/\([^)]*\bterreno\b[^)]*\)/gi, '');
+ for(const m of titleForUnit.matchAll(new RegExp(amount+'\\s*('+unit+')','gi')))add(numeric(m[1])*(/ha|hectare/i.test(m[2])?10000:1),'title',m[0]);
  for(const value of input.structuredSizes||[])add(value,'structured','Área publicada nos dados estruturados do lote');
 
  const ranks=land?['land','total','unspecified','structured','title']:['private','usable','built','structured','unspecified','title','total'];

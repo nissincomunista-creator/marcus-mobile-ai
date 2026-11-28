@@ -1,5 +1,12 @@
 // Public auction portal payload parser. Parse embedded JSON state only; never execute source scripts.
 export function officialLotFinancials(html: string, url: string) {
+  if (/freitasleiloeiro\.com\.br/i.test(url)) {
+    const simMatch = html.match(/SimulacaoBradesco[^"'<>]*[?&]valorInicial=([\d.]+)/i);
+    const simBid = simMatch ? Number(simMatch[1]) : 0;
+    if (Number.isFinite(simBid) && simBid > 0) {
+      return { auctionPrice: simBid, priceVerified: true };
+    }
+  }
   let lot: any;
   try {
     const m = html.match(/(?:var|let|const)\s+lote\s*=\s*(\{[^\r\n]+\});/);
@@ -7,7 +14,40 @@ export function officialLotFinancials(html: string, url: string) {
   } catch {
     return undefined;
   }
+  let sharedLeilao: any;
+  if (!lot) {
+    // Bomvalor SSR (franciscodavidleiloeiro, leiloei, etc.): sharedData holds single-line lote: {...} even while DOM says Carregando...
+    try {
+      const mShared = html.match(/\bsharedData\s*=\s*\{[\s\S]{0,600}?\blote:\s*(\{[^\r\n]+\})\s*,/);
+      if (mShared) lot = JSON.parse(mShared[1]);
+      const mLeilao = html.match(/\bsharedData\s*=\s*\{[\s\S]{0,6000}?\bleilao:\s*(\{[^\r\n]+\})/);
+      if (mLeilao) sharedLeilao = JSON.parse(mLeilao[1]);
+    } catch {}
+  }
   if (!lot || typeof lot !== 'object') return undefined;
+
+  // Bomvalor SSR schema handling (vl_lanceinicial / vl_lanceminimo / nm_slug)
+  if (lot.vl_lanceinicial !== undefined || lot.nm_slug !== undefined) {
+    const parseMoneyField = (v: any) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    const bidInit = parseMoneyField(lot.vl_lanceinicial);
+    const bidMin = parseMoneyField(lot.vl_lanceminimo);
+    const bidMajor = parseMoneyField(lot.maior_lance);
+    const amount = bidMajor || bidInit || bidMin;
+    const evalAmount = parseMoneyField(lot.vl_avaliacao) || undefined;
+    const rawDate =
+      (typeof sharedLeilao?.dt_fim === 'string' && sharedLeilao.dt_fim.slice(0, 10)) ||
+      (typeof lot.dt_fim === 'string' && lot.dt_fim.slice(0, 10)) ||
+      undefined;
+    if (amount <= 0 && !evalAmount) return undefined;
+    return {
+      ...(amount > 0 ? { auctionPrice: amount, priceVerified: true, firstAuctionPrice: amount } : {}),
+      ...(evalAmount ? { estimatedValue: evalAmount } : {}),
+      ...(rawDate ? { auctionDate: rawDate, firstAuctionDate: rawDate } : {}),
+    };
+  }
 
   // A public payload must belong to this lot, not an event or recommendation.
   try {
