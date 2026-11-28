@@ -245,6 +245,12 @@ export default function App() {
       void authFetch('/api/admin/licenses').then(async licRes => {
         if (licRes.ok) setAccessCodes(await licRes.json());
       }).catch(lErr => console.error('Licenses fetch error:', lErr));
+      void authFetch('/api/itbi').then(async itbiRes => {
+        if (!itbiRes.ok) return;
+        const itbiData = await itbiRes.json();
+        setItbiStats(itbiData.stats || []);
+        setItbiCount(itbiData.totalCount || 0);
+      }).catch(itbiErr => console.warn('ITBI startup summary fetch error:', itbiErr));
       try {
         // Show the catalogue as soon as its response is ready. The compact
         // ITBI summary is useful for secondary estimates, but must not hold

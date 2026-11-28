@@ -28691,7 +28691,12 @@ app.delete("/api/auctions/:id", authMiddleware, (req, res) => {
   saveStore(store);
   res.json({ success: true, message: "Leil\xE3o removido com sucesso." });
 });
+var itbiStatsCache = /* @__PURE__ */ new WeakMap();
 function getItbiStats(txs) {
+  const cached = itbiStatsCache.get(txs);
+  if (cached && cached.length === txs.length) {
+    return cached.stats;
+  }
   const groups = /* @__PURE__ */ new Map();
   for (let i = 0; i < txs.length; i++) {
     const t = txs[i];
@@ -28754,6 +28759,7 @@ function getItbiStats(txs) {
       periodRange: g.minDate && g.maxDate ? { minDate: g.minDate, maxDate: g.maxDate } : void 0
     });
   }
+  itbiStatsCache.set(txs, { length: txs.length, stats: result });
   return result;
 }
 app.get("/api/network/host-info", (req, res) => {
@@ -28829,6 +28835,24 @@ app.get("/api/itbi", (req, res) => {
     stats,
     totalCount: store.itbiTransactions.length
   });
+});
+app.get("/api/itbi/neighborhoods", (req, res) => {
+  const stateParam = typeof req.query.state === "string" ? req.query.state.trim().toUpperCase() : "";
+  const cityParam = typeof req.query.city === "string" ? normalizeString2(req.query.city).trim() : "";
+  const stats = getItbiStats(store.itbiTransactions);
+  const seen = /* @__PURE__ */ new Map();
+  for (const s of stats) {
+    if (stateParam && (s.state || "SP").toUpperCase() !== stateParam) continue;
+    if (cityParam && normalizeString2(s.city || "") !== cityParam) continue;
+    const label = String(s.neighborhood || "").trim();
+    if (!label || /^(?:nao informado|desconhecido|a confirmar)$/i.test(normalizeString2(label))) continue;
+    const key = cleanNeighborhood(label);
+    if (key && !seen.has(key)) {
+      seen.set(key, label);
+    }
+  }
+  const neighborhoods = Array.from(seen.values()).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  res.json(neighborhoods);
 });
 var itbiStreetsIndexCache = /* @__PURE__ */ new WeakMap();
 function getItbiStreetsIndex(txSource) {

@@ -364,6 +364,8 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
   // Autocomplete suggestions search states
   const [neighborhoodInput, setNeighborhoodInput] = useState(effectiveInitialNeigh);
   const [showNeighborhoodDropdown, setShowNeighborhoodDropdown] = useState(false);
+  const [remoteNeighborhoods, setRemoteNeighborhoods] = useState<string[]>([]);
+  const [isLoadingNeighborhoods, setIsLoadingNeighborhoods] = useState(false);
   const [streetInput, setStreetInput] = useState(initialAddr.street || '');
   const [streetSearchQuery, setStreetSearchQuery] = useState('');
   const [itbiRetry, setItbiRetry] = useState(0);
@@ -424,17 +426,63 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
     if (isHouseProperty) setCondoDebtInput(0);
   }, [isHouseProperty]);
 
+  // Fetch available neighborhoods directly for selected state and city (independent of App startup ITBI summary)
+  useEffect(() => {
+    const controller = new AbortController();
+    setIsLoadingNeighborhoods(true);
+    const params = new URLSearchParams({ state: selectedState, city: selectedCity });
+    void fetchCalculatorJson(`/api/itbi/neighborhoods?${params}`, controller.signal)
+      .then((data) => {
+        if (!controller.signal.aborted && Array.isArray(data)) {
+          setRemoteNeighborhoods(data.filter(isUsableNeighborhoodLabel));
+        }
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          console.warn('Error fetching ITBI neighborhoods:', err);
+          setRemoteNeighborhoods([]);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoadingNeighborhoods(false);
+      });
+    return () => controller.abort();
+  }, [selectedState, selectedCity, itbiRetry]);
+
   // Extract unique neighborhoods for selected state and city
   const neighborhoodsList = useMemo(() => {
-    const list = itbiStats
+    const fromStats = itbiStats
       .filter(stat => 
         (stat.state || 'SP').toUpperCase() === selectedState.toUpperCase() &&
-        (stat.city || 'São Paulo').toLowerCase() === selectedCity.toLowerCase()
+        normalizeString(stat.city || 'São Paulo') === normalizeString(selectedCity)
       )
       .map(stat => stat.neighborhood)
       .filter(isUsableNeighborhoodLabel);
-    return Array.from(new Set(list)).sort();
-  }, [itbiStats, selectedState, selectedCity]);
+    const mergedMap = new Map<string, string>();
+    for (const label of [...fromStats, ...remoteNeighborhoods]) {
+      const clean = String(label || '').trim();
+      if (!clean) continue;
+      const key = cleanNeighborhood(clean);
+      if (key && !mergedMap.has(key)) mergedMap.set(key, clean);
+    }
+    return Array.from(mergedMap.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [itbiStats, remoteNeighborhoods, selectedState, selectedCity]);
+
+  const filteredNeighborhoodSuggestions = useMemo(() => {
+    const query = normalizeString(neighborhoodInput).trim();
+    if (!query) return neighborhoodsList;
+    const starts: string[] = [];
+    const wordStarts: string[] = [];
+    const contains: string[] = [];
+    const wordNeedle = ` ${query}`;
+    for (const nb of neighborhoodsList) {
+      const norm = normalizeString(nb);
+      if (norm.startsWith(query)) starts.push(nb);
+      else if (norm.includes(wordNeedle)) wordStarts.push(nb);
+      else if (norm.includes(query)) contains.push(nb);
+    }
+    return [...starts, ...wordStarts, ...contains];
+  }, [neighborhoodsList, neighborhoodInput]);
 
   const prefillInitializedRef = useRef<boolean>(false);
   const lastPrefillIdRef = useRef<string | null>(null);
@@ -2886,11 +2934,10 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
               />
               {showNeighborhoodDropdown && (
                 <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-900 border border-slate-800 rounded-lg shadow-lg z-50 divide-y divide-slate-850">
-                  {neighborhoodsList
-                     .filter(nb => normalizeString(nb).includes(normalizeString(neighborhoodInput)))
-                     .map(nb => (
+                  {filteredNeighborhoodSuggestions.map(nb => (
                       <div
                         key={nb}
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           setSelectedNeighborhood(nb);
                           setNeighborhoodInput(nb);
@@ -2903,8 +2950,12 @@ export default function RealValueCalculator({ itbiStats = [], prefillData, onUpd
                         {nb}
                       </div>
                     ))}
-                  {neighborhoodsList.filter(nb => normalizeString(nb).includes(normalizeString(neighborhoodInput))).length === 0 && (
-                    <div className="px-3 py-2 text-xs text-slate-500">Nenhum bairro no banco ITBI (usando busca livre)</div>
+                  {filteredNeighborhoodSuggestions.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-slate-500">
+                      {isLoadingNeighborhoods
+                        ? 'Carregando bairros do banco ITBI...'
+                        : 'Nenhum bairro no banco ITBI (usando busca livre)'}
+                    </div>
                   )}
                 </div>
               )}

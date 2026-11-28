@@ -4958,7 +4958,13 @@ app.delete('/api/auctions/:id', authMiddleware, (req, res) => {
   res.json({ success: true, message: 'Leilão removido com sucesso.' });
 });
 
+const itbiStatsCache = new WeakMap<object, { length: number; stats: ItbiStats[] }>();
+
 function getItbiStats(txs: ItbiTransaction[]): ItbiStats[] {
+  const cached = itbiStatsCache.get(txs);
+  if (cached && cached.length === txs.length) {
+    return cached.stats;
+  }
   const groups = new Map<string, {
     state: string;
     city: string;
@@ -5043,6 +5049,7 @@ function getItbiStats(txs: ItbiTransaction[]): ItbiStats[] {
       periodRange: (g.minDate && g.maxDate) ? { minDate: g.minDate, maxDate: g.maxDate } : undefined
     });
   }
+  itbiStatsCache.set(txs, { length: txs.length, stats: result });
   return result;
 }
 
@@ -5129,6 +5136,26 @@ app.get('/api/itbi', (req, res) => {
     stats,
     totalCount: store.itbiTransactions.length
   });
+});
+
+// GET /api/itbi/neighborhoods (Lista rápida de bairros disponíveis no banco ITBI por UF/Cidade)
+app.get('/api/itbi/neighborhoods', (req, res) => {
+  const stateParam = typeof req.query.state === 'string' ? req.query.state.trim().toUpperCase() : '';
+  const cityParam = typeof req.query.city === 'string' ? normalizeString(req.query.city).trim() : '';
+  const stats = getItbiStats(store.itbiTransactions);
+  const seen = new Map<string, string>();
+  for (const s of stats) {
+    if (stateParam && (s.state || 'SP').toUpperCase() !== stateParam) continue;
+    if (cityParam && normalizeString(s.city || '') !== cityParam) continue;
+    const label = String(s.neighborhood || '').trim();
+    if (!label || /^(?:nao informado|desconhecido|a confirmar)$/i.test(normalizeString(label))) continue;
+    const key = cleanNeighborhood(label);
+    if (key && !seen.has(key)) {
+      seen.set(key, label);
+    }
+  }
+  const neighborhoods = Array.from(seen.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  res.json(neighborhoods);
 });
 
 interface CachedStreetSummary {
