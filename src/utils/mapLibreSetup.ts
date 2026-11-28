@@ -140,10 +140,8 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
   }
   if (!style || !Array.isArray(style.layers)) return;
 
-  // Inject rich OpenMapTiles natural/cartographic sublayers (real vegetation, beaches, parks, water contours, plazas)
-  // NOTE: OpenMapTiles `park` layer contains huge Brazilian APA / conservation / zona de amortecimento zoning overlays
-  // that falsely cover dense residential neighborhoods (Tanque, Quintino, Piedade, Copacabana, Santa Teresa, etc.).
-  // Therefore we HIDE `park` and render real physical greens solely from `landcover` and verified green `landuse` classes.
+  // Inject OpenMapTiles natural/cartographic sublayers (restores clean light palette from before 6bc5449,
+  // while keeping Positron's `park` APA/conservation zoning overlay hidden so residential streets never turn green).
   const hasOmtSource = Boolean(style.sources && style.sources.openmaptiles);
   if (hasOmtSource) {
     const firstWaterOrTransport =
@@ -172,7 +170,7 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
       } catch {}
     };
 
-    // Real hillside vegetation, scrubs, meadows & urban parks/gardens (strictly excludes APA/farmland)
+    // Unpainted grassy slopes, scrubs, meadows & hillside vegetation (excludes farmland so urban lots stay neutral)
     addSafeLayer(
       {
         id: 'landcover-grass-custom',
@@ -182,56 +180,17 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
         filter: [
           'all',
           ['match', ['geometry-type'], ['MultiPolygon', 'Polygon'], true, false],
-          ['match', ['get', 'class'], ['grass', 'shrub', 'scrub'], true, false],
+          ['match', ['get', 'class'], ['grass', 'wetland', 'shrub', 'scrub'], true, false],
         ],
         paint: {
-          'fill-color': [
-            'case',
-            ['==', ['get', 'subclass'], 'park'], '#96D87B',
-            ['==', ['get', 'subclass'], 'garden'], '#A4E08B',
-            '#8FCF73',
-          ],
+          'fill-color': ['case', ['==', ['get', 'subclass'], 'park'], '#A3D987', '#97CC7D'],
           'fill-opacity': 0.94,
         },
       },
       firstWaterOrTransport
     );
 
-    // Wetlands / mangroves in muted marsh sage-teal
-    addSafeLayer(
-      {
-        id: 'landcover-wetland-custom',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'landcover',
-        filter: [
-          'all',
-          ['match', ['geometry-type'], ['MultiPolygon', 'Polygon'], true, false],
-          ['==', ['get', 'class'], 'wetland'],
-        ],
-        paint: { 'fill-color': '#86C1A6', 'fill-opacity': 0.88 },
-      },
-      firstWaterOrTransport
-    );
-
-    // Exposed granite rock outcrops (Pão de Açúcar, Dois Irmãos, Pedra da Gávea)
-    addSafeLayer(
-      {
-        id: 'landcover-rock-custom',
-        type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'landcover',
-        filter: [
-          'all',
-          ['match', ['geometry-type'], ['MultiPolygon', 'Polygon'], true, false],
-          ['==', ['get', 'class'], 'rock'],
-        ],
-        paint: { 'fill-color': '#DED8CC', 'fill-opacity': 0.9 },
-      },
-      firstWaterOrTransport
-    );
-
-    // Verified green landuse only (sports pitches, playgrounds, gardens, cemeteries, parks — never residential/commercial lots)
+    // Recreational greens, plazas/squares greenery, gardens & cemeteries (excludes urban building uses)
     addSafeLayer(
       {
         id: 'landuse-green-custom',
@@ -241,9 +200,9 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
         filter: [
           'all',
           ['match', ['geometry-type'], ['MultiPolygon', 'Polygon'], true, false],
-          ['match', ['get', 'class'], ['grass', 'cemetery', 'recreation_ground', 'village_green', 'park', 'forest', 'meadow', 'garden', 'pitch', 'playground'], true, false],
+          ['match', ['get', 'class'], ['grass', 'cemetery', 'recreation_ground', 'village_green', 'park', 'forest', 'meadow', 'garden'], true, false],
         ],
-        paint: { 'fill-color': '#A5DC8B', 'fill-opacity': 0.9 },
+        paint: { 'fill-color': '#B4DD98', 'fill-opacity': 0.92 },
       },
       firstWaterOrTransport
     );
@@ -272,7 +231,7 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
       firstTransportOrBuilding
     );
 
-    // Crisp outline ONLY on physical public parks/squares (never conservation/APA zoning overlays)
+    // Crisp outline ONLY on physical parks and squares (never APA/conservation boundaries)
     addSafeLayer(
       {
         id: 'landcover-park-outline-custom',
@@ -285,12 +244,12 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
           ['==', ['get', 'class'], 'grass'],
           ['==', ['get', 'subclass'], 'park'],
         ],
-        paint: { 'line-color': '#5A9E44', 'line-width': 1.25, 'line-opacity': 0.88 },
+        paint: { 'line-color': '#6BAE53', 'line-width': 1.25, 'line-opacity': 0.88 },
       },
       firstTransportOrBuilding
     );
 
-    // Deep marine shoreline contour (unmistakably water, completely distinct from #00d4ff / #38bdf8 / #2563eb buildings)
+    // Crisp riverbank / bay shoreline outline
     addSafeLayer(
       {
         id: 'water-outline-custom',
@@ -298,7 +257,7 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
         source: 'openmaptiles',
         'source-layer': 'water',
         filter: ['all', ['match', ['geometry-type'], ['MultiPolygon', 'Polygon'], true, false], ['!=', ['get', 'brunnel'], 'tunnel']],
-        paint: { 'line-color': '#103D59', 'line-width': 1.5, 'line-opacity': 0.94 },
+        paint: { 'line-color': '#3D9BB0', 'line-width': 1.5, 'line-opacity': 0.92 },
       },
       firstTransportOrBuilding
     );
@@ -328,7 +287,7 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
     if (id.endsWith('-custom') || id === 'highway-plaza-casing') continue;
 
     try {
-      // Hide POIs, shields, airports AND Positron's `park` zoning overlay layer (APA/protected_area boundaries)
+      // Hide 100% of POIs, shields, airports AND Positron's `park` APA/conservation zoning overlay
       if (
         srcLayer === 'poi' ||
         srcLayer === 'aerodrome_label' ||
@@ -343,27 +302,16 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
 
       if (id === 'background' && layer.type === 'background') {
         map.setPaintProperty(id, 'background-color', '#F1EFEA');
-      } else if (layer.type === 'symbol') {
-        if (srcLayer === 'water_name' || idLower.includes('water_name')) {
-          map.setPaintProperty(id, 'text-color', '#FFFFFF');
-          map.setPaintProperty(id, 'text-halo-color', '#0F3A56');
-          map.setPaintProperty(id, 'text-halo-width', 1.6);
-        } else if (idLower.includes('waterway') && idLower.includes('label')) {
-          map.setPaintProperty(id, 'text-color', '#0F3A56');
-          map.setPaintProperty(id, 'text-halo-color', 'rgba(255,255,255,0.92)');
-          map.setPaintProperty(id, 'text-halo-width', 1.6);
-        }
       } else if (layer.type === 'fill') {
         if (srcLayer === 'water' || idLower.startsWith('water')) {
-          // Deep Prussian-marine water & pools so water NEVER blends with bright cyan/sky/royal 3D buildings
-          map.setPaintProperty(id, 'fill-color', ['case', ['==', ['get', 'class'], 'swimming_pool'], '#136F8A', '#1B5E86']);
+          map.setPaintProperty(id, 'fill-color', '#6BC7D7');
           map.setPaintProperty(id, 'fill-opacity', 1);
-        } else if (idLower.includes('wood') || idLower.includes('forest')) {
-          map.setPaintProperty(id, 'fill-color', '#6AB356');
-          map.setPaintProperty(id, 'fill-opacity', 0.96);
-        } else if (idLower.includes('grass') || idLower.includes('garden') || idLower.includes('pitch') || idLower.includes('cemetery')) {
-          map.setPaintProperty(id, 'fill-color', '#93D278');
-          map.setPaintProperty(id, 'fill-opacity', 0.95);
+        } else if (idLower.includes('wood') || idLower.includes('forest') || idLower.includes('scrub')) {
+          map.setPaintProperty(id, 'fill-color', '#7DBE68');
+          map.setPaintProperty(id, 'fill-opacity', 1);
+        } else if (idLower.includes('park') || idLower.includes('grass') || idLower.includes('garden') || idLower.includes('pitch') || idLower.includes('cemetery')) {
+          map.setPaintProperty(id, 'fill-color', '#A3D987');
+          map.setPaintProperty(id, 'fill-opacity', 1);
         } else if (
           srcLayer === 'landuse' ||
           idLower.includes('residential') ||
@@ -375,8 +323,8 @@ export function applyLightLandscapePalette(map: maplibregl.Map) {
         }
       } else if (layer.type === 'line') {
         if (srcLayer === 'waterway' || idLower.includes('waterway')) {
-          map.setPaintProperty(id, 'line-color', '#144D70');
-          map.setPaintProperty(id, 'line-width', ['interpolate', ['linear'], ['zoom'], 11, 1.6, 14, 3.0, 17, 4.6]);
+          map.setPaintProperty(id, 'line-color', '#48AFC4');
+          map.setPaintProperty(id, 'line-width', ['interpolate', ['linear'], ['zoom'], 11, 1.5, 14, 2.8, 17, 4.4]);
           map.setPaintProperty(id, 'line-opacity', 0.96);
         } else if (idLower.includes('casing') || idLower.includes('railway')) {
           map.setPaintProperty(id, 'line-color', '#D5D2CA');
@@ -515,18 +463,6 @@ export function upsertRio3DBuildingsLayer(
   if (isLightTheme) {
     applyLightLandscapePalette(map);
   } else {
-    for (const layer of styleLayers) {
-      const idLower = layer.id.toLowerCase();
-      const srcLayer = String(layer['source-layer'] || '').toLowerCase();
-      try {
-        if (layer.type === 'fill' && (srcLayer === 'water' || idLower === 'water')) {
-          map.setPaintProperty(layer.id, 'fill-color', '#0E324D');
-        } else if (layer.type === 'line' && (srcLayer === 'waterway' || idLower === 'waterway')) {
-          map.setPaintProperty(layer.id, 'line-color', '#19547A');
-          map.setPaintProperty(layer.id, 'line-width', ['interpolate', ['linear'], ['zoom'], 11, 1.4, 14, 2.6, 17, 4.0]);
-        }
-      } catch {}
-    }
     try {
       map.setLight({
         anchor: 'viewport',
